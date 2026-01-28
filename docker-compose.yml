@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./OpenRestoApi
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+
+  frontend:
+    build:
+      context: ./OpenRestoFrontend/openresto-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./OpenRestoFrontend/openresto-frontend/.env.docker
+
+  frontend-dev:
+    build:
+      context: ./OpenRestoFrontend/openresto-frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8081:8081"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+    env_file:
+      - ./OpenRestoFrontend/openresto-frontend/.env.docker
+    volumes:
+      - ./OpenRestoFrontend/openresto-frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    profiles:
+      - dev
+
+  reverse-proxy:
+    image: nginx:latest
+    ports:
+      - "5062:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
