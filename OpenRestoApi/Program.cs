@@ -7,12 +7,25 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
+    var corsOrigins = Environment.GetEnvironmentVariable("CORS_ORIGINS") ?? "*";
+    var origins = corsOrigins.Split(",", StringSplitOptions.RemoveEmptyEntries);
+
+    options.AddPolicy("AllowFrontend",
         builder =>
         {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
+            if (corsOrigins == "*")
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }
+            else
+            {
+                builder.WithOrigins(origins)
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .AllowCredentials();
+            }
         });
 });
 
@@ -26,7 +39,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
 
 app.MapControllers();
 

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OpenRestoApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8276feff3a763ba4a9f71e70e30276c26c8150a0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+474065a8fbc185546f9c19f7c97d1abb579362ce")]
 [assembly: System.Reflection.AssemblyProductAttribute("OpenRestoApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OpenRestoApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

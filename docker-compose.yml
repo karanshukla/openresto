@@ -10,19 +10,21 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+    env_file:
+      - ./OpenRestoApi/.env.docker
 
   frontend:
     build:
-      context: ./OpenRestoFrontend/openresto-frontend
+      context: ./openresto-frontend
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
     env_file:
-      - ./OpenRestoFrontend/openresto-frontend/.env.docker
+      - ./openresto-frontend/.env.docker
 
   frontend-dev:
     build:
-      context: ./OpenRestoFrontend/openresto-frontend
+      context: ./openresto-frontend
       dockerfile: Dockerfile.dev
     ports:
       - "8081:8081"
@@ -30,9 +32,9 @@ services:
       - "19001:19001"
       - "19002:19002"
     env_file:
-      - ./OpenRestoFrontend/openresto-frontend/.env.docker
+      - ./openresto-frontend/.env.docker
     volumes:
-      - ./OpenRestoFrontend/openresto-frontend:/usr/src/app
+      - ./openresto-frontend:/usr/src/app
       - /usr/src/app/node_modules
     profiles:
       - dev

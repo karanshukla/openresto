@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "f:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj": {}
+    "F:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj": {}
   },
   "projects": {
-    "f:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj": {
+    "F:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "f:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj",
+        "projectUniqueName": "F:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj",
         "projectName": "OpenRestoApi",
-        "projectPath": "f:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj",
+        "projectPath": "F:\\Development\\openresto\\OpenRestoApi\\OpenRestoApi.csproj",
         "packagesPath": "C:\\Users\\karan\\.nuget\\packages\\",
-        "outputPath": "f:\\Development\\openresto\\OpenRestoApi\\obj\\",
+        "outputPath": "F:\\Development\\openresto\\OpenRestoApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\karan\\AppData\\Roaming\\NuGet\\NuGet.Config"
