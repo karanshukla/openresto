@@ -1,0 +1,39 @@
+# Root .gitignore for the repository
+
+# Node / frontend
+node_modules/
+openresto-frontend/.expo/
+openresto-frontend/dist/
+openresto-frontend/web-build/
+
+# .NET build outputs
+**/bin/
+**/obj/
+*.dll
+*.pdb
+*.exe
+*.nuget.props
+*.nuget.g.targets
+
+# VS / Rider
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# env files
+*.env
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+**/docker-compose.override.yml
