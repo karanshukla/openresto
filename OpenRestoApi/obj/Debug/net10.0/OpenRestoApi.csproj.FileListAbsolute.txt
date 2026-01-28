@@ -31,3 +31,4 @@ F:\Development\openresto\OpenRestoApi\obj\Debug\net10.0\refint\OpenRestoApi.dll
 F:\Development\openresto\OpenRestoApi\obj\Debug\net10.0\OpenRestoApi.pdb
 F:\Development\openresto\OpenRestoApi\obj\Debug\net10.0\OpenRestoApi.genruntimeconfig.cache
 F:\Development\openresto\OpenRestoApi\obj\Debug\net10.0\ref\OpenRestoApi.dll
+f:\Development\openresto\OpenRestoApi\obj\Debug\net10.0\OpenRestoApi.sourcelink.json
