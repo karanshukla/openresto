@@ -1,4 +1,6 @@
 using System.Threading.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using OpenRestoApi.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +49,13 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddDistributedMemoryCache();
 
+// Database (SQLite)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
+    ?? "Data Source=./openresto.db";
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(connectionString));
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromSeconds(10);
@@ -68,5 +77,12 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
 app.MapControllers();
+
+// Ensure DB is created for first run
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.Run();
