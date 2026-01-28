@@ -1,0 +1,6 @@
+@OpenRestoApi_HostAddress = http://localhost:5062
+
+GET {{OpenRestoApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
