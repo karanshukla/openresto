@@ -55,7 +55,8 @@ Open `openresto.sln` in VS Code and run the backend directly.
 You can also use dotnet run from the terminal:
 
 ```bash
-dotnet run --launch-profile Development
+dotnet run
+dotnet watch run
 ```
 
 API runs at: **http://localhost:8080**
