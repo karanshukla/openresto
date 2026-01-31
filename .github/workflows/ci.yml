@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: openresto-frontend
+
+      - name: Run ESLint
+        run: npm run lint
+        working-directory: openresto-frontend
+
+      - name: Run Prettier Check
+        run: npm run format -- --check
+        working-directory: openresto-frontend
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+        working-directory: OpenRestoApi
+
+      - name: Build Solution
+        run: dotnet build --no-restore
+        working-directory: OpenRestoApi
+
+      - name: Run dotnet format (check only)
+        run: dotnet format --check --verify-no-changes
+        working-directory: OpenRestoApi

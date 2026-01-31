@@ -1,0 +1,16 @@
+# Development Dockerfile - runs expo dev server with hot reload
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+RUN npm install -g expo-cli
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 8081
+
+# Run the Expo development server accessible from host
+CMD ["expo", "start", "--web", "--lan", "--clear"]
