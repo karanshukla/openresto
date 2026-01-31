@@ -42,5 +42,13 @@ public class AppDbContext : DbContext
             tb.Property(t => t.Seats).IsRequired();
             tb.Property(t => t.Name);
         });
+
+        modelBuilder.Entity<Booking>(bb =>
+        {
+            bb.HasKey(b => b.Id);
+            bb.HasOne(b => b.Table).WithMany().HasForeignKey("TableId");
+            bb.HasOne(b => b.Section).WithMany().HasForeignKey("SectionId");
+            bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey("RestaurantId");
+        });
     }
 }

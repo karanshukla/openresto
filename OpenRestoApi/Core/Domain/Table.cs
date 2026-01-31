@@ -5,7 +5,6 @@ public class Table
     public int Id { get; set; }
     public string? Name { get; set; }
 
-    // Number of seats for this table
     public int Seats { get; set; }
 
     // Relation to Section

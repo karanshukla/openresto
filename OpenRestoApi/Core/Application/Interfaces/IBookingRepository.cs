@@ -1,9 +1,12 @@
+using OpenRestoApi.Core.Domain;
+
 namespace OpenRestoApi.Core.Application.Interfaces;
 
-using OpenRestoApi.Core.Domain;
 public interface IBookingRepository
 {
-    Task<IEnumerable<Booking>> GetAllAvailableBookingsAsync();
-    Task<Booking?> GetBookingByIdAsync(int id);
+    Task<Booking?> GetByIdAsync(int id);
     Task<IEnumerable<Booking>> GetBookingsByRestaurantIdAsync(int restaurantId);
+    Task<Booking> AddAsync(Booking booking);
+    Task<Booking> UpdateAsync(Booking booking);
+    Task DeleteAsync(int id);
 }

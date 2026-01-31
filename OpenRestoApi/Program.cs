@@ -1,6 +1,9 @@
 using System.Threading.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +51,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<ITableRepository, TableRepository>();
+builder.Services.AddScoped<ISectionRepository, SectionRepository>();
+builder.Services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+builder.Services.AddScoped<BookingService>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // Database (SQLite)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")

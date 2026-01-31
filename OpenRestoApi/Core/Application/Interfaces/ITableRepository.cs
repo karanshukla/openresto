@@ -1,9 +1,8 @@
+using OpenRestoApi.Core.Domain;
+
 namespace OpenRestoApi.Core.Application.Interfaces;
 
-using OpenRestoApi.Core.Domain;
-public interface TableRepository
+public interface ITableRepository
 {
-    Task<IEnumerable<Table>> GetAllTablesAsync();
-    Task<Table?> GetTableByIdAsync(int id);
-    Task<IEnumerable<Table>> GetTablesByRestaurantIdAsync(int restaurantId);
+    Task<Table?> GetByIdAsync(int id);
 }
