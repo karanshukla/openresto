@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Restaurant> Restaurants { get; set; } = null!;
     public DbSet<Section> Sections { get; set; } = null!;
     public DbSet<Table> Tables { get; set; } = null!;
+    public DbSet<Booking> Bookings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
