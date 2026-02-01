@@ -2,7 +2,7 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Interfaces;
 
-public interface IRestaurantRepository
+public interface ISectionRepository
 {
-    Task<Restaurant?> GetByIdAsync(int id);
+    Task<Section?> GetByIdAsync(int id);
 }
