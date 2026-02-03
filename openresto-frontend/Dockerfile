@@ -17,7 +17,7 @@ RUN npm install
 COPY . .
 
 # Build the web app
-RUN npx expo export
+RUN npx expo export --dev
 
 # Install a simple web server to serve the built files
 RUN npm install -g serve

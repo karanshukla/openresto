@@ -18,23 +18,6 @@ Services:
 - Backend API: http://localhost:8080 (direct)
 - Nginx Reverse Proxy: http://localhost:5062 (main entry point)
 
-## Development Mode - With Hot Reload
-
-Run with hot reload enabled for frontend development:
-
-```bash
-docker-compose --profile dev up
-```
-
-Access the app at: **http://localhost:8081**
-
-This mode:
-
-- ✅ Enables hot reload for frontend code changes
-- ✅ Uses Expo Metro dev server
-- ✅ Mounts local code volume for live updates
-- ✅ Backend still runs in Docker
-
 ## Local Development - No Docker
 
 Run both services locally in VS Code:
