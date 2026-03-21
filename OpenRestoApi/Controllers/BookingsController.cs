@@ -41,8 +41,15 @@ namespace OpenRestoApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            var newBooking = await _bookingService.CreateBookingAsync(bookingDto);
-            return CreatedAtAction(nameof(GetBooking), new { id = newBooking.Id }, newBooking);
+            try
+            {
+                var newBooking = await _bookingService.CreateBookingAsync(bookingDto);
+                return CreatedAtAction(nameof(GetBooking), new { id = newBooking.Id }, newBooking);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]

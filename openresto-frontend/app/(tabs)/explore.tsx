@@ -1,165 +1,177 @@
-import { Image } from "expo-image";
-import { Platform, StyleSheet, useColorScheme } from "react-native";
-import { useEffect, useState } from "react";
-
-import { Collapsible } from "@/components/ui/collapsible";
-import { ExternalLink } from "@/components/external-link";
-import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Fonts } from "@/constants/theme";
-import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { getBookingById, BookingDto } from "@/api/bookings";
+import { useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
+import PageContainer from "@/components/layout/PageContainer";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function TabTwoScreen() {
-  const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
+export default function MyBookingScreen() {
+  const [bookingIdInput, setBookingIdInput] = useState("");
+  const [booking, setBooking] = useState<BookingDto | null | undefined>(undefined);
   const [loading, setLoading] = useState(false);
-  const scheme = useColorScheme();
+  const [searched, setSearched] = useState(false);
+  const isDark = useColorScheme() === "dark";
+  const borderColor = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const mutedColor = isDark ? "#9ca3af" : "#6b7280";
 
-  useEffect(() => {
-    let mounted = true;
+  const handleLookup = async () => {
+    const id = parseInt(bookingIdInput, 10);
+    if (isNaN(id)) return;
     setLoading(true);
-    fetchRestaurants()
-      .then((r) => {
-        if (mounted) setRestaurants(r);
-      })
-      .catch((err) => console.warn("Failed to fetch restaurants", err))
-      .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    setSearched(true);
+    const result = await getBookingById(id);
+    setBooking(result);
+    setLoading(false);
+  };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}
-        >
-          Explore
-        </ThemedText>
-      </ThemedView>
+    <ScrollView style={styles.scroll}>
+      <PageContainer style={styles.page}>
+        <View style={styles.header}>
+          <ThemedText type="title">My Booking</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
+            Enter your booking ID to view your reservation details.
+          </ThemedText>
+        </View>
 
-      <ThemedText>
-        Restaurants ({loading ? "loading..." : restaurants.length})
-      </ThemedText>
+        <ThemedView style={[styles.searchCard, { borderColor }]}>
+          <ThemedText type="defaultSemiBold" style={styles.searchLabel}>
+            Booking ID
+          </ThemedText>
+          <Input
+            placeholder="e.g. 42"
+            value={bookingIdInput}
+            onChangeText={setBookingIdInput}
+            keyboardType="numeric"
+          />
+          <Button onPress={handleLookup} disabled={!bookingIdInput || loading}>
+            {loading ? "Looking up…" : "Find Booking"}
+          </Button>
+        </ThemedView>
 
-      {restaurants.map((r) => (
-        <Collapsible key={r.id} title={`${r.name} · ${r.address ?? ""}`}>
-          {r.sections.map((s) => (
-            <ThemedText key={s.id} style={{ marginBottom: 6 }}>
-              {s.name}:{" "}
-              {s.tables
-                .map((t) => `${t.name ?? "Table"} (${t.seats})`)
-                .join(", ")}
+        {loading && <ActivityIndicator style={styles.spinner} size="large" />}
+
+        {!loading && searched && !booking && (
+          <ThemedView style={[styles.resultCard, { borderColor }]}>
+            <ThemedText style={[styles.notFound, { color: mutedColor }]}>
+              No booking found with ID #{bookingIdInput}. Please check and try again.
             </ThemedText>
-          ))}
-        </Collapsible>
-      ))}
+          </ThemedView>
+        )}
 
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText>{" "}
-          and{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in{" "}
-          <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{" "}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
+        {!loading && booking && (
+          <ThemedView style={[styles.resultCard, { borderColor }]}>
+            <View style={styles.resultHeader}>
+              <ThemedText type="defaultSemiBold" style={styles.bookingId}>
+                Booking #{booking.id}
+              </ThemedText>
+            </View>
 
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the
-          web version, press <ThemedText type="defaultSemiBold">w</ThemedText>{" "}
-          in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
+            <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the{" "}
-          <ThemedText type="defaultSemiBold">@2x</ThemedText> and{" "}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to
-          provide files for different screen densities
-        </ThemedText>
-        <Image
-          source={require("@/assets/images/react-logo.png")}
-          style={{ width: 100, height: 100, alignSelf: "center" }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{" "}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook
-          lets you inspect what the user&apos;s current color scheme is, and so
-          you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{" "}
-          <ThemedText type="defaultSemiBold">
-            components/HelloWave.tsx
-          </ThemedText>{" "}
-          component uses the powerful{" "}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{" "}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The{" "}
-              <ThemedText type="defaultSemiBold">
-                components/ParallaxScrollView.tsx
-              </ThemedText>{" "}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+            {[
+              {
+                label: "Email",
+                value: booking.customerEmail,
+              },
+              {
+                label: "Date",
+                value: new Date(booking.date).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+              },
+              {
+                label: "Time",
+                value: new Date(booking.date).toLocaleTimeString(undefined, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              },
+              {
+                label: "Seats",
+                value: String(booking.seats),
+              },
+            ].map(({ label, value }) => (
+              <View key={label} style={styles.row}>
+                <ThemedText style={[styles.rowLabel, { color: mutedColor }]}>
+                  {label}
+                </ThemedText>
+                <ThemedText style={styles.rowValue}>{value}</ThemedText>
+              </View>
+            ))}
+          </ThemedView>
+        )}
+      </PageContainer>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: "#808080",
-    bottom: -90,
-    left: -35,
-    position: "absolute",
+  scroll: { flex: 1 },
+  page: {
+    maxWidth: 560,
+    gap: 20,
   },
-  titleContainer: {
-    flexDirection: "row",
+  header: {
+    paddingTop: 16,
     gap: 8,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  searchCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 20,
+    gap: 4,
+  },
+  searchLabel: {
+    marginBottom: 4,
+  },
+  spinner: {
+    marginTop: 24,
+  },
+  resultCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  resultHeader: {
+    padding: 16,
+  },
+  bookingId: {
+    fontSize: 18,
+  },
+  divider: {
+    height: 1,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  rowLabel: {
+    fontSize: 14,
+  },
+  rowValue: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
+    marginLeft: 16,
+  },
+  notFound: {
+    padding: 20,
+    fontSize: 15,
+    textAlign: "center",
   },
 });

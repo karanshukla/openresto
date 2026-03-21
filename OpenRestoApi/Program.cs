@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
@@ -51,6 +52,9 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddDistributedMemoryCache();
+
+// HoldService must be Singleton — the in-memory dictionary must survive across requests
+builder.Services.AddSingleton<IHoldService, HoldService>();
 
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<ITableRepository, TableRepository>();

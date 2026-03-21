@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^d.*\\\\.$\")",
+      "Bash(grep -r \"ValidationException\\\\|Validation\\\\|Conflict\" /f/Development/openresto/OpenRestoApi --include=*.cs)",
+      "Bash(xargs basename:*)"
+    ]
+  }
+}

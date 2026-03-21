@@ -58,5 +58,15 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 await _db.SaveChangesAsync();
             }
         }
+
+        public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime date)
+        {
+            var dayStart = date.ToUniversalTime().Date;
+            var dayEnd = dayStart.AddDays(1);
+            return await _db.Bookings.AnyAsync(b =>
+                b.TableId == tableId &&
+                b.Date >= dayStart &&
+                b.Date < dayEnd);
+        }
     }
 }
