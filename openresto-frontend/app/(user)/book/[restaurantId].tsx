@@ -6,6 +6,7 @@ import { ActivityIndicator, Platform, ScrollView, StyleSheet } from "react-nativ
 import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
+import { addCachedBooking } from "@/utils/bookingCache";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -52,6 +53,13 @@ export default function BookScreen() {
       const newBooking = await createBooking(bookingData);
       const email = encodeURIComponent(data.customerEmail);
       if (newBooking?.bookingRef) {
+        addCachedBooking({
+          bookingRef: newBooking.bookingRef,
+          email: data.customerEmail,
+          date: dateTime,
+          seats: data.seats,
+          restaurantName: restaurant.name,
+        });
         router.push(`/booking-confirmation/${newBooking.bookingRef}?email=${email}`);
       } else if (newBooking) {
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);

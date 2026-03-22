@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { AppThemeProvider, useTheme } from "@/context/ThemeContext";
+import { BrandProvider } from "@/context/BrandContext";
 
 function AppWithTheme() {
   const { colorScheme } = useTheme();
@@ -22,8 +23,10 @@ function AppWithTheme() {
 
 export default function RootLayout() {
   return (
-    <AppThemeProvider>
-      <AppWithTheme />
-    </AppThemeProvider>
+    <BrandProvider>
+      <AppThemeProvider>
+        <AppWithTheme />
+      </AppThemeProvider>
+    </BrandProvider>
   );
 }

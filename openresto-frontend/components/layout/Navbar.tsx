@@ -1,19 +1,20 @@
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { Link, usePathname } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
 import { PRIMARY } from "@/constants/colors";
-import { APP_NAME } from "@/constants/config";
+import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" as const, match: (p: string) => p === "/" },
+  { label: "Home", href: "/" as const, match: (p: string) => p === "/", adminOnly: false },
   {
     label: "My Booking",
     href: "/(user)/lookup" as const,
     match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
+    adminOnly: false,
   },
   {
     label: "Admin",
@@ -23,6 +24,7 @@ const NAV_LINKS = [
       p.startsWith("/bookings") ||
       p === "/settings" ||
       p === "/login",
+    adminOnly: true,
   },
 ];
 
@@ -30,8 +32,13 @@ export default function Navbar() {
   const pathname = usePathname();
   const isDark = useColorScheme() === "dark";
   const { toggle } = useTheme();
+  const brand = useBrand();
+  const accent = brand.primaryColor || PRIMARY;
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const mutedColor = isDark ? "#9ca3af" : "#6b7280";
+  const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
 
   return (
     <ThemedView
@@ -47,13 +54,17 @@ export default function Navbar() {
         {/* Brand */}
         <Link href="/" asChild>
           <Pressable style={styles.brand}>
-            <ThemedText style={styles.brandText}>{APP_NAME}</ThemedText>
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt={brand.appName} style={{ height: 32, objectFit: "contain" }} />
+            ) : (
+              <ThemedText style={[styles.brandText, { color: accent }]}>{brand.appName}</ThemedText>
+            )}
           </Pressable>
         </Link>
 
         {/* Nav links + theme toggle */}
         <View style={styles.links}>
-          {NAV_LINKS.map(({ label, href, match }) => {
+          {visibleLinks.map(({ label, href, match }) => {
             const active = match(pathname);
             return (
               <Link key={href} href={href} asChild>
@@ -61,14 +72,14 @@ export default function Navbar() {
                   <ThemedText
                     style={[
                       styles.linkText,
-                      { color: active ? PRIMARY : mutedColor },
+                      { color: active ? accent : mutedColor },
                     ]}
                   >
                     {label}
                   </ThemedText>
                   {active && (
                     <View
-                      style={[styles.linkUnderline, { backgroundColor: PRIMARY }]}
+                      style={[styles.linkUnderline, { backgroundColor: accent }]}
                     />
                   )}
                 </Pressable>

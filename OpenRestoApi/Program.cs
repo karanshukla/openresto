@@ -91,6 +91,11 @@ builder.Services.AddScoped<IRestaurantRepository, RestaurantRepository>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
 
+// Email
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
+builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
+
 // Database (SQLite)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
@@ -156,6 +161,42 @@ using (var scope = app.Services.CreateScope())
     catch { /* column already exists */ }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Restaurants\" ADD COLUMN \"CloseTime\" TEXT NOT NULL DEFAULT '22:00'"); }
     catch { /* column already exists */ }
+
+    // EmailSettings table
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
+                ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+                ""Host"" TEXT NOT NULL DEFAULT '',
+                ""Port"" INTEGER NOT NULL DEFAULT 587,
+                ""Username"" TEXT NOT NULL DEFAULT '',
+                ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
+                ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
+                ""FromName"" TEXT,
+                ""FromEmail"" TEXT
+            )");
+    }
+    catch { /* table already exists */ }
+
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"IsCancelled\" INTEGER NOT NULL DEFAULT 0"); }
+    catch { /* column already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"CancelledAt\" TEXT"); }
+    catch { /* column already exists */ }
+
+    // BrandSettings table
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
+                ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+                ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
+                ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
+                ""AccentColor"" TEXT,
+                ""LogoBase64"" TEXT
+            )");
+    }
+    catch { /* table already exists */ }
 
     // Seed initial data when database is empty
     DbSeeder.Seed(db);

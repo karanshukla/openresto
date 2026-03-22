@@ -7,6 +7,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
+import { getCachedBookings } from "@/utils/bookingCache";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -15,6 +16,7 @@ export default function LookupScreen() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const isDark = useColorScheme() === "dark";
+  const cached = getCachedBookings();
 
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -161,6 +163,38 @@ export default function LookupScreen() {
             </View>
           </View>
         )}
+
+        {/* Recent bookings from local cache */}
+        {cached.length > 0 && (
+          <View style={styles.recentSection}>
+            <ThemedText style={[styles.recentTitle, { color: mutedColor }]}>
+              YOUR RECENT BOOKINGS
+            </ThemedText>
+            {cached.map((c) => (
+              <Pressable
+                key={c.bookingRef}
+                style={[styles.recentCard, { backgroundColor: cardBg, borderColor }]}
+                onPress={() => {
+                  setRefInput(c.bookingRef);
+                  setEmailInput(c.email);
+                }}
+              >
+                <View style={styles.recentCardRow}>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <ThemedText style={styles.recentRef}>{c.bookingRef}</ThemedText>
+                    <ThemedText style={[styles.recentMeta, { color: mutedColor }]}>
+                      {c.restaurantName ? `${c.restaurantName} · ` : ""}
+                      {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      {" · "}
+                      {c.seats} guest{c.seats !== 1 ? "s" : ""}
+                    </ThemedText>
+                  </View>
+                  <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </PageContainer>
     </ScrollView>
   );
@@ -292,5 +326,41 @@ const styles = StyleSheet.create({
   },
   detailDivider: {
     height: 1,
+  },
+  recentSection: {
+    marginTop: 32,
+    gap: 10,
+    maxWidth: 480,
+    width: "100%",
+    alignSelf: "center",
+  },
+  recentTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  recentCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  recentCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  recentRef: {
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  recentMeta: {
+    fontSize: 12,
   },
 });

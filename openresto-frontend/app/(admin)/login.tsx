@@ -13,7 +13,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
-import { APP_NAME } from "@/constants/config";
+import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 
 type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
@@ -41,6 +41,7 @@ export default function AdminLoginScreen() {
 
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const brand = useBrand();
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -333,7 +334,7 @@ export default function AdminLoginScreen() {
         <View style={styles.container}>
           <View style={styles.brandRow}>
             <ThemedText style={[styles.brand, { color: PRIMARY }]}>
-              {APP_NAME}
+              {brand.appName}
             </ThemedText>
             <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>
               Admin
@@ -347,7 +348,7 @@ export default function AdminLoginScreen() {
           {stage === "login" && (
             <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as any}>
               <ThemedText style={[styles.backLink, { color: mutedColor }]}>
-                ← Back to {APP_NAME}
+                ← Back to {brand.appName}
               </ThemedText>
             </Pressable>
           )}

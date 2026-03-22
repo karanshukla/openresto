@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { getAdminBookings, adminGetTables, adminDeleteBooking, BookingDetailDto, SectionWithTables } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -200,6 +200,7 @@ export default function AdminBookingsScreen() {
   const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [showCancelled, setShowCancelled] = useState(false);
 
   // Grid state
   const [gridDate, setGridDate] = useState(new Date());
@@ -209,7 +210,6 @@ export default function AdminBookingsScreen() {
 
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [cancelTarget, setCancelTarget] = useState<BookingDetailDto | null>(null);
-  const menuClickedRef = useRef(false);
 
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
@@ -228,19 +228,19 @@ export default function AdminBookingsScreen() {
       if (data.length > 0) {
         const id = data[0].id;
         setSelectedRestaurantId(id);
-        const b = await getAdminBookings(id);
+        const b = await getAdminBookings(id, undefined, showCancelled);
         setBookings(b);
       }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [showCancelled]);
 
   const handleSelectRestaurant = async (id: number) => {
     if (id === selectedRestaurantId) return;
     setSelectedRestaurantId(id);
     setLoading(true);
-    const b = await getAdminBookings(id);
+    const b = await getAdminBookings(id, undefined, showCancelled);
     setBookings(b);
     setLoading(false);
     if (viewMode === "grid") loadGrid(id, gridDate);
@@ -316,27 +316,49 @@ export default function AdminBookingsScreen() {
             </View>
           )}
 
-          {/* View mode toggle */}
+          {/* Active / Cancelled toggle */}
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             <Pressable
-              style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
-              onPress={() => setViewMode("list")}
+              style={[styles.modeBtn, !showCancelled && { backgroundColor: PRIMARY }]}
+              onPress={() => setShowCancelled(false)}
             >
-              <Ionicons name="list-outline" size={16} color={viewMode === "list" ? "#fff" : mutedColor} />
-              <ThemedText style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}>
-                List
+              <ThemedText style={[styles.modeBtnText, { color: !showCancelled ? "#fff" : mutedColor }]}>
+                Active
               </ThemedText>
             </Pressable>
             <Pressable
-              style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
-              onPress={switchToGrid}
+              style={[styles.modeBtn, showCancelled && { backgroundColor: "#dc2626" }]}
+              onPress={() => setShowCancelled(true)}
             >
-              <Ionicons name="grid-outline" size={16} color={viewMode === "grid" ? "#fff" : mutedColor} />
-              <ThemedText style={[styles.modeBtnText, { color: viewMode === "grid" ? "#fff" : mutedColor }]}>
-                Grid
+              <ThemedText style={[styles.modeBtnText, { color: showCancelled ? "#fff" : mutedColor }]}>
+                Cancelled
               </ThemedText>
             </Pressable>
           </View>
+
+          {/* View mode toggle */}
+          {!showCancelled && (
+            <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
+              <Pressable
+                style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
+                onPress={() => setViewMode("list")}
+              >
+                <Ionicons name="list-outline" size={16} color={viewMode === "list" ? "#fff" : mutedColor} />
+                <ThemedText style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}>
+                  List
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
+                onPress={switchToGrid}
+              >
+                <Ionicons name="grid-outline" size={16} color={viewMode === "grid" ? "#fff" : mutedColor} />
+                <ThemedText style={[styles.modeBtnText, { color: viewMode === "grid" ? "#fff" : mutedColor }]}>
+                  Grid
+                </ThemedText>
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
 
@@ -408,18 +430,20 @@ export default function AdminBookingsScreen() {
           </View>
 
           {sorted.map((b, i) => (
-            <Pressable
+            <View
               key={b.id}
               style={[
                 styles.tableRow,
                 i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
                 { cursor: "pointer" } as any,
               ]}
-              onPress={() => {
-                if (menuClickedRef.current) { menuClickedRef.current = false; return; }
+              // Use onClick on the View so we can check event target
+              {...{ onClick: (e: any) => {
+                // Don't navigate if click was inside the menu area
+                if (e.target.closest?.("[data-menu]")) return;
                 if (openMenuId !== null) { setOpenMenuId(null); return; }
                 router.push(`/(admin)/bookings/${b.id}`);
-              }}
+              }}}
             >
               <View style={styles.colTime}>
                 <ThemedText style={styles.tdTime}>
@@ -432,7 +456,7 @@ export default function AdminBookingsScreen() {
               <View style={styles.colGuest}>
                 <ThemedText style={styles.tdGuest} numberOfLines={1}>{b.customerEmail}</ThemedText>
                 <ThemedText style={[styles.tdNotes, { color: mutedColor }]} numberOfLines={1}>
-                  No special requests
+                  {b.specialRequests || "No special requests"}
                 </ThemedText>
               </View>
               <View style={styles.colParty}>
@@ -447,28 +471,26 @@ export default function AdminBookingsScreen() {
               <View style={styles.colStatus}>
                 <StatusBadge date={b.date} isDark={isDark} />
               </View>
-              <View style={[styles.colAction, { zIndex: openMenuId === b.id ? 10 : 1 }]}>
+              <View
+                style={[styles.colAction, { zIndex: openMenuId === b.id ? 10 : 1 }]}
+                {...{ "data-menu": true } as any}
+              >
                 <Pressable
                   style={styles.menuBtn}
-                  onPress={() => {
-                    menuClickedRef.current = true;
-                    setOpenMenuId(openMenuId === b.id ? null : b.id);
-                  }}
+                  onPress={() => setOpenMenuId(openMenuId === b.id ? null : b.id)}
                 >
                   <Ionicons name="ellipsis-vertical" size={16} color={mutedColor} />
                 </Pressable>
                 {openMenuId === b.id && (
                   <>
-                    {/* Backdrop to close menu */}
                     <Pressable
                       style={styles.menuBackdrop}
-                      onPress={() => { menuClickedRef.current = true; setOpenMenuId(null); }}
+                      onPress={() => setOpenMenuId(null)}
                     />
                     <View style={[styles.menuPopup, { backgroundColor: cardBg, borderColor }]}>
                       <Pressable
                         style={styles.menuItem}
                         onPress={() => {
-                          menuClickedRef.current = true;
                           setOpenMenuId(null);
                           router.push(`/(admin)/bookings/${b.id}`);
                         }}
@@ -480,7 +502,6 @@ export default function AdminBookingsScreen() {
                       <Pressable
                         style={styles.menuItem}
                         onPress={() => {
-                          menuClickedRef.current = true;
                           setOpenMenuId(null);
                           setCancelTarget(b);
                         }}
@@ -492,7 +513,7 @@ export default function AdminBookingsScreen() {
                   </>
                 )}
               </View>
-            </Pressable>
+            </View>
           ))}
         </View>
       ) : (

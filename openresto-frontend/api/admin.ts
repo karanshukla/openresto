@@ -31,6 +31,8 @@ export interface BookingDetailDto {
   seats: number;
   specialRequests?: string;
   bookingRef?: string;
+  isCancelled?: boolean;
+  cancelledAt?: string;
 }
 
 export interface AdminCreateBookingRequest {
@@ -74,12 +76,14 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
 
 export async function getAdminBookings(
   restaurantId?: number,
-  date?: string
+  date?: string,
+  cancelled = false
 ): Promise<BookingDetailDto[]> {
   try {
     const params = new URLSearchParams();
     if (restaurantId != null) params.set("restaurantId", String(restaurantId));
     if (date) params.set("date", date);
+    if (cancelled) params.set("cancelled", "true");
     const query = params.toString() ? `?${params}` : "";
     const res = await fetch(buildEndpoint(`/admin/bookings${query}`), {
       headers: getAuthHeaders(),
@@ -227,5 +231,80 @@ export async function adminGetTables(
   } catch (err) {
     console.error("adminGetTables error:", err);
     return [];
+  }
+}
+
+// ---------- Email Settings ----------
+
+export interface EmailSettingsDto {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  enableSsl: boolean;
+  fromName?: string;
+  fromEmail?: string;
+  isConfigured: boolean;
+}
+
+export async function getEmailSettings(): Promise<EmailSettingsDto> {
+  try {
+    const res = await fetch(buildEndpoint("/admin/email-settings"), { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error();
+    return await res.json();
+  } catch {
+    return { host: "", port: 587, username: "", password: "", enableSsl: true, isConfigured: false };
+  }
+}
+
+export async function saveEmailSettings(data: Omit<EmailSettingsDto, "isConfigured">): Promise<{ message: string } | null> {
+  try {
+    const res = await fetch(buildEndpoint("/admin/email-settings"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function testEmailConnection(): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(buildEndpoint("/admin/email-settings/test"), {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    return { ok: res.ok, message: data.message };
+  } catch (err) {
+    return { ok: false, message: "Network error." };
+  }
+}
+
+// ---------- Brand Settings ----------
+
+export interface BrandSettingsDto {
+  appName: string;
+  primaryColor: string;
+  accentColor?: string;
+  logoBase64?: string;
+}
+
+export async function saveBrandSettings(data: BrandSettingsDto): Promise<{ message: string } | null> {
+  try {
+    const res = await fetch(buildEndpoint("/brand"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { message: err?.message ?? "Failed to save." };
+    }
+    return await res.json();
+  } catch {
+    return null;
   }
 }

@@ -14,7 +14,7 @@ import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
 import Navbar from "@/components/layout/Navbar";
 import { PRIMARY } from "@/constants/colors";
-import { APP_NAME } from "@/constants/config";
+import { useBrand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function HomeScreen() {
@@ -22,6 +22,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const isDark = useColorScheme() === "dark";
+  const brand = useBrand();
   const pageBg = isDark ? "#111214" : "#f2f3f5";
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function HomeScreen() {
               <ThemedText style={styles.heroEyebrow}>
                 Reserve online, instantly
               </ThemedText>
-              <ThemedText style={styles.heroTitle}>{APP_NAME}</ThemedText>
+              <ThemedText style={styles.heroTitle}>{brand.appName}</ThemedText>
               <ThemedText style={styles.heroSubtitle}>
                 Browse available restaurants and book a table in seconds.
               </ThemedText>

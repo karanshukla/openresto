@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<Table> Tables { get; set; } = null!;
     public DbSet<Booking> Bookings { get; set; } = null!;
     public DbSet<AdminCredential> AdminCredentials { get; set; } = null!;
+    public DbSet<EmailSettings> EmailSettings { get; set; } = null!;
+    public DbSet<BrandSettings> BrandSettings { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

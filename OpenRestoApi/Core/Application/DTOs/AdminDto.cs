@@ -35,6 +35,8 @@ public class BookingDetailDto
     public int Seats { get; set; }
     public string? SpecialRequests { get; set; }
     public string? BookingRef { get; set; }
+    public bool IsCancelled { get; set; }
+    public DateTime? CancelledAt { get; set; }
 }
 
 public class ExtendBookingRequest

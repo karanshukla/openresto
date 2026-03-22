@@ -5,8 +5,8 @@ import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
 import { logout } from "@/api/auth";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
-import { APP_NAME } from "@/constants/config";
+import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
@@ -38,6 +38,8 @@ export default function AdminSidebar() {
   const isDark = useColorScheme() === "dark";
   const { toggle } = useTheme();
   const [locationCount, setLocationCount] = useState(0);
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || "#0a7ea4";
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
@@ -72,7 +74,7 @@ export default function AdminSidebar() {
           <Ionicons name="restaurant-outline" size={16} color="#fff" />
         </View>
         <View style={styles.brandText}>
-          <ThemedText style={styles.brandName}>{APP_NAME}</ThemedText>
+          <ThemedText style={styles.brandName}>{brand.appName}</ThemedText>
           <ThemedText style={[styles.brandSub, { color: mutedColor }]}>
             {locationCount > 0
               ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`

@@ -43,13 +43,17 @@ public class AdminController : ControllerBase
     [HttpGet("bookings")]
     public async Task<IActionResult> GetBookings(
         [FromQuery] int? restaurantId,
-        [FromQuery] DateTime? date)
+        [FromQuery] DateTime? date,
+        [FromQuery] bool cancelled = false)
     {
         var q = _db.Bookings
             .Include(b => b.Restaurant)
             .Include(b => b.Section)
             .Include(b => b.Table)
             .AsQueryable();
+
+        // Filter by cancelled status
+        q = q.Where(b => b.IsCancelled == cancelled);
 
         if (restaurantId.HasValue)
             q = q.Where(b => b.RestaurantId == restaurantId.Value);
@@ -74,6 +78,8 @@ public class AdminController : ControllerBase
                 Seats          = b.Seats,
                 SpecialRequests = b.SpecialRequests,
                 BookingRef     = b.BookingRef,
+                IsCancelled    = b.IsCancelled,
+                CancelledAt    = b.CancelledAt,
             })
             .ToListAsync();
 
@@ -245,14 +251,15 @@ public class AdminController : ControllerBase
         return Ok(new { endTime = booking.EndTime });
     }
 
-    /// <summary>Cancel (permanently delete) a booking.</summary>
+    /// <summary>Soft-delete (cancel) a booking.</summary>
     [HttpDelete("bookings/{id}")]
     public async Task<IActionResult> CancelBooking(int id)
     {
         var booking = await _db.Bookings.FindAsync(id);
         if (booking == null) return NotFound();
 
-        _db.Bookings.Remove(booking);
+        booking.IsCancelled = true;
+        booking.CancelledAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return NoContent();
     }

@@ -33,6 +33,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import { getEmailSettings, saveEmailSettings, testEmailConnection, saveBrandSettings } from "@/api/admin";
+import { useBrand } from "@/context/BrandContext";
 
 function useConfirm() {
   const [state, setState] = useState<{ message: string } | null>(null);
@@ -798,6 +800,378 @@ function GlobalSettingRow({
   );
 }
 
+// ── Brand settings card ───────────────────────────────────────────────────────
+
+const MAX_LOGO_KB = 256;
+
+function BrandSettingsCard({
+  borderColor,
+  mutedColor,
+  cardBg,
+}: {
+  borderColor: string;
+  mutedColor: string;
+  cardBg: string;
+}) {
+  const brand = useBrand();
+  const [appName, setAppName] = useState(brand.appName);
+  const [primaryColor, setPrimaryColor] = useState(brand.primaryColor);
+  const [logoPreview, setLogoPreview] = useState<string | null>(brand.logoUrl ?? null);
+  const [logoData, setLogoData] = useState<string | undefined>(undefined); // undefined = no change
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setAppName(brand.appName);
+    setPrimaryColor(brand.primaryColor);
+    setLogoPreview(brand.logoUrl ?? null);
+  }, [brand]);
+
+  const handlePickLogo = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/svg+xml,image/webp";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > MAX_LOGO_KB * 1024) {
+        setMsg({ text: `Logo must be under ${MAX_LOGO_KB} KB. Yours is ${Math.round(file.size / 1024)} KB.`, ok: false });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setLogoPreview(dataUrl);
+        setLogoData(dataUrl);
+        setMsg(null);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg(null);
+    const result = await saveBrandSettings({
+      appName,
+      primaryColor,
+      logoBase64: logoData,
+    });
+    setSaving(false);
+    if (result) {
+      setMsg({ text: result.message, ok: !result.message.toLowerCase().includes("fail") });
+    } else {
+      setMsg({ text: "Failed to save.", ok: false });
+    }
+  };
+
+  const PRESET_COLORS = ["#0a7ea4", "#2563eb", "#7c3aed", "#059669", "#dc2626", "#d97706", "#475569"];
+
+  return (
+    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
+          <Ionicons name="brush-outline" size={20} color={primaryColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <ThemedText style={styles.secTitle}>Brand Identity</ThemedText>
+          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
+            {appName} · {primaryColor}
+          </ThemedText>
+        </View>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+      </Pressable>
+
+      {expanded && (
+        <View style={[styles.secForm, { borderTopColor: borderColor }]}>
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>App Name</ThemedText>
+            <Input value={appName} onChangeText={setAppName} placeholder="Open Resto" />
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Primary Color</ThemedText>
+            <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {PRESET_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => setPrimaryColor(c)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: c,
+                    borderWidth: primaryColor === c ? 3 : 0,
+                    borderColor: "#fff",
+                    shadowColor: "#000",
+                    shadowOpacity: primaryColor === c ? 0.3 : 0,
+                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 2 },
+                  }}
+                />
+              ))}
+              <Input
+                value={primaryColor}
+                onChangeText={setPrimaryColor}
+                placeholder="#0a7ea4"
+                style={{ width: 100 }}
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Logo (max {MAX_LOGO_KB} KB)</ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              {logoPreview ? (
+                <View style={{ width: 48, height: 48, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor }}>
+                  <img src={logoPreview} alt="Logo" style={{ width: 48, height: 48, objectFit: "contain" }} />
+                </View>
+              ) : (
+                <View style={{ width: 48, height: 48, borderRadius: 8, borderWidth: 1, borderColor, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="image-outline" size={20} color={mutedColor} />
+                </View>
+              )}
+              <Pressable style={[styles.secBtn, { borderColor }]} onPress={handlePickLogo}>
+                <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>
+                  {logoPreview ? "Change" : "Upload"}
+                </ThemedText>
+              </Pressable>
+              {logoPreview && (
+                <Pressable
+                  style={[styles.secBtn, { borderColor }]}
+                  onPress={() => { setLogoPreview(null); setLogoData(""); }}
+                >
+                  <ThemedText style={[styles.secBtnText, { color: "#dc2626" }]}>Remove</ThemedText>
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+          {msg && (
+            <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
+              {msg.text}
+            </ThemedText>
+          )}
+
+          <Button onPress={handleSave} disabled={saving || !appName.trim()} style={{ marginTop: 4 }}>
+            {saving ? "Saving…" : "Save Brand Settings"}
+          </Button>
+
+          <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 4 }}>
+            Changes take effect after a page reload. Logo is stored in the database — no CDN required.
+          </ThemedText>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Email settings card ───────────────────────────────────────────────────────
+
+const PRESETS: { label: string; host: string; port: number }[] = [
+  { label: "Gmail", host: "smtp.gmail.com", port: 587 },
+  { label: "Outlook", host: "smtp-mail.outlook.com", port: 587 },
+];
+
+function EmailSettingsCard({
+  borderColor,
+  mutedColor,
+  cardBg,
+}: {
+  borderColor: string;
+  mutedColor: string;
+  cardBg: string;
+}) {
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("587");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [enableSsl, setEnableSsl] = useState(true);
+  const [fromName, setFromName] = useState("");
+  const [fromEmail, setFromEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    getEmailSettings().then((s) => {
+      setHost(s.host);
+      setPort(String(s.port));
+      setUsername(s.username);
+      setPassword(s.password);
+      setEnableSsl(s.enableSsl);
+      setFromName(s.fromName ?? "");
+      setFromEmail(s.fromEmail ?? "");
+      setIsConfigured(s.isConfigured);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg(null);
+    const result = await saveEmailSettings({
+      host,
+      port: parseInt(port, 10) || 587,
+      username,
+      password,
+      enableSsl,
+      fromName: fromName || undefined,
+      fromEmail: fromEmail || undefined,
+    });
+    setSaving(false);
+    if (result) {
+      setMsg({ text: result.message, ok: true });
+      setIsConfigured(true);
+    } else {
+      setMsg({ text: "Failed to save.", ok: false });
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setMsg(null);
+    // Save first so the backend tests the latest values
+    await saveEmailSettings({
+      host,
+      port: parseInt(port, 10) || 587,
+      username,
+      password,
+      enableSsl,
+      fromName: fromName || undefined,
+      fromEmail: fromEmail || undefined,
+    });
+    setIsConfigured(true);
+    const result = await testEmailConnection();
+    setTesting(false);
+    setMsg({ text: result.message, ok: result.ok });
+  };
+
+  return (
+    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+        <View style={[styles.secIcon, { backgroundColor: "rgba(10,126,164,0.1)" }]}>
+          <Ionicons name="mail-outline" size={20} color={PRIMARY} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <ThemedText style={styles.secTitle}>Email (SMTP)</ThemedText>
+          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
+            {isConfigured ? `Connected via ${host}` : "Not configured"}
+          </ThemedText>
+        </View>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+      </Pressable>
+
+      {expanded && (
+        <View style={[styles.secForm, { borderTopColor: borderColor }]}>
+          {/* Presets */}
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
+            {PRESETS.map((p) => (
+              <Pressable
+                key={p.label}
+                style={[styles.secBtn, { borderColor }]}
+                onPress={() => { setHost(p.host); setPort(String(p.port)); setEnableSsl(true); }}
+              >
+                <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>{p.label}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>SMTP Host</ThemedText>
+            <Input value={host} onChangeText={setHost} placeholder="smtp.gmail.com" />
+          </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={[styles.field, { flex: 1 }]}>
+              <ThemedText style={styles.fieldLabel}>Port</ThemedText>
+              <Input value={port} onChangeText={setPort} placeholder="587" keyboardType="numeric" />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <ThemedText style={styles.fieldLabel}>SSL/TLS</ThemedText>
+              <Pressable
+                style={[styles.secBtn, { borderColor, paddingVertical: 10, alignItems: "center" as const }]}
+                onPress={() => setEnableSsl((v) => !v)}
+              >
+                <Ionicons name={enableSsl ? "checkmark-circle" : "ellipse-outline"} size={16} color={enableSsl ? PRIMARY : mutedColor} />
+                <ThemedText style={[styles.secBtnText, { color: enableSsl ? PRIMARY : mutedColor }]}>
+                  {enableSsl ? "Enabled" : "Disabled"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Username</ThemedText>
+            <Input value={username} onChangeText={setUsername} placeholder="your@email.com" autoCapitalize="none" />
+          </View>
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Password</ThemedText>
+            <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+              <View style={{ flex: 1 }}>
+                <Input
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="App password or SMTP password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+              </View>
+              <Pressable onPress={() => setShowPassword((v) => !v)} style={{ padding: 4 }}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={mutedColor} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={[styles.field, { flex: 1 }]}>
+              <ThemedText style={styles.fieldLabel}>From Name (optional)</ThemedText>
+              <Input value={fromName} onChangeText={setFromName} placeholder="OpenResto" />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <ThemedText style={styles.fieldLabel}>From Email (optional)</ThemedText>
+              <Input value={fromEmail} onChangeText={setFromEmail} placeholder="noreply@yoursite.com" autoCapitalize="none" />
+            </View>
+          </View>
+
+          {msg && (
+            <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
+              {msg.text}
+            </ThemedText>
+          )}
+
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+            <Button onPress={handleSave} disabled={saving || !host || !username} style={{ flex: 1 }}>
+              {saving ? "Saving…" : "Save Settings"}
+            </Button>
+            <Pressable
+              style={[
+                styles.secBtn,
+                { borderColor, paddingVertical: 10, paddingHorizontal: 14 },
+                (!host || !username) && { opacity: 0.4 },
+              ]}
+              onPress={() => {
+                if (testing || !host || !username) return;
+                handleTest();
+              }}
+            >
+              {testing ? (
+                <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>Testing…</ThemedText>
+              ) : (
+                <>
+                  <Ionicons name="flash-outline" size={14} color={PRIMARY} />
+                  <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>Test</ThemedText>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ── Security card ─────────────────────────────────────────────────────────────
 
 function SecurityCard({
@@ -1069,23 +1443,15 @@ export default function AdminSettingsScreen() {
         <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
           GLOBAL SETTINGS
         </ThemedText>
-        <GlobalSettingRow
-          icon="brush-outline"
-          title="Brand Identity"
-          sub="Logo, colors, and app name"
-          mutedColor={mutedColor}
+        <BrandSettingsCard
           borderColor={borderColor}
+          mutedColor={mutedColor}
           cardBg={cardBg}
-          comingSoon
         />
-        <GlobalSettingRow
-          icon="notifications-outline"
-          title="Notifications"
-          sub="Email and SMS alerts for bookings"
-          mutedColor={mutedColor}
+        <EmailSettingsCard
           borderColor={borderColor}
+          mutedColor={mutedColor}
           cardBg={cardBg}
-          comingSoon
         />
         <GlobalSettingRow
           icon="globe-outline"

@@ -12,6 +12,8 @@ public partial class BookingMapper
     [MapperIgnoreSource(nameof(Booking.Table))]
     [MapperIgnoreSource(nameof(Booking.Section))]
     [MapperIgnoreSource(nameof(Booking.Restaurant))]
+    [MapperIgnoreSource(nameof(Booking.IsCancelled))]
+    [MapperIgnoreSource(nameof(Booking.CancelledAt))]
     public partial BookingDto ToDto(Booking booking);
 
     [MapperIgnoreTarget(nameof(Booking.Table))]
@@ -19,6 +21,8 @@ public partial class BookingMapper
     [MapperIgnoreTarget(nameof(Booking.Restaurant))]
     [MapperIgnoreTarget(nameof(Booking.BookingRef))]
     [MapperIgnoreTarget(nameof(Booking.EndTime))]
+    [MapperIgnoreTarget(nameof(Booking.IsCancelled))]
+    [MapperIgnoreTarget(nameof(Booking.CancelledAt))]
     [MapperIgnoreSource(nameof(BookingDto.isHeld))]
     [MapperIgnoreSource(nameof(BookingDto.HoldId))]
     [MapperIgnoreSource(nameof(BookingDto.BookingRef))]

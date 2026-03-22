@@ -75,6 +75,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             // Check if any existing booking's time window overlaps the new one
             return await _db.Bookings.AnyAsync(b =>
                 b.TableId == tableId &&
+                !b.IsCancelled &&
                 b.Date < newEnd &&
                 (b.EndTime != null ? b.EndTime > newStart : b.Date.AddHours(1) > newStart));
         }
