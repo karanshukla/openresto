@@ -318,8 +318,9 @@ export default function AdminBookingsScreen() {
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const isWide = width >= 640;
 
+  // Initial load — fetch restaurants once
   useEffect(() => {
-    async function load() {
+    async function init() {
       const data = await fetchRestaurants();
       setRestaurants(data);
       if (data.length > 0) {
@@ -330,8 +331,19 @@ export default function AdminBookingsScreen() {
       }
       setLoading(false);
     }
-    load();
-  }, [statusFilter]);
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch bookings when filter changes
+  useEffect(() => {
+    if (!selectedRestaurantId) return;
+    setLoading(true);
+    getAdminBookings(selectedRestaurantId, undefined, statusFilter).then((b) => {
+      setBookings(b);
+      setLoading(false);
+    });
+  }, [statusFilter, selectedRestaurantId]);
 
   const handleSelectRestaurant = async (id: number) => {
     if (id === selectedRestaurantId) return;
@@ -440,7 +452,10 @@ export default function AdminBookingsScreen() {
               <Pressable
                 key={key}
                 style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
-                onPress={() => setStatusFilter(key)}
+                onPress={() => {
+                  setStatusFilter(key);
+                  if (key !== "active") setViewMode("list");
+                }}
               >
                 <ThemedText
                   style={[
