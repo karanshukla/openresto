@@ -20,7 +20,7 @@ function todayDate() {
 function nextSlotTime() {
   const now = new Date();
   let h = now.getHours();
-  let m = now.getMinutes() < 30 ? 30 : 0;
+  const m = now.getMinutes() < 30 ? 30 : 0;
   if (m === 0) h += 1;
   if (h < 9 || h >= 22) return "19:00";
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;

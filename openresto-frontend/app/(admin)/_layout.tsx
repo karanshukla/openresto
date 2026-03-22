@@ -23,13 +23,18 @@ function DesktopOnlyWall() {
 }
 
 export default function AdminLayout() {
-  const router = useRouter();
-  const segments = useSegments();
-  const [checked, setChecked] = useState(false);
   const { width } = useWindowDimensions();
 
   // Block mobile immediately — no async auth check needed
   if (Platform.OS !== "web" || width < MIN_WIDTH) return <DesktopOnlyWall />;
+
+  return <AdminLayoutInner />;
+}
+
+function AdminLayoutInner() {
+  const router = useRouter();
+  const segments = useSegments();
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const token = getStoredToken();

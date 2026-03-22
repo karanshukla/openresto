@@ -13,11 +13,14 @@ import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
 import { PRIMARY } from "@/constants/colors";
 import { APP_NAME } from "@/constants/config";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
+  const isDark = useColorScheme() === "dark";
+  const pageBg = isDark ? "#111214" : "#f2f3f5";
 
   useEffect(() => {
     async function loadRestaurants() {
@@ -33,7 +36,7 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      style={styles.scroll}
+      style={[styles.scroll, { backgroundColor: pageBg }]}
       contentContainerStyle={styles.scrollContent}
     >
       {/* Hero */}

@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { RestaurantDto } from "@/api/restaurants";
 import { Link } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,11 +27,18 @@ export default function RestaurantCard({
   const hues = [195, 210, 165, 220, 180, 200];
   const hue = hues[restaurant.name.charCodeAt(0) % hues.length];
   const headerBg = isDark
-    ? `hsl(${hue}, 45%, 16%)`
-    : `hsl(${hue}, 55%, 94%)`;
-  const iconBg = `hsl(${hue}, 65%, ${isDark ? "28%" : "82%"})`;
-  const iconColor = `hsl(${hue}, 70%, ${isDark ? "72%" : "32%"})`;
+    ? `hsl(${hue}, 55%, 20%)`
+    : `hsl(${hue}, 65%, 86%)`;
+  const iconBg = `hsl(${hue}, 65%, ${isDark ? "30%" : "76%"})`;
+  const iconColor = `hsl(${hue}, 70%, ${isDark ? "78%" : "28%"})`;
   const initial = restaurant.name.charAt(0).toUpperCase();
+
+  const webShadow =
+    Platform.OS === "web"
+      ? isDark
+        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.55)" } as any)
+        : ({ boxShadow: "0 4px 20px rgba(0,0,0,0.1)" } as any)
+      : {};
 
   return (
     <Link href={`/(user)/book/${restaurant.id}`} asChild>
@@ -39,6 +46,7 @@ export default function RestaurantCard({
         style={(state) => [
           styles.card,
           isDark ? styles.cardDark : styles.cardLight,
+          webShadow,
           (state as any).hovered && (isDark ? styles.cardHoveredDark : styles.cardHoveredLight),
           { cursor: "pointer" } as any,
         ]}
@@ -111,27 +119,18 @@ const styles = StyleSheet.create({
   },
   cardLight: {
     backgroundColor: "#ffffff",
-    borderColor: "rgba(0,0,0,0.18)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
+    borderColor: "rgba(0,0,0,0.1)",
     elevation: 4,
   },
   cardDark: {
-    backgroundColor: "#23272b",
-    borderColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#1e2428",
+    borderColor: "rgba(255,255,255,0.14)",
   },
   cardHoveredLight: {
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    elevation: 8,
     transform: [{ translateY: -3 }],
-    borderColor: "rgba(0,0,0,0.28)",
   },
   cardHoveredDark: {
     transform: [{ translateY: -3 }],
-    borderColor: "rgba(255,255,255,0.24)",
   },
   header: {
     height: 100,

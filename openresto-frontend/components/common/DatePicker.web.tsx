@@ -1,4 +1,3 @@
-import { ThemedText } from "@/components/themed-text";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 

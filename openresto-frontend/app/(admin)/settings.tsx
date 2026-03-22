@@ -29,7 +29,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -143,13 +142,11 @@ function EditableRow({
 function AddRow({
   label,
   placeholder,
-  isDark,
   onAdd,
   extraPlaceholder,
 }: {
   label: string;
   placeholder?: string;
-  isDark: boolean;
   onAdd: (name: string, extra?: string) => Promise<void>;
   extraPlaceholder?: string;
 }) {
@@ -416,7 +413,6 @@ function SectionBlock({
           label="Add Table"
           placeholder="e.g. T1, Window Booth"
           extraPlaceholder="Seats (e.g. 4)"
-          isDark={isDark}
           onAdd={async (name, extra) => {
             const seats = parseInt(extra ?? "2", 10);
             const result = await addTable(restaurantId, section.id, {
@@ -671,7 +667,6 @@ function LocationCard({
           <AddRow
             label="Add Section"
             placeholder="e.g. Indoor, Patio, Bar"
-            isDark={isDark}
             onAdd={async (name) => {
               const result = await addSection(restaurant.id, name);
               if (result)
@@ -740,12 +735,10 @@ function GlobalSettingRow({
 // ── Security card ─────────────────────────────────────────────────────────────
 
 function SecurityCard({
-  isDark,
   borderColor,
   mutedColor,
   cardBg,
 }: {
-  isDark: boolean;
   borderColor: string;
   mutedColor: string;
   cardBg: string;
@@ -934,7 +927,6 @@ export default function AdminSettingsScreen() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const isDark = useColorScheme() === "dark";
-  const { width } = useWindowDimensions();
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -1044,7 +1036,6 @@ export default function AdminSettingsScreen() {
           ACCOUNT SECURITY
         </ThemedText>
         <SecurityCard
-          isDark={isDark}
           borderColor={borderColor}
           mutedColor={mutedColor}
           cardBg={cardBg}

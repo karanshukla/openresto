@@ -7,7 +7,8 @@
       "Bash(dotnet build:*)",
       "Bash(ls \"/f/Development/openresto/openresto-frontend/app/\\(user\\)/\")",
       "Bash(ls \"/f/Development/openresto/openresto-frontend/app/\\(user\\)/booking-confirmation/\")",
-      "Bash(find f:/Development/openresto/OpenRestoApi -name *.editorconfig -o -name .globalconfig)"
+      "Bash(find f:/Development/openresto/OpenRestoApi -name *.editorconfig -o -name .globalconfig)",
+      "Bash(npx expo:*)"
     ]
   }
 }

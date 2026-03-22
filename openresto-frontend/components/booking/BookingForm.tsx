@@ -48,7 +48,7 @@ function suggestTime(): string {
   const now = new Date();
   // Round up to next 30-minute boundary
   let h = now.getHours();
-  let m = now.getMinutes() < 30 ? 30 : 0;
+  const m = now.getMinutes() < 30 ? 30 : 0;
   if (m === 0) h += 1;
 
   // If we're before opening or it's a tomorrow suggestion, default to 7 PM

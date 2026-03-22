@@ -1,5 +1,4 @@
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { getAdminBookings, BookingDetailDto, getAdminOverview, AdminOverviewDto } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
@@ -13,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, PRIMARY_DARK, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 
 // Bar heights (%) for time slots 5PM–9PM
