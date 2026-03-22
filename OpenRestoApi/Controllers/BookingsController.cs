@@ -36,12 +36,17 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpGet("ref/{bookingRef}")]
-        public async Task<IActionResult> GetBookingByRef(string bookingRef)
+        public async Task<IActionResult> GetBookingByRef(string bookingRef, [FromQuery] string email)
         {
-            var booking = await _bookingService.GetBookingByRefAsync(bookingRef);
-            if (booking == null)
+            if (string.IsNullOrWhiteSpace(email))
             {
-                return NotFound();
+                return BadRequest(new { message = "Email is required to look up a booking." });
+            }
+
+            var booking = await _bookingService.GetBookingByRefAsync(bookingRef);
+            if (booking == null || !string.Equals(booking.CustomerEmail, email.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(new { message = "No booking found matching that reference and email." });
             }
             return Ok(booking);
         }

@@ -10,7 +10,7 @@ import {
 } from "@/api/auth";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { APP_NAME } from "@/constants/config";
@@ -345,9 +345,11 @@ export default function AdminLoginScreen() {
           </ThemedView>
 
           {stage === "login" && (
-            <Link href="/" style={[styles.backLink, { color: mutedColor } as any]}>
-              ← Back to {APP_NAME}
-            </Link>
+            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as any}>
+              <ThemedText style={[styles.backLink, { color: mutedColor }]}>
+                ← Back to {APP_NAME}
+              </ThemedText>
+            </Pressable>
           )}
         </View>
       </ScrollView>

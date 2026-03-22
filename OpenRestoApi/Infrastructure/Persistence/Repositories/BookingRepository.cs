@@ -70,12 +70,13 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 
         public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate)
         {
-            var dayStart = bookingDate.ToUniversalTime().Date;
-            var dayEnd = dayStart.AddDays(1);
+            var newStart = bookingDate.ToUniversalTime();
+            var newEnd = newStart.AddHours(1);
+            // Check if any existing booking's time window overlaps the new one
             return await _db.Bookings.AnyAsync(b =>
                 b.TableId == tableId &&
-                b.Date >= dayStart &&
-                b.Date < dayEnd);
+                b.Date < newEnd &&
+                (b.EndTime != null ? b.EndTime > newStart : b.Date.AddHours(1) > newStart));
         }
     }
 }

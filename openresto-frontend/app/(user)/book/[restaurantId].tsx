@@ -50,11 +50,11 @@ export default function BookScreen() {
 
     try {
       const newBooking = await createBooking(bookingData);
+      const email = encodeURIComponent(data.customerEmail);
       if (newBooking?.bookingRef) {
-        router.push(`/booking-confirmation/${newBooking.bookingRef}`);
+        router.push(`/booking-confirmation/${newBooking.bookingRef}?email=${email}`);
       } else if (newBooking) {
-        // bookingRef missing means the backend hasn't hot-reloaded yet — retry fetch
-        router.push(`/booking-confirmation/${newBooking.id}`);
+        router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);
       }
     } catch (err: any) {
       setSubmitError(err.message ?? "Something went wrong. Please try again.");

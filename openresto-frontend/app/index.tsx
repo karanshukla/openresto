@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
+import Navbar from "@/components/layout/Navbar";
 import { PRIMARY } from "@/constants/colors";
 import { APP_NAME } from "@/constants/config";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -35,62 +37,65 @@ export default function HomeScreen() {
   const cardWidth = `${Math.floor(100 / numColumns) - 1}%`;
 
   return (
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: pageBg }]}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {/* Hero */}
-      <View
-        style={[
-          styles.hero,
-          Platform.OS === "web"
-            ? ({
-                background:
-                  "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
-              } as any)
-            : { backgroundColor: PRIMARY },
-        ]}
+    <ThemedView style={{ flex: 1 }}>
+      <Navbar />
+      <ScrollView
+        style={[styles.scroll, { backgroundColor: pageBg }]}
+        contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.heroOverlay}>
-          <View style={styles.heroContent}>
-            <ThemedText style={styles.heroEyebrow}>
-              Reserve online, instantly
-            </ThemedText>
-            <ThemedText style={styles.heroTitle}>{APP_NAME}</ThemedText>
-            <ThemedText style={styles.heroSubtitle}>
-              Browse available restaurants and book a table in seconds.
-            </ThemedText>
+        {/* Hero */}
+        <View
+          style={[
+            styles.hero,
+            Platform.OS === "web"
+              ? ({
+                  background:
+                    "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
+                } as any)
+              : { backgroundColor: PRIMARY },
+          ]}
+        >
+          <View style={styles.heroOverlay}>
+            <View style={styles.heroContent}>
+              <ThemedText style={styles.heroEyebrow}>
+                Reserve online, instantly
+              </ThemedText>
+              <ThemedText style={styles.heroTitle}>{APP_NAME}</ThemedText>
+              <ThemedText style={styles.heroSubtitle}>
+                Browse available restaurants and book a table in seconds.
+              </ThemedText>
+            </View>
           </View>
         </View>
-      </View>
 
-      <PageContainer>
-        <ThemedText style={styles.sectionLabel}>
-          {loading
-            ? "Loading…"
-            : `${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
-        </ThemedText>
+        <PageContainer>
+          <ThemedText style={styles.sectionLabel}>
+            {loading
+              ? "Loading…"
+              : `${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
+          </ThemedText>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            style={styles.spinner}
-            color={PRIMARY}
-          />
-        ) : (
-          <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
-            {restaurants.map((r) => (
-              <View
-                key={r.id}
-                style={[styles.cardWrapper, { width: cardWidth as any }]}
-              >
-                <RestaurantCard restaurant={r} />
-              </View>
-            ))}
-          </View>
-        )}
-      </PageContainer>
-    </ScrollView>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              style={styles.spinner}
+              color={PRIMARY}
+            />
+          ) : (
+            <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
+              {restaurants.map((r) => (
+                <View
+                  key={r.id}
+                  style={[styles.cardWrapper, { width: cardWidth as any }]}
+                >
+                  <RestaurantCard restaurant={r} />
+                </View>
+              ))}
+            </View>
+          )}
+        </PageContainer>
+      </ScrollView>
+    </ThemedView>
   );
 }
 

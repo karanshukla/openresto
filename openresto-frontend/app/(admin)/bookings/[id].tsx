@@ -7,11 +7,13 @@ import {
   BookingDetailDto,
 } from "@/api/admin";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import AlertModal from "@/components/common/AlertModal";
 
 export default function AdminBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,6 +21,8 @@ export default function AdminBookingDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [extending, setExtending] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
@@ -33,28 +37,17 @@ export default function AdminBookingDetailScreen() {
     });
   }, [id]);
 
-  const handleDelete = () => {
-    Alert.alert(
-      "Cancel Booking",
-      "Are you sure you want to cancel this booking? This cannot be undone.",
-      [
-        { text: "Keep", style: "cancel" },
-        {
-          text: "Cancel Booking",
-          style: "destructive",
-          onPress: async () => {
-            if (!booking) return;
-            setDeleting(true);
-            const ok = await adminDeleteBooking(booking.id);
-            if (ok) router.back();
-            else {
-              setDeleting(false);
-              Alert.alert("Error", "Failed to cancel the booking.");
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteConfirmed = async () => {
+    if (!booking) return;
+    setShowDeleteConfirm(false);
+    setDeleting(true);
+    const ok = await adminDeleteBooking(booking.id);
+    if (ok) {
+      router.back();
+    } else {
+      setDeleting(false);
+      setErrorMessage("Failed to cancel the booking.");
+    }
   };
 
   const handleExtend = async (minutes: number) => {
@@ -151,7 +144,7 @@ export default function AdminBookingDetailScreen() {
       {/* Cancel */}
       <Pressable
         style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
-        onPress={handleDelete}
+        onPress={() => setShowDeleteConfirm(true)}
         disabled={deleting}
       >
         <Ionicons name="trash-outline" size={15} color="#dc2626" />
@@ -159,6 +152,24 @@ export default function AdminBookingDetailScreen() {
           {deleting ? "Cancelling…" : "Cancel Booking"}
         </ThemedText>
       </Pressable>
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking? This cannot be undone."
+        confirmLabel="Cancel Booking"
+        cancelLabel="Keep"
+        destructive
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <AlertModal
+        visible={!!errorMessage}
+        title="Error"
+        message={errorMessage ?? ""}
+        onClose={() => setErrorMessage(null)}
+      />
     </ScrollView>
   );
 }

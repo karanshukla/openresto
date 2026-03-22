@@ -16,6 +16,8 @@ export interface RestaurantDto {
   id: number;
   name: string;
   address?: string | null;
+  openTime: string;
+  closeTime: string;
   sections: SectionDto[];
 }
 
@@ -55,7 +57,7 @@ export async function fetchRestaurantById(
 
 export async function updateRestaurant(
   id: number,
-  data: { name: string; address?: string | null }
+  data: { name: string; address?: string | null; openTime?: string; closeTime?: string }
 ): Promise<RestaurantDto | null> {
   try {
     const res = await fetch(buildEndpoint(`/restaurants/${id}`), {

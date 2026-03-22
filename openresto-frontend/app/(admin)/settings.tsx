@@ -21,11 +21,9 @@ import {
   changePassword,
   PvqStatus,
 } from "@/api/auth";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,17 +32,32 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
-function confirmAction(message: string): Promise<boolean> {
-  if (Platform.OS === "web") {
-    return Promise.resolve(window.confirm(message));
-  }
-  return new Promise((resolve) =>
-    Alert.alert("Confirm", message, [
-      { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-      { text: "Delete", style: "destructive", onPress: () => resolve(true) },
-    ])
-  );
+function useConfirm() {
+  const [state, setState] = useState<{ message: string } | null>(null);
+  const resolveRef = useRef<((v: boolean) => void) | null>(null);
+
+  const confirm = useCallback((message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      resolveRef.current = resolve;
+      setState({ message });
+    });
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    resolveRef.current?.(true);
+    resolveRef.current = null;
+    setState(null);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    resolveRef.current?.(false);
+    resolveRef.current = null;
+    setState(null);
+  }, []);
+
+  return { state, confirm, handleConfirm, handleCancel };
 }
 
 // ── Inline editable row ──────────────────────────────────────────────────────
@@ -56,6 +69,7 @@ function EditableRow({
   placeholder,
   deleteLabel = "Delete",
   isDark,
+  confirmAction,
 }: {
   value: string;
   onSave: (v: string) => Promise<void>;
@@ -63,6 +77,7 @@ function EditableRow({
   placeholder?: string;
   deleteLabel?: string;
   isDark: boolean;
+  confirmAction: (msg: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -224,6 +239,7 @@ function TableRow({
   borderColor,
   onUpdated,
   onDeleted,
+  confirmAction,
 }: {
   table: TableDto;
   restaurantId: number;
@@ -232,6 +248,7 @@ function TableRow({
   borderColor: string;
   onUpdated: (t: TableDto) => void;
   onDeleted: () => void;
+  confirmAction: (msg: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(table.name ?? "");
@@ -350,12 +367,14 @@ function SectionBlock({
   onTableAdded,
   onTableUpdated,
   onTableDeleted,
+  confirmAction,
 }: {
   section: SectionDto;
   restaurantId: number;
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
+  confirmAction: (msg: string) => Promise<boolean>;
   onSectionRenamed: (name: string) => void;
   onSectionDeleted: () => void;
   onTableAdded: (t: TableDto) => void;
@@ -378,6 +397,7 @@ function SectionBlock({
         placeholder="Section name"
         isDark={isDark}
         deleteLabel="Delete section"
+        confirmAction={confirmAction}
         onSave={async (name) => {
           const result = await updateSection(restaurantId, section.id, name);
           if (result) onSectionRenamed(result.name);
@@ -407,6 +427,7 @@ function SectionBlock({
             borderColor={borderColor}
             onUpdated={onTableUpdated}
             onDeleted={() => onTableDeleted(t.id)}
+            confirmAction={confirmAction}
           />
         ))}
         <AddRow
@@ -438,11 +459,16 @@ function RestaurantInfoForm({
 }) {
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
+  const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
+  const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const dirty =
-    name !== restaurant.name || address !== (restaurant.address ?? "");
+    name !== restaurant.name ||
+    address !== (restaurant.address ?? "") ||
+    openTime !== (restaurant.openTime ?? "09:00") ||
+    closeTime !== (restaurant.closeTime ?? "22:00");
 
   return (
     <View style={styles.infoForm}>
@@ -462,6 +488,28 @@ function RestaurantInfoForm({
           placeholder="e.g. 123 Main St"
         />
       </View>
+      <View style={styles.hoursRow}>
+        <View style={styles.hoursField}>
+          <ThemedText style={styles.fieldLabel}>Opens</ThemedText>
+          <input
+            type="time"
+            value={openTime}
+            step={900}
+            onChange={(e) => e.target.value && setOpenTime(e.target.value)}
+            style={hoursInputStyle}
+          />
+        </View>
+        <View style={styles.hoursField}>
+          <ThemedText style={styles.fieldLabel}>Closes</ThemedText>
+          <input
+            type="time"
+            value={closeTime}
+            step={900}
+            onChange={(e) => e.target.value && setCloseTime(e.target.value)}
+            style={hoursInputStyle}
+          />
+        </View>
+      </View>
       <Button
         onPress={async () => {
           if (!name.trim()) return;
@@ -469,10 +517,12 @@ function RestaurantInfoForm({
           const result = await updateRestaurant(restaurant.id, {
             name: name.trim(),
             address: address.trim() || null,
+            openTime,
+            closeTime,
           });
           setSaving(false);
           if (result) {
-            onSaved({ name: result.name, address: result.address });
+            onSaved({ name: result.name, address: result.address, openTime: result.openTime, closeTime: result.closeTime });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
           }
@@ -486,6 +536,19 @@ function RestaurantInfoForm({
   );
 }
 
+const hoursInputStyle: React.CSSProperties = {
+  width: "100%",
+  height: 44,
+  border: "1px solid rgba(0,0,0,0.18)",
+  borderRadius: 8,
+  paddingLeft: 12,
+  paddingRight: 12,
+  fontSize: 15,
+  outline: "none",
+  boxSizing: "border-box",
+  cursor: "pointer",
+};
+
 // ── Location card ─────────────────────────────────────────────────────────────
 
 function LocationCard({
@@ -497,6 +560,7 @@ function LocationCard({
   borderColor,
   mutedColor,
   cardBg,
+  confirmAction,
 }: {
   restaurant: RestaurantDto;
   isSelected: boolean;
@@ -506,6 +570,7 @@ function LocationCard({
   borderColor: string;
   mutedColor: string;
   cardBg: string;
+  confirmAction: (msg: string) => Promise<boolean>;
 }) {
   const tableCount = restaurant.sections.reduce(
     (acc, s) => acc + s.tables.length,
@@ -617,6 +682,7 @@ function LocationCard({
               isDark={isDark}
               borderColor={borderColor}
               mutedColor={mutedColor}
+              confirmAction={confirmAction}
               onSectionRenamed={(name) =>
                 onSaved({
                   sections: restaurant.sections.map((s) =>
@@ -927,6 +993,7 @@ export default function AdminSettingsScreen() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const isDark = useColorScheme() === "dark";
+  const { state: confirmState, confirm: confirmAction, handleConfirm, handleCancel } = useConfirm();
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -984,6 +1051,7 @@ export default function AdminSettingsScreen() {
             borderColor={borderColor}
             mutedColor={mutedColor}
             cardBg={cardBg}
+            confirmAction={confirmAction}
           />
         ))}
         {restaurants.length === 0 && (
@@ -1073,6 +1141,17 @@ export default function AdminSettingsScreen() {
           </Pressable>
         </View>
       </View>
+
+      <ConfirmModal
+        visible={!!confirmState}
+        title="Confirm"
+        message={confirmState?.message ?? ""}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </ScrollView>
   );
 }
@@ -1224,6 +1303,8 @@ const styles = StyleSheet.create({
   infoForm: { gap: 4 },
   field: { gap: 4 },
   fieldLabel: { fontSize: 13, fontWeight: "600" },
+  hoursRow: { flexDirection: "row", gap: 12, marginTop: 4 },
+  hoursField: { flex: 1, gap: 4 },
   saveBtn: { marginTop: 8 },
   // Empty card
   emptyCard: {

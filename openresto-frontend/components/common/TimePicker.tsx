@@ -10,19 +10,26 @@ import {
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-function generateTimeOptions(): { label: string; value: string }[] {
+function generateTimeOptions(
+  minTime: string,
+  maxTime: string
+): { label: string; value: string }[] {
+  const [minH, minM] = minTime.split(":").map(Number);
+  const [maxH, maxM] = maxTime.split(":").map(Number);
+  const minTotal = minH * 60 + minM;
+  const maxTotal = maxH * 60 + maxM;
+
   const options = [];
-  for (let hour = 9; hour <= 22; hour++) {
-    const minutes = hour === 22 ? [0] : [0, 30];
-    for (const minute of minutes) {
-      const h = hour.toString().padStart(2, "0");
-      const m = minute.toString().padStart(2, "0");
-      const value = `${h}:${m}`;
-      const period = hour < 12 ? "AM" : "PM";
-      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      const label = `${displayHour}:${m} ${period}`;
-      options.push({ label, value });
-    }
+  for (let total = minTotal; total <= maxTotal; total += 15) {
+    const hour = Math.floor(total / 60);
+    const minute = total % 60;
+    const h = hour.toString().padStart(2, "0");
+    const m = minute.toString().padStart(2, "0");
+    const value = `${h}:${m}`;
+    const period = hour < 12 ? "AM" : "PM";
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const label = `${displayHour}:${m} ${period}`;
+    options.push({ label, value });
   }
   return options;
 }
@@ -30,14 +37,18 @@ function generateTimeOptions(): { label: string; value: string }[] {
 export default function TimePicker({
   selectedTime,
   onSelect,
+  minTime = "09:00",
+  maxTime = "22:00",
 }: {
   selectedTime?: string;
   onSelect: (time: string) => void;
+  minTime?: string;
+  maxTime?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
   const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const options = generateTimeOptions();
+  const options = generateTimeOptions(minTime, maxTime);
   const selected = options.find((o) => o.value === selectedTime);
 
   return (

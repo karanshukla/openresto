@@ -29,6 +29,8 @@ public class RestaurantsController : ControllerBase
                 Id = r.Id,
                 Name = r.Name,
                 Address = r.Address,
+                OpenTime = r.OpenTime,
+                CloseTime = r.CloseTime,
                 Sections = r.Sections.Select(s => new SectionDto
                 {
                     Id = s.Id,
@@ -54,6 +56,8 @@ public class RestaurantsController : ControllerBase
             Id = r.Id,
             Name = r.Name,
             Address = r.Address,
+            OpenTime = r.OpenTime,
+            CloseTime = r.CloseTime,
             Sections = r.Sections.Select(s => new SectionDto
             {
                 Id = s.Id,
@@ -110,6 +114,8 @@ public class RestaurantsController : ControllerBase
 
         r.Name = req.Name;
         r.Address = req.Address;
+        if (req.OpenTime != null) r.OpenTime = req.OpenTime;
+        if (req.CloseTime != null) r.CloseTime = req.CloseTime;
         await _db.SaveChangesAsync();
 
         return Ok(new RestaurantDto
@@ -117,6 +123,8 @@ public class RestaurantsController : ControllerBase
             Id = r.Id,
             Name = r.Name,
             Address = r.Address,
+            OpenTime = r.OpenTime,
+            CloseTime = r.CloseTime,
             Sections = []
         });
     }

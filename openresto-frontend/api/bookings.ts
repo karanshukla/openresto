@@ -65,10 +65,13 @@ export async function getBookingById(
 }
 
 export async function getBookingByRef(
-  bookingRef: string
+  bookingRef: string,
+  email: string
 ): Promise<BookingDto | null> {
   try {
-    const res = await fetch(buildEndpoint(`/bookings/ref/${bookingRef}`));
+    const res = await fetch(
+      buildEndpoint(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`)
+    );
     if (!res.ok) throw new Error("Failed to fetch booking");
     return await res.json();
   } catch (err) {

@@ -30,7 +30,7 @@ jobs:
         working-directory: openresto-frontend
 
       - name: Run Prettier Check
-        run: npm run format -- --check
+        run: npx prettier --check .
         working-directory: openresto-frontend
 
   backend:
@@ -47,19 +47,12 @@ jobs:
 
       - name: Restore Dependencies
         run: dotnet restore
-        working-directory: OpenRestoApi
 
       - name: Build Solution
         run: dotnet build --no-restore
-        working-directory: OpenRestoApi
-
-      - name: Run Backend Tests
-        run: dotnet test OpenRestoApi.Tests/OpenRestoApi.Tests.csproj --no-build
 
       - name: Run Tests
-        run: dotnet test --no-build
-        working-directory: OpenRestoApi.Tests
+        run: dotnet test --no-build --verbosity normal
 
-      - name: Run dotnet format (verify no changes)
+      - name: Check Formatting
         run: dotnet format --verify-no-changes
-        working-directory: OpenRestoApi

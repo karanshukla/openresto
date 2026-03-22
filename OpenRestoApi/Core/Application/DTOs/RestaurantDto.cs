@@ -6,6 +6,8 @@ public class UpdateRestaurantRequest
 {
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
+    public string? OpenTime { get; set; }
+    public string? CloseTime { get; set; }
 }
 
 public class CreateSectionRequest
@@ -51,5 +53,7 @@ public class RestaurantDto
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
+    public string OpenTime { get; set; } = "09:00";
+    public string CloseTime { get; set; } = "22:00";
     public List<SectionDto> Sections { get; set; } = new();
 }

@@ -1,5 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
-import { getAdminBookings, BookingDetailDto, getAdminOverview, AdminOverviewDto } from "@/api/admin";
+import {
+  getAdminBookings,
+  BookingDetailDto,
+  getAdminOverview,
+  AdminOverviewDto,
+} from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
@@ -30,25 +35,27 @@ const QUICK_ACTIONS = [
     title: "Add Walk-in",
     sub: "Create an instant reservation",
     primary: true,
+    route: "/(admin)/bookings/new" as const,
   },
   {
-    icon: "ban-outline" as const,
-    title: "Block Table",
-    sub: "Mark a table as unavailable",
+    icon: "list-outline" as const,
+    title: "View Bookings",
+    sub: "See all reservations",
     primary: false,
+    route: "/(admin)/bookings" as const,
   },
   {
-    icon: "chatbubble-outline" as const,
-    title: "Message Guest",
-    sub: "Send a note to a reservation",
+    icon: "settings-outline" as const,
+    title: "Settings",
+    sub: "Manage locations & tables",
     primary: false,
+    route: "/(admin)/settings" as const,
   },
 ];
 
 export default function AdminDashboardScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
-  const [selectedRestaurant, setSelectedRestaurant] =
-    useState<RestaurantDto | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantDto | null>(null);
   const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
   const [overview, setOverview] = useState<AdminOverviewDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,9 +95,7 @@ export default function AdminDashboardScreen() {
   const todayBookings = bookings.filter(
     (b) => new Date(b.date).toDateString() === new Date().toDateString()
   );
-  const upcomingBookings = bookings.filter(
-    (b) => new Date(b.date) > new Date()
-  );
+  const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
 
   const stats = [
     {
@@ -180,12 +185,7 @@ export default function AdminDashboardScreen() {
                   isWide && styles.metricCardWide,
                 ]}
               >
-                <View
-                  style={[
-                    styles.metricIconWrap,
-                    { backgroundColor: `${stat.accent}14` },
-                  ]}
-                >
+                <View style={[styles.metricIconWrap, { backgroundColor: `${stat.accent}14` }]}>
                   <Ionicons name={stat.icon} size={18} color={stat.accent} />
                 </View>
                 <ThemedText style={styles.metricValue}>{stat.value}</ThemedText>
@@ -225,9 +225,7 @@ export default function AdminDashboardScreen() {
                           {
                             height: `${pct}%` as any,
                             backgroundColor:
-                              pct >= 85
-                                ? PRIMARY
-                                : `rgba(10,126,164,${(pct / 100) * 0.7 + 0.15})`,
+                              pct >= 85 ? PRIMARY : `rgba(10,126,164,${(pct / 100) * 0.7 + 0.15})`,
                           },
                         ]}
                       />
@@ -241,21 +239,14 @@ export default function AdminDashboardScreen() {
             </View>
 
             {/* Quick Actions — 1/3 width on wide */}
-            <View
-              style={[
-                styles.actionsCol,
-                isWide && styles.actionsColWide,
-              ]}
-            >
-              <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
-                QUICK ACTIONS
-              </ThemedText>
+            <View style={[styles.actionsCol, isWide && styles.actionsColWide]}>
               {QUICK_ACTIONS.map((action) => (
                 <Pressable
                   key={action.title}
+                  onPress={() => router.push(action.route)}
                   style={(state) => [
                     styles.actionCard,
-                    { backgroundColor: cardBg, borderColor },
+                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as any,
                     action.primary && {
                       backgroundColor: PRIMARY,
                       borderColor: PRIMARY,
@@ -270,9 +261,7 @@ export default function AdminDashboardScreen() {
                     style={[
                       styles.actionIconWrap,
                       {
-                        backgroundColor: action.primary
-                          ? "rgba(255,255,255,0.18)"
-                          : `${PRIMARY}14`,
+                        backgroundColor: action.primary ? "rgba(255,255,255,0.18)" : `${PRIMARY}14`,
                       },
                     ]}
                   >
@@ -283,12 +272,7 @@ export default function AdminDashboardScreen() {
                     />
                   </View>
                   <View style={styles.actionText}>
-                    <ThemedText
-                      style={[
-                        styles.actionTitle,
-                        action.primary && { color: "#fff" },
-                      ]}
-                    >
+                    <ThemedText style={[styles.actionTitle, action.primary && { color: "#fff" }]}>
                       {action.title}
                     </ThemedText>
                     <ThemedText
@@ -311,37 +295,24 @@ export default function AdminDashboardScreen() {
           </View>
 
           {/* Today's reservations list */}
-          <View
-            style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}
-          >
+          <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.listHeader}>
-              <ThemedText style={styles.cardTitle}>
-                Today's Reservations
-              </ThemedText>
+              <ThemedText style={styles.cardTitle}>Today's Reservations</ThemedText>
               <Pressable onPress={() => router.push("/(admin)/bookings")}>
-                <ThemedText style={[styles.viewAll, { color: PRIMARY }]}>
-                  View all →
-                </ThemedText>
+                <ThemedText style={[styles.viewAll, { color: PRIMARY }]}>View all →</ThemedText>
               </Pressable>
             </View>
 
             {todayBookings.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={32}
-                  color={mutedColor}
-                />
+                <Ionicons name="calendar-outline" size={32} color={mutedColor} />
                 <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
                   No bookings today
                 </ThemedText>
               </View>
             ) : (
               todayBookings
-                .sort(
-                  (a, b) =>
-                    new Date(a.date).getTime() - new Date(b.date).getTime()
-                )
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                 .map((b, i) => (
                   <Pressable
                     key={b.id}
@@ -366,17 +337,11 @@ export default function AdminDashboardScreen() {
                       <ThemedText style={styles.bookingEmail} numberOfLines={1}>
                         {b.customerEmail}
                       </ThemedText>
-                      <ThemedText
-                        style={[styles.bookingMeta, { color: mutedColor }]}
-                      >
+                      <ThemedText style={[styles.bookingMeta, { color: mutedColor }]}>
                         {b.seats} {b.seats === 1 ? "guest" : "guests"}
                       </ThemedText>
                     </View>
-                    <Ionicons
-                      name="chevron-forward-outline"
-                      size={16}
-                      color={mutedColor}
-                    />
+                    <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} />
                   </Pressable>
                 ))
             )}
@@ -473,7 +438,7 @@ const styles = StyleSheet.create({
   mainRow: { gap: 16 },
   mainRowWide: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "stretch",
   },
   chartCard: {
     borderRadius: 14,
@@ -532,7 +497,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   actionsCol: { gap: 10 },
-  actionsColWide: { flex: 1 },
+  actionsColWide: { flex: 1, justifyContent: "space-between" },
   actionCard: {
     borderRadius: 12,
     borderWidth: 1,

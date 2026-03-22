@@ -152,6 +152,10 @@ using (var scope = app.Services.CreateScope())
     catch { /* column already exists */ }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"EndTime\" TEXT"); }
     catch { /* column already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Restaurants\" ADD COLUMN \"OpenTime\" TEXT NOT NULL DEFAULT '09:00'"); }
+    catch { /* column already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Restaurants\" ADD COLUMN \"CloseTime\" TEXT NOT NULL DEFAULT '22:00'"); }
+    catch { /* column already exists */ }
 
     // Seed initial data when database is empty
     DbSeeder.Seed(db);

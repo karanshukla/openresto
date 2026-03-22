@@ -17,12 +17,15 @@ import Button from "@/components/common/Button";
 function todayDate() {
   return new Date().toISOString().split("T")[0];
 }
-function nextSlotTime() {
+function nextSlotTime(openTime = "09:00", closeTime = "22:00") {
   const now = new Date();
   let h = now.getHours();
-  const m = now.getMinutes() < 30 ? 30 : 0;
+  const min = now.getMinutes();
+  const m = min < 15 ? 15 : min < 30 ? 30 : min < 45 ? 45 : 0;
   if (m === 0) h += 1;
-  if (h < 9 || h >= 22) return "19:00";
+  const [openH] = openTime.split(":").map(Number);
+  const [closeH] = closeTime.split(":").map(Number);
+  if (h < openH || h >= closeH) return `${(openH + 1).toString().padStart(2, "0")}:00`;
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
@@ -42,7 +45,7 @@ export default function AdminNewBookingScreen() {
   const [sectionId, setSectionId] = useState<number | undefined>();
   const [tableId, setTableId] = useState<number | undefined>();
   const [date, setDate] = useState(todayDate());
-  const [time, setTime] = useState(nextSlotTime());
+  const [time, setTime] = useState(() => nextSlotTime());
   const [seats, setSeats] = useState(2);
   const [email, setEmail] = useState("");
 
@@ -52,6 +55,7 @@ export default function AdminNewBookingScreen() {
       if (data.length > 0) {
         const r = data[0];
         setRestaurantId(r.id);
+        setTime(nextSlotTime(r.openTime, r.closeTime));
         const firstSection = r.sections[0];
         if (firstSection) {
           setSectionId(firstSection.id);
@@ -165,7 +169,12 @@ export default function AdminNewBookingScreen() {
           </View>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Time</ThemedText>
-            <TimePicker selectedTime={time} onSelect={setTime} />
+            <TimePicker
+              selectedTime={time}
+              onSelect={setTime}
+              minTime={selectedRestaurant?.openTime ?? "09:00"}
+              maxTime={selectedRestaurant?.closeTime ?? "22:00"}
+            />
           </View>
         </View>
 

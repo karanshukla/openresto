@@ -9,11 +9,11 @@ import { APP_NAME } from "@/constants/config";
 import { Ionicons } from "@expo/vector-icons";
 
 const NAV_LINKS = [
-  { label: "Explore", href: "/" as const, match: (p: string) => p === "/" },
+  { label: "Home", href: "/" as const, match: (p: string) => p === "/" },
   {
     label: "My Booking",
-    href: "/explore" as const,
-    match: (p: string) => p === "/explore" || p.startsWith("/booking"),
+    href: "/(user)/lookup" as const,
+    match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
   },
   {
     label: "Admin",
