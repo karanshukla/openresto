@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<Section> Sections { get; set; } = null!;
     public DbSet<Table> Tables { get; set; } = null!;
     public DbSet<Booking> Bookings { get; set; } = null!;
+    public DbSet<AdminCredential> AdminCredentials { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,11 @@ public class AppDbContext : DbContext
             bb.HasOne(b => b.Table).WithMany().HasForeignKey("TableId");
             bb.HasOne(b => b.Section).WithMany().HasForeignKey("SectionId");
             bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey("RestaurantId");
+        });
+
+        modelBuilder.Entity<AdminCredential>(a =>
+        {
+            a.HasKey(x => x.Id);
         });
     }
 }

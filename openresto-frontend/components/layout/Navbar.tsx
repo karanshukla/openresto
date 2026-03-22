@@ -4,6 +4,7 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY } from "@/constants/colors";
+import { APP_NAME } from "@/constants/config";
 
 const NAV_LINKS = [
   { label: "Explore", href: "/" as const, match: (p: string) => p === "/" },
@@ -11,6 +12,15 @@ const NAV_LINKS = [
     label: "My Booking",
     href: "/explore" as const,
     match: (p: string) => p === "/explore" || p.startsWith("/booking"),
+  },
+  {
+    label: "Admin",
+    href: "/(admin)/dashboard" as const,
+    match: (p: string) =>
+      p === "/dashboard" ||
+      p.startsWith("/bookings") ||
+      p === "/settings" ||
+      p === "/login",
   },
 ];
 
@@ -34,7 +44,7 @@ export default function Navbar() {
         {/* Brand */}
         <Link href="/" asChild>
           <Pressable style={styles.brand}>
-            <ThemedText style={styles.brandText}>Open Resto</ThemedText>
+            <ThemedText style={styles.brandText}>{APP_NAME}</ThemedText>
           </Pressable>
         </Link>
 

@@ -74,6 +74,7 @@ export default function BookScreen() {
   }
 
   return (
+    <ThemedView style={styles.root}>
     <ScrollView style={styles.scroll}>
       <PageContainer style={styles.page}>
         <ThemedText type="title" style={styles.title}>
@@ -92,10 +93,12 @@ export default function BookScreen() {
         <BookingForm restaurant={restaurant} onSubmit={handleSubmit} />
       </PageContainer>
     </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   scroll: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   page: {

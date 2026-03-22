@@ -5,20 +5,27 @@ import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { logout } from "@/api/auth";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { APP_NAME } from "@/constants/config";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { fetchRestaurants } from "@/api/restaurants";
 
 const NAV_ITEMS = [
   {
     label: "Overview",
+    icon: "grid-outline" as const,
     href: "/(admin)/dashboard" as const,
     match: (p: string) => p === "/dashboard",
   },
   {
     label: "Reservations",
+    icon: "calendar-outline" as const,
     href: "/(admin)/bookings" as const,
     match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
   },
   {
-    label: "Settings",
+    label: "Location Manager",
+    icon: "location-outline" as const,
     href: "/(admin)/settings" as const,
     match: (p: string) => p === "/settings",
   },
@@ -28,10 +35,19 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const [locationCount, setLocationCount] = useState(0);
+
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-  const activeBg = isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)";
+  const activeBg = isDark
+    ? "rgba(10,126,164,0.18)"
+    : "rgba(10,126,164,0.09)";
+  const sidebarBg = isDark ? "#111214" : "#fafafa";
+
+  useEffect(() => {
+    fetchRestaurants().then((data) => setLocationCount(data.length));
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -42,22 +58,32 @@ export default function AdminSidebar() {
     <ThemedView
       style={[
         styles.sidebar,
-        { borderRightColor: borderColor },
+        { borderRightColor: borderColor, backgroundColor: sidebarBg },
+        Platform.OS === "web"
+          ? ({ position: "sticky", top: 0, height: "100vh" } as any)
+          : { height: "100%" },
       ]}
     >
       {/* Brand */}
       <View style={styles.brand}>
-        <ThemedText style={styles.brandText}>Open Resto</ThemedText>
-        <ThemedText style={[styles.brandSub, { color: mutedColor }]}>
-          Admin
-        </ThemedText>
+        <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
+          <Ionicons name="restaurant-outline" size={16} color="#fff" />
+        </View>
+        <View style={styles.brandText}>
+          <ThemedText style={styles.brandName}>{APP_NAME}</ThemedText>
+          <ThemedText style={[styles.brandSub, { color: mutedColor }]}>
+            {locationCount > 0
+              ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`
+              : "Admin Panel"}
+          </ThemedText>
+        </View>
       </View>
 
       <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
       {/* Nav */}
       <View style={styles.nav}>
-        {NAV_ITEMS.map(({ label, href, match }) => {
+        {NAV_ITEMS.map(({ label, icon, href, match }) => {
           const active = match(pathname);
           return (
             <Link key={href} href={href} asChild>
@@ -70,6 +96,12 @@ export default function AdminSidebar() {
                   { cursor: "pointer" } as any,
                 ]}
               >
+                <Ionicons
+                  name={icon}
+                  size={18}
+                  color={active ? PRIMARY : mutedColor}
+                  style={styles.navIcon}
+                />
                 <ThemedText
                   style={[
                     styles.navLabel,
@@ -82,10 +114,7 @@ export default function AdminSidebar() {
                 </ThemedText>
                 {active && (
                   <View
-                    style={[
-                      styles.activeBar,
-                      { backgroundColor: PRIMARY },
-                    ]}
+                    style={[styles.activeBar, { backgroundColor: PRIMARY }]}
                   />
                 )}
               </Pressable>
@@ -96,9 +125,20 @@ export default function AdminSidebar() {
 
       <View style={styles.spacer} />
 
+      {/* New Reservation CTA */}
+      <View style={styles.ctaWrapper}>
+        <Pressable
+          style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
+          onPress={() => router.push("/(admin)/bookings")}
+        >
+          <Ionicons name="add-circle-outline" size={16} color="#fff" />
+          <ThemedText style={styles.ctaBtnText}>New Reservation</ThemedText>
+        </Pressable>
+      </View>
+
       <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
-      {/* Footer: back to site + logout */}
+      {/* Footer */}
       <View style={styles.footer}>
         <Link href="/" asChild>
           <Pressable
@@ -108,8 +148,9 @@ export default function AdminSidebar() {
               { cursor: "pointer" } as any,
             ]}
           >
+            <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
             <ThemedText style={[styles.footerText, { color: mutedColor }]}>
-              ← Back to site
+              Back to site
             </ThemedText>
           </Pressable>
         </Link>
@@ -121,6 +162,7 @@ export default function AdminSidebar() {
           ]}
           onPress={handleLogout}
         >
+          <Ionicons name="log-out-outline" size={15} color={mutedColor} />
           <ThemedText style={[styles.footerText, { color: mutedColor }]}>
             Log out
           </ThemedText>
@@ -132,71 +174,98 @@ export default function AdminSidebar() {
 
 const styles = StyleSheet.create({
   sidebar: {
-    width: 220,
-    height: "100%" as any,
+    width: 230,
     borderRightWidth: 1,
     paddingVertical: 8,
-    // sticky on web
-    ...(Platform.OS === "web"
-      ? ({ position: "sticky", top: 0, height: "100vh" } as any)
-      : {}),
   },
   brand: {
-    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 2,
+    gap: 10,
+  },
+  brandIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   brandText: {
-    fontSize: 18,
+    gap: 1,
+  },
+  brandName: {
+    fontSize: 15,
     fontWeight: "800",
-    color: PRIMARY,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   brandSub: {
     fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontWeight: "500",
   },
   divider: {
     height: 1,
-    marginHorizontal: 16,
-    marginVertical: 4,
+    marginHorizontal: 12,
+    marginVertical: 6,
   },
   nav: {
-    paddingTop: 8,
+    paddingTop: 4,
     gap: 2,
+    paddingHorizontal: 8,
   },
   navItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    marginHorizontal: 8,
     borderRadius: 8,
     position: "relative",
+    gap: 10,
+  },
+  navIcon: {
+    width: 20,
   },
   navLabel: {
     fontSize: 14,
     flex: 1,
   },
   activeBar: {
-    width: 4,
+    width: 3,
     height: 16,
     borderRadius: 2,
-    marginLeft: 4,
   },
   spacer: {
     flex: 1,
   },
+  ctaWrapper: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  ctaBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
   footer: {
     paddingTop: 4,
+    paddingHorizontal: 8,
     gap: 2,
   },
   footerItem: {
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    marginHorizontal: 8,
     borderRadius: 8,
   },
   footerText: {

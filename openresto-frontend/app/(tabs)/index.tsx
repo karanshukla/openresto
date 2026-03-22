@@ -12,6 +12,7 @@ import {
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
 import { PRIMARY } from "@/constants/colors";
+import { APP_NAME } from "@/constants/config";
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -52,9 +53,7 @@ export default function HomeScreen() {
             <ThemedText style={styles.heroEyebrow}>
               Reserve online, instantly
             </ThemedText>
-            <ThemedText style={styles.heroTitle}>
-              The Curated Table.
-            </ThemedText>
+            <ThemedText style={styles.heroTitle}>{APP_NAME}</ThemedText>
             <ThemedText style={styles.heroSubtitle}>
               Browse available restaurants and book a table in seconds.
             </ThemedText>

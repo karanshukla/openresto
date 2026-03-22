@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
@@ -16,6 +17,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpGet("restaurant/{restaurantId}")]
+        [Authorize]
         public async Task<IActionResult> GetBookings(int restaurantId)
         {
             var bookings = await _bookingService.GetBookingsByRestaurantAsync(restaurantId);
@@ -53,6 +55,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateBooking(int id, [FromBody] BookingDto bookingDto)
         {
             if (id != bookingDto.Id)
@@ -70,6 +73,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteBooking(int id)
         {
             await _bookingService.DeleteBookingAsync(id);

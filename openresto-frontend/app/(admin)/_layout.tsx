@@ -1,5 +1,6 @@
 import { Platform, View } from "react-native";
 import { Slot, Stack, useRouter, useSegments } from "expo-router";
+import { ThemedView } from "@/components/themed-view";
 import { useEffect, useState } from "react";
 import { getStoredToken } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -15,6 +16,7 @@ export default function AdminLayout() {
 
     if (!token && !onLoginScreen) {
       router.replace("/(admin)/login");
+      return; // stay null while redirecting
     }
     setChecked(true);
   }, [segments]);
@@ -25,15 +27,15 @@ export default function AdminLayout() {
   if (Platform.OS === "web") {
     const onLoginScreen = segments.includes("login" as never);
     if (onLoginScreen) {
-      return <Slot />;
+      return <ThemedView style={{ flex: 1 }}><Slot /></ThemedView>;
     }
     return (
-      <View style={{ flex: 1, flexDirection: "row" }}>
+      <ThemedView style={{ flex: 1, flexDirection: "row" }}>
         <AdminSidebar />
         <View style={{ flex: 1, overflow: "auto" as any }}>
           <Slot />
         </View>
-      </View>
+      </ThemedView>
     );
   }
 

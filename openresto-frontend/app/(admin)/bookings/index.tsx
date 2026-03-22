@@ -1,11 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getBookingsByRestaurant, BookingDto } from "@/api/bookings";
+import { getAdminBookings, adminGetTables, BookingDetailDto, SectionWithTables } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,38 +14,205 @@ import {
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 
-function statusBadge(date: string): {
-  label: string;
-  bg: string;
-  text: string;
-} {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type ViewMode = "list" | "grid";
+type BadgeVariant = "arrived" | "seated" | "upcoming" | "scheduled" | "completed";
+
+// ── Time slots for the grid (11 AM – 10 PM) ──────────────────────────────────
+
+const TIME_SLOTS = Array.from({ length: 12 }, (_, i) => {
+  const h = i + 11;
+  const label = h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+  return { hour: h, label };
+});
+
+const COL_W = 68;   // px per time-slot column
+const ROW_H = 48;   // px per table row
+const LABEL_W = 110; // px for the fixed left label column
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtDate(d: Date) {
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function isoDate(d: Date) {
+  return d.toISOString().split("T")[0];
+}
+
+function getStatus(date: string): { label: string; variant: BadgeVariant } {
   const d = new Date(date);
   const now = new Date();
   const diffMins = (d.getTime() - now.getTime()) / 60000;
-
-  if (diffMins < -30) return { label: "Completed", bg: "#f1f5f9", text: "#64748b" };
-  if (diffMins < 0) return { label: "In Progress", bg: "#dcfce7", text: "#15803d" };
-  if (diffMins < 60) return { label: "Upcoming", bg: `rgba(10,126,164,0.08)`, text: PRIMARY };
-  return { label: "Scheduled", bg: "#f1f5f9", text: "#64748b" };
+  if (diffMins < -90) return { label: "Completed", variant: "completed" };
+  if (diffMins < -15) return { label: "Seated", variant: "seated" };
+  if (diffMins < 5)   return { label: "Arrived", variant: "arrived" };
+  if (diffMins < 60)  return { label: "Upcoming", variant: "upcoming" };
+  return { label: "Scheduled", variant: "scheduled" };
 }
+
+const BADGE_STYLES: Record<BadgeVariant, { bg: string; text: string; darkBg?: string; darkText?: string }> = {
+  arrived:   { bg: "#dcfce7", text: "#15803d", darkBg: "#14532d22", darkText: "#4ade80" },
+  seated:    { bg: `rgba(10,126,164,0.1)`, text: PRIMARY },
+  upcoming:  { bg: "#fef9c3", text: "#854d0e", darkBg: "#854d0e22", darkText: "#fde047" },
+  scheduled: { bg: "#f1f5f9", text: "#64748b", darkBg: "#1e2934", darkText: "#94a3b8" },
+  completed: { bg: "#f1f5f9", text: "#94a3b8", darkBg: "#1a1c1e", darkText: "#64748b" },
+};
+
+function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
+  const { label, variant } = getStatus(date);
+  const s = BADGE_STYLES[variant];
+  const bg   = isDark && s.darkBg   ? s.darkBg   : s.bg;
+  const text = isDark && s.darkText ? s.darkText : s.text;
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <ThemedText style={[styles.badgeText, { color: text }]}>{label}</ThemedText>
+    </View>
+  );
+}
+
+// ── Availability Grid ─────────────────────────────────────────────────────────
+
+function AvailabilityGrid({
+  sections,
+  bookings,
+  isDark,
+  onBookingPress,
+}: {
+  sections: SectionWithTables[];
+  bookings: BookingDetailDto[];
+  isDark: boolean;
+  onBookingPress: (b: BookingDetailDto) => void;
+}) {
+  const borderColor  = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const headerBg     = isDark ? "#28292b" : "#f4f5f6";
+  const sectionBg    = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+  const availBg      = isDark ? "rgba(255,255,255,0.02)" : "#fafafa";
+  const bookedBg     = isDark ? "rgba(220,38,38,0.18)" : "rgba(220,38,38,0.09)";
+  const bookedBorder = "#dc2626";
+  const mutedColor   = isDark ? MUTED_DARK : MUTED_LIGHT;
+
+  function bookingForCell(tableId: number, hour: number): BookingDetailDto | undefined {
+    return bookings.find((b) => b.tableId === tableId && new Date(b.date).getHours() === hour);
+  }
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator style={styles.gridScroll}>
+      <View>
+        {/* Column headers */}
+        <View style={[styles.gridHeaderRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
+          <View style={[styles.gridLabelCell, { borderRightColor: borderColor }]}>
+            <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>TABLE</ThemedText>
+          </View>
+          {TIME_SLOTS.map(({ hour, label }) => (
+            <View key={hour} style={[styles.gridTimeCell, { borderLeftColor: borderColor }]}>
+              <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>{label}</ThemedText>
+            </View>
+          ))}
+        </View>
+
+        {/* Sections + table rows */}
+        {sections.map((section) => (
+          <View key={section.id}>
+            {/* Section divider */}
+            <View style={[styles.gridSectionRow, { backgroundColor: sectionBg, borderBottomColor: borderColor }]}>
+              <View style={{ width: LABEL_W + TIME_SLOTS.length * COL_W, paddingHorizontal: 12, justifyContent: "center" }}>
+                <ThemedText style={[styles.gridSectionLabel, { color: mutedColor }]}>
+                  {section.name.toUpperCase()}
+                </ThemedText>
+              </View>
+            </View>
+
+            {/* Table rows */}
+            {section.tables.map((table) => (
+              <View
+                key={table.id}
+                style={[styles.gridRow, { borderBottomColor: borderColor }]}
+              >
+                {/* Fixed label */}
+                <View style={[styles.gridLabelCell, { borderRightColor: borderColor }]}>
+                  <ThemedText style={styles.gridTableName} numberOfLines={1}>
+                    {table.name ?? `T${table.id}`}
+                  </ThemedText>
+                  <ThemedText style={[styles.gridTableSeats, { color: mutedColor }]}>
+                    {table.seats}p
+                  </ThemedText>
+                </View>
+
+                {/* Time slot cells */}
+                {TIME_SLOTS.map(({ hour }) => {
+                  const booking = bookingForCell(table.id, hour);
+                  return (
+                    <Pressable
+                      key={hour}
+                      style={[
+                        styles.gridCell,
+                        { borderLeftColor: borderColor },
+                        booking
+                          ? { backgroundColor: bookedBg, borderLeftColor: bookedBorder, borderLeftWidth: 2 }
+                          : { backgroundColor: availBg },
+                      ]}
+                      onPress={() => booking && onBookingPress(booking)}
+                      disabled={!booking}
+                    >
+                      {booking ? (
+                        <>
+                          <Ionicons name="person" size={10} color="#dc2626" />
+                          <ThemedText style={styles.gridCellEmail} numberOfLines={1}>
+                            {booking.customerEmail?.split("@")[0]}
+                          </ThemedText>
+                          <ThemedText style={[styles.gridCellSeats, { color: mutedColor }]}>
+                            {booking.seats}p
+                          </ThemedText>
+                        </>
+                      ) : (
+                        <View style={[styles.gridDot, { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)" }]} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        ))}
+
+        {sections.length === 0 && (
+          <View style={styles.gridEmpty}>
+            <ThemedText style={{ color: mutedColor }}>No tables configured for this location.</ThemedText>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function AdminBookingsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState<
-    number | null
-  >(null);
-  const [bookings, setBookings] = useState<BookingDto[]>([]);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<number | null>(null);
+  const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+
+  // Grid state
+  const [gridDate, setGridDate] = useState(new Date());
+  const [gridSections, setGridSections] = useState<SectionWithTables[]>([]);
+  const [gridBookings, setGridBookings] = useState<BookingDetailDto[]>([]);
+  const [gridLoading, setGridLoading] = useState(false);
+
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const { width } = useWindowDimensions();
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
-  const headerBg = isDark ? "#28292b" : "#f8f8f9";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const isWide = width >= 640;
+  const cardBg      = isDark ? "#1e2022" : "#ffffff";
+  const headerBg    = isDark ? "#28292b" : "#f8f8f9";
+  const mutedColor  = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const isWide      = width >= 640;
 
   useEffect(() => {
     async function load() {
@@ -55,7 +221,7 @@ export default function AdminBookingsScreen() {
       if (data.length > 0) {
         const id = data[0].id;
         setSelectedRestaurantId(id);
-        const b = await getBookingsByRestaurant(id);
+        const b = await getAdminBookings(id);
         setBookings(b);
       }
       setLoading(false);
@@ -67,190 +233,247 @@ export default function AdminBookingsScreen() {
     if (id === selectedRestaurantId) return;
     setSelectedRestaurantId(id);
     setLoading(true);
-    const b = await getBookingsByRestaurant(id);
+    const b = await getAdminBookings(id);
     setBookings(b);
     setLoading(false);
+    if (viewMode === "grid") loadGrid(id, gridDate);
+  };
+
+  async function loadGrid(restaurantId: number, date: Date) {
+    setGridLoading(true);
+    const [sections, bookingsForDate] = await Promise.all([
+      adminGetTables(restaurantId),
+      getAdminBookings(restaurantId, isoDate(date)),
+    ]);
+    setGridSections(sections);
+    setGridBookings(bookingsForDate);
+    setGridLoading(false);
+  }
+
+  const switchToGrid = () => {
+    setViewMode("grid");
+    if (selectedRestaurantId) loadGrid(selectedRestaurantId, gridDate);
+  };
+
+  const handleGridDateChange = (delta: number) => {
+    const next = new Date(gridDate);
+    next.setDate(next.getDate() + delta);
+    setGridDate(next);
+    if (selectedRestaurantId) loadGrid(selectedRestaurantId, next);
   };
 
   const sorted = [...bookings].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
+  const todayCount = bookings.filter(
+    (b) => new Date(b.date).toDateString() === new Date().toDateString()
+  ).length;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Header */}
       <View style={styles.pageHeader}>
-        <ThemedText style={styles.pageTitle}>Reservations</ThemedText>
-        {restaurants.length > 1 && (
-          <View style={styles.locationRow}>
-            {restaurants.map((r) => (
-              <Pressable
-                key={r.id}
-                style={[
-                  styles.chip,
-                  { borderColor },
-                  r.id === selectedRestaurantId && {
-                    backgroundColor: PRIMARY,
-                    borderColor: PRIMARY,
-                  },
-                ]}
-                onPress={() => handleSelectRestaurant(r.id)}
-              >
-                <ThemedText
-                  style={
-                    r.id === selectedRestaurantId
-                      ? styles.chipTextActive
-                      : [styles.chipText, { color: mutedColor }]
-                  }
+        <View>
+          <ThemedText style={styles.pageTitle}>
+            {viewMode === "list" ? "Live Reservations" : "Availability"}
+          </ThemedText>
+          <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
+            {viewMode === "list"
+              ? `${bookings.length} total · ${todayCount} today`
+              : fmtDate(gridDate)}
+          </ThemedText>
+        </View>
+
+        <View style={styles.headerRight}>
+          {/* Restaurant selector chips */}
+          {restaurants.length > 1 && (
+            <View style={styles.locationRow}>
+              {restaurants.map((r) => (
+                <Pressable
+                  key={r.id}
+                  style={[
+                    styles.chip,
+                    { borderColor },
+                    r.id === selectedRestaurantId && { backgroundColor: PRIMARY, borderColor: PRIMARY },
+                  ]}
+                  onPress={() => handleSelectRestaurant(r.id)}
                 >
-                  {r.name}
-                </ThemedText>
-              </Pressable>
-            ))}
+                  <ThemedText
+                    style={r.id === selectedRestaurantId ? styles.chipTextActive : [styles.chipText, { color: mutedColor }]}
+                  >
+                    {r.name}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {/* View mode toggle */}
+          <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
+            <Pressable
+              style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
+              onPress={() => setViewMode("list")}
+            >
+              <Ionicons name="list-outline" size={16} color={viewMode === "list" ? "#fff" : mutedColor} />
+              <ThemedText style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}>
+                List
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
+              onPress={switchToGrid}
+            >
+              <Ionicons name="grid-outline" size={16} color={viewMode === "grid" ? "#fff" : mutedColor} />
+              <ThemedText style={[styles.modeBtnText, { color: viewMode === "grid" ? "#fff" : mutedColor }]}>
+                Grid
+              </ThemedText>
+            </Pressable>
           </View>
-        )}
+        </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator
-          style={styles.spinner}
-          size="large"
-          color={PRIMARY}
-        />
+        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
+      ) : viewMode === "grid" ? (
+        /* ── Grid view ── */
+        <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
+          {/* Date navigation */}
+          <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
+            <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(-1)}>
+              <Ionicons name="chevron-back" size={18} color={PRIMARY} />
+            </Pressable>
+            <Pressable
+              onPress={() => { setGridDate(new Date()); if (selectedRestaurantId) loadGrid(selectedRestaurantId, new Date()); }}
+              style={styles.gridDateLabel}
+            >
+              <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
+              {gridDate.toDateString() !== new Date().toDateString() && (
+                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>tap for today</ThemedText>
+              )}
+            </Pressable>
+            <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(1)}>
+              <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
+            </Pressable>
+          </View>
+
+          {/* Legend */}
+          <View style={[styles.gridLegend, { borderBottomColor: borderColor }]}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: "rgba(220,38,38,0.18)" }]} />
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f0f0f0" }]} />
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Available</ThemedText>
+            </View>
+            <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+              Tap a booked cell to view details
+            </ThemedText>
+          </View>
+
+          {gridLoading ? (
+            <ActivityIndicator style={{ padding: 40 }} size="large" color={PRIMARY} />
+          ) : (
+            <AvailabilityGrid
+              sections={gridSections}
+              bookings={gridBookings}
+              isDark={isDark}
+              onBookingPress={(b) => router.push(`/(admin)/bookings/${b.id}`)}
+            />
+          )}
+        </View>
       ) : sorted.length === 0 ? (
-        <ThemedText style={[styles.empty, { color: mutedColor }]}>
-          No bookings found.
-        </ThemedText>
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={40} color={mutedColor} />
+          <ThemedText style={[styles.emptyText, { color: mutedColor }]}>No reservations found</ThemedText>
+        </View>
       ) : isWide ? (
-        /* ── Table view (web / wider screens) ── */
-        <View
-          style={[
-            styles.tableCard,
-            { backgroundColor: cardBg, borderColor },
-          ]}
-        >
-          {/* Header row */}
+        /* ── Table view ── */
+        <View style={[styles.tableCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={[styles.tableHeader, { backgroundColor: headerBg }]}>
-            <ThemedText style={[styles.thCell, styles.colTime, { color: mutedColor }]}>
-              TIME
-            </ThemedText>
-            <ThemedText style={[styles.thCell, styles.colGuest, { color: mutedColor }]}>
-              GUEST
-            </ThemedText>
-            <ThemedText style={[styles.thCell, styles.colSeats, { color: mutedColor }]}>
-              SEATS
-            </ThemedText>
-            <ThemedText style={[styles.thCell, styles.colStatus, { color: mutedColor }]}>
-              STATUS
-            </ThemedText>
+            <ThemedText style={[styles.thCell, styles.colTime, { color: mutedColor }]}>TIME</ThemedText>
+            <ThemedText style={[styles.thCell, styles.colGuest, { color: mutedColor }]}>GUEST</ThemedText>
+            <ThemedText style={[styles.thCell, styles.colParty, { color: mutedColor }]}>PARTY</ThemedText>
+            <ThemedText style={[styles.thCell, styles.colTable, { color: mutedColor }]}>TABLE</ThemedText>
+            <ThemedText style={[styles.thCell, styles.colStatus, { color: mutedColor }]}>STATUS</ThemedText>
             <View style={styles.colAction} />
           </View>
 
-          {sorted.map((b, i) => {
-            const badge = statusBadge(b.date);
-            return (
-              <Pressable
-                key={b.id}
-                style={[
-                  styles.tableRow,
-                  i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
-                  { cursor: "pointer" } as any,
-                ]}
-                onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
-              >
-                <View style={styles.colTime}>
-                  <ThemedText style={styles.tdTime}>
-                    {new Date(b.date).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </ThemedText>
-                  <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
-                    {new Date(b.date).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </ThemedText>
-                </View>
-
-                <ThemedText style={[styles.tdGuest, styles.colGuest]} numberOfLines={1}>
-                  {b.customerEmail}
+          {sorted.map((b, i) => (
+            <Pressable
+              key={b.id}
+              style={[
+                styles.tableRow,
+                i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
+                { cursor: "pointer" } as any,
+              ]}
+              onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
+            >
+              <View style={styles.colTime}>
+                <ThemedText style={styles.tdTime}>
+                  {new Date(b.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
                 </ThemedText>
-
-                <ThemedText style={[styles.tdSeats, styles.colSeats]}>
-                  {b.seats}
+                <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
+                  {new Date(b.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </ThemedText>
-
-                <View style={styles.colStatus}>
-                  <View
-                    style={[
-                      styles.badge,
-                      { backgroundColor: badge.bg },
-                    ]}
-                  >
-                    <ThemedText style={[styles.badgeText, { color: badge.text }]}>
-                      {badge.label}
-                    </ThemedText>
-                  </View>
+              </View>
+              <View style={styles.colGuest}>
+                <ThemedText style={styles.tdGuest} numberOfLines={1}>{b.customerEmail}</ThemedText>
+                <ThemedText style={[styles.tdNotes, { color: mutedColor }]} numberOfLines={1}>
+                  No special requests
+                </ThemedText>
+              </View>
+              <View style={styles.colParty}>
+                <View style={styles.partyPill}>
+                  <Ionicons name="people-outline" size={12} color={mutedColor} />
+                  <ThemedText style={[styles.tdParty, { color: mutedColor }]}>{b.seats}</ThemedText>
                 </View>
-
-                <View style={styles.colAction}>
-                  <ThemedText style={[styles.chevron, { color: mutedColor }]}>
-                    ›
-                  </ThemedText>
-                </View>
-              </Pressable>
-            );
-          })}
+              </View>
+              <ThemedText style={[styles.tdTableNum, styles.colTable, { color: mutedColor }]}>
+                {b.tableName}
+              </ThemedText>
+              <View style={styles.colStatus}>
+                <StatusBadge date={b.date} isDark={isDark} />
+              </View>
+              <View style={styles.colAction}>
+                <Pressable style={styles.menuBtn}>
+                  <Ionicons name="ellipsis-vertical" size={16} color={mutedColor} />
+                </Pressable>
+              </View>
+            </Pressable>
+          ))}
         </View>
       ) : (
-        /* ── Card list (mobile / narrow) ── */
+        /* ── Card list (mobile) ── */
         <View style={styles.cardList}>
-          {sorted.map((b, i) => {
-            const badge = statusBadge(b.date);
-            return (
-              <Pressable
-                key={b.id}
-                style={[
-                  styles.listCard,
-                  { backgroundColor: cardBg, borderColor },
-                ]}
-                onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
-              >
-                <View style={styles.listCardRow}>
-                  <View style={styles.listCardInfo}>
-                    <ThemedText style={styles.tdTime}>
-                      {new Date(b.date).toLocaleString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.tdGuest, { marginTop: 2 }]}
-                      numberOfLines={1}
-                    >
-                      {b.customerEmail}
-                    </ThemedText>
-                    <ThemedText style={[styles.tdDate, { color: mutedColor, marginTop: 2 }]}>
-                      {b.seats} seats
-                    </ThemedText>
-                  </View>
-                  <View style={styles.listCardRight}>
-                    <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-                      <ThemedText style={[styles.badgeText, { color: badge.text }]}>
-                        {badge.label}
-                      </ThemedText>
-                    </View>
-                    <ThemedText style={[styles.chevron, { color: mutedColor, marginTop: 8 }]}>
-                      ›
-                    </ThemedText>
+          {sorted.map((b) => (
+            <Pressable
+              key={b.id}
+              style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}
+              onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
+            >
+              <View style={styles.listCardRow}>
+                <View style={styles.listCardInfo}>
+                  <ThemedText style={styles.tdTime}>
+                    {new Date(b.date).toLocaleString(undefined, {
+                      weekday: "short", month: "short", day: "numeric",
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </ThemedText>
+                  <ThemedText style={styles.tdGuest} numberOfLines={1}>{b.customerEmail}</ThemedText>
+                  <View style={styles.partyPill}>
+                    <Ionicons name="people-outline" size={12} color={mutedColor} />
+                    <ThemedText style={[styles.tdDate, { color: mutedColor }]}>{b.seats} guests</ThemedText>
                   </View>
                 </View>
-              </Pressable>
-            );
-          })}
+                <View style={styles.listCardRight}>
+                  <StatusBadge date={b.date} isDark={isDark} />
+                  <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} style={{ marginTop: 10 }} />
+                </View>
+              </View>
+            </Pressable>
+          ))}
         </View>
       )}
     </ScrollView>
@@ -259,8 +482,8 @@ export default function AdminBookingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    paddingTop: 28,
+    padding: 24,
+    paddingTop: 32,
     gap: 16,
     maxWidth: 1200,
     width: "100%",
@@ -269,42 +492,115 @@ const styles = StyleSheet.create({
   pageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     flexWrap: "wrap",
     gap: 12,
   },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  locationRow: {
+  pageTitle: { fontSize: 28, fontWeight: "800", letterSpacing: -0.6 },
+  pageSub: { fontSize: 14, marginTop: 2 },
+  headerRight: { gap: 10, alignItems: "flex-end" },
+  locationRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  chipText: { fontSize: 13 },
+  chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  // View mode toggle
+  modeToggle: {
     flexDirection: "row",
-    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  modeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modeBtnText: { fontSize: 13, fontWeight: "600" },
+  spinner: { marginTop: 40 },
+  emptyState: { alignItems: "center", paddingVertical: 60, gap: 12 },
+  emptyText: { fontSize: 15, fontStyle: "italic" },
+  // Grid card
+  gridCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  gridDateBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  gridNavBtn: { padding: 6 },
+  gridDateLabel: { alignItems: "center", gap: 2 },
+  gridDateText: { fontSize: 16, fontWeight: "700" },
+  gridTodayHint: { fontSize: 11, fontWeight: "600" },
+  gridLegend: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
     flexWrap: "wrap",
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 12, height: 12, borderRadius: 3 },
+  legendText: { fontSize: 12 },
+  gridScroll: { minHeight: 200 },
+  gridHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 36,
+    borderBottomWidth: 1,
   },
-  chipText: {
-    fontSize: 14,
+  gridLabelCell: {
+    width: LABEL_W,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+    borderRightWidth: 1,
+    height: "100%",
   },
-  chipTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
+  gridTimeCell: {
+    width: COL_W,
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1,
+    height: "100%",
   },
-  spinner: { marginTop: 40 },
-  empty: {
-    textAlign: "center",
-    marginTop: 40,
-    fontStyle: "italic",
-    fontSize: 14,
+  gridHeaderText: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+  gridSectionRow: { height: 28, borderBottomWidth: 1, justifyContent: "center" },
+  gridSectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
+  gridRow: {
+    flexDirection: "row",
+    height: ROW_H,
+    borderBottomWidth: 1,
   },
-  // Table
+  gridCell: {
+    width: COL_W,
+    borderLeftWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    gap: 1,
+  },
+  gridCellEmail: { fontSize: 9, fontWeight: "600", color: "#dc2626", textAlign: "center" },
+  gridCellSeats: { fontSize: 9 },
+  gridDot: { width: 6, height: 6, borderRadius: 3 },
+  gridTableName: { fontSize: 12, fontWeight: "600" },
+  gridTableSeats: { fontSize: 10 },
+  gridEmpty: { padding: 40, alignItems: "center" },
+  // Table (list)
   tableCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -315,40 +611,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  tableHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  thCell: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-  },
-  tableRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  colTime: { width: 90 },
+  tableHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
+  thCell: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
+  tableRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+  colTime: { width: 88 },
   colGuest: { flex: 1, paddingHorizontal: 8 },
-  colSeats: { width: 60, textAlign: "center" as any },
-  colStatus: { width: 100 },
-  colAction: { width: 32, alignItems: "center" },
+  colParty: { width: 64, alignItems: "flex-start" },
+  colTable: { width: 64 },
+  colStatus: { width: 108 },
+  colAction: { width: 36, alignItems: "center" },
   tdTime: { fontSize: 14, fontWeight: "700" },
   tdDate: { fontSize: 12, marginTop: 1 },
-  tdGuest: { fontSize: 14 },
-  tdSeats: { fontSize: 14, fontWeight: "500", textAlign: "center" as any },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-  },
+  tdGuest: { fontSize: 14, fontWeight: "500" },
+  tdNotes: { fontSize: 12, marginTop: 1 },
+  partyPill: { flexDirection: "row", alignItems: "center", gap: 4 },
+  tdParty: { fontSize: 13, fontWeight: "600" },
+  tdTableNum: { fontSize: 14 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, alignSelf: "flex-start" },
   badgeText: { fontSize: 11, fontWeight: "700" },
-  chevron: { fontSize: 20 },
+  menuBtn: { padding: 4, borderRadius: 4 },
   // Card list (mobile)
   cardList: { gap: 10 },
   listCard: {
@@ -361,11 +642,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  listCardRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  listCardInfo: { flex: 1, gap: 2 },
+  listCardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  listCardInfo: { flex: 1, gap: 4 },
   listCardRight: { alignItems: "flex-end" },
 });

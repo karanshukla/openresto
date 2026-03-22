@@ -15,7 +15,7 @@ export default function RestaurantDetails({
   const chipBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <ThemedText type="title" style={styles.name}>
         {restaurant.name}
       </ThemedText>
@@ -56,7 +56,7 @@ export default function RestaurantDetails({
           </View>
         </ThemedView>
       ))}
-    </ThemedView>
+    </View>
   );
 }
 

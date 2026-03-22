@@ -1,5 +1,8 @@
+using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Infrastructure.Holds;
@@ -51,6 +54,30 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// ── JWT Authentication ──────────────────────────────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? "openresto-jwt-signing-key-change-in-production-minimum-32-chars!!";
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer           = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"] ?? "openresto-api",
+            ValidateAudience         = true,
+            ValidAudience            = builder.Configuration["Jwt:Audience"] ?? "openresto-admin",
+            ValidateLifetime         = true,
+            ClockSkew                = TimeSpan.Zero,
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddDistributedMemoryCache();
 
 // HoldService must be Singleton — the in-memory dictionary must survive across requests
@@ -90,6 +117,9 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 // Ensure DB is created for first run
@@ -97,6 +127,23 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    // Schema evolution: create AdminCredentials table if it doesn't exist yet
+    // (handles existing databases created before this table was added)
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS "AdminCredentials" (
+            "Id"               INTEGER NOT NULL CONSTRAINT "PK_AdminCredentials" PRIMARY KEY AUTOINCREMENT,
+            "Email"            TEXT    NOT NULL,
+            "PasswordHash"     TEXT    NOT NULL,
+            "PasswordSalt"     TEXT    NOT NULL,
+            "PvqQuestion"      TEXT,
+            "PvqAnswerHash"    TEXT,
+            "PvqAnswerSalt"    TEXT,
+            "ResetToken"       TEXT,
+            "ResetTokenExpiry" TEXT
+        )
+        """);
+
     // Seed initial data when database is empty
     DbSeeder.Seed(db);
 }

@@ -41,6 +41,7 @@ export default function RestaurantScreen() {
   }
 
   return (
+    <ThemedView style={styles.root}>
     <ScrollView style={styles.scroll}>
       <PageContainer style={styles.page}>
         <RestaurantDetails restaurant={restaurant} />
@@ -49,10 +50,12 @@ export default function RestaurantScreen() {
         </Link>
       </PageContainer>
     </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   scroll: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   page: {

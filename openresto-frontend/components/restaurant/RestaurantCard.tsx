@@ -19,7 +19,7 @@ export default function RestaurantCard({
   );
 
   return (
-    <Link href={`/restaurant/${restaurant.id}`} asChild>
+    <Link href={`/(user)/book/${restaurant.id}`} asChild>
       <Pressable
         style={(state) => [
           styles.card,

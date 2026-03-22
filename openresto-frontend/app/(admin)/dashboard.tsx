@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getBookingsByRestaurant, BookingDto } from "@/api/bookings";
+import { getAdminBookings, BookingDetailDto, getAdminOverview, AdminOverviewDto } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
@@ -13,9 +13,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { PRIMARY, PRIMARY_DARK, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 
-// Bar heights (%) for time slots 5PM–9PM — derived from booking density
+// Bar heights (%) for time slots 5PM–9PM
 const FLOW_SLOTS = [
   { label: "5PM", pct: 30 },
   { label: "6PM", pct: 60 },
@@ -24,30 +25,52 @@ const FLOW_SLOTS = [
   { label: "9PM", pct: 45 },
 ];
 
+const QUICK_ACTIONS = [
+  {
+    icon: "person-add-outline" as const,
+    title: "Add Walk-in",
+    sub: "Create an instant reservation",
+    primary: true,
+  },
+  {
+    icon: "ban-outline" as const,
+    title: "Block Table",
+    sub: "Mark a table as unavailable",
+    primary: false,
+  },
+  {
+    icon: "chatbubble-outline" as const,
+    title: "Message Guest",
+    sub: "Send a note to a reservation",
+    primary: false,
+  },
+];
+
 export default function AdminDashboardScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] =
     useState<RestaurantDto | null>(null);
-  const [bookings, setBookings] = useState<BookingDto[]>([]);
+  const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
+  const [overview, setOverview] = useState<AdminOverviewDto | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const { width } = useWindowDimensions();
 
-  const borderColor = isDark
-    ? "rgba(255,255,255,0.08)"
-    : "rgba(0,0,0,0.07)";
+  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const isWide = width >= 768;
+  const subtleBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
   useEffect(() => {
     async function load() {
-      const data = await fetchRestaurants();
+      const [data, ov] = await Promise.all([fetchRestaurants(), getAdminOverview()]);
       setRestaurants(data);
+      setOverview(ov);
       if (data.length > 0) {
         setSelectedRestaurant(data[0]);
-        const b = await getBookingsByRestaurant(data[0].id);
+        const b = await getAdminBookings(data[0].id);
         setBookings(b);
       }
       setLoading(false);
@@ -58,23 +81,52 @@ export default function AdminDashboardScreen() {
   const handleSelectRestaurant = async (r: RestaurantDto) => {
     setSelectedRestaurant(r);
     setLoading(true);
-    const b = await getBookingsByRestaurant(r.id);
+    const b = await getAdminBookings(r.id);
     setBookings(b);
     setLoading(false);
   };
 
   const todayBookings = bookings.filter(
-    (b) =>
-      new Date(b.date).toDateString() === new Date().toDateString()
+    (b) => new Date(b.date).toDateString() === new Date().toDateString()
   );
   const upcomingBookings = bookings.filter(
     (b) => new Date(b.date) > new Date()
   );
-  const totalSeats = bookings.reduce((acc, b) => acc + b.seats, 0);
+
+  const stats = [
+    {
+      label: "Today's Bookings",
+      value: String(overview?.todayBookings ?? todayBookings.length),
+      sub: `${upcomingBookings.length} still upcoming`,
+      icon: "calendar-outline" as const,
+      accent: PRIMARY,
+    },
+    {
+      label: "Total Bookings",
+      value: String(overview?.totalBookings ?? bookings.length),
+      sub: "all time",
+      icon: "book-outline" as const,
+      accent: "#7c3aed",
+    },
+    {
+      label: "Total Covers",
+      value: String(overview?.totalSeats ?? 0),
+      sub: "seats reserved",
+      icon: "people-outline" as const,
+      accent: "#059669",
+    },
+    {
+      label: "Locations",
+      value: String(overview?.totalRestaurants ?? restaurants.length),
+      sub: "active",
+      icon: "location-outline" as const,
+      accent: "#d97706",
+    },
+  ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
+      {/* Page header */}
       <View style={styles.pageHeader}>
         <View>
           <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
@@ -84,70 +136,43 @@ export default function AdminDashboardScreen() {
             </ThemedText>
           )}
         </View>
+        {restaurants.length > 1 && (
+          <View style={styles.locationRow}>
+            {restaurants.map((r) => (
+              <Pressable
+                key={r.id}
+                style={[
+                  styles.locationChip,
+                  { borderColor },
+                  selectedRestaurant?.id === r.id && {
+                    backgroundColor: PRIMARY,
+                    borderColor: PRIMARY,
+                  },
+                ]}
+                onPress={() => handleSelectRestaurant(r)}
+              >
+                <ThemedText
+                  style={
+                    selectedRestaurant?.id === r.id
+                      ? styles.chipTextActive
+                      : [styles.chipText, { color: mutedColor }]
+                  }
+                >
+                  {r.name}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
 
-      {/* Location picker (multi-location) */}
-      {restaurants.length > 1 && (
-        <View style={styles.locationRow}>
-          {restaurants.map((r) => (
-            <Pressable
-              key={r.id}
-              style={[
-                styles.locationChip,
-                { borderColor },
-                selectedRestaurant?.id === r.id && {
-                  backgroundColor: PRIMARY,
-                  borderColor: PRIMARY,
-                },
-              ]}
-              onPress={() => handleSelectRestaurant(r)}
-            >
-              <ThemedText
-                style={
-                  selectedRestaurant?.id === r.id
-                    ? styles.chipTextActive
-                    : [styles.chipText, { color: mutedColor }]
-                }
-              >
-                {r.name}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
-      )}
-
       {loading ? (
-        <ActivityIndicator
-          style={styles.spinner}
-          size="large"
-          color={PRIMARY}
-        />
+        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
       ) : (
         <>
-          {/* Bento metrics */}
+          {/* Metrics bento */}
           <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
-            {[
-              {
-                label: "Today's Bookings",
-                value: String(todayBookings.length),
-                sub: `${upcomingBookings.length} still upcoming`,
-              },
-              {
-                label: "Total Bookings",
-                value: String(bookings.length),
-                sub: "all time",
-              },
-              {
-                label: "Total Covers",
-                value: String(totalSeats),
-                sub: "seats reserved",
-              },
-              {
-                label: "Locations",
-                value: String(restaurants.length),
-                sub: "active",
-              },
-            ].map((stat) => (
+            {stats.map((stat) => (
               <View
                 key={stat.label}
                 style={[
@@ -156,10 +181,18 @@ export default function AdminDashboardScreen() {
                   isWide && styles.metricCardWide,
                 ]}
               >
-                <ThemedText style={[styles.metricLabel, { color: mutedColor }]}>
-                  {stat.label.toUpperCase()}
-                </ThemedText>
+                <View
+                  style={[
+                    styles.metricIconWrap,
+                    { backgroundColor: `${stat.accent}14` },
+                  ]}
+                >
+                  <Ionicons name={stat.icon} size={18} color={stat.accent} />
+                </View>
                 <ThemedText style={styles.metricValue}>{stat.value}</ThemedText>
+                <ThemedText style={[styles.metricLabel, { color: mutedColor }]}>
+                  {stat.label}
+                </ThemedText>
                 <ThemedText style={[styles.metricSub, { color: mutedColor }]}>
                   {stat.sub}
                 </ThemedText>
@@ -167,9 +200,9 @@ export default function AdminDashboardScreen() {
             ))}
           </View>
 
-          {/* Today's Flow chart + quick actions */}
-          <View style={[styles.row, isWide && styles.rowWide]}>
-            {/* Bar chart */}
+          {/* Today's Flow + Quick Actions */}
+          <View style={[styles.mainRow, isWide && styles.mainRowWide]}>
+            {/* Bar chart — 2/3 width on wide */}
             <View
               style={[
                 styles.chartCard,
@@ -177,7 +210,12 @@ export default function AdminDashboardScreen() {
                 isWide && styles.chartCardWide,
               ]}
             >
-              <ThemedText style={styles.cardTitle}>Today's Flow</ThemedText>
+              <View style={styles.chartHeader}>
+                <ThemedText style={styles.cardTitle}>Today's Flow</ThemedText>
+                <ThemedText style={[styles.chartSub, { color: mutedColor }]}>
+                  Booking density by hour
+                </ThemedText>
+              </View>
               <View style={styles.chart}>
                 {FLOW_SLOTS.map(({ label, pct }) => (
                   <View key={label} style={styles.barCol}>
@@ -190,7 +228,7 @@ export default function AdminDashboardScreen() {
                             backgroundColor:
                               pct >= 85
                                 ? PRIMARY
-                                : `rgba(10,126,164,${pct / 100 + 0.15})`,
+                                : `rgba(10,126,164,${(pct / 100) * 0.7 + 0.15})`,
                           },
                         ]}
                       />
@@ -203,44 +241,77 @@ export default function AdminDashboardScreen() {
               </View>
             </View>
 
-            {/* Quick actions */}
-            <View style={[styles.actionsCol, isWide && styles.actionsColWide]}>
-              <Pressable
-                style={[styles.actionCard, { backgroundColor: cardBg, borderColor }]}
-                onPress={() => router.push("/(admin)/bookings")}
-              >
-                <View style={styles.actionContent}>
-                  <ThemedText style={styles.actionTitle}>
-                    View All Bookings
-                  </ThemedText>
-                  <ThemedText style={[styles.actionSub, { color: mutedColor }]}>
-                    {bookings.length} total reservations
-                  </ThemedText>
-                </View>
-                <ThemedText style={[styles.actionChevron, { color: mutedColor }]}>
-                  ›
-                </ThemedText>
-              </Pressable>
-
-              <View
-                style={[
-                  styles.actionCard,
-                  { backgroundColor: cardBg, borderColor },
-                ]}
-              >
-                <View style={styles.actionContent}>
-                  <ThemedText style={styles.actionTitle}>Today</ThemedText>
-                  <ThemedText style={[styles.actionSub, { color: mutedColor }]}>
-                    {todayBookings.length === 0
-                      ? "No bookings today"
-                      : `${todayBookings.length} bookings scheduled`}
-                  </ThemedText>
-                </View>
-              </View>
+            {/* Quick Actions — 1/3 width on wide */}
+            <View
+              style={[
+                styles.actionsCol,
+                isWide && styles.actionsColWide,
+              ]}
+            >
+              <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
+                QUICK ACTIONS
+              </ThemedText>
+              {QUICK_ACTIONS.map((action) => (
+                <Pressable
+                  key={action.title}
+                  style={(state) => [
+                    styles.actionCard,
+                    { backgroundColor: cardBg, borderColor },
+                    action.primary && {
+                      backgroundColor: PRIMARY,
+                      borderColor: PRIMARY,
+                    },
+                    !action.primary &&
+                      (state as any).hovered && {
+                        backgroundColor: subtleBg,
+                      },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.actionIconWrap,
+                      {
+                        backgroundColor: action.primary
+                          ? "rgba(255,255,255,0.18)"
+                          : `${PRIMARY}14`,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={action.icon}
+                      size={18}
+                      color={action.primary ? "#fff" : PRIMARY}
+                    />
+                  </View>
+                  <View style={styles.actionText}>
+                    <ThemedText
+                      style={[
+                        styles.actionTitle,
+                        action.primary && { color: "#fff" },
+                      ]}
+                    >
+                      {action.title}
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.actionSub,
+                        { color: action.primary ? "rgba(255,255,255,0.75)" : mutedColor },
+                      ]}
+                    >
+                      {action.sub}
+                    </ThemedText>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={16}
+                    color={action.primary ? "rgba(255,255,255,0.8)" : mutedColor}
+                  />
+                </Pressable>
+              ))}
             </View>
           </View>
 
-          {/* Today's bookings list */}
+          {/* Today's reservations list */}
           <View
             style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}
           >
@@ -256,9 +327,16 @@ export default function AdminDashboardScreen() {
             </View>
 
             {todayBookings.length === 0 ? (
-              <ThemedText style={[styles.empty, { color: mutedColor }]}>
-                No bookings today.
-              </ThemedText>
+              <View style={styles.emptyState}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={32}
+                  color={mutedColor}
+                />
+                <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
+                  No bookings today
+                </ThemedText>
+              </View>
             ) : (
               todayBookings
                 .sort(
@@ -270,34 +348,36 @@ export default function AdminDashboardScreen() {
                     key={b.id}
                     style={[
                       styles.bookingRow,
-                      i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
+                      i > 0 && {
+                        borderTopWidth: 1,
+                        borderTopColor: borderColor,
+                      },
                     ]}
-                    onPress={() =>
-                      router.push(`/(admin)/bookings/${b.id}`)
-                    }
+                    onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
                   >
-                    <ThemedText style={styles.bookingTime}>
-                      {new Date(b.date).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </ThemedText>
+                    <View style={styles.bookingTime}>
+                      <ThemedText style={styles.bookingTimeText}>
+                        {new Date(b.date).toLocaleTimeString(undefined, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </ThemedText>
+                    </View>
                     <View style={styles.bookingInfo}>
-                      <ThemedText
-                        style={styles.bookingEmail}
-                        numberOfLines={1}
-                      >
+                      <ThemedText style={styles.bookingEmail} numberOfLines={1}>
                         {b.customerEmail}
                       </ThemedText>
                       <ThemedText
                         style={[styles.bookingMeta, { color: mutedColor }]}
                       >
-                        {b.seats} {b.seats === 1 ? "seat" : "seats"}
+                        {b.seats} {b.seats === 1 ? "guest" : "guests"}
                       </ThemedText>
                     </View>
-                    <ThemedText style={[styles.chevron, { color: mutedColor }]}>
-                      ›
-                    </ThemedText>
+                    <Ionicons
+                      name="chevron-forward-outline"
+                      size={16}
+                      color={mutedColor}
+                    />
                   </Pressable>
                 ))
             )}
@@ -310,8 +390,8 @@ export default function AdminDashboardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    paddingTop: 28,
+    padding: 24,
+    paddingTop: 32,
     gap: 20,
     maxWidth: 1200,
     width: "100%",
@@ -321,11 +401,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: 12,
   },
   pageTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "800",
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   pageSub: {
     fontSize: 14,
@@ -342,26 +424,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  chipText: {
-    fontSize: 14,
-  },
-  chipTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  spinner: {
-    marginTop: 40,
-  },
-  // Metrics bento
+  chipText: { fontSize: 13 },
+  chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  spinner: { marginTop: 40 },
+  // Metrics
   metricsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
-  metricsGridWide: {
-    flexWrap: "nowrap",
-  },
+  metricsGridWide: { flexWrap: "nowrap" },
   metricCard: {
     flex: 1,
     minWidth: 140,
@@ -375,33 +447,35 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  metricCardWide: {
-    minWidth: 0,
-  },
-  metricLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
+  metricCardWide: { minWidth: 0 },
+  metricIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
   },
   metricValue: {
     fontSize: 32,
     fontWeight: "800",
     letterSpacing: -1,
-    marginTop: 4,
+  },
+  metricLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    marginTop: 2,
   },
   metricSub: {
     fontSize: 12,
-    marginTop: 2,
   },
-  // Row layout
-  row: {
-    gap: 12,
-  },
-  rowWide: {
+  // Main row (chart + actions)
+  mainRow: { gap: 16 },
+  mainRowWide: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  // Bar chart
   chartCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -412,14 +486,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  chartCardWide: {
-    flex: 2,
-  },
+  chartCardWide: { flex: 2 },
+  chartHeader: { marginBottom: 20 },
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 20,
     letterSpacing: -0.2,
+  },
+  chartSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   chart: {
     flexDirection: "row",
@@ -449,40 +525,38 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   // Quick actions
-  actionsCol: {
-    gap: 12,
+  sectionHeading: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+    paddingHorizontal: 2,
   },
-  actionsColWide: {
-    flex: 1,
-  },
+  actionsCol: { gap: 10 },
+  actionsColWide: { flex: 1 },
   actionCard: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 1,
   },
-  actionContent: {
-    gap: 4,
-    flex: 1,
+  actionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  actionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  actionSub: {
-    fontSize: 13,
-  },
-  actionChevron: {
-    fontSize: 22,
-    marginLeft: 8,
-  },
+  actionText: { flex: 1, gap: 2 },
+  actionTitle: { fontSize: 14, fontWeight: "700" },
+  actionSub: { fontSize: 12 },
   // Bookings list
   listCard: {
     borderRadius: 14,
@@ -501,14 +575,14 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 12,
   },
-  viewAll: {
-    fontSize: 14,
-    fontWeight: "600",
+  viewAll: { fontSize: 14, fontWeight: "600" },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 36,
+    gap: 10,
   },
-  empty: {
-    padding: 20,
+  emptyText: {
     fontSize: 14,
-    textAlign: "center",
     fontStyle: "italic",
   },
   bookingRow: {
@@ -519,9 +593,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bookingTime: {
+    width: 68,
+  },
+  bookingTimeText: {
     fontSize: 14,
     fontWeight: "700",
-    width: 60,
   },
   bookingInfo: {
     flex: 1,
@@ -533,8 +609,5 @@ const styles = StyleSheet.create({
   },
   bookingMeta: {
     fontSize: 12,
-  },
-  chevron: {
-    fontSize: 20,
   },
 });
