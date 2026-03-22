@@ -55,7 +55,7 @@ export default function AdminBookingDetailScreen() {
     setExtending(true);
     const result = await adminExtendBooking(booking.id, minutes);
     if (result) {
-      setBooking((prev) => prev ? { ...prev, endTime: result.endTime } : prev);
+      setBooking((prev) => (prev ? { ...prev, endTime: result.endTime } : prev));
     }
     setExtending(false);
   };
@@ -77,13 +77,23 @@ export default function AdminBookingDetailScreen() {
   }
 
   const startTime = new Date(booking.date);
-  const endTime = booking.endTime ? new Date(booking.endTime) : new Date(startTime.getTime() + 60 * 60 * 1000);
+  const endTime = booking.endTime
+    ? new Date(booking.endTime)
+    : new Date(startTime.getTime() + 60 * 60 * 1000);
   const durationMins = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
 
   const rows: { label: string; value: string }[] = [
     { label: "Ref", value: booking.bookingRef ?? `#${booking.id}` },
     { label: "Guest", value: booking.customerEmail },
-    { label: "Date", value: startTime.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) },
+    {
+      label: "Date",
+      value: startTime.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    },
     {
       label: "Time",
       value: `${startTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} – ${endTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} (${durationMins} min)`,
@@ -125,7 +135,9 @@ export default function AdminBookingDetailScreen() {
       <View style={[styles.section, { borderColor }]}>
         <View style={styles.sectionHeader}>
           <Ionicons name="time-outline" size={16} color={mutedColor} />
-          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Extend booking</ThemedText>
+          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
+            Extend booking
+          </ThemedText>
         </View>
         <View style={styles.extendBtns}>
           {[30, 60, 90].map((mins) => (
@@ -176,7 +188,14 @@ export default function AdminBookingDetailScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: { padding: 24, paddingTop: 32, gap: 16, maxWidth: 640, width: "100%", alignSelf: "center" },
+  container: {
+    padding: 24,
+    paddingTop: 32,
+    gap: 16,
+    maxWidth: 640,
+    width: "100%",
+    alignSelf: "center",
+  },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
   backText: { fontSize: 14, fontWeight: "600" },
   pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5, marginBottom: 4 },

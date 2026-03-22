@@ -44,9 +44,7 @@ export default function AdminSidebar() {
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-  const activeBg = isDark
-    ? "rgba(10,126,164,0.18)"
-    : "rgba(10,126,164,0.09)";
+  const activeBg = isDark ? "rgba(10,126,164,0.18)" : "rgba(10,126,164,0.09)";
   const sidebarBg = isDark ? "#111214" : "#fafafa";
 
   useEffect(() => {
@@ -110,9 +108,7 @@ export default function AdminSidebar() {
               <ThemedText
                 style={[
                   styles.navLabel,
-                  active
-                    ? { color: PRIMARY, fontWeight: "700" }
-                    : { color: mutedColor },
+                  active ? { color: PRIMARY, fontWeight: "700" } : { color: mutedColor },
                 ]}
               >
                 {label}
@@ -154,9 +150,7 @@ export default function AdminSidebar() {
           ]}
         >
           <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
-            Back to site
-          </ThemedText>
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Back to site</ThemedText>
         </Pressable>
         <Pressable
           style={(state) => [
@@ -181,9 +175,7 @@ export default function AdminSidebar() {
           onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={15} color={mutedColor} />
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
-            Log out
-          </ThemedText>
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Log out</ThemedText>
         </Pressable>
       </View>
     </ThemedView>

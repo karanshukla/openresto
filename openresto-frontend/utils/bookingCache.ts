@@ -43,10 +43,10 @@ export function addCachedBooking(booking: Omit<CachedBooking, "createdAt">) {
   const existing = getCachedBookings();
   // Don't duplicate
   if (existing.some((b) => b.bookingRef === booking.bookingRef)) return;
-  const updated = [
-    { ...booking, createdAt: new Date().toISOString() },
-    ...existing,
-  ].slice(0, MAX_CACHED);
+  const updated = [{ ...booking, createdAt: new Date().toISOString() }, ...existing].slice(
+    0,
+    MAX_CACHED
+  );
   storage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 

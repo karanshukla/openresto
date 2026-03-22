@@ -1,12 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -42,26 +36,18 @@ export default function Select({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setModalVisible(false)}
-        >
+        <Pressable style={styles.backdrop} onPress={() => setModalVisible(false)}>
           <ThemedView style={[styles.modalView, { borderColor }]}>
             <FlatList
               data={options}
               keyExtractor={(item) => item.value.toString()}
               style={styles.list}
               ItemSeparatorComponent={() => (
-                <ThemedView
-                  style={[styles.separator, { backgroundColor: dividerColor }]}
-                />
+                <ThemedView style={[styles.separator, { backgroundColor: dividerColor }]} />
               )}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedValue && styles.selectedOption,
-                  ]}
+                  style={[styles.option, item.value === selectedValue && styles.selectedOption]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
@@ -94,12 +80,7 @@ export default function Select({
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText
-          style={[
-            styles.triggerText,
-            !selectedOption && styles.placeholderText,
-          ]}
-        >
+        <ThemedText style={[styles.triggerText, !selectedOption && styles.placeholderText]}>
           {selectedOption?.label ?? placeholder}
         </ThemedText>
         <ThemedText style={styles.chevron}>▾</ThemedText>

@@ -6,18 +6,11 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function RestaurantCard({
-  restaurant,
-}: {
-  restaurant: RestaurantDto;
-}) {
+export default function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
 
-  const totalTables = restaurant.sections.reduce(
-    (acc, s) => acc + s.tables.length,
-    0
-  );
+  const totalTables = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
     (acc, s) => acc + s.tables.reduce((a, t) => a + t.seats, 0),
     0
@@ -26,22 +19,20 @@ export default function RestaurantCard({
   // Pick a consistent hue offset from the name so cards feel distinct
   const hues = [195, 210, 165, 220, 180, 200];
   const hue = hues[restaurant.name.charCodeAt(0) % hues.length];
-  const headerBg = isDark
-    ? `hsl(${hue}, 60%, 26%)`
-    : `hsl(${hue}, 68%, 82%)`;
+  const headerBg = isDark ? `hsl(${hue}, 60%, 26%)` : `hsl(${hue}, 68%, 82%)`;
   const iconBg = `hsl(${hue}, 65%, ${isDark ? "34%" : "72%"})`;
   const iconColor = `hsl(${hue}, 70%, ${isDark ? "78%" : "26%"})`;
   const initial = restaurant.name.charAt(0).toUpperCase();
 
-  const cardBg = isDark ? "#252b30" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.12)";
+  const cardBg = isDark ? "#282d33" : "#ffffff";
+  const borderColor = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.15)";
 
   // Outer wrapper has the shadow; inner view has overflow:hidden for the header clip
   const outerShadow =
     Platform.OS === "web"
       ? isDark
-        ? ({ boxShadow: "0 2px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1)" } as any)
-        : ({ boxShadow: "0 2px 16px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.09)" } as any)
+        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as any)
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any)
       : {};
 
   return (
@@ -62,9 +53,7 @@ export default function RestaurantCard({
             <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
               <Ionicons name="restaurant" size={20} color={iconColor} />
             </View>
-            <ThemedText style={[styles.initial, { color: iconColor }]}>
-              {initial}
-            </ThemedText>
+            <ThemedText style={[styles.initial, { color: iconColor }]}>{initial}</ThemedText>
           </View>
 
           {/* Body */}
@@ -81,10 +70,7 @@ export default function RestaurantCard({
                   color={mutedColor}
                   style={{ marginTop: 1 }}
                 />
-                <ThemedText
-                  style={[styles.address, { color: mutedColor }]}
-                  numberOfLines={1}
-                >
+                <ThemedText style={[styles.address, { color: mutedColor }]} numberOfLines={1}>
                   {restaurant.address}
                 </ThemedText>
               </View>

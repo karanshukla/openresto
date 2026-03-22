@@ -41,9 +41,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  return (
-    <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>
-  );
+  return <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>;
 }
 
 export function useBrand(): Brand {

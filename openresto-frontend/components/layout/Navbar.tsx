@@ -20,10 +20,7 @@ const NAV_LINKS = [
     label: "Admin",
     href: "/(admin)/dashboard" as const,
     match: (p: string) =>
-      p === "/dashboard" ||
-      p.startsWith("/bookings") ||
-      p === "/settings" ||
-      p === "/login",
+      p === "/dashboard" || p.startsWith("/bookings") || p === "/settings" || p === "/login",
     adminOnly: true,
   },
 ];
@@ -45,9 +42,7 @@ export default function Navbar() {
       style={[
         styles.nav,
         { borderBottomColor: borderColor },
-        Platform.OS === "web"
-          ? ({ position: "sticky", top: 0, zIndex: 100 } as any)
-          : undefined,
+        Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 100 } as any) : undefined,
       ]}
     >
       <View style={styles.inner}>
@@ -55,7 +50,11 @@ export default function Navbar() {
         <Link href="/" asChild>
           <Pressable style={styles.brand}>
             {brand.logoUrl ? (
-              <img src={brand.logoUrl} alt={brand.appName} style={{ height: 32, objectFit: "contain" }} />
+              <img
+                src={brand.logoUrl}
+                alt={brand.appName}
+                style={{ height: 32, objectFit: "contain" }}
+              />
             ) : (
               <ThemedText style={[styles.brandText, { color: accent }]}>{brand.appName}</ThemedText>
             )}
@@ -69,19 +68,10 @@ export default function Navbar() {
             return (
               <Link key={href} href={href} asChild>
                 <Pressable style={styles.linkBtn}>
-                  <ThemedText
-                    style={[
-                      styles.linkText,
-                      { color: active ? accent : mutedColor },
-                    ]}
-                  >
+                  <ThemedText style={[styles.linkText, { color: active ? accent : mutedColor }]}>
                     {label}
                   </ThemedText>
-                  {active && (
-                    <View
-                      style={[styles.linkUnderline, { backgroundColor: accent }]}
-                    />
-                  )}
+                  {active && <View style={[styles.linkUnderline, { backgroundColor: accent }]} />}
                 </Pressable>
               </Link>
             );
@@ -89,10 +79,7 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state) => [
-              styles.themeBtn,
-              (state as any).hovered && { opacity: 0.7 },
-            ]}
+            style={(state) => [styles.themeBtn, (state as any).hovered && { opacity: 0.7 }]}
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Ionicons

@@ -31,22 +31,24 @@ export default function DatePicker({
         onChange={(e) => {
           if (e.target.value) onSelect(e.target.value);
         }}
-        style={{
-          width: "100%",
-          height: 44,
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor,
-          borderRadius: 8,
-          paddingLeft: 12,
-          paddingRight: 12,
-          fontSize: 15,
-          backgroundColor: bg,
-          color: selectedDate ? textColor : placeholderColor,
-          outline: "none",
-          boxSizing: "border-box",
-          cursor: "pointer",
-        } as React.CSSProperties}
+        style={
+          {
+            width: "100%",
+            height: 44,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor,
+            borderRadius: 8,
+            paddingLeft: 12,
+            paddingRight: 12,
+            fontSize: 15,
+            backgroundColor: bg,
+            color: selectedDate ? textColor : placeholderColor,
+            outline: "none",
+            boxSizing: "border-box",
+            cursor: "pointer",
+          } as React.CSSProperties
+        }
         onFocus={(e) => {
           e.target.style.borderColor = "#0a7ea4";
         }}

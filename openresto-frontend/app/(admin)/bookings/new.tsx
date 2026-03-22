@@ -85,7 +85,8 @@ export default function AdminNewBookingScreen() {
     setTableId(sec?.tables[0]?.id);
   };
 
-  const isValid = !!restaurantId && !!sectionId && !!tableId && email.includes("@") && !!date && !!time;
+  const isValid =
+    !!restaurantId && !!sectionId && !!tableId && email.includes("@") && !!date && !!time;
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -149,12 +150,20 @@ export default function AdminNewBookingScreen() {
 
       <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
         <ThemedText style={styles.label}>Restaurant</ThemedText>
-        <Select selectedValue={restaurantId} onSelect={handleRestaurantChange} options={restaurantOptions} />
+        <Select
+          selectedValue={restaurantId}
+          onSelect={handleRestaurantChange}
+          options={restaurantOptions}
+        />
 
         <View style={styles.fieldRow}>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Section</ThemedText>
-            <Select selectedValue={sectionId} onSelect={handleSectionChange} options={sectionOptions} />
+            <Select
+              selectedValue={sectionId}
+              onSelect={handleSectionChange}
+              options={sectionOptions}
+            />
           </View>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Table</ThemedText>
@@ -205,7 +214,14 @@ export default function AdminNewBookingScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: { padding: 24, paddingTop: 32, gap: 16, maxWidth: 640, width: "100%", alignSelf: "center" },
+  container: {
+    padding: 24,
+    paddingTop: 32,
+    gap: 16,
+    maxWidth: 640,
+    width: "100%",
+    alignSelf: "center",
+  },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
   backText: { fontSize: 14, fontWeight: "600" },
   pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },

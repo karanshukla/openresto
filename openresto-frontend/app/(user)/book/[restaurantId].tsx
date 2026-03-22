@@ -42,9 +42,7 @@ export default function BookScreen() {
       holdId: data.holdId,
       restaurantId: restaurant.id,
       sectionId:
-        restaurant.sections.find((s) =>
-          s.tables.some((t) => t.id === data.tableId)
-        )?.id ?? 0,
+        restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ?? 0,
       date: dateTime,
       specialRequests: data.specialRequests || null,
     };
@@ -87,28 +85,28 @@ export default function BookScreen() {
 
   return (
     <ThemedView style={styles.root}>
-    <ScrollView style={styles.scroll}>
-      <PageContainer style={styles.page}>
-        <ThemedText type="title" style={styles.title}>
-          Book a table
-        </ThemedText>
-        <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-          at {restaurant.name}
-        </ThemedText>
+      <ScrollView style={styles.scroll}>
+        <PageContainer style={styles.page}>
+          <ThemedText type="title" style={styles.title}>
+            Book a table
+          </ThemedText>
+          <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
+            at {restaurant.name}
+          </ThemedText>
 
-        {submitError && (
-          <ThemedView style={styles.errorBanner}>
-            <ThemedText style={styles.errorText}>{submitError}</ThemedText>
-          </ThemedView>
-        )}
+          {submitError && (
+            <ThemedView style={styles.errorBanner}>
+              <ThemedText style={styles.errorText}>{submitError}</ThemedText>
+            </ThemedView>
+          )}
 
-        <BookingForm
-          restaurant={restaurant}
-          onSubmit={handleSubmit}
-          onRefresh={() => router.replace(`/book/${restaurantId}`)}
-        />
-      </PageContainer>
-    </ScrollView>
+          <BookingForm
+            restaurant={restaurant}
+            onSubmit={handleSubmit}
+            onRefresh={() => router.replace(`/book/${restaurantId}`)}
+          />
+        </PageContainer>
+      </ScrollView>
     </ThemedView>
   );
 }

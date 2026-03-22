@@ -7,9 +7,7 @@ import { Colors } from "@/constants/theme";
 const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
   const colorScheme = useColorScheme() ?? "light";
   const textColor = Colors[colorScheme].text;
-  const borderColor = colorScheme === "dark"
-    ? "rgba(255,255,255,0.15)"
-    : "rgba(0,0,0,0.18)";
+  const borderColor = colorScheme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
   const bgColor = colorScheme === "dark" ? "#1e2022" : "#fff";
   const placeholderColor = colorScheme === "dark" ? "#6b7280" : "#9ca3af";
 

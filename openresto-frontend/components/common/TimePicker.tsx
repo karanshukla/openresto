@@ -1,19 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-function generateTimeOptions(
-  minTime: string,
-  maxTime: string
-): { label: string; value: string }[] {
+function generateTimeOptions(minTime: string, maxTime: string): { label: string; value: string }[] {
   const [minH, minM] = minTime.split(":").map(Number);
   const [maxH, maxM] = maxTime.split(":").map(Number);
   const minTotal = minH * 60 + minM;
@@ -70,18 +61,13 @@ export default function TimePicker({
               style={styles.list}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedTime && styles.selectedOption,
-                  ]}
+                  style={[styles.option, item.value === selectedTime && styles.selectedOption]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
                 >
-                  <ThemedText
-                    style={item.value === selectedTime && styles.selectedText}
-                  >
+                  <ThemedText style={item.value === selectedTime && styles.selectedText}>
                     {item.label}
                   </ThemedText>
                   {item.value === selectedTime && (

@@ -32,14 +32,14 @@ export default function ConfirmModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel}>
-        <Pressable style={[styles.card, { backgroundColor: cardBg, borderColor }]} onPress={() => {}}>
+        <Pressable
+          style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+          onPress={() => {}}
+        >
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={[styles.message, { color: mutedColor }]}>{message}</ThemedText>
           <View style={[styles.actions, { borderTopColor: borderColor }]}>
-            <Pressable
-              style={[styles.btn, styles.cancelBtn, { borderColor }]}
-              onPress={onCancel}
-            >
+            <Pressable style={[styles.btn, styles.cancelBtn, { borderColor }]} onPress={onCancel}>
               <ThemedText style={[styles.btnText, { color: mutedColor }]}>{cancelLabel}</ThemedText>
             </Pressable>
             <Pressable

@@ -42,10 +42,7 @@ export function getAuthHeaders(): Record<string, string> {
 
 // ---------- Login / logout ----------
 
-export async function login(
-  email: string,
-  password: string
-): Promise<{ token: string } | null> {
+export async function login(email: string, password: string): Promise<{ token: string } | null> {
   try {
     const res = await fetch(buildEndpoint("/auth/login"), {
       method: "POST",

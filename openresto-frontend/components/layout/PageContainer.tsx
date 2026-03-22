@@ -4,11 +4,7 @@ import { View, StyleSheet, type ViewProps } from "react-native";
  * Constrains content to a readable max-width and centers it on wide screens.
  * Use on every full-page screen so content doesn't stretch across 1920px monitors.
  */
-export default function PageContainer({
-  children,
-  style,
-  ...props
-}: ViewProps) {
+export default function PageContainer({ children, style, ...props }: ViewProps) {
   return (
     <View style={styles.outer} {...props}>
       <View style={[styles.inner, style]}>{children}</View>

@@ -50,17 +50,14 @@ export default function HomeScreen() {
             styles.hero,
             Platform.OS === "web"
               ? ({
-                  background:
-                    "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
+                  background: "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
                 } as any)
               : { backgroundColor: PRIMARY },
           ]}
         >
           <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
-              <ThemedText style={styles.heroEyebrow}>
-                Reserve online, instantly
-              </ThemedText>
+              <ThemedText style={styles.heroEyebrow}>Reserve online, instantly</ThemedText>
               <ThemedText style={styles.heroTitle}>{brand.appName}</ThemedText>
               <ThemedText style={styles.heroSubtitle}>
                 Browse available restaurants and book a table in seconds.
@@ -77,18 +74,11 @@ export default function HomeScreen() {
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              style={styles.spinner}
-              color={PRIMARY}
-            />
+            <ActivityIndicator size="large" style={styles.spinner} color={PRIMARY} />
           ) : (
             <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
               {restaurants.map((r) => (
-                <View
-                  key={r.id}
-                  style={[styles.cardWrapper, { width: cardWidth as any }]}
-                >
+                <View key={r.id} style={[styles.cardWrapper, { width: cardWidth as any }]}>
                   <RestaurantCard restaurant={r} />
                 </View>
               ))}

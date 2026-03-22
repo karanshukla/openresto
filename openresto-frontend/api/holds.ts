@@ -23,9 +23,7 @@ export interface HoldResponse {
  * Requests a temporary hold on a table for the given date/time.
  * Returns the hold details if successful, or null if the table is already held.
  */
-export async function createHold(
-  request: HoldRequest
-): Promise<HoldResponse | null> {
+export async function createHold(request: HoldRequest): Promise<HoldResponse | null> {
   try {
     const res = await fetch(buildEndpoint("/holds"), {
       method: "POST",

@@ -124,8 +124,15 @@ public class BookingServiceTests
 
         await svc.CreateBookingAsync(dto);
 
+        var dto2 = new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "second@example.com", Seats = 2,
+            Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
+        };
+
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.CreateBookingAsync(dto with { CustomerEmail = "second@example.com" }));
+            svc.CreateBookingAsync(dto2));
 
         Assert.Contains("already booked", ex.Message);
     }

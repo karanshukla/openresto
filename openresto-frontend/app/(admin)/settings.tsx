@@ -15,25 +15,19 @@ import {
   SectionDto,
   TableDto,
 } from "@/api/restaurants";
-import {
-  getPvqStatus,
-  setupPvq,
-  changePassword,
-  PvqStatus,
-} from "@/api/auth";
+import { getPvqStatus, setupPvq, changePassword, PvqStatus } from "@/api/auth";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import { getEmailSettings, saveEmailSettings, testEmailConnection, saveBrandSettings } from "@/api/admin";
+import {
+  getEmailSettings,
+  saveEmailSettings,
+  testEmailConnection,
+  saveBrandSettings,
+} from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
 
 function useConfirm() {
@@ -98,17 +92,13 @@ function EditableRow({
               setEditing(true);
             }}
           >
-            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>
-              Edit
-            </ThemedText>
+            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>Edit</ThemedText>
           </Pressable>
           {onDelete && (
             <Pressable
               style={styles.smallBtn}
               onPress={async () => {
-                const ok = await confirmAction(
-                  `Delete "${value}"? This cannot be undone.`
-                );
+                const ok = await confirmAction(`Delete "${value}"? This cannot be undone.`);
                 if (ok) await onDelete();
               }}
             >
@@ -145,9 +135,7 @@ function EditableRow({
           </ThemedText>
         </Pressable>
         <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>
-            Cancel
-          </ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -176,20 +164,14 @@ function AddRow({
     return (
       <Pressable style={styles.addBtn} onPress={() => setOpen(true)}>
         <Ionicons name="add-circle-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.addBtnText, { color: PRIMARY }]}>
-          {label}
-        </ThemedText>
+        <ThemedText style={[styles.addBtnText, { color: PRIMARY }]}>{label}</ThemedText>
       </Pressable>
     );
   }
 
   return (
     <View style={styles.addForm}>
-      <Input
-        value={name}
-        onChangeText={setName}
-        placeholder={placeholder ?? "Name"}
-      />
+      <Input value={name} onChangeText={setName} placeholder={placeholder ?? "Name"} />
       {extraPlaceholder && (
         <Input
           value={extra}
@@ -222,9 +204,7 @@ function AddRow({
             setExtra("");
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>
-            Cancel
-          </ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -262,9 +242,7 @@ function TableRow({
     return (
       <View style={[styles.tableItemRow, { borderBottomColor: borderColor }]}>
         <View style={styles.tableInfo}>
-          <ThemedText style={styles.tableName}>
-            {table.name ?? `Table ${table.id}`}
-          </ThemedText>
+          <ThemedText style={styles.tableName}>{table.name ?? `Table ${table.id}`}</ThemedText>
           <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
             {table.seats} seats
           </ThemedText>
@@ -278,9 +256,7 @@ function TableRow({
               setEditing(true);
             }}
           >
-            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>
-              Edit
-            </ThemedText>
+            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>Edit</ThemedText>
           </Pressable>
           <Pressable
             style={styles.smallBtn}
@@ -289,11 +265,7 @@ function TableRow({
                 `Delete table "${table.name ?? `Table ${table.id}`}"?`
               );
               if (!ok) return;
-              const success = await deleteTable(
-                restaurantId,
-                sectionId,
-                table.id
-              );
+              const success = await deleteTable(restaurantId, sectionId, table.id);
               if (success) onDeleted();
             }}
           >
@@ -329,12 +301,10 @@ function TableRow({
             const seats = parseInt(draftSeats, 10);
             if (isNaN(seats) || seats < 1) return;
             setSaving(true);
-            const result = await updateTable(
-              restaurantId,
-              sectionId,
-              table.id,
-              { name: draftName.trim() || undefined, seats }
-            );
+            const result = await updateTable(restaurantId, sectionId, table.id, {
+              name: draftName.trim() || undefined,
+              seats,
+            });
             setSaving(false);
             if (result) {
               onUpdated(result);
@@ -347,9 +317,7 @@ function TableRow({
           </ThemedText>
         </Pressable>
         <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>
-            Cancel
-          </ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -383,17 +351,10 @@ function SectionBlock({
   onTableUpdated: (t: TableDto) => void;
   onTableDeleted: (id: number) => void;
 }) {
-  const sectionBg = isDark
-    ? "rgba(255,255,255,0.03)"
-    : "rgba(0,0,0,0.02)";
+  const sectionBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
   return (
-    <View
-      style={[
-        styles.sectionBlock,
-        { borderColor, backgroundColor: sectionBg },
-      ]}
-    >
+    <View style={[styles.sectionBlock, { borderColor, backgroundColor: sectionBg }]}>
       <EditableRow
         value={section.name}
         placeholder="Section name"
@@ -405,9 +366,7 @@ function SectionBlock({
           if (result) onSectionRenamed(result.name);
         }}
         onDelete={async () => {
-          const ok = await confirmAction(
-            `Delete section "${section.name}" and all its tables?`
-          );
+          const ok = await confirmAction(`Delete section "${section.name}" and all its tables?`);
           if (!ok) return;
           const success = await deleteSection(restaurantId, section.id);
           if (success) onSectionDeleted();
@@ -415,9 +374,7 @@ function SectionBlock({
       />
       <View style={styles.tableList}>
         {section.tables.length === 0 && (
-          <ThemedText style={[styles.emptyNote, { color: mutedColor }]}>
-            No tables yet.
-          </ThemedText>
+          <ThemedText style={[styles.emptyNote, { color: mutedColor }]}>No tables yet.</ThemedText>
         )}
         {section.tables.map((t) => (
           <TableRow
@@ -476,19 +433,11 @@ function RestaurantInfoForm({
     <View style={styles.infoForm}>
       <View style={styles.field}>
         <ThemedText style={styles.fieldLabel}>Name</ThemedText>
-        <Input
-          value={name}
-          onChangeText={setName}
-          placeholder="Restaurant name"
-        />
+        <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
       </View>
       <View style={styles.field}>
         <ThemedText style={styles.fieldLabel}>Address</ThemedText>
-        <Input
-          value={address}
-          onChangeText={setAddress}
-          placeholder="e.g. 123 Main St"
-        />
+        <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
       </View>
       <View style={styles.hoursRow}>
         <View style={styles.hoursField}>
@@ -524,7 +473,12 @@ function RestaurantInfoForm({
           });
           setSaving(false);
           if (result) {
-            onSaved({ name: result.name, address: result.address, openTime: result.openTime, closeTime: result.closeTime });
+            onSaved({
+              name: result.name,
+              address: result.address,
+              openTime: result.openTime,
+              closeTime: result.closeTime,
+            });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
           }
@@ -574,10 +528,7 @@ function LocationCard({
   cardBg: string;
   confirmAction: (msg: string) => Promise<boolean>;
 }) {
-  const tableCount = restaurant.sections.reduce(
-    (acc, s) => acc + s.tables.length,
-    0
-  );
+  const tableCount = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
 
   return (
     <View
@@ -589,21 +540,13 @@ function LocationCard({
     >
       {/* Card header */}
       <View style={styles.locationCardHeader}>
-        <View
-          style={[
-            styles.locationIcon,
-            { backgroundColor: `${PRIMARY}14` },
-          ]}
-        >
+        <View style={[styles.locationIcon, { backgroundColor: `${PRIMARY}14` }]}>
           <Ionicons name="storefront-outline" size={22} color={PRIMARY} />
         </View>
         <View style={styles.locationMeta}>
           <ThemedText style={styles.locationName}>{restaurant.name}</ThemedText>
           {restaurant.address ? (
-            <ThemedText
-              style={[styles.locationAddress, { color: mutedColor }]}
-              numberOfLines={1}
-            >
+            <ThemedText style={[styles.locationAddress, { color: mutedColor }]} numberOfLines={1}>
               {restaurant.address}
             </ThemedText>
           ) : null}
@@ -616,29 +559,21 @@ function LocationCard({
       {/* Stats row */}
       <View style={[styles.locationStats, { borderTopColor: borderColor }]}>
         <View style={styles.locationStat}>
-          <ThemedText style={styles.locationStatValue}>
-            {restaurant.sections.length}
-          </ThemedText>
+          <ThemedText style={styles.locationStatValue}>{restaurant.sections.length}</ThemedText>
           <ThemedText style={[styles.locationStatLabel, { color: mutedColor }]}>
             Sections
           </ThemedText>
         </View>
-        <View
-          style={[styles.locationStatDivider, { backgroundColor: borderColor }]}
-        />
+        <View style={[styles.locationStatDivider, { backgroundColor: borderColor }]} />
         <View style={styles.locationStat}>
           <ThemedText style={styles.locationStatValue}>{tableCount}</ThemedText>
-          <ThemedText style={[styles.locationStatLabel, { color: mutedColor }]}>
-            Tables
-          </ThemedText>
+          <ThemedText style={[styles.locationStatLabel, { color: mutedColor }]}>Tables</ThemedText>
         </View>
         <View style={styles.locationCardAction}>
           <Pressable
             style={[
               styles.configureBtn,
-              isSelected
-                ? { backgroundColor: PRIMARY }
-                : { backgroundColor: `${PRIMARY}14` },
+              isSelected ? { backgroundColor: PRIMARY } : { backgroundColor: `${PRIMARY}14` },
             ]}
             onPress={onSelect}
           >
@@ -647,12 +582,7 @@ function LocationCard({
               size={14}
               color={isSelected ? "#fff" : PRIMARY}
             />
-            <ThemedText
-              style={[
-                styles.configureBtnText,
-                { color: isSelected ? "#fff" : PRIMARY },
-              ]}
-            >
+            <ThemedText style={[styles.configureBtnText, { color: isSelected ? "#fff" : PRIMARY }]}>
               {isSelected ? "Close" : "Configure"}
             </ThemedText>
           </Pressable>
@@ -662,14 +592,10 @@ function LocationCard({
       {/* Expanded editor */}
       {isSelected && (
         <View style={[styles.expandedEditor, { borderTopColor: borderColor }]}>
-          <ThemedText style={styles.editorSectionTitle}>
-            Restaurant Info
-          </ThemedText>
+          <ThemedText style={styles.editorSectionTitle}>Restaurant Info</ThemedText>
           <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
 
-          <ThemedText
-            style={[styles.editorSectionTitle, { marginTop: 20 }]}
-          >
+          <ThemedText style={[styles.editorSectionTitle, { marginTop: 20 }]}>
             Sections & Tables
           </ThemedText>
           <ThemedText style={[styles.editorSectionSub, { color: mutedColor }]}>
@@ -694,17 +620,13 @@ function LocationCard({
               }
               onSectionDeleted={() =>
                 onSaved({
-                  sections: restaurant.sections.filter(
-                    (s) => s.id !== section.id
-                  ),
+                  sections: restaurant.sections.filter((s) => s.id !== section.id),
                 })
               }
               onTableAdded={(t) =>
                 onSaved({
                   sections: restaurant.sections.map((s) =>
-                    s.id === section.id
-                      ? { ...s, tables: [...s.tables, t] }
-                      : s
+                    s.id === section.id ? { ...s, tables: [...s.tables, t] } : s
                   ),
                 })
               }
@@ -723,9 +645,7 @@ function LocationCard({
               onTableDeleted={(id) =>
                 onSaved({
                   sections: restaurant.sections.map((s) =>
-                    s.id === section.id
-                      ? { ...s, tables: s.tables.filter((x) => x.id !== id) }
-                      : s
+                    s.id === section.id ? { ...s, tables: s.tables.filter((x) => x.id !== id) } : s
                   ),
                 })
               }
@@ -739,10 +659,7 @@ function LocationCard({
               const result = await addSection(restaurant.id, name);
               if (result)
                 onSaved({
-                  sections: [
-                    ...restaurant.sections,
-                    { ...result, tables: [] },
-                  ],
+                  sections: [...restaurant.sections, { ...result, tables: [] }],
                 });
             }}
           />
@@ -785,9 +702,7 @@ function GlobalSettingRow({
       </View>
       <View style={styles.globalRowText}>
         <ThemedText style={styles.globalRowTitle}>{title}</ThemedText>
-        <ThemedText style={[styles.globalRowSub, { color: mutedColor }]}>
-          {sub}
-        </ThemedText>
+        <ThemedText style={[styles.globalRowSub, { color: mutedColor }]}>{sub}</ThemedText>
       </View>
       {comingSoon ? (
         <View style={styles.comingSoonBadge}>
@@ -836,7 +751,10 @@ function BrandSettingsCard({
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > MAX_LOGO_KB * 1024) {
-        setMsg({ text: `Logo must be under ${MAX_LOGO_KB} KB. Yours is ${Math.round(file.size / 1024)} KB.`, ok: false });
+        setMsg({
+          text: `Logo must be under ${MAX_LOGO_KB} KB. Yours is ${Math.round(file.size / 1024)} KB.`,
+          ok: false,
+        });
         return;
       }
       const reader = new FileReader();
@@ -867,7 +785,15 @@ function BrandSettingsCard({
     }
   };
 
-  const PRESET_COLORS = ["#0a7ea4", "#2563eb", "#7c3aed", "#059669", "#dc2626", "#d97706", "#475569"];
+  const PRESET_COLORS = [
+    "#0a7ea4",
+    "#2563eb",
+    "#7c3aed",
+    "#059669",
+    "#dc2626",
+    "#d97706",
+    "#475569",
+  ];
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
@@ -925,11 +851,34 @@ function BrandSettingsCard({
             <ThemedText style={styles.fieldLabel}>Logo (max {MAX_LOGO_KB} KB)</ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               {logoPreview ? (
-                <View style={{ width: 48, height: 48, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor }}>
-                  <img src={logoPreview} alt="Logo" style={{ width: 48, height: 48, objectFit: "contain" }} />
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    borderWidth: 1,
+                    borderColor,
+                  }}
+                >
+                  <img
+                    src={logoPreview}
+                    alt="Logo"
+                    style={{ width: 48, height: 48, objectFit: "contain" }}
+                  />
                 </View>
               ) : (
-                <View style={{ width: 48, height: 48, borderRadius: 8, borderWidth: 1, borderColor, alignItems: "center", justifyContent: "center" }}>
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Ionicons name="image-outline" size={20} color={mutedColor} />
                 </View>
               )}
@@ -941,7 +890,10 @@ function BrandSettingsCard({
               {logoPreview && (
                 <Pressable
                   style={[styles.secBtn, { borderColor }]}
-                  onPress={() => { setLogoPreview(null); setLogoData(""); }}
+                  onPress={() => {
+                    setLogoPreview(null);
+                    setLogoData("");
+                  }}
                 >
                   <ThemedText style={[styles.secBtnText, { color: "#dc2626" }]}>Remove</ThemedText>
                 </Pressable>
@@ -955,12 +907,17 @@ function BrandSettingsCard({
             </ThemedText>
           )}
 
-          <Button onPress={handleSave} disabled={saving || !appName.trim()} style={{ marginTop: 4 }}>
+          <Button
+            onPress={handleSave}
+            disabled={saving || !appName.trim()}
+            style={{ marginTop: 4 }}
+          >
             {saving ? "Saving…" : "Save Brand Settings"}
           </Button>
 
           <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 4 }}>
-            Changes take effect after a page reload. Logo is stored in the database — no CDN required.
+            Changes take effect after a page reload. Logo is stored in the database — no CDN
+            required.
           </ThemedText>
         </View>
       )}
@@ -1074,7 +1031,11 @@ function EmailSettingsCard({
               <Pressable
                 key={p.label}
                 style={[styles.secBtn, { borderColor }]}
-                onPress={() => { setHost(p.host); setPort(String(p.port)); setEnableSsl(true); }}
+                onPress={() => {
+                  setHost(p.host);
+                  setPort(String(p.port));
+                  setEnableSsl(true);
+                }}
               >
                 <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>{p.label}</ThemedText>
               </Pressable>
@@ -1093,11 +1054,20 @@ function EmailSettingsCard({
             <View style={[styles.field, { flex: 1 }]}>
               <ThemedText style={styles.fieldLabel}>SSL/TLS</ThemedText>
               <Pressable
-                style={[styles.secBtn, { borderColor, paddingVertical: 10, alignItems: "center" as const }]}
+                style={[
+                  styles.secBtn,
+                  { borderColor, paddingVertical: 10, alignItems: "center" as const },
+                ]}
                 onPress={() => setEnableSsl((v) => !v)}
               >
-                <Ionicons name={enableSsl ? "checkmark-circle" : "ellipse-outline"} size={16} color={enableSsl ? PRIMARY : mutedColor} />
-                <ThemedText style={[styles.secBtnText, { color: enableSsl ? PRIMARY : mutedColor }]}>
+                <Ionicons
+                  name={enableSsl ? "checkmark-circle" : "ellipse-outline"}
+                  size={16}
+                  color={enableSsl ? PRIMARY : mutedColor}
+                />
+                <ThemedText
+                  style={[styles.secBtnText, { color: enableSsl ? PRIMARY : mutedColor }]}
+                >
                   {enableSsl ? "Enabled" : "Disabled"}
                 </ThemedText>
               </Pressable>
@@ -1105,7 +1075,12 @@ function EmailSettingsCard({
           </View>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>Username</ThemedText>
-            <Input value={username} onChangeText={setUsername} placeholder="your@email.com" autoCapitalize="none" />
+            <Input
+              value={username}
+              onChangeText={setUsername}
+              placeholder="your@email.com"
+              autoCapitalize="none"
+            />
           </View>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>Password</ThemedText>
@@ -1120,7 +1095,11 @@ function EmailSettingsCard({
                 />
               </View>
               <Pressable onPress={() => setShowPassword((v) => !v)} style={{ padding: 4 }}>
-                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={mutedColor} />
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={mutedColor}
+                />
               </Pressable>
             </View>
           </View>
@@ -1131,7 +1110,12 @@ function EmailSettingsCard({
             </View>
             <View style={[styles.field, { flex: 1 }]}>
               <ThemedText style={styles.fieldLabel}>From Email (optional)</ThemedText>
-              <Input value={fromEmail} onChangeText={setFromEmail} placeholder="noreply@yoursite.com" autoCapitalize="none" />
+              <Input
+                value={fromEmail}
+                onChangeText={setFromEmail}
+                placeholder="noreply@yoursite.com"
+                autoCapitalize="none"
+              />
             </View>
           </View>
 
@@ -1142,7 +1126,11 @@ function EmailSettingsCard({
           )}
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-            <Button onPress={handleSave} disabled={saving || !host || !username} style={{ flex: 1 }}>
+            <Button
+              onPress={handleSave}
+              disabled={saving || !host || !username}
+              style={{ flex: 1 }}
+            >
               {saving ? "Saving…" : "Save Settings"}
             </Button>
             <Pressable
@@ -1213,15 +1201,23 @@ function SecurityCard({
   };
 
   const handleChangePw = async () => {
-    if (newPw !== confirmPw) { setMsg({ text: "Passwords do not match.", ok: false }); return; }
-    if (newPw.length < 6) { setMsg({ text: "Password must be at least 6 characters.", ok: false }); return; }
+    if (newPw !== confirmPw) {
+      setMsg({ text: "Passwords do not match.", ok: false });
+      return;
+    }
+    if (newPw.length < 6) {
+      setMsg({ text: "Password must be at least 6 characters.", ok: false });
+      return;
+    }
     setSaving(true);
     const result = await changePassword(currentPw, newPw);
     setSaving(false);
     setMsg({ text: result.message, ok: result.ok });
     if (result.ok) {
       setShowPwForm(false);
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
     }
   };
 
@@ -1255,7 +1251,11 @@ function SecurityCard({
         </View>
         <Pressable
           style={[styles.secBtn, { borderColor }]}
-          onPress={() => { setShowPvqForm((v) => !v); setShowPwForm(false); setMsg(null); }}
+          onPress={() => {
+            setShowPvqForm((v) => !v);
+            setShowPwForm(false);
+            setMsg(null);
+          }}
         >
           <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>
             {pvqStatus?.isConfigured ? "Change" : "Set up"}
@@ -1282,9 +1282,7 @@ function SecurityCard({
               autoCapitalize="none"
             />
           </View>
-          {msg && !msg.ok && (
-            <ThemedText style={styles.errorText}>{msg.text}</ThemedText>
-          )}
+          {msg && !msg.ok && <ThemedText style={styles.errorText}>{msg.text}</ThemedText>}
           <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
             <Button
               onPress={handleSavePvq}
@@ -1310,7 +1308,11 @@ function SecurityCard({
         </View>
         <Pressable
           style={[styles.secBtn, { borderColor }]}
-          onPress={() => { setShowPwForm((v) => !v); setShowPvqForm(false); setMsg(null); }}
+          onPress={() => {
+            setShowPwForm((v) => !v);
+            setShowPvqForm(false);
+            setMsg(null);
+          }}
         >
           <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>Change</ThemedText>
         </Pressable>
@@ -1320,15 +1322,30 @@ function SecurityCard({
         <View style={[styles.secForm, { borderTopColor: borderColor }]}>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>Current password</ThemedText>
-            <Input value={currentPw} onChangeText={setCurrentPw} secureTextEntry placeholder="••••••••" />
+            <Input
+              value={currentPw}
+              onChangeText={setCurrentPw}
+              secureTextEntry
+              placeholder="••••••••"
+            />
           </View>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>New password</ThemedText>
-            <Input value={newPw} onChangeText={setNewPw} secureTextEntry placeholder="At least 6 characters" />
+            <Input
+              value={newPw}
+              onChangeText={setNewPw}
+              secureTextEntry
+              placeholder="At least 6 characters"
+            />
           </View>
           <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>Confirm new password</ThemedText>
-            <Input value={confirmPw} onChangeText={setConfirmPw} secureTextEntry placeholder="Repeat password" />
+            <Input
+              value={confirmPw}
+              onChangeText={setConfirmPw}
+              secureTextEntry
+              placeholder="Repeat password"
+            />
           </View>
           {msg && (
             <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
@@ -1374,9 +1391,7 @@ export default function AdminSettingsScreen() {
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
 
   function patchRestaurant(id: number, patch: Partial<RestaurantDto>) {
-    setRestaurants((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
-    );
+    setRestaurants((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   }
 
   useEffect(() => {
@@ -1401,8 +1416,7 @@ export default function AdminSettingsScreen() {
         <View>
           <ThemedText style={styles.pageTitle}>Location Manager</ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-            {restaurants.length} location{restaurants.length !== 1 ? "s" : ""}{" "}
-            configured
+            {restaurants.length} location{restaurants.length !== 1 ? "s" : ""} configured
           </ThemedText>
         </View>
       </View>
@@ -1417,9 +1431,7 @@ export default function AdminSettingsScreen() {
             key={r.id}
             restaurant={r}
             isSelected={selectedId === r.id}
-            onSelect={() =>
-              setSelectedId((prev) => (prev === r.id ? null : r.id))
-            }
+            onSelect={() => setSelectedId((prev) => (prev === r.id ? null : r.id))}
             onSaved={(patch) => patchRestaurant(r.id, patch)}
             isDark={isDark}
             borderColor={borderColor}
@@ -1443,16 +1455,8 @@ export default function AdminSettingsScreen() {
         <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
           GLOBAL SETTINGS
         </ThemedText>
-        <BrandSettingsCard
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          cardBg={cardBg}
-        />
-        <EmailSettingsCard
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          cardBg={cardBg}
-        />
+        <BrandSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
+        <EmailSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
         <GlobalSettingRow
           icon="globe-outline"
           title="API & Network"
@@ -1469,11 +1473,7 @@ export default function AdminSettingsScreen() {
         <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
           ACCOUNT SECURITY
         </ThemedText>
-        <SecurityCard
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          cardBg={cardBg}
-        />
+        <SecurityCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
       </View>
 
       {/* Table Configuration / Beta */}
@@ -1483,21 +1483,14 @@ export default function AdminSettingsScreen() {
         </ThemedText>
         <View style={[styles.betaCard, { borderColor, backgroundColor: cardBg }]}>
           <View style={styles.betaCardContent}>
-            <View
-              style={[
-                styles.betaIcon,
-                { backgroundColor: "rgba(124,58,237,0.1)" },
-              ]}
-            >
+            <View style={[styles.betaIcon, { backgroundColor: "rgba(124,58,237,0.1)" }]}>
               <Ionicons name="flask-outline" size={24} color="#7c3aed" />
             </View>
             <View style={styles.betaText}>
-              <ThemedText style={styles.betaTitle}>
-                Smart Table Optimization
-              </ThemedText>
+              <ThemedText style={styles.betaTitle}>Smart Table Optimization</ThemedText>
               <ThemedText style={[styles.betaSub, { color: mutedColor }]}>
-                AI-powered table layout suggestions and automatic conflict
-                resolution. Join the beta to get early access.
+                AI-powered table layout suggestions and automatic conflict resolution. Join the beta
+                to get early access.
               </ThemedText>
             </View>
           </View>
@@ -1758,10 +1751,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   secHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
-  secIcon: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  secIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   secTitle: { fontSize: 15, fontWeight: "700" },
   secSub: { fontSize: 12, marginTop: 1 },
-  secRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, gap: 12 },
+  secRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    gap: 12,
+  },
   secRowTitle: { fontSize: 14, fontWeight: "600" },
   secRowSub: { fontSize: 12, marginTop: 1 },
   secBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

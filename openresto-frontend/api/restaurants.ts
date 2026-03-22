@@ -40,9 +40,7 @@ export async function fetchRestaurants(): Promise<RestaurantDto[]> {
   }
 }
 
-export async function fetchRestaurantById(
-  id: number
-): Promise<RestaurantDto | null> {
+export async function fetchRestaurantById(id: number): Promise<RestaurantDto | null> {
   try {
     const res = await fetch(buildEndpoint(`/restaurants/${id}`));
     if (!res.ok) throw new Error("Failed to fetch restaurant");
@@ -75,19 +73,13 @@ export async function updateRestaurant(
 
 // ── Section management ─────────────────────────────────────────────────────
 
-export async function addSection(
-  restaurantId: number,
-  name: string
-): Promise<SectionDto | null> {
+export async function addSection(restaurantId: number, name: string): Promise<SectionDto | null> {
   try {
-    const res = await fetch(
-      buildEndpoint(`/restaurants/${restaurantId}/sections`),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ name }),
-      }
-    );
+    const res = await fetch(buildEndpoint(`/restaurants/${restaurantId}/sections`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ name }),
+    });
     if (!res.ok) throw new Error("Failed to add section");
     return await res.json();
   } catch (err) {
@@ -102,14 +94,11 @@ export async function updateSection(
   name: string
 ): Promise<SectionDto | null> {
   try {
-    const res = await fetch(
-      buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}`),
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ name }),
-      }
-    );
+    const res = await fetch(buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}`), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ name }),
+    });
     if (!res.ok) throw new Error("Failed to update section");
     return await res.json();
   } catch (err) {
@@ -118,15 +107,12 @@ export async function updateSection(
   }
 }
 
-export async function deleteSection(
-  restaurantId: number,
-  sectionId: number
-): Promise<boolean> {
+export async function deleteSection(restaurantId: number, sectionId: number): Promise<boolean> {
   try {
-    const res = await fetch(
-      buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}`),
-      { method: "DELETE", headers: getAuthHeaders() }
-    );
+    const res = await fetch(buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}`), {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
     return res.ok;
   } catch (err) {
     console.error("deleteSection error:", err);
@@ -143,9 +129,7 @@ export async function addTable(
 ): Promise<TableDto | null> {
   try {
     const res = await fetch(
-      buildEndpoint(
-        `/restaurants/${restaurantId}/sections/${sectionId}/tables`
-      ),
+      buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}/tables`),
       {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
@@ -168,9 +152,7 @@ export async function updateTable(
 ): Promise<TableDto | null> {
   try {
     const res = await fetch(
-      buildEndpoint(
-        `/restaurants/${restaurantId}/sections/${sectionId}/tables/${tableId}`
-      ),
+      buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}/tables/${tableId}`),
       {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
@@ -192,9 +174,7 @@ export async function deleteTable(
 ): Promise<boolean> {
   try {
     const res = await fetch(
-      buildEndpoint(
-        `/restaurants/${restaurantId}/sections/${sectionId}/tables/${tableId}`
-      ),
+      buildEndpoint(`/restaurants/${restaurantId}/sections/${sectionId}/tables/${tableId}`),
       { method: "DELETE", headers: getAuthHeaders() }
     );
     return res.ok;

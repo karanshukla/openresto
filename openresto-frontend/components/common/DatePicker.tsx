@@ -1,12 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -59,18 +53,13 @@ export default function DatePicker({
               style={styles.list}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedDate && styles.selectedOption,
-                  ]}
+                  style={[styles.option, item.value === selectedDate && styles.selectedOption]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
                 >
-                  <ThemedText
-                    style={item.value === selectedDate && styles.selectedText}
-                  >
+                  <ThemedText style={item.value === selectedDate && styles.selectedText}>
                     {item.label}
                   </ThemedText>
                   {item.value === selectedDate && (
@@ -92,9 +81,7 @@ export default function DatePicker({
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText
-          style={!selected && styles.placeholder}
-        >
+        <ThemedText style={!selected && styles.placeholder}>
           {selected?.label ?? "Select a date"}
         </ThemedText>
         <ThemedText style={styles.chevron}>▾</ThemedText>

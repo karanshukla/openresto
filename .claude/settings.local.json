@@ -10,7 +10,8 @@
       "Bash(find f:/Development/openresto/OpenRestoApi -name *.editorconfig -o -name .globalconfig)",
       "Bash(npx expo:*)",
       "Bash(npm install:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(npx prettier:*)"
     ]
   }
 }

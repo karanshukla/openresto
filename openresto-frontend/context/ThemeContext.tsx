@@ -42,10 +42,11 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-  const colorScheme: ColorScheme =
-    !hydrated ? "light" :
-    preference === "system" ? systemScheme :
-    preference;
+  const colorScheme: ColorScheme = !hydrated
+    ? "light"
+    : preference === "system"
+      ? systemScheme
+      : preference;
 
   const setPreference = (pref: ThemePreference) => {
     setPreferenceState(pref);

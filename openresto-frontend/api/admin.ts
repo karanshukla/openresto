@@ -96,9 +96,7 @@ export async function getAdminBookings(
   }
 }
 
-export async function getAdminBooking(
-  id: number
-): Promise<BookingDetailDto | null> {
+export async function getAdminBooking(id: number): Promise<BookingDetailDto | null> {
   try {
     const res = await fetch(buildEndpoint(`/admin/bookings/${id}`), {
       headers: getAuthHeaders(),
@@ -218,14 +216,11 @@ export interface SectionWithTables {
   tables: { id: number; name: string; seats: number }[];
 }
 
-export async function adminGetTables(
-  restaurantId: number
-): Promise<SectionWithTables[]> {
+export async function adminGetTables(restaurantId: number): Promise<SectionWithTables[]> {
   try {
-    const res = await fetch(
-      buildEndpoint(`/admin/restaurants/${restaurantId}/tables`),
-      { headers: getAuthHeaders() }
-    );
+    const res = await fetch(buildEndpoint(`/admin/restaurants/${restaurantId}/tables`), {
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch (err) {
@@ -253,11 +248,20 @@ export async function getEmailSettings(): Promise<EmailSettingsDto> {
     if (!res.ok) throw new Error();
     return await res.json();
   } catch {
-    return { host: "", port: 587, username: "", password: "", enableSsl: true, isConfigured: false };
+    return {
+      host: "",
+      port: 587,
+      username: "",
+      password: "",
+      enableSsl: true,
+      isConfigured: false,
+    };
   }
 }
 
-export async function saveEmailSettings(data: Omit<EmailSettingsDto, "isConfigured">): Promise<{ message: string } | null> {
+export async function saveEmailSettings(
+  data: Omit<EmailSettingsDto, "isConfigured">
+): Promise<{ message: string } | null> {
   try {
     const res = await fetch(buildEndpoint("/admin/email-settings"), {
       method: "POST",
@@ -292,7 +296,9 @@ export interface BrandSettingsDto {
   logoBase64?: string;
 }
 
-export async function saveBrandSettings(data: BrandSettingsDto): Promise<{ message: string } | null> {
+export async function saveBrandSettings(
+  data: BrandSettingsDto
+): Promise<{ message: string } | null> {
   try {
     const res = await fetch(buildEndpoint("/brand"), {
       method: "POST",

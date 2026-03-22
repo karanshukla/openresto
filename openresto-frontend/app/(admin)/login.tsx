@@ -2,12 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import {
-  login,
-  getPvqStatus,
-  verifyPvq,
-  resetPassword,
-} from "@/api/auth";
+import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -166,7 +161,13 @@ export default function AdminLoginScreen() {
               {loginLoading ? "Signing in…" : "Sign In"}
             </Button>
 
-            <Pressable onPress={() => { setFpEmail(email); setStage("pvq-email"); setFpError(null); }}>
+            <Pressable
+              onPress={() => {
+                setFpEmail(email);
+                setStage("pvq-email");
+                setFpError(null);
+              }}
+            >
               <ThemedText style={[styles.forgotLink, { color: PRIMARY }]}>
                 Forgot password?
               </ThemedText>
@@ -179,7 +180,12 @@ export default function AdminLoginScreen() {
     if (stage === "pvq-email") {
       return (
         <>
-          <BackButton onPress={() => { setStage("login"); setFpError(null); }} />
+          <BackButton
+            onPress={() => {
+              setStage("login");
+              setFpError(null);
+            }}
+          />
           <ThemedText style={styles.title}>Reset password</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
             We'll verify your identity using your security question.
@@ -218,9 +224,23 @@ export default function AdminLoginScreen() {
     if (stage === "pvq-answer") {
       return (
         <>
-          <BackButton onPress={() => { setStage("pvq-email"); setFpError(null); setPvqAnswer(""); }} />
+          <BackButton
+            onPress={() => {
+              setStage("pvq-email");
+              setFpError(null);
+              setPvqAnswer("");
+            }}
+          />
           <ThemedText style={styles.title}>Security question</ThemedText>
-          <View style={[styles.questionBox, { borderColor, backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)" }]}>
+          <View
+            style={[
+              styles.questionBox,
+              {
+                borderColor,
+                backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+              },
+            ]}
+          >
             <Ionicons name="help-circle-outline" size={18} color={PRIMARY} />
             <ThemedText style={[styles.questionText, { color: mutedColor }]}>
               {pvqQuestion}
@@ -316,7 +336,10 @@ export default function AdminLoginScreen() {
           Your password has been updated. Sign in with your new credentials.
         </ThemedText>
         <Button
-          onPress={() => { setStage("login"); setPassword(""); }}
+          onPress={() => {
+            setStage("login");
+            setPassword("");
+          }}
           style={styles.submitBtn}
         >
           Back to Sign In
@@ -327,18 +350,11 @@ export default function AdminLoginScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView
-        contentContainerStyle={styles.outer}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <ThemedText style={[styles.brand, { color: PRIMARY }]}>
-              {brand.appName}
-            </ThemedText>
-            <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>
-              Admin
-            </ThemedText>
+            <ThemedText style={[styles.brand, { color: PRIMARY }]}>{brand.appName}</ThemedText>
+            <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
           </View>
 
           <ThemedView style={[styles.card, { backgroundColor: cardBg, borderColor }]}>

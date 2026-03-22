@@ -4,11 +4,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function RestaurantDetails({
-  restaurant,
-}: {
-  restaurant: RestaurantDto;
-}) {
+export default function RestaurantDetails({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
   const mutedColor = isDark ? "#9ca3af" : "#6b7280";
   const borderColor = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
@@ -33,10 +29,7 @@ export default function RestaurantDetails({
       </ThemedText>
 
       {restaurant.sections.map((section) => (
-        <ThemedView
-          key={section.id}
-          style={[styles.sectionCard, { borderColor }]}
-        >
+        <ThemedView key={section.id} style={[styles.sectionCard, { borderColor }]}>
           <ThemedText style={styles.sectionName}>{section.name}</ThemedText>
 
           <View style={styles.tableGrid}>

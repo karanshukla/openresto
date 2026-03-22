@@ -26,7 +26,10 @@ export default function AlertModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.card, { backgroundColor: cardBg, borderColor }]} onPress={() => {}}>
+        <Pressable
+          style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+          onPress={() => {}}
+        >
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={[styles.message, { color: mutedColor }]}>{message}</ThemedText>
           <Pressable style={[styles.btn, { backgroundColor: "#0a7ea4" }]} onPress={onClose}>

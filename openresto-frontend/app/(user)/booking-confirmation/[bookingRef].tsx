@@ -52,20 +52,28 @@ export default function BookingConfirmationScreen() {
     );
   }
 
-  const rows: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; value: string }[] = [
+  const rows: {
+    icon: React.ComponentProps<typeof Ionicons>["name"];
+    label: string;
+    value: string;
+  }[] = [
     { icon: "mail-outline", label: "Email", value: booking.customerEmail },
     {
       icon: "calendar-outline",
       label: "Date",
       value: new Date(booking.date).toLocaleDateString(undefined, {
-        weekday: "long", year: "numeric", month: "long", day: "numeric",
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       }),
     },
     {
       icon: "time-outline",
       label: "Time",
       value: new Date(booking.date).toLocaleTimeString(undefined, {
-        hour: "2-digit", minute: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
       }),
     },
     { icon: "people-outline", label: "Guests", value: String(booking.seats) },
@@ -76,7 +84,10 @@ export default function BookingConfirmationScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: pageBg }} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: pageBg }}
+      contentContainerStyle={styles.scrollContent}
+    >
       <PageContainer style={styles.page}>
         {/* Success header */}
         <View style={styles.successHeader}>
@@ -95,10 +106,13 @@ export default function BookingConfirmationScreen() {
             Booking Reference
           </ThemedText>
           <View style={styles.refRow}>
-            <View style={[styles.refBadge, { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" }]}>
-              <ThemedText style={styles.refValue}>
-                {booking.bookingRef ?? bookingRef}
-              </ThemedText>
+            <View
+              style={[
+                styles.refBadge,
+                { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
+              ]}
+            >
+              <ThemedText style={styles.refValue}>{booking.bookingRef ?? bookingRef}</ThemedText>
             </View>
             {Platform.OS === "web" && (
               <Pressable
@@ -109,7 +123,11 @@ export default function BookingConfirmationScreen() {
                   setTimeout(() => setCopied(false), 2000);
                 }}
               >
-                <Ionicons name={copied ? "checkmark" : "copy-outline"} size={14} color={copied ? "#16a34a" : PRIMARY} />
+                <Ionicons
+                  name={copied ? "checkmark" : "copy-outline"}
+                  size={14}
+                  color={copied ? "#16a34a" : PRIMARY}
+                />
                 <ThemedText style={[styles.copyBtnText, { color: copied ? "#16a34a" : PRIMARY }]}>
                   {copied ? "Copied" : "Copy"}
                 </ThemedText>
@@ -129,7 +147,9 @@ export default function BookingConfirmationScreen() {
               <View style={styles.detailRow}>
                 <Ionicons name={icon} size={15} color={mutedColor} style={{ marginTop: 2 }} />
                 <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>{label}</ThemedText>
+                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                    {label}
+                  </ThemedText>
                   <ThemedText style={styles.detailValue}>{value}</ThemedText>
                 </View>
               </View>
@@ -145,13 +165,22 @@ export default function BookingConfirmationScreen() {
             </ThemedText>
             <View style={styles.calendarBtns}>
               <Pressable
-                style={[styles.calBtn, { backgroundColor: isDark ? "rgba(66,133,244,0.15)" : "rgba(66,133,244,0.08)" }]}
+                style={[
+                  styles.calBtn,
+                  { backgroundColor: isDark ? "rgba(66,133,244,0.15)" : "rgba(66,133,244,0.08)" },
+                ]}
                 onPress={() => {
                   const start = new Date(booking.date);
                   const end = new Date(start.getTime() + 60 * 60 * 1000);
-                  const fmt = (d: Date) => d.toISOString().replace(/[-:.]|\d{3}Z$/g, "").replace("T", "T");
+                  const fmt = (d: Date) =>
+                    d
+                      .toISOString()
+                      .replace(/[-:.]|\d{3}Z$/g, "")
+                      .replace("T", "T");
                   const title = encodeURIComponent("Restaurant Reservation");
-                  const details = encodeURIComponent(`Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`);
+                  const details = encodeURIComponent(
+                    `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
+                  );
                   window.open(
                     `https://calendar.google.com/calendar/r/eventedit?text=${title}&dates=${fmt(start)}/${fmt(end)}&details=${details}`,
                     "_blank"
@@ -163,12 +192,17 @@ export default function BookingConfirmationScreen() {
               </Pressable>
 
               <Pressable
-                style={[styles.calBtn, { backgroundColor: isDark ? "rgba(0,120,212,0.15)" : "rgba(0,120,212,0.08)" }]}
+                style={[
+                  styles.calBtn,
+                  { backgroundColor: isDark ? "rgba(0,120,212,0.15)" : "rgba(0,120,212,0.08)" },
+                ]}
                 onPress={() => {
                   const start = new Date(booking.date);
                   const end = new Date(start.getTime() + 60 * 60 * 1000);
                   const subject = encodeURIComponent("Restaurant Reservation");
-                  const body = encodeURIComponent(`Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`);
+                  const body = encodeURIComponent(
+                    `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
+                  );
                   window.open(
                     `https://outlook.live.com/calendar/0/action/compose?subject=${subject}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${body}`,
                     "_blank"
@@ -180,11 +214,15 @@ export default function BookingConfirmationScreen() {
               </Pressable>
 
               <Pressable
-                style={[styles.calBtn, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }]}
+                style={[
+                  styles.calBtn,
+                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" },
+                ]}
                 onPress={() => {
                   const start = new Date(booking.date);
                   const end = new Date(start.getTime() + 60 * 60 * 1000);
-                  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+                  const fmt = (d: Date) =>
+                    d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
                   const ics = [
                     "BEGIN:VCALENDAR",
                     "VERSION:2.0",
@@ -206,7 +244,9 @@ export default function BookingConfirmationScreen() {
                 }}
               >
                 <Ionicons name="download-outline" size={16} color={mutedColor} />
-                <ThemedText style={[styles.calBtnText, { color: mutedColor }]}>iCal / Other</ThemedText>
+                <ThemedText style={[styles.calBtnText, { color: mutedColor }]}>
+                  iCal / Other
+                </ThemedText>
               </Pressable>
             </View>
           </View>
@@ -219,14 +259,18 @@ export default function BookingConfirmationScreen() {
             onPress={() => router.replace("/")}
           >
             <Ionicons name="home-outline" size={16} color={PRIMARY} />
-            <ThemedText style={[styles.secondaryBtnText, { color: PRIMARY }]}>Back to Restaurants</ThemedText>
+            <ThemedText style={[styles.secondaryBtnText, { color: PRIMARY }]}>
+              Back to Restaurants
+            </ThemedText>
           </Pressable>
           <Pressable
             style={[styles.secondaryBtn, { borderColor }]}
             onPress={() => router.push("/(user)/lookup")}
           >
             <Ionicons name="search-outline" size={16} color={PRIMARY} />
-            <ThemedText style={[styles.secondaryBtnText, { color: PRIMARY }]}>Find My Booking</ThemedText>
+            <ThemedText style={[styles.secondaryBtnText, { color: PRIMARY }]}>
+              Find My Booking
+            </ThemedText>
           </Pressable>
         </View>
       </PageContainer>

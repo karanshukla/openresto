@@ -1,5 +1,11 @@
 import { ThemedText } from "@/components/themed-text";
-import { getAdminBookings, adminGetTables, adminDeleteBooking, BookingDetailDto, SectionWithTables } from "@/api/admin";
+import {
+  getAdminBookings,
+  adminGetTables,
+  adminDeleteBooking,
+  BookingDetailDto,
+  SectionWithTables,
+} from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useEffect, useState } from "react";
@@ -29,8 +35,8 @@ const TIME_SLOTS = Array.from({ length: 12 }, (_, i) => {
   return { hour: h, label };
 });
 
-const COL_W = 68;   // px per time-slot column
-const ROW_H = 48;   // px per table row
+const COL_W = 68; // px per time-slot column
+const ROW_H = 48; // px per table row
 const LABEL_W = 110; // px for the fixed left label column
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -49,15 +55,18 @@ function getStatus(date: string): { label: string; variant: BadgeVariant } {
   const diffMins = (d.getTime() - now.getTime()) / 60000;
   if (diffMins < -90) return { label: "Completed", variant: "completed" };
   if (diffMins < -15) return { label: "Seated", variant: "seated" };
-  if (diffMins < 5)   return { label: "Arrived", variant: "arrived" };
-  if (diffMins < 60)  return { label: "Upcoming", variant: "upcoming" };
+  if (diffMins < 5) return { label: "Arrived", variant: "arrived" };
+  if (diffMins < 60) return { label: "Upcoming", variant: "upcoming" };
   return { label: "Scheduled", variant: "scheduled" };
 }
 
-const BADGE_STYLES: Record<BadgeVariant, { bg: string; text: string; darkBg?: string; darkText?: string }> = {
-  arrived:   { bg: "#dcfce7", text: "#15803d", darkBg: "#14532d22", darkText: "#4ade80" },
-  seated:    { bg: `rgba(10,126,164,0.1)`, text: PRIMARY },
-  upcoming:  { bg: "#fef9c3", text: "#854d0e", darkBg: "#854d0e22", darkText: "#fde047" },
+const BADGE_STYLES: Record<
+  BadgeVariant,
+  { bg: string; text: string; darkBg?: string; darkText?: string }
+> = {
+  arrived: { bg: "#dcfce7", text: "#15803d", darkBg: "#14532d22", darkText: "#4ade80" },
+  seated: { bg: `rgba(10,126,164,0.1)`, text: PRIMARY },
+  upcoming: { bg: "#fef9c3", text: "#854d0e", darkBg: "#854d0e22", darkText: "#fde047" },
   scheduled: { bg: "#f1f5f9", text: "#64748b", darkBg: "#1e2934", darkText: "#94a3b8" },
   completed: { bg: "#f1f5f9", text: "#94a3b8", darkBg: "#1a1c1e", darkText: "#64748b" },
 };
@@ -65,7 +74,7 @@ const BADGE_STYLES: Record<BadgeVariant, { bg: string; text: string; darkBg?: st
 function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
   const { label, variant } = getStatus(date);
   const s = BADGE_STYLES[variant];
-  const bg   = isDark && s.darkBg   ? s.darkBg   : s.bg;
+  const bg = isDark && s.darkBg ? s.darkBg : s.bg;
   const text = isDark && s.darkText ? s.darkText : s.text;
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
@@ -90,12 +99,12 @@ function AvailabilityGrid({
   isDark: boolean;
   onBookingPress: (b: BookingDetailDto) => void;
 }) {
-  const borderColor  = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const headerBg     = isDark ? "#28292b" : "#f4f5f6";
-  const sectionBg    = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
-  const availBg      = isDark ? "#18191b" : "#fafafa";
-  const bookedBg     = isDark ? "rgba(220,38,38,0.22)" : "rgba(220,38,38,0.1)";
-  const mutedColor   = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const headerBg = isDark ? "#28292b" : "#f4f5f6";
+  const sectionBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+  const availBg = isDark ? "#18191b" : "#fafafa";
+  const bookedBg = isDark ? "rgba(220,38,38,0.22)" : "rgba(220,38,38,0.1)";
+  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
 
   function bookingForCell(tableId: number, hour: number): BookingDetailDto | undefined {
     return bookings.find((b) => b.tableId === tableId && new Date(b.date).getHours() === hour);
@@ -118,13 +127,48 @@ function AvailabilityGrid({
     <ScrollView horizontal showsHorizontalScrollIndicator>
       <View style={{ width: totalW }}>
         {/* Column headers */}
-        <View style={[{ flexDirection: "row", height: HEADER_H, backgroundColor: headerBg, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
-          <View style={[{ width: LABEL_W, height: HEADER_H, justifyContent: "center", paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: borderColor }]}>
+        <View
+          style={[
+            {
+              flexDirection: "row",
+              height: HEADER_H,
+              backgroundColor: headerBg,
+              borderBottomWidth: 1,
+              borderBottomColor: borderColor,
+            },
+          ]}
+        >
+          <View
+            style={[
+              {
+                width: LABEL_W,
+                height: HEADER_H,
+                justifyContent: "center",
+                paddingHorizontal: 10,
+                borderRightWidth: 1,
+                borderRightColor: borderColor,
+              },
+            ]}
+          >
             <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>TABLE</ThemedText>
           </View>
           {TIME_SLOTS.map(({ hour, label }) => (
-            <View key={hour} style={[{ width: COL_W, height: HEADER_H, alignItems: "center", justifyContent: "center", borderLeftWidth: 1, borderLeftColor: borderColor }]}>
-              <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>{label}</ThemedText>
+            <View
+              key={hour}
+              style={[
+                {
+                  width: COL_W,
+                  height: HEADER_H,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderLeftWidth: 1,
+                  borderLeftColor: borderColor,
+                },
+              ]}
+            >
+              <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>
+                {label}
+              </ThemedText>
             </View>
           ))}
         </View>
@@ -133,7 +177,19 @@ function AvailabilityGrid({
         {sections.map((section) => (
           <View key={section.id}>
             {/* Section divider */}
-            <View style={[{ height: SECTION_H, flexDirection: "row", backgroundColor: sectionBg, borderBottomWidth: 1, borderBottomColor: borderColor, alignItems: "center", paddingHorizontal: 10 }]}>
+            <View
+              style={[
+                {
+                  height: SECTION_H,
+                  flexDirection: "row",
+                  backgroundColor: sectionBg,
+                  borderBottomWidth: 1,
+                  borderBottomColor: borderColor,
+                  alignItems: "center",
+                  paddingHorizontal: 10,
+                },
+              ]}
+            >
               <ThemedText style={[styles.gridSectionLabel, { color: mutedColor }]}>
                 {section.name.toUpperCase()}
               </ThemedText>
@@ -141,9 +197,30 @@ function AvailabilityGrid({
 
             {/* Table rows */}
             {section.tables.map((table) => (
-              <View key={table.id} style={[{ flexDirection: "row", height: ROW_H, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
+              <View
+                key={table.id}
+                style={[
+                  {
+                    flexDirection: "row",
+                    height: ROW_H,
+                    borderBottomWidth: 1,
+                    borderBottomColor: borderColor,
+                  },
+                ]}
+              >
                 {/* Fixed label */}
-                <View style={[{ width: LABEL_W, height: ROW_H, justifyContent: "center", paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: borderColor }]}>
+                <View
+                  style={[
+                    {
+                      width: LABEL_W,
+                      height: ROW_H,
+                      justifyContent: "center",
+                      paddingHorizontal: 10,
+                      borderRightWidth: 1,
+                      borderRightColor: borderColor,
+                    },
+                  ]}
+                >
                   <ThemedText style={styles.gridTableName} numberOfLines={1}>
                     {table.name ?? `T${table.id}`}
                   </ThemedText>
@@ -159,9 +236,21 @@ function AvailabilityGrid({
                     <Pressable
                       key={hour}
                       style={[
-                        { width: COL_W, height: ROW_H, alignItems: "center", justifyContent: "center", borderLeftWidth: 1, borderLeftColor: borderColor, paddingHorizontal: 3 },
+                        {
+                          width: COL_W,
+                          height: ROW_H,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderLeftWidth: 1,
+                          borderLeftColor: borderColor,
+                          paddingHorizontal: 3,
+                        },
                         booking
-                          ? { backgroundColor: bookedBg, borderLeftColor: "#dc2626", borderLeftWidth: 2 }
+                          ? {
+                              backgroundColor: bookedBg,
+                              borderLeftColor: "#dc2626",
+                              borderLeftWidth: 2,
+                            }
                           : { backgroundColor: availBg },
                       ]}
                       onPress={() => booking && onBookingPress(booking)}
@@ -178,7 +267,14 @@ function AvailabilityGrid({
                           </ThemedText>
                         </View>
                       ) : (
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
+                        <View
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+                          }}
+                        />
                       )}
                     </Pressable>
                   );
@@ -216,10 +312,10 @@ export default function AdminBookingsScreen() {
   const { width } = useWindowDimensions();
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg      = isDark ? "#1e2022" : "#ffffff";
-  const headerBg    = isDark ? "#28292b" : "#f8f8f9";
-  const mutedColor  = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const isWide      = width >= 640;
+  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const headerBg = isDark ? "#28292b" : "#f8f8f9";
+  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const isWide = width >= 640;
 
   useEffect(() => {
     async function load() {
@@ -281,7 +377,7 @@ export default function AdminBookingsScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.pageHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <ThemedText style={styles.pageTitle}>
             {viewMode === "list" ? "Live Reservations" : "Availability"}
           </ThemedText>
@@ -292,28 +388,37 @@ export default function AdminBookingsScreen() {
           </ThemedText>
         </View>
 
-        <View style={styles.headerRight}>
+        <View style={styles.headerControls}>
           {/* Restaurant selector chips */}
-          {restaurants.length > 1 && (
-            <View style={styles.locationRow}>
-              {restaurants.map((r) => (
-                <Pressable
-                  key={r.id}
-                  style={[
-                    styles.chip,
-                    { borderColor },
-                    r.id === selectedRestaurantId && { backgroundColor: PRIMARY, borderColor: PRIMARY },
-                  ]}
-                  onPress={() => handleSelectRestaurant(r.id)}
+          {restaurants.length > 1 &&
+            restaurants.map((r) => (
+              <Pressable
+                key={r.id}
+                style={[
+                  styles.chip,
+                  { borderColor },
+                  r.id === selectedRestaurantId && {
+                    backgroundColor: PRIMARY,
+                    borderColor: PRIMARY,
+                  },
+                ]}
+                onPress={() => handleSelectRestaurant(r.id)}
+              >
+                <ThemedText
+                  style={
+                    r.id === selectedRestaurantId
+                      ? styles.chipTextActive
+                      : [styles.chipText, { color: mutedColor }]
+                  }
                 >
-                  <ThemedText
-                    style={r.id === selectedRestaurantId ? styles.chipTextActive : [styles.chipText, { color: mutedColor }]}
-                  >
-                    {r.name}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
+                  {r.name}
+                </ThemedText>
+              </Pressable>
+            ))}
+
+          {/* Separator between chips and toggles */}
+          {restaurants.length > 1 && (
+            <View style={[styles.headerSep, { backgroundColor: borderColor }]} />
           )}
 
           {/* Active / Cancelled toggle */}
@@ -322,7 +427,9 @@ export default function AdminBookingsScreen() {
               style={[styles.modeBtn, !showCancelled && { backgroundColor: PRIMARY }]}
               onPress={() => setShowCancelled(false)}
             >
-              <ThemedText style={[styles.modeBtnText, { color: !showCancelled ? "#fff" : mutedColor }]}>
+              <ThemedText
+                style={[styles.modeBtnText, { color: !showCancelled ? "#fff" : mutedColor }]}
+              >
                 Active
               </ThemedText>
             </Pressable>
@@ -330,7 +437,9 @@ export default function AdminBookingsScreen() {
               style={[styles.modeBtn, showCancelled && { backgroundColor: "#dc2626" }]}
               onPress={() => setShowCancelled(true)}
             >
-              <ThemedText style={[styles.modeBtnText, { color: showCancelled ? "#fff" : mutedColor }]}>
+              <ThemedText
+                style={[styles.modeBtnText, { color: showCancelled ? "#fff" : mutedColor }]}
+              >
                 Cancelled
               </ThemedText>
             </Pressable>
@@ -343,19 +452,21 @@ export default function AdminBookingsScreen() {
                 style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
                 onPress={() => setViewMode("list")}
               >
-                <Ionicons name="list-outline" size={16} color={viewMode === "list" ? "#fff" : mutedColor} />
-                <ThemedText style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}>
-                  List
-                </ThemedText>
+                <Ionicons
+                  name="list-outline"
+                  size={16}
+                  color={viewMode === "list" ? "#fff" : mutedColor}
+                />
               </Pressable>
               <Pressable
                 style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
                 onPress={switchToGrid}
               >
-                <Ionicons name="grid-outline" size={16} color={viewMode === "grid" ? "#fff" : mutedColor} />
-                <ThemedText style={[styles.modeBtnText, { color: viewMode === "grid" ? "#fff" : mutedColor }]}>
-                  Grid
-                </ThemedText>
+                <Ionicons
+                  name="grid-outline"
+                  size={16}
+                  color={viewMode === "grid" ? "#fff" : mutedColor}
+                />
               </Pressable>
             </View>
           )}
@@ -373,12 +484,17 @@ export default function AdminBookingsScreen() {
               <Ionicons name="chevron-back" size={18} color={PRIMARY} />
             </Pressable>
             <Pressable
-              onPress={() => { setGridDate(new Date()); if (selectedRestaurantId) loadGrid(selectedRestaurantId, new Date()); }}
+              onPress={() => {
+                setGridDate(new Date());
+                if (selectedRestaurantId) loadGrid(selectedRestaurantId, new Date());
+              }}
               style={styles.gridDateLabel}
             >
               <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
               {gridDate.toDateString() !== new Date().toDateString() && (
-                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>tap for today</ThemedText>
+                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
+                  tap for today
+                </ThemedText>
               )}
             </Pressable>
             <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(1)}>
@@ -393,7 +509,12 @@ export default function AdminBookingsScreen() {
               <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f0f0f0" }]} />
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f0f0f0" },
+                ]}
+              />
               <ThemedText style={[styles.legendText, { color: mutedColor }]}>Available</ThemedText>
             </View>
             <ThemedText style={[styles.legendText, { color: mutedColor }]}>
@@ -415,17 +536,29 @@ export default function AdminBookingsScreen() {
       ) : sorted.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={40} color={mutedColor} />
-          <ThemedText style={[styles.emptyText, { color: mutedColor }]}>No reservations found</ThemedText>
+          <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
+            No reservations found
+          </ThemedText>
         </View>
       ) : isWide ? (
         /* ── Table view ── */
         <View style={[styles.tableCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={[styles.tableHeader, { backgroundColor: headerBg }]}>
-            <ThemedText style={[styles.thCell, styles.colTime, { color: mutedColor }]}>TIME</ThemedText>
-            <ThemedText style={[styles.thCell, styles.colGuest, { color: mutedColor }]}>GUEST</ThemedText>
-            <ThemedText style={[styles.thCell, styles.colParty, { color: mutedColor }]}>PARTY</ThemedText>
-            <ThemedText style={[styles.thCell, styles.colTable, { color: mutedColor }]}>TABLE</ThemedText>
-            <ThemedText style={[styles.thCell, styles.colStatus, { color: mutedColor }]}>STATUS</ThemedText>
+            <ThemedText style={[styles.thCell, styles.colTime, { color: mutedColor }]}>
+              TIME
+            </ThemedText>
+            <ThemedText style={[styles.thCell, styles.colGuest, { color: mutedColor }]}>
+              GUEST
+            </ThemedText>
+            <ThemedText style={[styles.thCell, styles.colParty, { color: mutedColor }]}>
+              PARTY
+            </ThemedText>
+            <ThemedText style={[styles.thCell, styles.colTable, { color: mutedColor }]}>
+              TABLE
+            </ThemedText>
+            <ThemedText style={[styles.thCell, styles.colStatus, { color: mutedColor }]}>
+              STATUS
+            </ThemedText>
             <View style={styles.colAction} />
           </View>
 
@@ -438,23 +571,36 @@ export default function AdminBookingsScreen() {
                 { cursor: "pointer" } as any,
               ]}
               // Use onClick on the View so we can check event target
-              {...{ onClick: (e: any) => {
-                // Don't navigate if click was inside the menu area
-                if (e.target.closest?.("[data-menu]")) return;
-                if (openMenuId !== null) { setOpenMenuId(null); return; }
-                router.push(`/(admin)/bookings/${b.id}`);
-              }}}
+              {...{
+                onClick: (e: any) => {
+                  // Don't navigate if click was inside the menu area
+                  if (e.target.closest?.("[data-menu]")) return;
+                  if (openMenuId !== null) {
+                    setOpenMenuId(null);
+                    return;
+                  }
+                  router.push(`/(admin)/bookings/${b.id}`);
+                },
+              }}
             >
               <View style={styles.colTime}>
                 <ThemedText style={styles.tdTime}>
-                  {new Date(b.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(b.date).toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </ThemedText>
                 <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
-                  {new Date(b.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  {new Date(b.date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </ThemedText>
               </View>
               <View style={styles.colGuest}>
-                <ThemedText style={styles.tdGuest} numberOfLines={1}>{b.customerEmail}</ThemedText>
+                <ThemedText style={styles.tdGuest} numberOfLines={1}>
+                  {b.customerEmail}
+                </ThemedText>
                 <ThemedText style={[styles.tdNotes, { color: mutedColor }]} numberOfLines={1}>
                   {b.specialRequests || "No special requests"}
                 </ThemedText>
@@ -473,7 +619,7 @@ export default function AdminBookingsScreen() {
               </View>
               <View
                 style={[styles.colAction, { zIndex: openMenuId === b.id ? 10 : 1 }]}
-                {...{ "data-menu": true } as any}
+                {...({ "data-menu": true } as any)}
               >
                 <Pressable
                   style={styles.menuBtn}
@@ -483,10 +629,7 @@ export default function AdminBookingsScreen() {
                 </Pressable>
                 {openMenuId === b.id && (
                   <>
-                    <Pressable
-                      style={styles.menuBackdrop}
-                      onPress={() => setOpenMenuId(null)}
-                    />
+                    <Pressable style={styles.menuBackdrop} onPress={() => setOpenMenuId(null)} />
                     <View style={[styles.menuPopup, { backgroundColor: cardBg, borderColor }]}>
                       <Pressable
                         style={styles.menuItem}
@@ -496,7 +639,9 @@ export default function AdminBookingsScreen() {
                         }}
                       >
                         <Ionicons name="eye-outline" size={14} color={PRIMARY} />
-                        <ThemedText style={[styles.menuItemText, { color: PRIMARY }]}>View details</ThemedText>
+                        <ThemedText style={[styles.menuItemText, { color: PRIMARY }]}>
+                          View details
+                        </ThemedText>
                       </Pressable>
                       <View style={[styles.menuDivider, { backgroundColor: borderColor }]} />
                       <Pressable
@@ -507,7 +652,9 @@ export default function AdminBookingsScreen() {
                         }}
                       >
                         <Ionicons name="trash-outline" size={14} color="#dc2626" />
-                        <ThemedText style={[styles.menuItemText, { color: "#dc2626" }]}>Cancel booking</ThemedText>
+                        <ThemedText style={[styles.menuItemText, { color: "#dc2626" }]}>
+                          Cancel booking
+                        </ThemedText>
                       </Pressable>
                     </View>
                   </>
@@ -529,19 +676,31 @@ export default function AdminBookingsScreen() {
                 <View style={styles.listCardInfo}>
                   <ThemedText style={styles.tdTime}>
                     {new Date(b.date).toLocaleString(undefined, {
-                      weekday: "short", month: "short", day: "numeric",
-                      hour: "2-digit", minute: "2-digit",
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </ThemedText>
-                  <ThemedText style={styles.tdGuest} numberOfLines={1}>{b.customerEmail}</ThemedText>
+                  <ThemedText style={styles.tdGuest} numberOfLines={1}>
+                    {b.customerEmail}
+                  </ThemedText>
                   <View style={styles.partyPill}>
                     <Ionicons name="people-outline" size={12} color={mutedColor} />
-                    <ThemedText style={[styles.tdDate, { color: mutedColor }]}>{b.seats} guests</ThemedText>
+                    <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
+                      {b.seats} guests
+                    </ThemedText>
                   </View>
                 </View>
                 <View style={styles.listCardRight}>
                   <StatusBadge date={b.date} isDark={isDark} />
-                  <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} style={{ marginTop: 10 }} />
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={16}
+                    color={mutedColor}
+                    style={{ marginTop: 10 }}
+                  />
                 </View>
               </View>
             </Pressable>
@@ -586,8 +745,13 @@ const styles = StyleSheet.create({
   },
   pageTitle: { fontSize: 28, fontWeight: "800", letterSpacing: -0.6 },
   pageSub: { fontSize: 14, marginTop: 2 },
-  headerRight: { gap: 10, alignItems: "flex-end" },
-  locationRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  headerControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  headerSep: { width: 1, height: 24, marginHorizontal: 4 },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13 },
   chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
@@ -661,9 +825,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  tableHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
+  tableHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   thCell: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
-  tableRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+  tableRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
   colTime: { width: 88 },
   colGuest: { flex: 1, paddingHorizontal: 8 },
   colParty: { width: 64, alignItems: "flex-start" },
@@ -717,7 +891,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  listCardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  listCardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
   listCardInfo: { flex: 1, gap: 4 },
   listCardRight: { alignItems: "flex-end" },
 });

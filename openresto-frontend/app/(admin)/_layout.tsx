@@ -53,7 +53,11 @@ function AdminLayoutInner() {
   if (Platform.OS === "web") {
     const onLoginScreen = segments.includes("login" as never);
     if (onLoginScreen) {
-      return <ThemedView style={{ flex: 1 }}><Slot /></ThemedView>;
+      return (
+        <ThemedView style={{ flex: 1 }}>
+          <Slot />
+        </ThemedView>
+      );
     }
     return (
       <ThemedView style={{ flex: 1, flexDirection: "row" }}>
@@ -68,19 +72,10 @@ function AdminLayoutInner() {
   // On native desktop (iPad etc): standard Stack
   return (
     <Stack>
-      <Stack.Screen
-        name="login"
-        options={{ title: "Admin Login", headerBackVisible: false }}
-      />
-      <Stack.Screen
-        name="dashboard"
-        options={{ title: "Dashboard", headerBackVisible: false }}
-      />
+      <Stack.Screen name="login" options={{ title: "Admin Login", headerBackVisible: false }} />
+      <Stack.Screen name="dashboard" options={{ title: "Dashboard", headerBackVisible: false }} />
       <Stack.Screen name="bookings/index" options={{ title: "Bookings" }} />
-      <Stack.Screen
-        name="bookings/[id]"
-        options={{ title: "Booking Detail" }}
-      />
+      <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
       <Stack.Screen name="settings" options={{ title: "Settings" }} />
     </Stack>
   );

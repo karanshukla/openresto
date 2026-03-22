@@ -42,14 +42,14 @@ export default function RestaurantScreen() {
 
   return (
     <ThemedView style={styles.root}>
-    <ScrollView style={styles.scroll}>
-      <PageContainer style={styles.page}>
-        <RestaurantDetails restaurant={restaurant} />
-        <Link href={`/book/${id}`} asChild>
-          <Button style={styles.bookButton}>Book a Table</Button>
-        </Link>
-      </PageContainer>
-    </ScrollView>
+      <ScrollView style={styles.scroll}>
+        <PageContainer style={styles.page}>
+          <RestaurantDetails restaurant={restaurant} />
+          <Link href={`/book/${id}`} asChild>
+            <Button style={styles.bookButton}>Book a Table</Button>
+          </Link>
+        </PageContainer>
+      </ScrollView>
     </ThemedView>
   );
 }

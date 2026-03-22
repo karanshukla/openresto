@@ -37,7 +37,10 @@ export default function LookupScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: pageBg }} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: pageBg }}
+      contentContainerStyle={styles.scrollContent}
+    >
       <PageContainer>
         <View style={styles.header}>
           <Ionicons name="search-outline" size={32} color={PRIMARY} />
@@ -104,7 +107,12 @@ export default function LookupScreen() {
               <ThemedText style={styles.resultTitle}>Reservation Found</ThemedText>
             </View>
 
-            <View style={[styles.refBadge, { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" }]}>
+            <View
+              style={[
+                styles.refBadge,
+                { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
+              ]}
+            >
               <ThemedText style={[styles.refText, { color: PRIMARY }]}>
                 {booking.bookingRef}
               </ThemedText>
@@ -124,7 +132,9 @@ export default function LookupScreen() {
               <View style={styles.detailRow}>
                 <Ionicons name="people-outline" size={15} color={mutedColor} />
                 <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Guests</ThemedText>
+                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                    Guests
+                  </ThemedText>
                   <ThemedText style={styles.detailValue}>{booking.seats}</ThemedText>
                 </View>
               </View>
@@ -174,9 +184,14 @@ export default function LookupScreen() {
               <Pressable
                 key={c.bookingRef}
                 style={[styles.recentCard, { backgroundColor: cardBg, borderColor }]}
-                onPress={() => {
+                onPress={async () => {
                   setRefInput(c.bookingRef);
                   setEmailInput(c.email);
+                  setLoading(true);
+                  setSearched(true);
+                  const result = await getBookingByRef(c.bookingRef, c.email);
+                  setBooking(result);
+                  setLoading(false);
                 }}
               >
                 <View style={styles.recentCardRow}>
@@ -184,7 +199,10 @@ export default function LookupScreen() {
                     <ThemedText style={styles.recentRef}>{c.bookingRef}</ThemedText>
                     <ThemedText style={[styles.recentMeta, { color: mutedColor }]}>
                       {c.restaurantName ? `${c.restaurantName} · ` : ""}
-                      {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      {new Date(c.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
                       {" · "}
                       {c.seats} guest{c.seats !== 1 ? "s" : ""}
                     </ThemedText>
