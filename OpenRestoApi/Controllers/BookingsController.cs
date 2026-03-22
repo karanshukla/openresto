@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Infrastructure.Cookies;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Controllers
 {
@@ -10,10 +13,14 @@ namespace OpenRestoApi.Controllers
     public class BookingsController : ControllerBase
     {
         private readonly BookingService _bookingService;
+        private readonly RecentBookingsCookie _recentCookie;
+        private readonly AppDbContext _db;
 
-        public BookingsController(BookingService bookingService)
+        public BookingsController(BookingService bookingService, RecentBookingsCookie recentCookie, AppDbContext db)
         {
             _bookingService = bookingService;
+            _recentCookie = recentCookie;
+            _db = db;
         }
 
         [HttpGet("restaurant/{restaurantId}")]
@@ -62,12 +69,36 @@ namespace OpenRestoApi.Controllers
             try
             {
                 var newBooking = await _bookingService.CreateBookingAsync(bookingDto);
+
+                // Append to the encrypted recent-bookings cookie
+                var restaurantName = await _db.Restaurants
+                    .Where(r => r.Id == bookingDto.RestaurantId)
+                    .Select(r => r.Name)
+                    .FirstOrDefaultAsync();
+
+                _recentCookie.Append(Request, Response, new CachedBookingEntry(
+                    BookingRef: newBooking.BookingRef ?? "",
+                    Email: newBooking.CustomerEmail ?? "",
+                    Date: newBooking.Date.ToString("O"),
+                    Seats: newBooking.Seats,
+                    RestaurantName: restaurantName,
+                    CreatedAt: DateTime.UtcNow.ToString("O")
+                ));
+
                 return CreatedAtAction(nameof(GetBooking), new { id = newBooking.Id }, newBooking);
             }
             catch (InvalidOperationException ex)
             {
                 return Conflict(new { message = ex.Message });
             }
+        }
+
+        /// <summary>Returns the user's recent bookings from their encrypted HttpOnly cookie.</summary>
+        [HttpGet("my-recent")]
+        public IActionResult GetMyRecentBookings()
+        {
+            var entries = _recentCookie.Read(Request);
+            return Ok(entries);
         }
 
         [HttpPut("{id}")]

@@ -26,9 +26,12 @@ builder.Services.AddCors(options =>
         {
             if (corsOrigins == "*")
             {
-                builder.AllowAnyOrigin()
+                // AllowAnyOrigin is incompatible with AllowCredentials,
+                // so use SetIsOriginAllowed to permit all origins with credentials
+                builder.SetIsOriginAllowed(_ => true)
                        .AllowAnyMethod()
-                       .AllowAnyHeader();
+                       .AllowAnyHeader()
+                       .AllowCredentials();
             }
             else
             {
@@ -94,6 +97,7 @@ builder.Services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapp
 // Email
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
+builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
 builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
 
 // Database (SQLite)

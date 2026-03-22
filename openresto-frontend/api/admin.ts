@@ -74,16 +74,18 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
 
 // ---------- Bookings ----------
 
+export type BookingStatusFilter = "active" | "past" | "cancelled";
+
 export async function getAdminBookings(
   restaurantId?: number,
   date?: string,
-  cancelled = false
+  status: BookingStatusFilter = "active"
 ): Promise<BookingDetailDto[]> {
   try {
     const params = new URLSearchParams();
     if (restaurantId != null) params.set("restaurantId", String(restaurantId));
     if (date) params.set("date", date);
-    if (cancelled) params.set("cancelled", "true");
+    if (status !== "active") params.set("status", status);
     const query = params.toString() ? `?${params}` : "";
     const res = await fetch(buildEndpoint(`/admin/bookings${query}`), {
       headers: getAuthHeaders(),

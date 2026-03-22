@@ -37,6 +37,7 @@ export async function createBooking(booking: BookingCreationDto): Promise<Bookin
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(booking),
+    credentials: "include",
   });
 
   if (res.status === 409) {

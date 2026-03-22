@@ -5,6 +5,7 @@ import {
   adminDeleteBooking,
   BookingDetailDto,
   SectionWithTables,
+  BookingStatusFilter,
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -296,7 +297,7 @@ export default function AdminBookingsScreen() {
   const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [showCancelled, setShowCancelled] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("active");
 
   // Grid state
   const [gridDate, setGridDate] = useState(new Date());
@@ -324,19 +325,19 @@ export default function AdminBookingsScreen() {
       if (data.length > 0) {
         const id = data[0].id;
         setSelectedRestaurantId(id);
-        const b = await getAdminBookings(id, undefined, showCancelled);
+        const b = await getAdminBookings(id, undefined, statusFilter);
         setBookings(b);
       }
       setLoading(false);
     }
     load();
-  }, [showCancelled]);
+  }, [statusFilter]);
 
   const handleSelectRestaurant = async (id: number) => {
     if (id === selectedRestaurantId) return;
     setSelectedRestaurantId(id);
     setLoading(true);
-    const b = await getAdminBookings(id, undefined, showCancelled);
+    const b = await getAdminBookings(id, undefined, statusFilter);
     setBookings(b);
     setLoading(false);
     if (viewMode === "grid") loadGrid(id, gridDate);
@@ -379,7 +380,13 @@ export default function AdminBookingsScreen() {
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.pageTitle}>
-            {viewMode === "list" ? "Live Reservations" : "Availability"}
+            {viewMode === "grid"
+              ? "Availability"
+              : statusFilter === "past"
+                ? "Past Reservations"
+                : statusFilter === "cancelled"
+                  ? "Cancelled Reservations"
+                  : "Live Reservations"}
           </ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
             {viewMode === "list"
@@ -421,32 +428,34 @@ export default function AdminBookingsScreen() {
             <View style={[styles.headerSep, { backgroundColor: borderColor }]} />
           )}
 
-          {/* Active / Cancelled toggle */}
+          {/* Status filter toggle */}
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
-            <Pressable
-              style={[styles.modeBtn, !showCancelled && { backgroundColor: PRIMARY }]}
-              onPress={() => setShowCancelled(false)}
-            >
-              <ThemedText
-                style={[styles.modeBtnText, { color: !showCancelled ? "#fff" : mutedColor }]}
+            {(
+              [
+                { key: "active", label: "Active", color: PRIMARY },
+                { key: "past", label: "Past", color: "#7c3aed" },
+                { key: "cancelled", label: "Cancelled", color: "#dc2626" },
+              ] as const
+            ).map(({ key, label, color }) => (
+              <Pressable
+                key={key}
+                style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
+                onPress={() => setStatusFilter(key)}
               >
-                Active
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              style={[styles.modeBtn, showCancelled && { backgroundColor: "#dc2626" }]}
-              onPress={() => setShowCancelled(true)}
-            >
-              <ThemedText
-                style={[styles.modeBtnText, { color: showCancelled ? "#fff" : mutedColor }]}
-              >
-                Cancelled
-              </ThemedText>
-            </Pressable>
+                <ThemedText
+                  style={[
+                    styles.modeBtnText,
+                    { color: statusFilter === key ? "#fff" : mutedColor },
+                  ]}
+                >
+                  {label}
+                </ThemedText>
+              </Pressable>
+            ))}
           </View>
 
           {/* View mode toggle */}
-          {!showCancelled && (
+          {statusFilter === "active" && (
             <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
               <Pressable
                 style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
@@ -475,7 +484,7 @@ export default function AdminBookingsScreen() {
 
       {loading ? (
         <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
-      ) : viewMode === "grid" ? (
+      ) : viewMode === "grid" && statusFilter === "active" ? (
         /* ── Grid view ── */
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           {/* Date navigation */}

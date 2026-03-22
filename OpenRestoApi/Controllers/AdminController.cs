@@ -44,6 +44,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetBookings(
         [FromQuery] int? restaurantId,
         [FromQuery] DateTime? date,
+        [FromQuery] string status = "active",
         [FromQuery] bool cancelled = false)
     {
         var q = _db.Bookings
@@ -52,8 +53,23 @@ public class AdminController : ControllerBase
             .Include(b => b.Table)
             .AsQueryable();
 
-        // Filter by cancelled status
-        q = q.Where(b => b.IsCancelled == cancelled);
+        // Support both legacy `cancelled` param and new `status` param
+        var effectiveStatus = cancelled ? "cancelled" : status;
+        var todayStart = DateTime.Today; // midnight local time
+
+        switch (effectiveStatus.ToLowerInvariant())
+        {
+            case "cancelled":
+                q = q.Where(b => b.IsCancelled);
+                break;
+            case "past":
+                q = q.Where(b => !b.IsCancelled && b.Date < todayStart);
+                break;
+            case "active":
+            default:
+                q = q.Where(b => !b.IsCancelled && b.Date >= todayStart);
+                break;
+        }
 
         if (restaurantId.HasValue)
             q = q.Where(b => b.RestaurantId == restaurantId.Value);

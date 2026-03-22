@@ -1,59 +1,32 @@
-import { Platform } from "react-native";
-
 export interface CachedBooking {
   bookingRef: string;
   email: string;
   date: string;
   seats: number;
   restaurantName?: string;
-  createdAt: string; // ISO string
+  createdAt: string;
 }
 
-const STORAGE_KEY = "openresto_bookings";
-const MAX_CACHED = 20;
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-function getStorage(): Storage | null {
-  if (Platform.OS !== "web") return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
+function buildEndpoint(path: string): string {
+  const base = API_URL?.replace(/\/$/, "") ?? "";
+  if (!base) return `/api${path}`;
+  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
 }
 
-export function getCachedBookings(): CachedBooking[] {
-  const storage = getStorage();
-  if (!storage) return [];
+/**
+ * Fetch recent bookings from the encrypted HttpOnly cookie via the API.
+ * The cookie is sent automatically by the browser — no JS access to the data.
+ */
+export async function fetchCachedBookings(): Promise<CachedBooking[]> {
   try {
-    const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const bookings: CachedBooking[] = JSON.parse(raw);
-    // Sort newest first
-    return bookings.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const res = await fetch(buildEndpoint("/bookings/my-recent"), {
+      credentials: "include",
+    });
+    if (!res.ok) return [];
+    return await res.json();
   } catch {
     return [];
   }
-}
-
-export function addCachedBooking(booking: Omit<CachedBooking, "createdAt">) {
-  const storage = getStorage();
-  if (!storage) return;
-  const existing = getCachedBookings();
-  // Don't duplicate
-  if (existing.some((b) => b.bookingRef === booking.bookingRef)) return;
-  const updated = [{ ...booking, createdAt: new Date().toISOString() }, ...existing].slice(
-    0,
-    MAX_CACHED
-  );
-  storage.setItem(STORAGE_KEY, JSON.stringify(updated));
-}
-
-export function removeCachedBooking(bookingRef: string) {
-  const storage = getStorage();
-  if (!storage) return;
-  const existing = getCachedBookings();
-  const updated = existing.filter((b) => b.bookingRef !== bookingRef);
-  storage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }

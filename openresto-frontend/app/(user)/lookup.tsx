@@ -1,13 +1,13 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, BookingDto } from "@/api/bookings";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Input from "@/components/common/Input";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
-import { getCachedBookings } from "@/utils/bookingCache";
+import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -15,8 +15,12 @@ export default function LookupScreen() {
   const [booking, setBooking] = useState<BookingDto | null | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [cached, setCached] = useState<CachedBooking[]>([]);
   const isDark = useColorScheme() === "dark";
-  const cached = getCachedBookings();
+
+  useEffect(() => {
+    fetchCachedBookings().then(setCached);
+  }, []);
 
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const cardBg = isDark ? "#1e2022" : "#ffffff";
