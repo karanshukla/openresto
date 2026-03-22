@@ -1,8 +1,9 @@
 import { View, StyleSheet, Pressable, Platform } from "react-native";
-import { Link, usePathname, useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/context/ThemeContext";
 import { logout } from "@/api/auth";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { APP_NAME } from "@/constants/config";
@@ -35,6 +36,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const { toggle } = useTheme();
   const [locationCount, setLocationCount] = useState(0);
 
   const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
@@ -86,39 +88,40 @@ export default function AdminSidebar() {
         {NAV_ITEMS.map(({ label, icon, href, match }) => {
           const active = match(pathname);
           return (
-            <Link key={href} href={href} asChild>
-              <Pressable
-                style={(state) => [
-                  styles.navItem,
+            <Pressable
+              key={href}
+              onPress={() => router.push(href)}
+              style={(state) => [
+                styles.navItem,
+                active
+                  ? { backgroundColor: activeBg }
+                  : (state as any).hovered && { backgroundColor: hoverBg },
+                { cursor: "pointer" } as any,
+              ]}
+            >
+              <Ionicons
+                name={icon}
+                size={18}
+                color={active ? PRIMARY : mutedColor}
+                style={styles.navIcon}
+              />
+              <ThemedText
+                style={[
+                  styles.navLabel,
                   active
-                    ? { backgroundColor: activeBg }
-                    : (state as any).hovered && { backgroundColor: hoverBg },
-                  { cursor: "pointer" } as any,
+                    ? { color: PRIMARY, fontWeight: "700" }
+                    : { color: mutedColor },
                 ]}
               >
-                <Ionicons
-                  name={icon}
-                  size={18}
-                  color={active ? PRIMARY : mutedColor}
-                  style={styles.navIcon}
+                {label}
+              </ThemedText>
+              {active && (
+                <View
+                  style={[styles.activeBar, { backgroundColor: PRIMARY }]}
+                  pointerEvents="none"
                 />
-                <ThemedText
-                  style={[
-                    styles.navLabel,
-                    active
-                      ? { color: PRIMARY, fontWeight: "700" }
-                      : { color: mutedColor },
-                  ]}
-                >
-                  {label}
-                </ThemedText>
-                {active && (
-                  <View
-                    style={[styles.activeBar, { backgroundColor: PRIMARY }]}
-                  />
-                )}
-              </Pressable>
-            </Link>
+              )}
+            </Pressable>
           );
         })}
       </View>
@@ -129,7 +132,7 @@ export default function AdminSidebar() {
       <View style={styles.ctaWrapper}>
         <Pressable
           style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
-          onPress={() => router.push("/(admin)/bookings")}
+          onPress={() => router.push("/(admin)/bookings/new")}
         >
           <Ionicons name="add-circle-outline" size={16} color="#fff" />
           <ThemedText style={styles.ctaBtnText}>New Reservation</ThemedText>
@@ -140,20 +143,33 @@ export default function AdminSidebar() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Link href="/" asChild>
-          <Pressable
-            style={(state) => [
-              styles.footerItem,
-              (state as any).hovered && { backgroundColor: hoverBg },
-              { cursor: "pointer" } as any,
-            ]}
-          >
-            <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
-            <ThemedText style={[styles.footerText, { color: mutedColor }]}>
-              Back to site
-            </ThemedText>
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={() => router.push("/")}
+          style={(state) => [
+            styles.footerItem,
+            (state as any).hovered && { backgroundColor: hoverBg },
+            { cursor: "pointer" } as any,
+          ]}
+        >
+          <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+            Back to site
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={(state) => [
+            styles.footerItem,
+            (state as any).hovered && { backgroundColor: hoverBg },
+            { cursor: "pointer" } as any,
+          ]}
+          onPress={toggle}
+          accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={mutedColor} />
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+            {isDark ? "Light mode" : "Dark mode"}
+          </ThemedText>
+        </Pressable>
         <Pressable
           style={(state) => [
             styles.footerItem,
@@ -231,6 +247,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeBar: {
+    position: "absolute",
+    left: 0,
+    top: "50%" as any,
+    marginTop: -8,
     width: 3,
     height: 16,
     borderRadius: 2,

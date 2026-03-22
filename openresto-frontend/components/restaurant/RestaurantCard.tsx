@@ -4,6 +4,7 @@ import { Link } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function RestaurantCard({
   restaurant,
@@ -17,6 +18,20 @@ export default function RestaurantCard({
     (acc, s) => acc + s.tables.length,
     0
   );
+  const totalSeats = restaurant.sections.reduce(
+    (acc, s) => acc + s.tables.reduce((a, t) => a + t.seats, 0),
+    0
+  );
+
+  // Pick a consistent hue offset from the name so cards feel distinct
+  const hues = [195, 210, 165, 220, 180, 200];
+  const hue = hues[restaurant.name.charCodeAt(0) % hues.length];
+  const headerBg = isDark
+    ? `hsl(${hue}, 45%, 16%)`
+    : `hsl(${hue}, 55%, 94%)`;
+  const iconBg = `hsl(${hue}, 65%, ${isDark ? "28%" : "82%"})`;
+  const iconColor = `hsl(${hue}, 70%, ${isDark ? "72%" : "32%"})`;
+  const initial = restaurant.name.charAt(0).toUpperCase();
 
   return (
     <Link href={`/(user)/book/${restaurant.id}`} asChild>
@@ -24,35 +39,63 @@ export default function RestaurantCard({
         style={(state) => [
           styles.card,
           isDark ? styles.cardDark : styles.cardLight,
-          (state as any).hovered && styles.cardHovered,
+          (state as any).hovered && (isDark ? styles.cardHoveredDark : styles.cardHoveredLight),
           { cursor: "pointer" } as any,
         ]}
       >
-        <View style={[styles.accent, { backgroundColor: PRIMARY }]} />
+        {/* Coloured header band */}
+        <View style={[styles.header, { backgroundColor: headerBg }]}>
+          <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+            <Ionicons name="restaurant" size={20} color={iconColor} />
+          </View>
+          <ThemedText style={[styles.initial, { color: iconColor }]}>
+            {initial}
+          </ThemedText>
+        </View>
 
+        {/* Body */}
         <View style={styles.body}>
           <ThemedText style={styles.name} numberOfLines={1}>
             {restaurant.name}
           </ThemedText>
 
           {restaurant.address ? (
-            <ThemedText
-              style={[styles.address, { color: mutedColor }]}
-              numberOfLines={1}
-            >
-              {restaurant.address}
-            </ThemedText>
+            <View style={styles.addressRow}>
+              <Ionicons
+                name="location-outline"
+                size={13}
+                color={mutedColor}
+                style={{ marginTop: 1 }}
+              />
+              <ThemedText
+                style={[styles.address, { color: mutedColor }]}
+                numberOfLines={1}
+              >
+                {restaurant.address}
+              </ThemedText>
+            </View>
           ) : null}
 
-          <View style={styles.footer}>
-            <ThemedText style={[styles.meta, { color: mutedColor }]}>
-              {restaurant.sections.length}{" "}
-              {restaurant.sections.length === 1 ? "section" : "sections"} ·{" "}
-              {totalTables} {totalTables === 1 ? "table" : "tables"}
-            </ThemedText>
-            <ThemedText style={[styles.cta, { color: PRIMARY }]}>
-              Reserve →
-            </ThemedText>
+          {/* Chips */}
+          <View style={styles.chips}>
+            <View style={[styles.chip, { backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)" }]}>
+              <Ionicons name="grid-outline" size={11} color={mutedColor} />
+              <ThemedText style={[styles.chipText, { color: mutedColor }]}>
+                {totalTables} {totalTables === 1 ? "table" : "tables"}
+              </ThemedText>
+            </View>
+            <View style={[styles.chip, { backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)" }]}>
+              <Ionicons name="people-outline" size={11} color={mutedColor} />
+              <ThemedText style={[styles.chipText, { color: mutedColor }]}>
+                {totalSeats} seats
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* CTA */}
+          <View style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}>
+            <ThemedText style={styles.ctaBtnText}>Book a table</ThemedText>
+            <Ionicons name="arrow-forward" size={14} color="#fff" />
           </View>
         </View>
       </Pressable>
@@ -62,55 +105,102 @@ export default function RestaurantCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
   },
   cardLight: {
-    backgroundColor: "#fff",
-    borderColor: "rgba(0,0,0,0.08)",
+    backgroundColor: "#ffffff",
+    borderColor: "rgba(0,0,0,0.18)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardDark: {
-    backgroundColor: "#1e2022",
-    borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "#23272b",
+    borderColor: "rgba(255,255,255,0.15)",
   },
-  cardHovered: {
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    elevation: 6,
-    transform: [{ translateY: -2 }],
+  cardHoveredLight: {
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    elevation: 8,
+    transform: [{ translateY: -3 }],
+    borderColor: "rgba(0,0,0,0.28)",
   },
-  accent: {
-    height: 4,
+  cardHoveredDark: {
+    transform: [{ translateY: -3 }],
+    borderColor: "rgba(255,255,255,0.24)",
+  },
+  header: {
+    height: 100,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  initial: {
+    fontSize: 44,
+    fontWeight: "800",
+    opacity: 0.18,
+    lineHeight: 52,
   },
   body: {
-    padding: 20,
-    gap: 6,
+    padding: 18,
+    gap: 8,
   },
   name: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     letterSpacing: -0.3,
   },
-  address: {
-    fontSize: 14,
-  },
-  footer: {
+  addressRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
+    alignItems: "flex-start",
+    gap: 4,
   },
-  meta: {
+  address: {
     fontSize: 13,
+    flex: 1,
   },
-  cta: {
+  chips: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 2,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  ctaBtnText: {
+    color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
   },
 });

@@ -32,6 +32,15 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
+        public async Task<Booking?> GetByRefAsync(string bookingRef)
+        {
+            return await _db.Bookings
+                .Include(b => b.Table)
+                .Include(b => b.Section)
+                .Include(b => b.Restaurant)
+                .FirstOrDefaultAsync(b => b.BookingRef == bookingRef);
+        }
+
         public async Task<IEnumerable<Booking>> GetBookingsByRestaurantIdAsync(int restaurantId)
         {
             return await _db.Bookings
@@ -59,9 +68,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             }
         }
 
-        public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime date)
+        public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate)
         {
-            var dayStart = date.ToUniversalTime().Date;
+            var dayStart = bookingDate.ToUniversalTime().Date;
             var dayEnd = dayStart.AddDays(1);
             return await _db.Bookings.AnyAsync(b =>
                 b.TableId == tableId &&

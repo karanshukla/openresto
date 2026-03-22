@@ -1,13 +1,13 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getBookingById, BookingDto } from "@/api/bookings";
+import { getBookingByRef, BookingDto } from "@/api/bookings";
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet } from "react-native";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 
 export default function LookupScreen() {
-  const [bookingIdInput, setBookingIdInput] = useState("");
+  const [refInput, setRefInput] = useState("");
   const [booking, setBooking] = useState<BookingDto | null | undefined>(
     undefined
   );
@@ -15,11 +15,11 @@ export default function LookupScreen() {
   const [searched, setSearched] = useState(false);
 
   const handleLookup = async () => {
-    const id = parseInt(bookingIdInput, 10);
-    if (isNaN(id)) return;
+    const ref = refInput.trim();
+    if (!ref) return;
     setLoading(true);
     setSearched(true);
-    const result = await getBookingById(id);
+    const result = await getBookingByRef(ref);
     setBooking(result);
     setLoading(false);
   };
@@ -28,20 +28,22 @@ export default function LookupScreen() {
     <ThemedView style={styles.container}>
       <ThemedText type="title">Find My Booking</ThemedText>
       <ThemedText style={styles.subtitle}>
-        Enter your booking ID to view your reservation details.
+        Enter your booking reference to view your reservation details.
       </ThemedText>
 
-      <ThemedText>Booking ID</ThemedText>
+      <ThemedText>Booking Reference</ThemedText>
       <Input
-        placeholder="e.g. 42"
-        value={bookingIdInput}
-        onChangeText={setBookingIdInput}
-        keyboardType="numeric"
+        placeholder="e.g. crispy-basil-thyme"
+        value={refInput}
+        onChangeText={setRefInput}
+        autoCapitalize="none"
+        returnKeyType="go"
+        onSubmitEditing={handleLookup}
       />
 
       <Button
         onPress={handleLookup}
-        disabled={!bookingIdInput || loading}
+        disabled={!refInput.trim() || loading}
       >
         Look Up
       </Button>
@@ -53,7 +55,7 @@ export default function LookupScreen() {
       {!loading && searched && !booking && (
         <ThemedView style={styles.result}>
           <ThemedText style={styles.notFound}>
-            No booking found with that ID.
+            No booking found with that reference.
           </ThemedText>
         </ThemedView>
       )}
@@ -61,7 +63,7 @@ export default function LookupScreen() {
       {!loading && booking && (
         <ThemedView style={styles.result}>
           <ThemedText type="defaultSemiBold" style={styles.resultTitle}>
-            Booking #{booking.id}
+            {booking.bookingRef}
           </ThemedText>
           <ThemedText>Email: {booking.customerEmail}</ThemedText>
           <ThemedText>Seats: {booking.seats}</ThemedText>

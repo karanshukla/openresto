@@ -1,9 +1,10 @@
+import { forwardRef } from "react";
 import { StyleSheet, TextInput, TextInputProps } from "react-native";
 import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
 
-export default function Input(props: TextInputProps) {
+const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
   const colorScheme = useColorScheme() ?? "light";
   const textColor = Colors[colorScheme].text;
   const borderColor = colorScheme === "dark"
@@ -15,25 +16,25 @@ export default function Input(props: TextInputProps) {
   return (
     <ThemedView style={styles.container}>
       <TextInput
+        ref={ref}
         style={[
           styles.input,
-          {
-            color: textColor,
-            borderColor,
-            backgroundColor: bgColor,
-          },
+          { color: textColor, borderColor, backgroundColor: bgColor },
           { outlineColor: "#0a7ea4" } as any,
+          style,
         ]}
         placeholderTextColor={placeholderColor}
         {...props}
       />
     </ThemedView>
   );
-}
+});
+
+export default Input;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   input: {
     height: 44,

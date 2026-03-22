@@ -81,6 +81,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddDistributedMemoryCache();
 
 // HoldService must be Singleton — the in-memory dictionary must survive across requests
+builder.Services.AddSingleton<ISystemClock, SystemClock>();
 builder.Services.AddSingleton<IHoldService, HoldService>();
 
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
@@ -88,7 +89,7 @@ builder.Services.AddScoped<ITableRepository, TableRepository>();
 builder.Services.AddScoped<ISectionRepository, SectionRepository>();
 builder.Services.AddScoped<IRestaurantRepository, RestaurantRepository>();
 builder.Services.AddScoped<BookingService>();
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
 
 // Database (SQLite)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -144,8 +145,36 @@ using (var scope = app.Services.CreateScope())
         )
         """);
 
+    // Schema evolution: add new columns if they don't exist yet
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"BookingRef\" TEXT NOT NULL DEFAULT ''"); }
+    catch { /* column already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"SpecialRequests\" TEXT"); }
+    catch { /* column already exists */ }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"EndTime\" TEXT"); }
+    catch { /* column already exists */ }
+
     // Seed initial data when database is empty
     DbSeeder.Seed(db);
+
+    // Seed admin credentials from config if none exist yet
+    if (!db.AdminCredentials.Any())
+    {
+        var email    = builder.Configuration["Admin:Email"]    ?? "example@example.com";
+        var password = builder.Configuration["Admin:Password"] ?? "password";
+        var saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+        var salt      = Convert.ToBase64String(saltBytes);
+        var hashBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+            password, saltBytes, 100_000,
+            System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+        var hash = Convert.ToBase64String(hashBytes);
+        db.AdminCredentials.Add(new OpenRestoApi.Core.Domain.AdminCredential
+        {
+            Email        = email,
+            PasswordHash = hash,
+            PasswordSalt = salt,
+        });
+        db.SaveChanges();
+    }
 }
 
 app.Run();

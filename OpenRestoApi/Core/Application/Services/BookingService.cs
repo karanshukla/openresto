@@ -1,6 +1,6 @@
 using OpenRestoApi.Core.Application.Interfaces;
-using AutoMapper;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -12,7 +12,7 @@ public class BookingService
     private readonly ISectionRepository _sectionRepository;
     private readonly IRestaurantRepository _restaurantRepository;
     private readonly IHoldService _holdService;
-    private readonly IMapper _mapper;
+    private readonly BookingMapper _mapper;
 
     public BookingService(
         IBookingRepository bookingRepository,
@@ -20,7 +20,7 @@ public class BookingService
         ISectionRepository sectionRepository,
         IRestaurantRepository restaurantRepository,
         IHoldService holdService,
-        IMapper mapper)
+        BookingMapper mapper)
     {
         _bookingRepository = bookingRepository;
         _tableRepository = tableRepository;
@@ -55,10 +55,12 @@ public class BookingService
             throw new InvalidOperationException("This table is currently being held by another user. Please try again shortly.");
 
         // 3. Persist the booking
-        var booking = _mapper.Map<Booking>(bookingDto);
-        booking.Table = await _tableRepository.GetByIdAsync(bookingDto.TableId);
-        booking.Section = await _sectionRepository.GetByIdAsync(bookingDto.SectionId);
-        booking.Restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId);
+        var booking = _mapper.ToEntity(bookingDto);
+        booking.BookingRef = BookingRefGenerator.Generate();
+        booking.EndTime    = bookingDto.Date.AddHours(1);
+        booking.Table      = (await _tableRepository.GetByIdAsync(bookingDto.TableId))!;
+        booking.Section    = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId))!;
+        booking.Restaurant = (await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId))!;
 
         var newBooking = await _bookingRepository.AddAsync(booking);
 
@@ -66,24 +68,30 @@ public class BookingService
         if (!string.IsNullOrEmpty(bookingDto.HoldId))
             _holdService.ReleaseHold(bookingDto.HoldId);
 
-        return _mapper.Map<BookingDto>(newBooking);
+        return _mapper.ToDto(newBooking);
     }
 
     public async Task<BookingDto?> GetBookingByIdAsync(int id)
     {
         var booking = await _bookingRepository.GetByIdAsync(id);
-        return booking == null ? null : _mapper.Map<BookingDto>(booking);
+        return booking == null ? null : _mapper.ToDto(booking);
+    }
+
+    public async Task<BookingDto?> GetBookingByRefAsync(string bookingRef)
+    {
+        var booking = await _bookingRepository.GetByRefAsync(bookingRef);
+        return booking == null ? null : _mapper.ToDto(booking);
     }
 
     public async Task<IEnumerable<BookingDto>> GetBookingsByRestaurantAsync(int restaurantId)
     {
         var bookings = await _bookingRepository.GetBookingsByRestaurantIdAsync(restaurantId);
-        return _mapper.Map<IEnumerable<BookingDto>>(bookings);
+        return _mapper.ToDtoList(bookings);
     }
 
     public async Task UpdateBookingAsync(int id, BookingDto bookingDto)
     {
-        var booking = _mapper.Map<Booking>(bookingDto);
+        var booking = _mapper.ToEntity(bookingDto);
         await _bookingRepository.UpdateAsync(booking);
     }
 

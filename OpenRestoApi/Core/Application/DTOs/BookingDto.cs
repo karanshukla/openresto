@@ -9,7 +9,10 @@ public class BookingDto
     public DateTime Date { get; set; }
     public string? CustomerEmail { get; set; }
     public int Seats { get; set; }
-    public bool isHeld { get; set; } = false;
+    public bool isHeld { get; set; }
+    public string? SpecialRequests { get; set; }
+    public string? BookingRef { get; set; }
+    public DateTime? EndTime { get; set; }
 
     /// <summary>
     /// Optional hold ID obtained from POST /api/holds.

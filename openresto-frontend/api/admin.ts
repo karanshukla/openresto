@@ -26,8 +26,11 @@ export interface BookingDetailDto {
   tableId: number;
   tableName: string;
   date: string;
+  endTime?: string;
   customerEmail: string;
   seats: number;
+  specialRequests?: string;
+  bookingRef?: string;
 }
 
 export interface AdminCreateBookingRequest {
@@ -136,6 +139,24 @@ export async function adminUpdateBooking(
     return await res.json();
   } catch (err) {
     console.error("adminUpdateBooking error:", err);
+    return null;
+  }
+}
+
+export async function adminExtendBooking(
+  id: number,
+  minutes: number
+): Promise<{ endTime: string } | null> {
+  try {
+    const res = await fetch(buildEndpoint(`/admin/bookings/${id}/extend`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ minutes }),
+    });
+    if (!res.ok) throw new Error("Failed to extend booking");
+    return await res.json();
+  } catch (err) {
+    console.error("adminExtendBooking error:", err);
     return null;
   }
 }

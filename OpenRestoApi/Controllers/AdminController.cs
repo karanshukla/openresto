@@ -69,8 +69,11 @@ public class AdminController : ControllerBase
                 TableId        = b.TableId,
                 TableName      = b.Table.Name ?? $"Table {b.TableId}",
                 Date           = b.Date,
+                EndTime        = b.EndTime,
                 CustomerEmail  = b.CustomerEmail,
                 Seats          = b.Seats,
+                SpecialRequests = b.SpecialRequests,
+                BookingRef     = b.BookingRef,
             })
             .ToListAsync();
 
@@ -91,16 +94,19 @@ public class AdminController : ControllerBase
 
         return Ok(new BookingDetailDto
         {
-            Id             = b.Id,
-            RestaurantId   = b.RestaurantId,
-            RestaurantName = b.Restaurant.Name,
-            SectionId      = b.SectionId,
-            SectionName    = b.Section.Name,
-            TableId        = b.TableId,
-            TableName      = b.Table.Name ?? $"Table {b.TableId}",
-            Date           = b.Date,
-            CustomerEmail  = b.CustomerEmail,
-            Seats          = b.Seats,
+            Id              = b.Id,
+            RestaurantId    = b.RestaurantId,
+            RestaurantName  = b.Restaurant.Name,
+            SectionId       = b.SectionId,
+            SectionName     = b.Section.Name,
+            TableId         = b.TableId,
+            TableName       = b.Table.Name ?? $"Table {b.TableId}",
+            Date            = b.Date,
+            EndTime         = b.EndTime,
+            CustomerEmail   = b.CustomerEmail,
+            Seats           = b.Seats,
+            SpecialRequests = b.SpecialRequests,
+            BookingRef      = b.BookingRef,
         });
     }
 
@@ -118,7 +124,7 @@ public class AdminController : ControllerBase
         if (table == null)
             return BadRequest(new { message = "Table not found in the specified section." });
 
-        if (table.Section.RestaurantId != req.RestaurantId)
+        if (table.Section?.RestaurantId != req.RestaurantId)
             return BadRequest(new { message = "Section does not belong to this restaurant." });
 
         // Conflict: any existing booking on the same table on the same calendar day
@@ -135,8 +141,10 @@ public class AdminController : ControllerBase
             SectionId     = req.SectionId,
             TableId       = req.TableId,
             Date          = req.Date,
+            EndTime       = req.Date.AddHours(1),
             CustomerEmail = req.CustomerEmail,
             Seats         = req.Seats,
+            BookingRef    = OpenRestoApi.Core.Domain.BookingRefGenerator.Generate(),
         };
 
         _db.Bookings.Add(booking);
@@ -144,16 +152,18 @@ public class AdminController : ControllerBase
 
         return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, new BookingDetailDto
         {
-            Id             = booking.Id,
-            RestaurantId   = booking.RestaurantId,
-            RestaurantName = table.Section.Restaurant?.Name,
-            SectionId      = booking.SectionId,
-            SectionName    = table.Section.Name,
-            TableId        = booking.TableId,
-            TableName      = table.Name ?? $"Table {table.Id}",
-            Date           = booking.Date,
-            CustomerEmail  = booking.CustomerEmail,
-            Seats          = booking.Seats,
+            Id              = booking.Id,
+            RestaurantId    = booking.RestaurantId,
+            RestaurantName  = table.Section.Restaurant?.Name,
+            SectionId       = booking.SectionId,
+            SectionName     = table.Section.Name,
+            TableId         = booking.TableId,
+            TableName       = table.Name ?? $"Table {table.Id}",
+            Date            = booking.Date,
+            EndTime         = booking.EndTime,
+            CustomerEmail   = booking.CustomerEmail,
+            Seats           = booking.Seats,
+            BookingRef      = booking.BookingRef,
         });
     }
 
@@ -205,17 +215,34 @@ public class AdminController : ControllerBase
 
         return Ok(new BookingDetailDto
         {
-            Id             = booking.Id,
-            RestaurantId   = booking.RestaurantId,
-            RestaurantName = booking.Restaurant?.Name,
-            SectionId      = booking.SectionId,
-            SectionName    = booking.Section?.Name,
-            TableId        = booking.TableId,
-            TableName      = booking.Table?.Name ?? $"Table {booking.TableId}",
-            Date           = booking.Date,
-            CustomerEmail  = booking.CustomerEmail,
-            Seats          = booking.Seats,
+            Id              = booking.Id,
+            RestaurantId    = booking.RestaurantId,
+            RestaurantName  = booking.Restaurant?.Name,
+            SectionId       = booking.SectionId,
+            SectionName     = booking.Section?.Name,
+            TableId         = booking.TableId,
+            TableName       = booking.Table?.Name ?? $"Table {booking.TableId}",
+            Date            = booking.Date,
+            EndTime         = booking.EndTime,
+            CustomerEmail   = booking.CustomerEmail,
+            Seats           = booking.Seats,
+            SpecialRequests = booking.SpecialRequests,
+            BookingRef      = booking.BookingRef,
         });
+    }
+
+    /// <summary>Extend a booking's end time by the given number of minutes.</summary>
+    [HttpPost("bookings/{id}/extend")]
+    public async Task<IActionResult> ExtendBooking(int id, [FromBody] ExtendBookingRequest req)
+    {
+        var booking = await _db.Bookings.FindAsync(id);
+        if (booking == null) return NotFound();
+
+        var from = booking.EndTime ?? booking.Date.AddHours(1);
+        booking.EndTime = from.AddMinutes(req.Minutes);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { endTime = booking.EndTime });
     }
 
     /// <summary>Cancel (permanently delete) a booking.</summary>
@@ -289,7 +316,7 @@ public class AdminController : ControllerBase
             .OrderBy(s => s.Name)
             .ToListAsync();
 
-        if (!sections.Any()) return NotFound(new { message = "Restaurant not found or has no sections." });
+        if (sections.Count == 0) return NotFound(new { message = "Restaurant not found or has no sections." });
 
         var result = sections.Select(s => new SectionDto
         {

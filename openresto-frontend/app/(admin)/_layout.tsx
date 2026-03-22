@@ -1,14 +1,35 @@
-import { Platform, View } from "react-native";
+import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Slot, Stack, useRouter, useSegments } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
+import { ThemedText } from "@/components/themed-text";
 import { useEffect, useState } from "react";
 import { getStoredToken } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import { Ionicons } from "@expo/vector-icons";
+
+const MIN_WIDTH = 900;
+
+function DesktopOnlyWall() {
+  return (
+    <ThemedView style={styles.wall}>
+      <Ionicons name="desktop-outline" size={48} color="#0a7ea4" />
+      <ThemedText style={styles.wallTitle}>Desktop only</ThemedText>
+      <ThemedText style={styles.wallBody}>
+        The admin dashboard is designed for desktop browsers.{"\n"}
+        Please open it on a larger screen.
+      </ThemedText>
+    </ThemedView>
+  );
+}
 
 export default function AdminLayout() {
   const router = useRouter();
   const segments = useSegments();
   const [checked, setChecked] = useState(false);
+  const { width } = useWindowDimensions();
+
+  // Block mobile immediately — no async auth check needed
+  if (Platform.OS !== "web" || width < MIN_WIDTH) return <DesktopOnlyWall />;
 
   useEffect(() => {
     const token = getStoredToken();
@@ -16,7 +37,7 @@ export default function AdminLayout() {
 
     if (!token && !onLoginScreen) {
       router.replace("/(admin)/login");
-      return; // stay null while redirecting
+      return;
     }
     setChecked(true);
   }, [segments]);
@@ -39,7 +60,7 @@ export default function AdminLayout() {
     );
   }
 
-  // On native: standard Stack with headers
+  // On native desktop (iPad etc): standard Stack
   return (
     <Stack>
       <Stack.Screen
@@ -59,3 +80,24 @@ export default function AdminLayout() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  wall: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    padding: 32,
+  },
+  wallTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  wallBody: {
+    fontSize: 15,
+    textAlign: "center",
+    opacity: 0.6,
+    lineHeight: 24,
+  },
+});

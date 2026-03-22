@@ -109,8 +109,8 @@ public class AuthController : ControllerBase
     [HttpPost("pvq/verify")]
     public async Task<IActionResult> VerifyPvq([FromBody] VerifyPvqRequest req)
     {
-        var cred = await _db.AdminCredentials
-            .FirstOrDefaultAsync(c => c.Email.ToLower() == req.Email.ToLower());
+        var cred = (await _db.AdminCredentials.ToListAsync())
+            .FirstOrDefault(c => string.Equals(c.Email, req.Email, StringComparison.OrdinalIgnoreCase));
 
         if (cred?.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
             return BadRequest(new { message = "Security question not configured for this account." });

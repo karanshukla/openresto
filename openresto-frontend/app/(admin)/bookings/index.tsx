@@ -1,5 +1,4 @@
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { getAdminBookings, adminGetTables, BookingDetailDto, SectionWithTables } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
@@ -76,6 +75,9 @@ function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
 
 // ── Availability Grid ─────────────────────────────────────────────────────────
 
+const HEADER_H = 36;
+const SECTION_H = 26;
+
 function AvailabilityGrid({
   sections,
   bookings,
@@ -90,25 +92,37 @@ function AvailabilityGrid({
   const borderColor  = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
   const headerBg     = isDark ? "#28292b" : "#f4f5f6";
   const sectionBg    = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
-  const availBg      = isDark ? "rgba(255,255,255,0.02)" : "#fafafa";
-  const bookedBg     = isDark ? "rgba(220,38,38,0.18)" : "rgba(220,38,38,0.09)";
-  const bookedBorder = "#dc2626";
+  const availBg      = isDark ? "#18191b" : "#fafafa";
+  const bookedBg     = isDark ? "rgba(220,38,38,0.22)" : "rgba(220,38,38,0.1)";
   const mutedColor   = isDark ? MUTED_DARK : MUTED_LIGHT;
 
   function bookingForCell(tableId: number, hour: number): BookingDetailDto | undefined {
     return bookings.find((b) => b.tableId === tableId && new Date(b.date).getHours() === hour);
   }
 
+  const totalW = LABEL_W + TIME_SLOTS.length * COL_W;
+
+  if (sections.length === 0) {
+    return (
+      <View style={{ padding: 40, alignItems: "center" }}>
+        <Ionicons name="grid-outline" size={32} color={mutedColor} />
+        <ThemedText style={[{ color: mutedColor, marginTop: 10, fontSize: 14 }]}>
+          No tables found. Add sections and tables in Location Manager.
+        </ThemedText>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator style={styles.gridScroll}>
-      <View>
+    <ScrollView horizontal showsHorizontalScrollIndicator>
+      <View style={{ width: totalW }}>
         {/* Column headers */}
-        <View style={[styles.gridHeaderRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
-          <View style={[styles.gridLabelCell, { borderRightColor: borderColor }]}>
+        <View style={[{ flexDirection: "row", height: HEADER_H, backgroundColor: headerBg, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
+          <View style={[{ width: LABEL_W, height: HEADER_H, justifyContent: "center", paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: borderColor }]}>
             <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>TABLE</ThemedText>
           </View>
           {TIME_SLOTS.map(({ hour, label }) => (
-            <View key={hour} style={[styles.gridTimeCell, { borderLeftColor: borderColor }]}>
+            <View key={hour} style={[{ width: COL_W, height: HEADER_H, alignItems: "center", justifyContent: "center", borderLeftWidth: 1, borderLeftColor: borderColor }]}>
               <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>{label}</ThemedText>
             </View>
           ))}
@@ -118,22 +132,17 @@ function AvailabilityGrid({
         {sections.map((section) => (
           <View key={section.id}>
             {/* Section divider */}
-            <View style={[styles.gridSectionRow, { backgroundColor: sectionBg, borderBottomColor: borderColor }]}>
-              <View style={{ width: LABEL_W + TIME_SLOTS.length * COL_W, paddingHorizontal: 12, justifyContent: "center" }}>
-                <ThemedText style={[styles.gridSectionLabel, { color: mutedColor }]}>
-                  {section.name.toUpperCase()}
-                </ThemedText>
-              </View>
+            <View style={[{ height: SECTION_H, flexDirection: "row", backgroundColor: sectionBg, borderBottomWidth: 1, borderBottomColor: borderColor, alignItems: "center", paddingHorizontal: 10 }]}>
+              <ThemedText style={[styles.gridSectionLabel, { color: mutedColor }]}>
+                {section.name.toUpperCase()}
+              </ThemedText>
             </View>
 
             {/* Table rows */}
             {section.tables.map((table) => (
-              <View
-                key={table.id}
-                style={[styles.gridRow, { borderBottomColor: borderColor }]}
-              >
+              <View key={table.id} style={[{ flexDirection: "row", height: ROW_H, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
                 {/* Fixed label */}
-                <View style={[styles.gridLabelCell, { borderRightColor: borderColor }]}>
+                <View style={[{ width: LABEL_W, height: ROW_H, justifyContent: "center", paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: borderColor }]}>
                   <ThemedText style={styles.gridTableName} numberOfLines={1}>
                     {table.name ?? `T${table.id}`}
                   </ThemedText>
@@ -149,17 +158,16 @@ function AvailabilityGrid({
                     <Pressable
                       key={hour}
                       style={[
-                        styles.gridCell,
-                        { borderLeftColor: borderColor },
+                        { width: COL_W, height: ROW_H, alignItems: "center", justifyContent: "center", borderLeftWidth: 1, borderLeftColor: borderColor, paddingHorizontal: 3 },
                         booking
-                          ? { backgroundColor: bookedBg, borderLeftColor: bookedBorder, borderLeftWidth: 2 }
+                          ? { backgroundColor: bookedBg, borderLeftColor: "#dc2626", borderLeftWidth: 2 }
                           : { backgroundColor: availBg },
                       ]}
                       onPress={() => booking && onBookingPress(booking)}
                       disabled={!booking}
                     >
                       {booking ? (
-                        <>
+                        <View style={{ alignItems: "center", gap: 1 }}>
                           <Ionicons name="person" size={10} color="#dc2626" />
                           <ThemedText style={styles.gridCellEmail} numberOfLines={1}>
                             {booking.customerEmail?.split("@")[0]}
@@ -167,9 +175,9 @@ function AvailabilityGrid({
                           <ThemedText style={[styles.gridCellSeats, { color: mutedColor }]}>
                             {booking.seats}p
                           </ThemedText>
-                        </>
+                        </View>
                       ) : (
-                        <View style={[styles.gridDot, { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)" }]} />
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
                       )}
                     </Pressable>
                   );
@@ -178,12 +186,6 @@ function AvailabilityGrid({
             ))}
           </View>
         ))}
-
-        {sections.length === 0 && (
-          <View style={styles.gridEmpty}>
-            <ThemedText style={{ color: mutedColor }}>No tables configured for this location.</ThemedText>
-          </View>
-        )}
       </View>
     </ScrollView>
   );
@@ -437,7 +439,13 @@ export default function AdminBookingsScreen() {
                 <StatusBadge date={b.date} isDark={isDark} />
               </View>
               <View style={styles.colAction}>
-                <Pressable style={styles.menuBtn}>
+                <Pressable
+                  style={styles.menuBtn}
+                  onPress={(e) => {
+                    (e as any).stopPropagation?.();
+                    router.push(`/(admin)/bookings/${b.id}`);
+                  }}
+                >
                   <Ionicons name="ellipsis-vertical" size={16} color={mutedColor} />
                 </Pressable>
               </View>
@@ -557,49 +565,12 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 12, height: 12, borderRadius: 3 },
   legendText: { fontSize: 12 },
-  gridScroll: { minHeight: 200 },
-  gridHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 36,
-    borderBottomWidth: 1,
-  },
-  gridLabelCell: {
-    width: LABEL_W,
-    paddingHorizontal: 10,
-    justifyContent: "center",
-    borderRightWidth: 1,
-    height: "100%",
-  },
-  gridTimeCell: {
-    width: COL_W,
-    alignItems: "center",
-    justifyContent: "center",
-    borderLeftWidth: 1,
-    height: "100%",
-  },
   gridHeaderText: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
-  gridSectionRow: { height: 28, borderBottomWidth: 1, justifyContent: "center" },
   gridSectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
-  gridRow: {
-    flexDirection: "row",
-    height: ROW_H,
-    borderBottomWidth: 1,
-  },
-  gridCell: {
-    width: COL_W,
-    borderLeftWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    gap: 1,
-  },
   gridCellEmail: { fontSize: 9, fontWeight: "600", color: "#dc2626", textAlign: "center" },
   gridCellSeats: { fontSize: 9 },
-  gridDot: { width: 6, height: 6, borderRadius: 3 },
   gridTableName: { fontSize: 12, fontWeight: "600" },
   gridTableSeats: { fontSize: 10 },
-  gridEmpty: { padding: 40, alignItems: "center" },
   // Table (list)
   tableCard: {
     borderRadius: 14,

@@ -30,8 +30,17 @@ public class BookingDetailDto
     public int TableId { get; set; }
     public string? TableName { get; set; }
     public DateTime Date { get; set; }
+    public DateTime? EndTime { get; set; }
     public string? CustomerEmail { get; set; }
     public int Seats { get; set; }
+    public string? SpecialRequests { get; set; }
+    public string? BookingRef { get; set; }
+}
+
+public class ExtendBookingRequest
+{
+    /// <summary>Additional minutes to add to the booking's EndTime.</summary>
+    public int Minutes { get; set; }
 }
 
 // ── Admin booking create (walk-in — no hold required) ────────────────────────

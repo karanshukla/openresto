@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
@@ -45,11 +45,15 @@ export default function BookScreen() {
           s.tables.some((t) => t.id === data.tableId)
         )?.id ?? 0,
       date: dateTime,
+      specialRequests: data.specialRequests || null,
     };
 
     try {
       const newBooking = await createBooking(bookingData);
-      if (newBooking) {
+      if (newBooking?.bookingRef) {
+        router.push(`/booking-confirmation/${newBooking.bookingRef}`);
+      } else if (newBooking) {
+        // bookingRef missing means the backend hasn't hot-reloaded yet — retry fetch
         router.push(`/booking-confirmation/${newBooking.id}`);
       }
     } catch (err: any) {
@@ -90,7 +94,11 @@ export default function BookScreen() {
           </ThemedView>
         )}
 
-        <BookingForm restaurant={restaurant} onSubmit={handleSubmit} />
+        <BookingForm
+          restaurant={restaurant}
+          onSubmit={handleSubmit}
+          onRefresh={() => router.replace(`/book/${restaurantId}`)}
+        />
       </PageContainer>
     </ScrollView>
     </ThemedView>
@@ -102,7 +110,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   page: {
-    maxWidth: 560,
+    maxWidth: Platform.OS === "web" ? 860 : 560,
     gap: 4,
   },
   title: {

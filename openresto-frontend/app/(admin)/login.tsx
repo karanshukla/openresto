@@ -8,8 +8,8 @@ import {
   verifyPvq,
   resetPassword,
 } from "@/api/auth";
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
@@ -36,6 +36,8 @@ export default function AdminLoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fpLoading, setFpLoading] = useState(false);
   const [fpError, setFpError] = useState<string | null>(null);
+
+  const passwordRef = useRef<TextInput>(null);
 
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
@@ -130,16 +132,22 @@ export default function AdminLoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
             <View style={styles.field}>
               <ThemedText style={styles.label}>Password</ThemedText>
               <Input
+                ref={passwordRef}
                 placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 autoComplete="current-password"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
               />
             </View>
 
@@ -385,7 +393,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 24, fontWeight: "800", letterSpacing: -0.5, marginBottom: 4 },
   subtitle: { fontSize: 14, marginBottom: 16 },
-  fields: { gap: 4 },
+  fields: { gap: 12 },
   field: { gap: 4 },
   label: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
   errorBanner: {

@@ -3,8 +3,10 @@ import { Link, usePathname } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/context/ThemeContext";
 import { PRIMARY } from "@/constants/colors";
 import { APP_NAME } from "@/constants/config";
+import { Ionicons } from "@expo/vector-icons";
 
 const NAV_LINKS = [
   { label: "Explore", href: "/" as const, match: (p: string) => p === "/" },
@@ -27,6 +29,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const isDark = useColorScheme() === "dark";
+  const { toggle } = useTheme();
   const borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const mutedColor = isDark ? "#9ca3af" : "#6b7280";
 
@@ -48,7 +51,7 @@ export default function Navbar() {
           </Pressable>
         </Link>
 
-        {/* Nav links */}
+        {/* Nav links + theme toggle */}
         <View style={styles.links}>
           {NAV_LINKS.map(({ label, href, match }) => {
             const active = match(pathname);
@@ -72,6 +75,21 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          <Pressable
+            onPress={toggle}
+            style={(state) => [
+              styles.themeBtn,
+              (state as any).hovered && { opacity: 0.7 },
+            ]}
+            accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <Ionicons
+              name={isDark ? "sunny-outline" : "moon-outline"}
+              size={19}
+              color={mutedColor}
+            />
+          </Pressable>
         </View>
       </View>
     </ThemedView>
@@ -128,5 +146,14 @@ const styles = StyleSheet.create({
     right: 14,
     height: 2,
     borderRadius: 2,
+  },
+  themeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 4,
+    cursor: "pointer" as any,
   },
 });

@@ -9,6 +9,8 @@ export interface BookingDto {
   customerEmail: string;
   seats: number;
   isHeld: boolean;
+  specialRequests?: string;
+  bookingRef?: string;
 }
 
 export interface BookingCreationDto {
@@ -19,6 +21,7 @@ export interface BookingCreationDto {
   seats: number;
   date: string;
   holdId?: string | null;
+  specialRequests?: string | null;
 }
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -57,6 +60,19 @@ export async function getBookingById(
     return await res.json();
   } catch (err) {
     console.error("getBookingById error:", err);
+    return null;
+  }
+}
+
+export async function getBookingByRef(
+  bookingRef: string
+): Promise<BookingDto | null> {
+  try {
+    const res = await fetch(buildEndpoint(`/bookings/ref/${bookingRef}`));
+    if (!res.ok) throw new Error("Failed to fetch booking");
+    return await res.json();
+  } catch (err) {
+    console.error("getBookingByRef error:", err);
     return null;
   }
 }

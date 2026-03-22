@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getBookingById, BookingDto } from "@/api/bookings";
+import { getBookingByRef, getBookingById, BookingDto } from "@/api/bookings";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { Link, useLocalSearchParams } from "expo-router";
@@ -9,7 +9,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function BookingConfirmationScreen() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { bookingRef } = useLocalSearchParams<{ bookingRef: string }>();
   const [booking, setBooking] = useState<BookingDto | null>(null);
   const [loading, setLoading] = useState(true);
   const isDark = useColorScheme() === "dark";
@@ -17,15 +17,18 @@ export default function BookingConfirmationScreen() {
   const mutedColor = isDark ? "#9ca3af" : "#6b7280";
 
   useEffect(() => {
-    if (bookingId) {
-      async function loadBooking() {
-        const data = await getBookingById(parseInt(bookingId, 10));
-        setBooking(data);
-        setLoading(false);
-      }
-      loadBooking();
+    if (!bookingRef) return;
+    async function loadBooking() {
+      // Support legacy numeric IDs in the URL (transitional period)
+      const numericId = /^\d+$/.test(bookingRef) ? parseInt(bookingRef, 10) : NaN;
+      const data = isNaN(numericId)
+        ? await getBookingByRef(bookingRef)
+        : await getBookingById(numericId);
+      setBooking(data);
+      setLoading(false);
     }
-  }, [bookingId]);
+    loadBooking();
+  }, [bookingRef]);
 
   if (loading) {
     return (
@@ -53,18 +56,18 @@ export default function BookingConfirmationScreen() {
             Booking Confirmed
           </ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Your reservation has been placed. Save your booking ID below.
+            Your reservation has been placed. Save your booking reference below.
           </ThemedText>
         </View>
 
-        {/* Booking ID callout */}
+        {/* Booking reference callout */}
         <ThemedView style={[styles.idCallout, { borderColor }]}>
           <ThemedText style={[styles.idLabel, { color: mutedColor }]}>
-            Booking ID
+            Booking Reference
           </ThemedText>
-          <ThemedText style={styles.idValue}>#{booking.id}</ThemedText>
+          <ThemedText style={styles.idValue}>{booking.bookingRef ?? bookingRef}</ThemedText>
           <ThemedText style={[styles.idHint, { color: mutedColor }]}>
-            Use this ID to look up your booking under "My Booking"
+            Use this reference to look up your booking under "My Booking"
           </ThemedText>
         </ThemedView>
 
@@ -101,6 +104,15 @@ export default function BookingConfirmationScreen() {
             <ThemedText style={[styles.label, { color: mutedColor }]}>Seats</ThemedText>
             <ThemedText style={styles.value}>{booking.seats}</ThemedText>
           </View>
+          {!!booking.specialRequests && (
+            <>
+              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View style={styles.row}>
+                <ThemedText style={[styles.label, { color: mutedColor }]}>Special Requests</ThemedText>
+                <ThemedText style={styles.value}>{booking.specialRequests}</ThemedText>
+              </View>
+            </>
+          )}
         </ThemedView>
 
         <Link href="/" asChild>
@@ -152,10 +164,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   idValue: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: "800",
     color: "#0a7ea4",
-    letterSpacing: -1,
+    letterSpacing: -0.5,
+    textAlign: "center",
   },
   idHint: {
     fontSize: 13,

@@ -35,6 +35,17 @@ namespace OpenRestoApi.Controllers
             return Ok(booking);
         }
 
+        [HttpGet("ref/{bookingRef}")]
+        public async Task<IActionResult> GetBookingByRef(string bookingRef)
+        {
+            var booking = await _bookingService.GetBookingByRefAsync(bookingRef);
+            if (booking == null)
+            {
+                return NotFound();
+            }
+            return Ok(booking);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] BookingDto bookingDto)
         {

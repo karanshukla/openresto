@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { getBookingById, BookingDto } from "@/api/bookings";
+import { getBookingByRef, BookingDto } from "@/api/bookings";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import Input from "@/components/common/Input";
@@ -18,11 +18,11 @@ export default function MyBookingScreen() {
   const mutedColor = isDark ? "#9ca3af" : "#6b7280";
 
   const handleLookup = async () => {
-    const id = parseInt(bookingIdInput, 10);
-    if (isNaN(id)) return;
+    const ref = bookingIdInput.trim();
+    if (!ref) return;
     setLoading(true);
     setSearched(true);
-    const result = await getBookingById(id);
+    const result = await getBookingByRef(ref);
     setBooking(result);
     setLoading(false);
   };
@@ -33,19 +33,21 @@ export default function MyBookingScreen() {
         <View style={styles.header}>
           <ThemedText type="title">My Booking</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Enter your booking ID to view your reservation details.
+            Enter your booking reference to view your reservation details.
           </ThemedText>
         </View>
 
         <ThemedView style={[styles.searchCard, { borderColor }]}>
           <ThemedText type="defaultSemiBold" style={styles.searchLabel}>
-            Booking ID
+            Booking Reference
           </ThemedText>
           <Input
-            placeholder="e.g. 42"
+            placeholder="e.g. crispy-basil-thyme"
             value={bookingIdInput}
             onChangeText={setBookingIdInput}
-            keyboardType="numeric"
+            autoCapitalize="none"
+            returnKeyType="go"
+            onSubmitEditing={handleLookup}
           />
           <Button onPress={handleLookup} disabled={!bookingIdInput || loading}>
             {loading ? "Looking up…" : "Find Booking"}
@@ -57,7 +59,7 @@ export default function MyBookingScreen() {
         {!loading && searched && !booking && (
           <ThemedView style={[styles.resultCard, { borderColor }]}>
             <ThemedText style={[styles.notFound, { color: mutedColor }]}>
-              No booking found with ID #{bookingIdInput}. Please check and try again.
+              No booking found for "{bookingIdInput}". Please check your reference and try again.
             </ThemedText>
           </ThemedView>
         )}
@@ -66,7 +68,7 @@ export default function MyBookingScreen() {
           <ThemedView style={[styles.resultCard, { borderColor }]}>
             <View style={styles.resultHeader}>
               <ThemedText type="defaultSemiBold" style={styles.bookingId}>
-                Booking #{booking.id}
+                {booking.bookingRef ?? `Booking #${booking.id}`}
               </ThemedText>
             </View>
 
