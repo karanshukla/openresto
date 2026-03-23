@@ -69,13 +69,13 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ValidateIssuer           = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"] ?? "openresto-api",
-            ValidateAudience         = true,
-            ValidAudience            = builder.Configuration["Jwt:Audience"] ?? "openresto-admin",
-            ValidateLifetime         = true,
-            ClockSkew                = TimeSpan.Zero,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "openresto-api",
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "openresto-admin",
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
         };
     });
 
@@ -154,53 +154,60 @@ using (var scope = app.Services.CreateScope())
         )
         """);
 
-    // Schema evolution: add new columns if they don't exist yet
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"BookingRef\" TEXT NOT NULL DEFAULT ''"); }
-    catch { /* column already exists */ }
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"SpecialRequests\" TEXT"); }
-    catch { /* column already exists */ }
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"EndTime\" TEXT"); }
-    catch { /* column already exists */ }
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Restaurants\" ADD COLUMN \"OpenTime\" TEXT NOT NULL DEFAULT '09:00'"); }
-    catch { /* column already exists */ }
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Restaurants\" ADD COLUMN \"CloseTime\" TEXT NOT NULL DEFAULT '22:00'"); }
-    catch { /* column already exists */ }
-
-    // EmailSettings table
-    try
+    // ── Schema evolution helpers ──────────────────────────────────────────────
+    // Check if a column exists before trying to add it (avoids noisy fail: logs)
+    bool ColumnExists(string table, string column)
     {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
-                ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""Host"" TEXT NOT NULL DEFAULT '',
-                ""Port"" INTEGER NOT NULL DEFAULT 587,
-                ""Username"" TEXT NOT NULL DEFAULT '',
-                ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
-                ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
-                ""FromName"" TEXT,
-                ""FromEmail"" TEXT
-            )");
+        using var cmd = db.Database.GetDbConnection().CreateCommand();
+        cmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'";
+        db.Database.OpenConnection();
+        var result = Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+        return result > 0;
     }
-    catch { /* table already exists */ }
 
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"IsCancelled\" INTEGER NOT NULL DEFAULT 0"); }
-    catch { /* column already exists */ }
-    try { db.Database.ExecuteSqlRaw("ALTER TABLE \"Bookings\" ADD COLUMN \"CancelledAt\" TEXT"); }
-    catch { /* column already exists */ }
-
-    // BrandSettings table
-    try
+    void AddColumnIfMissing(string table, string column, string definition)
     {
-        db.Database.ExecuteSqlRaw(@"
-            CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
-                ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-                ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
-                ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
-                ""AccentColor"" TEXT,
-                ""LogoBase64"" TEXT
-            )");
+        if (!ColumnExists(table, column))
+        {
+            // Values are hardcoded constants, not user input — safe from injection
+#pragma warning disable EF1002
+            db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition}");
+#pragma warning restore EF1002
+        }
     }
-    catch { /* table already exists */ }
+
+    // Bookings columns
+    AddColumnIfMissing("Bookings", "BookingRef", "TEXT NOT NULL DEFAULT ''");
+    AddColumnIfMissing("Bookings", "SpecialRequests", "TEXT");
+    AddColumnIfMissing("Bookings", "EndTime", "TEXT");
+    AddColumnIfMissing("Bookings", "IsCancelled", "INTEGER NOT NULL DEFAULT 0");
+    AddColumnIfMissing("Bookings", "CancelledAt", "TEXT");
+
+    // Restaurants columns
+    AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
+    AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
+
+    // Tables (CREATE IF NOT EXISTS is safe — no fail: log)
+    db.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
+            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+            ""Host"" TEXT NOT NULL DEFAULT '',
+            ""Port"" INTEGER NOT NULL DEFAULT 587,
+            ""Username"" TEXT NOT NULL DEFAULT '',
+            ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
+            ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
+            ""FromName"" TEXT,
+            ""FromEmail"" TEXT
+        )");
+
+    db.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
+            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+            ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
+            ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
+            ""AccentColor"" TEXT,
+            ""LogoBase64"" TEXT
+        )");
 
     // Seed initial data when database is empty
     DbSeeder.Seed(db);
@@ -208,17 +215,17 @@ using (var scope = app.Services.CreateScope())
     // Seed admin credentials from config if none exist yet
     if (!db.AdminCredentials.Any())
     {
-        var email    = builder.Configuration["Admin:Email"]    ?? "example@example.com";
+        var email = builder.Configuration["Admin:Email"] ?? "example@example.com";
         var password = builder.Configuration["Admin:Password"] ?? "password";
         var saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
-        var salt      = Convert.ToBase64String(saltBytes);
+        var salt = Convert.ToBase64String(saltBytes);
         var hashBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
             password, saltBytes, 100_000,
             System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
         var hash = Convert.ToBase64String(hashBytes);
         db.AdminCredentials.Add(new OpenRestoApi.Core.Domain.AdminCredential
         {
-            Email        = email,
+            Email = email,
             PasswordHash = hash,
             PasswordSalt = salt,
         });

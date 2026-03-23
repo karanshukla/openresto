@@ -12,7 +12,9 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
     <!-- Elevate style violations to warnings so they appear in CI output -->
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Suppress the "missing XML comment" warnings since we don't require docs everywhere -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <!-- Roslynator: comprehensive Roslyn-based analyzer (800+ rules) -->

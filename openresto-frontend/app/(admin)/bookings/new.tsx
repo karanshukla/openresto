@@ -134,10 +134,10 @@ export default function AdminNewBookingScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Reservations</ThemedText>
+        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
       </Pressable>
 
-      <ThemedText style={styles.pageTitle}>New Reservation</ThemedText>
+      <ThemedText style={styles.pageTitle}>New Booking</ThemedText>
       <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
         Walk-in or phone booking — no hold required.
       </ThemedText>
@@ -206,7 +206,7 @@ export default function AdminNewBookingScreen() {
       </View>
 
       <Button onPress={handleSubmit} disabled={!isValid || submitting}>
-        {submitting ? "Creating…" : "Create Reservation"}
+        {submitting ? "Creating…" : "Create Booking"}
       </Button>
     </ScrollView>
   );

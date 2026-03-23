@@ -115,7 +115,7 @@ export default function AdminLoginScreen() {
         <>
           <ThemedText style={styles.title}>Sign in</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Manage your restaurant reservations.
+            Manage your restaurant bookings.
           </ThemedText>
 
           <View style={styles.fields}>

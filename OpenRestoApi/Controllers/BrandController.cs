@@ -42,7 +42,9 @@ public class BrandController : ControllerBase
             var base64Part = commaIdx >= 0 ? req.LogoBase64[(commaIdx + 1)..] : req.LogoBase64;
             var sizeBytes = (int)(base64Part.Length * 0.75);
             if (sizeBytes > MaxLogoBytes)
+            {
                 return BadRequest(new { message = $"Logo must be under {MaxLogoBytes / 1024} KB." });
+            }
         }
 
         var brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
@@ -58,7 +60,9 @@ public class BrandController : ControllerBase
 
         // Only update logo if explicitly provided (null = no change, empty = remove)
         if (req.LogoBase64 != null)
+        {
             brand.LogoBase64 = req.LogoBase64 == "" ? null : req.LogoBase64;
+        }
 
         await _db.SaveChangesAsync();
         return Ok(new { message = "Brand settings saved." });

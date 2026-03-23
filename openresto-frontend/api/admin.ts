@@ -178,6 +178,19 @@ export async function adminDeleteBooking(id: number): Promise<boolean> {
   }
 }
 
+export async function adminPurgeBooking(id: number): Promise<boolean> {
+  try {
+    const res = await fetch(buildEndpoint(`/admin/bookings/${id}/purge`), {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("adminPurgeBooking error:", err);
+    return false;
+  }
+}
+
 // ---------- Restaurants ----------
 
 export async function adminCreateRestaurant(

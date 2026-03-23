@@ -22,17 +22,21 @@ public class RecentBookingsCookie
     private const int MaxEntries = 10;
     private const int CookieMaxAgeDays = 90;
     private readonly IDataProtector _protector;
+    private readonly bool _isDevelopment;
 
-    public RecentBookingsCookie(IDataProtectionProvider provider)
+    public RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvironment env)
     {
         _protector = provider.CreateProtector("RecentBookings.v1");
+        _isDevelopment = env.IsDevelopment();
     }
 
     /// <summary>Read and decrypt the recent bookings from the request cookie.</summary>
     public List<CachedBookingEntry> Read(HttpRequest request)
     {
         if (!request.Cookies.TryGetValue(CookieName, out var encrypted) || string.IsNullOrEmpty(encrypted))
+        {
             return [];
+        }
 
         try
         {
@@ -53,13 +57,17 @@ public class RecentBookingsCookie
 
         // Don't duplicate
         if (entries.Any(e => string.Equals(e.BookingRef, entry.BookingRef, StringComparison.OrdinalIgnoreCase)))
+        {
             return;
+        }
 
         entries.Insert(0, entry);
 
         // Trim to max
         if (entries.Count > MaxEntries)
+        {
             entries = entries.Take(MaxEntries).ToList();
+        }
 
         Write(response, entries);
     }
@@ -70,11 +78,13 @@ public class RecentBookingsCookie
         var json = JsonSerializer.Serialize(entries);
         var encrypted = _protector.Protect(json);
 
+        // In dev (HTTP, cross-origin ports), use Lax + no Secure flag.
+        // In production (HTTPS, same origin), use Strict + Secure.
         response.Cookies.Append(CookieName, encrypted, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
+            Secure = !_isDevelopment,
+            SameSite = _isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict,
             MaxAge = TimeSpan.FromDays(CookieMaxAgeDays),
             Path = "/api/bookings",
             IsEssential = true,

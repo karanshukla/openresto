@@ -26,9 +26,9 @@ public class AdminController : ControllerBase
         var overview = new AdminOverviewDto
         {
             TotalRestaurants = await _db.Restaurants.CountAsync(),
-            TotalBookings    = await _db.Bookings.CountAsync(),
-            TodayBookings    = await _db.Bookings.CountAsync(b => b.Date.Date == todayUtc),
-            TotalSeats       = await _db.Bookings.SumAsync(b => (int?)b.Seats) ?? 0,
+            TotalBookings = await _db.Bookings.CountAsync(),
+            TodayBookings = await _db.Bookings.CountAsync(b => b.Date.Date == todayUtc),
+            TotalSeats = await _db.Bookings.SumAsync(b => (int?)b.Seats) ?? 0,
         };
         return Ok(overview);
     }
@@ -72,30 +72,34 @@ public class AdminController : ControllerBase
         }
 
         if (restaurantId.HasValue)
+        {
             q = q.Where(b => b.RestaurantId == restaurantId.Value);
+        }
 
         if (date.HasValue)
+        {
             q = q.Where(b => b.Date.Date == date.Value.Date);
+        }
 
         var results = await q
             .OrderBy(b => b.Date)
             .Select(b => new BookingDetailDto
             {
-                Id             = b.Id,
-                RestaurantId   = b.RestaurantId,
+                Id = b.Id,
+                RestaurantId = b.RestaurantId,
                 RestaurantName = b.Restaurant.Name,
-                SectionId      = b.SectionId,
-                SectionName    = b.Section.Name,
-                TableId        = b.TableId,
-                TableName      = b.Table.Name ?? $"Table {b.TableId}",
-                Date           = b.Date,
-                EndTime        = b.EndTime,
-                CustomerEmail  = b.CustomerEmail,
-                Seats          = b.Seats,
+                SectionId = b.SectionId,
+                SectionName = b.Section.Name,
+                TableId = b.TableId,
+                TableName = b.Table.Name ?? $"Table {b.TableId}",
+                Date = b.Date,
+                EndTime = b.EndTime,
+                CustomerEmail = b.CustomerEmail,
+                Seats = b.Seats,
                 SpecialRequests = b.SpecialRequests,
-                BookingRef     = b.BookingRef,
-                IsCancelled    = b.IsCancelled,
-                CancelledAt    = b.CancelledAt,
+                BookingRef = b.BookingRef,
+                IsCancelled = b.IsCancelled,
+                CancelledAt = b.CancelledAt,
             })
             .ToListAsync();
 
@@ -112,23 +116,26 @@ public class AdminController : ControllerBase
             .Include(b => b.Table)
             .FirstOrDefaultAsync(b => b.Id == id);
 
-        if (b == null) return NotFound();
+        if (b == null)
+        {
+            return NotFound();
+        }
 
         return Ok(new BookingDetailDto
         {
-            Id              = b.Id,
-            RestaurantId    = b.RestaurantId,
-            RestaurantName  = b.Restaurant.Name,
-            SectionId       = b.SectionId,
-            SectionName     = b.Section.Name,
-            TableId         = b.TableId,
-            TableName       = b.Table.Name ?? $"Table {b.TableId}",
-            Date            = b.Date,
-            EndTime         = b.EndTime,
-            CustomerEmail   = b.CustomerEmail,
-            Seats           = b.Seats,
+            Id = b.Id,
+            RestaurantId = b.RestaurantId,
+            RestaurantName = b.Restaurant.Name,
+            SectionId = b.SectionId,
+            SectionName = b.Section.Name,
+            TableId = b.TableId,
+            TableName = b.Table.Name ?? $"Table {b.TableId}",
+            Date = b.Date,
+            EndTime = b.EndTime,
+            CustomerEmail = b.CustomerEmail,
+            Seats = b.Seats,
             SpecialRequests = b.SpecialRequests,
-            BookingRef      = b.BookingRef,
+            BookingRef = b.BookingRef,
         });
     }
 
@@ -144,10 +151,14 @@ public class AdminController : ControllerBase
             .FirstOrDefaultAsync(t => t.Id == req.TableId && t.SectionId == req.SectionId);
 
         if (table == null)
+        {
             return BadRequest(new { message = "Table not found in the specified section." });
+        }
 
         if (table.Section?.RestaurantId != req.RestaurantId)
+        {
             return BadRequest(new { message = "Section does not belong to this restaurant." });
+        }
 
         // Conflict: any existing booking on the same table on the same calendar day
         var conflict = await _db.Bookings.AnyAsync(b =>
@@ -155,18 +166,20 @@ public class AdminController : ControllerBase
             b.Date.Date == req.Date.Date);
 
         if (conflict)
+        {
             return Conflict(new { message = "This table already has a booking on that date." });
+        }
 
         var booking = new Booking
         {
-            RestaurantId  = req.RestaurantId,
-            SectionId     = req.SectionId,
-            TableId       = req.TableId,
-            Date          = req.Date,
-            EndTime       = req.Date.AddHours(1),
+            RestaurantId = req.RestaurantId,
+            SectionId = req.SectionId,
+            TableId = req.TableId,
+            Date = req.Date,
+            EndTime = req.Date.AddHours(1),
             CustomerEmail = req.CustomerEmail,
-            Seats         = req.Seats,
-            BookingRef    = OpenRestoApi.Core.Domain.BookingRefGenerator.Generate(),
+            Seats = req.Seats,
+            BookingRef = OpenRestoApi.Core.Domain.BookingRefGenerator.Generate(),
         };
 
         _db.Bookings.Add(booking);
@@ -174,18 +187,18 @@ public class AdminController : ControllerBase
 
         return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, new BookingDetailDto
         {
-            Id              = booking.Id,
-            RestaurantId    = booking.RestaurantId,
-            RestaurantName  = table.Section.Restaurant?.Name,
-            SectionId       = booking.SectionId,
-            SectionName     = table.Section.Name,
-            TableId         = booking.TableId,
-            TableName       = table.Name ?? $"Table {table.Id}",
-            Date            = booking.Date,
-            EndTime         = booking.EndTime,
-            CustomerEmail   = booking.CustomerEmail,
-            Seats           = booking.Seats,
-            BookingRef      = booking.BookingRef,
+            Id = booking.Id,
+            RestaurantId = booking.RestaurantId,
+            RestaurantName = table.Section.Restaurant?.Name,
+            SectionId = booking.SectionId,
+            SectionName = table.Section.Name,
+            TableId = booking.TableId,
+            TableName = table.Name ?? $"Table {table.Id}",
+            Date = booking.Date,
+            EndTime = booking.EndTime,
+            CustomerEmail = booking.CustomerEmail,
+            Seats = booking.Seats,
+            BookingRef = booking.BookingRef,
         });
     }
 
@@ -202,16 +215,25 @@ public class AdminController : ControllerBase
             .Include(b => b.Table)
             .FirstOrDefaultAsync(b => b.Id == id);
 
-        if (booking == null) return NotFound();
+        if (booking == null)
+        {
+            return NotFound();
+        }
 
         if (req.Date.HasValue)
+        {
             booking.Date = req.Date.Value;
+        }
 
         if (req.Seats.HasValue)
+        {
             booking.Seats = req.Seats.Value;
+        }
 
         if (!string.IsNullOrEmpty(req.CustomerEmail))
+        {
             booking.CustomerEmail = req.CustomerEmail;
+        }
 
         // Table reassignment — validate the new table exists and is in the right section
         if (req.TableId.HasValue)
@@ -222,9 +244,11 @@ public class AdminController : ControllerBase
                 .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.SectionId == sectionId);
 
             if (table == null)
+            {
                 return BadRequest(new { message = "Table not found in the specified section." });
+            }
 
-            booking.TableId   = table.Id;
+            booking.TableId = table.Id;
             booking.SectionId = table.SectionId;
         }
         else if (req.SectionId.HasValue)
@@ -237,19 +261,19 @@ public class AdminController : ControllerBase
 
         return Ok(new BookingDetailDto
         {
-            Id              = booking.Id,
-            RestaurantId    = booking.RestaurantId,
-            RestaurantName  = booking.Restaurant?.Name,
-            SectionId       = booking.SectionId,
-            SectionName     = booking.Section?.Name,
-            TableId         = booking.TableId,
-            TableName       = booking.Table?.Name ?? $"Table {booking.TableId}",
-            Date            = booking.Date,
-            EndTime         = booking.EndTime,
-            CustomerEmail   = booking.CustomerEmail,
-            Seats           = booking.Seats,
+            Id = booking.Id,
+            RestaurantId = booking.RestaurantId,
+            RestaurantName = booking.Restaurant?.Name,
+            SectionId = booking.SectionId,
+            SectionName = booking.Section?.Name,
+            TableId = booking.TableId,
+            TableName = booking.Table?.Name ?? $"Table {booking.TableId}",
+            Date = booking.Date,
+            EndTime = booking.EndTime,
+            CustomerEmail = booking.CustomerEmail,
+            Seats = booking.Seats,
             SpecialRequests = booking.SpecialRequests,
-            BookingRef      = booking.BookingRef,
+            BookingRef = booking.BookingRef,
         });
     }
 
@@ -258,7 +282,10 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> ExtendBooking(int id, [FromBody] ExtendBookingRequest req)
     {
         var booking = await _db.Bookings.FindAsync(id);
-        if (booking == null) return NotFound();
+        if (booking == null)
+        {
+            return NotFound();
+        }
 
         var from = booking.EndTime ?? booking.Date.AddHours(1);
         booking.EndTime = from.AddMinutes(req.Minutes);
@@ -272,10 +299,28 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> CancelBooking(int id)
     {
         var booking = await _db.Bookings.FindAsync(id);
-        if (booking == null) return NotFound();
+        if (booking == null)
+        {
+            return NotFound();
+        }
 
         booking.IsCancelled = true;
         booking.CancelledAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>Permanently delete a booking and all associated data (GDPR compliance).</summary>
+    [HttpDelete("bookings/{id}/purge")]
+    public async Task<IActionResult> PurgeBooking(int id)
+    {
+        var booking = await _db.Bookings.FindAsync(id);
+        if (booking == null)
+        {
+            return NotFound();
+        }
+
+        _db.Bookings.Remove(booking);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -287,7 +332,9 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> CreateRestaurant([FromBody] CreateRestaurantRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Name))
+        {
             return BadRequest(new { message = "Name is required." });
+        }
 
         var restaurant = new Restaurant { Name = req.Name.Trim(), Address = req.Address?.Trim() };
         _db.Restaurants.Add(restaurant);
@@ -296,9 +343,9 @@ public class AdminController : ControllerBase
         return CreatedAtAction(nameof(Overview), new { },
             new RestaurantDto
             {
-                Id       = restaurant.Id,
-                Name     = restaurant.Name,
-                Address  = restaurant.Address,
+                Id = restaurant.Id,
+                Name = restaurant.Name,
+                Address = restaurant.Address,
                 Sections = [],
             });
     }
@@ -311,7 +358,10 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> DeleteRestaurant(int id)
     {
         var restaurant = await _db.Restaurants.FindAsync(id);
-        if (restaurant == null) return NotFound();
+        if (restaurant == null)
+        {
+            return NotFound();
+        }
 
         // Remove all bookings for this restaurant first (no cascade configured)
         var bookings = await _db.Bookings.Where(b => b.RestaurantId == id).ToListAsync();
@@ -339,16 +389,19 @@ public class AdminController : ControllerBase
             .OrderBy(s => s.Name)
             .ToListAsync();
 
-        if (sections.Count == 0) return NotFound(new { message = "Restaurant not found or has no sections." });
+        if (sections.Count == 0)
+        {
+            return NotFound(new { message = "Restaurant not found or has no sections." });
+        }
 
         var result = sections.Select(s => new SectionDto
         {
-            Id     = s.Id,
-            Name   = s.Name,
+            Id = s.Id,
+            Name = s.Name,
             Tables = s.Tables.Select(t => new TableDto
             {
-                Id    = t.Id,
-                Name  = t.Name,
+                Id = t.Id,
+                Name = t.Name,
                 Seats = t.Seats,
             }).ToList(),
         });

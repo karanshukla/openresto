@@ -6,7 +6,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export interface SelectOption {
   label: string;
-  value: any;
+  value: string | number;
 }
 
 export default function Select({
@@ -16,8 +16,8 @@ export default function Select({
   placeholder = "Select an option",
 }: {
   options: SelectOption[];
-  onSelect: (value: any) => void;
-  selectedValue?: any;
+  onSelect: (value: string | number) => void;
+  selectedValue?: string | number;
   placeholder?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);

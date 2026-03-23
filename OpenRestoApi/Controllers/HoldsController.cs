@@ -23,7 +23,9 @@ public class HoldsController : ControllerBase
     public IActionResult PlaceHold([FromBody] PlaceHoldRequest request)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         var result = _holdService.PlaceHold(
             request.RestaurantId,
@@ -32,7 +34,9 @@ public class HoldsController : ControllerBase
             request.Date);
 
         if (result == null)
+        {
             return Conflict(new { message = "This table is already held by another user. Please select a different table or try again shortly." });
+        }
 
         return Ok(new HoldResponse
         {

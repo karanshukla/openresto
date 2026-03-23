@@ -1,7 +1,15 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, BookingDto } from "@/api/bookings";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Input from "@/components/common/Input";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
@@ -17,6 +25,8 @@ export default function LookupScreen() {
   const [searched, setSearched] = useState(false);
   const [cached, setCached] = useState<CachedBooking[]>([]);
   const isDark = useColorScheme() === "dark";
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 768;
 
   useEffect(() => {
     fetchCachedBookings().then(setCached);
@@ -54,132 +64,171 @@ export default function LookupScreen() {
           </ThemedText>
         </View>
 
-        <View style={[styles.searchCard, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText style={styles.label}>Booking Reference</ThemedText>
-          <Input
-            placeholder="e.g. crispy-basil-thyme"
-            value={refInput}
-            onChangeText={setRefInput}
-            autoCapitalize="none"
-          />
-          <ThemedText style={styles.label}>Email Address</ThemedText>
-          <Input
-            placeholder="The email used when booking"
-            value={emailInput}
-            onChangeText={setEmailInput}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            returnKeyType="go"
-            onSubmitEditing={handleLookup}
-          />
-          <Pressable
-            onPress={handleLookup}
-            disabled={!canSearch || loading}
-            style={[
-              styles.searchBtn,
-              { backgroundColor: PRIMARY },
-              (!canSearch || loading) && { opacity: 0.5 },
-            ]}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="search" size={16} color="#fff" />
-                <ThemedText style={styles.searchBtnText}>Look Up</ThemedText>
-              </>
-            )}
-          </Pressable>
-          <ThemedText style={[styles.helpText, { color: mutedColor }]}>
-            Can't find your booking? Contact the restaurant directly for assistance.
-          </ThemedText>
-        </View>
-
-        {!loading && searched && !booking && (
-          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
-            <Ionicons name="alert-circle-outline" size={28} color={mutedColor} />
-            <ThemedText style={[styles.notFound, { color: mutedColor }]}>
-              No booking found matching that reference and email.
-            </ThemedText>
-          </View>
-        )}
-
-        {!loading && booking && (
-          <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
-            <View style={styles.resultHeader}>
-              <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
-              <ThemedText style={styles.resultTitle}>Reservation Found</ThemedText>
-            </View>
-
-            <View
-              style={[
-                styles.refBadge,
-                { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
-              ]}
-            >
-              <ThemedText style={[styles.refText, { color: PRIMARY }]}>
-                {booking.bookingRef}
+        <View style={isWide ? styles.wideRow : undefined}>
+          {/* Left column: search form */}
+          <View style={isWide ? styles.wideCol : undefined}>
+            <View style={[styles.searchCard, { backgroundColor: cardBg, borderColor }]}>
+              <ThemedText style={styles.label}>Booking Reference</ThemedText>
+              <Input
+                placeholder="e.g. crispy-basil-thyme"
+                value={refInput}
+                onChangeText={setRefInput}
+                autoCapitalize="none"
+              />
+              <ThemedText style={styles.label}>Email Address</ThemedText>
+              <Input
+                placeholder="The email used when booking"
+                value={emailInput}
+                onChangeText={setEmailInput}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                returnKeyType="go"
+                onSubmitEditing={handleLookup}
+              />
+              <Pressable
+                onPress={handleLookup}
+                disabled={!canSearch || loading}
+                style={[
+                  styles.searchBtn,
+                  { backgroundColor: PRIMARY },
+                  (!canSearch || loading) && { opacity: 0.5 },
+                ]}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="search" size={16} color="#fff" />
+                    <ThemedText style={styles.searchBtnText}>Look Up</ThemedText>
+                  </>
+                )}
+              </Pressable>
+              <ThemedText style={[styles.helpText, { color: mutedColor }]}>
+                Can't find your booking? Contact the restaurant directly for assistance.
               </ThemedText>
             </View>
 
-            <View style={styles.detailGrid}>
-              <View style={styles.detailRow}>
-                <Ionicons name="mail-outline" size={15} color={mutedColor} />
-                <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Email</ThemedText>
-                  <ThemedText style={styles.detailValue}>{booking.customerEmail}</ThemedText>
-                </View>
+            {/* Recent bookings — under search on wide, at bottom on narrow */}
+            {isWide && cached.length > 0 && (
+              <View style={styles.recentSection}>
+                <ThemedText style={[styles.recentTitle, { color: mutedColor }]}>
+                  YOUR RECENT BOOKINGS
+                </ThemedText>
+                {cached.map((c) => (
+                  <Pressable
+                    key={c.bookingRef}
+                    style={[styles.recentCard, { backgroundColor: cardBg, borderColor }]}
+                    onPress={async () => {
+                      setRefInput(c.bookingRef);
+                      setEmailInput(c.email);
+                      setLoading(true);
+                      setSearched(true);
+                      const result = await getBookingByRef(c.bookingRef, c.email);
+                      setBooking(result);
+                      setLoading(false);
+                    }}
+                  >
+                    <View style={styles.recentCardRow}>
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <ThemedText style={styles.recentRef}>{c.bookingRef}</ThemedText>
+                        <ThemedText style={[styles.recentMeta, { color: mutedColor }]}>
+                          {c.restaurantName ? `${c.restaurantName} · ` : ""}
+                          {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {" · "}
+                          {c.seats} guest{c.seats !== 1 ? "s" : ""}
+                        </ThemedText>
+                      </View>
+                      <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} />
+                    </View>
+                  </Pressable>
+                ))}
               </View>
-
-              <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-              <View style={styles.detailRow}>
-                <Ionicons name="people-outline" size={15} color={mutedColor} />
-                <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                    Guests
-                  </ThemedText>
-                  <ThemedText style={styles.detailValue}>{booking.seats}</ThemedText>
-                </View>
-              </View>
-
-              <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-              <View style={styles.detailRow}>
-                <Ionicons name="calendar-outline" size={15} color={mutedColor} />
-                <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Date</ThemedText>
-                  <ThemedText style={styles.detailValue}>
-                    {new Date(booking.date).toLocaleDateString(undefined, {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-              <View style={styles.detailRow}>
-                <Ionicons name="time-outline" size={15} color={mutedColor} />
-                <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Time</ThemedText>
-                  <ThemedText style={styles.detailValue}>
-                    {new Date(booking.date).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
+            )}
           </View>
-        )}
 
-        {/* Recent bookings from local cache */}
-        {cached.length > 0 && (
+          {/* Right column: result */}
+          <View style={isWide ? styles.wideCol : undefined}>
+            {!loading && searched && !booking && (
+              <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+                <Ionicons name="alert-circle-outline" size={28} color={mutedColor} />
+                <ThemedText style={[styles.notFound, { color: mutedColor }]}>
+                  No booking found matching that reference and email.
+                </ThemedText>
+              </View>
+            )}
+
+            {!loading && booking && (
+              <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+                <View style={styles.resultHeader}>
+                  <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
+                  <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>
+                </View>
+
+                <View
+                  style={[
+                    styles.refBadge,
+                    { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
+                  ]}
+                >
+                  <ThemedText style={[styles.refText, { color: PRIMARY }]}>
+                    {booking.bookingRef}
+                  </ThemedText>
+                </View>
+
+                <View style={styles.detailGrid}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="mail-outline" size={15} color={mutedColor} />
+                    <View style={styles.detailContent}>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Email</ThemedText>
+                      <ThemedText style={styles.detailValue}>{booking.customerEmail}</ThemedText>
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+
+                  <View style={styles.detailRow}>
+                    <Ionicons name="people-outline" size={15} color={mutedColor} />
+                    <View style={styles.detailContent}>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Guests</ThemedText>
+                      <ThemedText style={styles.detailValue}>{booking.seats}</ThemedText>
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+
+                  <View style={styles.detailRow}>
+                    <Ionicons name="calendar-outline" size={15} color={mutedColor} />
+                    <View style={styles.detailContent}>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Date</ThemedText>
+                      <ThemedText style={styles.detailValue}>
+                        {new Date(booking.date).toLocaleDateString(undefined, {
+                          weekday: "long", year: "numeric", month: "long", day: "numeric",
+                        })}
+                      </ThemedText>
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+
+                  <View style={styles.detailRow}>
+                    <Ionicons name="time-outline" size={15} color={mutedColor} />
+                    <View style={styles.detailContent}>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Time</ThemedText>
+                      <ThemedText style={styles.detailValue}>
+                        {new Date(booking.date).toLocaleTimeString(undefined, {
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Recent bookings — only on narrow (wide shows them in left column) */}
+        {!isWide && cached.length > 0 && (
           <View style={styles.recentSection}>
             <ThemedText style={[styles.recentTitle, { color: mutedColor }]}>
               YOUR RECENT BOOKINGS
@@ -244,14 +293,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
+  wideRow: {
+    flexDirection: "row",
+    gap: 24,
+    alignItems: "flex-start",
+  },
+  wideCol: {
+    flex: 1,
+  },
   searchCard: {
     borderRadius: 14,
     borderWidth: 1,
     padding: 20,
     gap: 12,
-    maxWidth: 480,
     width: "100%",
-    alignSelf: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -288,9 +343,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 24,
     marginTop: 20,
-    maxWidth: 480,
     width: "100%",
-    alignSelf: "center",
     alignItems: "center",
     gap: 16,
     shadowColor: "#000",
@@ -350,11 +403,9 @@ const styles = StyleSheet.create({
     height: 1,
   },
   recentSection: {
-    marginTop: 32,
+    marginTop: 20,
     gap: 10,
-    maxWidth: 480,
     width: "100%",
-    alignSelf: "center",
   },
   recentTitle: {
     fontSize: 11,

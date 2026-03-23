@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Domain;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 {

@@ -4,6 +4,7 @@ import {
   getAdminBooking,
   adminDeleteBooking,
   adminExtendBooking,
+  adminPurgeBooking,
   BookingDetailDto,
 } from "@/api/admin";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ export default function AdminBookingDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const [extending, setExtending] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
@@ -113,7 +115,7 @@ export default function AdminBookingDetailScreen() {
       {/* Back */}
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Reservations</ThemedText>
+        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
       </Pressable>
 
       <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
@@ -165,6 +167,18 @@ export default function AdminBookingDetailScreen() {
         </ThemedText>
       </Pressable>
 
+      {/* Permanent delete (GDPR) */}
+      <Pressable
+        style={[styles.purgeBtn, deleting && { opacity: 0.6 }]}
+        onPress={() => setShowPurgeConfirm(true)}
+        disabled={deleting}
+      >
+        <Ionicons name="nuclear-outline" size={15} color={mutedColor} />
+        <ThemedText style={[styles.purgeBtnText, { color: mutedColor }]}>
+          Permanently Delete (GDPR)
+        </ThemedText>
+      </Pressable>
+
       <ConfirmModal
         visible={showDeleteConfirm}
         title="Cancel Booking"
@@ -174,6 +188,30 @@ export default function AdminBookingDetailScreen() {
         destructive
         onConfirm={handleDeleteConfirmed}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showPurgeConfirm}
+        title="Permanently Delete"
+        message="This will permanently erase all data for this booking including the guest's email and personal details. This action cannot be reversed."
+        confirmLabel="Delete Forever"
+        cancelLabel="Go Back"
+        destructive
+        onConfirm={async () => {
+          if (!booking) {
+            return;
+          }
+          setShowPurgeConfirm(false);
+          setDeleting(true);
+          const ok = await adminPurgeBooking(booking.id);
+          if (ok) {
+            router.back();
+          } else {
+            setDeleting(false);
+            setErrorMessage("Failed to permanently delete the booking.");
+          }
+        }}
+        onCancel={() => setShowPurgeConfirm(false)}
       />
 
       <AlertModal
@@ -249,4 +287,16 @@ const styles = StyleSheet.create({
     cursor: "pointer" as any,
   },
   cancelBtnText: { color: "#dc2626", fontSize: 14, fontWeight: "700" },
+  purgeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(128,128,128,0.2)",
+    marginTop: 4,
+  },
+  purgeBtnText: { fontSize: 13, fontWeight: "600" },
 });

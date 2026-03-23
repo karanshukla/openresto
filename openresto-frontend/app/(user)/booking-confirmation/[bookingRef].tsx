@@ -1,7 +1,15 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, getBookingById, BookingDto } from "@/api/bookings";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
@@ -15,6 +23,8 @@ export default function BookingConfirmationScreen() {
   const [copied, setCopied] = useState(false);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 768;
   const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -88,7 +98,7 @@ export default function BookingConfirmationScreen() {
       style={{ flex: 1, backgroundColor: pageBg }}
       contentContainerStyle={styles.scrollContent}
     >
-      <PageContainer style={styles.page}>
+      <PageContainer style={[styles.page, isWide && styles.pageWide]}>
         {/* Success header */}
         <View style={styles.successHeader}>
           <View style={styles.checkCircle}>
@@ -96,12 +106,13 @@ export default function BookingConfirmationScreen() {
           </View>
           <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Your reservation has been placed. Save your booking reference below.
+            Your booking has been placed. Save your booking reference below.
           </ThemedText>
         </View>
 
+        <View style={isWide ? styles.wideRow : undefined}>
         {/* Booking reference callout */}
-        <View style={[styles.refCard, { backgroundColor: cardBg, borderColor }]}>
+        <View style={[styles.refCard, { backgroundColor: cardBg, borderColor }, isWide && styles.wideCol]}>
           <ThemedText style={[styles.refLabel, { color: mutedColor }]}>
             Booking Reference
           </ThemedText>
@@ -139,6 +150,8 @@ export default function BookingConfirmationScreen() {
           </ThemedText>
         </View>
 
+        {/* Right column: details + calendar */}
+        <View style={isWide ? styles.wideCol : undefined}>
         {/* Details card */}
         <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
           {rows.map(({ icon, label, value }, i) => (
@@ -252,8 +265,11 @@ export default function BookingConfirmationScreen() {
           </View>
         )}
 
+        </View>{/* close right column */}
+        </View>{/* close wideRow */}
+
         {/* Navigation actions */}
-        <View style={styles.actions}>
+        <View style={isWide ? styles.actionsWide : styles.actions}>
           <Pressable
             style={[styles.secondaryBtn, { borderColor }]}
             onPress={() => router.replace("/")}

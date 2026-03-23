@@ -1,6 +1,6 @@
-using Riok.Mapperly.Abstractions;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Domain;
+using Riok.Mapperly.Abstractions;
 
 namespace OpenRestoApi.Core.Application.Mappings;
 

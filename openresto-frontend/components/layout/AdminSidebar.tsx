@@ -19,7 +19,7 @@ const NAV_ITEMS = [
     match: (p: string) => p === "/dashboard",
   },
   {
-    label: "Reservations",
+    label: "Bookings",
     icon: "calendar-outline" as const,
     href: "/(admin)/bookings" as const,
     match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
@@ -126,14 +126,14 @@ export default function AdminSidebar() {
 
       <View style={styles.spacer} />
 
-      {/* New Reservation CTA */}
+      {/* New Booking CTA */}
       <View style={styles.ctaWrapper}>
         <Pressable
           style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
           onPress={() => router.push("/(admin)/bookings/new")}
         >
           <Ionicons name="add-circle-outline" size={16} color="#fff" />
-          <ThemedText style={styles.ctaBtnText}>New Reservation</ThemedText>
+          <ThemedText style={styles.ctaBtnText}>New Booking</ThemedText>
         </Pressable>
       </View>
 

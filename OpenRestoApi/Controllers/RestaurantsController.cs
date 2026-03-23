@@ -49,7 +49,10 @@ public class RestaurantsController : ControllerBase
                 .ThenInclude(s => s.Tables)
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (r == null) return NotFound();
+        if (r == null)
+        {
+            return NotFound();
+        }
 
         var dto = new RestaurantDto
         {
@@ -110,12 +113,23 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> Put(int id, UpdateRestaurantRequest req)
     {
         var r = await _db.Restaurants.FindAsync(id);
-        if (r == null) return NotFound();
+        if (r == null)
+        {
+            return NotFound();
+        }
 
         r.Name = req.Name;
         r.Address = req.Address;
-        if (req.OpenTime != null) r.OpenTime = req.OpenTime;
-        if (req.CloseTime != null) r.CloseTime = req.CloseTime;
+        if (req.OpenTime != null)
+        {
+            r.OpenTime = req.OpenTime;
+        }
+
+        if (req.CloseTime != null)
+        {
+            r.CloseTime = req.CloseTime;
+        }
+
         await _db.SaveChangesAsync();
 
         return Ok(new RestaurantDto
@@ -136,7 +150,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> AddSection(int id, CreateSectionRequest req)
     {
         var r = await _db.Restaurants.FindAsync(id);
-        if (r == null) return NotFound();
+        if (r == null)
+        {
+            return NotFound();
+        }
 
         var section = new Section { Name = req.Name, RestaurantId = id };
         _db.Sections.Add(section);
@@ -150,7 +167,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> UpdateSection(int id, int sectionId, UpdateSectionRequest req)
     {
         var section = await _db.Sections.FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == id);
-        if (section == null) return NotFound();
+        if (section == null)
+        {
+            return NotFound();
+        }
 
         section.Name = req.Name;
         await _db.SaveChangesAsync();
@@ -163,7 +183,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> DeleteSection(int id, int sectionId)
     {
         var section = await _db.Sections.FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == id);
-        if (section == null) return NotFound();
+        if (section == null)
+        {
+            return NotFound();
+        }
 
         _db.Sections.Remove(section);
         await _db.SaveChangesAsync();
@@ -178,7 +201,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> AddTable(int id, int sectionId, CreateTableRequest req)
     {
         var section = await _db.Sections.FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == id);
-        if (section == null) return NotFound();
+        if (section == null)
+        {
+            return NotFound();
+        }
 
         var table = new Table { Name = req.Name, Seats = req.Seats, SectionId = sectionId };
         _db.Tables.Add(table);
@@ -192,7 +218,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
     {
         var table = await _db.Tables.FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId);
-        if (table == null) return NotFound();
+        if (table == null)
+        {
+            return NotFound();
+        }
 
         table.Name = req.Name;
         table.Seats = req.Seats;
@@ -206,7 +235,10 @@ public class RestaurantsController : ControllerBase
     public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
     {
         var table = await _db.Tables.FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId);
-        if (table == null) return NotFound();
+        if (table == null)
+        {
+            return NotFound();
+        }
 
         _db.Tables.Remove(table);
         await _db.SaveChangesAsync();

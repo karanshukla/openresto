@@ -71,15 +71,26 @@ public class HoldService : IHoldService
     public bool IsTableHeld(int tableId, DateTime bookingDate, string? excludeHoldId = null)
     {
         var tableKey = TableKey(tableId, bookingDate);
-        if (!_tableIndex.TryGetValue(tableKey, out var holdId)) return false;
-        if (holdId == excludeHoldId) return false;
+        if (!_tableIndex.TryGetValue(tableKey, out var holdId))
+        {
+            return false;
+        }
+
+        if (holdId == excludeHoldId)
+        {
+            return false;
+        }
+
         return _holds.TryGetValue(holdId, out var entry) && entry.ExpiresAt > _clock.UtcNow;
     }
 
     public HoldEntry? GetHold(string holdId)
     {
         if (_holds.TryGetValue(holdId, out var entry) && entry.ExpiresAt > _clock.UtcNow)
+        {
             return entry;
+        }
+
         return null;
     }
 
@@ -92,13 +103,18 @@ public class HoldService : IHoldService
         var now = _clock.UtcNow;
         foreach (var kvp in _holds.ToArray())
         {
-            if (kvp.Value.ExpiresAt > now) continue;
+            if (kvp.Value.ExpiresAt > now)
+            {
+                continue;
+            }
 
             if (_holds.TryRemove(kvp.Key, out var entry))
             {
                 var tableKey = TableKey(entry.TableId, entry.Date);
                 if (_tableIndex.TryGetValue(tableKey, out var currentId) && currentId == kvp.Key)
+                {
                     _tableIndex.TryRemove(tableKey, out _);
+                }
             }
         }
     }

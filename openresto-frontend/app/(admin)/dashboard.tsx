@@ -33,14 +33,14 @@ const QUICK_ACTIONS = [
   {
     icon: "person-add-outline" as const,
     title: "Add Walk-in",
-    sub: "Create an instant reservation",
+    sub: "Create an instant booking",
     primary: true,
     route: "/(admin)/bookings/new" as const,
   },
   {
     icon: "list-outline" as const,
     title: "View Bookings",
-    sub: "See all reservations",
+    sub: "See all bookings",
     primary: false,
     route: "/(admin)/bookings" as const,
   },
@@ -297,7 +297,7 @@ export default function AdminDashboardScreen() {
           {/* Today's reservations list */}
           <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.listHeader}>
-              <ThemedText style={styles.cardTitle}>Today's Reservations</ThemedText>
+              <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>
               <Pressable onPress={() => router.push("/(admin)/bookings")}>
                 <ThemedText style={[styles.viewAll, { color: PRIMARY }]}>View all →</ThemedText>
               </Pressable>

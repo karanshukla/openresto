@@ -395,10 +395,10 @@ export default function AdminBookingsScreen() {
             {viewMode === "grid"
               ? "Availability"
               : statusFilter === "past"
-                ? "Past Reservations"
+                ? "Past Bookings"
                 : statusFilter === "cancelled"
-                  ? "Cancelled Reservations"
-                  : "Live Reservations"}
+                  ? "Cancelled Bookings"
+                  : "Live Bookings"}
           </ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
             {viewMode === "list"
@@ -561,7 +561,7 @@ export default function AdminBookingsScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={40} color={mutedColor} />
           <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
-            No reservations found
+            No bookings found
           </ThemedText>
         </View>
       ) : isWide ? (

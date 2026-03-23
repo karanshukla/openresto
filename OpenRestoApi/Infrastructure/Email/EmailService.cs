@@ -1,7 +1,7 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using MimeKit;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -27,7 +27,10 @@ public class EmailService : IEmailService
     public async Task<bool> TestConnectionAsync()
     {
         var settings = await GetSettingsAsync();
-        if (settings == null) return false;
+        if (settings == null)
+        {
+            return false;
+        }
 
         using var client = new SmtpClient();
         var options = settings.Port == 587
@@ -40,7 +43,7 @@ public class EmailService : IEmailService
         return true;
     }
 
-    public async Task SendEmailAsync(string to, string subject, string htmlBody)
+    public async Task SendEmailAsync(string recipient, string subject, string htmlBody)
     {
         var settings = await GetSettingsAsync()
             ?? throw new InvalidOperationException("Email is not configured.");
@@ -49,7 +52,7 @@ public class EmailService : IEmailService
         message.From.Add(new MailboxAddress(
             settings.FromName ?? "OpenResto",
             settings.FromEmail ?? settings.Username));
-        message.To.Add(MailboxAddress.Parse(to));
+        message.To.Add(MailboxAddress.Parse(recipient));
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = htmlBody };
 
