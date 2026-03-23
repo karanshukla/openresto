@@ -47,10 +47,7 @@ export function useTableHold({
   function startCountdown(expiresAt: string) {
     clearCountdown();
     const update = () => {
-      const secs = Math.max(
-        0,
-        Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
-      );
+      const secs = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
       setSecondsLeft(secs);
       if (secs === 0) {
         clearCountdown();
@@ -92,8 +89,7 @@ export function useTableHold({
     debounceTimer.current = setTimeout(async () => {
       releaseCurrentHold();
 
-      const sectionId =
-        sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
+      const sectionId = sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
       const isoDate = new Date(`${date}T${time}:00`).toISOString();
 
       const result = await createHold({

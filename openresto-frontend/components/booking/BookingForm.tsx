@@ -167,9 +167,7 @@ export default function BookingForm({
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Table</ThemedText>
           {eligibleTables.length === 0 ? (
-            <ThemedText style={styles.noTables}>
-              No tables available for {seats} guests.
-            </ThemedText>
+            <ThemedText style={styles.noTables}>No tables available for {seats} guests.</ThemedText>
           ) : (
             <Select
               selectedValue={tableId}
@@ -199,6 +197,12 @@ export default function BookingForm({
             returnKeyType="next"
             blurOnSubmit={false}
           />
+          <HoldStatusBanner
+            holdStatus={holdStatus}
+            secondsLeft={secondsLeft}
+            hasSelection={!!tableId && !!date && !!time}
+            onRefresh={onRefresh}
+          />
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Special Requests / Allergies</ThemedText>
@@ -213,19 +217,11 @@ export default function BookingForm({
         </View>
       </View>
 
-      {/* Hold status */}
-      <HoldStatusBanner
-        holdStatus={holdStatus}
-        secondsLeft={secondsLeft}
-        hasSelection={!!tableId && !!date && !!time}
-        onRefresh={onRefresh}
-      />
-
       <ThemedText style={styles.gdpr}>
         By confirming, you agree that your email and booking details will be stored to manage your
-        reservation. We also use an essential cookie to remember your recent bookings on this device.
-        We do not share your data with third parties. You can request deletion by contacting the
-        restaurant.
+        reservation. We also use an essential cookie to remember your recent bookings on this
+        device. We do not share your data with third parties. You can request deletion by contacting
+        the restaurant.
       </ThemedText>
 
       <Button onPress={handleSubmit} disabled={!isValid} style={styles.submitBtn}>

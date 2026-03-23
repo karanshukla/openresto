@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 12,
+    marginTop: 6,
     backgroundColor: "transparent",
   },
   holdPending: {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   expiredBox: {
     gap: 8,
-    marginBottom: 12,
+    marginTop: 6,
     backgroundColor: "transparent",
   },
   refreshBtn: {
