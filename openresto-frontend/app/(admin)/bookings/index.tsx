@@ -305,7 +305,6 @@ export default function AdminBookingsScreen() {
   const [gridBookings, setGridBookings] = useState<BookingDetailDto[]>([]);
   const [gridLoading, setGridLoading] = useState(false);
 
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [cancelTarget, setCancelTarget] = useState<BookingDetailDto | null>(null);
 
   const router = useRouter();
@@ -587,25 +586,14 @@ export default function AdminBookingsScreen() {
           </View>
 
           {sorted.map((b, i) => (
-            <View
+            <Pressable
               key={b.id}
               style={[
                 styles.tableRow,
                 i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
                 { cursor: "pointer" } as any,
               ]}
-              // Use onClick on the View so we can check event target
-              {...{
-                onClick: (e: any) => {
-                  // Don't navigate if click was inside the menu area
-                  if (e.target.closest?.("[data-menu]")) return;
-                  if (openMenuId !== null) {
-                    setOpenMenuId(null);
-                    return;
-                  }
-                  router.push(`/(admin)/bookings/${b.id}`);
-                },
-              }}
+              onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
             >
               <View style={styles.colTime}>
                 <ThemedText style={styles.tdTime}>
@@ -641,50 +629,27 @@ export default function AdminBookingsScreen() {
               <View style={styles.colStatus}>
                 <StatusBadge date={b.date} isDark={isDark} />
               </View>
-              <View
-                style={[styles.colAction, { zIndex: openMenuId === b.id ? 10 : 1 }]}
-                {...({ "data-menu": true } as any)}
-              >
+              <View style={styles.colAction}>
                 <Pressable
-                  style={styles.menuBtn}
-                  onPress={() => setOpenMenuId(openMenuId === b.id ? null : b.id)}
+                  style={[styles.rowActionBtn, { backgroundColor: `${PRIMARY}14` }]}
+                  onPress={(e) => {
+                    (e as any).stopPropagation?.();
+                    router.push(`/(admin)/bookings/${b.id}`);
+                  }}
                 >
-                  <Ionicons name="ellipsis-vertical" size={16} color={mutedColor} />
+                  <Ionicons name="eye-outline" size={14} color={PRIMARY} />
                 </Pressable>
-                {openMenuId === b.id && (
-                  <>
-                    <Pressable style={styles.menuBackdrop} onPress={() => setOpenMenuId(null)} />
-                    <View style={[styles.menuPopup, { backgroundColor: cardBg, borderColor }]}>
-                      <Pressable
-                        style={styles.menuItem}
-                        onPress={() => {
-                          setOpenMenuId(null);
-                          router.push(`/(admin)/bookings/${b.id}`);
-                        }}
-                      >
-                        <Ionicons name="eye-outline" size={14} color={PRIMARY} />
-                        <ThemedText style={[styles.menuItemText, { color: PRIMARY }]}>
-                          View details
-                        </ThemedText>
-                      </Pressable>
-                      <View style={[styles.menuDivider, { backgroundColor: borderColor }]} />
-                      <Pressable
-                        style={styles.menuItem}
-                        onPress={() => {
-                          setOpenMenuId(null);
-                          setCancelTarget(b);
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={14} color="#dc2626" />
-                        <ThemedText style={[styles.menuItemText, { color: "#dc2626" }]}>
-                          Cancel booking
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </>
-                )}
+                <Pressable
+                  style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
+                  onPress={(e) => {
+                    (e as any).stopPropagation?.();
+                    setCancelTarget(b);
+                  }}
+                >
+                  <Ionicons name="close-outline" size={14} color="#dc2626" />
+                </Pressable>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       ) : (
@@ -867,7 +832,7 @@ const styles = StyleSheet.create({
   colParty: { width: 64, alignItems: "flex-start" },
   colTable: { width: 64 },
   colStatus: { width: 108 },
-  colAction: { width: 36, alignItems: "center" },
+  colAction: { width: 64, flexDirection: "row", alignItems: "center", gap: 6 },
   tdTime: { fontSize: 14, fontWeight: "700" },
   tdDate: { fontSize: 12, marginTop: 1 },
   tdGuest: { fontSize: 14, fontWeight: "500" },
@@ -877,32 +842,7 @@ const styles = StyleSheet.create({
   tdTableNum: { fontSize: 14 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, alignSelf: "flex-start" },
   badgeText: { fontSize: 11, fontWeight: "700" },
-  menuBtn: { padding: 4, borderRadius: 4 },
-  menuBackdrop: { position: "fixed" as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 },
-  menuPopup: {
-    position: "absolute",
-    right: 0,
-    top: 28,
-    zIndex: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    minWidth: 160,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  menuItemText: { fontSize: 14, fontWeight: "500" },
-  menuDivider: { height: 1 },
+  rowActionBtn: { padding: 6, borderRadius: 8 },
   // Card list (mobile)
   cardList: { gap: 10 },
   listCard: {

@@ -25,8 +25,8 @@ const NAV_ITEMS = [
     match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
   },
   {
-    label: "Location Manager",
-    icon: "location-outline" as const,
+    label: "Settings",
+    icon: "settings-outline" as const,
     href: "/(admin)/settings" as const,
     match: (p: string) => p === "/settings",
   },

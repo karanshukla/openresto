@@ -133,7 +133,10 @@ export default function LookupScreen() {
                         <ThemedText style={styles.recentRef}>{c.bookingRef}</ThemedText>
                         <ThemedText style={[styles.recentMeta, { color: mutedColor }]}>
                           {c.restaurantName ? `${c.restaurantName} · ` : ""}
-                          {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {new Date(c.date).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
                           {" · "}
                           {c.seats} guest{c.seats !== 1 ? "s" : ""}
                         </ThemedText>
@@ -179,7 +182,9 @@ export default function LookupScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="mail-outline" size={15} color={mutedColor} />
                     <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Email</ThemedText>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                        Email
+                      </ThemedText>
                       <ThemedText style={styles.detailValue}>{booking.customerEmail}</ThemedText>
                     </View>
                   </View>
@@ -189,7 +194,9 @@ export default function LookupScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="people-outline" size={15} color={mutedColor} />
                     <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Guests</ThemedText>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                        Guests
+                      </ThemedText>
                       <ThemedText style={styles.detailValue}>{booking.seats}</ThemedText>
                     </View>
                   </View>
@@ -199,10 +206,15 @@ export default function LookupScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="calendar-outline" size={15} color={mutedColor} />
                     <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Date</ThemedText>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                        Date
+                      </ThemedText>
                       <ThemedText style={styles.detailValue}>
                         {new Date(booking.date).toLocaleDateString(undefined, {
-                          weekday: "long", year: "numeric", month: "long", day: "numeric",
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
                         })}
                       </ThemedText>
                     </View>
@@ -213,10 +225,13 @@ export default function LookupScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="time-outline" size={15} color={mutedColor} />
                     <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Time</ThemedText>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                        Time
+                      </ThemedText>
                       <ThemedText style={styles.detailValue}>
                         {new Date(booking.date).toLocaleTimeString(undefined, {
-                          hour: "2-digit", minute: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </ThemedText>
                     </View>

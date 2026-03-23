@@ -111,162 +111,175 @@ export default function BookingConfirmationScreen() {
         </View>
 
         <View style={isWide ? styles.wideRow : undefined}>
-        {/* Booking reference callout */}
-        <View style={[styles.refCard, { backgroundColor: cardBg, borderColor }, isWide && styles.wideCol]}>
-          <ThemedText style={[styles.refLabel, { color: mutedColor }]}>
-            Booking Reference
-          </ThemedText>
-          <View style={styles.refRow}>
-            <View
-              style={[
-                styles.refBadge,
-                { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
-              ]}
-            >
-              <ThemedText style={styles.refValue}>{booking.bookingRef ?? bookingRef}</ThemedText>
-            </View>
-            {Platform.OS === "web" && (
-              <Pressable
-                style={[styles.copyBtn, { borderColor }]}
-                onPress={() => {
-                  navigator.clipboard.writeText(booking.bookingRef ?? bookingRef);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
+          {/* Booking reference callout */}
+          <View
+            style={[
+              styles.refCard,
+              { backgroundColor: cardBg, borderColor },
+              isWide && styles.wideCol,
+            ]}
+          >
+            <ThemedText style={[styles.refLabel, { color: mutedColor }]}>
+              Booking Reference
+            </ThemedText>
+            <View style={styles.refRow}>
+              <View
+                style={[
+                  styles.refBadge,
+                  { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
+                ]}
               >
-                <Ionicons
-                  name={copied ? "checkmark" : "copy-outline"}
-                  size={14}
-                  color={copied ? "#16a34a" : PRIMARY}
-                />
-                <ThemedText style={[styles.copyBtnText, { color: copied ? "#16a34a" : PRIMARY }]}>
-                  {copied ? "Copied" : "Copy"}
-                </ThemedText>
-              </Pressable>
-            )}
-          </View>
-          <ThemedText style={[styles.refHint, { color: mutedColor }]}>
-            Use this reference and your email to look up your booking
-          </ThemedText>
-        </View>
-
-        {/* Right column: details + calendar */}
-        <View style={isWide ? styles.wideCol : undefined}>
-        {/* Details card */}
-        <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
-          {rows.map(({ icon, label, value }, i) => (
-            <View key={label}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
-              <View style={styles.detailRow}>
-                <Ionicons name={icon} size={15} color={mutedColor} style={{ marginTop: 2 }} />
-                <View style={styles.detailContent}>
-                  <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                    {label}
+                <ThemedText style={styles.refValue}>{booking.bookingRef ?? bookingRef}</ThemedText>
+              </View>
+              {Platform.OS === "web" && (
+                <Pressable
+                  style={[styles.copyBtn, { borderColor }]}
+                  onPress={() => {
+                    navigator.clipboard.writeText(booking.bookingRef ?? bookingRef);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  <Ionicons
+                    name={copied ? "checkmark" : "copy-outline"}
+                    size={14}
+                    color={copied ? "#16a34a" : PRIMARY}
+                  />
+                  <ThemedText style={[styles.copyBtnText, { color: copied ? "#16a34a" : PRIMARY }]}>
+                    {copied ? "Copied" : "Copy"}
                   </ThemedText>
-                  <ThemedText style={styles.detailValue}>{value}</ThemedText>
+                </Pressable>
+              )}
+            </View>
+            <ThemedText style={[styles.refHint, { color: mutedColor }]}>
+              Use this reference and your email to look up your booking
+            </ThemedText>
+          </View>
+
+          {/* Right column: details + calendar */}
+          <View style={isWide ? styles.wideCol : undefined}>
+            {/* Details card */}
+            <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
+              {rows.map(({ icon, label, value }, i) => (
+                <View key={label}>
+                  {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
+                  <View style={styles.detailRow}>
+                    <Ionicons name={icon} size={15} color={mutedColor} style={{ marginTop: 2 }} />
+                    <View style={styles.detailContent}>
+                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                        {label}
+                      </ThemedText>
+                      <ThemedText style={styles.detailValue}>{value}</ThemedText>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar actions */}
+            {Platform.OS === "web" && (
+              <View style={[styles.calendarCard, { backgroundColor: cardBg, borderColor }]}>
+                <ThemedText style={[styles.calendarTitle, { color: mutedColor }]}>
+                  Add to Calendar
+                </ThemedText>
+                <View style={styles.calendarBtns}>
+                  <Pressable
+                    style={[
+                      styles.calBtn,
+                      {
+                        backgroundColor: isDark ? "rgba(66,133,244,0.15)" : "rgba(66,133,244,0.08)",
+                      },
+                    ]}
+                    onPress={() => {
+                      const start = new Date(booking.date);
+                      const end = new Date(start.getTime() + 60 * 60 * 1000);
+                      const fmt = (d: Date) =>
+                        d
+                          .toISOString()
+                          .replace(/[-:.]|\d{3}Z$/g, "")
+                          .replace("T", "T");
+                      const title = encodeURIComponent("Restaurant Reservation");
+                      const details = encodeURIComponent(
+                        `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
+                      );
+                      window.open(
+                        `https://calendar.google.com/calendar/r/eventedit?text=${title}&dates=${fmt(start)}/${fmt(end)}&details=${details}`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <Ionicons name="logo-google" size={16} color="#4285F4" />
+                    <ThemedText style={[styles.calBtnText, { color: "#4285F4" }]}>
+                      Google
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.calBtn,
+                      { backgroundColor: isDark ? "rgba(0,120,212,0.15)" : "rgba(0,120,212,0.08)" },
+                    ]}
+                    onPress={() => {
+                      const start = new Date(booking.date);
+                      const end = new Date(start.getTime() + 60 * 60 * 1000);
+                      const subject = encodeURIComponent("Restaurant Reservation");
+                      const body = encodeURIComponent(
+                        `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
+                      );
+                      window.open(
+                        `https://outlook.live.com/calendar/0/action/compose?subject=${subject}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${body}`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <Ionicons name="mail-outline" size={16} color="#0078D4" />
+                    <ThemedText style={[styles.calBtnText, { color: "#0078D4" }]}>
+                      Outlook
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.calBtn,
+                      { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" },
+                    ]}
+                    onPress={() => {
+                      const start = new Date(booking.date);
+                      const end = new Date(start.getTime() + 60 * 60 * 1000);
+                      const fmt = (d: Date) =>
+                        d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+                      const ics = [
+                        "BEGIN:VCALENDAR",
+                        "VERSION:2.0",
+                        "BEGIN:VEVENT",
+                        `DTSTART:${fmt(start)}`,
+                        `DTEND:${fmt(end)}`,
+                        `SUMMARY:Restaurant Reservation`,
+                        `DESCRIPTION:Booking ref: ${booking.bookingRef ?? bookingRef}\\nGuests: ${booking.seats}`,
+                        "END:VEVENT",
+                        "END:VCALENDAR",
+                      ].join("\r\n");
+                      const blob = new Blob([ics], { type: "text/calendar" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `reservation-${booking.bookingRef ?? bookingRef}.ics`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    <Ionicons name="download-outline" size={16} color={mutedColor} />
+                    <ThemedText style={[styles.calBtnText, { color: mutedColor }]}>
+                      iCal / Other
+                    </ThemedText>
+                  </Pressable>
                 </View>
               </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Calendar actions */}
-        {Platform.OS === "web" && (
-          <View style={[styles.calendarCard, { backgroundColor: cardBg, borderColor }]}>
-            <ThemedText style={[styles.calendarTitle, { color: mutedColor }]}>
-              Add to Calendar
-            </ThemedText>
-            <View style={styles.calendarBtns}>
-              <Pressable
-                style={[
-                  styles.calBtn,
-                  { backgroundColor: isDark ? "rgba(66,133,244,0.15)" : "rgba(66,133,244,0.08)" },
-                ]}
-                onPress={() => {
-                  const start = new Date(booking.date);
-                  const end = new Date(start.getTime() + 60 * 60 * 1000);
-                  const fmt = (d: Date) =>
-                    d
-                      .toISOString()
-                      .replace(/[-:.]|\d{3}Z$/g, "")
-                      .replace("T", "T");
-                  const title = encodeURIComponent("Restaurant Reservation");
-                  const details = encodeURIComponent(
-                    `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
-                  );
-                  window.open(
-                    `https://calendar.google.com/calendar/r/eventedit?text=${title}&dates=${fmt(start)}/${fmt(end)}&details=${details}`,
-                    "_blank"
-                  );
-                }}
-              >
-                <Ionicons name="logo-google" size={16} color="#4285F4" />
-                <ThemedText style={[styles.calBtnText, { color: "#4285F4" }]}>Google</ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={[
-                  styles.calBtn,
-                  { backgroundColor: isDark ? "rgba(0,120,212,0.15)" : "rgba(0,120,212,0.08)" },
-                ]}
-                onPress={() => {
-                  const start = new Date(booking.date);
-                  const end = new Date(start.getTime() + 60 * 60 * 1000);
-                  const subject = encodeURIComponent("Restaurant Reservation");
-                  const body = encodeURIComponent(
-                    `Booking ref: ${booking.bookingRef ?? bookingRef}\nGuests: ${booking.seats}`
-                  );
-                  window.open(
-                    `https://outlook.live.com/calendar/0/action/compose?subject=${subject}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${body}`,
-                    "_blank"
-                  );
-                }}
-              >
-                <Ionicons name="mail-outline" size={16} color="#0078D4" />
-                <ThemedText style={[styles.calBtnText, { color: "#0078D4" }]}>Outlook</ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={[
-                  styles.calBtn,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" },
-                ]}
-                onPress={() => {
-                  const start = new Date(booking.date);
-                  const end = new Date(start.getTime() + 60 * 60 * 1000);
-                  const fmt = (d: Date) =>
-                    d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-                  const ics = [
-                    "BEGIN:VCALENDAR",
-                    "VERSION:2.0",
-                    "BEGIN:VEVENT",
-                    `DTSTART:${fmt(start)}`,
-                    `DTEND:${fmt(end)}`,
-                    `SUMMARY:Restaurant Reservation`,
-                    `DESCRIPTION:Booking ref: ${booking.bookingRef ?? bookingRef}\\nGuests: ${booking.seats}`,
-                    "END:VEVENT",
-                    "END:VCALENDAR",
-                  ].join("\r\n");
-                  const blob = new Blob([ics], { type: "text/calendar" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `reservation-${booking.bookingRef ?? bookingRef}.ics`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                <Ionicons name="download-outline" size={16} color={mutedColor} />
-                <ThemedText style={[styles.calBtnText, { color: mutedColor }]}>
-                  iCal / Other
-                </ThemedText>
-              </Pressable>
-            </View>
+            )}
           </View>
-        )}
-
-        </View>{/* close right column */}
-        </View>{/* close wideRow */}
+          {/* close right column */}
+        </View>
+        {/* close wideRow */}
 
         {/* Navigation actions */}
         <View style={isWide ? styles.actionsWide : styles.actions}>
@@ -312,6 +325,17 @@ const styles = StyleSheet.create({
   page: {
     maxWidth: 520,
     gap: 20,
+  },
+  pageWide: {
+    maxWidth: 860,
+  },
+  wideRow: {
+    flexDirection: "row",
+    gap: 24,
+    alignItems: "flex-start",
+  },
+  wideCol: {
+    flex: 1,
   },
   successHeader: {
     alignItems: "center",
@@ -460,6 +484,11 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+    marginTop: 4,
+  },
+  actionsWide: {
+    flexDirection: "row",
+    gap: 12,
     marginTop: 4,
   },
   primaryBtn: {
