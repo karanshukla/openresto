@@ -71,16 +71,16 @@ export default function AdminNewBookingScreen() {
   const selectedSection = sections.find((s) => s.id === sectionId);
   const tables = selectedSection?.tables ?? [];
 
-  const handleRestaurantChange = (id: number) => {
-    setRestaurantId(id);
+  const handleRestaurantChange = (id: string | number) => {
+    setRestaurantId(id as number);
     const r = restaurants.find((x) => x.id === id);
     const sec = r?.sections[0];
     setSectionId(sec?.id);
     setTableId(sec?.tables[0]?.id);
   };
 
-  const handleSectionChange = (id: number) => {
-    setSectionId(id);
+  const handleSectionChange = (id: string | number) => {
+    setSectionId(id as number);
     const sec = sections.find((s) => s.id === id);
     setTableId(sec?.tables[0]?.id);
   };
@@ -167,7 +167,11 @@ export default function AdminNewBookingScreen() {
           </View>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Table</ThemedText>
-            <Select selectedValue={tableId} onSelect={setTableId} options={tableOptions} />
+            <Select
+              selectedValue={tableId}
+              onSelect={(v) => setTableId(v as number)}
+              options={tableOptions}
+            />
           </View>
         </View>
 
@@ -190,7 +194,11 @@ export default function AdminNewBookingScreen() {
         <View style={styles.fieldRow}>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Guests</ThemedText>
-            <Select selectedValue={seats} onSelect={setSeats} options={seatOptions} />
+            <Select
+              selectedValue={seats}
+              onSelect={(v) => setSeats(v as number)}
+              options={seatOptions}
+            />
           </View>
           <View style={styles.fieldHalf}>
             <ThemedText style={styles.label}>Guest email</ThemedText>

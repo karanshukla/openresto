@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   frontend:
@@ -41,6 +42,9 @@ jobs:
 
       - name: TypeScript Type Check
         run: npx tsc --noEmit
+
+      - name: Run Tests
+        run: npm test -- --ci --coverage --forceExit
 
   backend:
     name: Backend CI

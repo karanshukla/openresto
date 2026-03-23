@@ -1,0 +1,4 @@
+{
+  "jest.rootPath": "openresto-frontend",
+  "jest.jestCommandLine": "npx jest"
+}

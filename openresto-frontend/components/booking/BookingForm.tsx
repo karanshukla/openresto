@@ -145,7 +145,11 @@ export default function BookingForm({
       <View style={isWeb ? styles.fieldRow : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Number of Guests</ThemedText>
-          <Select selectedValue={seats} onSelect={setSeats} options={seatOptions} />
+          <Select
+            selectedValue={seats}
+            onSelect={(v) => setSeats(v as number)}
+            options={seatOptions}
+          />
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
@@ -175,7 +179,7 @@ export default function BookingForm({
                 if (holdStatus === "held" || holdStatus === "expired") {
                   setHoldStatus("idle");
                 }
-                setTableId(val);
+                setTableId(val as number | undefined);
               }}
               options={tableOptions}
               placeholder="Select a table"
