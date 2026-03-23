@@ -152,7 +152,13 @@ export default function LookupScreen() {
           {/* Right column: result */}
           <View style={isWide ? styles.wideCol : undefined}>
             {!loading && searched && !booking && (
-              <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }, isWide && { marginTop: 0 }]}>
+              <View
+                style={[
+                  styles.resultCard,
+                  { backgroundColor: cardBg, borderColor },
+                  isWide && { marginTop: 0 },
+                ]}
+              >
                 <Ionicons name="alert-circle-outline" size={28} color={mutedColor} />
                 <ThemedText style={[styles.notFound, { color: mutedColor }]}>
                   No booking found matching that reference and email.
@@ -161,7 +167,13 @@ export default function LookupScreen() {
             )}
 
             {!loading && booking && (
-              <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }, isWide && { marginTop: 0 }]}>
+              <View
+                style={[
+                  styles.resultCard,
+                  { backgroundColor: cardBg, borderColor },
+                  isWide && { marginTop: 0 },
+                ]}
+              >
                 <View style={styles.resultHeader}>
                   <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
                   <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>

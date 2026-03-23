@@ -185,7 +185,7 @@ export default function BookingForm({
       </View>
 
       {/* Row 3: Email + Special Requests */}
-      <View style={isWeb ? styles.fieldRow : undefined}>
+      <View style={isWeb ? [styles.fieldRow, styles.fieldRowStretch] : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Email</ThemedText>
           <Input
@@ -197,12 +197,14 @@ export default function BookingForm({
             returnKeyType="next"
             blurOnSubmit={false}
           />
-          <HoldStatusBanner
-            holdStatus={holdStatus}
-            secondsLeft={secondsLeft}
-            hasSelection={!!tableId && !!date && !!time}
-            onRefresh={onRefresh}
-          />
+          <View style={isWeb ? styles.holdPush : undefined}>
+            <HoldStatusBanner
+              holdStatus={holdStatus}
+              secondsLeft={secondsLeft}
+              hasSelection={!!tableId && !!date && !!time}
+              onRefresh={onRefresh}
+            />
+          </View>
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Special Requests / Allergies</ThemedText>
@@ -242,6 +244,12 @@ const styles = StyleSheet.create({
   fieldRow: {
     flexDirection: "row",
     gap: 16,
+  },
+  fieldRowStretch: {
+    alignItems: "stretch",
+  },
+  holdPush: {
+    marginTop: "auto",
   },
   field: {
     marginBottom: 4,
