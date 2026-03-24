@@ -68,5 +68,8 @@
     },
     "testPathIgnorePatterns": ["/node_modules/", "/android/", "/ios/"]
   },
+  "overrides": {
+    "react-test-renderer": "19.1.0"
+  },
   "private": true
 }
