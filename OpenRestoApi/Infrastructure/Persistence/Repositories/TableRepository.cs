@@ -5,14 +5,9 @@ using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Infrastructure.Persistence.Repositories;
 
-public class TableRepository : ITableRepository
+public class TableRepository(AppDbContext db) : ITableRepository
 {
-    private readonly AppDbContext _db;
-
-    public TableRepository(AppDbContext db)
-    {
-        _db = db;
-    }
+    private readonly AppDbContext _db = db;
 
     public async Task<Table?> GetByIdAsync(int id)
     {

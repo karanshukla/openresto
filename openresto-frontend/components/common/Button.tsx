@@ -1,34 +1,51 @@
 import { ThemedText } from "@/components/themed-text";
-import { Pressable, PressableProps, StyleSheet } from "react-native";
+import { Pressable, PressableProps, StyleSheet, ViewStyle } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function Button({
-  children,
-  disabled,
-  ...props
-}: PressableProps & { children: React.ReactNode; disabled?: boolean }) {
+interface ButtonProps extends Omit<PressableProps, "style"> {
+  children: React.ReactNode;
+  disabled?: boolean;
+  style?: ViewStyle;
+}
+
+export default function Button({ children, disabled, style, ...props }: ButtonProps) {
+  const isDark = useColorScheme() === "dark";
+  const disabledBg = isDark ? "#2a2d31" : "#d1d5db";
+  const disabledTextColor = isDark ? "#555" : "#9ca3af";
+
   return (
     <Pressable
-      style={[styles.button, disabled && styles.disabledButton]}
+      style={(state) => [
+        styles.button,
+        (state as any).hovered && !disabled && styles.buttonHovered,
+        disabled && { backgroundColor: disabledBg },
+        style,
+        { cursor: disabled ? "not-allowed" : "pointer" } as any,
+      ]}
       disabled={disabled}
       {...props}
     >
-      <ThemedText style={styles.buttonText}>{children}</ThemedText>
+      <ThemedText style={[styles.buttonText, disabled && { color: disabledTextColor }]}>
+        {children}
+      </ThemedText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#007BFF",
-    padding: 16,
+    backgroundColor: "#0a7ea4",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: "center",
   },
-  disabledButton: {
-    backgroundColor: "#ccc",
+  buttonHovered: {
+    backgroundColor: "#085f7a",
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "bold",
+    fontWeight: "600",
+    fontSize: 15,
   },
 });

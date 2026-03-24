@@ -30,6 +30,9 @@ Thumbs.db
 # env files
 *.env
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # logs
 npm-debug.log*
 yarn-debug.log*

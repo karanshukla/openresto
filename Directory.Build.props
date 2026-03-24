@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <!-- Nullable reference types enforced across all projects -->
+    <Nullable>enable</Nullable>
+
+    <!-- Enable the full .NET SDK Roslyn analyzer suite -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+
+    <!-- Enforce .editorconfig code-style rules as build diagnostics -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Elevate style violations to warnings so they appear in CI output -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Suppress the "missing XML comment" warnings since we don't require docs everywhere -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- Roslynator: comprehensive Roslyn-based analyzer (800+ rules) -->
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.Formatting.Analyzers" Version="4.12.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

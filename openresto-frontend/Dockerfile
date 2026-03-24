@@ -1,29 +1,20 @@
-# Use an official Node.js runtime as a parent image
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
-
-# Install expo-cli
-RUN npm install -g expo-cli
-
-# Copy package.json and package-lock.json to leverage Docker cache
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm ci --legacy-peer-deps
 
-# Install app dependencies
-RUN npm install
-
-# Bundle app source
+# Copy source and build the web export
 COPY . .
+RUN npx expo export --platform web
 
-# Build the web app
-RUN npx expo export
-
-# Install a simple web server to serve the built files
+# Production stage — serve static files
+FROM node:20-alpine
 RUN npm install -g serve
+WORKDIR /app
+COPY --from=build /app/dist ./dist
 
-# Expose the port the app runs on
 EXPOSE 8081
-
-# Command to run the app
 CMD ["serve", "-s", "dist", "-l", "8081"]

@@ -1,0 +1,577 @@
+import { ThemedText } from "@/components/themed-text";
+import {
+  getAdminBookings,
+  BookingDetailDto,
+  getAdminOverview,
+  AdminOverviewDto,
+} from "@/api/admin";
+import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
+
+// Bar heights (%) for time slots 5PM–9PM
+const FLOW_SLOTS = [
+  { label: "5PM", pct: 30 },
+  { label: "6PM", pct: 60 },
+  { label: "7PM", pct: 95 },
+  { label: "8PM", pct: 85 },
+  { label: "9PM", pct: 45 },
+];
+
+const QUICK_ACTIONS = [
+  {
+    icon: "person-add-outline" as const,
+    title: "Add Walk-in",
+    sub: "Create an instant booking",
+    primary: true,
+    route: "/(admin)/bookings/new" as const,
+  },
+  {
+    icon: "list-outline" as const,
+    title: "View Bookings",
+    sub: "See all bookings",
+    primary: false,
+    route: "/(admin)/bookings" as const,
+  },
+  {
+    icon: "settings-outline" as const,
+    title: "Settings",
+    sub: "Manage locations & tables",
+    primary: false,
+    route: "/(admin)/settings" as const,
+  },
+];
+
+export default function AdminDashboardScreen() {
+  const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantDto | null>(null);
+  const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
+  const [overview, setOverview] = useState<AdminOverviewDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const isDark = useColorScheme() === "dark";
+  const { width } = useWindowDimensions();
+
+  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const isWide = width >= 768;
+  const subtleBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
+
+  useEffect(() => {
+    async function load() {
+      const [data, ov] = await Promise.all([fetchRestaurants(), getAdminOverview()]);
+      setRestaurants(data);
+      setOverview(ov);
+      if (data.length > 0) {
+        setSelectedRestaurant(data[0]);
+        const b = await getAdminBookings(data[0].id);
+        setBookings(b);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const handleSelectRestaurant = async (r: RestaurantDto) => {
+    setSelectedRestaurant(r);
+    setLoading(true);
+    const b = await getAdminBookings(r.id);
+    setBookings(b);
+    setLoading(false);
+  };
+
+  const todayBookings = bookings.filter(
+    (b) => new Date(b.date).toDateString() === new Date().toDateString()
+  );
+  const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
+
+  const stats = [
+    {
+      label: "Today's Bookings",
+      value: String(overview?.todayBookings ?? todayBookings.length),
+      sub: `${upcomingBookings.length} still upcoming`,
+      icon: "calendar-outline" as const,
+      accent: PRIMARY,
+    },
+    {
+      label: "Total Bookings",
+      value: String(overview?.totalBookings ?? bookings.length),
+      sub: "all time",
+      icon: "book-outline" as const,
+      accent: "#7c3aed",
+    },
+    {
+      label: "Total Covers",
+      value: String(overview?.totalSeats ?? 0),
+      sub: "seats reserved",
+      icon: "people-outline" as const,
+      accent: "#059669",
+    },
+    {
+      label: "Locations",
+      value: String(overview?.totalRestaurants ?? restaurants.length),
+      sub: "active",
+      icon: "location-outline" as const,
+      accent: "#d97706",
+    },
+  ];
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Page header */}
+      <View style={styles.pageHeader}>
+        <View>
+          <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
+          {selectedRestaurant && (
+            <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
+              {selectedRestaurant.name}
+            </ThemedText>
+          )}
+        </View>
+        {restaurants.length > 1 && (
+          <View style={styles.locationRow}>
+            {restaurants.map((r) => (
+              <Pressable
+                key={r.id}
+                style={[
+                  styles.locationChip,
+                  { borderColor },
+                  selectedRestaurant?.id === r.id && {
+                    backgroundColor: PRIMARY,
+                    borderColor: PRIMARY,
+                  },
+                ]}
+                onPress={() => handleSelectRestaurant(r)}
+              >
+                <ThemedText
+                  style={
+                    selectedRestaurant?.id === r.id
+                      ? styles.chipTextActive
+                      : [styles.chipText, { color: mutedColor }]
+                  }
+                >
+                  {r.name}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {loading ? (
+        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
+      ) : (
+        <>
+          {/* Metrics bento */}
+          <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
+            {stats.map((stat) => (
+              <View
+                key={stat.label}
+                style={[
+                  styles.metricCard,
+                  { backgroundColor: cardBg, borderColor },
+                  isWide && styles.metricCardWide,
+                ]}
+              >
+                <View style={[styles.metricIconWrap, { backgroundColor: `${stat.accent}14` }]}>
+                  <Ionicons name={stat.icon} size={18} color={stat.accent} />
+                </View>
+                <ThemedText style={styles.metricValue}>{stat.value}</ThemedText>
+                <ThemedText style={[styles.metricLabel, { color: mutedColor }]}>
+                  {stat.label}
+                </ThemedText>
+                <ThemedText style={[styles.metricSub, { color: mutedColor }]}>
+                  {stat.sub}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+
+          {/* Today's Flow + Quick Actions */}
+          <View style={[styles.mainRow, isWide && styles.mainRowWide]}>
+            {/* Bar chart — 2/3 width on wide */}
+            <View
+              style={[
+                styles.chartCard,
+                { backgroundColor: cardBg, borderColor },
+                isWide && styles.chartCardWide,
+              ]}
+            >
+              <View style={styles.chartHeader}>
+                <ThemedText style={styles.cardTitle}>Today's Flow</ThemedText>
+                <ThemedText style={[styles.chartSub, { color: mutedColor }]}>
+                  Booking density by hour
+                </ThemedText>
+              </View>
+              <View style={styles.chart}>
+                {FLOW_SLOTS.map(({ label, pct }) => (
+                  <View key={label} style={styles.barCol}>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.bar,
+                          {
+                            height: `${pct}%` as any,
+                            backgroundColor:
+                              pct >= 85 ? PRIMARY : `rgba(10,126,164,${(pct / 100) * 0.7 + 0.15})`,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <ThemedText style={[styles.barLabel, { color: mutedColor }]}>
+                      {label}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Quick Actions — 1/3 width on wide */}
+            <View style={[styles.actionsCol, isWide && styles.actionsColWide]}>
+              {QUICK_ACTIONS.map((action) => (
+                <Pressable
+                  key={action.title}
+                  onPress={() => router.push(action.route)}
+                  style={(state) => [
+                    styles.actionCard,
+                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as any,
+                    action.primary && {
+                      backgroundColor: PRIMARY,
+                      borderColor: PRIMARY,
+                    },
+                    !action.primary &&
+                      (state as any).hovered && {
+                        backgroundColor: subtleBg,
+                      },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.actionIconWrap,
+                      {
+                        backgroundColor: action.primary ? "rgba(255,255,255,0.18)" : `${PRIMARY}14`,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={action.icon}
+                      size={18}
+                      color={action.primary ? "#fff" : PRIMARY}
+                    />
+                  </View>
+                  <View style={styles.actionText}>
+                    <ThemedText style={[styles.actionTitle, action.primary && { color: "#fff" }]}>
+                      {action.title}
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.actionSub,
+                        { color: action.primary ? "rgba(255,255,255,0.75)" : mutedColor },
+                      ]}
+                    >
+                      {action.sub}
+                    </ThemedText>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={16}
+                    color={action.primary ? "rgba(255,255,255,0.8)" : mutedColor}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Today's reservations list */}
+          <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.listHeader}>
+              <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>
+              <Pressable onPress={() => router.push("/(admin)/bookings")}>
+                <ThemedText style={[styles.viewAll, { color: PRIMARY }]}>View all →</ThemedText>
+              </Pressable>
+            </View>
+
+            {todayBookings.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="calendar-outline" size={32} color={mutedColor} />
+                <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
+                  No bookings today
+                </ThemedText>
+              </View>
+            ) : (
+              todayBookings
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .map((b, i) => (
+                  <Pressable
+                    key={b.id}
+                    style={[
+                      styles.bookingRow,
+                      i > 0 && {
+                        borderTopWidth: 1,
+                        borderTopColor: borderColor,
+                      },
+                    ]}
+                    onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
+                  >
+                    <View style={styles.bookingTime}>
+                      <ThemedText style={styles.bookingTimeText}>
+                        {new Date(b.date).toLocaleTimeString(undefined, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.bookingInfo}>
+                      <ThemedText style={styles.bookingEmail} numberOfLines={1}>
+                        {b.customerEmail}
+                      </ThemedText>
+                      <ThemedText style={[styles.bookingMeta, { color: mutedColor }]}>
+                        {b.seats} {b.seats === 1 ? "guest" : "guests"}
+                      </ThemedText>
+                    </View>
+                    <Ionicons name="chevron-forward-outline" size={16} color={mutedColor} />
+                  </Pressable>
+                ))
+            )}
+          </View>
+        </>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 24,
+    paddingTop: 32,
+    gap: 20,
+    maxWidth: 1200,
+    width: "100%",
+    alignSelf: "center",
+  },
+  pageHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: -0.6,
+  },
+  pageSub: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  locationRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  locationChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: 13 },
+  chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  spinner: { marginTop: 40 },
+  // Metrics
+  metricsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  metricsGridWide: { flexWrap: "nowrap" },
+  metricCard: {
+    flex: 1,
+    minWidth: 140,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 18,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  metricCardWide: { minWidth: 0 },
+  metricIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  metricValue: {
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -1,
+  },
+  metricLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  metricSub: {
+    fontSize: 12,
+  },
+  // Main row (chart + actions)
+  mainRow: { gap: 16 },
+  mainRowWide: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  chartCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  chartCardWide: { flex: 2 },
+  chartHeader: { marginBottom: 20 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  chartSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  chart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    height: 140,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: "center",
+    height: "100%",
+  },
+  barTrack: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "flex-end",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  bar: {
+    width: "100%",
+    borderRadius: 6,
+  },
+  barLabel: {
+    fontSize: 10,
+    marginTop: 6,
+    fontWeight: "500",
+  },
+  // Quick actions
+  sectionHeading: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+    paddingHorizontal: 2,
+  },
+  actionsCol: { gap: 10 },
+  actionsColWide: { flex: 1, justifyContent: "space-between" },
+  actionCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  actionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionText: { flex: 1, gap: 2 },
+  actionTitle: { fontSize: 14, fontWeight: "700" },
+  actionSub: { fontSize: 12 },
+  // Bookings list
+  listCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    paddingBottom: 12,
+  },
+  viewAll: { fontSize: 14, fontWeight: "600" },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 36,
+    gap: 10,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontStyle: "italic",
+  },
+  bookingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  bookingTime: {
+    width: 68,
+  },
+  bookingTimeText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  bookingInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  bookingEmail: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  bookingMeta: {
+    fontSize: 12,
+  },
+});

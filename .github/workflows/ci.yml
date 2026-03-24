@@ -8,10 +8,18 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   frontend:
     name: Frontend CI
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openresto-frontend
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -20,18 +28,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: openresto-frontend/package-lock.json
 
       - name: Install Dependencies
         run: npm ci
-        working-directory: openresto-frontend
 
       - name: Run ESLint
         run: npm run lint
-        working-directory: openresto-frontend
 
       - name: Run Prettier Check
-        run: npm run format -- --check
-        working-directory: openresto-frontend
+        run: npx prettier --check "**/*.{ts,tsx,js,json}"
+
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Run Tests
+        run: npm test -- --ci --coverage --forceExit
 
   backend:
     name: Backend CI
@@ -43,23 +56,46 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore Dependencies
         run: dotnet restore
-        working-directory: OpenRestoApi
 
       - name: Build Solution
-        run: dotnet build --no-restore
-        working-directory: OpenRestoApi
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Run Backend Tests
-        run: dotnet test OpenRestoApi.Tests/OpenRestoApi.Tests.csproj --no-build
+      - name: Run Tests with Coverage
+        run: >
+          dotnet test --no-build --configuration Release --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
 
-      - name: Run Tests
-        run: dotnet test --no-build
-        working-directory: OpenRestoApi.Tests
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
 
-      - name: Run dotnet format (verify no changes)
-        run: dotnet format --verify-no-changes
-        working-directory: OpenRestoApi
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: "**/TestResults/**/coverage.cobertura.xml"
+
+      - name: Coverage Summary
+        if: always()
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: "**/coverage.cobertura.xml"
+          badge: true
+          format: markdown
+          output: both
+
+      - name: Add Coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: code-coverage-results.md

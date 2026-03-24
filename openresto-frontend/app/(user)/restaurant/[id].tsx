@@ -1,13 +1,12 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  fetchRestaurantById,
-  RestaurantDto,
-} from "@/api/restaurants";
+import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
 import { Link, useLocalSearchParams } from "expo-router";
+import PageContainer from "@/components/layout/PageContainer";
+import Button from "@/components/common/Button";
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +26,7 @@ export default function RestaurantScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.center}>
         <ActivityIndicator size="large" />
       </ThemedView>
     );
@@ -35,38 +34,35 @@ export default function RestaurantScreen() {
 
   if (!restaurant) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={styles.center}>
         <ThemedText>Restaurant not found.</ThemedText>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <RestaurantDetails restaurant={restaurant} />
-      <Link href={`/book/${id}`} asChild>
-        <Pressable style={styles.button}>
-          <ThemedText style={styles.buttonText}>Book a table</ThemedText>
-        </Pressable>
-      </Link>
+    <ThemedView style={styles.root}>
+      <ScrollView style={styles.scroll}>
+        <PageContainer style={styles.page}>
+          <RestaurantDetails restaurant={restaurant} />
+          <Link href={`/book/${id}`} asChild>
+            <Button style={styles.bookButton}>Book a Table</Button>
+          </Link>
+        </PageContainer>
+      </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  page: {
+    maxWidth: 720,
+    gap: 16,
   },
-  button: {
-    backgroundColor: "#007BFF",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  bookButton: {
+    marginTop: 8,
   },
 });

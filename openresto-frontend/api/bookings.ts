@@ -1,3 +1,4 @@
+import { get, post, del } from "./client";
 
 export interface BookingDto {
   id: number;
@@ -8,6 +9,8 @@ export interface BookingDto {
   customerEmail: string;
   seats: number;
   isHeld: boolean;
+  specialRequests?: string;
+  bookingRef?: string;
 }
 
 export interface BookingCreationDto {
@@ -17,57 +20,64 @@ export interface BookingCreationDto {
   customerEmail: string;
   seats: number;
   date: string;
+  holdId?: string | null;
+  specialRequests?: string | null;
 }
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+export async function createBooking(booking: BookingCreationDto): Promise<BookingDto | null> {
+  const res = await post("/bookings", booking);
 
-export async function createBooking(
-  booking: BookingCreationDto
-): Promise<BookingDto | null> {
-  try {
-    const base = API_URL?.replace(/\/$/, "") ?? "";
-    const endpoint = base
-      ? base.includes("/api")
-        ? `${base}/bookings`
-        : `${base}/api/bookings`
-      : "/api/bookings";
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(booking),
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to create booking");
-    }
-
-    return await res.json();
-  } catch (err) {
-    console.error("createBooking error:", err);
-    return null;
+  if (res.status === 409) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? "This table is no longer available.");
   }
+
+  if (!res.ok) throw new Error("Failed to create booking");
+  return await res.json();
 }
 
-export async function getBookingById(
-  id: number
-): Promise<BookingDto | null> {
+export async function getBookingById(id: number): Promise<BookingDto | null> {
   try {
-    const base = API_URL?.replace(/\/$/, "") ?? "";
-    const endpoint = base
-      ? base.includes("/api")
-        ? `${base}/bookings/${id}`
-        : `${base}/api/bookings/${id}`
-      : `/api/bookings/${id}`;
-
-    const res = await fetch(endpoint);
+    const res = await get(`/bookings/${id}`);
     if (!res.ok) throw new Error("Failed to fetch booking");
-
     return await res.json();
   } catch (err) {
     console.error("getBookingById error:", err);
     return null;
+  }
+}
+
+export async function getBookingByRef(
+  bookingRef: string,
+  email: string
+): Promise<BookingDto | null> {
+  try {
+    const res = await get(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
+    if (!res.ok) throw new Error("Failed to fetch booking");
+    return await res.json();
+  } catch (err) {
+    console.error("getBookingByRef error:", err);
+    return null;
+  }
+}
+
+export async function getBookingsByRestaurant(restaurantId: number): Promise<BookingDto[]> {
+  try {
+    const res = await get(`/bookings/restaurant/${restaurantId}`);
+    if (!res.ok) throw new Error("Failed to fetch bookings");
+    return await res.json();
+  } catch (err) {
+    console.error("getBookingsByRestaurant error:", err);
+    return [];
+  }
+}
+
+export async function deleteBooking(id: number): Promise<boolean> {
+  try {
+    const res = await del(`/bookings/${id}`);
+    return res.ok;
+  } catch (err) {
+    console.error("deleteBooking error:", err);
+    return false;
   }
 }

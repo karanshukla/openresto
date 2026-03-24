@@ -22,23 +22,6 @@ services:
     env_file:
       - ./openresto-frontend/.env.docker
 
-  frontend-dev:
-    build:
-      context: ./openresto-frontend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "8081:8081"
-      - "19000:19000"
-      - "19001:19001"
-      - "19002:19002"
-    env_file:
-      - ./openresto-frontend/.env.docker
-    volumes:
-      - ./openresto-frontend:/usr/src/app
-      - /usr/src/app/node_modules
-    profiles:
-      - dev
-
   reverse-proxy:
     image: nginx:latest
     ports:

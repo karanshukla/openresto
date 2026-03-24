@@ -1,99 +1,88 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RestaurantsController : ControllerBase
+[EnableRateLimiting("public")]
+public class RestaurantsController(RestaurantManagementService service) : ControllerBase
 {
-    private readonly AppDbContext _db;
-
-    public RestaurantsController(AppDbContext db)
-    {
-        _db = db;
-    }
+    private readonly RestaurantManagementService _service = service;
 
     [HttpGet]
-    public async Task<IEnumerable<RestaurantDto>> Get()
-    {
-        return await _db.Restaurants
-            .Include(r => r.Sections)
-                .ThenInclude(s => s.Tables)
-            .Select(r => new RestaurantDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Address = r.Address,
-                Sections = r.Sections.Select(s => new SectionDto
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
-                }).ToList()
-            })
-            .ToListAsync();
-    }
+    public async Task<IActionResult> Get()
+        => Ok(await _service.GetAllAsync());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
-        var r = await _db.Restaurants
-            .Include(x => x.Sections)
-                .ThenInclude(s => s.Tables)
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (r == null) return NotFound();
-
-        var dto = new RestaurantDto
-        {
-            Id = r.Id,
-            Name = r.Name,
-            Address = r.Address,
-            Sections = r.Sections.Select(s => new SectionDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
-            }).ToList()
-        };
-
-        return Ok(dto);
+        RestaurantDto? result = await _service.GetByIdAsync(id);
+        return result == null ? NotFound() : Ok(result);
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Post(RestaurantDto dto)
     {
-        var entity = new Restaurant
-        {
-            Name = dto.Name,
-            Address = dto.Address,
-            Sections = dto.Sections.Select(s => new Section
-            {
-                Name = s.Name,
-                Tables = s.Tables.Select(t => new Table { Name = t.Name, Seats = t.Seats }).ToList()
-            }).ToList()
-        };
-
-        _db.Restaurants.Add(entity);
-        await _db.SaveChangesAsync();
-
-        var created = new RestaurantDto
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Address = entity.Address,
-            Sections = entity.Sections.Select(s => new SectionDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
-            }).ToList()
-        };
-
+        RestaurantDto created = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
+
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Put(int id, UpdateRestaurantRequest req)
+    {
+        RestaurantDto? result = await _service.UpdateAsync(id, req);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    // ── Sections ────────────────────────────────────────────────────────────
+
+    [HttpPost("{id}/sections")]
+    [Authorize]
+    public async Task<IActionResult> AddSection(int id, CreateSectionRequest req)
+    {
+        SectionDto? result = await _service.AddSectionAsync(id, req.Name);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("{id}/sections/{sectionId}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateSection(int id, int sectionId, UpdateSectionRequest req)
+    {
+        SectionDto? result = await _service.UpdateSectionAsync(id, sectionId, req.Name);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("{id}/sections/{sectionId}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteSection(int id, int sectionId)
+        => await _service.DeleteSectionAsync(id, sectionId) ? NoContent() : NotFound();
+
+    // ── Tables ──────────────────────────────────────────────────────────────
+
+    [HttpPost("{id}/sections/{sectionId}/tables")]
+    [Authorize]
+    public async Task<IActionResult> AddTable(int id, int sectionId, CreateTableRequest req)
+    {
+        TableDto? result = await _service.AddTableAsync(id, sectionId, req.Name, req.Seats);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("{id}/sections/{sectionId}/tables/{tableId}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
+    {
+        TableDto? result = await _service.UpdateTableAsync(sectionId, tableId, req.Name, req.Seats);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("{id}/sections/{sectionId}/tables/{tableId}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
+        => await _service.DeleteTableAsync(sectionId, tableId) ? NoContent() : NotFound();
 }

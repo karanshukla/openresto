@@ -1,0 +1,288 @@
+import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { usePathname, useRouter } from "expo-router";
+import { ThemedView } from "@/components/themed-view";
+import { ThemedText } from "@/components/themed-text";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/context/ThemeContext";
+import { logout } from "@/api/auth";
+import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { useBrand } from "@/context/BrandContext";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { fetchRestaurants } from "@/api/restaurants";
+
+const NAV_ITEMS = [
+  {
+    label: "Overview",
+    icon: "grid-outline" as const,
+    href: "/(admin)/dashboard" as const,
+    match: (p: string) => p === "/dashboard",
+  },
+  {
+    label: "Bookings",
+    icon: "calendar-outline" as const,
+    href: "/(admin)/bookings" as const,
+    match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
+  },
+  {
+    label: "Settings",
+    icon: "settings-outline" as const,
+    href: "/(admin)/settings" as const,
+    match: (p: string) => p === "/settings",
+  },
+];
+
+export default function AdminSidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isDark = useColorScheme() === "dark";
+  const { toggle } = useTheme();
+  const [locationCount, setLocationCount] = useState(0);
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || "#0a7ea4";
+
+  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+  const activeBg = isDark ? "rgba(10,126,164,0.18)" : "rgba(10,126,164,0.09)";
+  const sidebarBg = isDark ? "#111214" : "#fafafa";
+
+  useEffect(() => {
+    fetchRestaurants().then((data) => setLocationCount(data.length));
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/(admin)/login");
+  };
+
+  return (
+    <ThemedView
+      style={[
+        styles.sidebar,
+        { borderRightColor: borderColor, backgroundColor: sidebarBg },
+        Platform.OS === "web"
+          ? ({ position: "sticky", top: 0, height: "100vh" } as any)
+          : { height: "100%" },
+      ]}
+    >
+      {/* Brand */}
+      <View style={styles.brand}>
+        <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
+          <Ionicons name="restaurant-outline" size={16} color="#fff" />
+        </View>
+        <View style={styles.brandText}>
+          <ThemedText style={styles.brandName}>{brand.appName}</ThemedText>
+          <ThemedText style={[styles.brandSub, { color: mutedColor }]}>
+            {locationCount > 0
+              ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`
+              : "Admin Panel"}
+          </ThemedText>
+        </View>
+      </View>
+
+      <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+      {/* Nav */}
+      <View style={styles.nav}>
+        {NAV_ITEMS.map(({ label, icon, href, match }) => {
+          const active = match(pathname);
+          return (
+            <Pressable
+              key={href}
+              onPress={() => router.push(href)}
+              style={(state) => [
+                styles.navItem,
+                active
+                  ? { backgroundColor: activeBg }
+                  : (state as any).hovered && { backgroundColor: hoverBg },
+                { cursor: "pointer" } as any,
+              ]}
+            >
+              <Ionicons
+                name={icon}
+                size={18}
+                color={active ? PRIMARY : mutedColor}
+                style={styles.navIcon}
+              />
+              <ThemedText
+                style={[
+                  styles.navLabel,
+                  active ? { color: PRIMARY, fontWeight: "700" } : { color: mutedColor },
+                ]}
+              >
+                {label}
+              </ThemedText>
+              {active && (
+                <View
+                  style={[styles.activeBar, { backgroundColor: PRIMARY }]}
+                  pointerEvents="none"
+                />
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.spacer} />
+
+      {/* New Booking CTA */}
+      <View style={styles.ctaWrapper}>
+        <Pressable
+          style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
+          onPress={() => router.push("/(admin)/bookings/new")}
+        >
+          <Ionicons name="add-circle-outline" size={16} color="#fff" />
+          <ThemedText style={styles.ctaBtnText}>New Booking</ThemedText>
+        </Pressable>
+      </View>
+
+      <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Pressable
+          onPress={() => router.push("/")}
+          style={(state) => [
+            styles.footerItem,
+            (state as any).hovered && { backgroundColor: hoverBg },
+            { cursor: "pointer" } as any,
+          ]}
+        >
+          <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Back to site</ThemedText>
+        </Pressable>
+        <Pressable
+          style={(state) => [
+            styles.footerItem,
+            (state as any).hovered && { backgroundColor: hoverBg },
+            { cursor: "pointer" } as any,
+          ]}
+          onPress={toggle}
+          accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={mutedColor} />
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+            {isDark ? "Light mode" : "Dark mode"}
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={(state) => [
+            styles.footerItem,
+            (state as any).hovered && { backgroundColor: hoverBg },
+            { cursor: "pointer" } as any,
+          ]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={15} color={mutedColor} />
+          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Log out</ThemedText>
+        </Pressable>
+      </View>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  sidebar: {
+    width: 230,
+    borderRightWidth: 1,
+    paddingVertical: 8,
+  },
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 10,
+  },
+  brandIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandText: {
+    gap: 1,
+  },
+  brandName: {
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  brandSub: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 12,
+    marginVertical: 6,
+  },
+  nav: {
+    paddingTop: 4,
+    gap: 2,
+    paddingHorizontal: 8,
+  },
+  navItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    position: "relative",
+    gap: 10,
+  },
+  navIcon: {
+    width: 20,
+  },
+  navLabel: {
+    fontSize: 14,
+    flex: 1,
+  },
+  activeBar: {
+    position: "absolute",
+    left: 0,
+    top: "50%" as any,
+    marginTop: -8,
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+  },
+  spacer: {
+    flex: 1,
+  },
+  ctaWrapper: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  ctaBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  footer: {
+    paddingTop: 4,
+    paddingHorizontal: 8,
+    gap: 2,
+  },
+  footerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  footerText: {
+    fontSize: 13,
+  },
+});
