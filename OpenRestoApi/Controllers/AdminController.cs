@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
@@ -8,9 +9,10 @@ namespace OpenRestoApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AdminController(AdminService adminService) : ControllerBase
+public class AdminController(AdminService adminService, IEmailService emailService) : ControllerBase
 {
     private readonly AdminService _admin = adminService;
+    private readonly IEmailService _email = emailService;
 
     [HttpGet("overview")]
     public async Task<IActionResult> Overview()
@@ -104,5 +106,36 @@ public class AdminController(AdminService adminService) : ControllerBase
         return result == null
             ? NotFound(new { message = "Restaurant not found or has no sections." })
             : Ok(result);
+    }
+
+    // ── Email ───────────────────────────────────────────────────────────────
+
+    [HttpPost("bookings/{id}/email")]
+    public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
+    {
+        BookingDetailDto? booking = await _admin.GetBookingAsync(id);
+        if (booking == null)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
+        {
+            return BadRequest(new { message = "Subject and body are required." });
+        }
+
+        try
+        {
+            await _email.SendEmailAsync(booking.CustomerEmail, req.Subject, req.Body);
+            return Ok(new { message = $"Email sent to {booking.CustomerEmail}." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = $"Failed to send: {ex.Message}" });
+        }
     }
 }

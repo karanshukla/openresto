@@ -23,7 +23,12 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Open Resto",
+      "shortName": "OpenResto",
+      "description": "Restaurant table booking system",
+      "themeColor": "#0a7ea4",
+      "backgroundColor": "#ffffff"
     },
     "plugins": [
       "expo-router",

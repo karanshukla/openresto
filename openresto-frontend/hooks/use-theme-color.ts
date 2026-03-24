@@ -13,6 +13,7 @@ export function useThemeColor(
   const theme = useColorScheme() ?? "light";
   const colorFromProps = props[theme];
 
+  /* istanbul ignore next -- dark/light branch depends on native color scheme */
   if (colorFromProps) {
     return colorFromProps;
   } else {

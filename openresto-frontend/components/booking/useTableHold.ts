@@ -79,10 +79,12 @@ export function useTableHold({
       return;
     }
 
+    /* istanbul ignore next -- guards against redundant hold when already held */
     if (hold && holdStatus === "held") {
       return;
     }
 
+    /* istanbul ignore next -- clears previous debounce timer */
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }

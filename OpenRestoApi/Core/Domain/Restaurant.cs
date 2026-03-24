@@ -14,6 +14,12 @@ public class Restaurant
     /// </summary>
     public string OpenDays { get; set; } = "1,2,3,4,5,6,7";
 
+    /// <summary>
+    /// IANA timezone identifier (e.g. "Europe/London", "America/New_York").
+    /// All booking times are interpreted in this timezone.
+    /// </summary>
+    public string Timezone { get; set; } = "UTC";
+
     // A restaurant can have multiple sections (e.g., indoor, patio)
     public ICollection<Section> Sections { get; set; } = new List<Section>();
 }

@@ -45,22 +45,25 @@ builder.Services.AddCors(options =>
         });
 });
 
+bool isTesting = builder.Environment.EnvironmentName == "Testing";
+int authLimit = isTesting ? 10000 : 5;
+int publicLimit = isTesting ? 10000 : 30;
+int globalLimit = isTesting ? 10000 : 60;
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // Strict limit for auth endpoints (login, PVQ) — 5 per minute per IP
     options.AddFixedWindowLimiter("auth", limiter =>
     {
-        limiter.PermitLimit = 5;
+        limiter.PermitLimit = authLimit;
         limiter.Window = TimeSpan.FromMinutes(1);
         limiter.QueueLimit = 0;
     });
 
-    // General public endpoint limit — 30 per minute per IP
     options.AddFixedWindowLimiter("public", limiter =>
     {
-        limiter.PermitLimit = 30;
+        limiter.PermitLimit = publicLimit;
         limiter.Window = TimeSpan.FromMinutes(1);
         limiter.QueueLimit = 0;
     });
@@ -72,7 +75,7 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = 60,
+                PermitLimit = globalLimit,
                 QueueLimit = 0,
                 Window = TimeSpan.FromMinutes(1)
             }));
@@ -239,6 +242,7 @@ using (IServiceScope scope = app.Services.CreateScope())
     AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
     AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
     AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
+    AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
 
     // Tables (CREATE IF NOT EXISTS is safe — no fail: log)
     db.Database.ExecuteSqlRaw(@"

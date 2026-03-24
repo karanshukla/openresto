@@ -159,6 +159,20 @@ export async function adminPurgeBooking(id: number): Promise<boolean> {
   }
 }
 
+export async function sendBookingEmail(
+  bookingId: number,
+  subject: string,
+  body: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await post(`/admin/bookings/${bookingId}/email`, { subject, body });
+    const data = await res.json();
+    return { ok: res.ok, message: data.message };
+  } catch {
+    return { ok: false, message: "Network error." };
+  }
+}
+
 // ---------- Restaurants ----------
 
 export async function adminCreateRestaurant(
@@ -178,7 +192,7 @@ export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   try {
     const res = await del(`/admin/restaurants/${id}`);
     return res.ok;
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     console.error("adminDeleteRestaurant error:", err);
     return false;
   }

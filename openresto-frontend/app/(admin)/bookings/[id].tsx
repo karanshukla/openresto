@@ -5,6 +5,7 @@ import {
   adminDeleteBooking,
   adminExtendBooking,
   adminPurgeBooking,
+  sendBookingEmail,
   BookingDetailDto,
 } from "@/api/admin";
 import { useEffect, useState } from "react";
@@ -25,6 +26,10 @@ export default function AdminBookingDetailScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ ok: boolean; message: string } | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
@@ -155,6 +160,96 @@ export default function AdminBookingDetailScreen() {
         </View>
       </View>
 
+      {/* Email guest */}
+      <View style={[styles.section, { borderColor }]}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="mail-outline" size={16} color={mutedColor} />
+          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
+            Email guest
+          </ThemedText>
+        </View>
+        <ThemedText style={[styles.emailTo, { color: mutedColor }]}>
+          To: {booking.customerEmail}
+        </ThemedText>
+        <input
+          type="text"
+          placeholder="Subject"
+          value={emailSubject}
+          onChange={(e) => setEmailSubject(e.target.value)}
+          style={{
+            width: "100%",
+            height: 40,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+            borderRadius: 8,
+            paddingLeft: 12,
+            paddingRight: 12,
+            fontSize: 14,
+            backgroundColor: isDark ? "#1c1c1e" : "#fff",
+            color: isDark ? "#fff" : "#000",
+            marginBottom: 8,
+          } as React.CSSProperties}
+        />
+        <textarea
+          placeholder="Message body (HTML supported)"
+          value={emailBody}
+          onChange={(e) => setEmailBody(e.target.value)}
+          rows={4}
+          style={{
+            width: "100%",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 14,
+            backgroundColor: isDark ? "#1c1c1e" : "#fff",
+            color: isDark ? "#fff" : "#000",
+            resize: "vertical",
+            fontFamily: "inherit",
+            marginBottom: 8,
+          } as React.CSSProperties}
+        />
+        <View style={styles.emailActions}>
+          <Pressable
+            style={[
+              styles.emailSendBtn,
+              { backgroundColor: PRIMARY },
+              (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
+            ]}
+            onPress={async () => {
+              if (!emailSubject.trim() || !emailBody.trim()) return;
+              setEmailSending(true);
+              setEmailResult(null);
+              const result = await sendBookingEmail(booking.id, emailSubject, emailBody);
+              setEmailResult(result);
+              setEmailSending(false);
+              if (result.ok) {
+                setEmailSubject("");
+                setEmailBody("");
+              }
+            }}
+            disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
+          >
+            <Ionicons name="send-outline" size={14} color="#fff" />
+            <ThemedText style={styles.emailSendBtnText}>
+              {emailSending ? "Sending…" : "Send Email"}
+            </ThemedText>
+          </Pressable>
+          {emailResult && (
+            <ThemedText
+              style={[
+                styles.emailResultText,
+                { color: emailResult.ok ? "#16a34a" : "#dc2626" },
+              ]}
+            >
+              {emailResult.message}
+            </ThemedText>
+          )}
+        </View>
+      </View>
+
       {/* Cancel */}
       <Pressable
         style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
@@ -276,6 +371,18 @@ const styles = StyleSheet.create({
     cursor: "pointer" as any,
   },
   extendBtnText: { fontSize: 14, fontWeight: "600" },
+  emailTo: { fontSize: 13, marginBottom: 8 },
+  emailActions: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
+  emailSendBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  emailResultText: { fontSize: 13, fontWeight: "500" },
   cancelBtn: {
     flexDirection: "row",
     alignItems: "center",

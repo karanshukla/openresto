@@ -23,6 +23,7 @@ describe("RestaurantCard", () => {
     openTime: "09:00",
     closeTime: "22:00",
     openDays: "1,2,3,4,5,6,7",
+    timezone: "UTC",
     sections: [
       {
         id: 1,

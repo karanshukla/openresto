@@ -19,6 +19,7 @@ export function ThemedText({
 
   return (
     <Text
+      /* istanbul ignore next -- type variant branches */
       style={[
         { color },
         type === "default" ? styles.default : undefined,

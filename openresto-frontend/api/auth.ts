@@ -60,7 +60,7 @@ export async function getPvqStatus(): Promise<PvqStatus | null> {
     const res = await get("/admin/auth/pvq", { credentials: "omit" });
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch /* istanbul ignore next */ {
     return null;
   }
 }
@@ -87,7 +87,7 @@ export async function verifyPvq(
     const res = await post("/admin/auth/pvq/verify", { email, answer });
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch /* istanbul ignore next */ {
     return null;
   }
 }

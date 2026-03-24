@@ -24,8 +24,8 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        string? token = body.GetProperty("token").GetString();
-        Assert.False(string.IsNullOrEmpty(token));
+        string? message = body.GetProperty("message").GetString();
+        Assert.Equal("Login successful.", message);
     }
 
     [Fact]

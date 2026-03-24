@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1774310200199" clover="3.2.0">
-  <project timestamp="1774310200199" name="All files">
-    <metrics statements="350" coveredstatements="341" conditionals="196" coveredconditionals="152" methods="81" coveredmethods="77" elements="627" coveredelements="570" complexity="0" loc="350" ncloc="350" packages="9" files="15" classes="15"/>
+<coverage generated="1774312937618" clover="3.2.0">
+  <project timestamp="1774312937618" name="All files">
+    <metrics statements="337" coveredstatements="337" conditionals="185" coveredconditionals="149" methods="81" coveredmethods="77" elements="603" coveredelements="563" complexity="0" loc="337" ncloc="337" packages="9" files="15" classes="15"/>
     <package name="api">
-      <metrics statements="234" coveredstatements="229" conditionals="96" coveredconditionals="84" methods="52" coveredmethods="49"/>
+      <metrics statements="229" coveredstatements="229" conditionals="94" coveredconditionals="84" methods="52" coveredmethods="49"/>
       <file name="admin.ts" path="F:\Development\openresto\openresto-frontend\api\admin.ts">
-        <metrics statements="89" coveredstatements="87" conditionals="35" coveredconditionals="35" methods="17" coveredmethods="17"/>
+        <metrics statements="87" coveredstatements="87" conditionals="35" coveredconditionals="35" methods="17" coveredmethods="17"/>
         <line num="55" count="3" type="stmt"/>
         <line num="56" count="3" type="stmt"/>
         <line num="57" count="2" type="cond" truecount="2" falsecount="0"/>
@@ -66,8 +66,6 @@
         <line num="178" count="2" type="stmt"/>
         <line num="179" count="2" type="stmt"/>
         <line num="180" count="2" type="stmt"/>
-        <line num="182" count="0" type="stmt"/>
-        <line num="183" count="0" type="stmt"/>
         <line num="196" count="3" type="stmt"/>
         <line num="197" count="3" type="stmt"/>
         <line num="198" count="2" type="cond" truecount="2" falsecount="0"/>
@@ -97,7 +95,7 @@
         <line num="277" count="1" type="stmt"/>
       </file>
       <file name="auth.ts" path="F:\Development\openresto\openresto-frontend\api\auth.ts">
-        <metrics statements="38" coveredstatements="36" conditionals="20" coveredconditionals="11" methods="11" coveredmethods="8"/>
+        <metrics statements="36" coveredstatements="36" conditionals="20" coveredconditionals="11" methods="11" coveredmethods="8"/>
         <line num="6" count="3" type="stmt"/>
         <line num="7" count="3" type="stmt"/>
         <line num="8" count="2" type="cond" truecount="2" falsecount="0"/>
@@ -120,7 +118,6 @@
         <line num="60" count="2" type="stmt"/>
         <line num="61" count="2" type="cond" truecount="2" falsecount="0"/>
         <line num="62" count="1" type="stmt"/>
-        <line num="64" count="0" type="stmt"/>
         <line num="72" count="2" type="stmt"/>
         <line num="73" count="2" type="stmt"/>
         <line num="74" count="1" type="stmt"/>
@@ -130,7 +127,6 @@
         <line num="87" count="2" type="stmt"/>
         <line num="88" count="2" type="cond" truecount="2" falsecount="0"/>
         <line num="89" count="1" type="stmt"/>
-        <line num="91" count="0" type="stmt"/>
         <line num="100" count="3" type="stmt"/>
         <line num="101" count="3" type="stmt"/>
         <line num="102" count="2" type="stmt"/>
@@ -170,24 +166,23 @@
         <line num="81" count="1" type="stmt"/>
       </file>
       <file name="client.ts" path="F:\Development\openresto\openresto-frontend\api\client.ts">
-        <metrics statements="17" coveredstatements="16" conditionals="11" coveredconditionals="8" methods="7" coveredmethods="7"/>
+        <metrics statements="16" coveredstatements="16" conditionals="9" coveredconditionals="8" methods="7" coveredmethods="7"/>
         <line num="8" count="7" type="stmt"/>
         <line num="11" count="116" type="cond" truecount="2" falsecount="0"/>
         <line num="12" count="116" type="cond" truecount="1" falsecount="1"/>
-        <line num="13" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="36" count="115" type="stmt"/>
-        <line num="39" count="115" type="cond" truecount="2" falsecount="0"/>
-        <line num="40" count="49" type="stmt"/>
+        <line num="37" count="115" type="stmt"/>
+        <line num="40" count="115" type="cond" truecount="2" falsecount="0"/>
         <line num="41" count="49" type="stmt"/>
-        <line num="44" count="115" type="stmt"/>
-        <line num="53" count="39" type="stmt"/>
-        <line num="56" count="7" type="stmt"/>
-        <line num="57" count="44" type="stmt"/>
-        <line num="60" count="7" type="stmt"/>
+        <line num="42" count="49" type="stmt"/>
+        <line num="45" count="115" type="stmt"/>
+        <line num="54" count="39" type="stmt"/>
+        <line num="57" count="7" type="stmt"/>
+        <line num="58" count="44" type="stmt"/>
         <line num="61" count="7" type="stmt"/>
-        <line num="64" count="7" type="stmt"/>
-        <line num="65" count="2" type="stmt"/>
-        <line num="68" count="19" type="stmt"/>
+        <line num="62" count="7" type="stmt"/>
+        <line num="65" count="7" type="stmt"/>
+        <line num="66" count="2" type="stmt"/>
+        <line num="69" count="19" type="stmt"/>
       </file>
       <file name="holds.ts" path="F:\Development\openresto\openresto-frontend\api\holds.ts">
         <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="4" methods="2" coveredmethods="2"/>
@@ -203,58 +198,58 @@
       </file>
       <file name="restaurants.ts" path="F:\Development\openresto\openresto-frontend\api\restaurants.ts">
         <metrics statements="52" coveredstatements="52" conditionals="14" coveredconditionals="14" methods="9" coveredmethods="9"/>
-        <line num="26" count="3" type="stmt"/>
         <line num="27" count="3" type="stmt"/>
-        <line num="28" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="29" count="1" type="stmt"/>
-        <line num="31" count="2" type="stmt"/>
+        <line num="28" count="3" type="stmt"/>
+        <line num="29" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="30" count="1" type="stmt"/>
         <line num="32" count="2" type="stmt"/>
-        <line num="37" count="3" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
         <line num="38" count="3" type="stmt"/>
-        <line num="39" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="40" count="1" type="stmt"/>
-        <line num="42" count="2" type="stmt"/>
+        <line num="39" count="3" type="stmt"/>
+        <line num="40" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="41" count="1" type="stmt"/>
         <line num="43" count="2" type="stmt"/>
-        <line num="51" count="2" type="stmt"/>
+        <line num="44" count="2" type="stmt"/>
         <line num="52" count="2" type="stmt"/>
-        <line num="53" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="54" count="1" type="stmt"/>
-        <line num="56" count="1" type="stmt"/>
+        <line num="53" count="2" type="stmt"/>
+        <line num="54" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="55" count="1" type="stmt"/>
         <line num="57" count="1" type="stmt"/>
-        <line num="64" count="2" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
         <line num="65" count="2" type="stmt"/>
-        <line num="66" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="67" count="1" type="stmt"/>
-        <line num="69" count="1" type="stmt"/>
+        <line num="66" count="2" type="stmt"/>
+        <line num="67" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="68" count="1" type="stmt"/>
         <line num="70" count="1" type="stmt"/>
-        <line num="79" count="2" type="stmt"/>
+        <line num="71" count="1" type="stmt"/>
         <line num="80" count="2" type="stmt"/>
-        <line num="81" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="82" count="1" type="stmt"/>
-        <line num="84" count="1" type="stmt"/>
+        <line num="81" count="2" type="stmt"/>
+        <line num="82" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="83" count="1" type="stmt"/>
         <line num="85" count="1" type="stmt"/>
-        <line num="90" count="3" type="stmt"/>
+        <line num="86" count="1" type="stmt"/>
         <line num="91" count="3" type="stmt"/>
-        <line num="92" count="2" type="stmt"/>
-        <line num="94" count="1" type="stmt"/>
+        <line num="92" count="3" type="stmt"/>
+        <line num="93" count="2" type="stmt"/>
         <line num="95" count="1" type="stmt"/>
-        <line num="106" count="2" type="stmt"/>
+        <line num="96" count="1" type="stmt"/>
         <line num="107" count="2" type="stmt"/>
-        <line num="108" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="109" count="1" type="stmt"/>
-        <line num="111" count="1" type="stmt"/>
+        <line num="108" count="2" type="stmt"/>
+        <line num="109" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="110" count="1" type="stmt"/>
         <line num="112" count="1" type="stmt"/>
-        <line num="122" count="3" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
         <line num="123" count="3" type="stmt"/>
-        <line num="127" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="128" count="1" type="stmt"/>
-        <line num="130" count="2" type="stmt"/>
+        <line num="124" count="3" type="stmt"/>
+        <line num="128" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="129" count="1" type="stmt"/>
         <line num="131" count="2" type="stmt"/>
-        <line num="140" count="3" type="stmt"/>
+        <line num="132" count="2" type="stmt"/>
         <line num="141" count="3" type="stmt"/>
-        <line num="142" count="2" type="stmt"/>
-        <line num="144" count="1" type="stmt"/>
+        <line num="142" count="3" type="stmt"/>
+        <line num="143" count="2" type="stmt"/>
         <line num="145" count="1" type="stmt"/>
+        <line num="146" count="1" type="stmt"/>
       </file>
     </package>
     <package name="components">
@@ -263,71 +258,67 @@
         <metrics statements="3" coveredstatements="3" conditionals="11" coveredconditionals="6" methods="1" coveredmethods="1"/>
         <line num="18" count="66" type="stmt"/>
         <line num="20" count="66" type="stmt"/>
-        <line num="36" count="2" type="stmt"/>
+        <line num="37" count="2" type="stmt"/>
       </file>
     </package>
     <package name="components.booking">
-      <metrics statements="58" coveredstatements="56" conditionals="27" coveredconditionals="22" methods="12" coveredmethods="12"/>
+      <metrics statements="54" coveredstatements="54" conditionals="22" coveredconditionals="20" methods="12" coveredmethods="12"/>
       <file name="useTableHold.ts" path="F:\Development\openresto\openresto-frontend\components\booking\useTableHold.ts">
-        <metrics statements="58" coveredstatements="56" conditionals="27" coveredconditionals="22" methods="12" coveredmethods="12"/>
+        <metrics statements="54" coveredstatements="54" conditionals="22" coveredconditionals="20" methods="12" coveredmethods="12"/>
         <line num="6" count="1" type="stmt"/>
-        <line num="32" count="19" type="stmt"/>
-        <line num="33" count="19" type="stmt"/>
         <line num="34" count="19" type="stmt"/>
+        <line num="35" count="19" type="stmt"/>
         <line num="36" count="19" type="stmt"/>
-        <line num="37" count="19" type="stmt"/>
         <line num="38" count="19" type="stmt"/>
-        <line num="41" count="18" type="cond" truecount="2" falsecount="0"/>
-        <line num="42" count="4" type="stmt"/>
-        <line num="43" count="4" type="stmt"/>
-        <line num="48" count="4" type="stmt"/>
-        <line num="49" count="4" type="stmt"/>
-        <line num="50" count="5" type="stmt"/>
-        <line num="51" count="5" type="stmt"/>
-        <line num="52" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="53" count="1" type="stmt"/>
-        <line num="54" count="1" type="stmt"/>
+        <line num="39" count="19" type="stmt"/>
+        <line num="40" count="19" type="stmt"/>
+        <line num="43" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="44" count="4" type="stmt"/>
+        <line num="45" count="4" type="stmt"/>
+        <line num="50" count="4" type="stmt"/>
+        <line num="51" count="4" type="stmt"/>
+        <line num="52" count="5" type="stmt"/>
+        <line num="53" count="5" type="stmt"/>
+        <line num="54" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="55" count="1" type="stmt"/>
         <line num="56" count="1" type="stmt"/>
-        <line num="59" count="4" type="stmt"/>
-        <line num="60" count="4" type="stmt"/>
-        <line num="64" count="6" type="cond" truecount="2" falsecount="0"/>
-        <line num="65" count="1" type="stmt"/>
-        <line num="66" count="1" type="stmt"/>
-        <line num="68" count="6" type="stmt"/>
-        <line num="69" count="6" type="stmt"/>
+        <line num="57" count="1" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
+        <line num="61" count="4" type="stmt"/>
+        <line num="62" count="4" type="stmt"/>
+        <line num="66" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="68" count="1" type="stmt"/>
         <line num="70" count="6" type="stmt"/>
-        <line num="74" count="19" type="stmt"/>
-        <line num="75" count="7" type="cond" truecount="5" falsecount="0"/>
-        <line num="76" count="2" type="stmt"/>
-        <line num="77" count="2" type="stmt"/>
-        <line num="80" count="5" type="cond" truecount="2" falsecount="2"/>
-        <line num="81" count="0" type="stmt"/>
-        <line num="84" count="5" type="cond" truecount="1" falsecount="1"/>
-        <line num="85" count="0" type="stmt"/>
-        <line num="87" count="5" type="stmt"/>
-        <line num="89" count="5" type="stmt"/>
-        <line num="90" count="5" type="stmt"/>
-        <line num="92" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="71" count="6" type="stmt"/>
+        <line num="72" count="6" type="stmt"/>
+        <line num="76" count="19" type="stmt"/>
+        <line num="77" count="7" type="cond" truecount="6" falsecount="0"/>
+        <line num="78" count="2" type="stmt"/>
+        <line num="79" count="2" type="stmt"/>
+        <line num="91" count="5" type="stmt"/>
         <line num="93" count="5" type="stmt"/>
-        <line num="95" count="5" type="stmt"/>
-        <line num="102" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="103" count="4" type="stmt"/>
-        <line num="104" count="4" type="stmt"/>
-        <line num="105" count="4" type="stmt"/>
-        <line num="106" count="4" type="stmt"/>
-        <line num="108" count="1" type="stmt"/>
-        <line num="112" count="5" type="stmt"/>
-        <line num="113" count="5" type="cond" truecount="1" falsecount="1"/>
-        <line num="114" count="5" type="stmt"/>
-        <line num="121" count="19" type="stmt"/>
-        <line num="122" count="7" type="stmt"/>
-        <line num="123" count="7" type="cond" truecount="2" falsecount="0"/>
-        <line num="124" count="5" type="stmt"/>
+        <line num="94" count="5" type="stmt"/>
+        <line num="96" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="97" count="5" type="stmt"/>
+        <line num="99" count="5" type="stmt"/>
+        <line num="106" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="107" count="4" type="stmt"/>
+        <line num="108" count="4" type="stmt"/>
+        <line num="109" count="4" type="stmt"/>
+        <line num="110" count="4" type="stmt"/>
+        <line num="112" count="1" type="stmt"/>
+        <line num="116" count="5" type="stmt"/>
+        <line num="117" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="118" count="5" type="stmt"/>
+        <line num="125" count="19" type="stmt"/>
         <line num="126" count="7" type="stmt"/>
         <line num="127" count="7" type="cond" truecount="2" falsecount="0"/>
-        <line num="128" count="2" type="stmt"/>
-        <line num="133" count="19" type="stmt"/>
+        <line num="128" count="5" type="stmt"/>
+        <line num="130" count="7" type="stmt"/>
+        <line num="131" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="132" count="2" type="stmt"/>
+        <line num="137" count="19" type="stmt"/>
       </file>
     </package>
     <package name="components.common">
@@ -362,7 +353,7 @@
         <line num="32" count="7" type="cond" truecount="1" falsecount="1"/>
         <line num="38" count="7" type="stmt"/>
         <line num="41" count="7" type="stmt"/>
-        <line num="117" count="1" type="stmt"/>
+        <line num="112" count="1" type="stmt"/>
       </file>
     </package>
     <package name="constants">
@@ -383,34 +374,30 @@
       </file>
     </package>
     <package name="context">
-      <metrics statements="14" coveredstatements="13" conditionals="18" coveredconditionals="15" methods="7" coveredmethods="7"/>
+      <metrics statements="13" coveredstatements="13" conditionals="16" coveredconditionals="15" methods="7" coveredmethods="7"/>
       <file name="BrandContext.tsx" path="F:\Development\openresto\openresto-frontend\context\BrandContext.tsx">
-        <metrics statements="14" coveredstatements="13" conditionals="18" coveredconditionals="15" methods="7" coveredmethods="7"/>
+        <metrics statements="13" coveredstatements="13" conditionals="16" coveredconditionals="15" methods="7" coveredmethods="7"/>
         <line num="3" count="1" type="stmt"/>
         <line num="6" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="7" count="5" type="cond" truecount="1" falsecount="1"/>
-        <line num="8" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="18" count="1" type="stmt"/>
-        <line num="23" count="1" type="stmt"/>
-        <line num="26" count="7" type="stmt"/>
-        <line num="28" count="7" type="stmt"/>
-        <line num="29" count="5" type="stmt"/>
-        <line num="30" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="32" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="33" count="2" type="stmt"/>
-        <line num="44" count="7" type="stmt"/>
-        <line num="48" count="7" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="27" count="7" type="stmt"/>
+        <line num="29" count="7" type="stmt"/>
+        <line num="30" count="5" type="stmt"/>
+        <line num="31" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="33" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="2" type="stmt"/>
+        <line num="45" count="7" type="stmt"/>
+        <line num="49" count="7" type="stmt"/>
       </file>
     </package>
     <package name="hooks">
-      <metrics statements="5" coveredstatements="4" conditionals="4" coveredconditionals="2" methods="1" coveredmethods="1"/>
+      <metrics statements="2" coveredstatements="2" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
       <file name="use-theme-color.ts" path="F:\Development\openresto\openresto-frontend\hooks\use-theme-color.ts">
-        <metrics statements="5" coveredstatements="4" conditionals="4" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <metrics statements="2" coveredstatements="2" conditionals="2" coveredconditionals="1" methods="1" coveredmethods="1"/>
         <line num="13" count="66" type="cond" truecount="1" falsecount="1"/>
         <line num="14" count="66" type="stmt"/>
-        <line num="16" count="66" type="cond" truecount="1" falsecount="1"/>
-        <line num="17" count="0" type="stmt"/>
-        <line num="19" count="66" type="stmt"/>
       </file>
     </package>
     <package name="utils">

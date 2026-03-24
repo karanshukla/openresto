@@ -198,6 +198,15 @@ export default function BookingForm({
         </View>
       </View>
 
+      {restaurant.timezone && restaurant.timezone !== "UTC" && (
+        <ThemedText style={styles.timezoneHint}>
+          All times are in {restaurant.timezone.replace(/_/g, " ")} timezone
+        </ThemedText>
+      )}
+      {restaurant.timezone === "UTC" && (
+        <ThemedText style={styles.timezoneHint}>All times are in UTC</ThemedText>
+      )}
+
       {/* Row 3: Email + Special Requests */}
       <View style={isWeb ? [styles.fieldRow, styles.fieldRowStretch] : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
@@ -281,6 +290,12 @@ const styles = StyleSheet.create({
     color: "#e53e3e",
     fontSize: 13,
     marginBottom: 12,
+  },
+  timezoneHint: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: -4,
+    marginBottom: 4,
   },
   submitBtn: {
     marginTop: 8,

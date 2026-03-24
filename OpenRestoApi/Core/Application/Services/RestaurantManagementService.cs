@@ -73,6 +73,11 @@ public class RestaurantManagementService(AppDbContext db)
             r.OpenDays = req.OpenDays;
         }
 
+        if (req.Timezone != null)
+        {
+            r.Timezone = req.Timezone;
+        }
+
         await _db.SaveChangesAsync();
 
         return new RestaurantDto
@@ -83,6 +88,7 @@ public class RestaurantManagementService(AppDbContext db)
             OpenTime = r.OpenTime,
             CloseTime = r.CloseTime,
         OpenDays = r.OpenDays,
+        Timezone = r.Timezone,
             Sections = []
         };
     }
@@ -195,6 +201,7 @@ public class RestaurantManagementService(AppDbContext db)
         OpenTime = r.OpenTime,
         CloseTime = r.CloseTime,
         OpenDays = r.OpenDays,
+        Timezone = r.Timezone,
         Sections = r.Sections.Select(s => new SectionDto
         {
             Id = s.Id,

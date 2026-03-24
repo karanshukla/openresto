@@ -54,6 +54,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
             {
                 options.UseSqlite(_connection);
             });
+
         });
 
         builder.UseSetting("Jwt:Key", JwtKey);

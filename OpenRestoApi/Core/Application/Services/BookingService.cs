@@ -29,6 +29,12 @@ public class BookingService(
     /// <exception cref="InvalidOperationException">Thrown when the table is unavailable.</exception>
     public async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
+        // 0. Reject bookings in the past
+        if (bookingDto.Date < DateTime.UtcNow.AddMinutes(-5))
+        {
+            throw new InvalidOperationException("Cannot create a booking in the past.");
+        }
+
         // 1. Check DB for an existing confirmed booking on the same table+date
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
             bookingDto.TableId, bookingDto.Date);

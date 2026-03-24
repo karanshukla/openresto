@@ -183,11 +183,11 @@ export default function LookupScreen() {
             )}
 
             {!loading && booking && (
-              <View style={[isWide && { marginTop: 0 }, { gap: 16 }]}>
-                {/* Header */}
-                <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+              <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
+                {/* Header inside card */}
+                <View style={styles.cardHeader}>
                   <View style={styles.resultHeader}>
-                    <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
+                    <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
                     <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>
                   </View>
                   <View
@@ -201,9 +201,7 @@ export default function LookupScreen() {
                     </ThemedText>
                   </View>
                 </View>
-
-                {/* Details card */}
-                <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
+                <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
                   {[
                     ...(restaurant
                       ? [
@@ -272,7 +270,6 @@ export default function LookupScreen() {
                       </View>
                     </View>
                   ))}
-                </View>
               </View>
             )}
           </View>
@@ -426,6 +423,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
+  cardHeader: {
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
   detailCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -438,9 +442,10 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
   detailContent: {
     flex: 1,

@@ -424,6 +424,7 @@ function RestaurantInfoForm({
   const [openDays, setOpenDays] = useState<number[]>(
     (restaurant.openDays ?? "1,2,3,4,5,6,7").split(",").map(Number)
   );
+  const [timezone, setTimezone] = useState(restaurant.timezone ?? "UTC");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -440,7 +441,8 @@ function RestaurantInfoForm({
     address !== (restaurant.address ?? "") ||
     openTime !== (restaurant.openTime ?? "09:00") ||
     closeTime !== (restaurant.closeTime ?? "22:00") ||
-    openDays.join(",") !== (restaurant.openDays ?? "1,2,3,4,5,6,7");
+    openDays.join(",") !== (restaurant.openDays ?? "1,2,3,4,5,6,7") ||
+    timezone !== (restaurant.timezone ?? "UTC");
 
   return (
     <View style={styles.infoForm}>
@@ -501,6 +503,47 @@ function RestaurantInfoForm({
           })}
         </View>
       </View>
+      <View style={styles.field}>
+        <ThemedText style={styles.fieldLabel}>Timezone</ThemedText>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          style={{
+            width: "100%",
+            height: 44,
+            borderWidth: 1,
+            borderStyle: "solid" as const,
+            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)",
+            borderRadius: 8,
+            paddingLeft: 12,
+            paddingRight: 12,
+            fontSize: 14,
+            backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+            color: isDark ? "#ffffff" : "#000000",
+            cursor: "pointer",
+          }}
+        >
+          {[
+            "UTC",
+            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Madrid",
+            "Europe/Rome", "Europe/Amsterdam", "Europe/Brussels", "Europe/Zurich",
+            "Europe/Vienna", "Europe/Warsaw", "Europe/Prague", "Europe/Budapest",
+            "Europe/Athens", "Europe/Helsinki", "Europe/Stockholm", "Europe/Oslo",
+            "Europe/Dublin", "Europe/Lisbon", "Europe/Moscow", "Europe/Istanbul",
+            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+            "America/Toronto", "America/Vancouver", "America/Mexico_City",
+            "America/Sao_Paulo", "America/Buenos_Aires", "America/Bogota",
+            "Asia/Tokyo", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Singapore",
+            "Asia/Seoul", "Asia/Kolkata", "Asia/Dubai", "Asia/Bangkok",
+            "Asia/Jakarta", "Asia/Kuala_Lumpur", "Asia/Manila", "Asia/Taipei",
+            "Australia/Sydney", "Australia/Melbourne", "Australia/Perth",
+            "Australia/Brisbane", "Pacific/Auckland", "Africa/Johannesburg",
+            "Africa/Cairo", "Africa/Lagos", "Africa/Nairobi",
+          ].map((tz) => (
+            <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+          ))}
+        </select>
+      </View>
       <Button
         onPress={async () => {
           if (!name.trim()) return;
@@ -511,6 +554,7 @@ function RestaurantInfoForm({
             openTime,
             closeTime,
             openDays: openDays.join(","),
+            timezone,
           });
           setSaving(false);
           if (result) {
@@ -520,6 +564,7 @@ function RestaurantInfoForm({
               openTime: result.openTime,
               closeTime: result.closeTime,
               openDays: result.openDays,
+              timezone: result.timezone,
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);

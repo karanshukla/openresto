@@ -45,6 +45,14 @@ public class ExtendBookingRequest
     public int Minutes { get; set; }
 }
 
+// ── Send email to booking guest ──────────────────────────────────────────────
+
+public class SendBookingEmailRequest
+{
+    public string Subject { get; set; } = null!;
+    public string Body { get; set; } = null!;
+}
+
 // ── Admin booking create (walk-in — no hold required) ────────────────────────
 
 public class AdminCreateBookingRequest

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96.66% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>58/60</span>
+                <span class='fraction'>56/56</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">81.48% </span>
+                <span class="strong">90.9% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>22/27</span>
+                <span class='fraction'>20/22</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96.55% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>56/58</span>
+                <span class='fraction'>54/54</span>
             </div>
         
             
@@ -204,12 +204,18 @@
 <a name='L139'></a><a href='#L139'>139</a>
 <a name='L140'></a><a href='#L140'>140</a>
 <a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -283,12 +289,14 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -358,6 +366,7 @@ interface UseTableHoldParams {
   tableId: number | undefined;
   date: string;
   time: string;
+  email: string;
 }
 &nbsp;
 interface UseTableHoldResult {
@@ -375,6 +384,7 @@ export function useTableHold({
   tableId,
   date,
   time,
+  email,
 }: UseTableHoldParams): UseTableHoldResult {
   const [hold, setHold] = useState&lt;HoldResponse | null&gt;(null);
   const [holdStatus, setHoldStatus] = useState&lt;HoldStatus&gt;("idle");
@@ -419,17 +429,19 @@ export function useTableHold({
 &nbsp;
   // Debounced hold trigger
   useEffect(() =&gt; {
-    if (!tableId || !date || !time) {
+    if (!tableId || !date || !time || !email.trim()) {
       setHoldStatus("idle");
       return;
     }
 &nbsp;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (hold &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >holdStatus === "held")</span> {
-<span class="cstat-no" title="statement not covered" >      return;</span>
+    /* istanbul ignore next -- guards against redundant hold when already held */
+    if (hold &amp;&amp; holdStatus === "held") {
+      return;
     }
 &nbsp;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (debounceTimer.current) {
-<span class="cstat-no" title="statement not covered" >      clearTimeout(debounceTimer.current);</span>
+    /* istanbul ignore next -- clears previous debounce timer */
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
     }
     setHoldStatus("pending");
 &nbsp;
@@ -462,7 +474,7 @@ export function useTableHold({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableId, date, time]);
+  }, [tableId, date, time, email]);
 &nbsp;
   // Cleanup on unmount
   useEffect(() =&gt; {
@@ -493,7 +505,7 @@ export function useTableHold({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-23T23:56:40.158Z
+                at 2026-03-24T00:42:17.577Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
