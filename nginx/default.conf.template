@@ -1,6 +1,9 @@
 server {
     listen ${PORT};
 
+    # Use the container's DNS resolver for .railway.internal names
+    resolver 127.0.0.11 valid=10s ipv6=on;
+
     # ── Security headers ──────────────────────────────────────────────────
     add_header X-Content-Type-Options  "nosniff" always;
     add_header X-Frame-Options         "DENY" always;
@@ -10,7 +13,8 @@ server {
 
     # ── API — proxy to backend ────────────────────────────────────────────
     location /api/ {
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+        set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
+        proxy_pass $backend_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -20,7 +24,8 @@ server {
 
     # ── Frontend — proxy to static server ─────────────────────────────────
     location / {
-        proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
+        set $frontend_upstream http://${FRONTEND_HOST}:${FRONTEND_PORT};
+        proxy_pass $frontend_upstream;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
