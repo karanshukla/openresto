@@ -1,0 +1,4 @@
+10003	IGNORE	(Vulnerable JS Library - false positive for bundled React)
+10015	IGNORE	(Re-examine Cache-control Directives - intentional caching on /api/brand)
+10049	IGNORE	(Storable and Cacheable Content - intentional for public endpoints)
+10109	IGNORE	(Modern Web Application - informational)

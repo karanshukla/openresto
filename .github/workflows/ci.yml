@@ -145,6 +145,29 @@ jobs:
           echo "$HEADERS" | grep -qi "x-content-type-options: nosniff" || exit 1
           echo "$HEADERS" | grep -qi "x-frame-options: DENY" || exit 1
 
+      - name: OWASP ZAP API Scan
+        uses: zaproxy/action-api-scan@v0.9.0
+        with:
+          target: http://localhost:5062/api/brand
+          rules_file_name: .zap-rules.tsv
+          cmd_options: >
+            -a
+            -j
+            -l WARN
+            -z "-config api.disablekey=true
+            -config spider.maxDuration=2
+            -config scanner.maxScanDurationInMins=5"
+          allow_issue_writing: false
+        continue-on-error: true
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report_html.html
+          if-no-files-found: ignore
+
       - name: Show container logs on failure
         if: failure()
         run: docker compose logs
