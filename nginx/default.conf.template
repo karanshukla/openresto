@@ -2,7 +2,7 @@ server {
     listen ${PORT};
 
     # Use the container's DNS resolver for .railway.internal names
-    resolver 127.0.0.11 valid=10s ipv6=on;
+    resolver ${RESOLVER} valid=10s;
 
     # ── Security headers ──────────────────────────────────────────────────
     add_header X-Content-Type-Options  "nosniff" always;
