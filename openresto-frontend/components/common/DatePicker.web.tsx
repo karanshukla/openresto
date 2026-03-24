@@ -1,12 +1,22 @@
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ThemedText } from "@/components/themed-text";
+
+/** Convert a YYYY-MM-DD string to ISO day-of-week (1=Mon, 7=Sun) */
+function getIsoDay(dateStr: string): number {
+  const jsDay = new Date(dateStr + "T12:00:00").getDay(); // 0=Sun, 6=Sat
+  return jsDay === 0 ? 7 : jsDay;
+}
 
 export default function DatePicker({
   selectedDate,
   onSelect,
+  openDays,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
+  /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
+  openDays?: number[];
 }) {
   const isDark = useColorScheme() === "dark";
   const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
@@ -20,6 +30,18 @@ export default function DatePicker({
     d.setDate(d.getDate() + 29);
     return d.toISOString().split("T")[0];
   })();
+
+  const isClosedDay = selectedDate && openDays ? !openDays.includes(getIsoDay(selectedDate)) : false;
+
+  const DAY_NAMES: Record<number, string> = {
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
+    7: "Sunday",
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -37,7 +59,7 @@ export default function DatePicker({
             height: 44,
             borderWidth: 1,
             borderStyle: "solid",
-            borderColor,
+            borderColor: isClosedDay ? "#dc2626" : borderColor,
             borderRadius: 8,
             paddingLeft: 12,
             paddingRight: 12,
@@ -50,12 +72,17 @@ export default function DatePicker({
           } as React.CSSProperties
         }
         onFocus={(e) => {
-          e.target.style.borderColor = "#0a7ea4";
+          e.target.style.borderColor = isClosedDay ? "#dc2626" : "#0a7ea4";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = borderColor;
+          e.target.style.borderColor = isClosedDay ? "#dc2626" : borderColor;
         }}
       />
+      {isClosedDay && selectedDate && (
+        <ThemedText style={styles.closedWarning}>
+          Closed on {DAY_NAMES[getIsoDay(selectedDate)] ?? "this day"}. Please pick another date.
+        </ThemedText>
+      )}
     </View>
   );
 }
@@ -63,5 +90,10 @@ export default function DatePicker({
 const styles = StyleSheet.create({
   wrapper: {
     marginBottom: 16,
+  },
+  closedWarning: {
+    fontSize: 12,
+    color: "#dc2626",
+    marginTop: 4,
   },
 });

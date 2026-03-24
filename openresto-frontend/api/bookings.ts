@@ -1,4 +1,4 @@
-import { getAuthHeaders } from "./auth";
+import { get, post, del } from "./client";
 
 export interface BookingDto {
   id: number;
@@ -24,21 +24,8 @@ export interface BookingCreationDto {
   specialRequests?: string | null;
 }
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-function buildEndpoint(path: string): string {
-  const base = API_URL?.replace(/\/$/, "") ?? "";
-  if (!base) return `/api${path}`;
-  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
-
 export async function createBooking(booking: BookingCreationDto): Promise<BookingDto | null> {
-  const res = await fetch(buildEndpoint("/bookings"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(booking),
-    credentials: "include",
-  });
+  const res = await post("/bookings", booking);
 
   if (res.status === 409) {
     const body = await res.json().catch(() => ({}));
@@ -46,13 +33,12 @@ export async function createBooking(booking: BookingCreationDto): Promise<Bookin
   }
 
   if (!res.ok) throw new Error("Failed to create booking");
-
   return await res.json();
 }
 
 export async function getBookingById(id: number): Promise<BookingDto | null> {
   try {
-    const res = await fetch(buildEndpoint(`/bookings/${id}`));
+    const res = await get(`/bookings/${id}`);
     if (!res.ok) throw new Error("Failed to fetch booking");
     return await res.json();
   } catch (err) {
@@ -66,9 +52,7 @@ export async function getBookingByRef(
   email: string
 ): Promise<BookingDto | null> {
   try {
-    const res = await fetch(
-      buildEndpoint(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`)
-    );
+    const res = await get(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
     if (!res.ok) throw new Error("Failed to fetch booking");
     return await res.json();
   } catch (err) {
@@ -79,9 +63,7 @@ export async function getBookingByRef(
 
 export async function getBookingsByRestaurant(restaurantId: number): Promise<BookingDto[]> {
   try {
-    const res = await fetch(buildEndpoint(`/bookings/restaurant/${restaurantId}`), {
-      headers: getAuthHeaders(),
-    });
+    const res = await get(`/bookings/restaurant/${restaurantId}`);
     if (!res.ok) throw new Error("Failed to fetch bookings");
     return await res.json();
   } catch (err) {
@@ -92,10 +74,7 @@ export async function getBookingsByRestaurant(restaurantId: number): Promise<Boo
 
 export async function deleteBooking(id: number): Promise<boolean> {
   try {
-    const res = await fetch(buildEndpoint(`/bookings/${id}`), {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
+    const res = await del(`/bookings/${id}`);
     return res.ok;
   } catch (err) {
     console.error("deleteBooking error:", err);

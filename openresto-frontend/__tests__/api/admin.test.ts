@@ -16,9 +16,7 @@ import {
   saveBrandSettings,
 } from "@/api/admin";
 
-jest.mock("@/api/auth", () => ({
-  getAuthHeaders: () => ({ Authorization: "Bearer test" }),
-}));
+// Admin API now uses credentials: "include" for cookie-based auth — no mock needed
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -39,7 +37,7 @@ describe("getAdminOverview", () => {
 
     expect(result).toEqual(overview);
     expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/overview");
-    expect(mockFetch.mock.calls[0][1].headers).toEqual({ Authorization: "Bearer test" });
+    expect(mockFetch.mock.calls[0][1].credentials).toBe("include");
   });
 
   it("returns null on failure", async () => {

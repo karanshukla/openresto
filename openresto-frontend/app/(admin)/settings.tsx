@@ -416,18 +416,31 @@ function RestaurantInfoForm({
   restaurant: RestaurantDto;
   onSaved: (patch: Partial<RestaurantDto>) => void;
 }) {
+  const isDark = useColorScheme() === "dark";
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
   const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
+  const [openDays, setOpenDays] = useState<number[]>(
+    (restaurant.openDays ?? "1,2,3,4,5,6,7").split(",").map(Number)
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const toggleDay = (day: number) => {
+    setOpenDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+    );
+  };
 
   const dirty =
     name !== restaurant.name ||
     address !== (restaurant.address ?? "") ||
     openTime !== (restaurant.openTime ?? "09:00") ||
-    closeTime !== (restaurant.closeTime ?? "22:00");
+    closeTime !== (restaurant.closeTime ?? "22:00") ||
+    openDays.join(",") !== (restaurant.openDays ?? "1,2,3,4,5,6,7");
 
   return (
     <View style={styles.infoForm}>
@@ -461,6 +474,33 @@ function RestaurantInfoForm({
           />
         </View>
       </View>
+      <View style={styles.field}>
+        <ThemedText style={styles.fieldLabel}>Open Days</ThemedText>
+        <View style={styles.dayRow}>
+          {DAY_LABELS.map((label, i) => {
+            const day = i + 1;
+            const active = openDays.includes(day);
+            return (
+              <Pressable
+                key={day}
+                onPress={() => toggleDay(day)}
+                style={[
+                  styles.dayChip,
+                  active
+                    ? { backgroundColor: PRIMARY, borderColor: PRIMARY }
+                    : { borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" },
+                ]}
+              >
+                <ThemedText
+                  style={[styles.dayChipText, active && { color: "#fff" }]}
+                >
+                  {label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       <Button
         onPress={async () => {
           if (!name.trim()) return;
@@ -470,6 +510,7 @@ function RestaurantInfoForm({
             address: address.trim() || null,
             openTime,
             closeTime,
+            openDays: openDays.join(","),
           });
           setSaving(false);
           if (result) {
@@ -478,6 +519,7 @@ function RestaurantInfoForm({
               address: result.address,
               openTime: result.openTime,
               closeTime: result.closeTime,
+              openDays: result.openDays,
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
@@ -1476,30 +1518,6 @@ export default function AdminSettingsScreen() {
         <SecurityCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
       </View>
 
-      {/* Table Configuration / Beta */}
-      <View style={styles.section}>
-        <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
-          TABLE CONFIGURATION
-        </ThemedText>
-        <View style={[styles.betaCard, { borderColor, backgroundColor: cardBg }]}>
-          <View style={styles.betaCardContent}>
-            <View style={[styles.betaIcon, { backgroundColor: "rgba(124,58,237,0.1)" }]}>
-              <Ionicons name="flask-outline" size={24} color="#7c3aed" />
-            </View>
-            <View style={styles.betaText}>
-              <ThemedText style={styles.betaTitle}>Smart Table Optimization</ThemedText>
-              <ThemedText style={[styles.betaSub, { color: mutedColor }]}>
-                AI-powered table layout suggestions and automatic conflict resolution. Join the beta
-                to get early access.
-              </ThemedText>
-            </View>
-          </View>
-          <Pressable style={styles.betaBtn}>
-            <Ionicons name="rocket-outline" size={14} color="#7c3aed" />
-            <ThemedText style={styles.betaBtnText}>Join Beta</ThemedText>
-          </Pressable>
-        </View>
-      </View>
 
       <ConfirmModal
         visible={!!confirmState}
@@ -1664,6 +1682,15 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13, fontWeight: "600" },
   hoursRow: { flexDirection: "row", gap: 12, marginTop: 4 },
   hoursField: { flex: 1, gap: 4 },
+  dayRow: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 4 },
+  dayChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  dayChipText: { fontSize: 13, fontWeight: "600" },
   saveBtn: { marginTop: 8 },
   // Empty card
   emptyCard: {
@@ -1705,40 +1732,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   comingSoonText: { fontSize: 11, fontWeight: "700", color: PRIMARY },
-  // Beta card
-  betaCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 18,
-    gap: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  betaCardContent: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
-  betaIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  betaText: { flex: 1, gap: 6 },
-  betaTitle: { fontSize: 15, fontWeight: "700" },
-  betaSub: { fontSize: 13, lineHeight: 18 },
-  betaBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(124,58,237,0.1)",
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 8,
-  },
-  betaBtnText: { fontSize: 14, fontWeight: "700", color: "#7c3aed" },
   // Security card
   secCard: {
     borderRadius: 14,

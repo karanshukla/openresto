@@ -1,36 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
-using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/admin/email-settings")]
 [Authorize]
-public class EmailSettingsController : ControllerBase
+public class EmailSettingsController(EmailSettingsService emailSettings) : ControllerBase
 {
-    private readonly AppDbContext _db;
-    private readonly CredentialProtector _protector;
-    private readonly IEmailService _emailService;
-
-    public EmailSettingsController(
-        AppDbContext db,
-        CredentialProtector protector,
-        IEmailService emailService)
-    {
-        _db = db;
-        _protector = protector;
-        _emailService = emailService;
-    }
+    private readonly EmailSettingsService _emailSettings = emailSettings;
 
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var settings = await _db.Set<EmailSettings>().FirstOrDefaultAsync();
+        var settings = await _emailSettings.GetAsync();
         if (settings == null)
         {
             return Ok(new EmailSettingsResponse());
@@ -52,26 +36,9 @@ public class EmailSettingsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Save([FromBody] EmailSettingsRequest req)
     {
-        var settings = await _db.Set<EmailSettings>().FirstOrDefaultAsync();
-        if (settings == null)
-        {
-            settings = new EmailSettings();
-            _db.Set<EmailSettings>().Add(settings);
-        }
-
-        settings.Host = req.Host;
-        settings.Port = req.Port;
-        settings.Username = req.Username;
-        settings.EnableSsl = req.EnableSsl;
-        settings.FromName = req.FromName;
-        settings.FromEmail = req.FromEmail;
-
-        if (!string.IsNullOrEmpty(req.Password) && req.Password != "••••••••")
-        {
-            settings.EncryptedPassword = _protector.Encrypt(req.Password);
-        }
-
-        await _db.SaveChangesAsync();
+        await _emailSettings.SaveAsync(
+            req.Host, req.Port, req.Username, req.Password,
+            req.EnableSsl, req.FromName, req.FromEmail);
         return Ok(new { message = "Email settings saved." });
     }
 
@@ -80,7 +47,7 @@ public class EmailSettingsController : ControllerBase
     {
         try
         {
-            var ok = await _emailService.TestConnectionAsync();
+            bool ok = await _emailSettings.TestConnectionAsync();
             return ok
                 ? Ok(new { message = "Connection successful." })
                 : BadRequest(new { message = "Email is not configured." });

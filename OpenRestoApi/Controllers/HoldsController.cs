@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 
@@ -6,14 +7,10 @@ namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class HoldsController : ControllerBase
+[EnableRateLimiting("public")]
+public class HoldsController(IHoldService holdService) : ControllerBase
 {
-    private readonly IHoldService _holdService;
-
-    public HoldsController(IHoldService holdService)
-    {
-        _holdService = holdService;
-    }
+    private readonly IHoldService _holdService = holdService;
 
     /// <summary>
     /// Places a temporary hold on a table for a given date.
@@ -27,7 +24,7 @@ public class HoldsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var result = _holdService.PlaceHold(
+        HoldResult? result = _holdService.PlaceHold(
             request.RestaurantId,
             request.TableId,
             request.SectionId,

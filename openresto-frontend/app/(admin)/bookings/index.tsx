@@ -317,40 +317,35 @@ export default function AdminBookingsScreen() {
   const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const isWide = width >= 640;
 
-  // Initial load — fetch restaurants once
+  // Load restaurants once on mount
   useEffect(() => {
-    async function init() {
-      const data = await fetchRestaurants();
+    fetchRestaurants().then((data) => {
       setRestaurants(data);
       if (data.length > 0) {
-        const id = data[0].id;
-        setSelectedRestaurantId(id);
-        const b = await getAdminBookings(id, undefined, statusFilter);
-        setBookings(b);
+        setSelectedRestaurantId(data[0].id);
       }
-      setLoading(false);
-    }
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
   }, []);
 
-  // Refetch bookings when filter changes
+  // Fetch bookings whenever restaurant or filter changes
   useEffect(() => {
     if (!selectedRestaurantId) return;
+    let cancelled = false;
     setLoading(true);
     getAdminBookings(selectedRestaurantId, undefined, statusFilter).then((b) => {
-      setBookings(b);
-      setLoading(false);
+      if (!cancelled) {
+        setBookings(b);
+        setLoading(false);
+      }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [statusFilter, selectedRestaurantId]);
 
-  const handleSelectRestaurant = async (id: number) => {
+  const handleSelectRestaurant = (id: number) => {
     if (id === selectedRestaurantId) return;
-    setSelectedRestaurantId(id);
-    setLoading(true);
-    const b = await getAdminBookings(id, undefined, statusFilter);
-    setBookings(b);
-    setLoading(false);
+    setSelectedRestaurantId(id); // triggers the useEffect to refetch
     if (viewMode === "grid") loadGrid(id, gridDate);
   };
 
@@ -627,7 +622,23 @@ export default function AdminBookingsScreen() {
                 {b.tableName}
               </ThemedText>
               <View style={styles.colStatus}>
-                <StatusBadge date={b.date} isDark={isDark} />
+                {statusFilter === "cancelled" ? (
+                  <View style={[styles.badge, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
+                    <ThemedText style={[styles.badgeText, { color: "#dc2626" }]}>
+                      Cancelled
+                    </ThemedText>
+                  </View>
+                ) : statusFilter === "past" ? (
+                  <View style={[styles.badge, { backgroundColor: isDark ? "#1a1c1e" : "#f1f5f9" }]}>
+                    <ThemedText
+                      style={[styles.badgeText, { color: isDark ? "#64748b" : "#94a3b8" }]}
+                    >
+                      Past
+                    </ThemedText>
+                  </View>
+                ) : (
+                  <StatusBadge date={b.date} isDark={isDark} />
+                )}
               </View>
               <View style={styles.colAction}>
                 <Pressable
@@ -639,15 +650,17 @@ export default function AdminBookingsScreen() {
                 >
                   <Ionicons name="eye-outline" size={14} color={PRIMARY} />
                 </Pressable>
-                <Pressable
-                  style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
-                  onPress={(e) => {
-                    (e as any).stopPropagation?.();
-                    setCancelTarget(b);
-                  }}
-                >
-                  <Ionicons name="close-outline" size={14} color="#dc2626" />
-                </Pressable>
+                {statusFilter === "active" && (
+                  <Pressable
+                    style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
+                    onPress={(e) => {
+                      (e as any).stopPropagation?.();
+                      setCancelTarget(b);
+                    }}
+                  >
+                    <Ionicons name="close-outline" size={14} color="#dc2626" />
+                  </Pressable>
+                )}
               </View>
             </Pressable>
           ))}

@@ -7,18 +7,18 @@ public class CredentialProtectorTests
 {
     private static CredentialProtector CreateProtector()
     {
-        var provider = DataProtectionProvider.Create("TestApp");
+        IDataProtectionProvider provider = DataProtectionProvider.Create("TestApp");
         return new CredentialProtector(provider);
     }
 
     [Fact]
     public void EncryptThenDecrypt_ReturnsOriginal()
     {
-        var protector = CreateProtector();
-        var original = "my-secret-password-123!";
+        CredentialProtector protector = CreateProtector();
+        string original = "my-secret-password-123!";
 
-        var encrypted = protector.Encrypt(original);
-        var decrypted = protector.Decrypt(encrypted);
+        string encrypted = protector.Encrypt(original);
+        string decrypted = protector.Decrypt(encrypted);
 
         Assert.Equal(original, decrypted);
     }
@@ -26,10 +26,10 @@ public class CredentialProtectorTests
     [Fact]
     public void Encrypt_DifferentInputs_ProduceDifferentCiphertexts()
     {
-        var protector = CreateProtector();
+        CredentialProtector protector = CreateProtector();
 
-        var cipher1 = protector.Encrypt("password-one");
-        var cipher2 = protector.Encrypt("password-two");
+        string cipher1 = protector.Encrypt("password-one");
+        string cipher2 = protector.Encrypt("password-two");
 
         Assert.NotEqual(cipher1, cipher2);
     }
@@ -37,9 +37,9 @@ public class CredentialProtectorTests
     [Fact]
     public void Encrypt_ProducesNonEmptyOutput()
     {
-        var protector = CreateProtector();
+        CredentialProtector protector = CreateProtector();
 
-        var encrypted = protector.Encrypt("test");
+        string encrypted = protector.Encrypt("test");
 
         Assert.False(string.IsNullOrEmpty(encrypted));
     }
@@ -47,10 +47,10 @@ public class CredentialProtectorTests
     [Fact]
     public void Encrypt_OutputDiffersFromInput()
     {
-        var protector = CreateProtector();
-        var input = "my-password";
+        CredentialProtector protector = CreateProtector();
+        string input = "my-password";
 
-        var encrypted = protector.Encrypt(input);
+        string encrypted = protector.Encrypt(input);
 
         Assert.NotEqual(input, encrypted);
     }
@@ -58,7 +58,7 @@ public class CredentialProtectorTests
     [Fact]
     public void Decrypt_WithWrongCiphertext_Throws()
     {
-        var protector = CreateProtector();
+        CredentialProtector protector = CreateProtector();
 
         // Decrypting garbage should throw a CryptographicException
         Assert.ThrowsAny<Exception>(() => protector.Decrypt("not-valid-ciphertext"));
@@ -68,11 +68,11 @@ public class CredentialProtectorTests
     public void Decrypt_WithDifferentProtectorInstance_Succeeds()
     {
         // Both protectors use the same application name, so they share keys
-        var protector1 = CreateProtector();
-        var protector2 = CreateProtector();
+        CredentialProtector protector1 = CreateProtector();
+        CredentialProtector protector2 = CreateProtector();
 
-        var encrypted = protector1.Encrypt("shared-secret");
-        var decrypted = protector2.Decrypt(encrypted);
+        string encrypted = protector1.Encrypt("shared-secret");
+        string decrypted = protector2.Decrypt(encrypted);
 
         Assert.Equal("shared-secret", decrypted);
     }

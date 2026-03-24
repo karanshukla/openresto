@@ -93,6 +93,7 @@ export default function BookingForm({
     tableId,
     date,
     time,
+    email: customerEmail,
   });
 
   // When seats change, auto-update table to smallest fitting one
@@ -120,8 +121,13 @@ export default function BookingForm({
 
   // ── Submit ───────────────────────────────────────────────────────────────────
 
+  const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
+  const selectedJsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
+  const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
+  const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
+
   const isValid =
-    !!tableId && !!date && !!time && customerEmail.includes("@") && holdStatus === "held";
+    !!tableId && !!date && !!time && customerEmail.includes("@") && holdStatus === "held" && !isClosedDay;
 
   const handleSubmit = () => {
     if (isValid) {
@@ -153,7 +159,11 @@ export default function BookingForm({
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
-          <DatePicker selectedDate={date} onSelect={setDate} />
+          <DatePicker
+            selectedDate={date}
+            onSelect={setDate}
+            openDays={restaurant.openDays?.split(",").map(Number)}
+          />
         </View>
       </View>
 

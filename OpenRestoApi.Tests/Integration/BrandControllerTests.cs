@@ -4,37 +4,32 @@ using System.Text.Json;
 
 namespace OpenRestoApi.Tests.Integration;
 
-public class BrandControllerTests : IClassFixture<TestWebAppFactory>
+public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<TestWebAppFactory>
 {
-    private readonly TestWebAppFactory _factory;
-
-    public BrandControllerTests(TestWebAppFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly TestWebAppFactory _factory = factory;
 
     [Fact]
     public async Task GetBrand_ReturnsOkWithExpectedFields()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/brand");
+        HttpResponseMessage response = await client.GetAsync("/api/brand");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         // Brand may have been modified by other tests, just check fields exist
-        Assert.True(body.TryGetProperty("appName", out var appName));
+        Assert.True(body.TryGetProperty("appName", out JsonElement appName));
         Assert.False(string.IsNullOrEmpty(appName.GetString()));
-        Assert.True(body.TryGetProperty("primaryColor", out var color));
+        Assert.True(body.TryGetProperty("primaryColor", out JsonElement color));
         Assert.False(string.IsNullOrEmpty(color.GetString()));
     }
 
     [Fact]
     public async Task SaveBrand_WithoutAuth_Returns401()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
         {
             appName = "My Resto"
         });
@@ -45,9 +40,9 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task SaveBrand_WithAuth_UpdatesValues()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var saveResponse = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage saveResponse = await client.PostAsJsonAsync("/api/brand", new
         {
             appName = "Custom Resto",
             primaryColor = "#ff5500",
@@ -57,8 +52,8 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
 
         // Verify the values were saved
-        var getResponse = await client.GetAsync("/api/brand");
-        var body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        HttpResponseMessage getResponse = await client.GetAsync("/api/brand");
+        JsonElement body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Custom Resto", body.GetProperty("appName").GetString());
         Assert.Equal("#ff5500", body.GetProperty("primaryColor").GetString());
         Assert.Equal("#00ff55", body.GetProperty("accentColor").GetString());
@@ -67,12 +62,12 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task SaveBrand_OversizedLogo_Returns400()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
         // Generate a base64 string larger than 256KB
-        var largePayload = new string('A', 400 * 1024);
+        string largePayload = new string('A', 400 * 1024);
 
-        var response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
         {
             logoBase64 = largePayload
         });
@@ -83,7 +78,7 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task SaveBrand_EmptyLogo_RemovesLogo()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
         // First set a logo
         await client.PostAsJsonAsync("/api/brand", new
@@ -92,7 +87,7 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
         });
 
         // Then remove it with empty string
-        var response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
         {
             logoBase64 = ""
         });
@@ -100,8 +95,8 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Verify logo is null
-        var getResp = await client.GetAsync("/api/brand");
-        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
+        HttpResponseMessage getResp = await client.GetAsync("/api/brand");
+        JsonElement body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(
             body.GetProperty("logoUrl").ValueKind == JsonValueKind.Null,
             "Logo should be null after removal");
@@ -110,9 +105,9 @@ public class BrandControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task GetBrand_HasCacheHeaders()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/brand");
+        HttpResponseMessage response = await client.GetAsync("/api/brand");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         // ResponseCache(Duration = 3600) should set Cache-Control header

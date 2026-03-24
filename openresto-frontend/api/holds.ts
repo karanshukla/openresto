@@ -1,10 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-function buildEndpoint(path: string): string {
-  const base = API_URL?.replace(/\/$/, "") ?? "";
-  if (!base) return `/api${path}`;
-  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
+import { post, del } from "./client";
 
 export interface HoldRequest {
   restaurantId: number;
@@ -25,15 +19,9 @@ export interface HoldResponse {
  */
 export async function createHold(request: HoldRequest): Promise<HoldResponse | null> {
   try {
-    const res = await fetch(buildEndpoint("/holds"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-
-    if (res.status === 409) return null; // held by someone else
+    const res = await post("/holds", request);
+    if (res.status === 409) return null;
     if (!res.ok) throw new Error("Failed to place hold");
-
     return await res.json();
   } catch (err) {
     console.error("createHold error:", err);
@@ -47,7 +35,7 @@ export async function createHold(request: HoldRequest): Promise<HoldResponse | n
  */
 export async function releaseHold(holdId: string): Promise<void> {
   try {
-    await fetch(buildEndpoint(`/holds/${holdId}`), { method: "DELETE" });
+    await del(`/holds/${holdId}`);
   } catch {
     // Intentionally ignored — hold will expire via TTL
   }

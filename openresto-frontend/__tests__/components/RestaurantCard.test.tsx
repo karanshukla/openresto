@@ -22,6 +22,7 @@ describe("RestaurantCard", () => {
     address: "123 Main St",
     openTime: "09:00",
     closeTime: "22:00",
+    openDays: "1,2,3,4,5,6,7",
     sections: [
       {
         id: 1,

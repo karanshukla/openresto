@@ -24,14 +24,23 @@ function generateDateOptions(): { label: string; value: string }[] {
 export default function DatePicker({
   selectedDate,
   onSelect,
+  openDays,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
+  openDays?: number[];
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
   const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const options = generateDateOptions();
+  const allOptions = generateDateOptions();
+  const options = openDays
+    ? allOptions.filter((o) => {
+        const jsDay = new Date(o.value + "T12:00:00").getDay();
+        const isoDay = jsDay === 0 ? 7 : jsDay;
+        return openDays.includes(isoDay);
+      })
+    : allOptions;
   const selected = options.find((o) => o.value === selectedDate);
 
   return (

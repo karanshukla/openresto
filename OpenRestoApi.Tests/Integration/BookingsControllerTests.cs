@@ -2,47 +2,43 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
 
-public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
+public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<TestWebAppFactory>
 {
-    private readonly TestWebAppFactory _factory;
-
-    public BookingsControllerTests(TestWebAppFactory factory)
-    {
-        _factory = factory;
-    }
+    private readonly TestWebAppFactory _factory = factory;
 
     private (int restaurantId, int sectionId, int tableId) GetSeededIds()
     {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var restaurant = db.Restaurants.First();
-        var section = db.Sections.First(s => s.RestaurantId == restaurant.Id);
-        var table = db.Tables.First(t => t.SectionId == section.Id);
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Restaurant restaurant = db.Restaurants.First();
+        Section section = db.Sections.First(s => s.RestaurantId == restaurant.Id);
+        Table table = db.Tables.First(t => t.SectionId == section.Id);
         return (restaurant.Id, section.Id, table.Id);
     }
 
     [Fact]
     public async Task CreateBooking_Returns201WithBookingRef()
     {
-        var client = _factory.CreateClient();
-        var (restaurantId, sectionId, tableId) = GetSeededIds();
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
 
         // First place a hold
-        var holdResponse = await client.PostAsJsonAsync("/api/holds", new
+        HttpResponseMessage holdResponse = await client.PostAsJsonAsync("/api/holds", new
         {
             restaurantId,
             sectionId,
             tableId,
             date = DateTime.UtcNow.AddDays(10).ToString("O")
         });
-        var holdBody = await holdResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var holdId = holdBody.GetProperty("holdId").GetString();
+        JsonElement holdBody = await holdResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
 
-        var response = await client.PostAsJsonAsync("/api/bookings", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId,
             sectionId,
@@ -54,25 +50,25 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
         });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.False(string.IsNullOrEmpty(body.GetProperty("bookingRef").GetString()));
     }
 
     [Fact]
     public async Task CreateBooking_DuplicateTable_ReturnsConflict()
     {
-        var client = _factory.CreateClient();
-        var (restaurantId, sectionId, tableId) = GetSeededIds();
-        var bookingDate = DateTime.UtcNow.AddDays(20).ToString("O");
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        string bookingDate = DateTime.UtcNow.AddDays(20).ToString("O");
 
         // First place a hold and create booking
-        var holdResponse = await client.PostAsJsonAsync("/api/holds", new
+        HttpResponseMessage holdResponse = await client.PostAsJsonAsync("/api/holds", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate
         });
-        var holdBody = await holdResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var holdId = holdBody.GetProperty("holdId").GetString();
+        JsonElement holdBody = await holdResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
 
         await client.PostAsJsonAsync("/api/bookings", new
         {
@@ -84,7 +80,7 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
         });
 
         // Try to book same table on same date
-        var response = await client.PostAsJsonAsync("/api/bookings", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate,
@@ -98,20 +94,20 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task GetBookingByRef_WithCorrectEmail_ReturnsBooking()
     {
-        var client = _factory.CreateClient();
-        var (restaurantId, sectionId, tableId) = GetSeededIds();
-        var bookingDate = DateTime.UtcNow.AddDays(30).ToString("O");
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        string bookingDate = DateTime.UtcNow.AddDays(30).ToString("O");
 
         // Place hold + create booking
-        var holdResp = await client.PostAsJsonAsync("/api/holds", new
+        HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate
         });
-        var holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
-        var holdId = holdBody.GetProperty("holdId").GetString();
+        JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
 
-        var createResp = await client.PostAsJsonAsync("/api/bookings", new
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate,
@@ -119,40 +115,40 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
             seats = 3,
             holdId
         });
-        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var bookingRef = created.GetProperty("bookingRef").GetString();
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? bookingRef = created.GetProperty("bookingRef").GetString();
 
         // Look up by ref
-        var response = await client.GetAsync($"/api/bookings/ref/{bookingRef}?email=lookup@test.com");
+        HttpResponseMessage response = await client.GetAsync($"/api/bookings/ref/{bookingRef}?email=lookup@test.com");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(bookingRef, body.GetProperty("bookingRef").GetString());
     }
 
     [Fact]
     public async Task GetBookingByRef_WithWrongEmail_Returns404()
     {
-        var client = _factory.CreateClient();
-        var (restaurantId, sectionId, tableId) = GetSeededIds();
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
 
         // Use a different table to avoid conflicts — get second table
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var table2 = db.Tables.Where(t => t.SectionId == sectionId).Skip(1).First();
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Table table2 = db.Tables.Where(t => t.SectionId == sectionId).Skip(1).First();
 
-        var bookingDate = DateTime.UtcNow.AddDays(31).ToString("O");
+        string bookingDate = DateTime.UtcNow.AddDays(31).ToString("O");
 
-        var holdResp = await client.PostAsJsonAsync("/api/holds", new
+        HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
         {
             restaurantId, sectionId,
             tableId = table2.Id,
             date = bookingDate
         });
-        var holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
-        var holdId = holdBody.GetProperty("holdId").GetString();
+        JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
 
-        var createResp = await client.PostAsJsonAsync("/api/bookings", new
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId,
             tableId = table2.Id,
@@ -161,10 +157,10 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
             seats = 2,
             holdId
         });
-        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var bookingRef = created.GetProperty("bookingRef").GetString();
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? bookingRef = created.GetProperty("bookingRef").GetString();
 
-        var response = await client.GetAsync($"/api/bookings/ref/{bookingRef}?email=wrong@test.com");
+        HttpResponseMessage response = await client.GetAsync($"/api/bookings/ref/{bookingRef}?email=wrong@test.com");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -172,21 +168,21 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task GetMyRecent_ReturnsEmptyByDefault()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/bookings/my-recent");
+        HttpResponseMessage response = await client.GetAsync("/api/bookings/my-recent");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(JsonValueKind.Array, body.ValueKind);
     }
 
     [Fact]
     public async Task DeleteBooking_RequiresAuth()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.DeleteAsync("/api/bookings/1");
+        HttpResponseMessage response = await client.DeleteAsync("/api/bookings/1");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -194,21 +190,21 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task DeleteBooking_WithAuth_ReturnsNoContent()
     {
-        var client = _factory.CreateAuthenticatedClient();
-        var (restaurantId, sectionId, tableId) = GetSeededIds();
-        var bookingDate = DateTime.UtcNow.AddDays(50).ToString("O");
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        string bookingDate = DateTime.UtcNow.AddDays(50).ToString("O");
 
         // Place hold + create booking
-        var unauthClient = _factory.CreateClient();
-        var holdResp = await unauthClient.PostAsJsonAsync("/api/holds", new
+        HttpClient unauthClient = _factory.CreateClient();
+        HttpResponseMessage holdResp = await unauthClient.PostAsJsonAsync("/api/holds", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate
         });
-        var holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
-        var holdId = holdBody.GetProperty("holdId").GetString();
+        JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
 
-        var createResp = await unauthClient.PostAsJsonAsync("/api/bookings", new
+        HttpResponseMessage createResp = await unauthClient.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
             date = bookingDate,
@@ -216,10 +212,10 @@ public class BookingsControllerTests : IClassFixture<TestWebAppFactory>
             seats = 2,
             holdId
         });
-        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var bookingId = created.GetProperty("id").GetInt32();
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int bookingId = created.GetProperty("id").GetInt32();
 
-        var response = await client.DeleteAsync($"/api/bookings/{bookingId}");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/bookings/{bookingId}");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }

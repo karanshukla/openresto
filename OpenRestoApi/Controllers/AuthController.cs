@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.DTOs;
@@ -13,28 +14,17 @@ using OpenRestoApi.Infrastructure.Persistence;
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+[Route("api/admin/auth")]
+[EnableRateLimiting("auth")]
+public class AuthController(IConfiguration config, AppDbContext db) : ControllerBase
 {
-    private readonly IConfiguration _config;
-    private readonly AppDbContext _db;
+    private readonly IConfiguration _config = config;
+    private readonly AppDbContext _db = db;
 
-    public AuthController(IConfiguration config, AppDbContext db)
-    {
-        _config = config;
-        _db = db;
-    }
-
-    // ── Login ────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Authenticate with admin credentials. Returns a JWT valid for 30 days.
-    /// On first call, bootstraps credentials from appsettings (Admin:Email / Admin:Password).
-    /// </summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        var cred = await GetOrCreateCredentialAsync();
+        AdminCredential cred = await GetOrCreateCredentialAsync();
 
         if (!string.Equals(req.Email, cred.Email, StringComparison.OrdinalIgnoreCase))
         {
@@ -46,26 +36,41 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid email or password." });
         }
 
-        return Ok(new { token = GenerateJwt(cred.Email) });
+        string jwt = GenerateJwt(cred.Email);
+        SetAuthCookie(jwt);
+        return Ok(new { message = "Login successful." });
     }
 
-    /// <summary>Quick check — returns 200 if the caller's JWT is valid.</summary>
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        bool isProduction = !string.Equals(
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            "Development",
+            StringComparison.OrdinalIgnoreCase);
+
+        Response.Cookies.Delete("openresto_auth", new CookieOptions
+        {
+            Path = "/",
+            Secure = isProduction,
+            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
+        });
+        return Ok(new { message = "Logged out." });
+    }
+
     [HttpGet("me")]
     [Authorize]
     public IActionResult Me()
     {
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        string? email = User.FindFirst(ClaimTypes.Email)?.Value;
         return Ok(new { email });
     }
 
-    // ── Password management ──────────────────────────────────────────────────
-
-    /// <summary>Change password while logged in (requires current password).</summary>
     [HttpPost("change-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
-        var cred = await GetOrCreateCredentialAsync();
+        AdminCredential cred = await GetOrCreateCredentialAsync();
 
         if (!VerifyPassword(req.CurrentPassword, cred.PasswordHash, cred.PasswordSalt))
         {
@@ -82,13 +87,10 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password changed successfully." });
     }
 
-    // ── PVQ endpoints ────────────────────────────────────────────────────────
-
-    /// <summary>Returns the admin's security question (used on the forgot-password screen).</summary>
     [HttpGet("pvq")]
     public async Task<IActionResult> GetPvqStatus()
     {
-        var cred = await _db.AdminCredentials.FirstOrDefaultAsync();
+        AdminCredential? cred = await _db.AdminCredentials.FirstOrDefaultAsync();
         return Ok(new PvqStatusDto
         {
             IsConfigured = cred?.PvqQuestion != null,
@@ -96,7 +98,6 @@ public class AuthController : ControllerBase
         });
     }
 
-    /// <summary>Set or replace the security question + answer. Requires active session.</summary>
     [HttpPost("pvq/setup")]
     [Authorize]
     public async Task<IActionResult> SetupPvq([FromBody] SetupPvqRequest req)
@@ -106,20 +107,17 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Question and answer are required." });
         }
 
-        var cred = await GetOrCreateCredentialAsync();
+        AdminCredential cred = await GetOrCreateCredentialAsync();
         (cred.PvqAnswerHash, cred.PvqAnswerSalt) = HashPassword(NormaliseAnswer(req.Answer));
         cred.PvqQuestion = req.Question.Trim();
         await _db.SaveChangesAsync();
         return Ok(new { message = "Security question configured." });
     }
 
-    /// <summary>
-    /// Verify the PVQ answer. On success returns a short-lived reset token (15 min).
-    /// </summary>
     [HttpPost("pvq/verify")]
     public async Task<IActionResult> VerifyPvq([FromBody] VerifyPvqRequest req)
     {
-        var cred = (await _db.AdminCredentials.ToListAsync())
+        AdminCredential? cred = (await _db.AdminCredentials.ToListAsync())
             .FirstOrDefault(c => string.Equals(c.Email, req.Email, StringComparison.OrdinalIgnoreCase));
 
         if (cred?.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
@@ -132,7 +130,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Incorrect answer." });
         }
 
-        var token = Guid.NewGuid().ToString("N");
+        string token = Guid.NewGuid().ToString("N");
         cred.ResetToken = token;
         cred.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
         await _db.SaveChangesAsync();
@@ -140,11 +138,10 @@ public class AuthController : ControllerBase
         return Ok(new { resetToken = token });
     }
 
-    /// <summary>Use a reset token (from PVQ verify) to set a new password.</summary>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
     {
-        var cred = await _db.AdminCredentials
+        AdminCredential? cred = await _db.AdminCredentials
             .FirstOrDefaultAsync(c => c.ResetToken == req.ResetToken);
 
         if (cred == null || cred.ResetTokenExpiry < DateTime.UtcNow)
@@ -165,23 +162,18 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password reset successfully." });
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Returns the AdminCredential row, creating it from appsettings on first use.
-    /// </summary>
     private async Task<AdminCredential> GetOrCreateCredentialAsync()
     {
-        var cred = await _db.AdminCredentials.FirstOrDefaultAsync();
+        AdminCredential? cred = await _db.AdminCredentials.FirstOrDefaultAsync();
         if (cred != null)
         {
             return cred;
         }
 
-        var email = _config["Admin:Email"] ?? "admin@openresto.com";
-        var password = _config["Admin:Password"] ?? "admin";
+        string email = _config["Admin:Email"] ?? "admin@openresto.com";
+        string password = _config["Admin:Password"] ?? "admin";
 
-        var (hash, salt) = HashPassword(password);
+        (string? hash, string? salt) = HashPassword(password);
         cred = new AdminCredential { Email = email, PasswordHash = hash, PasswordSalt = salt };
         _db.AdminCredentials.Add(cred);
         await _db.SaveChangesAsync();
@@ -190,7 +182,7 @@ public class AuthController : ControllerBase
 
     private string GenerateJwt(string email)
     {
-        var keyBytes = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
+        byte[] keyBytes = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
         var credentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -205,18 +197,35 @@ public class AuthController : ControllerBase
 
     private static (string hash, string salt) HashPassword(string password)
     {
-        var saltBytes = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100_000, HashAlgorithmName.SHA256, 32);
+        byte[] saltBytes = RandomNumberGenerator.GetBytes(16);
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100_000, HashAlgorithmName.SHA256, 32);
         return (Convert.ToBase64String(hash), Convert.ToBase64String(saltBytes));
     }
 
     private static bool VerifyPassword(string password, string storedHash, string storedSalt)
     {
-        var saltBytes = Convert.FromBase64String(storedSalt);
-        var computed = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100_000, HashAlgorithmName.SHA256, 32);
+        byte[] saltBytes = Convert.FromBase64String(storedSalt);
+        byte[] computed = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, 100_000, HashAlgorithmName.SHA256, 32);
         return CryptographicOperations.FixedTimeEquals(computed, Convert.FromBase64String(storedHash));
     }
 
-    /// <summary>Normalise PVQ answers: lowercase and trim for case-insensitive comparison.</summary>
+
     private static string NormaliseAnswer(string answer) => answer.Trim().ToLowerInvariant();
+
+    private void SetAuthCookie(string jwt)
+    {
+        bool isProduction = !string.Equals(
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+            "Development",
+            StringComparison.OrdinalIgnoreCase);
+
+        Response.Cookies.Append("openresto_auth", jwt, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = isProduction,
+            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
+            Path = "/",
+            Expires = DateTimeOffset.UtcNow.AddDays(30),
+        });
+    }
 }

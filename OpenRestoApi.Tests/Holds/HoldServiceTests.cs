@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Infrastructure.Holds;
 
 namespace OpenRestoApi.Tests.Holds;
@@ -24,7 +25,7 @@ public class HoldServiceTests
     [Fact]
     public void PlaceHold_ReturnsResult_ForFreshTableAndDate()
     {
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
+        HoldResult? result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
         Assert.NotNull(result);
         Assert.NotEmpty(result.HoldId);
@@ -36,7 +37,7 @@ public class HoldServiceTests
     {
         _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
-        var second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
+        HoldResult? second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
         Assert.Null(second);
     }
@@ -44,10 +45,10 @@ public class HoldServiceTests
     [Fact]
     public void PlaceHold_Succeeds_AfterPreviousHoldReleased()
     {
-        var first = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult first = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _svc.ReleaseHold(first.HoldId);
 
-        var second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
+        HoldResult? second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
         Assert.NotNull(second);
         Assert.NotEqual(first.HoldId, second!.HoldId);
@@ -59,7 +60,7 @@ public class HoldServiceTests
         _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
         _clock.Advance(HoldService.HoldDuration + TimeSpan.FromSeconds(1));
 
-        var second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
+        HoldResult? second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
         Assert.NotNull(second);
     }
@@ -67,10 +68,10 @@ public class HoldServiceTests
     [Fact]
     public void PlaceHold_DifferentDates_DoNotConflict()
     {
-        var date2 = BookingDate.AddDays(1);
+        DateTime date2 = BookingDate.AddDays(1);
         _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, date2);
+        HoldResult? result = _svc.PlaceHold(RestaurantId, TableId, SectionId, date2);
 
         Assert.NotNull(result);
     }
@@ -80,7 +81,7 @@ public class HoldServiceTests
     {
         _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate);
 
-        var result = _svc.PlaceHold(RestaurantId, TableId + 1, SectionId, BookingDate);
+        HoldResult? result = _svc.PlaceHold(RestaurantId, TableId + 1, SectionId, BookingDate);
 
         Assert.NotNull(result);
     }
@@ -90,7 +91,7 @@ public class HoldServiceTests
     [Fact]
     public void ReleaseHold_AllowsNewHoldOnSameTable()
     {
-        var hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _svc.ReleaseHold(hold.HoldId);
 
         Assert.False(_svc.IsTableHeld(TableId, BookingDate));
@@ -99,7 +100,7 @@ public class HoldServiceTests
     [Fact]
     public void ReleaseHold_IsIdempotent()
     {
-        var hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _svc.ReleaseHold(hold.HoldId);
 
         // Should not throw
@@ -115,11 +116,11 @@ public class HoldServiceTests
     [Fact]
     public void ReleaseHold_DoesNotRemoveNewerHold()
     {
-        var first = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult first = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _clock.Advance(HoldService.HoldDuration + TimeSpan.FromSeconds(1));
 
         // First expired; a new hold can be placed
-        var second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
 
         // Releasing the old hold ID should not affect the new hold
         _svc.ReleaseHold(first.HoldId);
@@ -146,7 +147,7 @@ public class HoldServiceTests
     [Fact]
     public void IsTableHeld_ReturnsFalse_WhenExcludedByHoldId()
     {
-        var hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult hold = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
 
         Assert.False(_svc.IsTableHeld(TableId, BookingDate, excludeHoldId: hold.HoldId));
     }
@@ -173,9 +174,9 @@ public class HoldServiceTests
     [Fact]
     public void GetHold_ReturnsEntry_ForActiveHold()
     {
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
 
-        var entry = _svc.GetHold(result.HoldId);
+        HoldEntry? entry = _svc.GetHold(result.HoldId);
 
         Assert.NotNull(entry);
         Assert.Equal(TableId, entry.TableId);
@@ -186,7 +187,7 @@ public class HoldServiceTests
     [Fact]
     public void GetHold_ReturnsNull_AfterHoldExpires()
     {
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _clock.Advance(HoldService.HoldDuration + TimeSpan.FromSeconds(1));
 
         Assert.Null(_svc.GetHold(result.HoldId));
@@ -201,7 +202,7 @@ public class HoldServiceTests
     [Fact]
     public void GetHold_ReturnsNull_AfterRelease()
     {
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
         _svc.ReleaseHold(result.HoldId);
 
         Assert.Null(_svc.GetHold(result.HoldId));
@@ -218,7 +219,7 @@ public class HoldServiceTests
     [Fact]
     public void PlaceHold_ExpiresAt_IsExactlyHoldDurationFromNow()
     {
-        var result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        HoldResult result = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
 
         Assert.Equal(_clock.UtcNow + HoldService.HoldDuration, result.ExpiresAt);
     }

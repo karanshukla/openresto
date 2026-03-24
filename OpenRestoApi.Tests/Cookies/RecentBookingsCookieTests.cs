@@ -12,7 +12,7 @@ public class RecentBookingsCookieTests
 
     public RecentBookingsCookieTests()
     {
-        var provider = DataProtectionProvider.Create("Tests");
+        IDataProtectionProvider provider = DataProtectionProvider.Create("Tests");
         var env = new Mock<IWebHostEnvironment>();
         env.Setup(e => e.EnvironmentName).Returns("Development");
         _cookie = new RecentBookingsCookie(provider, env.Object);
@@ -31,24 +31,24 @@ public class RecentBookingsCookieTests
     [Fact]
     public void Read_ReturnsEmpty_WhenNoCookiePresent()
     {
-        var (ctx, _) = CreateContext();
-        var result = _cookie.Read(ctx.Request);
+        (HttpContext? ctx, DefaultHttpContext _) = CreateContext();
+        List<CachedBookingEntry> result = _cookie.Read(ctx.Request);
         Assert.Empty(result);
     }
 
     [Fact]
     public void Append_ThenRead_ReturnsSameEntry()
     {
-        var (ctx, inner) = CreateContext();
-        var entry = MakeEntry();
+        (HttpContext? ctx, DefaultHttpContext? inner) = CreateContext();
+        CachedBookingEntry entry = MakeEntry();
 
         _cookie.Append(ctx.Request, ctx.Response, entry);
 
         // Simulate the cookie being sent back on the next request
-        var cookieValue = ExtractCookieValue(ctx.Response);
-        var ctx2 = CreateContextWithCookie(cookieValue);
+        string? cookieValue = ExtractCookieValue(ctx.Response);
+        DefaultHttpContext ctx2 = CreateContextWithCookie(cookieValue);
 
-        var result = _cookie.Read(ctx2.Request);
+        List<CachedBookingEntry> result = _cookie.Read(ctx2.Request);
 
         Assert.Single(result);
         Assert.Equal("test-ref", result[0].BookingRef);
@@ -60,44 +60,44 @@ public class RecentBookingsCookieTests
     [Fact]
     public void Append_DoesNotDuplicate_SameBookingRef()
     {
-        var (ctx, _) = CreateContext();
-        var entry = MakeEntry();
+        (HttpContext? ctx, DefaultHttpContext _) = CreateContext();
+        CachedBookingEntry entry = MakeEntry();
 
         _cookie.Append(ctx.Request, ctx.Response, entry);
 
         // Simulate the cookie being sent back
-        var cookieValue = ExtractCookieValue(ctx.Response);
-        var ctx2 = CreateContextWithCookie(cookieValue);
+        string? cookieValue = ExtractCookieValue(ctx.Response);
+        DefaultHttpContext ctx2 = CreateContextWithCookie(cookieValue);
 
         // Append same ref again
         _cookie.Append(ctx2.Request, ctx2.Response, entry);
 
-        var cookieValue2 = ExtractCookieValue(ctx2.Response);
+        string? cookieValue2 = ExtractCookieValue(ctx2.Response);
         // If no new cookie was set, the old one still has 1 entry
-        var ctx3 = CreateContextWithCookie(cookieValue2 ?? cookieValue);
+        DefaultHttpContext ctx3 = CreateContextWithCookie(cookieValue2 ?? cookieValue);
 
-        var result = _cookie.Read(ctx3.Request);
+        List<CachedBookingEntry> result = _cookie.Read(ctx3.Request);
         Assert.Single(result);
     }
 
     [Fact]
     public void Append_MultipleEntries_PreservesAll()
     {
-        var (ctx, _) = CreateContext();
+        (HttpContext? ctx, DefaultHttpContext _) = CreateContext();
 
         _cookie.Append(ctx.Request, ctx.Response, MakeEntry("ref-1"));
-        var cv1 = ExtractCookieValue(ctx.Response);
-        var ctx2 = CreateContextWithCookie(cv1);
+        string? cv1 = ExtractCookieValue(ctx.Response);
+        DefaultHttpContext ctx2 = CreateContextWithCookie(cv1);
 
         _cookie.Append(ctx2.Request, ctx2.Response, MakeEntry("ref-2"));
-        var cv2 = ExtractCookieValue(ctx2.Response);
-        var ctx3 = CreateContextWithCookie(cv2);
+        string? cv2 = ExtractCookieValue(ctx2.Response);
+        DefaultHttpContext ctx3 = CreateContextWithCookie(cv2);
 
         _cookie.Append(ctx3.Request, ctx3.Response, MakeEntry("ref-3"));
-        var cv3 = ExtractCookieValue(ctx3.Response);
-        var ctx4 = CreateContextWithCookie(cv3);
+        string? cv3 = ExtractCookieValue(ctx3.Response);
+        DefaultHttpContext ctx4 = CreateContextWithCookie(cv3);
 
-        var result = _cookie.Read(ctx4.Request);
+        List<CachedBookingEntry> result = _cookie.Read(ctx4.Request);
         Assert.Equal(3, result.Count);
     }
 
@@ -106,9 +106,9 @@ public class RecentBookingsCookieTests
     {
         string? cookieValue = null;
 
-        for (var i = 0; i < 12; i++)
+        for (int i = 0; i < 12; i++)
         {
-            var ctx = cookieValue != null
+            HttpContext ctx = cookieValue != null
                 ? CreateContextWithCookie(cookieValue)
                 : CreateContext().ctx;
 
@@ -116,8 +116,8 @@ public class RecentBookingsCookieTests
             cookieValue = ExtractCookieValue(ctx.Response) ?? cookieValue;
         }
 
-        var finalCtx = CreateContextWithCookie(cookieValue!);
-        var result = _cookie.Read(finalCtx.Request);
+        DefaultHttpContext finalCtx = CreateContextWithCookie(cookieValue!);
+        List<CachedBookingEntry> result = _cookie.Read(finalCtx.Request);
 
         Assert.True(result.Count <= 10, $"Expected at most 10 entries but got {result.Count}");
     }
@@ -128,7 +128,7 @@ public class RecentBookingsCookieTests
         var ctx = new DefaultHttpContext();
         ctx.Request.Headers.Append("Cookie", "openresto_recent=corrupted-garbage-value");
 
-        var result = _cookie.Read(ctx.Request);
+        List<CachedBookingEntry> result = _cookie.Read(ctx.Request);
         Assert.Empty(result);
     }
 
@@ -138,7 +138,7 @@ public class RecentBookingsCookieTests
         var ctx = new DefaultHttpContext();
         ctx.Request.Headers.Append("Cookie", "openresto_recent=");
 
-        var result = _cookie.Read(ctx.Request);
+        List<CachedBookingEntry> result = _cookie.Read(ctx.Request);
         Assert.Empty(result);
     }
 
@@ -146,14 +146,14 @@ public class RecentBookingsCookieTests
 
     private static string? ExtractCookieValue(HttpResponse response)
     {
-        if (!response.Headers.TryGetValue("Set-Cookie", out var values))
+        if (!response.Headers.TryGetValue("Set-Cookie", out Microsoft.Extensions.Primitives.StringValues values))
             return null;
 
-        foreach (var header in values)
+        foreach (string? header in values)
         {
             if (header == null || !header.StartsWith("openresto_recent=")) continue;
-            var valueEnd = header.IndexOf(';');
-            var value = valueEnd >= 0
+            int valueEnd = header.IndexOf(';');
+            string value = valueEnd >= 0
                 ? header["openresto_recent=".Length..valueEnd]
                 : header["openresto_recent=".Length..];
             return value;

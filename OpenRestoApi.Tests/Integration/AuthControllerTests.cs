@@ -4,41 +4,36 @@ using System.Text.Json;
 
 namespace OpenRestoApi.Tests.Integration;
 
-public class AuthControllerTests : IClassFixture<TestWebAppFactory>
+public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<TestWebAppFactory>
 {
-    private readonly TestWebAppFactory _factory;
+    private readonly TestWebAppFactory _factory = factory;
     private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
-
-    public AuthControllerTests(TestWebAppFactory factory)
-    {
-        _factory = factory;
-    }
 
     // ── Login ────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Login_WithValidCredentials_Returns200AndToken()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = TestWebAppFactory.AdminPassword
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var token = body.GetProperty("token").GetString();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        string? token = body.GetProperty("token").GetString();
         Assert.False(string.IsNullOrEmpty(token));
     }
 
     [Fact]
     public async Task Login_WithWrongEmail_Returns401()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = "wrong@test.com",
             password = TestWebAppFactory.AdminPassword
@@ -50,9 +45,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task Login_WithWrongPassword_Returns401()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = "WrongPassword999"
@@ -66,21 +61,21 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task Me_WithValidJwt_Returns200WithEmail()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var response = await client.GetAsync("/api/auth/me");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/auth/me");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(TestWebAppFactory.AdminEmail, body.GetProperty("email").GetString());
     }
 
     [Fact]
     public async Task Me_WithoutJwt_Returns401()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/auth/me");
+        HttpResponseMessage response = await client.GetAsync("/api/admin/auth/me");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -90,9 +85,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task ChangePassword_WithCorrectCurrent_Succeeds()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/change-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = TestWebAppFactory.AdminPassword,
             newPassword = "NewPass123!"
@@ -101,7 +96,7 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Verify we can login with the new password
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = "NewPass123!"
@@ -109,7 +104,7 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
         // Reset password back for other tests
-        await client.PostAsJsonAsync("/api/auth/change-password", new
+        await client.PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = "NewPass123!",
             newPassword = TestWebAppFactory.AdminPassword
@@ -119,9 +114,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task ChangePassword_WithWrongCurrent_Returns401()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/change-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = "WrongCurrent",
             newPassword = "NewPass123!"
@@ -133,9 +128,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task ChangePassword_WithShortNewPassword_Returns400()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/change-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = TestWebAppFactory.AdminPassword,
             newPassword = "ab"
@@ -149,10 +144,10 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task PvqFlow_SetupVerifyAndReset_Succeeds()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
         // 1. Setup PVQ
-        var setupResponse = await client.PostAsJsonAsync("/api/auth/pvq/setup", new
+        HttpResponseMessage setupResponse = await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
         {
             question = "What is your pet's name?",
             answer = "Fluffy"
@@ -160,26 +155,26 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, setupResponse.StatusCode);
 
         // 2. Check PVQ status
-        var statusResponse = await client.GetAsync("/api/auth/pvq");
+        HttpResponseMessage statusResponse = await client.GetAsync("/api/admin/auth/pvq");
         Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
-        var status = await statusResponse.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement status = await statusResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(status.GetProperty("isConfigured").GetBoolean());
         Assert.Equal("What is your pet's name?", status.GetProperty("question").GetString());
 
         // 3. Verify PVQ (unauthenticated)
-        var unauthClient = _factory.CreateClient();
-        var verifyResponse = await unauthClient.PostAsJsonAsync("/api/auth/pvq/verify", new
+        HttpClient unauthClient = _factory.CreateClient();
+        HttpResponseMessage verifyResponse = await unauthClient.PostAsJsonAsync("/api/admin/auth/pvq/verify", new
         {
             email = TestWebAppFactory.AdminEmail,
             answer = "Fluffy"
         });
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
-        var verifyBody = await verifyResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var resetToken = verifyBody.GetProperty("resetToken").GetString();
+        JsonElement verifyBody = await verifyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string? resetToken = verifyBody.GetProperty("resetToken").GetString();
         Assert.False(string.IsNullOrEmpty(resetToken));
 
         // 4. Reset password using the token
-        var resetResponse = await unauthClient.PostAsJsonAsync("/api/auth/reset-password", new
+        HttpResponseMessage resetResponse = await unauthClient.PostAsJsonAsync("/api/admin/auth/reset-password", new
         {
             resetToken,
             newPassword = "ResetPass123!"
@@ -187,7 +182,7 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, resetResponse.StatusCode);
 
         // 5. Login with new password
-        var loginResponse = await unauthClient.PostAsJsonAsync("/api/auth/login", new
+        HttpResponseMessage loginResponse = await unauthClient.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = "ResetPass123!"
@@ -195,7 +190,7 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
         // Reset password back for other tests
-        await client.PostAsJsonAsync("/api/auth/change-password", new
+        await client.PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = "ResetPass123!",
             newPassword = TestWebAppFactory.AdminPassword
@@ -205,17 +200,17 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task PvqVerify_WithWrongAnswer_Returns401()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
         // Ensure PVQ is set up
-        await client.PostAsJsonAsync("/api/auth/pvq/setup", new
+        await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
         {
             question = "What color?",
             answer = "Blue"
         });
 
-        var unauthClient = _factory.CreateClient();
-        var response = await unauthClient.PostAsJsonAsync("/api/auth/pvq/verify", new
+        HttpClient unauthClient = _factory.CreateClient();
+        HttpResponseMessage response = await unauthClient.PostAsJsonAsync("/api/admin/auth/pvq/verify", new
         {
             email = TestWebAppFactory.AdminEmail,
             answer = "Red"
@@ -227,9 +222,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task PvqSetup_WithEmptyFields_Returns400()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/pvq/setup", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
         {
             question = "",
             answer = ""
@@ -241,9 +236,9 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task ResetPassword_WithInvalidToken_Returns400()
     {
-        var client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/reset-password", new
         {
             resetToken = "invalid-token-that-does-not-exist",
             newPassword = "SomeNewPass123!"
@@ -255,26 +250,26 @@ public class AuthControllerTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task ResetPassword_WithShortPassword_Returns400()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateAuthenticatedClient();
 
         // Setup and verify PVQ to get a valid token
-        await client.PostAsJsonAsync("/api/auth/pvq/setup", new
+        await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
         {
             question = "Fav food?",
             answer = "Pizza"
         });
 
-        var unauthClient = _factory.CreateClient();
-        var verifyResponse = await unauthClient.PostAsJsonAsync("/api/auth/pvq/verify", new
+        HttpClient unauthClient = _factory.CreateClient();
+        HttpResponseMessage verifyResponse = await unauthClient.PostAsJsonAsync("/api/admin/auth/pvq/verify", new
         {
             email = TestWebAppFactory.AdminEmail,
             answer = "Pizza"
         });
-        var verifyBody = await verifyResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var resetToken = verifyBody.GetProperty("resetToken").GetString();
+        JsonElement verifyBody = await verifyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string? resetToken = verifyBody.GetProperty("resetToken").GetString();
 
         // Try to reset with short password
-        var response = await unauthClient.PostAsJsonAsync("/api/auth/reset-password", new
+        HttpResponseMessage response = await unauthClient.PostAsJsonAsync("/api/admin/auth/reset-password", new
         {
             resetToken,
             newPassword = "ab"

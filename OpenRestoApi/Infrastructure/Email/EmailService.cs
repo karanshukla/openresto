@@ -8,16 +8,10 @@ using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Infrastructure.Email;
 
-public class EmailService : IEmailService
+public class EmailService(AppDbContext db, CredentialProtector protector) : IEmailService
 {
-    private readonly AppDbContext _db;
-    private readonly CredentialProtector _protector;
-
-    public EmailService(AppDbContext db, CredentialProtector protector)
-    {
-        _db = db;
-        _protector = protector;
-    }
+    private readonly AppDbContext _db = db;
+    private readonly CredentialProtector _protector = protector;
 
     private async Task<EmailSettings?> GetSettingsAsync()
     {
@@ -26,14 +20,14 @@ public class EmailService : IEmailService
 
     public async Task<bool> TestConnectionAsync()
     {
-        var settings = await GetSettingsAsync();
+        EmailSettings? settings = await GetSettingsAsync();
         if (settings == null)
         {
             return false;
         }
 
         using var client = new SmtpClient();
-        var options = settings.Port == 587
+        SecureSocketOptions options = settings.Port == 587
             ? SecureSocketOptions.StartTls
             : settings.EnableSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None;
 
@@ -45,7 +39,7 @@ public class EmailService : IEmailService
 
     public async Task SendEmailAsync(string recipient, string subject, string htmlBody)
     {
-        var settings = await GetSettingsAsync()
+        EmailSettings settings = await GetSettingsAsync()
             ?? throw new InvalidOperationException("Email is not configured.");
 
         var message = new MimeMessage();
@@ -57,7 +51,7 @@ public class EmailService : IEmailService
         message.Body = new TextPart("html") { Text = htmlBody };
 
         using var client = new SmtpClient();
-        var options = settings.Port == 587
+        SecureSocketOptions options = settings.Port == 587
             ? SecureSocketOptions.StartTls
             : settings.EnableSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None;
 

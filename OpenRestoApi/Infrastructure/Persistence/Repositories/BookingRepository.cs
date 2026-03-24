@@ -7,14 +7,9 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 {
-    public class BookingRepository : IBookingRepository
+    public class BookingRepository(AppDbContext db) : IBookingRepository
     {
-        private readonly AppDbContext _db;
-
-        public BookingRepository(AppDbContext db)
-        {
-            _db = db;
-        }
+        private readonly AppDbContext _db = db;
 
         public async Task<Booking> AddAsync(Booking booking)
         {
@@ -60,7 +55,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 
         public async Task DeleteAsync(int id)
         {
-            var booking = await _db.Bookings.FindAsync(id);
+            Booking? booking = await _db.Bookings.FindAsync(id);
             if (booking != null)
             {
                 _db.Bookings.Remove(booking);
@@ -70,8 +65,8 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 
         public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate)
         {
-            var newStart = bookingDate.ToUniversalTime();
-            var newEnd = newStart.AddHours(1);
+            DateTime newStart = bookingDate.ToUniversalTime();
+            DateTime newEnd = newStart.AddHours(1);
             // Check if any existing booking's time window overlaps the new one
             return await _db.Bookings.AnyAsync(b =>
                 b.TableId == tableId &&

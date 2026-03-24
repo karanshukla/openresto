@@ -23,7 +23,7 @@ public class RepositoryTests : IDisposable
 
     private AppDbContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
         var db = new AppDbContext(options);
@@ -53,8 +53,8 @@ public class RepositoryTests : IDisposable
         db.Restaurants.Add(restaurant);
         db.SaveChanges();
 
-        var section = restaurant.Sections.First();
-        var table = section.Tables.First();
+        Section section = restaurant.Sections.First();
+        Table table = section.Tables.First();
         return (restaurant, section, table);
     }
 
@@ -63,8 +63,8 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_AddAsync_CreatesBooking()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
         var booking = new Booking
@@ -78,7 +78,7 @@ public class RepositoryTests : IDisposable
             BookingRef = "REF001"
         };
 
-        var result = await repo.AddAsync(booking);
+        Booking result = await repo.AddAsync(booking);
 
         Assert.True(result.Id > 0);
         Assert.Equal("REF001", result.BookingRef);
@@ -87,8 +87,8 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_GetByIdAsync_ReturnsBookingWithIncludes()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
         var booking = new Booking
@@ -106,7 +106,7 @@ public class RepositoryTests : IDisposable
         // Detach all entities so that GetByIdAsync has to load from DB with includes
         db.ChangeTracker.Clear();
 
-        var result = await repo.GetByIdAsync(booking.Id);
+        Booking? result = await repo.GetByIdAsync(booking.Id);
 
         Assert.NotNull(result);
         Assert.Equal("REF002", result!.BookingRef);
@@ -121,8 +121,8 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_GetByRefAsync_ReturnsCorrectBooking()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
         var booking = new Booking
@@ -138,7 +138,7 @@ public class RepositoryTests : IDisposable
         await repo.AddAsync(booking);
         db.ChangeTracker.Clear();
 
-        var result = await repo.GetByRefAsync("UNIQUE-REF");
+        Booking? result = await repo.GetByRefAsync("UNIQUE-REF");
 
         Assert.NotNull(result);
         Assert.Equal("ref@test.com", result!.CustomerEmail);
@@ -147,11 +147,11 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_GetByRefAsync_ReturnsNull_WhenNotFound()
     {
-        using var db = CreateContext();
+        using AppDbContext db = CreateContext();
         SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
-        var result = await repo.GetByRefAsync("NONEXISTENT");
+        Booking? result = await repo.GetByRefAsync("NONEXISTENT");
 
         Assert.Null(result);
     }
@@ -159,11 +159,11 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_GetBookingsByRestaurantIdAsync_ReturnsOnlyMatchingBookings()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
-        var table2 = section.Tables.Last();
+        Table table2 = section.Tables.Last();
 
         await repo.AddAsync(new Booking
         {
@@ -195,8 +195,8 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_DeleteAsync_RemovesBooking()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
         var booking = new Booking
@@ -213,18 +213,18 @@ public class RepositoryTests : IDisposable
 
         await repo.DeleteAsync(booking.Id);
 
-        var result = await repo.GetByIdAsync(booking.Id);
+        Booking? result = await repo.GetByIdAsync(booking.Id);
         Assert.Null(result);
     }
 
     [Fact]
     public async Task BookingRepository_IsTableBookedOnDateAsync_ReturnsTrue_WhenOverlap()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
-        var bookingDate = DateTime.UtcNow.Date.AddDays(7).AddHours(12).ToUniversalTime();
+        DateTime bookingDate = DateTime.UtcNow.Date.AddDays(7).AddHours(12).ToUniversalTime();
 
         await repo.AddAsync(new Booking
         {
@@ -239,7 +239,7 @@ public class RepositoryTests : IDisposable
         });
 
         // Check at a time that overlaps (30 minutes into the existing booking)
-        var isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate.AddMinutes(30));
+        bool isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate.AddMinutes(30));
 
         Assert.True(isBooked);
     }
@@ -247,11 +247,11 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_IsTableBookedOnDateAsync_ReturnsFalse_WhenNoOverlap()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
-        var bookingDate = DateTime.UtcNow.Date.AddDays(8).AddHours(12).ToUniversalTime();
+        DateTime bookingDate = DateTime.UtcNow.Date.AddDays(8).AddHours(12).ToUniversalTime();
 
         await repo.AddAsync(new Booking
         {
@@ -266,7 +266,7 @@ public class RepositoryTests : IDisposable
         });
 
         // Check at a time well after the existing booking ends
-        var isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate.AddHours(2));
+        bool isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate.AddHours(2));
 
         Assert.False(isBooked);
     }
@@ -274,11 +274,11 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task BookingRepository_IsTableBookedOnDateAsync_ReturnsFalse_WhenCancelled()
     {
-        using var db = CreateContext();
-        var (restaurant, section, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
         var repo = new BookingRepository(db);
 
-        var bookingDate = DateTime.UtcNow.Date.AddDays(9).AddHours(12).ToUniversalTime();
+        DateTime bookingDate = DateTime.UtcNow.Date.AddDays(9).AddHours(12).ToUniversalTime();
 
         await repo.AddAsync(new Booking
         {
@@ -295,7 +295,7 @@ public class RepositoryTests : IDisposable
         });
 
         // Same time as the cancelled booking — should be available
-        var isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate);
+        bool isBooked = await repo.IsTableBookedOnDateAsync(table.Id, bookingDate);
 
         Assert.False(isBooked);
     }
@@ -305,18 +305,18 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task RestaurantRepository_GetByIdAsync_LoadsSectionsAndTables()
     {
-        using var db = CreateContext();
-        var (restaurant, _, _) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section _, Table _) = SeedRestaurantData(db);
         db.ChangeTracker.Clear();
         var repo = new RestaurantRepository(db);
 
-        var result = await repo.GetByIdAsync(restaurant.Id);
+        Restaurant? result = await repo.GetByIdAsync(restaurant.Id);
 
         Assert.NotNull(result);
         Assert.Equal("Test Restaurant", result!.Name);
         Assert.Single(result.Sections);
 
-        var section = result.Sections.First();
+        Section section = result.Sections.First();
         Assert.Equal("Main Hall", section.Name);
         Assert.Equal(2, section.Tables.Count);
     }
@@ -324,10 +324,10 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task RestaurantRepository_GetByIdAsync_ReturnsNull_WhenNotFound()
     {
-        using var db = CreateContext();
+        using AppDbContext db = CreateContext();
         var repo = new RestaurantRepository(db);
 
-        var result = await repo.GetByIdAsync(9999);
+        Restaurant? result = await repo.GetByIdAsync(9999);
 
         Assert.Null(result);
     }
@@ -337,12 +337,12 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task SectionRepository_GetByIdAsync_ReturnsSection()
     {
-        using var db = CreateContext();
-        var (_, section, _) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant _, Section? section, Table _) = SeedRestaurantData(db);
         db.ChangeTracker.Clear();
         var repo = new SectionRepository(db);
 
-        var result = await repo.GetByIdAsync(section.Id);
+        Section? result = await repo.GetByIdAsync(section.Id);
 
         Assert.NotNull(result);
         Assert.Equal("Main Hall", result!.Name);
@@ -351,10 +351,10 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task SectionRepository_GetByIdAsync_ReturnsNull_WhenNotFound()
     {
-        using var db = CreateContext();
+        using AppDbContext db = CreateContext();
         var repo = new SectionRepository(db);
 
-        var result = await repo.GetByIdAsync(9999);
+        Section? result = await repo.GetByIdAsync(9999);
 
         Assert.Null(result);
     }
@@ -364,12 +364,12 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task TableRepository_GetByIdAsync_ReturnsTable()
     {
-        using var db = CreateContext();
-        var (_, _, table) = SeedRestaurantData(db);
+        using AppDbContext db = CreateContext();
+        (Restaurant _, Section _, Table? table) = SeedRestaurantData(db);
         db.ChangeTracker.Clear();
         var repo = new TableRepository(db);
 
-        var result = await repo.GetByIdAsync(table.Id);
+        Table? result = await repo.GetByIdAsync(table.Id);
 
         Assert.NotNull(result);
         Assert.Equal("A1", result!.Name);
@@ -379,10 +379,10 @@ public class RepositoryTests : IDisposable
     [Fact]
     public async Task TableRepository_GetByIdAsync_ReturnsNull_WhenNotFound()
     {
-        using var db = CreateContext();
+        using AppDbContext db = CreateContext();
         var repo = new TableRepository(db);
 
-        var result = await repo.GetByIdAsync(9999);
+        Table? result = await repo.GetByIdAsync(9999);
 
         Assert.Null(result);
     }

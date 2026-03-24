@@ -3,7 +3,7 @@ import { Slot, Stack, useRouter, useSegments } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/api/auth";
+import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -34,20 +34,31 @@ export default function AdminLayout() {
 function AdminLayoutInner() {
   const router = useRouter();
   const segments = useSegments();
-  const [checked, setChecked] = useState(false);
+  const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
 
+  // Check auth once on mount — not on every navigation
   useEffect(() => {
-    const token = getStoredToken();
     const onLoginScreen = segments.includes("login" as never);
-
-    if (!token && !onLoginScreen) {
-      router.replace("/(admin)/login");
+    if (onLoginScreen) {
+      setAuthState("authenticated"); // login screen doesn't need auth check
       return;
     }
-    setChecked(true);
+
+    // Only check if we haven't confirmed auth yet
+    if (authState === "authenticated") return;
+
+    checkSession().then((session) => {
+      if (session) {
+        setAuthState("authenticated");
+      } else {
+        setAuthState("unauthenticated");
+        router.replace("/(admin)/login");
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
-  if (!checked) return null;
+  if (authState === "loading") return null;
 
   // On web: sidebar + content layout (skip sidebar on login screen)
   if (Platform.OS === "web") {

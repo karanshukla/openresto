@@ -44,7 +44,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
                     d.ServiceType == typeof(AppDbContext))
                 .ToList();
 
-            foreach (var descriptor in descriptorsToRemove)
+            foreach (ServiceDescriptor? descriptor in descriptorsToRemove)
             {
                 services.Remove(descriptor);
             }
@@ -68,7 +68,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     /// </summary>
     public static string GenerateTestJwt()
     {
-        var keyBytes = Encoding.UTF8.GetBytes(JwtKey);
+        byte[] keyBytes = Encoding.UTF8.GetBytes(JwtKey);
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
 
@@ -91,7 +91,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     /// </summary>
     public HttpClient CreateAuthenticatedClient()
     {
-        var client = CreateClient();
+        HttpClient client = CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateTestJwt());
         return client;

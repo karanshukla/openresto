@@ -1,4 +1,10 @@
-import { createBooking, getBookingById, getBookingByRef, deleteBooking } from "@/api/bookings";
+import {
+  createBooking,
+  getBookingById,
+  getBookingByRef,
+  getBookingsByRestaurant,
+  deleteBooking,
+} from "@/api/bookings";
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -111,6 +117,31 @@ describe("getBookingByRef", () => {
   it("returns null on failure", async () => {
     mockFetch.mockResolvedValueOnce({ ok: false });
     expect(await getBookingByRef("no-exist", "a@b.com")).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await getBookingByRef("ref", "a@b.com")).toBeNull();
+  });
+});
+
+describe("getBookingsByRestaurant", () => {
+  it("fetches bookings for a restaurant", async () => {
+    const bookings = [{ id: 1 }, { id: 2 }];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
+    const result = await getBookingsByRestaurant(5);
+    expect(result).toEqual(bookings);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/bookings/restaurant/5");
+  });
+
+  it("returns empty array on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await getBookingsByRestaurant(5)).toEqual([]);
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await getBookingsByRestaurant(5)).toEqual([]);
   });
 });
 

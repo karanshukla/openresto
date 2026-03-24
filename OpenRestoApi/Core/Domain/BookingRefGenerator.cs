@@ -22,8 +22,8 @@ public static class BookingRefGenerator
 
     public static string Generate()
     {
-        var adj = Adjectives[_rng.Next(Adjectives.Length)];
-        var food1 = Foods[_rng.Next(Foods.Length)];
+        string adj = Adjectives[_rng.Next(Adjectives.Length)];
+        string food1 = Foods[_rng.Next(Foods.Length)];
         string food2;
         do { food2 = Foods[_rng.Next(Foods.Length)]; }
         while (food2 == food1);

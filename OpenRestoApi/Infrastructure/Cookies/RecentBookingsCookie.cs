@@ -16,31 +16,25 @@ public record CachedBookingEntry(
 /// Manages an encrypted HttpOnly cookie containing a user's recent booking references.
 /// Uses ASP.NET Data Protection to encrypt the payload so it cannot be read or tampered with client-side.
 /// </summary>
-public class RecentBookingsCookie
+public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvironment env)
 {
     private const string CookieName = "openresto_recent";
     private const int MaxEntries = 10;
     private const int CookieMaxAgeDays = 90;
-    private readonly IDataProtector _protector;
-    private readonly bool _isDevelopment;
-
-    public RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvironment env)
-    {
-        _protector = provider.CreateProtector("RecentBookings.v1");
-        _isDevelopment = env.IsDevelopment();
-    }
+    private readonly IDataProtector _protector = provider.CreateProtector("RecentBookings.v1");
+    private readonly bool _isDevelopment = env.IsDevelopment();
 
     /// <summary>Read and decrypt the recent bookings from the request cookie.</summary>
     public List<CachedBookingEntry> Read(HttpRequest request)
     {
-        if (!request.Cookies.TryGetValue(CookieName, out var encrypted) || string.IsNullOrEmpty(encrypted))
+        if (!request.Cookies.TryGetValue(CookieName, out string? encrypted) || string.IsNullOrEmpty(encrypted))
         {
             return [];
         }
 
         try
         {
-            var json = _protector.Unprotect(encrypted);
+            string json = _protector.Unprotect(encrypted);
             return JsonSerializer.Deserialize<List<CachedBookingEntry>>(json) ?? [];
         }
         catch
@@ -53,7 +47,7 @@ public class RecentBookingsCookie
     /// <summary>Add a booking entry and write the encrypted cookie to the response.</summary>
     public void Append(HttpRequest request, HttpResponse response, CachedBookingEntry entry)
     {
-        var entries = Read(request);
+        List<CachedBookingEntry> entries = Read(request);
 
         // Don't duplicate
         if (entries.Any(e => string.Equals(e.BookingRef, entry.BookingRef, StringComparison.OrdinalIgnoreCase)))
@@ -75,8 +69,8 @@ public class RecentBookingsCookie
     /// <summary>Write the full list to the response cookie.</summary>
     private void Write(HttpResponse response, List<CachedBookingEntry> entries)
     {
-        var json = JsonSerializer.Serialize(entries);
-        var encrypted = _protector.Protect(json);
+        string json = JsonSerializer.Serialize(entries);
+        string encrypted = _protector.Protect(json);
 
         // In dev (HTTP, cross-origin ports), use Lax + no Secure flag.
         // In production (HTTPS, same origin), use Strict + Secure.

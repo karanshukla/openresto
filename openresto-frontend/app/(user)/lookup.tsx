@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, BookingDto } from "@/api/bookings";
+import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,19 +13,23 @@ import {
 } from "react-native";
 import Input from "@/components/common/Input";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
+import { useBrand } from "@/context/BrandContext";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [booking, setBooking] = useState<BookingDto | null | undefined>(undefined);
+  const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [cached, setCached] = useState<CachedBooking[]>([]);
   const isDark = useColorScheme() === "dark";
+  const brand = useBrand();
+  const accent = brand.primaryColor || "#0a7ea4";
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
 
@@ -45,8 +50,13 @@ export default function LookupScreen() {
     if (!ref || !email) return;
     setLoading(true);
     setSearched(true);
+    setRestaurant(null);
     const result = await getBookingByRef(ref, email);
     setBooking(result);
+    if (result?.restaurantId) {
+      const r = await fetchRestaurantById(result.restaurantId);
+      setRestaurant(r);
+    }
     setLoading(false);
   };
 
@@ -57,7 +67,7 @@ export default function LookupScreen() {
     >
       <PageContainer>
         <View style={styles.header}>
-          <Ionicons name="search-outline" size={32} color={PRIMARY} />
+          <Ionicons name="search-outline" size={32} color={accent} />
           <ThemedText style={styles.title}>Find My Booking</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
             Enter your booking reference and email to look up your reservation.
@@ -90,7 +100,7 @@ export default function LookupScreen() {
                 disabled={!canSearch || loading}
                 style={[
                   styles.searchBtn,
-                  { backgroundColor: PRIMARY },
+                  { backgroundColor: accent },
                   (!canSearch || loading) && { opacity: 0.5 },
                 ]}
               >
@@ -123,8 +133,13 @@ export default function LookupScreen() {
                       setEmailInput(c.email);
                       setLoading(true);
                       setSearched(true);
+                      setRestaurant(null);
                       const result = await getBookingByRef(c.bookingRef, c.email);
                       setBooking(result);
+                      if (result?.restaurantId) {
+                        const r = await fetchRestaurantById(result.restaurantId);
+                        setRestaurant(r);
+                      }
                       setLoading(false);
                     }}
                   >
@@ -161,93 +176,102 @@ export default function LookupScreen() {
               >
                 <Ionicons name="alert-circle-outline" size={28} color={mutedColor} />
                 <ThemedText style={[styles.notFound, { color: mutedColor }]}>
-                  No booking found matching that reference and email.
+                  No booking found matching that reference and email. It may have been cancelled or
+                  deleted. Please contact the restaurant directly if you have any other questions.
                 </ThemedText>
               </View>
             )}
 
             {!loading && booking && (
-              <View
-                style={[
-                  styles.resultCard,
-                  { backgroundColor: cardBg, borderColor },
-                  isWide && { marginTop: 0 },
-                ]}
-              >
-                <View style={styles.resultHeader}>
-                  <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
-                  <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>
+              <View style={[isWide && { marginTop: 0 }, { gap: 16 }]}>
+                {/* Header */}
+                <View style={[styles.resultCard, { backgroundColor: cardBg, borderColor }]}>
+                  <View style={styles.resultHeader}>
+                    <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
+                    <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>
+                  </View>
+                  <View
+                    style={[
+                      styles.refBadge,
+                      { backgroundColor: isDark ? `${accent}22` : `${accent}14` },
+                    ]}
+                  >
+                    <ThemedText style={[styles.refText, { color: accent }]}>
+                      {booking.bookingRef}
+                    </ThemedText>
+                  </View>
                 </View>
 
-                <View
-                  style={[
-                    styles.refBadge,
-                    { backgroundColor: isDark ? "rgba(10,126,164,0.15)" : "rgba(10,126,164,0.08)" },
-                  ]}
-                >
-                  <ThemedText style={[styles.refText, { color: PRIMARY }]}>
-                    {booking.bookingRef}
-                  </ThemedText>
-                </View>
-
-                <View style={styles.detailGrid}>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="mail-outline" size={15} color={mutedColor} />
-                    <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                        Email
-                      </ThemedText>
-                      <ThemedText style={styles.detailValue}>{booking.customerEmail}</ThemedText>
+                {/* Details card */}
+                <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
+                  {[
+                    ...(restaurant
+                      ? [
+                          {
+                            icon: "restaurant-outline" as const,
+                            label: "Restaurant",
+                            value: restaurant.name,
+                          },
+                          ...(restaurant.address
+                            ? [
+                                {
+                                  icon: "location-outline" as const,
+                                  label: "Address",
+                                  value: restaurant.address,
+                                },
+                              ]
+                            : []),
+                        ]
+                      : []),
+                    { icon: "mail-outline" as const, label: "Email", value: booking.customerEmail },
+                    {
+                      icon: "calendar-outline" as const,
+                      label: "Date",
+                      value: new Date(booking.date).toLocaleDateString(undefined, {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }),
+                    },
+                    {
+                      icon: "time-outline" as const,
+                      label: "Time",
+                      value: new Date(booking.date).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }),
+                    },
+                    {
+                      icon: "people-outline" as const,
+                      label: "Guests",
+                      value: String(booking.seats),
+                    },
+                    ...(booking.specialRequests
+                      ? [
+                          {
+                            icon: "chatbubble-outline" as const,
+                            label: "Requests",
+                            value: booking.specialRequests,
+                          },
+                        ]
+                      : []),
+                  ].map(({ icon, label, value }, i) => (
+                    <View key={label}>
+                      {i > 0 && (
+                        <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+                      )}
+                      <View style={styles.detailRow}>
+                        <Ionicons name={icon} size={15} color={mutedColor} />
+                        <View style={styles.detailContent}>
+                          <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                            {label}
+                          </ThemedText>
+                          <ThemedText style={styles.detailValue}>{value}</ThemedText>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-
-                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="people-outline" size={15} color={mutedColor} />
-                    <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                        Guests
-                      </ThemedText>
-                      <ThemedText style={styles.detailValue}>{booking.seats}</ThemedText>
-                    </View>
-                  </View>
-
-                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="calendar-outline" size={15} color={mutedColor} />
-                    <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                        Date
-                      </ThemedText>
-                      <ThemedText style={styles.detailValue}>
-                        {new Date(booking.date).toLocaleDateString(undefined, {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </ThemedText>
-                    </View>
-                  </View>
-
-                  <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-
-                  <View style={styles.detailRow}>
-                    <Ionicons name="time-outline" size={15} color={mutedColor} />
-                    <View style={styles.detailContent}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                        Time
-                      </ThemedText>
-                      <ThemedText style={styles.detailValue}>
-                        {new Date(booking.date).toLocaleTimeString(undefined, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </ThemedText>
-                    </View>
-                  </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -402,9 +426,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
-  detailGrid: {
-    width: "100%",
-    gap: 0,
+  detailCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   detailRow: {
     flexDirection: "row",

@@ -26,6 +26,7 @@ const defaultParams = {
   tableId: undefined as number | undefined,
   date: "2026-06-15",
   time: "19:00",
+  email: "test@example.com",
 };
 
 describe("useTableHold", () => {

@@ -64,12 +64,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
 
             {restaurant.address ? (
               <View style={styles.addressRow}>
-                <Ionicons
-                  name="location-outline"
-                  size={13}
-                  color={mutedColor}
-                  style={{ marginTop: 1 }}
-                />
+                <Ionicons name="location-outline" size={13} color={mutedColor} />
                 <ThemedText style={[styles.address, { color: mutedColor }]} numberOfLines={1}>
                   {restaurant.address}
                 </ThemedText>
@@ -161,7 +156,7 @@ const styles = StyleSheet.create({
   },
   addressRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 4,
   },
   address: {

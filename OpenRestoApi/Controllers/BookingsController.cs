@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
@@ -10,31 +11,26 @@ namespace OpenRestoApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BookingsController : ControllerBase
+    [EnableRateLimiting("public")]
+    public class BookingsController(BookingService bookingService, RecentBookingsCookie recentCookie, AppDbContext db) : ControllerBase
     {
-        private readonly BookingService _bookingService;
-        private readonly RecentBookingsCookie _recentCookie;
-        private readonly AppDbContext _db;
-
-        public BookingsController(BookingService bookingService, RecentBookingsCookie recentCookie, AppDbContext db)
-        {
-            _bookingService = bookingService;
-            _recentCookie = recentCookie;
-            _db = db;
-        }
+        private readonly BookingService _bookingService = bookingService;
+        private readonly RecentBookingsCookie _recentCookie = recentCookie;
+        private readonly AppDbContext _db = db;
 
         [HttpGet("restaurant/{restaurantId}")]
         [Authorize]
         public async Task<IActionResult> GetBookings(int restaurantId)
         {
-            var bookings = await _bookingService.GetBookingsByRestaurantAsync(restaurantId);
+            IEnumerable<BookingDto> bookings = await _bookingService.GetBookingsByRestaurantAsync(restaurantId);
             return Ok(bookings);
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetBooking(int id)
         {
-            var booking = await _bookingService.GetBookingByIdAsync(id);
+            BookingDto? booking = await _bookingService.GetBookingByIdAsync(id);
             if (booking == null)
             {
                 return NotFound();
@@ -50,7 +46,7 @@ namespace OpenRestoApi.Controllers
                 return BadRequest(new { message = "Email is required to look up a booking." });
             }
 
-            var booking = await _bookingService.GetBookingByRefAsync(bookingRef);
+            BookingDto? booking = await _bookingService.GetBookingByRefAsync(bookingRef);
             if (booking == null || !string.Equals(booking.CustomerEmail, email.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 return NotFound(new { message = "No booking found matching that reference and email." });
@@ -68,10 +64,10 @@ namespace OpenRestoApi.Controllers
 
             try
             {
-                var newBooking = await _bookingService.CreateBookingAsync(bookingDto);
+                BookingDto newBooking = await _bookingService.CreateBookingAsync(bookingDto);
 
                 // Append to the encrypted recent-bookings cookie
-                var restaurantName = await _db.Restaurants
+                string? restaurantName = await _db.Restaurants
                     .Where(r => r.Id == bookingDto.RestaurantId)
                     .Select(r => r.Name)
                     .FirstOrDefaultAsync();
@@ -97,7 +93,7 @@ namespace OpenRestoApi.Controllers
         [HttpGet("my-recent")]
         public IActionResult GetMyRecentBookings()
         {
-            var entries = _recentCookie.Read(Request);
+            List<CachedBookingEntry> entries = _recentCookie.Read(Request);
             return Ok(entries);
         }
 

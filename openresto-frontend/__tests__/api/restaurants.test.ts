@@ -10,9 +10,7 @@ import {
   deleteTable,
 } from "@/api/restaurants";
 
-jest.mock("@/api/auth", () => ({
-  getAuthHeaders: () => ({ Authorization: "Bearer test" }),
-}));
+// Restaurants API now uses credentials: "include" for cookie-based auth
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -83,7 +81,7 @@ describe("updateRestaurant", () => {
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/restaurants/1");
     expect(opts.method).toBe("PUT");
-    expect(opts.headers["Authorization"]).toBe("Bearer test");
+    expect(opts.credentials).toBe("include");
     expect(JSON.parse(opts.body)).toEqual(data);
   });
 
@@ -106,7 +104,7 @@ describe("addSection", () => {
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/restaurants/1/sections");
     expect(opts.method).toBe("POST");
-    expect(opts.headers["Authorization"]).toBe("Bearer test");
+    expect(opts.credentials).toBe("include");
     expect(JSON.parse(opts.body)).toEqual({ name: "Patio" });
   });
 
@@ -146,7 +144,7 @@ describe("deleteSection", () => {
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/restaurants/1/sections/10");
     expect(opts.method).toBe("DELETE");
-    expect(opts.headers["Authorization"]).toBe("Bearer test");
+    expect(opts.credentials).toBe("include");
   });
 
   it("returns false on failure", async () => {
@@ -173,7 +171,7 @@ describe("addTable", () => {
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/restaurants/1/sections/10/tables");
     expect(opts.method).toBe("POST");
-    expect(opts.headers["Authorization"]).toBe("Bearer test");
+    expect(opts.credentials).toBe("include");
   });
 
   it("returns null on failure", async () => {

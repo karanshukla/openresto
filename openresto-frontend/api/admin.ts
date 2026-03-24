@@ -1,12 +1,4 @@
-import { getAuthHeaders } from "./auth";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-function buildEndpoint(path: string): string {
-  const base = API_URL?.replace(/\/$/, "") ?? "";
-  if (!base) return `/api${path}`;
-  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
+import { get, post, patch, del } from "./client";
 
 // ---------- Types ----------
 
@@ -61,9 +53,7 @@ export interface CreateRestaurantRequest {
 
 export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
   try {
-    const res = await fetch(buildEndpoint("/admin/overview"), {
-      headers: getAuthHeaders(),
-    });
+    const res = await get("/admin/overview");
     if (!res.ok) throw new Error("Failed to fetch overview");
     return await res.json();
   } catch (err) {
@@ -87,9 +77,7 @@ export async function getAdminBookings(
     if (date) params.set("date", date);
     if (status !== "active") params.set("status", status);
     const query = params.toString() ? `?${params}` : "";
-    const res = await fetch(buildEndpoint(`/admin/bookings${query}`), {
-      headers: getAuthHeaders(),
-    });
+    const res = await get(`/admin/bookings${query}`);
     if (!res.ok) throw new Error("Failed to fetch admin bookings");
     return await res.json();
   } catch (err) {
@@ -100,9 +88,7 @@ export async function getAdminBookings(
 
 export async function getAdminBooking(id: number): Promise<BookingDetailDto | null> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/bookings/${id}`), {
-      headers: getAuthHeaders(),
-    });
+    const res = await get(`/admin/bookings/${id}`);
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {
@@ -114,11 +100,7 @@ export async function getAdminBooking(id: number): Promise<BookingDetailDto | nu
 export async function adminCreateBooking(
   req: AdminCreateBookingRequest
 ): Promise<BookingDetailDto | null> {
-  const res = await fetch(buildEndpoint("/admin/bookings"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify(req),
-  });
+  const res = await post("/admin/bookings", req);
 
   if (res.status === 409) {
     const body = await res.json().catch(() => ({}));
@@ -134,11 +116,7 @@ export async function adminUpdateBooking(
   req: UpdateBookingRequest
 ): Promise<BookingDetailDto | null> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/bookings/${id}`), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify(req),
-    });
+    const res = await patch(`/admin/bookings/${id}`, req);
     if (!res.ok) throw new Error("Failed to update booking");
     return await res.json();
   } catch (err) {
@@ -152,11 +130,7 @@ export async function adminExtendBooking(
   minutes: number
 ): Promise<{ endTime: string } | null> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/bookings/${id}/extend`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ minutes }),
-    });
+    const res = await post(`/admin/bookings/${id}/extend`, { minutes });
     if (!res.ok) throw new Error("Failed to extend booking");
     return await res.json();
   } catch (err) {
@@ -167,10 +141,7 @@ export async function adminExtendBooking(
 
 export async function adminDeleteBooking(id: number): Promise<boolean> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/bookings/${id}`), {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
+    const res = await del(`/admin/bookings/${id}`);
     return res.ok;
   } catch (err) {
     console.error("adminDeleteBooking error:", err);
@@ -180,10 +151,7 @@ export async function adminDeleteBooking(id: number): Promise<boolean> {
 
 export async function adminPurgeBooking(id: number): Promise<boolean> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/bookings/${id}/purge`), {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
+    const res = await del(`/admin/bookings/${id}/purge`);
     return res.ok;
   } catch (err) {
     console.error("adminPurgeBooking error:", err);
@@ -197,11 +165,7 @@ export async function adminCreateRestaurant(
   req: CreateRestaurantRequest
 ): Promise<{ id: number; name: string; address?: string } | null> {
   try {
-    const res = await fetch(buildEndpoint("/admin/restaurants"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify(req),
-    });
+    const res = await post("/admin/restaurants", req);
     if (!res.ok) throw new Error("Failed to create restaurant");
     return await res.json();
   } catch (err) {
@@ -212,10 +176,7 @@ export async function adminCreateRestaurant(
 
 export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/restaurants/${id}`), {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
+    const res = await del(`/admin/restaurants/${id}`);
     return res.ok;
   } catch (err) {
     console.error("adminDeleteRestaurant error:", err);
@@ -233,9 +194,7 @@ export interface SectionWithTables {
 
 export async function adminGetTables(restaurantId: number): Promise<SectionWithTables[]> {
   try {
-    const res = await fetch(buildEndpoint(`/admin/restaurants/${restaurantId}/tables`), {
-      headers: getAuthHeaders(),
-    });
+    const res = await get(`/admin/restaurants/${restaurantId}/tables`);
     if (!res.ok) return [];
     return await res.json();
   } catch (err) {
@@ -259,7 +218,7 @@ export interface EmailSettingsDto {
 
 export async function getEmailSettings(): Promise<EmailSettingsDto> {
   try {
-    const res = await fetch(buildEndpoint("/admin/email-settings"), { headers: getAuthHeaders() });
+    const res = await get("/admin/email-settings");
     if (!res.ok) throw new Error();
     return await res.json();
   } catch {
@@ -278,11 +237,7 @@ export async function saveEmailSettings(
   data: Omit<EmailSettingsDto, "isConfigured">
 ): Promise<{ message: string } | null> {
   try {
-    const res = await fetch(buildEndpoint("/admin/email-settings"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify(data),
-    });
+    const res = await post("/admin/email-settings", data);
     return await res.json();
   } catch {
     return null;
@@ -291,13 +246,10 @@ export async function saveEmailSettings(
 
 export async function testEmailConnection(): Promise<{ ok: boolean; message: string }> {
   try {
-    const res = await fetch(buildEndpoint("/admin/email-settings/test"), {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
+    const res = await post("/admin/email-settings/test");
     const data = await res.json();
     return { ok: res.ok, message: data.message };
-  } catch (err) {
+  } catch {
     return { ok: false, message: "Network error." };
   }
 }
@@ -315,11 +267,7 @@ export async function saveBrandSettings(
   data: BrandSettingsDto
 ): Promise<{ message: string } | null> {
   try {
-    const res = await fetch(buildEndpoint("/brand"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify(data),
-    });
+    const res = await post("/brand", data);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
       return { message: err?.message ?? "Failed to save." };

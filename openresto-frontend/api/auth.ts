@@ -1,68 +1,36 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-const TOKEN_KEY = "openresto_admin_token";
-
-function buildEndpoint(path: string): string {
-  const base = API_URL?.replace(/\/$/, "") ?? "";
-  if (!base) return `/api${path}`;
-  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
-
-// ---------- Token storage (web-first) ----------
-
-export function getStoredToken(): string | null {
-  if (typeof window !== "undefined" && window.localStorage) {
-    return localStorage.getItem(TOKEN_KEY);
-  }
-  return null;
-}
-
-function storeToken(token: string): void {
-  if (typeof window !== "undefined" && window.localStorage) {
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-}
-
-function removeToken(): void {
-  if (typeof window !== "undefined" && window.localStorage) {
-    localStorage.removeItem(TOKEN_KEY);
-  }
-}
-
-// ---------- Auth helpers ----------
-
-export interface LoginResponse {
-  token: string;
-}
-
-export function getAuthHeaders(): Record<string, string> {
-  const token = getStoredToken();
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
+import { get, post } from "./client";
 
 // ---------- Login / logout ----------
 
-export async function login(email: string, password: string): Promise<{ token: string } | null> {
+export async function login(email: string, password: string): Promise<{ message: string } | null> {
   try {
-    const res = await fetch(buildEndpoint("/auth/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
+    const res = await post("/admin/auth/login", { email, password });
     if (!res.ok) return null;
-
-    const data: LoginResponse = await res.json();
-    storeToken(data.token);
-    return data;
+    return await res.json();
   } catch (err) {
     console.error("login error:", err);
     return null;
   }
 }
 
-export function logout(): void {
-  removeToken();
+export async function logout(): Promise<void> {
+  try {
+    await post("/admin/auth/logout");
+  } catch {
+    // Best-effort — cookie will expire on its own
+  }
+}
+
+// ---------- Session check ----------
+
+export async function checkSession(): Promise<{ email: string } | null> {
+  try {
+    const res = await get("/admin/auth/me");
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 // ---------- Password management ----------
@@ -72,11 +40,7 @@ export async function changePassword(
   newPassword: string
 ): Promise<{ ok: boolean; message: string }> {
   try {
-    const res = await fetch(buildEndpoint("/auth/change-password"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
+    const res = await post("/admin/auth/change-password", { currentPassword, newPassword });
     const body = await res.json().catch(() => ({}));
     return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Request failed.") };
   } catch {
@@ -93,7 +57,7 @@ export interface PvqStatus {
 
 export async function getPvqStatus(): Promise<PvqStatus | null> {
   try {
-    const res = await fetch(buildEndpoint("/auth/pvq"));
+    const res = await get("/admin/auth/pvq", { credentials: "omit" });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -106,11 +70,7 @@ export async function setupPvq(
   answer: string
 ): Promise<{ ok: boolean; message: string }> {
   try {
-    const res = await fetch(buildEndpoint("/auth/pvq/setup"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-      body: JSON.stringify({ question, answer }),
-    });
+    const res = await post("/admin/auth/pvq/setup", { question, answer });
     const body = await res.json().catch(() => ({}));
     return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Failed.") };
   } catch {
@@ -124,11 +84,7 @@ export async function verifyPvq(
   answer: string
 ): Promise<{ resetToken: string } | null> {
   try {
-    const res = await fetch(buildEndpoint("/auth/pvq/verify"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, answer }),
-    });
+    const res = await post("/admin/auth/pvq/verify", { email, answer });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -142,11 +98,7 @@ export async function resetPassword(
   newPassword: string
 ): Promise<{ ok: boolean; message: string }> {
   try {
-    const res = await fetch(buildEndpoint("/auth/reset-password"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resetToken, newPassword }),
-    });
+    const res = await post("/admin/auth/reset-password", { resetToken, newPassword });
     const body = await res.json().catch(() => ({}));
     return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Failed.") };
   } catch {

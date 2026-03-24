@@ -9,12 +9,12 @@ namespace OpenRestoApi.Infrastructure.Holds;
 /// (each restaurant runs their own copy). Swap IMemoryCache backing to
 /// Redis if multi-instance scaling is ever needed.
 /// </summary>
-public class HoldService : IHoldService
+public class HoldService(ISystemClock clock) : IHoldService
 {
     private const int HoldDurationMinutes = 5;
     public static readonly TimeSpan HoldDuration = TimeSpan.FromMinutes(HoldDurationMinutes);
 
-    private readonly ISystemClock _clock;
+    private readonly ISystemClock _clock = clock;
     private readonly ConcurrentDictionary<string, HoldEntry> _holds = new();
 
     // tableKey ("{tableId}:{yyyy-MM-dd}") → holdId, for fast availability checks
@@ -22,29 +22,24 @@ public class HoldService : IHoldService
 
     private readonly object _placeLock = new();
 
-    public HoldService(ISystemClock clock)
-    {
-        _clock = clock;
-    }
-
     public HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate)
     {
         lock (_placeLock)
         {
             Cleanup();
 
-            var tableKey = TableKey(tableId, bookingDate);
+            string tableKey = TableKey(tableId, bookingDate);
 
             // Reject if an active hold already exists for this table+date
-            if (_tableIndex.TryGetValue(tableKey, out var existingId) &&
-                _holds.TryGetValue(existingId, out var existing) &&
+            if (_tableIndex.TryGetValue(tableKey, out string? existingId) &&
+                _holds.TryGetValue(existingId, out HoldEntry? existing) &&
                 existing.ExpiresAt > _clock.UtcNow)
             {
                 return null;
             }
 
-            var holdId = Guid.NewGuid().ToString("N");
-            var expiresAt = _clock.UtcNow.Add(HoldDuration);
+            string holdId = Guid.NewGuid().ToString("N");
+            DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
             var entry = new HoldEntry(holdId, tableId, sectionId, restaurantId, bookingDate, expiresAt);
 
             _holds[holdId] = entry;
@@ -56,12 +51,12 @@ public class HoldService : IHoldService
 
     public void ReleaseHold(string holdId)
     {
-        if (_holds.TryRemove(holdId, out var entry))
+        if (_holds.TryRemove(holdId, out HoldEntry? entry))
         {
             // Only remove the table index if it still points to this specific hold
             // (prevents removing a newer hold if this one had already been replaced)
-            var tableKey = TableKey(entry.TableId, entry.Date);
-            if (_tableIndex.TryGetValue(tableKey, out var currentId) && currentId == holdId)
+            string tableKey = TableKey(entry.TableId, entry.Date);
+            if (_tableIndex.TryGetValue(tableKey, out string? currentId) && currentId == holdId)
             {
                 _tableIndex.TryRemove(tableKey, out _);
             }
@@ -70,8 +65,8 @@ public class HoldService : IHoldService
 
     public bool IsTableHeld(int tableId, DateTime bookingDate, string? excludeHoldId = null)
     {
-        var tableKey = TableKey(tableId, bookingDate);
-        if (!_tableIndex.TryGetValue(tableKey, out var holdId))
+        string tableKey = TableKey(tableId, bookingDate);
+        if (!_tableIndex.TryGetValue(tableKey, out string? holdId))
         {
             return false;
         }
@@ -81,12 +76,12 @@ public class HoldService : IHoldService
             return false;
         }
 
-        return _holds.TryGetValue(holdId, out var entry) && entry.ExpiresAt > _clock.UtcNow;
+        return _holds.TryGetValue(holdId, out HoldEntry? entry) && entry.ExpiresAt > _clock.UtcNow;
     }
 
     public HoldEntry? GetHold(string holdId)
     {
-        if (_holds.TryGetValue(holdId, out var entry) && entry.ExpiresAt > _clock.UtcNow)
+        if (_holds.TryGetValue(holdId, out HoldEntry? entry) && entry.ExpiresAt > _clock.UtcNow)
         {
             return entry;
         }
@@ -100,18 +95,18 @@ public class HoldService : IHoldService
     /// </summary>
     private void Cleanup()
     {
-        var now = _clock.UtcNow;
-        foreach (var kvp in _holds.ToArray())
+        DateTime now = _clock.UtcNow;
+        foreach (KeyValuePair<string, HoldEntry> kvp in _holds.ToArray())
         {
             if (kvp.Value.ExpiresAt > now)
             {
                 continue;
             }
 
-            if (_holds.TryRemove(kvp.Key, out var entry))
+            if (_holds.TryRemove(kvp.Key, out HoldEntry? entry))
             {
-                var tableKey = TableKey(entry.TableId, entry.Date);
-                if (_tableIndex.TryGetValue(tableKey, out var currentId) && currentId == kvp.Key)
+                string tableKey = TableKey(entry.TableId, entry.Date);
+                if (_tableIndex.TryGetValue(tableKey, out string? currentId) && currentId == kvp.Key)
                 {
                     _tableIndex.TryRemove(tableKey, out _);
                 }

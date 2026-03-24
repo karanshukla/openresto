@@ -11,6 +11,7 @@ interface UseTableHoldParams {
   tableId: number | undefined;
   date: string;
   time: string;
+  email: string;
 }
 
 interface UseTableHoldResult {
@@ -28,6 +29,7 @@ export function useTableHold({
   tableId,
   date,
   time,
+  email,
 }: UseTableHoldParams): UseTableHoldResult {
   const [hold, setHold] = useState<HoldResponse | null>(null);
   const [holdStatus, setHoldStatus] = useState<HoldStatus>("idle");
@@ -72,7 +74,7 @@ export function useTableHold({
 
   // Debounced hold trigger
   useEffect(() => {
-    if (!tableId || !date || !time) {
+    if (!tableId || !date || !time || !email.trim()) {
       setHoldStatus("idle");
       return;
     }
@@ -115,7 +117,7 @@ export function useTableHold({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableId, date, time]);
+  }, [tableId, date, time, email]);
 
   // Cleanup on unmount
   useEffect(() => {

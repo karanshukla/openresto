@@ -51,8 +51,8 @@ export default function AdminSidebar() {
     fetchRestaurants().then((data) => setLocationCount(data.length));
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.replace("/(admin)/login");
   };
 

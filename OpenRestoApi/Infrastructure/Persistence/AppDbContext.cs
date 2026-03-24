@@ -3,10 +3,8 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     public DbSet<Restaurant> Restaurants { get; set; } = null!;
     public DbSet<Section> Sections { get; set; } = null!;
     public DbSet<Table> Tables { get; set; } = null!;

@@ -7,7 +7,7 @@ public class BookingRefGeneratorTests
     [Fact]
     public void Generate_ReturnsNonEmptyString()
     {
-        var result = BookingRefGenerator.Generate();
+        string result = BookingRefGenerator.Generate();
 
         Assert.False(string.IsNullOrWhiteSpace(result));
     }
@@ -15,9 +15,9 @@ public class BookingRefGeneratorTests
     [Fact]
     public void Generate_ReturnsThreeWordFormat()
     {
-        var result = BookingRefGenerator.Generate();
+        string result = BookingRefGenerator.Generate();
 
-        var parts = result.Split('-');
+        string[] parts = result.Split('-');
         Assert.Equal(3, parts.Length);
         Assert.All(parts, part => Assert.False(string.IsNullOrWhiteSpace(part)));
     }
@@ -42,8 +42,8 @@ public class BookingRefGeneratorTests
         // The generator ensures food2 != food1
         for (int i = 0; i < 20; i++)
         {
-            var result = BookingRefGenerator.Generate();
-            var parts = result.Split('-');
+            string result = BookingRefGenerator.Generate();
+            string[] parts = result.Split('-');
             Assert.NotEqual(parts[1], parts[2]);
         }
     }
