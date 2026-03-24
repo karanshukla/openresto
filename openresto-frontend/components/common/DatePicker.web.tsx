@@ -31,7 +31,8 @@ export default function DatePicker({
     return d.toISOString().split("T")[0];
   })();
 
-  const isClosedDay = selectedDate && openDays ? !openDays.includes(getIsoDay(selectedDate)) : false;
+  const isClosedDay =
+    selectedDate && openDays ? !openDays.includes(getIsoDay(selectedDate)) : false;
 
   const DAY_NAMES: Record<number, string> = {
     1: "Monday",

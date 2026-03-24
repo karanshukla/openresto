@@ -47,7 +47,14 @@ export async function fetchRestaurantById(id: number): Promise<RestaurantDto | n
 
 export async function updateRestaurant(
   id: number,
-  data: { name: string; address?: string | null; openTime?: string; closeTime?: string; openDays?: string; timezone?: string }
+  data: {
+    name: string;
+    address?: string | null;
+    openTime?: string;
+    closeTime?: string;
+    openDays?: string;
+    timezone?: string;
+  }
 ): Promise<RestaurantDto | null> {
   try {
     const res = await put(`/restaurants/${id}`, data);

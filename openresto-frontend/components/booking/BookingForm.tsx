@@ -127,7 +127,12 @@ export default function BookingForm({
   const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
 
   const isValid =
-    !!tableId && !!date && !!time && customerEmail.includes("@") && holdStatus === "held" && !isClosedDay;
+    !!tableId &&
+    !!date &&
+    !!time &&
+    customerEmail.includes("@") &&
+    holdStatus === "held" &&
+    !isClosedDay;
 
   const handleSubmit = () => {
     if (isValid) {

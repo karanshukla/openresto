@@ -202,74 +202,74 @@ export default function LookupScreen() {
                   </View>
                 </View>
                 <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-                  {[
-                    ...(restaurant
-                      ? [
-                          {
-                            icon: "restaurant-outline" as const,
-                            label: "Restaurant",
-                            value: restaurant.name,
-                          },
-                          ...(restaurant.address
-                            ? [
-                                {
-                                  icon: "location-outline" as const,
-                                  label: "Address",
-                                  value: restaurant.address,
-                                },
-                              ]
-                            : []),
-                        ]
-                      : []),
-                    { icon: "mail-outline" as const, label: "Email", value: booking.customerEmail },
-                    {
-                      icon: "calendar-outline" as const,
-                      label: "Date",
-                      value: new Date(booking.date).toLocaleDateString(undefined, {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }),
-                    },
-                    {
-                      icon: "time-outline" as const,
-                      label: "Time",
-                      value: new Date(booking.date).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }),
-                    },
-                    {
-                      icon: "people-outline" as const,
-                      label: "Guests",
-                      value: String(booking.seats),
-                    },
-                    ...(booking.specialRequests
-                      ? [
-                          {
-                            icon: "chatbubble-outline" as const,
-                            label: "Requests",
-                            value: booking.specialRequests,
-                          },
-                        ]
-                      : []),
-                  ].map(({ icon, label, value }, i) => (
-                    <View key={label}>
-                      {i > 0 && (
-                        <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
-                      )}
-                      <View style={styles.detailRow}>
-                        <Ionicons name={icon} size={15} color={mutedColor} />
-                        <View style={styles.detailContent}>
-                          <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
-                            {label}
-                          </ThemedText>
-                          <ThemedText style={styles.detailValue}>{value}</ThemedText>
-                        </View>
+                {[
+                  ...(restaurant
+                    ? [
+                        {
+                          icon: "restaurant-outline" as const,
+                          label: "Restaurant",
+                          value: restaurant.name,
+                        },
+                        ...(restaurant.address
+                          ? [
+                              {
+                                icon: "location-outline" as const,
+                                label: "Address",
+                                value: restaurant.address,
+                              },
+                            ]
+                          : []),
+                      ]
+                    : []),
+                  { icon: "mail-outline" as const, label: "Email", value: booking.customerEmail },
+                  {
+                    icon: "calendar-outline" as const,
+                    label: "Date",
+                    value: new Date(booking.date).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }),
+                  },
+                  {
+                    icon: "time-outline" as const,
+                    label: "Time",
+                    value: new Date(booking.date).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                  },
+                  {
+                    icon: "people-outline" as const,
+                    label: "Guests",
+                    value: String(booking.seats),
+                  },
+                  ...(booking.specialRequests
+                    ? [
+                        {
+                          icon: "chatbubble-outline" as const,
+                          label: "Requests",
+                          value: booking.specialRequests,
+                        },
+                      ]
+                    : []),
+                ].map(({ icon, label, value }, i) => (
+                  <View key={label}>
+                    {i > 0 && (
+                      <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+                    )}
+                    <View style={styles.detailRow}>
+                      <Ionicons name={icon} size={15} color={mutedColor} />
+                      <View style={styles.detailContent}>
+                        <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                          {label}
+                        </ThemedText>
+                        <ThemedText style={styles.detailValue}>{value}</ThemedText>
                       </View>
                     </View>
-                  ))}
+                  </View>
+                ))}
               </View>
             )}
           </View>

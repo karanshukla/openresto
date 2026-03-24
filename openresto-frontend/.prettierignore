@@ -3,4 +3,5 @@ dist/
 .expo/
 android/
 ios/
+coverage/
 *.lock

@@ -164,9 +164,7 @@ export default function AdminBookingDetailScreen() {
       <View style={[styles.section, { borderColor }]}>
         <View style={styles.sectionHeader}>
           <Ionicons name="mail-outline" size={16} color={mutedColor} />
-          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
-            Email guest
-          </ThemedText>
+          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
         </View>
         <ThemedText style={[styles.emailTo, { color: mutedColor }]}>
           To: {booking.customerEmail}
@@ -176,40 +174,44 @@ export default function AdminBookingDetailScreen() {
           placeholder="Subject"
           value={emailSubject}
           onChange={(e) => setEmailSubject(e.target.value)}
-          style={{
-            width: "100%",
-            height: 40,
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-            borderRadius: 8,
-            paddingLeft: 12,
-            paddingRight: 12,
-            fontSize: 14,
-            backgroundColor: isDark ? "#1c1c1e" : "#fff",
-            color: isDark ? "#fff" : "#000",
-            marginBottom: 8,
-          } as React.CSSProperties}
+          style={
+            {
+              width: "100%",
+              height: 40,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+              borderRadius: 8,
+              paddingLeft: 12,
+              paddingRight: 12,
+              fontSize: 14,
+              backgroundColor: isDark ? "#1c1c1e" : "#fff",
+              color: isDark ? "#fff" : "#000",
+              marginBottom: 8,
+            } as React.CSSProperties
+          }
         />
         <textarea
           placeholder="Message body (HTML supported)"
           value={emailBody}
           onChange={(e) => setEmailBody(e.target.value)}
           rows={4}
-          style={{
-            width: "100%",
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 14,
-            backgroundColor: isDark ? "#1c1c1e" : "#fff",
-            color: isDark ? "#fff" : "#000",
-            resize: "vertical",
-            fontFamily: "inherit",
-            marginBottom: 8,
-          } as React.CSSProperties}
+          style={
+            {
+              width: "100%",
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+              borderRadius: 8,
+              padding: 12,
+              fontSize: 14,
+              backgroundColor: isDark ? "#1c1c1e" : "#fff",
+              color: isDark ? "#fff" : "#000",
+              resize: "vertical",
+              fontFamily: "inherit",
+              marginBottom: 8,
+            } as React.CSSProperties
+          }
         />
         <View style={styles.emailActions}>
           <Pressable
@@ -239,10 +241,7 @@ export default function AdminBookingDetailScreen() {
           </Pressable>
           {emailResult && (
             <ThemedText
-              style={[
-                styles.emailResultText,
-                { color: emailResult.ok ? "#16a34a" : "#dc2626" },
-              ]}
+              style={[styles.emailResultText, { color: emailResult.ok ? "#16a34a" : "#dc2626" }]}
             >
               {emailResult.message}
             </ThemedText>

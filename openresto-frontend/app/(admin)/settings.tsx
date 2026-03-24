@@ -493,9 +493,7 @@ function RestaurantInfoForm({
                     : { borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" },
                 ]}
               >
-                <ThemedText
-                  style={[styles.dayChipText, active && { color: "#fff" }]}
-                >
+                <ThemedText style={[styles.dayChipText, active && { color: "#fff" }]}>
                   {label}
                 </ThemedText>
               </Pressable>
@@ -525,22 +523,61 @@ function RestaurantInfoForm({
         >
           {[
             "UTC",
-            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Madrid",
-            "Europe/Rome", "Europe/Amsterdam", "Europe/Brussels", "Europe/Zurich",
-            "Europe/Vienna", "Europe/Warsaw", "Europe/Prague", "Europe/Budapest",
-            "Europe/Athens", "Europe/Helsinki", "Europe/Stockholm", "Europe/Oslo",
-            "Europe/Dublin", "Europe/Lisbon", "Europe/Moscow", "Europe/Istanbul",
-            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-            "America/Toronto", "America/Vancouver", "America/Mexico_City",
-            "America/Sao_Paulo", "America/Buenos_Aires", "America/Bogota",
-            "Asia/Tokyo", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Singapore",
-            "Asia/Seoul", "Asia/Kolkata", "Asia/Dubai", "Asia/Bangkok",
-            "Asia/Jakarta", "Asia/Kuala_Lumpur", "Asia/Manila", "Asia/Taipei",
-            "Australia/Sydney", "Australia/Melbourne", "Australia/Perth",
-            "Australia/Brisbane", "Pacific/Auckland", "Africa/Johannesburg",
-            "Africa/Cairo", "Africa/Lagos", "Africa/Nairobi",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Madrid",
+            "Europe/Rome",
+            "Europe/Amsterdam",
+            "Europe/Brussels",
+            "Europe/Zurich",
+            "Europe/Vienna",
+            "Europe/Warsaw",
+            "Europe/Prague",
+            "Europe/Budapest",
+            "Europe/Athens",
+            "Europe/Helsinki",
+            "Europe/Stockholm",
+            "Europe/Oslo",
+            "Europe/Dublin",
+            "Europe/Lisbon",
+            "Europe/Moscow",
+            "Europe/Istanbul",
+            "America/New_York",
+            "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
+            "America/Toronto",
+            "America/Vancouver",
+            "America/Mexico_City",
+            "America/Sao_Paulo",
+            "America/Buenos_Aires",
+            "America/Bogota",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Asia/Hong_Kong",
+            "Asia/Singapore",
+            "Asia/Seoul",
+            "Asia/Kolkata",
+            "Asia/Dubai",
+            "Asia/Bangkok",
+            "Asia/Jakarta",
+            "Asia/Kuala_Lumpur",
+            "Asia/Manila",
+            "Asia/Taipei",
+            "Australia/Sydney",
+            "Australia/Melbourne",
+            "Australia/Perth",
+            "Australia/Brisbane",
+            "Pacific/Auckland",
+            "Africa/Johannesburg",
+            "Africa/Cairo",
+            "Africa/Lagos",
+            "Africa/Nairobi",
           ].map((tz) => (
-            <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+            <option key={tz} value={tz}>
+              {tz.replace(/_/g, " ")}
+            </option>
           ))}
         </select>
       </View>
@@ -1562,7 +1599,6 @@ export default function AdminSettingsScreen() {
         </ThemedText>
         <SecurityCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
       </View>
-
 
       <ConfirmModal
         visible={!!confirmState}

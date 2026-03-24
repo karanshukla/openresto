@@ -34,7 +34,9 @@ export default function AdminLayout() {
 function AdminLayoutInner() {
   const router = useRouter();
   const segments = useSegments();
-  const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">(
+    "loading"
+  );
 
   // Check auth once on mount — not on every navigation
   useEffect(() => {
