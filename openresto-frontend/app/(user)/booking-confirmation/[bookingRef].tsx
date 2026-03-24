@@ -90,14 +90,13 @@ export default function BookingConfirmationScreen() {
     .filter(Boolean)
     .join("\n");
 
-  const fmtIcs = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-  const fmtGoogle = (d: Date) =>
+  const fmtCal = (d: Date) =>
     d
       .toISOString()
-      .replace(/[-:.]|\d{3}Z$/g, "")
-      .replace("T", "T");
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}/, "");
 
-  const googleUrl = `https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(calTitle)}&dates=${fmtGoogle(startDate)}/${fmtGoogle(endDate)}&details=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
+  const googleUrl = `https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(calTitle)}&dates=${fmtCal(startDate)}/${fmtCal(endDate)}&details=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
 
   const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?subject=${encodeURIComponent(calTitle)}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}&body=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
 
@@ -107,8 +106,8 @@ export default function BookingConfirmationScreen() {
       "VERSION:2.0",
       "PRODID:-//OpenResto//Booking//EN",
       "BEGIN:VEVENT",
-      `DTSTART:${fmtIcs(startDate)}`,
-      `DTEND:${fmtIcs(endDate)}`,
+      `DTSTART:${fmtCal(startDate)}`,
+      `DTEND:${fmtCal(endDate)}`,
       `SUMMARY:${calTitle}`,
       `DESCRIPTION:${calDescription.replace(/\n/g, "\\n")}`,
       restaurantAddress ? `LOCATION:${restaurantAddress}` : "",
