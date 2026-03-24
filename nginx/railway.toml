@@ -6,3 +6,9 @@ healthcheckPath = "/"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+[deploy.variables]
+BACKEND_HOST = "OpenRestoApi.railway.internal"
+BACKEND_PORT = "${{OpenRestoApi.PORT}}"
+FRONTEND_HOST = "openresto-frontend.railway.internal"
+FRONTEND_PORT = "${{openresto-frontend.PORT}}"
