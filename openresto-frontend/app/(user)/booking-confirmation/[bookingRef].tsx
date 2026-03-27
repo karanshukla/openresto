@@ -171,7 +171,7 @@ export default function BookingConfirmationScreen() {
           </View>
           <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Your table at {restaurantName} is reserved. Save your reference below.
+            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}. Save your reference below.
           </ThemedText>
         </View>
 

@@ -82,15 +82,17 @@ export default function AdminDashboardScreen() {
     setBookings(b);
     setLoading(false);
   };
+  // Get today's local date string for comparison (handles timezone correctly)
+  const getTodayDateString = (): string => {
+    const d = new Date();
+    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+  };
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  const todayDateString = getTodayDateString();
 
   const todayBookings = bookings.filter((b) => {
-    const bookingDate = new Date(b.date);
-    return bookingDate >= todayStart && bookingDate <= todayEnd;
+    const bookingDateString = new Date(b.date).toLocaleDateString("en-CA");
+    return bookingDateString === todayDateString;
   });
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
 

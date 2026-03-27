@@ -108,8 +108,6 @@ public class AdminController(AdminService adminService, IEmailService emailServi
             : Ok(result);
     }
 
-    // ── Email ───────────────────────────────────────────────────────────────
-
     [HttpPost("bookings/{id}/email")]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
     {
@@ -122,6 +120,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
         {
             return BadRequest(new { message = "Subject and body are required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(booking.CustomerEmail))
+        {
+            return BadRequest(new { message = "Customer email is not available." });
         }
 
         try
