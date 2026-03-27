@@ -51,6 +51,7 @@ export default function HomeScreen() {
             Platform.OS === "web"
               ? ({
                   background: "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any)
               : { backgroundColor: PRIMARY },
           ]}

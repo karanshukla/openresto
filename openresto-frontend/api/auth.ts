@@ -1,7 +1,5 @@
 import { get, post } from "./client";
 
-// ---------- Login / logout ----------
-
 export async function login(email: string, password: string): Promise<{ message: string } | null> {
   try {
     const res = await post("/admin/auth/login", { email, password });
@@ -17,7 +15,7 @@ export async function logout(): Promise<void> {
   try {
     await post("/admin/auth/logout");
   } catch {
-    // Best-effort — cookie will expire on its own
+    console.log("Error logging out, if you see this, clear your cache and cookies!");
   }
 }
 

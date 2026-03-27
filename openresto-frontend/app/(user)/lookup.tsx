@@ -163,7 +163,7 @@ export default function LookupScreen() {
               </View>
             )}
           </View>
-
+          at
           {/* Right column: result */}
           <View style={isWide ? styles.wideCol : undefined}>
             {!loading && searched && !booking && (

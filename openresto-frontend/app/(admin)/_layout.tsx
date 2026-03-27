@@ -25,7 +25,6 @@ function DesktopOnlyWall() {
 export default function AdminLayout() {
   const { width } = useWindowDimensions();
 
-  // Block mobile immediately — no async auth check needed
   if (Platform.OS !== "web" || width < MIN_WIDTH) return <DesktopOnlyWall />;
 
   return <AdminLayoutInner />;
@@ -38,15 +37,13 @@ function AdminLayoutInner() {
     "loading"
   );
 
-  // Check auth once on mount — not on every navigation
   useEffect(() => {
     const onLoginScreen = segments.includes("login" as never);
     if (onLoginScreen) {
-      setAuthState("authenticated"); // login screen doesn't need auth check
+      setAuthState("authenticated");
       return;
     }
 
-    // Only check if we haven't confirmed auth yet
     if (authState === "authenticated") return;
 
     checkSession().then((session) => {
@@ -62,7 +59,6 @@ function AdminLayoutInner() {
 
   if (authState === "loading") return null;
 
-  // On web: sidebar + content layout (skip sidebar on login screen)
   if (Platform.OS === "web") {
     const onLoginScreen = segments.includes("login" as never);
     if (onLoginScreen) {
@@ -75,14 +71,13 @@ function AdminLayoutInner() {
     return (
       <ThemedView style={{ flex: 1, flexDirection: "row" }}>
         <AdminSidebar />
-        <View style={{ flex: 1, overflow: "auto" as any }}>
+        <View style={{ flex: 1 }}>
           <Slot />
         </View>
       </ThemedView>
     );
   }
 
-  // On native desktop (iPad etc): standard Stack
   return (
     <Stack>
       <Stack.Screen name="login" options={{ title: "Admin Login", headerBackVisible: false }} />

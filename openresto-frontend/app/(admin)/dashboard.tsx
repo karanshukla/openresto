@@ -20,15 +20,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 
-// Bar heights (%) for time slots 5PM–9PM
-const FLOW_SLOTS = [
-  { label: "5PM", pct: 30 },
-  { label: "6PM", pct: 60 },
-  { label: "7PM", pct: 95 },
-  { label: "8PM", pct: 85 },
-  { label: "9PM", pct: 45 },
-];
-
 const QUICK_ACTIONS = [
   {
     icon: "person-add-outline" as const,
@@ -92,10 +83,36 @@ export default function AdminDashboardScreen() {
     setLoading(false);
   };
 
-  const todayBookings = bookings.filter(
-    (b) => new Date(b.date).toDateString() === new Date().toDateString()
-  );
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const todayBookings = bookings.filter((b) => {
+    const bookingDate = new Date(b.date);
+    return bookingDate >= todayStart && bookingDate <= todayEnd;
+  });
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
+
+  const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
+    const totalSeats = todayBookings
+      .filter((b) => {
+        const d = new Date(b.date);
+        return d.getHours() === hour;
+      })
+      .reduce((sum, b) => sum + b.seats, 0);
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    return {
+      label: `${displayHour}${ampm}`,
+      seats: totalSeats,
+    };
+  });
+  const maxSeats = Math.max(...flowData.map((d) => d.seats), 10);
+  const flowSlots = flowData.map((d) => ({
+    label: d.label,
+    pct: (d.seats / maxSeats) * 100,
+  }));
 
   const stats = [
     {
@@ -216,7 +233,7 @@ export default function AdminDashboardScreen() {
                 </ThemedText>
               </View>
               <View style={styles.chart}>
-                {FLOW_SLOTS.map(({ label, pct }) => (
+                {flowSlots.map(({ label, pct }) => (
                   <View key={label} style={styles.barCol}>
                     <View style={styles.barTrack}>
                       <View

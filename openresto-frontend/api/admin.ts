@@ -49,8 +49,6 @@ export interface CreateRestaurantRequest {
   address?: string;
 }
 
-// ---------- Overview ----------
-
 export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
   try {
     const res = await get("/admin/overview");
@@ -173,8 +171,6 @@ export async function sendBookingEmail(
   }
 }
 
-// ---------- Restaurants ----------
-
 export async function adminCreateRestaurant(
   req: CreateRestaurantRequest
 ): Promise<{ id: number; name: string; address?: string } | null> {
@@ -198,8 +194,6 @@ export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   }
 }
 
-// ---------- Tables ----------
-
 export interface SectionWithTables {
   id: number;
   name: string;
@@ -216,8 +210,6 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
     return [];
   }
 }
-
-// ---------- Email Settings ----------
 
 export interface EmailSettingsDto {
   host: string;
@@ -267,8 +259,6 @@ export async function testEmailConnection(): Promise<{ ok: boolean; message: str
     return { ok: false, message: "Network error." };
   }
 }
-
-// ---------- Brand Settings ----------
 
 export interface BrandSettingsDto {
   appName: string;
