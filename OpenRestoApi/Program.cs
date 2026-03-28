@@ -141,7 +141,11 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
     ?? "Data Source=./openresto.db";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+{
+    options.UseSqlite(connectionString);
+    options.ConfigureWarnings(w => 
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.MultipleCollectionIncludeWarning));
+});
 
 builder.Services.AddSession(options =>
 {
