@@ -1,11 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
-import {
-  getAdminBookings,
-  BookingDetailDto,
-  getAdminOverview,
-  AdminOverviewDto,
-} from "@/api/admin";
-import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +12,13 @@ import {
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import {
+  getAdminBookings,
+  BookingDetailDto,
+  getAdminOverview,
+  AdminOverviewDto,
+} from "@/api/admin";
+import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 
 const hexToRgba = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -25,7 +26,6 @@ const hexToRgba = (hex: string, alpha: number) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 };
-import { Ionicons } from "@expo/vector-icons";
 
 const QUICK_ACTIONS = [
   {
@@ -250,7 +250,7 @@ export default function AdminDashboardScreen() {
                         style={[
                           styles.bar,
                           {
-                            height: `${pct}%` as any,
+                            height: `${pct}%` as const,
                             backgroundColor:
                               pct >= 85 ? COLORS.primary : hexToRgba(COLORS.primary, (pct / 100) * 0.7 + 0.15),
                           },
@@ -273,13 +273,13 @@ export default function AdminDashboardScreen() {
                   onPress={() => router.push(action.route)}
                   style={(state) => [
                     styles.actionCard,
-                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as any,
+                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as const,
                     action.primary && {
                       backgroundColor: COLORS.primary,
                       borderColor: COLORS.primary,
                     },
                     !action.primary &&
-                      (state as any).hovered && {
+                      (state as { hovered?: boolean }).hovered && {
                         backgroundColor: subtleBg,
                       },
                   ]}

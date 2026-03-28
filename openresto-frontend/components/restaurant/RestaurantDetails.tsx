@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { RestaurantDto } from "@/api/restaurants";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, SPACING, getThemeColors } from "@/theme/theme";
+import { getThemeColors } from "@/theme/theme";
 
 export default function RestaurantDetails({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";

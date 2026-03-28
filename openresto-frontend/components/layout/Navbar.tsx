@@ -41,7 +41,7 @@ export default function Navbar() {
       style={[
         styles.nav,
         { borderBottomColor: colors.border },
-        Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 100 } as any) : undefined,
+        Platform.OS === "web" ? { position: "sticky" as const, top: 0, zIndex: 100 } : undefined,
       ]}
     >
       <View style={styles.inner}>
@@ -78,7 +78,7 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state) => [styles.themeBtn, (state as any).hovered && { opacity: 0.7 }]}
+            style={(state) => [styles.themeBtn, (state as { hovered?: boolean }).hovered && { opacity: 0.7 }]}
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Ionicons

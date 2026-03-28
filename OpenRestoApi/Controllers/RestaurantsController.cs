@@ -75,7 +75,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPut("{id}/sections/{sectionId}/tables/{tableId}")]
     [Authorize]
-    public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
+    public async Task<IActionResult> UpdateTable(int sectionId, int tableId, UpdateTableRequest req)
     {
         TableDto? result = await _service.UpdateTableAsync(sectionId, tableId, req.Name, req.Seats);
         return result == null ? NotFound() : Ok(result);
@@ -83,6 +83,6 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpDelete("{id}/sections/{sectionId}/tables/{tableId}")]
     [Authorize]
-    public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
+    public async Task<IActionResult> DeleteTable(int sectionId, int tableId)
         => await _service.DeleteTableAsync(sectionId, tableId) ? NoContent() : NotFound();
 }

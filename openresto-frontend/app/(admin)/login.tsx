@@ -38,7 +38,6 @@ export default function AdminLoginScreen() {
   const isDark = useColorScheme() === "dark";
   const brand = useBrand();
   const colors = getThemeColors(isDark);
-  const borderColor = colors.border;
   const mutedColor = colors.muted;
 
   // ── Login ────────────────────────────────────────────────────────────────
@@ -362,7 +361,7 @@ export default function AdminLoginScreen() {
           </ThemedView>
 
           {stage === "login" && (
-            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as any}>
+            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as const}>
               <ThemedText style={[styles.backLink, { color: mutedColor }]}>
                 ← Back to {brand.appName}
               </ThemedText>
@@ -428,9 +427,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginTop: 12,
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
-  backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as any },
+  backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as const },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
   backBtnText: { fontSize: 13 },
   questionBox: {

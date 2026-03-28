@@ -5,12 +5,6 @@ import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-};
 import { Ionicons } from "@expo/vector-icons";
 
 export default function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
@@ -39,8 +33,8 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const outerShadow =
     Platform.OS === "web"
       ? isDark
-        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as any)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any) // TODO: Use theme shadows
+        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as const)
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const) // TODO: Use theme shadows
       : {};
 
   return (
@@ -50,8 +44,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
           styles.outer,
           outerShadow,
           { backgroundColor: cardBg },
-          (state as any).hovered && styles.outerHovered,
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered && styles.outerHovered,
         ]}
       >
         {/* Inner view clips header to card border radius */}

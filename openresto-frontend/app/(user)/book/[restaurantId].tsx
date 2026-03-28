@@ -8,7 +8,6 @@ import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { BUTTON_SIZES } from "@/theme/theme";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -55,8 +54,9 @@ export default function BookScreen() {
       } else if (newBooking) {
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);
       }
-    } catch (err: any) {
-      setSubmitError(err.message ?? "Something went wrong. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setSubmitError(message);
     }
   };
 

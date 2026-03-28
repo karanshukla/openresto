@@ -61,7 +61,7 @@ export default function AdminSidebar() {
         styles.sidebar,
         { borderRightColor: colors.border },
         Platform.OS === "web"
-          ? ({ position: "sticky", top: 0, height: "100vh" } as any)
+          ? { position: "sticky" as const, top: 0 }
           : { height: "100%" },
       ]}
     >
@@ -94,8 +94,8 @@ export default function AdminSidebar() {
                 styles.navItem,
                 active
                   ? { backgroundColor: activeBg }
-                  : (state as any).hovered && { backgroundColor: hoverBg },
-                { cursor: "pointer" } as any,
+                  : (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
+                { cursor: "pointer" } as const,
               ]}
             >
               <Ionicons

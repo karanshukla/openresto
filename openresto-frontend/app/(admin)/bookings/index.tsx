@@ -588,7 +588,7 @@ export default function AdminBookingsScreen() {
               style={[
                 styles.tableRow,
                 i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
-                { cursor: "pointer" } as any,
+                { cursor: "pointer" } as const,
               ]}
               onPress={() => router.push(`/(admin)/bookings/${b.id}`)}
             >
@@ -646,7 +646,7 @@ export default function AdminBookingsScreen() {
                 <Pressable
                   style={[styles.rowActionBtn, { backgroundColor: `${COLORS.primary}14` }]}
                   onPress={(e) => {
-                    (e as any).stopPropagation?.();
+                    (e as { stopPropagation?: () => void }).stopPropagation?.();
                     router.push(`/(admin)/bookings/${b.id}`);
                   }}
                 >
@@ -656,7 +656,7 @@ export default function AdminBookingsScreen() {
                   <Pressable
                     style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
                     onPress={(e) => {
-                      (e as any).stopPropagation?.();
+                      (e as { stopPropagation?: () => void }).stopPropagation?.();
                       setCancelTarget(b);
                     }}
                   >

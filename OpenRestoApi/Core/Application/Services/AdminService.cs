@@ -279,7 +279,7 @@ public class AdminService(AppDbContext db)
         {
             Table? table = await _db.Tables
                 .Include(t => t.Section)
-                .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.Section.RestaurantId == booking.RestaurantId);
+                .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.Section!.RestaurantId == booking.RestaurantId);
             
             if (table == null)
             {
@@ -336,9 +336,13 @@ public class AdminService(AppDbContext db)
             booking.Seats = req.Seats.Value;
         }
         if (req.CustomerEmail != null)
+        {
             booking.CustomerEmail = req.CustomerEmail;
+        }
         if (req.SpecialRequests != null)
+        {
             booking.SpecialRequests = req.SpecialRequests;
+        }
 
         await _db.SaveChangesAsync();
 

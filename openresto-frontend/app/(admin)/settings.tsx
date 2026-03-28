@@ -2,6 +2,12 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import { Ionicons } from "@expo/vector-icons";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { COLORS, BADGE_COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import {
   fetchRestaurants,
   updateRestaurant,
@@ -16,10 +22,13 @@ import {
   TableDto,
 } from "@/api/restaurants";
 import { getPvqStatus, setupPvq, changePassword, PvqStatus } from "@/api/auth";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, STATUS_COLORS, BADGE_COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import {
+  getEmailSettings,
+  saveEmailSettings,
+  testEmailConnection,
+  saveBrandSettings,
+} from "@/api/admin";
+import { useBrand } from "@/context/BrandContext";
 
 // Helper to convert hex to rgba
 const hexToRgba = (hex: string, alpha: number) => {
@@ -28,15 +37,6 @@ const hexToRgba = (hex: string, alpha: number) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 };
-import { Ionicons } from "@expo/vector-icons";
-import ConfirmModal from "@/components/common/ConfirmModal";
-import {
-  getEmailSettings,
-  saveEmailSettings,
-  testEmailConnection,
-  saveBrandSettings,
-} from "@/api/admin";
-import { useBrand } from "@/context/BrandContext";
 
 function useConfirm() {
   const [state, setState] = useState<{ message: string } | null>(null);
@@ -366,7 +366,6 @@ function SectionBlock({
   onTableDeleted: (id: number) => void;
 }) {
   const sectionBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
-  const colors = getThemeColors(isDark);
 
   return (
     <View style={[styles.sectionBlock, { borderColor, backgroundColor: sectionBg }]}>

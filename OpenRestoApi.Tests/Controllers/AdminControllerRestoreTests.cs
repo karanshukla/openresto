@@ -171,11 +171,14 @@ namespace OpenRestoApi.Tests.Controllers
     // Mock email service for testing
     public class MockEmailService : OpenRestoApi.Core.Application.Interfaces.IEmailService
     {
-        public Task SendEmailAsync(string to, string subject, string body)
+        public Task<bool> TestConnectionAsync()
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task SendEmailAsync(string recipient, string subject, string htmlBody)
         {
             return Task.CompletedTask;
         }
-
-        public bool IsConfigured => true;
     }
 }

@@ -22,10 +22,9 @@ export default function Button({ children, disabled, size = "primary", style, ..
       style={(state) => [
         styles.button,
         sizeStyles,
-        (state as any).hovered && !disabled && styles.buttonHovered,
+        (state as { hovered?: boolean }).hovered && !disabled && styles.buttonHovered,
         disabled && { backgroundColor: disabledBg },
         style,
-        { cursor: disabled ? "not-allowed" : "pointer" } as any,
       ]}
       disabled={disabled}
       {...props}

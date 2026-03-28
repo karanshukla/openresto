@@ -115,8 +115,9 @@ export default function AdminNewBookingScreen() {
       if (result) {
         router.replace(`/(admin)/bookings/${result.id}`);
       }
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create booking.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create booking.";
+      setError(message);
       setSubmitting(false);
     }
   };

@@ -1,4 +1,3 @@
-using System.Linq;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence;

@@ -152,8 +152,9 @@ export default function AdminBookingDetailScreen() {
       await adminRestoreBooking(booking.id);
       const updated = await getAdminBooking(booking.id);
       setBooking(updated);
-    } catch (err: any) {
-      setErrorMessage(err.message ?? "Failed to restore booking.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to restore booking.";
+      setErrorMessage(message);
     }
     setUncancelling(false);
   };
@@ -205,8 +206,9 @@ export default function AdminBookingDetailScreen() {
       const updated = await adminUpdateBookingFull(booking.id, updateData);
       setBooking(updated);
       setEditing(false);
-    } catch (err: any) {
-      setErrorMessage(err.message ?? "Failed to update booking.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update booking.";
+      setErrorMessage(message);
     }
     setEditLoading(false);
   };
@@ -470,7 +472,7 @@ export default function AdminBookingDetailScreen() {
                 style={(state) => [
                   styles.extendBtn,
                   { backgroundColor: COLORS.primary },
-                  (state as any).hovered && { opacity: 0.9 },
+                  (state as { hovered?: boolean }).hovered && { opacity: 0.9 },
                   extending && { opacity: 0.7 },
                 ]}
                 onPress={() => handleExtend(mins)}
@@ -720,7 +722,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: "center",
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
   extendBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   emailTo: { fontSize: 13, marginBottom: 8 },
@@ -752,7 +754,7 @@ const styles = StyleSheet.create({
     ...BUTTON_SIZES.secondary,
     borderRadius: 10,
     backgroundColor: hexToRgba(COLORS.success, 0.1),
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
   uncancelBtnText: { color: COLORS.success, fontSize: 14, fontWeight: "700" },
   cancelBtn: {
@@ -763,7 +765,7 @@ const styles = StyleSheet.create({
     ...BUTTON_SIZES.secondary,
     borderRadius: 10,
     backgroundColor: hexToRgba(COLORS.error, 0.1),
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
   cancelBtnText: { color: COLORS.error, fontSize: 14, fontWeight: "700" },
   purgeBtn: {

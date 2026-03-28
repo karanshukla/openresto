@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import { COLORS, getThemeColors } from "@/theme/theme";
 
 interface AlertModalProps {
   visible: boolean;

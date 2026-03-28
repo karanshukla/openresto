@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, SPACING, getThemeColors } from "@/theme/theme";
+import { getThemeColors } from "@/theme/theme";
 
 export interface SelectOption {
   label: string;
@@ -77,8 +77,7 @@ export default function Select({
         style={(state) => [
           styles.trigger,
           { borderColor },
-          (state as any).hovered && styles.triggerHovered,
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
         ]}
         onPress={() => setModalVisible(true)}
       >

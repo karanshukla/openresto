@@ -13,8 +13,6 @@ import { COLORS, getThemeColors } from "@/theme/theme";
 const MIN_WIDTH = 900;
 
 function DesktopOnlyWall() {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
   return (
     <ThemedView style={styles.wall}>
       <Ionicons name="desktop-outline" size={48} color={COLORS.primary} />
