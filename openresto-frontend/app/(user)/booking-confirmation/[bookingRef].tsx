@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { useBrand } from "@/context/BrandContext";
@@ -26,14 +26,14 @@ export default function BookingConfirmationScreen() {
   const [copied, setCopied] = useState(false);
   const router = useRouter();
   const brand = useBrand();
-  const accent = brand.primaryColor || PRIMARY;
+  const accent = brand.primaryColor || COLORS.primary;
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
-  const pageBg = isDark ? "#111214" : "#f2f3f5";
+  const pageBg = colors.page;
+  const mutedColor = colors.muted;
+  const borderColor = colors.border;
 
   useEffect(() => {
     if (!bookingRef) return;
@@ -151,7 +151,22 @@ export default function BookingConfirmationScreen() {
       label: "Time",
       value: startDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
     },
-    { icon: "people-outline", label: "Guests", value: String(booking.seats) },
+    {
+      icon: "people-outline",
+      label: "Guests",
+      value: `${booking.seats}${booking.tableSeats ? ` (Table for ${booking.tableSeats})` : ""}`,
+    },
+    ...(booking.tableName
+      ? [
+          {
+            icon: "grid-outline" as const,
+            label: "Table",
+            value: booking.sectionName
+              ? `${booking.tableName} (${booking.sectionName})`
+              : booking.tableName,
+          },
+        ]
+      : []),
   ];
 
   if (booking.specialRequests) {
@@ -160,7 +175,7 @@ export default function BookingConfirmationScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: pageBg }}
+      style={{ flex: 1, backgroundColor: colors.page }}
       contentContainerStyle={styles.scrollContent}
     >
       <PageContainer>
@@ -170,14 +185,17 @@ export default function BookingConfirmationScreen() {
             <Ionicons name="checkmark" size={32} color="#fff" />
           </View>
           <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Your table at {restaurantName} is reserved. Save your reference below.
+          <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
+            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}. Save
+            your reference below.
           </ThemedText>
         </View>
 
         {/* Booking reference */}
-        <View style={[styles.refCard, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText style={[styles.refLabel, { color: mutedColor }]}>
+        <View
+          style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
             Booking Reference
           </ThemedText>
           <View style={styles.refRow}>
@@ -188,7 +206,7 @@ export default function BookingConfirmationScreen() {
             </View>
             {Platform.OS === "web" && (
               <Pressable
-                style={[styles.copyBtn, { borderColor }]}
+                style={[styles.copyBtn, { borderColor: colors.border }]}
                 onPress={() => {
                   navigator.clipboard.writeText(ref);
                   setCopied(true);
@@ -206,7 +224,7 @@ export default function BookingConfirmationScreen() {
               </Pressable>
             )}
           </View>
-          <ThemedText style={[styles.refHint, { color: mutedColor }]}>
+          <ThemedText style={[styles.refHint, { color: colors.muted }]}>
             Use this reference and your email to look up your booking
           </ThemedText>
         </View>
@@ -216,17 +234,17 @@ export default function BookingConfirmationScreen() {
           <View
             style={[
               styles.detailCard,
-              { backgroundColor: cardBg, borderColor },
+              { backgroundColor: colors.card, borderColor: colors.border },
               isWide && styles.wideCol,
             ]}
           >
             {rows.map(({ icon, label, value }, i) => (
               <View key={label}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
+                {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                 <View style={styles.detailRow}>
-                  <Ionicons name={icon} size={15} color={mutedColor} />
+                  <Ionicons name={icon} size={15} color={colors.muted} />
                   <View style={styles.detailContent}>
-                    <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>
+                    <ThemedText style={[styles.detailLabel, { color: colors.muted }]}>
                       {label}
                     </ThemedText>
                     <ThemedText style={styles.detailValue}>{value}</ThemedText>
@@ -236,11 +254,16 @@ export default function BookingConfirmationScreen() {
             ))}
           </View>
 
-          {/* Calendar / Wallet actions */}
-          <View style={isWide ? styles.wideCol : undefined}>
-            {Platform.OS === "web" && (
-              <View style={[styles.actionCard, { backgroundColor: cardBg, borderColor }]}>
-                <ThemedText style={[styles.actionTitle, { color: mutedColor }]}>
+          {/* Calendar actions */}
+          {Platform.OS === "web" && (
+            <View style={isWide && styles.wideCol}>
+              <View
+                style={[
+                  styles.actionCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <ThemedText style={[styles.actionTitle, { color: colors.muted }]}>
                   ADD TO CALENDAR
                 </ThemedText>
                 <Pressable
@@ -298,8 +321,8 @@ export default function BookingConfirmationScreen() {
                   <Ionicons name="chevron-forward" size={14} color={mutedColor} />
                 </Pressable>
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </View>
 
         {/* Navigation */}
@@ -408,8 +431,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 10,
   },
   refValue: {

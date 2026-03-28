@@ -276,15 +276,108 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task GetTables_ForRestaurant_ReturnsSections()
+    public async Task GetBookings_WithRestaurantFilter_ReturnsFiltered()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
-        (int restaurantId, int _, int _) = GetSeededIds();
+        (int restaurantId, _, _) = GetSeededIds();
 
-        HttpResponseMessage response = await client.GetAsync($"/api/admin/restaurants/{restaurantId}/tables");
+        HttpResponseMessage response = await client.GetAsync($"/api/admin/bookings?restaurantId={restaurantId}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(body.GetArrayLength() >= 1);
+        foreach (JsonElement b in body.EnumerateArray())
+        {
+            Assert.Equal(restaurantId, b.GetProperty("restaurantId").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task GetBookings_WithDateFilter_ReturnsFiltered()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        string date = DateTime.UtcNow.AddDays(200).ToString("yyyy-MM-dd");
+
+        HttpResponseMessage response = await client.GetAsync($"/api/admin/bookings?date={date}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        foreach (JsonElement b in body.EnumerateArray())
+        {
+            Assert.Contains(date, b.GetProperty("date").GetString()!);
+        }
+    }
+
+    [Fact]
+    public async Task CreateAdminBooking_InvalidTableSection_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int restaurantId, _, _) = GetSeededIds();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/bookings", new
+        {
+            restaurantId,
+            sectionId = 999, // Invalid
+            tableId = 999,   // Invalid
+            date = DateTime.UtcNow.AddDays(200).ToString("O"),
+            customerEmail = "bad@test.com",
+            seats = 2
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RestoreBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+
+        // Create and cancel a booking
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/bookings", new
+        {
+            restaurantId, sectionId, tableId,
+            date = DateTime.UtcNow.AddDays(210).ToString("O"),
+            customerEmail = "restore@test.com",
+            seats = 2
+        });
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int bookingId = created.GetProperty("id").GetInt32();
+        await client.DeleteAsync($"/api/admin/bookings/{bookingId}");
+
+        // Restore
+        HttpResponseMessage response = await client.PostAsync($"/api/admin/bookings/{bookingId}/restore", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Booking restored successfully.", body.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task SendEmail_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+
+        // Create a booking
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/bookings", new
+        {
+            restaurantId, sectionId, tableId,
+            date = DateTime.UtcNow.AddDays(211).ToString("O"),
+            customerEmail = "email@test.com",
+            seats = 2
+        });
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int bookingId = created.GetProperty("id").GetInt32();
+
+        // Send email
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/bookings/{bookingId}/email", new
+        {
+            subject = "Test Subject",
+            body = "Test Body"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Email sent to email@test.com", body.GetProperty("message").GetString()!);
     }
 }

@@ -14,6 +14,10 @@ public class BookingDto
     public string? BookingRef { get; set; }
     public DateTime? EndTime { get; set; }
 
+    public string? TableName { get; set; }
+    public string? SectionName { get; set; }
+    public int TableSeats { get; set; }
+
     /// <summary>
     /// Optional hold ID obtained from POST /api/holds.
     /// Provide this when creating a booking to validate and consume the hold.

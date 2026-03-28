@@ -1,11 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
-import {
-  getAdminBookings,
-  BookingDetailDto,
-  getAdminOverview,
-  AdminOverviewDto,
-} from "@/api/admin";
-import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,17 +11,21 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
-import { Ionicons } from "@expo/vector-icons";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import {
+  getAdminBookings,
+  BookingDetailDto,
+  getAdminOverview,
+  AdminOverviewDto,
+} from "@/api/admin";
+import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 
-// Bar heights (%) for time slots 5PM–9PM
-const FLOW_SLOTS = [
-  { label: "5PM", pct: 30 },
-  { label: "6PM", pct: 60 },
-  { label: "7PM", pct: 95 },
-  { label: "8PM", pct: 85 },
-  { label: "9PM", pct: 45 },
-];
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 const QUICK_ACTIONS = [
   {
@@ -63,9 +61,10 @@ export default function AdminDashboardScreen() {
   const isDark = useColorScheme() === "dark";
   const { width } = useWindowDimensions();
 
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
+  const cardBg = colors.card;
+  const mutedColor = colors.muted;
   const isWide = width >= 768;
   const subtleBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
@@ -91,11 +90,39 @@ export default function AdminDashboardScreen() {
     setBookings(b);
     setLoading(false);
   };
+  // Get today's local date string for comparison (handles timezone correctly)
+  const getTodayDateString = (): string => {
+    const d = new Date();
+    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+  };
 
-  const todayBookings = bookings.filter(
-    (b) => new Date(b.date).toDateString() === new Date().toDateString()
-  );
+  const todayDateString = getTodayDateString();
+
+  const todayBookings = bookings.filter((b) => {
+    const bookingDateString = new Date(b.date).toLocaleDateString("en-CA");
+    return bookingDateString === todayDateString;
+  });
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
+
+  const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
+    const totalSeats = todayBookings
+      .filter((b) => {
+        const d = new Date(b.date);
+        return d.getHours() === hour;
+      })
+      .reduce((sum, b) => sum + b.seats, 0);
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    return {
+      label: `${displayHour}${ampm}`,
+      seats: totalSeats,
+    };
+  });
+  const maxSeats = Math.max(...flowData.map((d) => d.seats), 10);
+  const flowSlots = flowData.map((d) => ({
+    label: d.label,
+    pct: (d.seats / maxSeats) * 100,
+  }));
 
   const stats = [
     {
@@ -103,28 +130,28 @@ export default function AdminDashboardScreen() {
       value: String(overview?.todayBookings ?? todayBookings.length),
       sub: `${upcomingBookings.length} still upcoming`,
       icon: "calendar-outline" as const,
-      accent: PRIMARY,
+      accent: COLORS.primary,
     },
     {
       label: "Total Bookings",
       value: String(overview?.totalBookings ?? bookings.length),
       sub: "all time",
       icon: "book-outline" as const,
-      accent: "#7c3aed",
+      accent: COLORS.primary,
     },
     {
       label: "Total Covers",
       value: String(overview?.totalSeats ?? 0),
       sub: "seats reserved",
       icon: "people-outline" as const,
-      accent: "#059669",
+      accent: COLORS.primary,
     },
     {
       label: "Locations",
       value: String(overview?.totalRestaurants ?? restaurants.length),
       sub: "active",
       icon: "location-outline" as const,
-      accent: "#d97706",
+      accent: COLORS.primary,
     },
   ];
 
@@ -149,8 +176,8 @@ export default function AdminDashboardScreen() {
                   styles.locationChip,
                   { borderColor },
                   selectedRestaurant?.id === r.id && {
-                    backgroundColor: PRIMARY,
-                    borderColor: PRIMARY,
+                    backgroundColor: COLORS.primary,
+                    borderColor: COLORS.primary,
                   },
                 ]}
                 onPress={() => handleSelectRestaurant(r)}
@@ -171,7 +198,7 @@ export default function AdminDashboardScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
+        <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
       ) : (
         <>
           {/* Metrics bento */}
@@ -216,16 +243,18 @@ export default function AdminDashboardScreen() {
                 </ThemedText>
               </View>
               <View style={styles.chart}>
-                {FLOW_SLOTS.map(({ label, pct }) => (
+                {flowSlots.map(({ label, pct }) => (
                   <View key={label} style={styles.barCol}>
                     <View style={styles.barTrack}>
                       <View
                         style={[
                           styles.bar,
                           {
-                            height: `${pct}%` as any,
+                            height: `${pct}%` as const,
                             backgroundColor:
-                              pct >= 85 ? PRIMARY : `rgba(10,126,164,${(pct / 100) * 0.7 + 0.15})`,
+                              pct >= 85
+                                ? COLORS.primary
+                                : hexToRgba(COLORS.primary, (pct / 100) * 0.7 + 0.15),
                           },
                         ]}
                       />
@@ -246,13 +275,13 @@ export default function AdminDashboardScreen() {
                   onPress={() => router.push(action.route)}
                   style={(state) => [
                     styles.actionCard,
-                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as any,
+                    { backgroundColor: cardBg, borderColor, cursor: "pointer" } as const,
                     action.primary && {
-                      backgroundColor: PRIMARY,
-                      borderColor: PRIMARY,
+                      backgroundColor: COLORS.primary,
+                      borderColor: COLORS.primary,
                     },
                     !action.primary &&
-                      (state as any).hovered && {
+                      (state as { hovered?: boolean }).hovered && {
                         backgroundColor: subtleBg,
                       },
                   ]}
@@ -261,14 +290,16 @@ export default function AdminDashboardScreen() {
                     style={[
                       styles.actionIconWrap,
                       {
-                        backgroundColor: action.primary ? "rgba(255,255,255,0.18)" : `${PRIMARY}14`,
+                        backgroundColor: action.primary
+                          ? "rgba(255,255,255,0.18)"
+                          : hexToRgba(COLORS.primary, 0.08),
                       },
                     ]}
                   >
                     <Ionicons
                       name={action.icon}
                       size={18}
-                      color={action.primary ? "#fff" : PRIMARY}
+                      color={action.primary ? "#fff" : COLORS.primary}
                     />
                   </View>
                   <View style={styles.actionText}>
@@ -278,7 +309,7 @@ export default function AdminDashboardScreen() {
                     <ThemedText
                       style={[
                         styles.actionSub,
-                        { color: action.primary ? "rgba(255,255,255,0.75)" : mutedColor },
+                        { color: action.primary ? "rgba(255,255,255,0.75)" : colors.muted },
                       ]}
                     >
                       {action.sub}
@@ -287,7 +318,7 @@ export default function AdminDashboardScreen() {
                   <Ionicons
                     name="chevron-forward-outline"
                     size={16}
-                    color={action.primary ? "rgba(255,255,255,0.8)" : mutedColor}
+                    color={action.primary ? "rgba(255,255,255,0.8)" : colors.muted}
                   />
                 </Pressable>
               ))}
@@ -299,7 +330,9 @@ export default function AdminDashboardScreen() {
             <View style={styles.listHeader}>
               <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>
               <Pressable onPress={() => router.push("/(admin)/bookings")}>
-                <ThemedText style={[styles.viewAll, { color: PRIMARY }]}>View all →</ThemedText>
+                <ThemedText style={[styles.viewAll, { color: COLORS.primary }]}>
+                  View all →
+                </ThemedText>
               </Pressable>
             </View>
 
@@ -501,6 +534,7 @@ const styles = StyleSheet.create({
   actionCard: {
     borderRadius: 12,
     borderWidth: 1,
+    ...BUTTON_SIZES.secondary,
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -512,15 +546,12 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   actionIconWrap: {
-    width: 36,
-    height: 36,
+    ...BUTTON_SIZES.icon,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
   },
   actionText: { flex: 1, gap: 2 },
-  actionTitle: { fontSize: 14, fontWeight: "700" },
-  actionSub: { fontSize: 12 },
+  actionTitle: { fontSize: 15, fontWeight: "700" },
+  actionSub: { fontSize: 13 },
   // Bookings list
   listCard: {
     borderRadius: 14,

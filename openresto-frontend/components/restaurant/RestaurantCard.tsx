@@ -3,12 +3,14 @@ import { RestaurantDto } from "@/api/restaurants";
 import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
+
 import { Ionicons } from "@expo/vector-icons";
 
 export default function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
 
   const totalTables = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
@@ -24,15 +26,15 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const iconColor = `hsl(${hue}, 70%, ${isDark ? "78%" : "26%"})`;
   const initial = restaurant.name.charAt(0).toUpperCase();
 
-  const cardBg = isDark ? "#282d33" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.15)";
+  const cardBg = colors.card;
+  const borderColor = colors.border;
 
   // Outer wrapper has the shadow; inner view has overflow:hidden for the header clip
   const outerShadow =
     Platform.OS === "web"
       ? isDark
-        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as any)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any)
+        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as const)
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const) // TODO: Use theme shadows
       : {};
 
   return (
@@ -42,8 +44,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
           styles.outer,
           outerShadow,
           { backgroundColor: cardBg },
-          (state as any).hovered && styles.outerHovered,
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered && styles.outerHovered,
         ]}
       >
         {/* Inner view clips header to card border radius */}
@@ -98,7 +99,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
             </View>
 
             {/* CTA */}
-            <View style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}>
+            <View style={[styles.ctaBtn, { backgroundColor: COLORS.primary }]}>
               <ThemedText style={styles.ctaBtnText}>Book a table</ThemedText>
               <Ionicons name="arrow-forward" size={14} color="#fff" />
             </View>

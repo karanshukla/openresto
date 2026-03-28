@@ -124,6 +124,9 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(bookingRef, body.GetProperty("bookingRef").GetString());
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("tableName").GetString()));
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("sectionName").GetString()));
+        Assert.True(body.GetProperty("tableSeats").GetInt32() > 0);
     }
 
     [Fact]
@@ -188,35 +191,71 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task DeleteBooking_WithAuth_ReturnsNoContent()
+    public async Task GetBooking_ReturnsOk()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        string bookingDate = DateTime.UtcNow.AddDays(50).ToString("O");
-
-        // Place hold + create booking
-        HttpClient unauthClient = _factory.CreateClient();
-        HttpResponseMessage holdResp = await unauthClient.PostAsJsonAsync("/api/holds", new
+        
+        // Create a booking first
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
-            date = bookingDate
+            date = DateTime.UtcNow.AddDays(60).ToString("O"),
+            customerEmail = "get@test.com",
+            seats = 2
         });
-        JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
-        string? holdId = holdBody.GetProperty("holdId").GetString();
+        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int id = created.GetProperty("id").GetInt32();
 
-        HttpResponseMessage createResp = await unauthClient.PostAsJsonAsync("/api/bookings", new
+        var response = await client.GetAsync($"/api/bookings/{id}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(id, body.GetProperty("id").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetBookingByRef_MissingEmail_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/bookings/ref/SOME-REF"); // No email query param
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+
+        // Create
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
-            date = bookingDate,
-            customerEmail = "delete@test.com",
-            seats = 2,
-            holdId
+            date = DateTime.UtcNow.AddDays(61).ToString("O"),
+            customerEmail = "update@test.com",
+            seats = 2
         });
-        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        int bookingId = created.GetProperty("id").GetInt32();
+        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int id = created.GetProperty("id").GetInt32();
 
-        HttpResponseMessage response = await client.DeleteAsync($"/api/bookings/{bookingId}");
+        // Update
+        var response = await client.PutAsJsonAsync($"/api/bookings/{id}", new
+        {
+            id,
+            restaurantId, sectionId, tableId,
+            date = DateTime.UtcNow.AddDays(61).ToString("O"),
+            customerEmail = "updated@test.com",
+            seats = 3
+        });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        // Verify
+        var getResp = await client.GetAsync($"/api/bookings/{id}");
+        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("updated@test.com", body.GetProperty("customerEmail").GetString());
+        Assert.Equal(3, body.GetProperty("seats").GetInt32());
     }
 }

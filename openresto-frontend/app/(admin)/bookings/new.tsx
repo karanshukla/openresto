@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
@@ -32,9 +32,9 @@ function nextSlotTime(openTime = "09:00", closeTime = "22:00") {
 export default function AdminNewBookingScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
+  const mutedColor = colors.muted;
 
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +90,16 @@ export default function AdminNewBookingScreen() {
 
   const handleSubmit = async () => {
     if (!isValid) return;
+
+    // Check seat capacity warning
+    const table = tables.find((t) => t.id === tableId);
+    if (table && seats > table.seats) {
+      const confirmed = window.confirm(
+        `Warning: This table only has ${table.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+      );
+      if (!confirmed) return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
@@ -105,8 +115,9 @@ export default function AdminNewBookingScreen() {
       if (result) {
         router.replace(`/(admin)/bookings/${result.id}`);
       }
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create booking.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create booking.";
+      setError(message);
       setSubmitting(false);
     }
   };
@@ -125,7 +136,7 @@ export default function AdminNewBookingScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={PRIMARY} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </ThemedView>
     );
   }
@@ -133,8 +144,8 @@ export default function AdminNewBookingScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
-        <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
+        <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
+        <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
       </Pressable>
 
       <ThemedText style={styles.pageTitle}>New Booking</ThemedText>
@@ -148,7 +159,7 @@ export default function AdminNewBookingScreen() {
         </View>
       )}
 
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor }]}>
         <ThemedText style={styles.label}>Restaurant</ThemedText>
         <Select
           selectedValue={restaurantId}

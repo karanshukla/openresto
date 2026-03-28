@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 function generateTimeOptions(minTime: string, maxTime: string): { label: string; value: string }[] {
   const [minH, minM] = minTime.split(":").map(Number);
@@ -38,7 +39,8 @@ export default function TimePicker({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
   const options = generateTimeOptions(minTime, maxTime);
   const selected = options.find((o) => o.value === selectedTime);
 
@@ -84,8 +86,7 @@ export default function TimePicker({
         style={(state) => [
           styles.trigger,
           { borderColor },
-          (state as any).hovered && styles.triggerHovered,
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
         ]}
         onPress={() => setModalVisible(true)}
       >

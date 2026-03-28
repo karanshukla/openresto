@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -25,28 +25,31 @@ export default function ConfirmModal({
   onCancel,
 }: ConfirmModalProps) {
   const isDark = useColorScheme() === "dark";
-  const cardBg = isDark ? "#25282c" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable
-          style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {}}
         >
           <ThemedText style={styles.title}>{title}</ThemedText>
-          <ThemedText style={[styles.message, { color: mutedColor }]}>{message}</ThemedText>
-          <View style={[styles.actions, { borderTopColor: borderColor }]}>
-            <Pressable style={[styles.btn, styles.cancelBtn, { borderColor }]} onPress={onCancel}>
-              <ThemedText style={[styles.btnText, { color: mutedColor }]}>{cancelLabel}</ThemedText>
+          <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
+          <View style={[styles.actions, { borderTopColor: colors.border }]}>
+            <Pressable
+              style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]}
+              onPress={onCancel}
+            >
+              <ThemedText style={[styles.btnText, { color: colors.muted }]}>
+                {cancelLabel}
+              </ThemedText>
             </Pressable>
             <Pressable
               style={[
                 styles.btn,
                 styles.confirmBtn,
-                { backgroundColor: destructive ? "#dc2626" : "#0a7ea4" },
+                { backgroundColor: destructive ? COLORS.error : COLORS.primary },
               ]}
               onPress={onConfirm}
             >
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     flex: 1,
-    paddingVertical: 11,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 10,
     alignItems: "center",
   },
@@ -107,12 +110,12 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {},
   btnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
   confirmBtnText: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
 });

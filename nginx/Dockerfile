@@ -1,9 +1,11 @@
 FROM nginx:alpine
 
+RUN apk add --no-cache gettext
+
 RUN rm /etc/nginx/conf.d/default.conf
 COPY default.conf.template /tmp/default.conf.template
 COPY start.sh /start.sh
-RUN chmod +x /start.sh
+RUN chmod +x /start.sh && sed -i 's/\r$//' /start.sh
 
 # Defaults for local docker-compose
 ENV PORT=80

@@ -28,8 +28,6 @@ builder.Services.AddCors(options =>
         {
             if (corsOrigins == "*")
             {
-                // AllowAnyOrigin is incompatible with AllowCredentials,
-                // so use SetIsOriginAllowed to permit all origins with credentials
                 builder.SetIsOriginAllowed(_ => true)
                        .AllowAnyMethod()
                        .AllowAnyHeader()
@@ -68,7 +66,6 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueLimit = 0;
     });
 
-    // Global fallback — 60 per minute per IP (for admin authenticated calls)
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -81,7 +78,6 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// ── JWT Authentication ──────────────────────────────────────────────────────
 string jwtKey = builder.Configuration["Jwt:Key"]
     ?? Environment.GetEnvironmentVariable("JWT_KEY")
     ?? "openresto-jwt-signing-key-change-in-production-minimum-32-chars!!";
@@ -135,13 +131,11 @@ builder.Services.AddScoped<BrandService>();
 builder.Services.AddScoped<EmailSettingsService>();
 builder.Services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
 
-// Email
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
 builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
 builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
 
-// Database (SQLite)
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
     ?? "Data Source=./openresto.db";
@@ -158,7 +152,6 @@ builder.Services.AddSession(options =>
 
 WebApplication app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -168,7 +161,6 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
-// ── Security headers ────────────────────────────────────────────────────────
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -193,8 +185,6 @@ using (IServiceScope scope = app.Services.CreateScope())
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 
-    // Schema evolution: create AdminCredentials table if it doesn't exist yet
-    // (handles existing databases created before this table was added)
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS "AdminCredentials" (
             "Id"               INTEGER NOT NULL CONSTRAINT "PK_AdminCredentials" PRIMARY KEY AUTOINCREMENT,
@@ -209,8 +199,6 @@ using (IServiceScope scope = app.Services.CreateScope())
         )
         """);
 
-    // ── Schema evolution helpers ──────────────────────────────────────────────
-    // Check if a column exists before trying to add it (avoids noisy fail: logs)
     bool ColumnExists(string table, string column)
     {
         using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
@@ -224,27 +212,23 @@ using (IServiceScope scope = app.Services.CreateScope())
     {
         if (!ColumnExists(table, column))
         {
-            // Values are hardcoded constants, not user input — safe from injection
 #pragma warning disable EF1002
             db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition}");
 #pragma warning restore EF1002
         }
     }
 
-    // Bookings columns
     AddColumnIfMissing("Bookings", "BookingRef", "TEXT NOT NULL DEFAULT ''");
     AddColumnIfMissing("Bookings", "SpecialRequests", "TEXT");
     AddColumnIfMissing("Bookings", "EndTime", "TEXT");
     AddColumnIfMissing("Bookings", "IsCancelled", "INTEGER NOT NULL DEFAULT 0");
     AddColumnIfMissing("Bookings", "CancelledAt", "TEXT");
 
-    // Restaurants columns
     AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
     AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
     AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
     AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
 
-    // Tables (CREATE IF NOT EXISTS is safe — no fail: log)
     db.Database.ExecuteSqlRaw(@"
         CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
             ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -266,10 +250,8 @@ using (IServiceScope scope = app.Services.CreateScope())
             ""LogoBase64"" TEXT
         )");
 
-    // Seed initial data when database is empty
     DbSeeder.Seed(db);
 
-    // Seed admin credentials from config if none exist yet
     if (!db.AdminCredentials.Any())
     {
         string email = builder.Configuration["Admin:Email"] ?? "example@example.com";
@@ -291,5 +273,3 @@ using (IServiceScope scope = app.Services.CreateScope())
 }
 
 app.Run();
-
-public partial class Program { }

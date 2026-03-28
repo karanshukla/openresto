@@ -136,6 +136,15 @@ export default function BookingForm({
 
   const handleSubmit = () => {
     if (isValid) {
+      // Check seat capacity warning
+      const selectedTable = allTables.find((t) => t.id === tableId);
+      if (selectedTable && seats > selectedTable.seats) {
+        const confirmed = window.confirm(
+          `Warning: This table only has ${selectedTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+        );
+        if (!confirmed) return;
+      }
+
       onSubmit({
         customerEmail,
         seats,

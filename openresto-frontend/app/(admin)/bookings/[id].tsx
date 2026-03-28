@@ -6,16 +6,27 @@ import {
   adminExtendBooking,
   adminPurgeBooking,
   sendBookingEmail,
+  adminRestoreBooking,
+  adminUpdateBookingFull,
   BookingDetailDto,
+  AdminUpdateBookingRequest,
 } from "@/api/admin";
+import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
+
+import { bookingDetailStyles as styles } from "@/components/admin/bookings/booking-detail.styles";
+import { BookingDetailsCard } from "@/components/admin/bookings/BookingDetailsCard";
+import { EditBookingForm } from "@/components/admin/bookings/EditBookingForm";
+import { ExtendBookingActions } from "@/components/admin/bookings/ExtendBookingActions";
+import { EmailGuestForm } from "@/components/admin/bookings/EmailGuestForm";
+import { BookingActionButtons } from "@/components/admin/bookings/BookingActionButtons";
 
 export default function AdminBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,19 +41,81 @@ export default function AdminBookingDetailScreen() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [uncancelling, setUncancelling] = useState(false);
+  const [showUncancelConfirm, setShowUncancelConfirm] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
+  const [loadingRestaurants, setLoadingRestaurants] = useState(false);
+  const [editSeats, setEditSeats] = useState("1");
+  const [editEmail, setEditEmail] = useState("");
+  const [editSpecialRequests, setEditSpecialRequests] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editTableId, setEditTableId] = useState<number | null>(null);
+  const [editSectionId, setEditSectionId] = useState<number | null>(null);
+  const [editRestaurantId, setEditRestaurantId] = useState<number | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
+  const mutedColor = colors.muted;
 
   useEffect(() => {
     if (!id) return;
     getAdminBooking(parseInt(id, 10)).then((b) => {
       setBooking(b);
+      if (b) {
+        setEditSeats(String(b.seats));
+        setEditEmail(b.customerEmail ?? "");
+        setEditSpecialRequests(b.specialRequests ?? "");
+        setEditTableId(b.tableId);
+        setEditSectionId(b.sectionId);
+        setEditRestaurantId(b.restaurantId);
+
+        const d = new Date(b.date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        setEditDate(`${year}-${month}-${day}`);
+        setEditTime(d.toTimeString().slice(0, 5));
+      }
       setLoading(false);
     });
   }, [id]);
+
+  useEffect(() => {
+    if (!editing || restaurants.length > 0) {
+      return;
+    }
+
+    setLoadingRestaurants(true);
+    fetchRestaurants()
+      .then((data) => setRestaurants(data))
+      .finally(() => setLoadingRestaurants(false));
+  }, [editing, restaurants.length]);
+
+  const selectedRestaurant = restaurants.find((r) => r.id === editRestaurantId) ?? null;
+  const sections: SectionDto[] = selectedRestaurant?.sections ?? [];
+  const selectedSection = sections.find((s) => s.id === editSectionId);
+  const tables = selectedSection?.tables ?? [];
+
+  const handleRestaurantChange = (value: string | number) => {
+    const nextRestaurantId = Number(value);
+    setEditRestaurantId(nextRestaurantId);
+    const restaurant = restaurants.find((r) => r.id === nextRestaurantId);
+    const firstSection = restaurant?.sections[0];
+    setEditSectionId(firstSection?.id ?? null);
+    setEditTableId(firstSection?.tables[0]?.id ?? null);
+  };
+
+  const handleSectionChange = (value: string | number) => {
+    const nextSectionId = Number(value);
+    setEditSectionId(nextSectionId);
+    const section = sections.find((s) => s.id === nextSectionId);
+    setEditTableId(section?.tables[0]?.id ?? null);
+  };
 
   const handleDeleteConfirmed = async () => {
     if (!booking) return;
@@ -67,10 +140,118 @@ export default function AdminBookingDetailScreen() {
     setExtending(false);
   };
 
+  const handleUncancel = async () => {
+    if (!booking) return;
+    setShowUncancelConfirm(false);
+    setUncancelling(true);
+    try {
+      await adminRestoreBooking(booking.id);
+      const updated = await getAdminBooking(booking.id);
+      setBooking(updated);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to restore booking.";
+      setErrorMessage(message);
+    }
+    setUncancelling(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!booking) return;
+    const seats = parseInt(editSeats, 10);
+    if (isNaN(seats) || seats < 1) {
+      setErrorMessage("Invalid seats value");
+      return;
+    }
+
+    if (!editDate || !editTime) {
+      setErrorMessage("Date and time are required");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const currentRestaurant = restaurants.find((r) => r.id === editRestaurantId);
+      const currentTable = currentRestaurant?.sections
+        .flatMap((s) => s.tables)
+        .find((t) => t.id === editTableId);
+
+      if (currentTable && seats > currentTable.seats) {
+        const confirmed = window.confirm(
+          `Warning: This table only has ${currentTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+        );
+        if (!confirmed) {
+          setEditLoading(false);
+          return;
+        }
+      }
+
+      const dateTime = new Date(`${editDate}T${editTime}`);
+
+      const updateData: AdminUpdateBookingRequest = {
+        restaurantId: editRestaurantId ?? undefined,
+        sectionId: editSectionId ?? undefined,
+        tableId: editTableId ?? undefined,
+        date: dateTime.toISOString(),
+        seats,
+        customerEmail: editEmail.trim() || undefined,
+        specialRequests: editSpecialRequests.trim() || undefined,
+      };
+
+      const updated = await adminUpdateBookingFull(booking.id, updateData);
+      setBooking(updated);
+      setEditing(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update booking.";
+      setErrorMessage(message);
+    }
+    setEditLoading(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    if (booking) {
+      setEditSeats(String(booking.seats));
+      setEditEmail(booking.customerEmail ?? "");
+      setEditSpecialRequests(booking.specialRequests ?? "");
+      setEditTableId(booking.tableId);
+      setEditSectionId(booking.sectionId);
+      setEditRestaurantId(booking.restaurantId);
+
+      const bookingDate = new Date(booking.date);
+      setEditDate(bookingDate.toISOString().split("T")[0]);
+      setEditTime(bookingDate.toTimeString().slice(0, 5));
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!booking) return;
+    if (!emailSubject.trim() || !emailBody.trim()) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    const result = await sendBookingEmail(booking.id, emailSubject, emailBody);
+    setEmailResult(result);
+    setEmailSending(false);
+    if (result.ok) {
+      setEmailSubject("");
+      setEmailBody("");
+    }
+  };
+
+  const restaurantOptions = restaurants.map((r) => ({ label: r.name, value: r.id }));
+  const sectionOptions = sections.map((s) => ({ label: s.name, value: s.id }));
+  const tableOptions = tables.map((t) => ({
+    label: `${t.name ?? `Table ${t.id}`} (${t.seats} seats)`,
+    value: t.id,
+  }));
+  const seatOptions = [...Array(10).keys()].map((i) => ({
+    label: `${i + 1} guest${i > 0 ? "s" : ""}`,
+    value: i + 1,
+  }));
+
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={PRIMARY} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </ThemedView>
     );
   }
@@ -83,195 +264,128 @@ export default function AdminBookingDetailScreen() {
     );
   }
 
-  const startTime = new Date(booking.date);
-  const endTime = booking.endTime
-    ? new Date(booking.endTime)
-    : new Date(startTime.getTime() + 60 * 60 * 1000);
-  const durationMins = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
-
-  const rows: { label: string; value: string }[] = [
-    { label: "Ref", value: booking.bookingRef ?? `#${booking.id}` },
-    { label: "Guest", value: booking.customerEmail },
-    {
-      label: "Date",
-      value: startTime.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-    },
-    {
-      label: "Time",
-      value: `${startTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} – ${endTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} (${durationMins} min)`,
-    },
-    { label: "Party", value: `${booking.seats} guest${booking.seats !== 1 ? "s" : ""}` },
-    { label: "Restaurant", value: booking.restaurantName },
-    { label: "Section", value: booking.sectionName },
-    { label: "Table", value: booking.tableName },
-  ];
-
-  if (booking.specialRequests) {
-    rows.push({ label: "Requests", value: booking.specialRequests });
-  }
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Back */}
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
-        <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
+        <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
+        <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
       </Pressable>
 
       <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
 
-      {/* Detail card */}
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-        {rows.map(({ label, value }, i) => (
-          <View key={label}>
-            {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
-            <View style={styles.row}>
-              <ThemedText style={[styles.rowLabel, { color: mutedColor }]}>{label}</ThemedText>
-              <ThemedText style={styles.rowValue}>{value}</ThemedText>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Extend duration */}
-      <View style={[styles.section, { borderColor }]}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="time-outline" size={16} color={mutedColor} />
-          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
-            Extend booking
-          </ThemedText>
-        </View>
-        <View style={styles.extendBtns}>
-          {[30, 60, 90].map((mins) => (
-            <Pressable
-              key={mins}
-              style={[styles.extendBtn, { borderColor }]}
-              onPress={() => handleExtend(mins)}
-              disabled={extending}
-            >
-              <ThemedText style={styles.extendBtnText}>+{mins} min</ThemedText>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Email guest */}
-      <View style={[styles.section, { borderColor }]}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="mail-outline" size={16} color={mutedColor} />
-          <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
-        </View>
-        <ThemedText style={[styles.emailTo, { color: mutedColor }]}>
-          To: {booking.customerEmail}
-        </ThemedText>
-        <input
-          type="text"
-          placeholder="Subject"
-          value={emailSubject}
-          onChange={(e) => setEmailSubject(e.target.value)}
-          style={
-            {
-              width: "100%",
-              height: 40,
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-              borderRadius: 8,
-              paddingLeft: 12,
-              paddingRight: 12,
-              fontSize: 14,
-              backgroundColor: isDark ? "#1c1c1e" : "#fff",
-              color: isDark ? "#fff" : "#000",
-              marginBottom: 8,
-            } as React.CSSProperties
-          }
-        />
-        <textarea
-          placeholder="Message body (HTML supported)"
-          value={emailBody}
-          onChange={(e) => setEmailBody(e.target.value)}
-          rows={4}
-          style={
-            {
-              width: "100%",
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-              borderRadius: 8,
-              padding: 12,
-              fontSize: 14,
-              backgroundColor: isDark ? "#1c1c1e" : "#fff",
-              color: isDark ? "#fff" : "#000",
-              resize: "vertical",
-              fontFamily: "inherit",
-              marginBottom: 8,
-            } as React.CSSProperties
-          }
-        />
-        <View style={styles.emailActions}>
+      {editing ? (
+        <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
-            style={[
-              styles.emailSendBtn,
-              { backgroundColor: PRIMARY },
-              (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
-            ]}
-            onPress={async () => {
-              if (!emailSubject.trim() || !emailBody.trim()) return;
-              setEmailSending(true);
-              setEmailResult(null);
-              const result = await sendBookingEmail(booking.id, emailSubject, emailBody);
-              setEmailResult(result);
-              setEmailSending(false);
-              if (result.ok) {
-                setEmailSubject("");
-                setEmailBody("");
-              }
-            }}
-            disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
+            style={[styles.actionBtn, { backgroundColor: COLORS.primary, flex: 1 }]}
+            onPress={handleSaveEdit}
+            disabled={editLoading}
           >
-            <Ionicons name="send-outline" size={14} color="#fff" />
-            <ThemedText style={styles.emailSendBtnText}>
-              {emailSending ? "Sending…" : "Send Email"}
+            <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
+              {editLoading ? "Saving…" : "Save Changes"}
             </ThemedText>
           </Pressable>
-          {emailResult && (
-            <ThemedText
-              style={[styles.emailResultText, { color: emailResult.ok ? "#16a34a" : "#dc2626" }]}
-            >
-              {emailResult.message}
-            </ThemedText>
-          )}
+          <Pressable
+            style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border, flex: 1 }]}
+            onPress={handleCancelEdit}
+            disabled={editLoading}
+          >
+            <ThemedText style={[styles.actionBtnText, { color: colors.text }]}>Cancel</ThemedText>
+          </Pressable>
         </View>
-      </View>
+      ) : (
+        <Pressable
+          style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
+          onPress={() => setEditing(true)}
+          disabled={booking.isCancelled}
+        >
+          <Ionicons
+            name="create-outline"
+            size={16}
+            color={booking.isCancelled ? colors.muted : COLORS.primary}
+          />
+          <ThemedText
+            style={[
+              styles.actionBtnText,
+              { color: booking.isCancelled ? colors.muted : COLORS.primary },
+            ]}
+          >
+            Edit Booking
+          </ThemedText>
+        </Pressable>
+      )}
 
-      {/* Cancel */}
-      <Pressable
-        style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
-        onPress={() => setShowDeleteConfirm(true)}
-        disabled={deleting}
-      >
-        <Ionicons name="trash-outline" size={15} color="#dc2626" />
-        <ThemedText style={styles.cancelBtnText}>
-          {deleting ? "Cancelling…" : "Cancel Booking"}
-        </ThemedText>
-      </Pressable>
+      <BookingDetailsCard
+        booking={booking}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        cardColor={colors.card}
+      />
 
-      {/* Permanent delete (GDPR) */}
-      <Pressable
-        style={[styles.purgeBtn, deleting && { opacity: 0.6 }]}
-        onPress={() => setShowPurgeConfirm(true)}
-        disabled={deleting}
-      >
-        <Ionicons name="nuclear-outline" size={15} color={mutedColor} />
-        <ThemedText style={[styles.purgeBtnText, { color: mutedColor }]}>
-          Permanently Delete (GDPR)
-        </ThemedText>
-      </Pressable>
+      {editing && (
+        <EditBookingForm
+          borderColor={borderColor}
+          loadingRestaurants={loadingRestaurants}
+          restaurantOptions={restaurantOptions}
+          sectionOptions={sectionOptions}
+          tableOptions={tableOptions}
+          seatOptions={seatOptions}
+          editRestaurantId={editRestaurantId}
+          editSectionId={editSectionId}
+          editTableId={editTableId}
+          editSeats={editSeats}
+          editEmail={editEmail}
+          editSpecialRequests={editSpecialRequests}
+          editDate={editDate}
+          editTime={editTime}
+          selectedRestaurant={selectedRestaurant}
+          setEditTableId={setEditTableId}
+          setEditSeats={setEditSeats}
+          setEditEmail={setEditEmail}
+          setEditSpecialRequests={setEditSpecialRequests}
+          setEditDate={setEditDate}
+          setEditTime={setEditTime}
+          handleRestaurantChange={handleRestaurantChange}
+          handleSectionChange={handleSectionChange}
+        />
+      )}
+
+      {/* Extend duration - hide for cancelled bookings */}
+      {!booking.isCancelled && (
+        <ExtendBookingActions
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          extending={extending}
+          onExtend={handleExtend}
+        />
+      )}
+
+      {/* Email guest - hide for cancelled bookings */}
+      {!booking.isCancelled && (
+        <EmailGuestForm
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          isDark={isDark}
+          colors={colors}
+          customerEmail={booking.customerEmail}
+          emailSubject={emailSubject}
+          emailBody={emailBody}
+          emailSending={emailSending}
+          emailResult={emailResult}
+          setEmailSubject={setEmailSubject}
+          setEmailBody={setEmailBody}
+          onSendEmail={handleSendEmail}
+        />
+      )}
+
+      <BookingActionButtons
+        isCancelled={!!booking.isCancelled}
+        uncancelling={uncancelling}
+        deleting={deleting}
+        mutedColor={mutedColor}
+        onUncancel={() => setShowUncancelConfirm(true)}
+        onCancel={() => setShowDeleteConfirm(true)}
+        onPurge={() => setShowPurgeConfirm(true)}
+      />
 
       <ConfirmModal
         visible={showDeleteConfirm}
@@ -285,6 +399,16 @@ export default function AdminBookingDetailScreen() {
       />
 
       <ConfirmModal
+        visible={showUncancelConfirm}
+        title="Restore Booking"
+        message="Are you sure you want to restore this cancelled booking?"
+        confirmLabel="Restore"
+        cancelLabel="Go Back"
+        onConfirm={handleUncancel}
+        onCancel={() => setShowUncancelConfirm(false)}
+      />
+
+      <ConfirmModal
         visible={showPurgeConfirm}
         title="Permanently Delete"
         message="This will permanently erase all data for this booking including the guest's email and personal details. This action cannot be reversed."
@@ -292,9 +416,7 @@ export default function AdminBookingDetailScreen() {
         cancelLabel="Go Back"
         destructive
         onConfirm={async () => {
-          if (!booking) {
-            return;
-          }
+          if (!booking) return;
           setShowPurgeConfirm(false);
           setDeleting(true);
           const ok = await adminPurgeBooking(booking.id);
@@ -317,92 +439,3 @@ export default function AdminBookingDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: {
-    padding: 24,
-    paddingTop: 32,
-    gap: 16,
-    maxWidth: 640,
-    width: "100%",
-    alignSelf: "center",
-  },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  backText: { fontSize: 14, fontWeight: "600" },
-  pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5, marginBottom: 4 },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 16,
-  },
-  rowLabel: { fontSize: 13, fontWeight: "500", width: 80 },
-  rowValue: { fontSize: 14, flex: 1, textAlign: "right" },
-  divider: { height: 1 },
-  section: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  sectionTitle: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6 },
-  extendBtns: { flexDirection: "row", gap: 10 },
-  extendBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    cursor: "pointer" as any,
-  },
-  extendBtnText: { fontSize: 14, fontWeight: "600" },
-  emailTo: { fontSize: 13, marginBottom: 8 },
-  emailActions: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
-  emailSendBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  emailResultText: { fontSize: 13, fontWeight: "500" },
-  cancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "rgba(220,38,38,0.1)",
-    cursor: "pointer" as any,
-  },
-  cancelBtnText: { color: "#dc2626", fontSize: 14, fontWeight: "700" },
-  purgeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(128,128,128,0.2)",
-    marginTop: 4,
-  },
-  purgeBtnText: { fontSize: 13, fontWeight: "600" },
-});

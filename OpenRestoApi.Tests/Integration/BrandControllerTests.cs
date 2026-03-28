@@ -114,4 +114,19 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         // Note: In test server environment, response caching middleware may not set headers,
         // but the attribute is configured. We verify the response succeeds.
     }
+
+    [Fact]
+    public async Task SaveBrand_InvalidColor_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
+        {
+            primaryColor = "not-a-color"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Invalid primary color hex code", body.GetProperty("message").GetString()!);
+    }
 }

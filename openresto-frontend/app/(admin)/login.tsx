@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -37,9 +37,8 @@ export default function AdminLoginScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const brand = useBrand();
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
 
   // ── Login ────────────────────────────────────────────────────────────────
 
@@ -168,7 +167,7 @@ export default function AdminLoginScreen() {
                 setFpError(null);
               }}
             >
-              <ThemedText style={[styles.forgotLink, { color: PRIMARY }]}>
+              <ThemedText style={[styles.forgotLink, { color: COLORS.primary }]}>
                 Forgot password?
               </ThemedText>
             </Pressable>
@@ -236,12 +235,12 @@ export default function AdminLoginScreen() {
             style={[
               styles.questionBox,
               {
-                borderColor,
-                backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+                borderColor: colors.border,
+                backgroundColor: colors.card,
               },
             ]}
           >
-            <Ionicons name="help-circle-outline" size={18} color={PRIMARY} />
+            <Ionicons name="help-circle-outline" size={18} color={COLORS.primary} />
             <ThemedText style={[styles.questionText, { color: mutedColor }]}>
               {pvqQuestion}
             </ThemedText>
@@ -353,16 +352,20 @@ export default function AdminLoginScreen() {
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <ThemedText style={[styles.brand, { color: PRIMARY }]}>{brand.appName}</ThemedText>
+            <ThemedText style={[styles.brand, { color: COLORS.primary }]}>
+              {brand.appName}
+            </ThemedText>
             <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
           </View>
 
-          <ThemedView style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <ThemedView
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
             {cardContent()}
           </ThemedView>
 
           {stage === "login" && (
-            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as any}>
+            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as const}>
               <ThemedText style={[styles.backLink, { color: mutedColor }]}>
                 ← Back to {brand.appName}
               </ThemedText>
@@ -376,11 +379,11 @@ export default function AdminLoginScreen() {
 
 function BackButton({ onPress }: { onPress: () => void }) {
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
   return (
     <Pressable style={styles.backBtn} onPress={onPress}>
-      <Ionicons name="arrow-back" size={16} color={mutedColor} />
-      <ThemedText style={[styles.backBtnText, { color: mutedColor }]}>Back</ThemedText>
+      <Ionicons name="arrow-back" size={16} color={colors.muted} />
+      <ThemedText style={[styles.backBtnText, { color: colors.muted }]}>Back</ThemedText>
     </Pressable>
   );
 }
@@ -428,9 +431,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginTop: 12,
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
-  backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as any },
+  backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as const },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 12 },
   backBtnText: { fontSize: 13 },
   questionBox: {

@@ -11,8 +11,8 @@ namespace OpenRestoApi.Infrastructure.Holds;
 /// </summary>
 public class HoldService(ISystemClock clock) : IHoldService
 {
-    private const int HoldDurationMinutes = 5;
-    public static readonly TimeSpan HoldDuration = TimeSpan.FromMinutes(HoldDurationMinutes);
+    private const int _holdDurationMinutes = 5;
+    public static readonly TimeSpan HoldDuration = TimeSpan.FromMinutes(_holdDurationMinutes);
 
     private readonly ISystemClock _clock = clock;
     private readonly ConcurrentDictionary<string, HoldEntry> _holds = new();
@@ -89,10 +89,6 @@ public class HoldService(ISystemClock clock) : IHoldService
         return null;
     }
 
-    /// <summary>
-    /// Removes all expired holds. Called before PlaceHold to keep memory clean.
-    /// A background service could also call this periodically if needed.
-    /// </summary>
     private void Cleanup()
     {
         DateTime now = _clock.UtcNow;

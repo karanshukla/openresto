@@ -46,11 +46,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(new { message = ex.Message });
+            return Conflict(new MessageResponse { Message = ex.Message });
         }
     }
 
@@ -64,7 +64,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
     }
 
@@ -88,7 +92,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         if (string.IsNullOrWhiteSpace(req.Name))
         {
-            return BadRequest(new { message = "Name is required." });
+            return BadRequest(new MessageResponse { Message = "Name is required." });
         }
 
         RestaurantDto result = await _admin.CreateRestaurantAsync(req.Name, req.Address);
@@ -99,16 +103,28 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     public async Task<IActionResult> DeleteRestaurant(int id)
         => await _admin.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 
+    [HttpGet("restaurants")]
+    public async Task<IActionResult> GetRestaurants()
+    {
+        var restaurants = await _admin.GetRestaurantsAsync();
+        return Ok(restaurants);
+    }
+
+    [HttpGet("restaurants/{restaurantId}/sections")]
+    public async Task<IActionResult> GetSections(int restaurantId)
+    {
+        var sections = await _admin.GetSectionsAsync(restaurantId);
+        return Ok(sections);
+    }
+
     [HttpGet("restaurants/{restaurantId}/tables")]
     public async Task<IActionResult> GetTables(int restaurantId)
     {
         List<SectionDto>? result = await _admin.GetTablesAsync(restaurantId);
         return result == null
-            ? NotFound(new { message = "Restaurant not found or has no sections." })
+            ? NotFound(new MessageResponse { Message = "Restaurant not found or has no sections." })
             : Ok(result);
     }
-
-    // ── Email ───────────────────────────────────────────────────────────────
 
     [HttpPost("bookings/{id}/email")]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
@@ -121,21 +137,58 @@ public class AdminController(AdminService adminService, IEmailService emailServi
 
         if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
         {
-            return BadRequest(new { message = "Subject and body are required." });
+            return BadRequest(new MessageResponse { Message = "Subject and body are required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(booking.CustomerEmail))
+        {
+            return BadRequest(new MessageResponse { Message = "Customer email is not available." });
         }
 
         try
         {
             await _email.SendEmailAsync(booking.CustomerEmail, req.Subject, req.Body);
-            return Ok(new { message = $"Email sent to {booking.CustomerEmail}." });
+            return Ok(new MessageResponse { Message = $"Email sent to {booking.CustomerEmail}." });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = $"Failed to send: {ex.Message}" });
+            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("bookings/{id}/restore")]
+    public async Task<IActionResult> RestoreBooking(int id)
+    {
+        try
+        {
+            BookingDetailDto? result = await _admin.RestoreBookingAsync(id);
+            return result == null ? NotFound() : Ok(new MessageResponse { Message = "Booking restored successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new MessageResponse { Message = ex.Message });
+        }
+    }
+
+    [HttpPut("bookings/{id}")]
+    public async Task<IActionResult> AdminUpdateBooking(int id, [FromBody] AdminUpdateBookingRequest req)
+    {
+        try
+        {
+            BookingDetailDto? result = await _admin.AdminUpdateBookingAsync(id, req);
+            return result == null ? NotFound() : Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new MessageResponse { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
     }
 }

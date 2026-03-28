@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
 
 interface AlertModalProps {
   visible: boolean;
@@ -19,20 +19,18 @@ export default function AlertModal({
   onClose,
 }: AlertModalProps) {
   const isDark = useColorScheme() === "dark";
-  const cardBg = isDark ? "#25282c" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
-          style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => {}}
         >
           <ThemedText style={styles.title}>{title}</ThemedText>
-          <ThemedText style={[styles.message, { color: mutedColor }]}>{message}</ThemedText>
-          <Pressable style={[styles.btn, { backgroundColor: "#0a7ea4" }]} onPress={onClose}>
+          <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
+          <Pressable style={[styles.btn, { backgroundColor: COLORS.primary }]} onPress={onClose}>
             <ThemedText style={styles.btnText}>{buttonLabel}</ThemedText>
           </Pressable>
         </Pressable>
@@ -79,7 +77,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
 });

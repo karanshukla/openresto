@@ -66,8 +66,6 @@ export async function updateRestaurant(
   }
 }
 
-// ── Section management ─────────────────────────────────────────────────────
-
 export async function addSection(restaurantId: number, name: string): Promise<SectionDto | null> {
   try {
     const res = await post(`/restaurants/${restaurantId}/sections`, { name });
@@ -103,8 +101,6 @@ export async function deleteSection(restaurantId: number, sectionId: number): Pr
     return false;
   }
 }
-
-// ── Table management ───────────────────────────────────────────────────────
 
 export async function addTable(
   restaurantId: number,

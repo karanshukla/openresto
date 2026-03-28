@@ -37,13 +37,14 @@ public class AdminService(AppDbContext db)
             .Include(b => b.Table)
             .AsQueryable();
 
-        DateTime todayStart = DateTime.Today;
+        DateTime utcNow = DateTime.UtcNow;
+        DateTime todayUtc = utcNow.Date;
 
         q = NormalizeStatus(status) switch
         {
             "cancelled" => q.Where(b => b.IsCancelled),
-            "past" => q.Where(b => !b.IsCancelled && b.Date < todayStart),
-            _ => q.Where(b => !b.IsCancelled && b.Date >= todayStart),
+            "past" => q.Where(b => !b.IsCancelled && b.Date < todayUtc),
+            _ => q.Where(b => !b.IsCancelled && b.Date >= todayUtc),
         };
         if (restaurantId.HasValue)
         {
@@ -95,6 +96,11 @@ public class AdminService(AppDbContext db)
             throw new InvalidOperationException("This table already has a booking on that date.");
         }
 
+        if (req.Seats > table.Seats)
+        {
+            throw new InvalidOperationException($"This table only has {table.Seats} seats, but {req.Seats} guests were requested.");
+        }
+
         var booking = new Booking
         {
             RestaurantId = req.RestaurantId,
@@ -110,21 +116,12 @@ public class AdminService(AppDbContext db)
         _db.Bookings.Add(booking);
         await _db.SaveChangesAsync();
 
-        return new BookingDetailDto
-        {
-            Id = booking.Id,
-            RestaurantId = booking.RestaurantId,
-            RestaurantName = table.Section?.Restaurant?.Name,
-            SectionId = booking.SectionId,
-            SectionName = table.Section?.Name,
-            TableId = booking.TableId,
-            TableName = table.Name ?? $"Table {table.Id}",
-            Date = booking.Date,
-            EndTime = booking.EndTime,
-            CustomerEmail = booking.CustomerEmail,
-            Seats = booking.Seats,
-            BookingRef = booking.BookingRef,
-        };
+        // Reload to get names and ensure UTC consistency
+        await _db.Entry(booking).Reference(b => b.Table).LoadAsync();
+        await _db.Entry(booking).Reference(b => b.Section).LoadAsync();
+        await _db.Entry(booking).Reference(b => b.Restaurant).LoadAsync();
+
+        return ToDetailDto(booking);
     }
 
     public async Task<BookingDetailDto?> UpdateBookingAsync(int id, UpdateBookingRequest req)
@@ -140,13 +137,26 @@ public class AdminService(AppDbContext db)
             return null;
         }
 
-        if (req.Date.HasValue)
+        if (req.Date.HasValue && req.Date.Value != booking.Date)
         {
+            if (booking.EndTime.HasValue)
+            {
+                var duration = booking.EndTime.Value - booking.Date;
+                booking.EndTime = req.Date.Value + duration;
+            }
+            else
+            {
+                booking.EndTime = req.Date.Value.AddHours(1);
+            }
             booking.Date = req.Date.Value;
         }
 
         if (req.Seats.HasValue)
         {
+            if (req.Seats.Value > booking.Table.Seats)
+            {
+                throw new InvalidOperationException($"This table only has {booking.Table.Seats} seats, but {req.Seats.Value} guests were requested.");
+            }
             booking.Seats = req.Seats.Value;
         }
 
@@ -170,6 +180,12 @@ public class AdminService(AppDbContext db)
             throw new ArgumentException("Provide tableId when reassigning to a different section.");
         }
 
+        // Final safety check: EndTime should never be before Date
+        if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
+        {
+            booking.EndTime = booking.Date.AddHours(1);
+        }
+
         await _db.SaveChangesAsync();
         return ToDetailDto(booking);
     }
@@ -182,7 +198,11 @@ public class AdminService(AppDbContext db)
             return null;
         }
 
-        DateTime from = booking.EndTime ?? booking.Date.AddHours(1);
+        // Use EndTime if it's valid (after Date), otherwise fall back to Date + 1h
+        DateTime from = (booking.EndTime.HasValue && booking.EndTime.Value > booking.Date) 
+            ? booking.EndTime.Value 
+            : booking.Date.AddHours(1);
+
         booking.EndTime = from.AddMinutes(minutes);
         await _db.SaveChangesAsync();
         return booking.EndTime;
@@ -213,6 +233,147 @@ public class AdminService(AppDbContext db)
         _db.Bookings.Remove(booking);
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<BookingDetailDto?> RestoreBookingAsync(int id)
+    {
+        Booking? booking = await _db.Bookings.FindAsync(id);
+        if (booking == null)
+        {
+            return null;
+        }
+
+        if (!booking.IsCancelled)
+        {
+            throw new InvalidOperationException("Booking is already active.");
+        }
+
+        booking.IsCancelled = false;
+        booking.CancelledAt = null;
+        await _db.SaveChangesAsync();
+
+        return ToDetailDto(booking);
+    }
+
+    public async Task<BookingDetailDto?> AdminUpdateBookingAsync(int id, AdminUpdateBookingRequest req)
+    {
+        Booking? booking = await _db.Bookings
+            .Include(b => b.Restaurant)
+            .Include(b => b.Section)
+            .Include(b => b.Table)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (booking == null)
+        {
+            return null;
+        }
+
+        // Validate restaurant exists if changing
+        if (req.RestaurantId.HasValue && req.RestaurantId.Value != booking.RestaurantId)
+        {
+            var restaurantExists = await _db.Restaurants.AnyAsync(r => r.Id == req.RestaurantId.Value);
+            if (!restaurantExists)
+            {
+                throw new ArgumentException("Invalid restaurant.");
+            }
+            booking.RestaurantId = req.RestaurantId.Value;
+        }
+
+        // Validate table exists and belongs to the (possibly new) restaurant
+        if (req.TableId.HasValue && req.TableId.Value != booking.TableId)
+        {
+            Table? table = await _db.Tables
+                .Include(t => t.Section)
+                .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.Section!.RestaurantId == booking.RestaurantId);
+            
+            if (table == null)
+            {
+                throw new ArgumentException("Invalid table for this restaurant.");
+            }
+            booking.TableId = req.TableId.Value;
+            booking.SectionId = table.SectionId;
+        }
+        else if (req.SectionId.HasValue && req.SectionId.Value != booking.SectionId)
+        {
+            // If only section changed but not table (might happen if user just selects section)
+            var sectionExists = await _db.Sections.AnyAsync(s => s.Id == req.SectionId.Value && s.RestaurantId == booking.RestaurantId);
+            if (!sectionExists)
+            {
+                throw new ArgumentException("Invalid section for this restaurant.");
+            }
+            booking.SectionId = req.SectionId.Value;
+        }
+
+        // Update other fields
+        if (req.Date.HasValue && req.Date.Value != booking.Date)
+        {
+            // If date changed, we should also shift EndTime by the same amount to keep duration
+            if (booking.EndTime.HasValue)
+            {
+                var duration = booking.EndTime.Value - booking.Date;
+                booking.EndTime = req.Date.Value + duration;
+            }
+            else
+            {
+                // Default to 1 hour if EndTime was missing for some reason
+                booking.EndTime = req.Date.Value.AddHours(1);
+            }
+            booking.Date = req.Date.Value;
+        }
+
+        // Final safety check: EndTime should never be before Date
+        if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
+        {
+            booking.EndTime = booking.Date.AddHours(1);
+        }
+        if (req.Seats.HasValue)
+        {
+            // If table is also changing, we use the new table's capacity
+            int tableId = req.TableId ?? booking.TableId;
+            Table currentTable = (req.TableId.HasValue && req.TableId.Value != booking.TableId)
+                ? (await _db.Tables.FindAsync(req.TableId.Value))!
+                : booking.Table;
+
+            if (req.Seats.Value > currentTable.Seats)
+            {
+                throw new InvalidOperationException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.");
+            }
+            booking.Seats = req.Seats.Value;
+        }
+        if (req.CustomerEmail != null)
+        {
+            booking.CustomerEmail = req.CustomerEmail;
+        }
+        if (req.SpecialRequests != null)
+        {
+            booking.SpecialRequests = req.SpecialRequests;
+        }
+
+        await _db.SaveChangesAsync();
+
+        // Reload to get updated names
+        await _db.Entry(booking).Reference(b => b.Restaurant).LoadAsync();
+        await _db.Entry(booking).Reference(b => b.Section).LoadAsync();
+        await _db.Entry(booking).Reference(b => b.Table).LoadAsync();
+
+        return ToDetailDto(booking);
+    }
+
+    public async Task<List<LookupDto>> GetRestaurantsAsync()
+    {
+        return await _db.Restaurants
+            .OrderBy(r => r.Name)
+            .Select(r => new LookupDto { Id = r.Id, Name = r.Name })
+            .ToListAsync();
+    }
+
+    public async Task<List<LookupDto>> GetSectionsAsync(int restaurantId)
+    {
+        return await _db.Sections
+            .Where(s => s.RestaurantId == restaurantId)
+            .OrderBy(s => s.Name)
+            .Select(s => new LookupDto { Id = s.Id, Name = s.Name })
+            .ToListAsync();
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────
@@ -277,22 +438,38 @@ public class AdminService(AppDbContext db)
 
     // ── Mapping ─────────────────────────────────────────────────────────────
 
-    private static BookingDetailDto ToDetailDto(Booking b) => new()
+    private static BookingDetailDto ToDetailDto(Booking b)
     {
-        Id = b.Id,
-        RestaurantId = b.RestaurantId,
-        RestaurantName = b.Restaurant?.Name,
-        SectionId = b.SectionId,
-        SectionName = b.Section?.Name,
-        TableId = b.TableId,
-        TableName = b.Table?.Name ?? $"Table {b.TableId}",
-        Date = b.Date,
-        EndTime = b.EndTime,
-        CustomerEmail = b.CustomerEmail,
-        Seats = b.Seats,
-        SpecialRequests = b.SpecialRequests,
-        BookingRef = b.BookingRef,
-        IsCancelled = b.IsCancelled,
-        CancelledAt = b.CancelledAt,
-    };
+        // Force UTC kind to ensure JSON serializer adds the 'Z' suffix
+        DateTime dateUtc = b.Date.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(b.Date, DateTimeKind.Utc)
+            : b.Date.ToUniversalTime();
+
+        DateTime? endTimeUtc = null;
+        if (b.EndTime.HasValue)
+        {
+            endTimeUtc = b.EndTime.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(b.EndTime.Value, DateTimeKind.Utc)
+                : b.EndTime.Value.ToUniversalTime();
+        }
+
+        return new BookingDetailDto
+        {
+            Id = b.Id,
+            RestaurantId = b.RestaurantId,
+            RestaurantName = b.Restaurant?.Name,
+            SectionId = b.SectionId,
+            SectionName = b.Section?.Name,
+            TableId = b.TableId,
+            TableName = b.Table?.Name ?? $"Table {b.TableId}",
+            Date = dateUtc,
+            EndTime = endTimeUtc,
+            CustomerEmail = b.CustomerEmail,
+            Seats = b.Seats,
+            SpecialRequests = b.SpecialRequests,
+            BookingRef = b.BookingRef,
+            IsCancelled = b.IsCancelled,
+            CancelledAt = b.CancelledAt,
+        };
+    }
 }

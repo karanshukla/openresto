@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>19/19</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>13/26</span>
+                <span class='fraction'>10/20</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>17/17</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -260,7 +260,8 @@
 <a name='L195'></a><a href='#L195'>195</a>
 <a name='L196'></a><a href='#L196'>196</a>
 <a name='L197'></a><a href='#L197'>197</a>
-<a name='L198'></a><a href='#L198'>198</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -269,6 +270,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -301,7 +304,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -462,12 +464,14 @@ import { RestaurantDto } from "@/api/restaurants";
 import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
+&nbsp;
 import { Ionicons } from "@expo/vector-icons";
 &nbsp;
 export default function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >MUTED_DARK </span>: MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
 &nbsp;
   const totalTables = restaurant.sections.reduce((acc, s) =&gt; acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
@@ -483,15 +487,15 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const iconColor = `hsl(${hue}, 70%, ${isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >"78%" </span>: "26%"})`;
   const initial = restaurant.name.charAt(0).toUpperCase();
 &nbsp;
-  const cardBg = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >"#282d33" </span>: "#ffffff";
-  const borderColor = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >"rgba(255,255,255,0.22)" </span>: "rgba(0,0,0,0.15)";
+  const cardBg = colors.card;
+  const borderColor = colors.border;
 &nbsp;
   // Outer wrapper has the shadow; inner view has overflow:hidden for the header clip
   const outerShadow =
     Platform.OS === "web"
       ? <span class="branch-0 cbranch-no" title="branch not covered" >isDark</span>
-        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as any)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any)
+        ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as const)
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const) // TODO: Use theme shadows
       : {};
 &nbsp;
   return (
@@ -501,8 +505,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
           styles.outer,
           outerShadow,
           { backgroundColor: cardBg },
-          (state as any).hovered &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >styles.outerHovered,</span>
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >styles.outerHovered,</span>
         ]}
       &gt;
         {/* Inner view clips header to card border radius */}
@@ -557,7 +560,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
             &lt;/View&gt;
 &nbsp;
             {/* CTA */}
-            &lt;View style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}&gt;
+            &lt;View style={[styles.ctaBtn, { backgroundColor: COLORS.primary }]}&gt;
               &lt;ThemedText style={styles.ctaBtnText}&gt;Book a table&lt;/ThemedText&gt;
               &lt;Ionicons name="arrow-forward" size={14} color="#fff" /&gt;
             &lt;/View&gt;
@@ -661,7 +664,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-24T00:42:17.577Z
+                at 2026-03-28T12:51:47.233Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

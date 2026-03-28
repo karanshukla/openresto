@@ -262,4 +262,43 @@ public class RestaurantsControllerTests(TestWebAppFactory factory) : IClassFixtu
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
+
+    [Fact]
+    public async Task UpdateSection_NonExistent_Returns404()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/restaurants/1/sections/9999", new
+        {
+            name = "Doesn't Matter"
+        });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteSection_NonExistent_Returns404()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.DeleteAsync("/api/restaurants/1/sections/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateTable_NonExistent_Returns404()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PutAsJsonAsync("/api/restaurants/1/sections/1/tables/9999", new
+        {
+            name = "Doesn't Matter",
+            seats = 4
+        });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTable_NonExistent_Returns404()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.DeleteAsync("/api/restaurants/1/sections/1/tables/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

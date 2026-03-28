@@ -3,11 +3,13 @@ import { ThemedView } from "@/components/themed-view";
 import { RestaurantDto } from "@/api/restaurants";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 export default function RestaurantDetails({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? "#9ca3af" : "#6b7280";
-  const borderColor = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
+  const borderColor = colors.border;
   const chipBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   return (

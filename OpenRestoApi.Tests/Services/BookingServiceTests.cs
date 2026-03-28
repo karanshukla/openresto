@@ -318,4 +318,74 @@ public class BookingServiceTests
 
         Assert.Null(await db.Bookings.FindAsync(created.Id));
     }
+
+    // ── Seat Capacity Validation ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateBookingAsync_Throws_WhenSeatsExceedTableCapacity()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenSeatsExceedTableCapacity));
+        Seed(db);
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 5,
+            Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
+        };
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.CreateBookingAsync(dto));
+
+        Assert.Contains("only has 4 seats", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_Succeeds_WhenSeatsEqualTableCapacity()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Succeeds_WhenSeatsEqualTableCapacity));
+        Seed(db);
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 4,
+            Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
+        };
+
+        BookingDto result = await svc.CreateBookingAsync(dto);
+
+        Assert.Equal(4, result.Seats);
+        Assert.NotEmpty(result.BookingRef!);
+    }
+
+    [Fact]
+    public async Task UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity));
+        Seed(db);
+
+        BookingService svc = CreateService(db);
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 2,
+            Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
+        });
+
+        var updateDto = new BookingDto
+        {
+            Id = created.Id,
+            TableId = 1,
+            Seats = 5,
+            Date = created.Date // mapper needs date
+        };
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.UpdateBookingAsync(created.Id, updateDto));
+
+        Assert.Contains("only has 4 seats", ex.Message);
+    }
 }

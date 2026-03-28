@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 function generateDateOptions(): { label: string; value: string }[] {
   const options = [];
@@ -32,7 +33,8 @@ export default function DatePicker({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
   const allOptions = generateDateOptions();
   const options = openDays
     ? allOptions.filter((o) => {
@@ -85,8 +87,7 @@ export default function DatePicker({
         style={(state) => [
           styles.trigger,
           { borderColor },
-          (state as any).hovered && styles.triggerHovered,
-          { cursor: "pointer" } as any,
+          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
         ]}
         onPress={() => setModalVisible(true)}
       >

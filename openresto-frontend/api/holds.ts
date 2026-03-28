@@ -13,10 +13,6 @@ export interface HoldResponse {
   secondsRemaining: number;
 }
 
-/**
- * Requests a temporary hold on a table for the given date/time.
- * Returns the hold details if successful, or null if the table is already held.
- */
 export async function createHold(request: HoldRequest): Promise<HoldResponse | null> {
   try {
     const res = await post("/holds", request);
@@ -29,14 +25,10 @@ export async function createHold(request: HoldRequest): Promise<HoldResponse | n
   }
 }
 
-/**
- * Releases a hold early (e.g., when the user navigates away).
- * Fire-and-forget — the hold will expire on its own if this fails.
- */
 export async function releaseHold(holdId: string): Promise<void> {
   try {
     await del(`/holds/${holdId}`);
   } catch {
-    // Intentionally ignored — hold will expire via TTL
+    console.log("Hold was not released, that's okay...");
   }
 }
