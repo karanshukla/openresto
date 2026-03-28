@@ -1,5 +1,13 @@
 import { StyleSheet } from "react-native";
-import { COLORS, BUTTON_SIZES, BADGE_COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from "@/theme/theme";
+import {
+  COLORS,
+  BUTTON_SIZES,
+  BADGE_COLORS,
+  TYPOGRAPHY,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -121,7 +129,12 @@ export const styles = StyleSheet.create({
   addSaveBtn: { flex: 1 },
   cancelBtn: { ...BUTTON_SIZES.secondary, borderRadius: BORDER_RADIUS.md },
   cancelBtnText: { ...TYPOGRAPHY.label },
-  actionBtn: { ...BUTTON_SIZES.secondary, borderRadius: BORDER_RADIUS.md, alignItems: "center", justifyContent: "center" },
+  actionBtn: {
+    ...BUTTON_SIZES.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   actionBtnText: { ...TYPOGRAPHY.label },
   sectionBlock: {
     borderRadius: BORDER_RADIUS.lg,
@@ -227,8 +240,20 @@ export const styles = StyleSheet.create({
   secRowSub: { ...TYPOGRAPHY.caption, marginTop: 1 },
   secBtn: { ...BUTTON_SIZES.secondary, borderWidth: 1, borderRadius: BORDER_RADIUS.md },
   secBtnText: { ...TYPOGRAPHY.label },
-  secForm: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, paddingTop: SPACING.md, borderTopWidth: 1, gap: SPACING.sm },
+  secForm: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    gap: SPACING.sm,
+  },
   errorText: { ...TYPOGRAPHY.label, color: COLORS.error },
   successText: { ...TYPOGRAPHY.label, color: COLORS.success },
-  successBanner: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, padding: SPACING.md, paddingTop: 0 },
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    paddingTop: 0,
+  },
 });

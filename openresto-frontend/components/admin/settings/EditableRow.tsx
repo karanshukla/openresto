@@ -83,7 +83,9 @@ export function EditableRow({
           </ThemedText>
         </Pressable>
         <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.smallBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: COLORS.muted.light }]}>
+            Cancel
+          </ThemedText>
         </Pressable>
       </View>
     </View>

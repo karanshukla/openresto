@@ -55,7 +55,7 @@ export default function AdminBookingDetailScreen() {
   const [editSectionId, setEditSectionId] = useState<number | null>(null);
   const [editRestaurantId, setEditRestaurantId] = useState<number | null>(null);
   const [editLoading, setEditLoading] = useState(false);
-  
+
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
@@ -73,11 +73,11 @@ export default function AdminBookingDetailScreen() {
         setEditTableId(b.tableId);
         setEditSectionId(b.sectionId);
         setEditRestaurantId(b.restaurantId);
-        
+
         const d = new Date(b.date);
         const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
         setEditDate(`${year}-${month}-${day}`);
         setEditTime(d.toTimeString().slice(0, 5));
       }
@@ -162,19 +162,19 @@ export default function AdminBookingDetailScreen() {
       setErrorMessage("Invalid seats value");
       return;
     }
-    
+
     if (!editDate || !editTime) {
       setErrorMessage("Date and time are required");
       return;
     }
-    
+
     setEditLoading(true);
     try {
-      const currentRestaurant = restaurants.find(r => r.id === editRestaurantId);
+      const currentRestaurant = restaurants.find((r) => r.id === editRestaurantId);
       const currentTable = currentRestaurant?.sections
-        .flatMap(s => s.tables)
-        .find(t => t.id === editTableId);
-      
+        .flatMap((s) => s.tables)
+        .find((t) => t.id === editTableId);
+
       if (currentTable && seats > currentTable.seats) {
         const confirmed = window.confirm(
           `Warning: This table only has ${currentTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
@@ -186,7 +186,7 @@ export default function AdminBookingDetailScreen() {
       }
 
       const dateTime = new Date(`${editDate}T${editTime}`);
-      
+
       const updateData: AdminUpdateBookingRequest = {
         restaurantId: editRestaurantId ?? undefined,
         sectionId: editSectionId ?? undefined,
@@ -196,7 +196,7 @@ export default function AdminBookingDetailScreen() {
         customerEmail: editEmail.trim() || undefined,
         specialRequests: editSpecialRequests.trim() || undefined,
       };
-      
+
       const updated = await adminUpdateBookingFull(booking.id, updateData);
       setBooking(updated);
       setEditing(false);
@@ -216,13 +216,13 @@ export default function AdminBookingDetailScreen() {
       setEditTableId(booking.tableId);
       setEditSectionId(booking.sectionId);
       setEditRestaurantId(booking.restaurantId);
-      
+
       const bookingDate = new Date(booking.date);
-      setEditDate(bookingDate.toISOString().split('T')[0]);
+      setEditDate(bookingDate.toISOString().split("T")[0]);
       setEditTime(bookingDate.toTimeString().slice(0, 5));
     }
   };
-  
+
   const handleSendEmail = async () => {
     if (!booking) return;
     if (!emailSubject.trim() || !emailBody.trim()) return;
@@ -276,7 +276,7 @@ export default function AdminBookingDetailScreen() {
       {editing ? (
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
-            style={[styles.actionBtn, { backgroundColor: COLORS.primary, flex: 1 }]} 
+            style={[styles.actionBtn, { backgroundColor: COLORS.primary, flex: 1 }]}
             onPress={handleSaveEdit}
             disabled={editLoading}
           >
@@ -298,13 +298,22 @@ export default function AdminBookingDetailScreen() {
           onPress={() => setEditing(true)}
           disabled={booking.isCancelled}
         >
-          <Ionicons name="create-outline" size={16} color={booking.isCancelled ? colors.muted : COLORS.primary} />
-          <ThemedText style={[styles.actionBtnText, { color: booking.isCancelled ? colors.muted : COLORS.primary }]}>
+          <Ionicons
+            name="create-outline"
+            size={16}
+            color={booking.isCancelled ? colors.muted : COLORS.primary}
+          />
+          <ThemedText
+            style={[
+              styles.actionBtnText,
+              { color: booking.isCancelled ? colors.muted : COLORS.primary },
+            ]}
+          >
             Edit Booking
           </ThemedText>
         </Pressable>
       )}
-      
+
       <BookingDetailsCard
         booking={booking}
         borderColor={borderColor}

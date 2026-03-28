@@ -18,7 +18,7 @@ export function useThemeColor(
     return colorFromProps;
   } else if (colorName && colorName in COLORS) {
     const c = COLORS[colorName as keyof typeof COLORS] as any;
-    return typeof c === 'string' ? c : c[isDark ? 'dark' : 'light'];
+    return typeof c === "string" ? c : c[isDark ? "dark" : "light"];
   } else {
     return isDark ? "#ffffff" : "#000000";
   }

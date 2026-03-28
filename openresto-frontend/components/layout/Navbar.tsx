@@ -78,7 +78,10 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state) => [styles.themeBtn, (state as { hovered?: boolean }).hovered && { opacity: 0.7 }]}
+            style={(state) => [
+              styles.themeBtn,
+              (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
+            ]}
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Ionicons

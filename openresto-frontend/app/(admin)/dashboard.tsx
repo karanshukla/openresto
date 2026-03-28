@@ -252,7 +252,9 @@ export default function AdminDashboardScreen() {
                           {
                             height: `${pct}%` as const,
                             backgroundColor:
-                              pct >= 85 ? COLORS.primary : hexToRgba(COLORS.primary, (pct / 100) * 0.7 + 0.15),
+                              pct >= 85
+                                ? COLORS.primary
+                                : hexToRgba(COLORS.primary, (pct / 100) * 0.7 + 0.15),
                           },
                         ]}
                       />
@@ -288,7 +290,9 @@ export default function AdminDashboardScreen() {
                     style={[
                       styles.actionIconWrap,
                       {
-                        backgroundColor: action.primary ? "rgba(255,255,255,0.18)" : hexToRgba(COLORS.primary, 0.08),
+                        backgroundColor: action.primary
+                          ? "rgba(255,255,255,0.18)"
+                          : hexToRgba(COLORS.primary, 0.08),
                       },
                     ]}
                   >
@@ -326,7 +330,9 @@ export default function AdminDashboardScreen() {
             <View style={styles.listHeader}>
               <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>
               <Pressable onPress={() => router.push("/(admin)/bookings")}>
-                <ThemedText style={[styles.viewAll, { color: COLORS.primary }]}>View all →</ThemedText>
+                <ThemedText style={[styles.viewAll, { color: COLORS.primary }]}>
+                  View all →
+                </ThemedText>
               </Pressable>
             </View>
 

@@ -68,7 +68,9 @@ export function AddRow({
             setExtra("");
           }}
         >
-          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>
+            Cancel
+          </ThemedText>
         </Pressable>
       </View>
     </View>

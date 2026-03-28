@@ -116,7 +116,9 @@ export function EmailSettingsCard({
                   setEnableSsl(true);
                 }}
               >
-                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>{p.label}</ThemedText>
+                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+                  {p.label}
+                </ThemedText>
               </Pressable>
             ))}
           </View>
@@ -133,10 +135,7 @@ export function EmailSettingsCard({
             <View style={[styles.field, { flex: 1 }]}>
               <ThemedText style={styles.fieldLabel}>SSL/TLS</ThemedText>
               <Pressable
-                style={[
-                  styles.secBtn,
-                  { borderColor, alignItems: "center" as const },
-                ]}
+                style={[styles.secBtn, { borderColor, alignItems: "center" as const }]}
                 onPress={() => setEnableSsl((v) => !v)}
               >
                 <Ionicons
@@ -213,11 +212,7 @@ export function EmailSettingsCard({
               {saving ? "Saving…" : "Save Settings"}
             </Button>
             <Pressable
-              style={[
-                styles.secBtn,
-                { borderColor },
-                (!host || !username) && { opacity: 0.4 },
-              ]}
+              style={[styles.secBtn, { borderColor }, (!host || !username) && { opacity: 0.4 }]}
               onPress={() => {
                 if (testing || !host || !username) return;
                 handleTest();
@@ -228,7 +223,9 @@ export function EmailSettingsCard({
               ) : (
                 <>
                   <Ionicons name="flash-outline" size={14} color={COLORS.primary} />
-                  <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>Test</ThemedText>
+                  <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+                    Test
+                  </ThemedText>
                 </>
               )}
             </Pressable>

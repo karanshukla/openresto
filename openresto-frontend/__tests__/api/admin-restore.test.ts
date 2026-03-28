@@ -1,14 +1,14 @@
-import { adminRestoreBooking } from '../../api/admin';
+import { adminRestoreBooking } from "../../api/admin";
 
 // Mock fetch for testing
 global.fetch = jest.fn();
 
-describe('adminRestoreBooking', () => {
+describe("adminRestoreBooking", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should successfully restore a booking', async () => {
+  it("should successfully restore a booking", async () => {
     // Arrange
     const mockResponse = { ok: true };
     (fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
@@ -17,54 +17,54 @@ describe('adminRestoreBooking', () => {
     const result = await adminRestoreBooking(123);
 
     // Assert
-    expect(fetch).toHaveBeenCalledWith('/api/admin/bookings/123/restore', {
-      method: 'POST',
-      credentials: 'include',
+    expect(fetch).toHaveBeenCalledWith("/api/admin/bookings/123/restore", {
+      method: "POST",
+      credentials: "include",
       headers: {},
       body: undefined,
     });
     expect(result).toBe(true);
   });
 
-  it('should throw error when response is not ok', async () => {
+  it("should throw error when response is not ok", async () => {
     // Arrange
-    const mockResponse = { 
+    const mockResponse = {
       ok: false,
-      json: jest.fn().mockResolvedValue({ message: 'Booking not found' })
+      json: jest.fn().mockResolvedValue({ message: "Booking not found" }),
     };
     (fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
     // Act & Assert
-    await expect(adminRestoreBooking(123)).rejects.toThrow('Booking not found');
+    await expect(adminRestoreBooking(123)).rejects.toThrow("Booking not found");
   });
 
-  it('should throw generic error when response has no message', async () => {
+  it("should throw generic error when response has no message", async () => {
     // Arrange
-    const mockResponse = { 
+    const mockResponse = {
       ok: false,
-      json: jest.fn().mockRejectedValue(new Error('JSON parse error'))
+      json: jest.fn().mockRejectedValue(new Error("JSON parse error")),
     };
     (fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
     // Act & Assert
-    await expect(adminRestoreBooking(123)).rejects.toThrow('Failed to restore booking');
+    await expect(adminRestoreBooking(123)).rejects.toThrow("Failed to restore booking");
   });
 
-  it('should handle network errors', async () => {
+  it("should handle network errors", async () => {
     // Arrange
-    const networkError = new Error('Network error');
+    const networkError = new Error("Network error");
     (fetch as jest.Mock).mockRejectedValueOnce(networkError);
 
     // Act & Assert
-    await expect(adminRestoreBooking(123)).rejects.toThrow('Network error');
+    await expect(adminRestoreBooking(123)).rejects.toThrow("Network error");
   });
 
-  it('should call console.error on failure', async () => {
+  it("should call console.error on failure", async () => {
     // Arrange
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    const mockResponse = { 
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const mockResponse = {
       ok: false,
-      json: jest.fn().mockResolvedValue({ message: 'Server error' })
+      json: jest.fn().mockResolvedValue({ message: "Server error" }),
     };
     (fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
@@ -76,8 +76,8 @@ describe('adminRestoreBooking', () => {
     }
 
     // Assert
-    expect(consoleSpy).toHaveBeenCalledWith('adminRestoreBooking error:', expect.any(Error));
-    
+    expect(consoleSpy).toHaveBeenCalledWith("adminRestoreBooking error:", expect.any(Error));
+
     // Cleanup
     consoleSpy.mockRestore();
   });

@@ -187,7 +187,9 @@ export function BrandSettingsCard({
                     setLogoData("");
                   }}
                 >
-                  <ThemedText style={[styles.secBtnText, { color: COLORS.error }]}>Delete</ThemedText>
+                  <ThemedText style={[styles.secBtnText, { color: COLORS.error }]}>
+                    Delete
+                  </ThemedText>
                 </Pressable>
               )}
             </View>

@@ -55,7 +55,11 @@ export function BookingActionButtons({
 
       {/* Permanent delete (GDPR) */}
       <Pressable
-        style={[styles.purgeBtn, { borderColor: "rgba(128,128,128,0.2)" }, deleting && { opacity: 0.6 }]}
+        style={[
+          styles.purgeBtn,
+          { borderColor: "rgba(128,128,128,0.2)" },
+          deleting && { opacity: 0.6 },
+        ]}
         onPress={onPurge}
         disabled={deleting}
       >

@@ -96,7 +96,8 @@ export function BookingDetailsCard({
             <ThemedText
               style={[
                 styles.rowValue,
-                label === "Status" && value === "CANCELLED" && { color: COLORS.error, fontWeight: "700" },
+                label === "Status" &&
+                  value === "CANCELLED" && { color: COLORS.error, fontWeight: "700" },
               ]}
             >
               {value}

@@ -186,21 +186,21 @@ export default function BookingConfirmationScreen() {
           </View>
           <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
           <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}. Save your reference below.
+            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}. Save
+            your reference below.
           </ThemedText>
         </View>
 
         {/* Booking reference */}
-        <View style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
           <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
             Booking Reference
           </ThemedText>
           <View style={styles.refRow}>
             <View
-              style={[
-                styles.refBadge,
-                { backgroundColor: isDark ? `${accent}22` : `${accent}14` },
-              ]}
+              style={[styles.refBadge, { backgroundColor: isDark ? `${accent}22` : `${accent}14` }]}
             >
               <ThemedText style={[styles.refValue, { color: accent }]}>{ref}</ThemedText>
             </View>
@@ -244,7 +244,9 @@ export default function BookingConfirmationScreen() {
                 <View style={styles.detailRow}>
                   <Ionicons name={icon} size={15} color={colors.muted} />
                   <View style={styles.detailContent}>
-                    <ThemedText style={[styles.detailLabel, { color: colors.muted }]}>{label}</ThemedText>
+                    <ThemedText style={[styles.detailLabel, { color: colors.muted }]}>
+                      {label}
+                    </ThemedText>
                     <ThemedText style={styles.detailValue}>{value}</ThemedText>
                   </View>
                 </View>
@@ -255,7 +257,12 @@ export default function BookingConfirmationScreen() {
           {/* Calendar actions */}
           {Platform.OS === "web" && (
             <View style={isWide && styles.wideCol}>
-              <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.actionCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
                 <ThemedText style={[styles.actionTitle, { color: colors.muted }]}>
                   ADD TO CALENDAR
                 </ThemedText>

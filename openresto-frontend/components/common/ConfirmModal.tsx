@@ -37,8 +37,13 @@ export default function ConfirmModal({
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
           <View style={[styles.actions, { borderTopColor: colors.border }]}>
-            <Pressable style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]} onPress={onCancel}>
-              <ThemedText style={[styles.btnText, { color: colors.muted }]}>{cancelLabel}</ThemedText>
+            <Pressable
+              style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]}
+              onPress={onCancel}
+            >
+              <ThemedText style={[styles.btnText, { color: colors.muted }]}>
+                {cancelLabel}
+              </ThemedText>
             </Pressable>
             <Pressable
               style={[

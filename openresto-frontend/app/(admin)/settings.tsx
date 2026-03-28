@@ -16,7 +16,6 @@ import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
 import { styles } from "@/components/admin/settings/settings.styles";
 
-
 function useConfirmLocal() {
   const [state, setState] = useState<{ message: string } | null>(null);
   const resolveRef = { current: null as ((v: boolean) => void) | null };
@@ -48,7 +47,12 @@ export default function AdminSettingsScreen() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const isDark = useColorScheme() === "dark";
-  const { state: confirmState, confirm: confirmAction, handleConfirm, handleCancel } = useConfirmLocal();
+  const {
+    state: confirmState,
+    confirm: confirmAction,
+    handleConfirm,
+    handleCancel,
+  } = useConfirmLocal();
 
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;

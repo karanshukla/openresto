@@ -20,9 +20,7 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => "Ionicons",
 }));
 
-const mockRestaurants = [
-  { id: 1, name: "Test Restaurant", slug: "test-rest" },
-];
+const mockRestaurants = [{ id: 1, name: "Test Restaurant", slug: "test-rest" }];
 
 const mockOverview = {
   todayBookings: 2,
@@ -82,7 +80,7 @@ describe("AdminDashboardScreen Flow Tests", () => {
     render(<AdminDashboardScreen />);
 
     await waitFor(() => {
-        expect(screen.getByText("No bookings today")).toBeTruthy();
+      expect(screen.getByText("No bookings today")).toBeTruthy();
     });
 
     expect(screen.getByText("5PM")).toBeTruthy();

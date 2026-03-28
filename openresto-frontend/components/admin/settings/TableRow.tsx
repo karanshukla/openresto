@@ -114,7 +114,9 @@ export function TableRow({
           style={[styles.actionBtn, { borderWidth: 1, borderColor: `${COLORS.primary}30` }]}
           onPress={() => setEditing(false)}
         >
-          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>
+            Cancel
+          </ThemedText>
         </Pressable>
       </View>
     </View>

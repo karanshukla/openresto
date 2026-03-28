@@ -74,7 +74,9 @@ export function LocationCard({
           <Pressable
             style={[
               styles.configureBtn,
-              isSelected ? { backgroundColor: COLORS.primary } : { backgroundColor: `${COLORS.primary}14` },
+              isSelected
+                ? { backgroundColor: COLORS.primary }
+                : { backgroundColor: `${COLORS.primary}14` },
             ]}
             onPress={onSelect}
           >
@@ -83,7 +85,9 @@ export function LocationCard({
               size={14}
               color={isSelected ? "#fff" : COLORS.primary}
             />
-            <ThemedText style={[styles.configureBtnText, { color: isSelected ? "#fff" : COLORS.primary }]}>
+            <ThemedText
+              style={[styles.configureBtnText, { color: isSelected ? "#fff" : COLORS.primary }]}
+            >
               {isSelected ? "Close" : "Configure"}
             </ThemedText>
           </Pressable>

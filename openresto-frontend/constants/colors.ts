@@ -1,4 +1,3 @@
-
 export { COLORS } from "@/theme/theme";
 
 export const PRIMARY = "#0a7ea4";

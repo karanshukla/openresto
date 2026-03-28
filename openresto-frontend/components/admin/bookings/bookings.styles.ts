@@ -26,7 +26,12 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   headerSep: { width: 1, height: 24, marginHorizontal: SPACING.xs },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: BORDER_RADIUS.full, borderWidth: 1 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+  },
   chipText: { ...TYPOGRAPHY.label },
   chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
   modeToggle: {
@@ -47,7 +52,7 @@ export const styles = StyleSheet.create({
   spinner: { marginTop: 40 },
   emptyState: { alignItems: "center", paddingVertical: 60, gap: SPACING.md },
   emptyText: { ...TYPOGRAPHY.body, fontStyle: "italic" },
-  
+
   // Grid card
   gridCard: {
     borderRadius: BORDER_RADIUS.card,
@@ -85,7 +90,7 @@ export const styles = StyleSheet.create({
   gridCellSeats: { fontSize: 9 },
   gridTableName: { ...TYPOGRAPHY.caption, fontWeight: "600" },
   gridTableSeats: { fontSize: 10 },
-  
+
   // Table (list)
   tableCard: {
     borderRadius: BORDER_RADIUS.card,
@@ -118,10 +123,15 @@ export const styles = StyleSheet.create({
   partyPill: { flexDirection: "row", alignItems: "center", gap: 4 },
   tdParty: { ...TYPOGRAPHY.label },
   tdTableNum: { ...TYPOGRAPHY.body, fontSize: 14 },
-  badge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full, alignSelf: "flex-start" },
+  badge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.full,
+    alignSelf: "flex-start",
+  },
   badgeText: { ...TYPOGRAPHY.labelSmall, fontWeight: "700" },
   rowActionBtn: { padding: 6, borderRadius: BORDER_RADIUS.md },
-  
+
   // Card list (mobile)
   cardList: { gap: SPACING.md },
   listCard: {

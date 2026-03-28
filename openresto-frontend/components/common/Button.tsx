@@ -10,7 +10,13 @@ interface ButtonProps extends Omit<PressableProps, "style"> {
   style?: ViewStyle;
 }
 
-export default function Button({ children, disabled, size = "primary", style, ...props }: ButtonProps) {
+export default function Button({
+  children,
+  disabled,
+  size = "primary",
+  style,
+  ...props
+}: ButtonProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const disabledBg = COLORS.disabled[isDark ? "dark" : "light"];

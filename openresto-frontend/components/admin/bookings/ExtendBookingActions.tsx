@@ -21,9 +21,7 @@ export function ExtendBookingActions({
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
         <Ionicons name="time-outline" size={16} color={mutedColor} />
-        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
-          Extend booking
-        </ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Extend booking</ThemedText>
       </View>
       <View style={styles.extendBtns}>
         {[30, 60, 90].map((mins) => (

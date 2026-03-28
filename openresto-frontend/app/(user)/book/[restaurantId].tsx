@@ -55,7 +55,8 @@ export default function BookScreen() {
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setSubmitError(message);
     }
   };

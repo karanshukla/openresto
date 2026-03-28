@@ -252,7 +252,7 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
   }
 }
 
-export async function adminGetRestaurants(): Promise<{id: number; name: string}[]> {
+export async function adminGetRestaurants(): Promise<{ id: number; name: string }[]> {
   try {
     const res = await get("/admin/restaurants");
     if (!res.ok) return [];
@@ -263,7 +263,9 @@ export async function adminGetRestaurants(): Promise<{id: number; name: string}[
   }
 }
 
-export async function adminGetSections(restaurantId: number): Promise<{id: number; name: string}[]> {
+export async function adminGetSections(
+  restaurantId: number
+): Promise<{ id: number; name: string }[]> {
   try {
     const res = await get(`/admin/restaurants/${restaurantId}/sections`);
     if (!res.ok) return [];
