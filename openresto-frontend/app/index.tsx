@@ -35,7 +35,10 @@ export default function HomeScreen() {
   }, []);
 
   const numColumns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
-  const cardWidth = Math.floor((width - 32) / numColumns - 16);
+  const cardWidth =
+    numColumns === 1
+      ? "100%"
+      : Math.floor((Math.min(width, 1200) - 48 - (numColumns > 1 ? 20 : 16) * (numColumns - 1)) / numColumns);
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -79,7 +82,7 @@ export default function HomeScreen() {
           ) : (
             <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
               {restaurants.map((r) => (
-                <View key={r.id} style={[styles.cardWrapper, numColumns > 1 && { width: cardWidth }]}>
+                <View key={r.id} style={[styles.cardWrapper, { width: cardWidth as any }]}>
                   <RestaurantCard restaurant={r} />
                 </View>
               ))}

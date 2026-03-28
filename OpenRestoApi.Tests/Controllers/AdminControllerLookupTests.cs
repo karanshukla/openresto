@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenRestoApi.Controllers;
+using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -56,14 +59,12 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var restaurants = Assert.IsType<List<object>>(okResult.Value);
+            var restaurants = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Equal(2, restaurants.Count);
             
             // Check sorting (A should be first)
-            dynamic first = restaurants[0];
-            dynamic second = restaurants[1];
-            Assert.Equal("A Restaurant", first.Name);
-            Assert.Equal("B Restaurant", second.Name);
+            Assert.Equal("A Restaurant", restaurants[0].Name);
+            Assert.Equal("B Restaurant", restaurants[1].Name);
         }
 
         [Fact]
@@ -77,7 +78,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var sections = Assert.IsType<List<object>>(okResult.Value);
+            var sections = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Equal(2, sections.Count);
         }
 
@@ -89,7 +90,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var sections = Assert.IsType<List<object>>(okResult.Value);
+            var sections = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Empty(sections);
         }
 

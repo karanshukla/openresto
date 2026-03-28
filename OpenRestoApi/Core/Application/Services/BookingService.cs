@@ -103,6 +103,16 @@ public class BookingService(
         _ = id; // Required by REST convention (PUT /bookings/{id}) but entity ID comes from DTO
         Booking booking = _mapper.ToEntity(bookingDto);
         
+        // Check for seat capacity if seats are being updated
+        if (bookingDto.Seats > 0)
+        {
+            Table? table = await _tableRepository.GetByIdAsync(booking.TableId);
+            if (table != null && bookingDto.Seats > table.Seats)
+            {
+                throw new InvalidOperationException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
+            }
+        }
+        
         // Ensure EndTime is valid if it's being updated or if Date changed
         if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
         {

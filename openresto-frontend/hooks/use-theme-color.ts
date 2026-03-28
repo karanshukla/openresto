@@ -9,7 +9,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName?: keyof typeof COLORS
-) {
+): string {
   const isDark = useColorScheme() === "dark";
   const colorFromProps = props[isDark ? "dark" : "light"];
 
@@ -17,7 +17,8 @@ export function useThemeColor(
   if (colorFromProps) {
     return colorFromProps;
   } else if (colorName && colorName in COLORS) {
-    return COLORS[colorName as keyof typeof COLORS];
+    const c = COLORS[colorName as keyof typeof COLORS] as any;
+    return typeof c === 'string' ? c : c[isDark ? 'dark' : 'light'];
   } else {
     return isDark ? "#ffffff" : "#000000";
   }

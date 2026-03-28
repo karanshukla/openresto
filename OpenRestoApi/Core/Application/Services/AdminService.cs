@@ -238,9 +238,14 @@ public class AdminService(AppDbContext db)
     public async Task<BookingDetailDto?> RestoreBookingAsync(int id)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
-        if (booking == null || !booking.IsCancelled)
+        if (booking == null)
         {
             return null;
+        }
+
+        if (!booking.IsCancelled)
+        {
+            throw new InvalidOperationException("Booking is already active.");
         }
 
         booking.IsCancelled = false;
@@ -354,21 +359,21 @@ public class AdminService(AppDbContext db)
         return ToDetailDto(booking);
     }
 
-    public async Task<List<object>> GetRestaurantsAsync()
+    public async Task<List<LookupDto>> GetRestaurantsAsync()
     {
         return await _db.Restaurants
             .OrderBy(r => r.Name)
-            .Select(r => new { r.Id, r.Name })
-            .ToListAsync<object>();
+            .Select(r => new LookupDto { Id = r.Id, Name = r.Name })
+            .ToListAsync();
     }
 
-    public async Task<List<object>> GetSectionsAsync(int restaurantId)
+    public async Task<List<LookupDto>> GetSectionsAsync(int restaurantId)
     {
         return await _db.Sections
             .Where(s => s.RestaurantId == restaurantId)
             .OrderBy(s => s.Name)
-            .Select(s => new { s.Id, s.Name })
-            .ToListAsync<object>();
+            .Select(s => new LookupDto { Id = s.Id, Name = s.Name })
+            .ToListAsync();
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────

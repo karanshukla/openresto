@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -9,6 +10,11 @@ public class BrandService(AppDbContext db)
     private readonly AppDbContext _db = db;
     private const int MaxLogoBytes = 256 * 1024; // 256 KB
 
+    private static bool IsValidHexColor(string color)
+    {
+        return Regex.IsMatch(color, @"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$");
+    }
+
     public async Task<BrandSettings> GetAsync()
     {
         return await _db.Set<BrandSettings>().FirstOrDefaultAsync()
@@ -17,6 +23,16 @@ public class BrandService(AppDbContext db)
 
     public async Task SaveAsync(string? appName, string? primaryColor, string? accentColor, string? logoBase64)
     {
+        if (primaryColor != null && !IsValidHexColor(primaryColor))
+        {
+            throw new ArgumentException("Invalid primary color hex code.");
+        }
+
+        if (accentColor != null && !IsValidHexColor(accentColor))
+        {
+            throw new ArgumentException("Invalid accent color hex code.");
+        }
+
         if (logoBase64 != null)
         {
             int commaIdx = logoBase64.IndexOf(',');

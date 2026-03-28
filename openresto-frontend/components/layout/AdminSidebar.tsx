@@ -144,8 +144,7 @@ export default function AdminSidebar() {
           onPress={() => router.push("/")}
           style={(state) => [
             styles.footerItem,
-            (state as any).hovered && { backgroundColor: hoverBg },
-            { cursor: "pointer" } as any,
+            (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
         >
           <Ionicons name="arrow-back-outline" size={15} color={colors.muted} />
@@ -154,8 +153,7 @@ export default function AdminSidebar() {
         <Pressable
           style={(state) => [
             styles.footerItem,
-            (state as any).hovered && { backgroundColor: hoverBg },
-            { cursor: "pointer" } as any,
+            (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
           onPress={toggle}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -168,8 +166,7 @@ export default function AdminSidebar() {
         <Pressable
           style={(state) => [
             styles.footerItem,
-            (state as any).hovered && { backgroundColor: hoverBg },
-            { cursor: "pointer" } as any,
+            (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
           onPress={handleLogout}
         >

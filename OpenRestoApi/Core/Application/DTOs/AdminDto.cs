@@ -123,6 +123,17 @@ public class ChangePasswordRequest
     public string NewPassword { get; set; } = null!;
 }
 
+public class LookupDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+}
+
+public class MessageResponse
+{
+    public string Message { get; set; } = null!;
+}
+
 public class PvqStatusDto
 {
     public bool IsConfigured { get; set; }

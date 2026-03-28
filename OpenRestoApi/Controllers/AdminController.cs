@@ -46,11 +46,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(new { message = ex.Message });
+            return Conflict(new MessageResponse { Message = ex.Message });
         }
     }
 
@@ -64,7 +64,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
     }
 
@@ -88,7 +92,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         if (string.IsNullOrWhiteSpace(req.Name))
         {
-            return BadRequest(new { message = "Name is required." });
+            return BadRequest(new MessageResponse { Message = "Name is required." });
         }
 
         RestaurantDto result = await _admin.CreateRestaurantAsync(req.Name, req.Address);
@@ -118,7 +122,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         List<SectionDto>? result = await _admin.GetTablesAsync(restaurantId);
         return result == null
-            ? NotFound(new { message = "Restaurant not found or has no sections." })
+            ? NotFound(new MessageResponse { Message = "Restaurant not found or has no sections." })
             : Ok(result);
     }
 
@@ -133,26 +137,26 @@ public class AdminController(AdminService adminService, IEmailService emailServi
 
         if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
         {
-            return BadRequest(new { message = "Subject and body are required." });
+            return BadRequest(new MessageResponse { Message = "Subject and body are required." });
         }
 
         if (string.IsNullOrWhiteSpace(booking.CustomerEmail))
         {
-            return BadRequest(new { message = "Customer email is not available." });
+            return BadRequest(new MessageResponse { Message = "Customer email is not available." });
         }
 
         try
         {
             await _email.SendEmailAsync(booking.CustomerEmail, req.Subject, req.Body);
-            return Ok(new { message = $"Email sent to {booking.CustomerEmail}." });
+            return Ok(new MessageResponse { Message = $"Email sent to {booking.CustomerEmail}." });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = $"Failed to send: {ex.Message}" });
+            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}" });
         }
     }
 
@@ -162,11 +166,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         try
         {
             BookingDetailDto? result = await _admin.RestoreBookingAsync(id);
-            return result == null ? NotFound() : Ok(new { message = "Booking restored successfully." });
+            return result == null ? NotFound() : Ok(new MessageResponse { Message = "Booking restored successfully." });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
     }
 
@@ -180,11 +184,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new MessageResponse { Message = ex.Message });
         }
     }
 }

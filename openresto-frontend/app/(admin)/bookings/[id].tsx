@@ -13,24 +13,20 @@ import {
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
-import Input from "@/components/common/Input";
-import Select from "@/components/common/Select";
-import DatePicker from "@/components/common/DatePicker";
-import TimePicker from "@/components/common/TimePicker";
 
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-};
+import { bookingDetailStyles as styles } from "@/components/admin/bookings/booking-detail.styles";
+import { BookingDetailsCard } from "@/components/admin/bookings/BookingDetailsCard";
+import { EditBookingForm } from "@/components/admin/bookings/EditBookingForm";
+import { ExtendBookingActions } from "@/components/admin/bookings/ExtendBookingActions";
+import { EmailGuestForm } from "@/components/admin/bookings/EmailGuestForm";
+import { BookingActionButtons } from "@/components/admin/bookings/BookingActionButtons";
 
 export default function AdminBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,6 +55,7 @@ export default function AdminBookingDetailScreen() {
   const [editSectionId, setEditSectionId] = useState<number | null>(null);
   const [editRestaurantId, setEditRestaurantId] = useState<number | null>(null);
   const [editLoading, setEditLoading] = useState(false);
+  
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
@@ -77,7 +74,6 @@ export default function AdminBookingDetailScreen() {
         setEditSectionId(b.sectionId);
         setEditRestaurantId(b.restaurantId);
         
-        // Parse date and time for editing using local time to avoid UTC day-flipping mismatch
         const d = new Date(b.date);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -167,7 +163,6 @@ export default function AdminBookingDetailScreen() {
       return;
     }
     
-    // Validate date and time
     if (!editDate || !editTime) {
       setErrorMessage("Date and time are required");
       return;
@@ -175,7 +170,6 @@ export default function AdminBookingDetailScreen() {
     
     setEditLoading(true);
     try {
-      // Check seat capacity warning
       const currentRestaurant = restaurants.find(r => r.id === editRestaurantId);
       const currentTable = currentRestaurant?.sections
         .flatMap(s => s.tables)
@@ -191,7 +185,6 @@ export default function AdminBookingDetailScreen() {
         }
       }
 
-      // Combine date and time
       const dateTime = new Date(`${editDate}T${editTime}`);
       
       const updateData: AdminUpdateBookingRequest = {
@@ -203,6 +196,7 @@ export default function AdminBookingDetailScreen() {
         customerEmail: editEmail.trim() || undefined,
         specialRequests: editSpecialRequests.trim() || undefined,
       };
+      
       const updated = await adminUpdateBookingFull(booking.id, updateData);
       setBooking(updated);
       setEditing(false);
@@ -226,6 +220,20 @@ export default function AdminBookingDetailScreen() {
       const bookingDate = new Date(booking.date);
       setEditDate(bookingDate.toISOString().split('T')[0]);
       setEditTime(bookingDate.toTimeString().slice(0, 5));
+    }
+  };
+  
+  const handleSendEmail = async () => {
+    if (!booking) return;
+    if (!emailSubject.trim() || !emailBody.trim()) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    const result = await sendBookingEmail(booking.id, emailSubject, emailBody);
+    setEmailResult(result);
+    setEmailSending(false);
+    if (result.ok) {
+      setEmailSubject("");
+      setEmailBody("");
     }
   };
 
@@ -256,68 +264,8 @@ export default function AdminBookingDetailScreen() {
     );
   }
 
-  const startTime = new Date(booking.date);
-  const endTime = booking.endTime
-    ? new Date(booking.endTime)
-    : new Date(startTime.getTime() + 60 * 60 * 1000);
-  
-  // Safety check for duration calculation
-  const diffMs = endTime.getTime() - startTime.getTime();
-  const durationMins = Math.round(diffMs / 60000);
-
-  // Formatting time display to handle potential date crossings or timezone weirdness
-  const formatTime = (d: Date) => {
-    return d.toLocaleTimeString(undefined, { 
-      hour: "2-digit", 
-      minute: "2-digit",
-      hour12: false 
-    });
-  };
-
-  const formatDate = (d: Date) => {
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const timeRangeDisplay = startTime.toDateString() === endTime.toDateString()
-    ? `${formatTime(startTime)} – ${formatTime(endTime)}`
-    : `${formatTime(startTime)} (${formatDate(startTime)}) – ${formatTime(endTime)} (${formatDate(endTime)})`;
-
-  const rows: { label: string; value: string }[] = [
-    { label: "Ref", value: booking.bookingRef ?? `#${booking.id}` },
-    { label: "Guest", value: booking.customerEmail },
-    {
-      label: "Date",
-      value: startTime.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-    },
-    {
-      label: "Time",
-      value: `${timeRangeDisplay} (${durationMins} min)`,
-    },
-    { label: "Party", value: `${booking.seats} guest${booking.seats !== 1 ? "s" : ""}` },
-    { label: "Restaurant", value: booking.restaurantName },
-    { label: "Section", value: booking.sectionName },
-    { label: "Table", value: booking.tableName },
-  ];
-
-  if (booking.specialRequests) {
-    rows.push({ label: "Requests", value: booking.specialRequests });
-  }
-
-  if (booking.isCancelled) {
-    rows.push({ label: "Status", value: "CANCELLED" });
-  }
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Back */}
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
         <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
@@ -325,7 +273,6 @@ export default function AdminBookingDetailScreen() {
 
       <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
 
-      {/* Edit mode buttons */}
       {editing ? (
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
@@ -357,264 +304,79 @@ export default function AdminBookingDetailScreen() {
           </ThemedText>
         </Pressable>
       )}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor }]}>
-        {rows.map(({ label, value }, i) => (
-          <View key={label}>
-            {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
-            <View style={styles.row}>
-              <ThemedText style={[styles.rowLabel, { color: mutedColor }]}>{label}</ThemedText>
-              <ThemedText
-                style={[
-                  styles.rowValue,
-                  label === "Status" && value === "CANCELLED" && { color: COLORS.error, fontWeight: "700" },
-                ]}
-              >
-                {value}
-              </ThemedText>
-            </View>
-          </View>
-        ))}
-      </View>
+      
+      <BookingDetailsCard
+        booking={booking}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        cardColor={colors.card}
+      />
 
       {editing && (
-        <View style={[styles.section, { borderColor }]}>
-          {loadingRestaurants ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : (
-            <>
-              <ThemedText style={styles.label}>Restaurant</ThemedText>
-              <Select
-                selectedValue={editRestaurantId ?? undefined}
-                onSelect={handleRestaurantChange}
-                options={restaurantOptions}
-              />
-
-              <View style={styles.fieldRow}>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Section</ThemedText>
-                  <Select
-                    selectedValue={editSectionId ?? undefined}
-                    onSelect={handleSectionChange}
-                    options={sectionOptions}
-                  />
-                </View>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Table</ThemedText>
-                  <Select
-                    selectedValue={editTableId ?? undefined}
-                    onSelect={(v) => setEditTableId(v as number)}
-                    options={tableOptions}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.fieldRow}>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Date</ThemedText>
-                  <DatePicker selectedDate={editDate} onSelect={setEditDate} />
-                </View>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Time</ThemedText>
-                  <TimePicker
-                    selectedTime={editTime}
-                    onSelect={setEditTime}
-                    minTime={selectedRestaurant?.openTime ?? "09:00"}
-                    maxTime={selectedRestaurant?.closeTime ?? "22:00"}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.fieldRow}>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Guests</ThemedText>
-                  <Select
-                    selectedValue={Number(editSeats)}
-                    onSelect={(v) => setEditSeats(String(v))}
-                    options={seatOptions}
-                  />
-                </View>
-                <View style={styles.fieldHalf}>
-                  <ThemedText style={styles.label}>Guest email</ThemedText>
-                  <Input
-                    placeholder="guest@example.com"
-                    value={editEmail}
-                    onChangeText={setEditEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              <ThemedText style={styles.label}>Special requests</ThemedText>
-              <Input
-                placeholder="Dietary needs, occasion, notes"
-                value={editSpecialRequests}
-                onChangeText={setEditSpecialRequests}
-              />
-            </>
-          )}
-        </View>
+        <EditBookingForm
+          borderColor={borderColor}
+          loadingRestaurants={loadingRestaurants}
+          restaurantOptions={restaurantOptions}
+          sectionOptions={sectionOptions}
+          tableOptions={tableOptions}
+          seatOptions={seatOptions}
+          editRestaurantId={editRestaurantId}
+          editSectionId={editSectionId}
+          editTableId={editTableId}
+          editSeats={editSeats}
+          editEmail={editEmail}
+          editSpecialRequests={editSpecialRequests}
+          editDate={editDate}
+          editTime={editTime}
+          selectedRestaurant={selectedRestaurant}
+          setEditTableId={setEditTableId}
+          setEditSeats={setEditSeats}
+          setEditEmail={setEditEmail}
+          setEditSpecialRequests={setEditSpecialRequests}
+          setEditDate={setEditDate}
+          setEditTime={setEditTime}
+          handleRestaurantChange={handleRestaurantChange}
+          handleSectionChange={handleSectionChange}
+        />
       )}
 
       {/* Extend duration - hide for cancelled bookings */}
       {!booking.isCancelled && (
-        <View style={[styles.section, { borderColor }]}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="time-outline" size={16} color={mutedColor} />
-            <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
-              Extend booking
-            </ThemedText>
-          </View>
-          <View style={styles.extendBtns}>
-            {[30, 60, 90].map((mins) => (
-              <Pressable
-                key={mins}
-                style={(state) => [
-                  styles.extendBtn,
-                  { backgroundColor: COLORS.primary },
-                  (state as { hovered?: boolean }).hovered && { opacity: 0.9 },
-                  extending && { opacity: 0.7 },
-                ]}
-                onPress={() => handleExtend(mins)}
-                disabled={extending}
-              >
-                <ThemedText style={styles.extendBtnText}>+{mins} min</ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        </View>
+        <ExtendBookingActions
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          extending={extending}
+          onExtend={handleExtend}
+        />
       )}
 
       {/* Email guest - hide for cancelled bookings */}
       {!booking.isCancelled && (
-        <View style={[styles.section, { borderColor }]}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="mail-outline" size={16} color={mutedColor} />
-            <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
-          </View>
-          <ThemedText style={[styles.emailTo, { color: mutedColor }]}>
-            To: {booking.customerEmail}
-          </ThemedText>
-          <input
-            type="text"
-            placeholder="Subject"
-            value={emailSubject}
-            onChange={(e) => setEmailSubject(e.target.value)}
-            style={
-              {
-                width: "100%",
-                height: 40,
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: isDark ? "#1c1c1e" : "#fff",
-                color: isDark ? "#fff" : "#000",
-                marginBottom: 8,
-              } as React.CSSProperties
-            }
-          />
-          <textarea
-            placeholder="Message body (HTML supported)"
-            value={emailBody}
-            onChange={(e) => setEmailBody(e.target.value)}
-            rows={4}
-            style={
-              {
-                width: "100%",
-                borderWidth: 1,
-                borderStyle: "solid",
-                borderColor: colors.border,
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                resize: "vertical",
-                fontFamily: "inherit",
-                marginBottom: 8,
-              } as React.CSSProperties
-            }
-          />
-          <View style={styles.emailActions}>
-            <Pressable
-              style={[
-                styles.emailSendBtn,
-                { backgroundColor: COLORS.primary },
-                (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
-              ]}
-              onPress={async () => {
-                if (!emailSubject.trim() || !emailBody.trim()) return;
-                setEmailSending(true);
-                setEmailResult(null);
-                const result = await sendBookingEmail(booking.id, emailSubject, emailBody);
-                setEmailResult(result);
-                setEmailSending(false);
-                if (result.ok) {
-                  setEmailSubject("");
-                  setEmailBody("");
-                }
-              }}
-              disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
-            >
-              <Ionicons name="send-outline" size={14} color="#fff" />
-              <ThemedText style={styles.emailSendBtnText}>
-                {emailSending ? "Sending…" : "Send Email"}
-              </ThemedText>
-            </Pressable>
-            {emailResult && (
-              <ThemedText
-                style={[styles.emailResultText, { color: emailResult.ok ? "#16a34a" : "#dc2626" }]}
-              >
-                {emailResult.message}
-              </ThemedText>
-            )}
-          </View>
-        </View>
+        <EmailGuestForm
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          isDark={isDark}
+          colors={colors}
+          customerEmail={booking.customerEmail}
+          emailSubject={emailSubject}
+          emailBody={emailBody}
+          emailSending={emailSending}
+          emailResult={emailResult}
+          setEmailSubject={setEmailSubject}
+          setEmailBody={setEmailBody}
+          onSendEmail={handleSendEmail}
+        />
       )}
 
-      {/* Uncancel - only for cancelled bookings */}
-      {booking.isCancelled && (
-        <Pressable
-          style={[styles.uncancelBtn, uncancelling && { opacity: 0.6 }]}
-          onPress={() => setShowUncancelConfirm(true)}
-          disabled={uncancelling}
-        >
-          <Ionicons name="refresh-outline" size={16} color={COLORS.success} />
-          <ThemedText style={styles.uncancelBtnText}>
-            {uncancelling ? "Restoring…" : "Restore Booking"}
-          </ThemedText>
-        </Pressable>
-      )}
-
-      {/* Cancel - hide if already cancelled */}
-      {!booking.isCancelled && (
-        <Pressable
-          style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
-          onPress={() => setShowDeleteConfirm(true)}
-          disabled={deleting}
-        >
-          <Ionicons name="trash-outline" size={15} color="#dc2626" />
-          <ThemedText style={styles.cancelBtnText}>
-            {deleting ? "Cancelling…" : "Cancel Booking"}
-          </ThemedText>
-        </Pressable>
-      )}
-
-      {/* Permanent delete (GDPR) */}
-      <Pressable
-        style={[styles.purgeBtn, deleting && { opacity: 0.6 }]}
-        onPress={() => setShowPurgeConfirm(true)}
-        disabled={deleting}
-      >
-        <Ionicons name="nuclear-outline" size={15} color={mutedColor} />
-        <ThemedText style={[styles.purgeBtnText, { color: mutedColor }]}>
-          Permanently Delete (GDPR)
-        </ThemedText>
-      </Pressable>
+      <BookingActionButtons
+        isCancelled={!!booking.isCancelled}
+        uncancelling={uncancelling}
+        deleting={deleting}
+        mutedColor={mutedColor}
+        onUncancel={() => setShowUncancelConfirm(true)}
+        onCancel={() => setShowDeleteConfirm(true)}
+        onPurge={() => setShowPurgeConfirm(true)}
+      />
 
       <ConfirmModal
         visible={showDeleteConfirm}
@@ -645,9 +407,7 @@ export default function AdminBookingDetailScreen() {
         cancelLabel="Go Back"
         destructive
         onConfirm={async () => {
-          if (!booking) {
-            return;
-          }
+          if (!booking) return;
           setShowPurgeConfirm(false);
           setDeleting(true);
           const ok = await adminPurgeBooking(booking.id);
@@ -670,114 +430,3 @@ export default function AdminBookingDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: {
-    padding: 24,
-    paddingTop: 32,
-    gap: 16,
-    maxWidth: 640,
-    width: "100%",
-    alignSelf: "center",
-  },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  backText: { fontSize: 14, fontWeight: "600" },
-  pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5, marginBottom: 4 },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 16,
-  },
-  rowLabel: { fontSize: 13, fontWeight: "500", width: 80 },
-  rowValue: { fontSize: 14, flex: 1, textAlign: "right" },
-  divider: { height: 1 },
-  section: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  sectionTitle: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6 },
-  label: { fontSize: 13, fontWeight: "600", marginBottom: 4, marginTop: 8 },
-  fieldRow: { flexDirection: "row", gap: 12 },
-  fieldHalf: { flex: 1 },
-  extendBtns: { flexDirection: "row", gap: 10 },
-  extendBtn: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    cursor: "pointer" as const,
-  },
-  extendBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  emailTo: { fontSize: 13, marginBottom: 8 },
-  emailActions: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
-  emailSendBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  emailResultText: { fontSize: 13, fontWeight: "500" },
-  actionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: 10,
-  },
-  actionBtnText: { fontSize: 14, fontWeight: "600" },
-  uncancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: 10,
-    backgroundColor: hexToRgba(COLORS.success, 0.1),
-    cursor: "pointer" as const,
-  },
-  uncancelBtnText: { color: COLORS.success, fontSize: 14, fontWeight: "700" },
-  cancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: 10,
-    backgroundColor: hexToRgba(COLORS.error, 0.1),
-    cursor: "pointer" as const,
-  },
-  cancelBtnText: { color: COLORS.error, fontSize: 14, fontWeight: "700" },
-  purgeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(128,128,128,0.2)", // TODO: Use theme border color
-    marginTop: 4,
-  },
-  purgeBtnText: { fontSize: 13, fontWeight: "600" },
-});

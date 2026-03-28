@@ -151,6 +151,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
-    cursor: "pointer" as any,
+    cursor: "pointer" as const,
   },
 });

@@ -8,6 +8,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -54,6 +55,14 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
             {
                 options.UseSqlite(_connection);
             });
+
+            // Replace IEmailService with a mock for testing
+            var emailServiceDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IEmailService));
+            if (emailServiceDescriptor != null)
+            {
+                services.Remove(emailServiceDescriptor);
+            }
+            services.AddScoped<IEmailService, MockEmailService>();
 
         });
 
@@ -105,5 +114,11 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
         {
             _connection.Dispose();
         }
+    }
+
+    private class MockEmailService : IEmailService
+    {
+        public Task<bool> TestConnectionAsync() => Task.FromResult(true);
+        public Task SendEmailAsync(string recipient, string subject, string htmlBody) => Task.CompletedTask;
     }
 }

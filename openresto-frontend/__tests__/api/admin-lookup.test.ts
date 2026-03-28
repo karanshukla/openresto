@@ -18,7 +18,7 @@ describe('Admin lookup APIs', () => {
 
       const result = await adminGetRestaurants();
 
-      expect(fetch).toHaveBeenCalledWith('/admin/restaurants', expect.any(Object));
+      expect(fetch).toHaveBeenCalledWith('/api/admin/restaurants', expect.any(Object));
       expect(result).toEqual(mockData);
     });
 
@@ -39,7 +39,7 @@ describe('Admin lookup APIs', () => {
 
       const result = await adminGetSections(1);
 
-      expect(fetch).toHaveBeenCalledWith('/admin/restaurants/1/sections', expect.any(Object));
+      expect(fetch).toHaveBeenCalledWith('/api/admin/restaurants/1/sections', expect.any(Object));
       expect(result).toEqual(mockData);
     });
 

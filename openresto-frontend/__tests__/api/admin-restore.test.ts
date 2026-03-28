@@ -17,11 +17,10 @@ describe('adminRestoreBooking', () => {
     const result = await adminRestoreBooking(123);
 
     // Assert
-    expect(fetch).toHaveBeenCalledWith('/admin/bookings/123/restore', {
+    expect(fetch).toHaveBeenCalledWith('/api/admin/bookings/123/restore', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      credentials: 'include',
+      headers: {},
       body: undefined,
     });
     expect(result).toBe(true);

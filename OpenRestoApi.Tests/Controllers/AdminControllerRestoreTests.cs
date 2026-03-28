@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -119,7 +120,8 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.NotNull(badRequestResult.Value);
+            var response = Assert.IsType<MessageResponse>(badRequestResult.Value);
+            Assert.Equal("Booking is already active.", response.Message);
         }
 
         [Fact]
@@ -137,10 +139,13 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             Assert.IsType<OkObjectResult>(firstResult);
-            Assert.IsType<BadRequestObjectResult>(secondResult);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(secondResult);
+            var response = Assert.IsType<MessageResponse>(badRequestResult.Value);
+            Assert.Equal("Booking is already active.", response.Message);
 
             // Verify booking is still active
             var booking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
+            Assert.NotNull(booking);
             Assert.False(booking.IsCancelled);
             Assert.Null(booking.CancelledAt);
         }
@@ -157,28 +162,14 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic responseValue = okResult.Value!;
-            Assert.Equal("Booking restored successfully.", responseValue.message);
+            var response = Assert.IsType<MessageResponse>(okResult.Value);
+            Assert.Equal("Booking restored successfully.", response.Message);
         }
 
         public void Dispose()
         {
             _dbContext.Dispose();
             _serviceProvider.Dispose();
-        }
-    }
-
-    // Mock email service for testing
-    public class MockEmailService : OpenRestoApi.Core.Application.Interfaces.IEmailService
-    {
-        public Task<bool> TestConnectionAsync()
-        {
-            return Task.FromResult(true);
-        }
-
-        public Task SendEmailAsync(string recipient, string subject, string htmlBody)
-        {
-            return Task.CompletedTask;
         }
     }
 }

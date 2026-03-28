@@ -6,9 +6,7 @@ import { useEffect, useState } from "react";
 import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { COLORS } from "@/theme/theme";
 
 const MIN_WIDTH = 900;
 

@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -78,7 +79,7 @@ namespace OpenRestoApi.Tests.Controllers
             {
                 TableId = table2.Id,
                 Date = newDate,
-                Seats = 4,
+                Seats = 2,
                 CustomerEmail = "updated@test.com",
                 SpecialRequests = "Lots of requests"
             };
@@ -92,7 +93,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             Assert.Equal(table2.Id, updatedDto.TableId);
             Assert.Equal(newDate, updatedDto.Date);
-            Assert.Equal(4, updatedDto.Seats);
+            Assert.Equal(2, updatedDto.Seats);
             Assert.Equal("updated@test.com", updatedDto.CustomerEmail);
             Assert.Equal("Lots of requests", updatedDto.SpecialRequests);
 
@@ -100,7 +101,7 @@ namespace OpenRestoApi.Tests.Controllers
             var dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
             Assert.Equal(table2.Id, dbBooking.TableId);
             Assert.Equal(newDate, dbBooking.Date);
-            Assert.Equal(4, dbBooking.Seats);
+            Assert.Equal(2, dbBooking.Seats);
             Assert.Equal("updated@test.com", dbBooking.CustomerEmail);
             Assert.Equal("Lots of requests", dbBooking.SpecialRequests);
         }
@@ -168,6 +169,87 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task AdminUpdateBooking_ReturnsBadRequest_WhenSeatsExceedTableCapacity()
+        {
+            // Arrange
+            var restaurant = new Restaurant { Name = "Test Restaurant", Address = "123 Test St" };
+            _dbContext.Restaurants.Add(restaurant);
+            _dbContext.SaveChanges();
+
+            var section = new Section { Name = "Main", RestaurantId = restaurant.Id };
+            _dbContext.Sections.Add(section);
+            _dbContext.SaveChanges();
+
+            var table = new Table { Name = "Table 1", Seats = 2, SectionId = section.Id };
+            _dbContext.Tables.Add(table);
+            _dbContext.SaveChanges();
+
+            var booking = new Booking
+            {
+                RestaurantId = restaurant.Id,
+                SectionId = section.Id,
+                TableId = table.Id,
+                Date = DateTime.UtcNow.AddDays(1),
+                CustomerEmail = "guest@test.com",
+                Seats = 1,
+                BookingRef = "TEST001"
+            };
+            _dbContext.Bookings.Add(booking);
+            _dbContext.SaveChanges();
+
+            var req = new AdminUpdateBookingRequest { Seats = 5 };
+
+            // Act
+            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+
+            // Assert
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            var json = System.Text.Json.JsonSerializer.Serialize(badRequest.Value);
+            Assert.Contains("only has 2 seats", json);
+        }
+
+        [Fact]
+        public async Task AdminUpdateBooking_Succeeds_WhenSeatsEqualTableCapacity()
+        {
+            // Arrange
+            var restaurant = new Restaurant { Name = "Test Restaurant", Address = "123 Test St" };
+            _dbContext.Restaurants.Add(restaurant);
+            _dbContext.SaveChanges();
+
+            var section = new Section { Name = "Main", RestaurantId = restaurant.Id };
+            _dbContext.Sections.Add(section);
+            _dbContext.SaveChanges();
+
+            var table = new Table { Name = "Table 1", Seats = 4, SectionId = section.Id };
+            _dbContext.Tables.Add(table);
+            _dbContext.SaveChanges();
+
+            var booking = new Booking
+            {
+                RestaurantId = restaurant.Id,
+                SectionId = section.Id,
+                TableId = table.Id,
+                Date = DateTime.UtcNow.AddDays(1),
+                CustomerEmail = "guest@test.com",
+                Seats = 2,
+                BookingRef = "TEST002"
+            };
+            _dbContext.Bookings.Add(booking);
+            _dbContext.SaveChanges();
+
+            var req = new AdminUpdateBookingRequest { Seats = 4 };
+
+            // Act
+            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result);
+            var okResult = (OkObjectResult)result;
+            var returnedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
+            Assert.Equal(4, returnedDto.Seats);
         }
 
         public void Dispose()

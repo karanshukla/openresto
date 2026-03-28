@@ -42,8 +42,9 @@ describe('adminUpdateBookingFull', () => {
     const result = await adminUpdateBookingFull(123, updateReq);
 
     // Assert
-    expect(fetch).toHaveBeenCalledWith('/admin/bookings/123', {
+    expect(fetch).toHaveBeenCalledWith('/api/admin/bookings/123', {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

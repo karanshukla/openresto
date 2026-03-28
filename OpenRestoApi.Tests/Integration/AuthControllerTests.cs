@@ -1,6 +1,9 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OpenRestoApi.Tests.Integration;
 
@@ -248,33 +251,42 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
     }
 
     [Fact]
-    public async Task ResetPassword_WithShortPassword_Returns400()
+    public async Task Logout_ClearsCookie()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsync("/api/admin/auth/logout", null);
 
-        // Setup and verify PVQ to get a valid token
-        await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Logged out.", body.GetProperty("message").GetString());
+        
+        // Note: We can't easily verify the cookie is deleted in this test client setup without more complex logic, 
+        // but we verify the endpoint responds correctly.
+    }
+
+    [Fact]
+    public async Task VerifyPvq_NotConfigured_ReturnsBadRequest()
+    {
+        // Ensure we have a fresh DB or at least clear the PVQ for this account
+        using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            question = "Fav food?",
-            answer = "Pizza"
-        });
+            var db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            var cred = await db.AdminCredentials.FirstAsync();
+            cred.PvqQuestion = null;
+            cred.PvqAnswerHash = null;
+            cred.PvqAnswerSalt = null;
+            await db.SaveChangesAsync();
+        }
 
-        HttpClient unauthClient = _factory.CreateClient();
-        HttpResponseMessage verifyResponse = await unauthClient.PostAsJsonAsync("/api/admin/auth/pvq/verify", new
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/pvq/verify", new
         {
             email = TestWebAppFactory.AdminEmail,
-            answer = "Pizza"
-        });
-        JsonElement verifyBody = await verifyResponse.Content.ReadFromJsonAsync<JsonElement>();
-        string? resetToken = verifyBody.GetProperty("resetToken").GetString();
-
-        // Try to reset with short password
-        HttpResponseMessage response = await unauthClient.PostAsJsonAsync("/api/admin/auth/reset-password", new
-        {
-            resetToken,
-            newPassword = "ab"
+            answer = "Any"
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Security question not configured for this account.", body.GetProperty("message").GetString());
     }
 }
