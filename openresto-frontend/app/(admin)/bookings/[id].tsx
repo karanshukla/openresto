@@ -96,7 +96,7 @@ export default function AdminBookingDetailScreen() {
       .finally(() => setLoadingRestaurants(false));
   }, [editing, restaurants.length]);
 
-  const selectedRestaurant = restaurants.find((r) => r.id === editRestaurantId);
+  const selectedRestaurant = restaurants.find((r) => r.id === editRestaurantId) ?? null;
   const sections: SectionDto[] = selectedRestaurant?.sections ?? [];
   const selectedSection = sections.find((s) => s.id === editSectionId);
   const tables = selectedSection?.tables ?? [];

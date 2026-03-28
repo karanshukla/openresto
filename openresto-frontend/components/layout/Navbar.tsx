@@ -41,7 +41,8 @@ export default function Navbar() {
       style={[
         styles.nav,
         { borderBottomColor: colors.border },
-        Platform.OS === "web" ? { position: "sticky" as const, top: 0, zIndex: 100 } : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Platform.OS === "web" ? { position: "sticky" as any, top: 0, zIndex: 100 } : undefined,
       ]}
     >
       <View style={styles.inner}>

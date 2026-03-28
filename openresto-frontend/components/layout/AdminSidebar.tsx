@@ -60,7 +60,8 @@ export default function AdminSidebar() {
       style={[
         styles.sidebar,
         { borderRightColor: colors.border },
-        Platform.OS === "web" ? { position: "sticky" as const, top: 0 } : { height: "100%" },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Platform.OS === "web" ? { position: "sticky" as any, top: 0 } : { height: "100%" },
       ]}
     >
       {/* Brand */}
@@ -88,7 +89,8 @@ export default function AdminSidebar() {
             <Pressable
               key={href}
               onPress={() => router.push(href)}
-              style={(state: { hovered?: boolean }) => [
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              style={(state: any) => [
                 styles.navItem,
                 active
                   ? { backgroundColor: activeBg }
@@ -140,19 +142,15 @@ export default function AdminSidebar() {
       <View style={styles.footer}>
         <Pressable
           onPress={() => router.push("/")}
-          style={(state: { hovered?: boolean }) => [
-            styles.footerItem,
-            state.hovered && { backgroundColor: hoverBg },
-          ]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
         >
           <Ionicons name="arrow-back-outline" size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>Back to site</ThemedText>
         </Pressable>
         <Pressable
-          style={(state: { hovered?: boolean }) => [
-            styles.footerItem,
-            state.hovered && { backgroundColor: hoverBg },
-          ]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
           onPress={toggle}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
@@ -166,10 +164,7 @@ export default function AdminSidebar() {
           </ThemedText>
         </Pressable>
         <Pressable
-          style={(state: { hovered?: boolean }) => [
-            styles.footerItem,
-            state.hovered && { backgroundColor: hoverBg },
-          ]}
+          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
           onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={15} color={colors.muted} />
