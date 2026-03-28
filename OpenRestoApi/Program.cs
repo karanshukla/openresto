@@ -139,8 +139,18 @@ builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.Emai
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
     ?? "Data Source=./openresto.db";
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+{
+    if (connectionString.Contains("Server=") || connectionString.Contains("Host="))
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlite(connectionString);
+    }
+});
 
 builder.Services.AddSession(options =>
 {
