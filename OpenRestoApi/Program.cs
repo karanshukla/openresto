@@ -140,9 +140,17 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
     ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
     ?? "Data Source=./openresto.db";
 
+// Convert postgresql:// URI to standard connection string format
+if (connectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.LocalPath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]}";
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    if (connectionString.StartsWith("postgresql://") || connectionString.Contains("Server=") || connectionString.Contains("Host="))
+    if (connectionString.Contains("Host=") || connectionString.Contains("Server="))
     {
         options.UseNpgsql(connectionString);
     }
