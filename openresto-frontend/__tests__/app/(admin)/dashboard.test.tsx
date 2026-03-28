@@ -38,17 +38,21 @@ describe("AdminDashboardScreen Flow Tests", () => {
 
   it("calculates flow slots correctly based on today's bookings", async () => {
     const today = new Date();
-    // Create bookings for specific hours (17=5PM, 19=7PM)
+    // Create bookings for specific hours in UTC (17=5PM, 19=7PM)
     const mockBookings = [
       {
         id: "1",
-        date: new Date(today.setHours(17, 0, 0, 0)).toISOString(),
+        date: new Date(
+          Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 17, 0, 0, 0)
+        ).toISOString(),
         seats: 4,
         customerEmail: "user1@example.com",
       },
       {
         id: "2",
-        date: new Date(today.setHours(19, 0, 0, 0)).toISOString(),
+        date: new Date(
+          Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 19, 0, 0, 0)
+        ).toISOString(),
         seats: 8,
         customerEmail: "user2@example.com",
       },

@@ -69,18 +69,24 @@ export default function AdminDashboardScreen() {
   const subtleBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const [data, ov] = await Promise.all([fetchRestaurants(), getAdminOverview()]);
+      if (cancelled) return;
       setRestaurants(data);
       setOverview(ov);
       if (data.length > 0) {
         setSelectedRestaurant(data[0]);
         const b = await getAdminBookings(data[0].id);
+        if (cancelled) return;
         setBookings(b);
       }
       setLoading(false);
     }
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSelectRestaurant = async (r: RestaurantDto) => {
@@ -90,16 +96,22 @@ export default function AdminDashboardScreen() {
     setBookings(b);
     setLoading(false);
   };
-  // Get today's local date string for comparison (handles timezone correctly)
-  const getTodayDateString = (): string => {
+  const getTodayUTCDateString = (): string => {
     const d = new Date();
-    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
-  const todayDateString = getTodayDateString();
+  const todayDateString = getTodayUTCDateString();
 
   const todayBookings = bookings.filter((b) => {
-    const bookingDateString = new Date(b.date).toLocaleDateString("en-CA");
+    const bookingDate = new Date(b.date);
+    const year = bookingDate.getUTCFullYear();
+    const month = String(bookingDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(bookingDate.getUTCDate()).padStart(2, "0");
+    const bookingDateString = `${year}-${month}-${day}`;
     return bookingDateString === todayDateString;
   });
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());

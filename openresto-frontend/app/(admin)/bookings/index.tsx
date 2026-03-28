@@ -60,12 +60,17 @@ export default function AdminBookingsScreen() {
 
   // Load restaurants once on mount
   useEffect(() => {
+    let cancelled = false;
     fetchRestaurants().then((data) => {
+      if (cancelled) return;
       setRestaurants(data);
       if (data.length > 0) {
         setSelectedRestaurantId(data[0].id);
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch bookings whenever restaurant or filter changes
@@ -117,9 +122,22 @@ export default function AdminBookingsScreen() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const todayCount = bookings.filter(
-    (b) => new Date(b.date).toDateString() === new Date().toDateString()
-  ).length;
+  const getTodayUTCDateString = (): string => {
+    const d = new Date();
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayCount = bookings.filter((b) => {
+    const bookingDate = new Date(b.date);
+    const year = bookingDate.getUTCFullYear();
+    const month = String(bookingDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(bookingDate.getUTCDate()).padStart(2, "0");
+    const bookingDateString = `${year}-${month}-${day}`;
+    return bookingDateString === getTodayUTCDateString();
+  }).length;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

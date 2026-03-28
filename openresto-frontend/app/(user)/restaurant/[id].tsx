@@ -15,12 +15,17 @@ export default function RestaurantScreen() {
 
   useEffect(() => {
     if (id) {
+      let cancelled = false;
       async function loadRestaurant() {
         const data = await fetchRestaurantById(parseInt(id, 10));
+        if (cancelled) return;
         setRestaurant(data);
         setLoading(false);
       }
       loadRestaurant();
+      return () => {
+        cancelled = true;
+      };
     }
   }, [id]);
 

@@ -64,10 +64,15 @@ export default function AdminSettingsScreen() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     fetchRestaurants().then((data) => {
+      if (cancelled) return;
       setRestaurants(data);
       setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {

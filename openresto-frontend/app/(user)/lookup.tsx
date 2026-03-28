@@ -34,7 +34,14 @@ export default function LookupScreen() {
   const isWide = Platform.OS === "web" && width >= 768;
 
   useEffect(() => {
-    fetchCachedBookings().then(setCached);
+    let cancelled = false;
+    fetchCachedBookings().then((data) => {
+      if (cancelled) return;
+      setCached(data);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const colors = getThemeColors(isDark);
@@ -44,26 +51,99 @@ export default function LookupScreen() {
 
   const canSearch = refInput.trim() && emailInput.trim();
 
-  const handleLookup = async () => {
-    const ref = refInput.trim();
-    const email = emailInput.trim();
-    if (!ref || !email) return;
+  // Calendar URL generation (only when booking is found)
+  const calendarUrls =
+    !loading && booking
+      ? (() => {
+          const ref = booking.bookingRef;
+          const startDate = new Date(booking.date);
+          const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+          const restaurantName = restaurant?.name ?? "Restaurant";
+          const restaurantAddress = restaurant?.address ?? "";
+
+          const calTitle = `Reservation at ${restaurantName}`;
+          const calDescription = [
+            `Booking ref: ${ref}`,
+            `Guests: ${booking.seats}`,
+            restaurantAddress ? `Address: ${restaurantAddress}` : "",
+            booking.specialRequests ? `Requests: ${booking.specialRequests}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+          const fmtCal = (d: Date) =>
+            d
+              .toISOString()
+              .replace(/[-:]/g, "")
+              .replace(/\.\d{3}/, "");
+
+          const googleUrl = `https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(calTitle)}&dates=${fmtCal(startDate)}/${fmtCal(endDate)}&details=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
+
+          const outlookUrl = `https://outlook.live.com/calendar/0/action/compose?subject=${encodeURIComponent(calTitle)}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}&body=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
+
+          const downloadIcs = () => {
+            const ics = [
+              "BEGIN:VCALENDAR",
+              "VERSION:2.0",
+              "PRODID:-//OpenResto//Booking//EN",
+              "BEGIN:VEVENT",
+              `DTSTART:${fmtCal(startDate)}`,
+              `DTEND:${fmtCal(endDate)}`,
+              `SUMMARY:${calTitle}`,
+              `DESCRIPTION:${calDescription.replace(/\n/g, "\\n")}`,
+              restaurantAddress ? `LOCATION:${restaurantAddress}` : "",
+              `UID:${ref}@openresto`,
+              "END:VEVENT",
+              "END:VCALENDAR",
+            ]
+              .filter(Boolean)
+              .join("\r\n");
+            const blob = new Blob([ics], { type: "text/calendar" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `reservation-${ref}.ics`;
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          return { googleUrl, outlookUrl, downloadIcs };
+        })()
+      : null;
+
+  const googleCalendarUrl = calendarUrls?.googleUrl;
+  const outlookCalendarUrl = calendarUrls?.outlookUrl;
+  const downloadIcs = calendarUrls?.downloadIcs;
+
+  const performLookup = async (ref: string, email: string) => {
     setLoading(true);
     setSearched(true);
     setRestaurant(null);
-    const result = await getBookingByRef(ref, email);
-    setBooking(result);
-    if (result?.restaurantId) {
-      const r = await fetchRestaurantById(result.restaurantId);
-      setRestaurant(r);
+    try {
+      const result = await getBookingByRef(ref, email);
+      setBooking(result);
+      if (result?.restaurantId) {
+        const r = await fetchRestaurantById(result.restaurantId);
+        setRestaurant(r);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleLookup = () => {
+    const ref = refInput.trim();
+    const email = emailInput.trim();
+    if (!ref || !email) return;
+    performLookup(ref, email);
   };
 
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: colors.page }]}
       contentContainerStyle={styles.scrollContent}
+      horizontal={false}
+      showsHorizontalScrollIndicator={false}
     >
       <PageContainer>
         <View style={styles.header}>
@@ -128,19 +208,10 @@ export default function LookupScreen() {
                   <Pressable
                     key={c.bookingRef}
                     style={[styles.recentCard, { backgroundColor: cardBg, borderColor }]}
-                    onPress={async () => {
+                    onPress={() => {
                       setRefInput(c.bookingRef);
                       setEmailInput(c.email);
-                      setLoading(true);
-                      setSearched(true);
-                      setRestaurant(null);
-                      const result = await getBookingByRef(c.bookingRef, c.email);
-                      setBooking(result);
-                      if (result?.restaurantId) {
-                        const r = await fetchRestaurantById(result.restaurantId);
-                        setRestaurant(r);
-                      }
-                      setLoading(false);
+                      performLookup(c.bookingRef, c.email);
                     }}
                   >
                     <View style={styles.recentCardRow}>
@@ -170,7 +241,7 @@ export default function LookupScreen() {
                 style={[
                   styles.resultCard,
                   { backgroundColor: cardBg, borderColor },
-                  isWide && { marginTop: 0 },
+                  isWide ? { marginTop: 0 } : { marginTop: 16 },
                 ]}
               >
                 <Ionicons name="alert-circle-outline" size={28} color={mutedColor} />
@@ -182,7 +253,13 @@ export default function LookupScreen() {
             )}
 
             {!loading && booking && (
-              <View style={[styles.detailCard, { backgroundColor: cardBg, borderColor }]}>
+              <View
+                style={[
+                  styles.detailCard,
+                  { backgroundColor: cardBg, borderColor },
+                  isWide ? {} : { marginTop: 24 },
+                ]}
+              >
                 {/* Header inside card */}
                 <View style={styles.cardHeader}>
                   <View style={styles.resultHeader}>
@@ -200,6 +277,70 @@ export default function LookupScreen() {
                     </ThemedText>
                   </View>
                 </View>
+                <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+
+                {/* Calendar actions - only on web */}
+                {Platform.OS === "web" && (
+                  <View
+                    style={[
+                      styles.calendarSection,
+                      { backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" },
+                    ]}
+                  >
+                    <ThemedText style={[styles.calendarTitle, { color: mutedColor }]}>
+                      ADD TO CALENDAR
+                    </ThemedText>
+                    <View style={styles.calendarActions}>
+                      <Pressable
+                        style={[
+                          styles.calendarBtn,
+                          {
+                            backgroundColor: isDark
+                              ? "rgba(66,133,244,0.12)"
+                              : "rgba(66,133,244,0.06)",
+                          },
+                        ]}
+                        onPress={() => window.open(googleCalendarUrl, "_blank")}
+                      >
+                        <Ionicons name="logo-google" size={16} color="#4285F4" />
+                        <ThemedText style={[styles.calendarBtnText, { color: "#4285F4" }]}>
+                          Google
+                        </ThemedText>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.calendarBtn,
+                          {
+                            backgroundColor: isDark
+                              ? "rgba(0,120,212,0.12)"
+                              : "rgba(0,120,212,0.06)",
+                          },
+                        ]}
+                        onPress={() => window.open(outlookCalendarUrl, "_blank")}
+                      >
+                        <Ionicons name="calendar-outline" size={16} color="#0078D4" />
+                        <ThemedText style={[styles.calendarBtnText, { color: "#0078D4" }]}>
+                          Outlook
+                        </ThemedText>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.calendarBtn,
+                          {
+                            backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+                          },
+                        ]}
+                        onPress={downloadIcs}
+                      >
+                        <Ionicons name="download-outline" size={16} color={mutedColor} />
+                        <ThemedText style={[styles.calendarBtnText, { color: mutedColor }]}>
+                          .ics
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+
                 <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
                 {[
                   ...(restaurant
@@ -287,7 +428,7 @@ export default function LookupScreen() {
 
         {/* Recent bookings — only on narrow (wide shows them in left column) */}
         {!isWide && cached.length > 0 && (
-          <View style={styles.recentSection}>
+          <View style={[styles.recentSection, { marginTop: 20 }]}>
             <ThemedText style={[styles.recentTitle, { color: mutedColor }]}>
               YOUR RECENT BOOKINGS
             </ThemedText>
@@ -295,14 +436,10 @@ export default function LookupScreen() {
               <Pressable
                 key={c.bookingRef}
                 style={[styles.recentCard, { backgroundColor: cardBg, borderColor }]}
-                onPress={async () => {
+                onPress={() => {
                   setRefInput(c.bookingRef);
                   setEmailInput(c.email);
-                  setLoading(true);
-                  setSearched(true);
-                  const result = await getBookingByRef(c.bookingRef, c.email);
-                  setBooking(result);
-                  setLoading(false);
+                  performLookup(c.bookingRef, c.email);
                 }}
               >
                 <View style={styles.recentCardRow}>
@@ -413,6 +550,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  calendarSection: {
+    padding: 16,
+    borderRadius: 10,
+    gap: 10,
+  },
+  calendarTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  calendarActions: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  calendarBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    minWidth: 70,
+    maxWidth: 100,
+    justifyContent: "center",
+  },
+  calendarBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   notFound: {
     fontSize: 15,
     textAlign: "center",
@@ -473,6 +642,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     fontWeight: "500",
+    flex: 1,
   },
   detailDivider: {
     height: 1,
@@ -507,6 +677,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: -0.2,
+    flex: 1,
   },
   recentMeta: {
     fontSize: 12,

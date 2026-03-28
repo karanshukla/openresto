@@ -37,19 +37,25 @@ export default function BookingConfirmationScreen() {
 
   useEffect(() => {
     if (!bookingRef) return;
+    let cancelled = false;
     async function load() {
       const numericId = /^\d+$/.test(bookingRef) ? parseInt(bookingRef, 10) : NaN;
       const data = isNaN(numericId)
         ? await getBookingByRef(bookingRef, email ?? "")
         : await getBookingById(numericId);
+      if (cancelled) return;
       setBooking(data);
       if (data?.restaurantId) {
         const r = await fetchRestaurantById(data.restaurantId);
+        if (cancelled) return;
         setRestaurant(r);
       }
       setLoading(false);
     }
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [bookingRef, email]);
 
   if (loading) {

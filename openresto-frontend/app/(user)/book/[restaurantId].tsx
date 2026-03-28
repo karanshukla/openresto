@@ -20,12 +20,17 @@ export default function BookScreen() {
 
   useEffect(() => {
     if (restaurantId) {
+      let cancelled = false;
       async function loadRestaurant() {
         const data = await fetchRestaurantById(parseInt(restaurantId, 10));
+        if (cancelled) return;
         setRestaurant(data);
         setLoading(false);
       }
       loadRestaurant();
+      return () => {
+        cancelled = true;
+      };
     }
   }, [restaurantId]);
 
