@@ -1,7 +1,7 @@
 import { ScrollView, View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { getThemeColors } from "@/theme/theme";
 import { SectionWithTables, BookingDetailDto } from "@/api/admin";
 import { styles } from "./bookings.styles";
 

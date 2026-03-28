@@ -20,26 +20,41 @@ const BADGE_STYLES: Record<
   BadgeVariant,
   { bg: { light: string; dark: string }; text: string | { light: string; dark: string } }
 > = {
-  arrived: STATUS_COLORS.arrived as any,
-  seated: STATUS_COLORS.seated as any,
-  upcoming: STATUS_COLORS.upcoming as any,
-  scheduled: STATUS_COLORS.scheduled as any,
-  completed: STATUS_COLORS.completed as any,
+  arrived: STATUS_COLORS.arrived as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
+  seated: STATUS_COLORS.seated as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
+  upcoming: STATUS_COLORS.upcoming as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
+  scheduled: STATUS_COLORS.scheduled as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
+  completed: STATUS_COLORS.completed as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
 };
 
 export function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
   const { label, variant } = getStatus(date);
   const s = BADGE_STYLES[variant];
-  
+
   const bg = isDark && s.bg.dark ? s.bg.dark : s.bg.light;
-  let text = typeof s.text === "string" ? s.text : (isDark ? s.text.dark : s.text.light);
+  let text = typeof s.text === "string" ? s.text : isDark ? s.text.dark : s.text.light;
 
   // Fallbacks based on original implementation for contrast in dark mode
   if (isDark) {
-      if (variant === 'arrived') text = "#4ade80";
-      if (variant === 'upcoming') text = "#fde047";
-      if (variant === 'scheduled') text = "#94a3b8";
-      if (variant === 'completed') text = "#64748b";
+    if (variant === "arrived") text = "#4ade80";
+    if (variant === "upcoming") text = "#fde047";
+    if (variant === "scheduled") text = "#94a3b8";
+    if (variant === "completed") text = "#64748b";
   }
 
   return (

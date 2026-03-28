@@ -7,6 +7,11 @@ import DatePicker from "@/components/common/DatePicker";
 import TimePicker from "@/components/common/TimePicker";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
 
+interface RestaurantDto {
+  openTime?: string;
+  closeTime?: string;
+}
+
 interface EditBookingFormProps {
   borderColor: string;
   loadingRestaurants: boolean;
@@ -22,7 +27,7 @@ interface EditBookingFormProps {
   editSpecialRequests: string;
   editDate: string;
   editTime: string;
-  selectedRestaurant: any;
+  selectedRestaurant: RestaurantDto | null;
   setEditTableId: (id: number) => void;
   setEditSeats: (s: string) => void;
   setEditEmail: (e: string) => void;
