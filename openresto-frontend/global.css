@@ -26,8 +26,8 @@ body.dark {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -35,16 +35,18 @@ body.dark {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
+    background: #9ca3af;
+    border-radius: 5px;
+    border: 2px solid #f2f3f5;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+    background: #6b7280;
 }
 
 body.dark ::-webkit-scrollbar-thumb {
     background: #4b5563;
+    border: 2px solid #111214;
 }
 
 body.dark ::-webkit-scrollbar-thumb:hover {

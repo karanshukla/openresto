@@ -1,4 +1,4 @@
-import { get, post, patch, del } from "./client";
+import { get, post, patch, del, put } from "./client";
 
 // ---------- Types ----------
 
@@ -171,6 +171,47 @@ export async function sendBookingEmail(
   }
 }
 
+export async function adminRestoreBooking(id: number): Promise<boolean> {
+  try {
+    const res = await post(`/admin/bookings/${id}/restore`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message ?? "Failed to restore booking");
+    }
+    return true;
+  } catch (err) {
+    console.error("adminRestoreBooking error:", err);
+    throw err;
+  }
+}
+
+export interface AdminUpdateBookingRequest {
+  restaurantId?: number;
+  sectionId?: number;
+  tableId?: number;
+  date?: string;
+  seats?: number;
+  customerEmail?: string;
+  specialRequests?: string;
+}
+
+export async function adminUpdateBookingFull(
+  id: number,
+  req: AdminUpdateBookingRequest
+): Promise<BookingDetailDto | null> {
+  try {
+    const res = await put(`/admin/bookings/${id}`, req);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message ?? "Failed to update booking");
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("adminUpdateBookingFull error:", err);
+    throw err;
+  }
+}
+
 export async function adminCreateRestaurant(
   req: CreateRestaurantRequest
 ): Promise<{ id: number; name: string; address?: string } | null> {
@@ -207,6 +248,28 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
     return await res.json();
   } catch (err) {
     console.error("adminGetTables error:", err);
+    return [];
+  }
+}
+
+export async function adminGetRestaurants(): Promise<{id: number; name: string}[]> {
+  try {
+    const res = await get("/admin/restaurants");
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error("adminGetRestaurants error:", err);
+    return [];
+  }
+}
+
+export async function adminGetSections(restaurantId: number): Promise<{id: number; name: string}[]> {
+  try {
+    const res = await get(`/admin/restaurants/${restaurantId}/sections`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error("adminGetSections error:", err);
     return [];
   }
 }

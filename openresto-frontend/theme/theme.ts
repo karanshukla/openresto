@@ -16,7 +16,7 @@ export const COLORS = {
   },
   
   muted: {
-    light: '#6b7280',
+    light: '#4b5563', // Increased contrast from #6b7280 for WCAG AA
     dark: '#9ca3af',
   },
   
@@ -32,12 +32,12 @@ export const COLORS = {
   
   card: {
     light: '#ffffff',
-    dark: '#282d33',
+    dark: '#1e2022',
   },
   
   input: {
     light: '#f9fafb',
-    dark: '#282d33',
+    dark: '#1e2022',
   },
   
   border: {
@@ -72,11 +72,11 @@ export const STATUS_COLORS = {
   },
   scheduled: {
     bg: { light: '#f1f5f9', dark: '#1e2934' },
-    text: '#64748b',
+    text: '#475569', // Increased contrast from #64748b
   },
   completed: {
     bg: { light: '#f1f5f9', dark: '#1a1c1e' },
-    text: '#94a3b8',
+    text: '#475569', // Increased contrast from #94a3b8
   },
   cancelled: {
     bg: { light: 'rgba(220,38,38,0.1)', dark: 'rgba(220,38,38,0.15)' },
@@ -84,7 +84,7 @@ export const STATUS_COLORS = {
   },
   past: {
     bg: { light: '#f1f5f9', dark: '#1a1c1e' },
-    text: { light: '#94a3b8', dark: '#64748b' },
+    text: { light: '#475569', dark: '#94a3b8' }, // Increased contrast for light mode
   },
 };
 

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Controllers;
 
@@ -99,6 +101,20 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     public async Task<IActionResult> DeleteRestaurant(int id)
         => await _admin.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 
+    [HttpGet("restaurants")]
+    public async Task<IActionResult> GetRestaurants()
+    {
+        var restaurants = await _admin.GetRestaurantsAsync();
+        return Ok(restaurants);
+    }
+
+    [HttpGet("restaurants/{restaurantId}/sections")]
+    public async Task<IActionResult> GetSections(int restaurantId)
+    {
+        var sections = await _admin.GetSectionsAsync(restaurantId);
+        return Ok(sections);
+    }
+
     [HttpGet("restaurants/{restaurantId}/tables")]
     public async Task<IActionResult> GetTables(int restaurantId)
     {
@@ -139,6 +155,38 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         catch (Exception ex)
         {
             return BadRequest(new { message = $"Failed to send: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("bookings/{id}/restore")]
+    public async Task<IActionResult> RestoreBooking(int id)
+    {
+        try
+        {
+            BookingDetailDto? result = await _admin.RestoreBookingAsync(id);
+            return result == null ? NotFound() : Ok(new { message = "Booking restored successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("bookings/{id}")]
+    public async Task<IActionResult> AdminUpdateBooking(int id, [FromBody] AdminUpdateBookingRequest req)
+    {
+        try
+        {
+            BookingDetailDto? result = await _admin.AdminUpdateBookingAsync(id, req);
+            return result == null ? NotFound() : Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

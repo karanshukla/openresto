@@ -76,6 +76,19 @@ public class UpdateBookingRequest
     public string? CustomerEmail { get; set; }
 }
 
+// ── Admin booking update (PUT — can modify all fields) ───────────────────────
+
+public class AdminUpdateBookingRequest
+{
+    public int? RestaurantId { get; set; }
+    public int? SectionId { get; set; }
+    public int? TableId { get; set; }
+    public DateTime? Date { get; set; }
+    public int? Seats { get; set; }
+    public string? CustomerEmail { get; set; }
+    public string? SpecialRequests { get; set; }
+}
+
 // ── Admin restaurant create ───────────────────────────────────────────────────
 
 public class CreateRestaurantRequest

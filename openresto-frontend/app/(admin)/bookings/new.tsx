@@ -90,6 +90,16 @@ export default function AdminNewBookingScreen() {
 
   const handleSubmit = async () => {
     if (!isValid) return;
+
+    // Check seat capacity warning
+    const table = tables.find((t) => t.id === tableId);
+    if (table && seats > table.seats) {
+      const confirmed = window.confirm(
+        `Warning: This table only has ${table.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+      );
+      if (!confirmed) return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {

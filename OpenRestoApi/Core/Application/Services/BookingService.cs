@@ -54,11 +54,18 @@ public class BookingService(
             throw new InvalidOperationException("This table is currently being held by another user. Please try again shortly.");
         }
 
-        // 3. Persist the booking
+        // 3. Check for seat capacity
+        Table? table = await _tableRepository.GetByIdAsync(bookingDto.TableId);
+        if (table != null && bookingDto.Seats > table.Seats)
+        {
+            throw new InvalidOperationException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
+        }
+
+        // 4. Persist the booking
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.BookingRef = BookingRefGenerator.Generate();
         booking.EndTime = bookingDto.Date.AddHours(1);
-        booking.Table = (await _tableRepository.GetByIdAsync(bookingDto.TableId))!;
+        booking.Table = table!;
         booking.Section = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId))!;
         booking.Restaurant = (await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId))!;
 
@@ -95,6 +102,17 @@ public class BookingService(
     {
         _ = id; // Required by REST convention (PUT /bookings/{id}) but entity ID comes from DTO
         Booking booking = _mapper.ToEntity(bookingDto);
+        
+        // Ensure EndTime is valid if it's being updated or if Date changed
+        if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
+        {
+            booking.EndTime = booking.Date.AddHours(1);
+        }
+        else if (!booking.EndTime.HasValue)
+        {
+            booking.EndTime = booking.Date.AddHours(1);
+        }
+
         await _bookingRepository.UpdateAsync(booking);
     }
 

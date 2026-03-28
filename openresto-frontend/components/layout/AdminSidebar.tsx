@@ -56,9 +56,10 @@ export default function AdminSidebar() {
 
   return (
     <ThemedView
+      lightColor="#ffffff"
       style={[
         styles.sidebar,
-        { borderRightColor: colors.border, backgroundColor: colors.page },
+        { borderRightColor: colors.border },
         Platform.OS === "web"
           ? ({ position: "sticky", top: 0, height: "100vh" } as any)
           : { height: "100%" },
