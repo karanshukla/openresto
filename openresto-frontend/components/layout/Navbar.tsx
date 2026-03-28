@@ -4,7 +4,7 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
-import { PRIMARY } from "@/constants/colors";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -28,20 +28,19 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
   const brand = useBrand();
-  const accent = brand.primaryColor || PRIMARY;
+  const accent = brand.primaryColor || COLORS.primary;
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const mutedColor = isDark ? "#9ca3af" : "#6b7280";
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
 
   return (
     <ThemedView
       style={[
         styles.nav,
-        { borderBottomColor: borderColor },
+        { borderBottomColor: colors.border },
         Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 100 } as any) : undefined,
       ]}
     >
@@ -68,7 +67,7 @@ export default function Navbar() {
             return (
               <Link key={href} href={href} asChild>
                 <Pressable style={styles.linkBtn}>
-                  <ThemedText style={[styles.linkText, { color: active ? accent : mutedColor }]}>
+                  <ThemedText style={[styles.linkText, { color: active ? accent : colors.muted }]}>
                     {label}
                   </ThemedText>
                   {active && <View style={[styles.linkUnderline, { backgroundColor: accent }]} />}
@@ -85,7 +84,7 @@ export default function Navbar() {
             <Ionicons
               name={isDark ? "sunny-outline" : "moon-outline"}
               size={19}
-              color={mutedColor}
+              color={colors.muted}
             />
           </Pressable>
         </View>
@@ -117,7 +116,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 20,
     fontWeight: "800",
-    color: PRIMARY,
+    color: COLORS.primary,
     letterSpacing: -0.5,
   },
   links: {
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   linkBtn: {
-    paddingHorizontal: 14,
+    ...BUTTON_SIZES.secondary,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",

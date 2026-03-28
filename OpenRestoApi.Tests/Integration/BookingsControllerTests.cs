@@ -124,6 +124,9 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(bookingRef, body.GetProperty("bookingRef").GetString());
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("tableName").GetString()));
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("sectionName").GetString()));
+        Assert.True(body.GetProperty("tableSeats").GetInt32() > 0);
     }
 
     [Fact]

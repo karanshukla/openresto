@@ -32,18 +32,12 @@
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
-    "expo-web-browser": "~15.0.10",
-    "nativewind": "^4.2.3",
+    "expo-web-browser": "~15.0.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-gesture-handler": "~2.28.0",
-    "react-native-reanimated": "~4.1.1",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.5.1",
-    "tailwindcss": "^3.4.19"
+    "react-native": "0.81.6",
+    "react-native-web": "~0.21.1",
+    "react-native-worklets": "0.5.2"
   },
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",
@@ -55,13 +49,12 @@
     "jest": "^29.7.0",
     "jest-expo": "^55.0.11",
     "prettier": "^3.8.1",
-    "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nativewind)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"

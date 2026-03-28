@@ -3,12 +3,20 @@ import { RestaurantDto } from "@/api/restaurants";
 import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 import { Ionicons } from "@expo/vector-icons";
 
 export default function RestaurantCard({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
 
   const totalTables = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
@@ -24,15 +32,15 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const iconColor = `hsl(${hue}, 70%, ${isDark ? "78%" : "26%"})`;
   const initial = restaurant.name.charAt(0).toUpperCase();
 
-  const cardBg = isDark ? "#282d33" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.15)";
+  const cardBg = colors.card;
+  const borderColor = colors.border;
 
   // Outer wrapper has the shadow; inner view has overflow:hidden for the header clip
   const outerShadow =
     Platform.OS === "web"
       ? isDark
         ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as any)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any)
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as any) // TODO: Use theme shadows
       : {};
 
   return (
@@ -98,7 +106,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
             </View>
 
             {/* CTA */}
-            <View style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}>
+            <View style={[styles.ctaBtn, { backgroundColor: COLORS.primary }]}>
               <ThemedText style={styles.ctaBtnText}>Book a table</ThemedText>
               <Ionicons name="arrow-forward" size={14} color="#fff" />
             </View>

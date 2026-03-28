@@ -19,7 +19,15 @@ import { getPvqStatus, setupPvq, changePassword, PvqStatus } from "@/api/auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, STATUS_COLORS, BADGE_COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 import { Ionicons } from "@expo/vector-icons";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import {
@@ -78,7 +86,8 @@ function EditableRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
 
   if (!editing) {
     return (
@@ -92,7 +101,7 @@ function EditableRow({
               setEditing(true);
             }}
           >
-            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>Edit</ThemedText>
+            <ThemedText style={[styles.smallBtnText, { color: COLORS.primary }]}>Edit</ThemedText>
           </Pressable>
           {onDelete && (
             <Pressable
@@ -130,12 +139,12 @@ function EditableRow({
             setEditing(false);
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>
+          <ThemedText style={[styles.smallBtnText, { color: COLORS.primary }]}>
             {saving ? "…" : "Save"}
           </ThemedText>
         </Pressable>
         <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -163,8 +172,8 @@ function AddRow({
   if (!open) {
     return (
       <Pressable style={styles.addBtn} onPress={() => setOpen(true)}>
-        <Ionicons name="add-circle-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.addBtnText, { color: PRIMARY }]}>{label}</ThemedText>
+        <Ionicons name="add-circle-outline" size={16} color="#fff" />
+        <ThemedText style={styles.addBtnText}>{label}</ThemedText>
       </Pressable>
     );
   }
@@ -181,7 +190,7 @@ function AddRow({
         />
       )}
       <View style={styles.rowActions}>
-        <Button
+        <Pressable
           onPress={async () => {
             if (!name.trim()) return;
             setSaving(true);
@@ -192,19 +201,20 @@ function AddRow({
             setOpen(false);
           }}
           disabled={saving || !name.trim()}
-          style={styles.addSaveBtn}
-        >
-          {saving ? "Adding…" : "Add"}
-        </Button>
+          style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}        >
+          <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
+            {saving ? "Adding…" : "Add"}
+          </ThemedText>
+        </Pressable>
         <Pressable
-          style={styles.smallBtn}
+          style={[styles.actionBtn, { borderWidth: 1, borderColor: `${COLORS.primary}30` }]}
           onPress={() => {
             setOpen(false);
             setName("");
             setExtra("");
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -236,7 +246,8 @@ function TableRow({
   const [draftName, setDraftName] = useState(table.name ?? "");
   const [draftSeats, setDraftSeats] = useState(String(table.seats));
   const [saving, setSaving] = useState(false);
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
 
   if (!editing) {
     return (
@@ -256,7 +267,7 @@ function TableRow({
               setEditing(true);
             }}
           >
-            <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>Edit</ThemedText>
+            <ThemedText style={[styles.smallBtnText, { color: COLORS.primary }]}>Edit</ThemedText>
           </Pressable>
           <Pressable
             style={styles.smallBtn}
@@ -295,7 +306,7 @@ function TableRow({
       </View>
       <View style={styles.rowActions}>
         <Pressable
-          style={styles.smallBtn}
+          style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
           disabled={saving}
           onPress={async () => {
             const seats = parseInt(draftSeats, 10);
@@ -312,12 +323,15 @@ function TableRow({
             }
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: PRIMARY }]}>
+          <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
             {saving ? "…" : "Save"}
           </ThemedText>
         </Pressable>
-        <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.smallBtnText, { color: MUTED_LIGHT }]}>Cancel</ThemedText>
+        <Pressable
+          style={[styles.actionBtn, { borderWidth: 1, borderColor: `${COLORS.primary}30` }]}
+          onPress={() => setEditing(false)}
+        >
+          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>Cancel</ThemedText>
         </Pressable>
       </View>
     </View>
@@ -352,6 +366,7 @@ function SectionBlock({
   onTableDeleted: (id: number) => void;
 }) {
   const sectionBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
+  const colors = getThemeColors(isDark);
 
   return (
     <View style={[styles.sectionBlock, { borderColor, backgroundColor: sectionBg }]}>
@@ -417,6 +432,7 @@ function RestaurantInfoForm({
   onSaved: (patch: Partial<RestaurantDto>) => void;
 }) {
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
@@ -489,7 +505,7 @@ function RestaurantInfoForm({
                 style={[
                   styles.dayChip,
                   active
-                    ? { backgroundColor: PRIMARY, borderColor: PRIMARY }
+                    ? { backgroundColor: COLORS.primary, borderColor: COLORS.primary }
                     : { borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" },
                 ]}
               >
@@ -511,13 +527,13 @@ function RestaurantInfoForm({
             height: 44,
             borderWidth: 1,
             borderStyle: "solid" as const,
-            borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)",
+            borderColor: colors.border,
             borderRadius: 8,
             paddingLeft: 12,
             paddingRight: 12,
             fontSize: 14,
-            backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-            color: isDark ? "#ffffff" : "#000000",
+            backgroundColor: colors.input,
+            color: colors.text,
             cursor: "pointer",
           }}
         >
@@ -619,7 +635,7 @@ function RestaurantInfoForm({
 const hoursInputStyle: React.CSSProperties = {
   width: "100%",
   height: 44,
-  border: "1px solid rgba(0,0,0,0.18)",
+  border: `1px solid ${COLORS.border.light}`,
   borderRadius: 8,
   paddingLeft: 12,
   paddingRight: 12,
@@ -659,13 +675,13 @@ function LocationCard({
       style={[
         styles.locationCard,
         { backgroundColor: cardBg, borderColor },
-        isSelected && { borderColor: PRIMARY },
+        isSelected && { borderColor: COLORS.primary },
       ]}
     >
       {/* Card header */}
       <View style={styles.locationCardHeader}>
-        <View style={[styles.locationIcon, { backgroundColor: `${PRIMARY}14` }]}>
-          <Ionicons name="storefront-outline" size={22} color={PRIMARY} />
+        <View style={[styles.locationIcon, { backgroundColor: `${COLORS.primary}14` }]}>
+          <Ionicons name="storefront-outline" size={22} color={COLORS.primary} />
         </View>
         <View style={styles.locationMeta}>
           <ThemedText style={styles.locationName}>{restaurant.name}</ThemedText>
@@ -697,16 +713,16 @@ function LocationCard({
           <Pressable
             style={[
               styles.configureBtn,
-              isSelected ? { backgroundColor: PRIMARY } : { backgroundColor: `${PRIMARY}14` },
+              isSelected ? { backgroundColor: COLORS.primary } : { backgroundColor: `${COLORS.primary}14` },
             ]}
             onPress={onSelect}
           >
             <Ionicons
               name={isSelected ? "chevron-up" : "settings-outline"}
               size={14}
-              color={isSelected ? "#fff" : PRIMARY}
+              color={isSelected ? "#fff" : COLORS.primary}
             />
-            <ThemedText style={[styles.configureBtnText, { color: isSelected ? "#fff" : PRIMARY }]}>
+            <ThemedText style={[styles.configureBtnText, { color: isSelected ? "#fff" : COLORS.primary }]}>
               {isSelected ? "Close" : "Configure"}
             </ThemedText>
           </Pressable>
@@ -821,8 +837,8 @@ function GlobalSettingRow({
         { cursor: comingSoon ? ("default" as any) : ("pointer" as any) },
       ]}
     >
-      <View style={[styles.globalRowIcon, { backgroundColor: `${PRIMARY}14` }]}>
-        <Ionicons name={icon} size={18} color={PRIMARY} />
+      <View style={[styles.globalRowIcon, { backgroundColor: `${COLORS.primary}14` }]}>
+        <Ionicons name={icon} size={18} color={COLORS.primary} />
       </View>
       <View style={styles.globalRowText}>
         <ThemedText style={styles.globalRowTitle}>{title}</ThemedText>
@@ -1007,7 +1023,7 @@ function BrandSettingsCard({
                 </View>
               )}
               <Pressable style={[styles.secBtn, { borderColor }]} onPress={handlePickLogo}>
-                <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>
+                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
                   {logoPreview ? "Change" : "Upload"}
                 </ThemedText>
               </Pressable>
@@ -1019,7 +1035,7 @@ function BrandSettingsCard({
                     setLogoData("");
                   }}
                 >
-                  <ThemedText style={[styles.secBtnText, { color: "#dc2626" }]}>Remove</ThemedText>
+                  <ThemedText style={[styles.secBtnText, { color: COLORS.error }]}>Delete</ThemedText>
                 </Pressable>
               )}
             </View>
@@ -1136,7 +1152,7 @@ function EmailSettingsCard({
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
         <View style={[styles.secIcon, { backgroundColor: "rgba(10,126,164,0.1)" }]}>
-          <Ionicons name="mail-outline" size={20} color={PRIMARY} />
+          <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Email (SMTP)</ThemedText>
@@ -1161,7 +1177,7 @@ function EmailSettingsCard({
                   setEnableSsl(true);
                 }}
               >
-                <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>{p.label}</ThemedText>
+                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>{p.label}</ThemedText>
               </Pressable>
             ))}
           </View>
@@ -1180,17 +1196,17 @@ function EmailSettingsCard({
               <Pressable
                 style={[
                   styles.secBtn,
-                  { borderColor, paddingVertical: 10, alignItems: "center" as const },
+                  { borderColor, alignItems: "center" as const },
                 ]}
                 onPress={() => setEnableSsl((v) => !v)}
               >
                 <Ionicons
                   name={enableSsl ? "checkmark-circle" : "ellipse-outline"}
                   size={16}
-                  color={enableSsl ? PRIMARY : mutedColor}
+                  color={enableSsl ? COLORS.primary : mutedColor}
                 />
                 <ThemedText
-                  style={[styles.secBtnText, { color: enableSsl ? PRIMARY : mutedColor }]}
+                  style={[styles.secBtnText, { color: enableSsl ? COLORS.primary : mutedColor }]}
                 >
                   {enableSsl ? "Enabled" : "Disabled"}
                 </ThemedText>
@@ -1260,7 +1276,7 @@ function EmailSettingsCard({
             <Pressable
               style={[
                 styles.secBtn,
-                { borderColor, paddingVertical: 10, paddingHorizontal: 14 },
+                { borderColor },
                 (!host || !username) && { opacity: 0.4 },
               ]}
               onPress={() => {
@@ -1272,8 +1288,8 @@ function EmailSettingsCard({
                 <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>Testing…</ThemedText>
               ) : (
                 <>
-                  <Ionicons name="flash-outline" size={14} color={PRIMARY} />
-                  <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>Test</ThemedText>
+                  <Ionicons name="flash-outline" size={14} color={COLORS.primary} />
+                  <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>Test</ThemedText>
                 </>
               )}
             </Pressable>
@@ -1348,8 +1364,8 @@ function SecurityCard({
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <View style={styles.secHeader}>
-        <View style={[styles.secIcon, { backgroundColor: `${PRIMARY}14` }]}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={PRIMARY} />
+        <View style={[styles.secIcon, { backgroundColor: `${COLORS.primary}14` }]}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Account Security</ThemedText>
@@ -1368,7 +1384,7 @@ function SecurityCard({
               {pvqStatus.question}
             </ThemedText>
           ) : (
-            <ThemedText style={[styles.secRowSub, { color: "#f59e0b" }]}>
+            <ThemedText style={[styles.secRowSub, { color: COLORS.warning }]}>
               Not configured — set one up to enable password reset
             </ThemedText>
           )}
@@ -1381,7 +1397,7 @@ function SecurityCard({
             setMsg(null);
           }}
         >
-          <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>
+          <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
             {pvqStatus?.isConfigured ? "Change" : "Set up"}
           </ThemedText>
         </Pressable>
@@ -1438,7 +1454,7 @@ function SecurityCard({
             setMsg(null);
           }}
         >
-          <ThemedText style={[styles.secBtnText, { color: PRIMARY }]}>Change</ThemedText>
+          <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>Change</ThemedText>
         </Pressable>
       </View>
 
@@ -1510,9 +1526,10 @@ export default function AdminSettingsScreen() {
   const isDark = useColorScheme() === "dark";
   const { state: confirmState, confirm: confirmAction, handleConfirm, handleCancel } = useConfirm();
 
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
+  const cardBg = colors.card;
+  const mutedColor = colors.muted;
 
   function patchRestaurant(id: number, patch: Partial<RestaurantDto>) {
     setRestaurants((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -1528,7 +1545,7 @@ export default function AdminSettingsScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={PRIMARY} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </ThemedView>
     );
   }
@@ -1674,7 +1691,7 @@ const styles = StyleSheet.create({
   locationName: { fontSize: 16, fontWeight: "700" },
   locationAddress: { fontSize: 13 },
   activeBadge: {
-    backgroundColor: "#dcfce7",
+    backgroundColor: BADGE_COLORS.active.bg,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
@@ -1682,7 +1699,7 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#15803d",
+    color: BADGE_COLORS.active.text,
     letterSpacing: 0.5,
   },
   locationStats: {
@@ -1701,12 +1718,12 @@ const styles = StyleSheet.create({
   configureBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    justifyContent: "center",
+    gap: 8,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 8,
   },
-  configureBtnText: { fontSize: 13, fontWeight: "700" },
+  configureBtnText: { fontSize: 14, fontWeight: "700" },
   expandedEditor: {
     borderTopWidth: 1,
     padding: 16,
@@ -1724,19 +1741,28 @@ const styles = StyleSheet.create({
   },
   editableValue: { fontSize: 15, fontWeight: "600", flex: 1 },
   editableInput: { flex: 1 },
-  rowActions: { flexDirection: "row", gap: 4 },
-  smallBtn: { paddingHorizontal: 8, paddingVertical: 4 },
-  smallBtnText: { fontSize: 13, fontWeight: "600" },
-  deleteText: { fontSize: 13, fontWeight: "600", color: "#dc2626" },
+  rowActions: { flexDirection: "row", gap: 8, alignItems: "center" },
+  smallBtn: { ...BUTTON_SIZES.secondary, borderRadius: 8 },
+  smallBtnText: { fontSize: 14, fontWeight: "600" },
+  deleteText: { fontSize: 14, fontWeight: "600", color: COLORS.error },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 10,
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    minHeight: 48,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
   },
-  addBtnText: { fontSize: 14, fontWeight: "600" },
+  addBtnText: { fontSize: 16, fontWeight: "600", color: "#fff" },
   addForm: { gap: 8, paddingTop: 8 },
-  addSaveBtn: { flex: 0 },
+  addSaveBtn: { flex: 1 },
+  cancelBtn: { ...BUTTON_SIZES.secondary, borderRadius: 8 },
+  cancelBtnText: { fontSize: 14, fontWeight: "600" },
+  actionBtn: { ...BUTTON_SIZES.secondary, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  actionBtnText: { fontSize: 14, fontWeight: "600" },
   sectionBlock: {
     borderRadius: 10,
     borderWidth: 1,
@@ -1765,11 +1791,14 @@ const styles = StyleSheet.create({
   hoursField: { flex: 1, gap: 4 },
   dayRow: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 4 },
   dayChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 56,
+    minHeight: 40,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
+    justifyContent: "center",
   },
   dayChipText: { fontSize: 13, fontWeight: "600" },
   saveBtn: { marginTop: 8 },
@@ -1812,7 +1841,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 20,
   },
-  comingSoonText: { fontSize: 11, fontWeight: "700", color: PRIMARY },
+  comingSoonText: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
   // Security card
   secCard: {
     borderRadius: 14,
@@ -1844,10 +1873,10 @@ const styles = StyleSheet.create({
   },
   secRowTitle: { fontSize: 14, fontWeight: "600" },
   secRowSub: { fontSize: 12, marginTop: 1 },
-  secBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  secBtnText: { fontSize: 13, fontWeight: "600" },
+  secBtn: { ...BUTTON_SIZES.secondary, borderWidth: 1, borderRadius: 8 },
+  secBtnText: { fontSize: 14, fontWeight: "600" },
   secForm: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 12, borderTopWidth: 1, gap: 8 },
-  errorText: { color: "#dc2626", fontSize: 13 },
-  successText: { color: "#16a34a", fontSize: 13 },
+  errorText: { color: COLORS.error, fontSize: 13 },
+  successText: { color: COLORS.success, fontSize: 13 },
   successBanner: { flexDirection: "row", alignItems: "center", gap: 6, padding: 12, paddingTop: 0 },
 });

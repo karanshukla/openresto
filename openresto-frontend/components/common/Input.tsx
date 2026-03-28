@@ -1,30 +1,27 @@
 import { forwardRef } from "react";
-import { StyleSheet, TextInput, TextInputProps } from "react-native";
-import { ThemedView } from "@/components/themed-view";
+import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
+import { getThemeColors } from "@/theme/theme";
 
 const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
-  const colorScheme = useColorScheme() ?? "light";
-  const textColor = Colors[colorScheme].text;
-  const borderColor = colorScheme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const bgColor = colorScheme === "dark" ? "#1e2022" : "#fff";
-  const placeholderColor = colorScheme === "dark" ? "#6b7280" : "#9ca3af";
+  const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
+  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
+  const placeholderColor = isDark ? "#6b7280" : "#9ca3af";
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <TextInput
         ref={ref}
         style={[
           styles.input,
-          { color: textColor, borderColor, backgroundColor: bgColor },
-          { outlineColor: "#0a7ea4" } as any,
+          { color: colors.text, borderColor, backgroundColor: colors.input },
           style,
         ]}
         placeholderTextColor={placeholderColor}
         {...props}
       />
-    </ThemedView>
+    </View>
   );
 });
 

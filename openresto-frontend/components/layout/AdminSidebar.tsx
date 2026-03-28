@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
 import { logout } from "@/api/auth";
-import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -36,16 +36,14 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
   const [locationCount, setLocationCount] = useState(0);
   const brand = useBrand();
-  const PRIMARY = brand.primaryColor || "#0a7ea4";
+  const PRIMARY = brand.primaryColor || COLORS.primary;
 
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
   const activeBg = isDark ? "rgba(10,126,164,0.18)" : "rgba(10,126,164,0.09)";
-  const sidebarBg = isDark ? "#111214" : "#fafafa";
 
   useEffect(() => {
     fetchRestaurants().then((data) => setLocationCount(data.length));
@@ -60,7 +58,7 @@ export default function AdminSidebar() {
     <ThemedView
       style={[
         styles.sidebar,
-        { borderRightColor: borderColor, backgroundColor: sidebarBg },
+        { borderRightColor: colors.border, backgroundColor: colors.page },
         Platform.OS === "web"
           ? ({ position: "sticky", top: 0, height: "100vh" } as any)
           : { height: "100%" },
@@ -73,7 +71,7 @@ export default function AdminSidebar() {
         </View>
         <View style={styles.brandText}>
           <ThemedText style={styles.brandName}>{brand.appName}</ThemedText>
-          <ThemedText style={[styles.brandSub, { color: mutedColor }]}>
+          <ThemedText style={[styles.brandSub, { color: colors.muted }]}>
             {locationCount > 0
               ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`
               : "Admin Panel"}
@@ -81,7 +79,7 @@ export default function AdminSidebar() {
         </View>
       </View>
 
-      <View style={[styles.divider, { backgroundColor: borderColor }]} />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {/* Nav */}
       <View style={styles.nav}>
@@ -102,13 +100,13 @@ export default function AdminSidebar() {
               <Ionicons
                 name={icon}
                 size={18}
-                color={active ? PRIMARY : mutedColor}
+                color={active ? PRIMARY : colors.muted}
                 style={styles.navIcon}
               />
               <ThemedText
                 style={[
                   styles.navLabel,
-                  active ? { color: PRIMARY, fontWeight: "700" } : { color: mutedColor },
+                  active ? { color: PRIMARY, fontWeight: "700" } : { color: colors.muted },
                 ]}
               >
                 {label}
@@ -137,7 +135,7 @@ export default function AdminSidebar() {
         </Pressable>
       </View>
 
-      <View style={[styles.divider, { backgroundColor: borderColor }]} />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -149,8 +147,8 @@ export default function AdminSidebar() {
             { cursor: "pointer" } as any,
           ]}
         >
-          <Ionicons name="arrow-back-outline" size={15} color={mutedColor} />
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Back to site</ThemedText>
+          <Ionicons name="arrow-back-outline" size={15} color={colors.muted} />
+          <ThemedText style={[styles.footerText, { color: colors.muted }]}>Back to site</ThemedText>
         </Pressable>
         <Pressable
           style={(state) => [
@@ -161,8 +159,8 @@ export default function AdminSidebar() {
           onPress={toggle}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={mutedColor} />
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+          <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={colors.muted} />
+          <ThemedText style={[styles.footerText, { color: colors.muted }]}>
             {isDark ? "Light mode" : "Dark mode"}
           </ThemedText>
         </Pressable>
@@ -174,8 +172,8 @@ export default function AdminSidebar() {
           ]}
           onPress={handleLogout}
         >
-          <Ionicons name="log-out-outline" size={15} color={mutedColor} />
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>Log out</ThemedText>
+          <Ionicons name="log-out-outline" size={15} color={colors.muted} />
+          <ThemedText style={[styles.footerText, { color: colors.muted }]}>Log out</ThemedText>
         </Pressable>
       </View>
     </ThemedView>
@@ -266,7 +264,7 @@ const styles = StyleSheet.create({
   },
   ctaBtnText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
   footer: {
@@ -278,8 +276,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 8,
   },
   footerText: {

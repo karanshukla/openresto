@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { COLORS, SPACING, getThemeColors } from "@/theme/theme";
 
 export interface SelectOption {
   label: string;
@@ -23,7 +24,8 @@ export default function Select({
   const [modalVisible, setModalVisible] = useState(false);
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
   const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
 
   const selectedOption = options.find((o) => o.value === selectedValue);

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import Input from "@/components/common/Input";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
@@ -37,10 +37,10 @@ export default function LookupScreen() {
     fetchCachedBookings().then(setCached);
   }, []);
 
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-  const pageBg = isDark ? "#111214" : "#f2f3f5";
+  const colors = getThemeColors(isDark);
+  const mutedColor = colors.muted;
+  const cardBg = colors.card;
+  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
 
   const canSearch = refInput.trim() && emailInput.trim();
 
@@ -62,7 +62,7 @@ export default function LookupScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: pageBg }}
+      style={[styles.scroll, { backgroundColor: colors.page }]}
       contentContainerStyle={styles.scrollContent}
     >
       <PageContainer>
@@ -146,7 +146,7 @@ export default function LookupScreen() {
                     <View style={styles.recentCardRow}>
                       <View style={{ flex: 1, gap: 3 }}>
                         <ThemedText style={styles.recentRef}>{c.bookingRef}</ThemedText>
-                        <ThemedText style={[styles.recentMeta, { color: mutedColor }]}>
+                        <ThemedText style={[styles.recentMeta, { color: colors.muted }]}>
                           {c.restaurantName ? `${c.restaurantName} · ` : ""}
                           {new Date(c.date).toLocaleDateString(undefined, {
                             month: "short",
@@ -163,7 +163,6 @@ export default function LookupScreen() {
               </View>
             )}
           </View>
-          at
           {/* Right column: result */}
           <View style={isWide ? styles.wideCol : undefined}>
             {!loading && searched && !booking && (
@@ -243,8 +242,19 @@ export default function LookupScreen() {
                   {
                     icon: "people-outline" as const,
                     label: "Guests",
-                    value: String(booking.seats),
+                    value: `${booking.seats}${booking.tableSeats ? ` (Table for ${booking.tableSeats})` : ""}`,
                   },
+                  ...(booking.tableName
+                    ? [
+                        {
+                          icon: "grid-outline" as const,
+                          label: "Table",
+                          value: booking.sectionName
+                            ? `${booking.tableName} (${booking.sectionName})`
+                            : booking.tableName,
+                        },
+                      ]
+                    : []),
                   ...(booking.specialRequests
                     ? [
                         {
@@ -320,6 +330,9 @@ export default function LookupScreen() {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 60,
@@ -371,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 12,
+    ...BUTTON_SIZES.primary,
     borderRadius: 10,
     marginTop: 4,
   },
@@ -383,7 +396,7 @@ const styles = StyleSheet.create({
   },
   searchBtnText: {
     color: "#fff",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
   },
   resultCard: {

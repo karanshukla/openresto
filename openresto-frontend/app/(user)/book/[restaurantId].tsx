@@ -8,6 +8,7 @@ import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { BUTTON_SIZES } from "@/theme/theme";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();

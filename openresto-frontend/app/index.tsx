@@ -13,7 +13,7 @@ import {
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
 import Navbar from "@/components/layout/Navbar";
-import { PRIMARY } from "@/constants/colors";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -22,8 +22,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const brand = useBrand();
-  const pageBg = isDark ? "#111214" : "#f2f3f5";
 
   useEffect(() => {
     async function loadRestaurants() {
@@ -41,7 +41,7 @@ export default function HomeScreen() {
     <ThemedView style={{ flex: 1 }}>
       <Navbar />
       <ScrollView
-        style={[styles.scroll, { backgroundColor: pageBg }]}
+        style={[styles.scroll, { backgroundColor: colors.page }]}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Hero */}
@@ -53,7 +53,7 @@ export default function HomeScreen() {
                   background: "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any)
-              : { backgroundColor: PRIMARY },
+              : { backgroundColor: COLORS.primary },
           ]}
         >
           <View style={styles.heroOverlay}>
@@ -75,7 +75,7 @@ export default function HomeScreen() {
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator size="large" style={styles.spinner} color={PRIMARY} />
+            <ActivityIndicator size="large" style={styles.spinner} color={COLORS.primary} />
           ) : (
             <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
               {restaurants.map((r) => (

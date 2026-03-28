@@ -20,7 +20,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, STATUS_COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -65,11 +65,11 @@ const BADGE_STYLES: Record<
   BadgeVariant,
   { bg: string; text: string; darkBg?: string; darkText?: string }
 > = {
-  arrived: { bg: "#dcfce7", text: "#15803d", darkBg: "#14532d22", darkText: "#4ade80" },
-  seated: { bg: `rgba(10,126,164,0.1)`, text: PRIMARY },
-  upcoming: { bg: "#fef9c3", text: "#854d0e", darkBg: "#854d0e22", darkText: "#fde047" },
-  scheduled: { bg: "#f1f5f9", text: "#64748b", darkBg: "#1e2934", darkText: "#94a3b8" },
-  completed: { bg: "#f1f5f9", text: "#94a3b8", darkBg: "#1a1c1e", darkText: "#64748b" },
+  arrived: { bg: STATUS_COLORS.arrived.bg.light, text: STATUS_COLORS.arrived.text, darkBg: STATUS_COLORS.arrived.bg.dark, darkText: "#4ade80" },
+  seated: { bg: STATUS_COLORS.seated.bg.light, text: STATUS_COLORS.seated.text },
+  upcoming: { bg: STATUS_COLORS.upcoming.bg.light, text: STATUS_COLORS.upcoming.text, darkBg: STATUS_COLORS.upcoming.bg.dark, darkText: "#fde047" },
+  scheduled: { bg: STATUS_COLORS.scheduled.bg.light, text: STATUS_COLORS.scheduled.text, darkBg: STATUS_COLORS.scheduled.bg.dark, darkText: "#94a3b8" },
+  completed: { bg: STATUS_COLORS.completed.bg.light, text: STATUS_COLORS.completed.text, darkBg: STATUS_COLORS.completed.bg.dark, darkText: "#64748b" },
 };
 
 function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
@@ -100,12 +100,13 @@ function AvailabilityGrid({
   isDark: boolean;
   onBookingPress: (b: BookingDetailDto) => void;
 }) {
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
   const headerBg = isDark ? "#28292b" : "#f4f5f6";
   const sectionBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
   const availBg = isDark ? "#18191b" : "#fafafa";
-  const bookedBg = isDark ? "rgba(220,38,38,0.22)" : "rgba(220,38,38,0.1)";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const bookedBg = isDark ? `rgba(${parseInt(COLORS.error.slice(1, 3), 16)},${parseInt(COLORS.error.slice(3, 5), 16)},${parseInt(COLORS.error.slice(5, 7), 16)},0.22)` : `rgba(${parseInt(COLORS.error.slice(1, 3), 16)},${parseInt(COLORS.error.slice(3, 5), 16)},${parseInt(COLORS.error.slice(5, 7), 16)},0.1)`;
+  const mutedColor = colors.muted;
 
   function bookingForCell(tableId: number, hour: number): BookingDetailDto | undefined {
     return bookings.find((b) => b.tableId === tableId && new Date(b.date).getHours() === hour);
@@ -309,12 +310,13 @@ export default function AdminBookingsScreen() {
 
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const { width } = useWindowDimensions();
 
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const borderColor = colors.border;
+  const cardBg = colors.card;
   const headerBg = isDark ? "#28292b" : "#f8f8f9";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
+  const mutedColor = colors.muted;
   const isWide = width >= 640;
 
   // Load restaurants once on mount
@@ -411,8 +413,8 @@ export default function AdminBookingsScreen() {
                   styles.chip,
                   { borderColor },
                   r.id === selectedRestaurantId && {
-                    backgroundColor: PRIMARY,
-                    borderColor: PRIMARY,
+                    backgroundColor: COLORS.primary,
+                    borderColor: COLORS.primary,
                   },
                 ]}
                 onPress={() => handleSelectRestaurant(r.id)}
@@ -438,7 +440,7 @@ export default function AdminBookingsScreen() {
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             {(
               [
-                { key: "active", label: "Active", color: PRIMARY },
+                { key: "active", label: "Active", color: COLORS.primary },
                 { key: "past", label: "Past", color: "#7c3aed" },
                 { key: "cancelled", label: "Cancelled", color: "#dc2626" },
               ] as const
@@ -467,7 +469,7 @@ export default function AdminBookingsScreen() {
           {statusFilter === "active" && (
             <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
               <Pressable
-                style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
+                style={[styles.modeBtn, viewMode === "list" && { backgroundColor: COLORS.primary }]}
                 onPress={() => setViewMode("list")}
               >
                 <Ionicons
@@ -477,7 +479,7 @@ export default function AdminBookingsScreen() {
                 />
               </Pressable>
               <Pressable
-                style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
+                style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: COLORS.primary }]}
                 onPress={switchToGrid}
               >
                 <Ionicons
@@ -492,14 +494,14 @@ export default function AdminBookingsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
+        <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
       ) : viewMode === "grid" && statusFilter === "active" ? (
         /* ── Grid view ── */
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           {/* Date navigation */}
           <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
             <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(-1)}>
-              <Ionicons name="chevron-back" size={18} color={PRIMARY} />
+              <Ionicons name="chevron-back" size={18} color={COLORS.primary} />
             </Pressable>
             <Pressable
               onPress={() => {
@@ -510,20 +512,20 @@ export default function AdminBookingsScreen() {
             >
               <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
               {gridDate.toDateString() !== new Date().toDateString() && (
-                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
+                <ThemedText style={[styles.gridTodayHint, { color: COLORS.primary }]}>
                   tap for today
                 </ThemedText>
               )}
             </Pressable>
             <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(1)}>
-              <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
+              <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
             </Pressable>
           </View>
 
           {/* Legend */}
           <View style={[styles.gridLegend, { borderBottomColor: borderColor }]}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: "rgba(220,38,38,0.18)" }]} />
+            <View style={[styles.legendItem, { backgroundColor: `${COLORS.primary}22` }]}>
+              <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
               <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
             </View>
             <View style={styles.legendItem}>
@@ -541,7 +543,7 @@ export default function AdminBookingsScreen() {
           </View>
 
           {gridLoading ? (
-            <ActivityIndicator style={{ padding: 40 }} size="large" color={PRIMARY} />
+            <ActivityIndicator style={{ padding: 40 }} size="large" color={COLORS.primary} />
           ) : (
             <AvailabilityGrid
               sections={gridSections}
@@ -642,13 +644,13 @@ export default function AdminBookingsScreen() {
               </View>
               <View style={styles.colAction}>
                 <Pressable
-                  style={[styles.rowActionBtn, { backgroundColor: `${PRIMARY}14` }]}
+                  style={[styles.rowActionBtn, { backgroundColor: `${COLORS.primary}14` }]}
                   onPress={(e) => {
                     (e as any).stopPropagation?.();
                     router.push(`/(admin)/bookings/${b.id}`);
                   }}
                 >
-                  <Ionicons name="eye-outline" size={14} color={PRIMARY} />
+                  <Ionicons name="eye-outline" size={14} color={COLORS.primary} />
                 </Pressable>
                 {statusFilter === "active" && (
                   <Pressable
@@ -772,7 +774,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  modeBtnText: { fontSize: 13, fontWeight: "600" },
+  modeBtnText: { fontSize: 14, fontWeight: "600" },
   spinner: { marginTop: 40 },
   emptyState: { alignItems: "center", paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 15, fontStyle: "italic" },
@@ -795,7 +797,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  gridNavBtn: { padding: 6 },
+  gridNavBtn: { ...BUTTON_SIZES.icon },
   gridDateLabel: { alignItems: "center", gap: 2 },
   gridDateText: { fontSize: 16, fontWeight: "700" },
   gridTodayHint: { fontSize: 11, fontWeight: "600" },

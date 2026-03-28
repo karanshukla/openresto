@@ -13,9 +13,16 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PRIMARY, MUTED_LIGHT, MUTED_DARK } from "@/constants/colors";
+import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
 export default function AdminBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,9 +39,9 @@ export default function AdminBookingDetailScreen() {
   const [emailResult, setEmailResult] = useState<{ ok: boolean; message: string } | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? MUTED_DARK : MUTED_LIGHT;
-  const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const colors = getThemeColors(isDark);
+  const borderColor = colors.border;
+  const mutedColor = colors.muted;
 
   useEffect(() => {
     if (!id) return;
@@ -70,7 +77,7 @@ export default function AdminBookingDetailScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={PRIMARY} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </ThemedView>
     );
   }
@@ -119,14 +126,14 @@ export default function AdminBookingDetailScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Back */}
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
-        <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
-        <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
+        <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
+        <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
       </Pressable>
 
       <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
 
       {/* Detail card */}
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor }]}>
         {rows.map(({ label, value }, i) => (
           <View key={label}>
             {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
@@ -150,7 +157,7 @@ export default function AdminBookingDetailScreen() {
           {[30, 60, 90].map((mins) => (
             <Pressable
               key={mins}
-              style={[styles.extendBtn, { borderColor }]}
+              style={[styles.extendBtn, { backgroundColor: COLORS.primary }]}
               onPress={() => handleExtend(mins)}
               disabled={extending}
             >
@@ -201,12 +208,12 @@ export default function AdminBookingDetailScreen() {
               width: "100%",
               borderWidth: 1,
               borderStyle: "solid",
-              borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
+              borderColor: colors.border,
               borderRadius: 8,
               padding: 12,
               fontSize: 14,
-              backgroundColor: isDark ? "#1c1c1e" : "#fff",
-              color: isDark ? "#fff" : "#000",
+              backgroundColor: colors.input,
+              color: colors.text,
               resize: "vertical",
               fontFamily: "inherit",
               marginBottom: 8,
@@ -217,7 +224,7 @@ export default function AdminBookingDetailScreen() {
           <Pressable
             style={[
               styles.emailSendBtn,
-              { backgroundColor: PRIMARY },
+              { backgroundColor: COLORS.primary },
               (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
             ]}
             onPress={async () => {
@@ -387,21 +394,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 12,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 10,
-    backgroundColor: "rgba(220,38,38,0.1)",
+    backgroundColor: hexToRgba(COLORS.error, 0.1),
     cursor: "pointer" as any,
   },
-  cancelBtnText: { color: "#dc2626", fontSize: 14, fontWeight: "700" },
+  cancelBtnText: { color: COLORS.error, fontSize: 14, fontWeight: "700" },
   purgeBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 12,
+    ...BUTTON_SIZES.secondary,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(128,128,128,0.2)",
+    borderColor: "rgba(128,128,128,0.2)", // TODO: Use theme border color
     marginTop: 4,
   },
   purgeBtnText: { fontSize: 13, fontWeight: "600" },

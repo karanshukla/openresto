@@ -11,6 +11,9 @@ export interface BookingDto {
   isHeld: boolean;
   specialRequests?: string;
   bookingRef?: string;
+  tableName?: string;
+  sectionName?: string;
+  tableSeats?: number;
 }
 
 export interface BookingCreationDto {

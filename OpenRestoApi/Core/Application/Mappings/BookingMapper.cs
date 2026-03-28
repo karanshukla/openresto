@@ -9,11 +9,12 @@ public partial class BookingMapper
 {
     [MapperIgnoreTarget(nameof(BookingDto.isHeld))]
     [MapperIgnoreTarget(nameof(BookingDto.HoldId))]
-    [MapperIgnoreSource(nameof(Booking.Table))]
-    [MapperIgnoreSource(nameof(Booking.Section))]
     [MapperIgnoreSource(nameof(Booking.Restaurant))]
     [MapperIgnoreSource(nameof(Booking.IsCancelled))]
     [MapperIgnoreSource(nameof(Booking.CancelledAt))]
+    [MapProperty("Table.Name", nameof(BookingDto.TableName))]
+    [MapProperty("Table.Seats", nameof(BookingDto.TableSeats))]
+    [MapProperty("Section.Name", nameof(BookingDto.SectionName))]
     public partial BookingDto ToDto(Booking booking);
 
     [MapperIgnoreTarget(nameof(Booking.Table))]
@@ -27,6 +28,9 @@ public partial class BookingMapper
     [MapperIgnoreSource(nameof(BookingDto.HoldId))]
     [MapperIgnoreSource(nameof(BookingDto.BookingRef))]
     [MapperIgnoreSource(nameof(BookingDto.EndTime))]
+    [MapperIgnoreSource(nameof(BookingDto.TableName))]
+    [MapperIgnoreSource(nameof(BookingDto.SectionName))]
+    [MapperIgnoreSource(nameof(BookingDto.TableSeats))]
     public partial Booking ToEntity(BookingDto dto);
 
     public partial IEnumerable<BookingDto> ToDtoList(IEnumerable<Booking> bookings);

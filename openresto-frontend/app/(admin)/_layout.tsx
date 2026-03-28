@@ -6,13 +6,18 @@ import { useEffect, useState } from "react";
 import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+import { COLORS, getThemeColors } from "@/theme/theme";
 
 const MIN_WIDTH = 900;
 
 function DesktopOnlyWall() {
+  const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   return (
     <ThemedView style={styles.wall}>
-      <Ionicons name="desktop-outline" size={48} color="#0a7ea4" />
+      <Ionicons name="desktop-outline" size={48} color={COLORS.primary} />
       <ThemedText style={styles.wallTitle}>Desktop only</ThemedText>
       <ThemedText style={styles.wallBody}>
         The admin dashboard is designed for desktop browsers.{"\n"}
