@@ -142,7 +142,7 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    if (connectionString.Contains("Server=") || connectionString.Contains("Host="))
+    if (connectionString.StartsWith("postgresql://") || connectionString.Contains("Server=") || connectionString.Contains("Host="))
     {
         options.UseNpgsql(connectionString);
     }
