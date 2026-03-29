@@ -64,7 +64,6 @@ export default function AdminSidebar() {
         Platform.OS === "web" ? { position: "sticky" as any, top: 0 } : { height: "100%" },
       ]}
     >
-      {/* Brand */}
       <View style={styles.brand}>
         <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
           <Ionicons name="restaurant-outline" size={16} color="#fff" />
@@ -81,7 +80,6 @@ export default function AdminSidebar() {
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-      {/* Nav */}
       <View style={styles.nav}>
         {NAV_ITEMS.map(({ label, icon, href, match }) => {
           const active = match(pathname);
@@ -125,7 +123,6 @@ export default function AdminSidebar() {
 
       <View style={styles.spacer} />
 
-      {/* New Booking CTA */}
       <View style={styles.ctaWrapper}>
         <Pressable
           style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
@@ -138,7 +135,6 @@ export default function AdminSidebar() {
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-      {/* Footer */}
       <View style={styles.footer}>
         <Pressable
           onPress={() => router.push("/")}

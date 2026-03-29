@@ -1,3 +1,4 @@
+# doesnt work right now, this should support HMR
 services:
   backend:
     # Fix: Targeting .NET 10.0 requires the preview SDK image

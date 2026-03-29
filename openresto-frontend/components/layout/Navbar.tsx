@@ -61,7 +61,6 @@ export default function Navbar() {
             </Pressable>
           )}
 
-          {/* Brand */}
           <Link href="/" asChild>
             <Pressable style={styles.brand}>
             {brand.logoUrl ? (

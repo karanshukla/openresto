@@ -21,6 +21,13 @@ import {
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { hexToRgba } from "@/utils/colors";
 
+function toUTCDateString(d: Date): string {
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 const QUICK_ACTIONS = [
   {
     icon: "person-add-outline" as const,
@@ -90,24 +97,11 @@ export default function AdminDashboardScreen() {
     setBookings(b);
     setLoading(false);
   };
-  const getTodayUTCDateString = (): string => {
-    const d = new Date();
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(d.getUTCDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  const todayDateString = toUTCDateString(new Date());
 
-  const todayDateString = getTodayUTCDateString();
-
-  const todayBookings = bookings.filter((b) => {
-    const bookingDate = new Date(b.date);
-    const year = bookingDate.getUTCFullYear();
-    const month = String(bookingDate.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(bookingDate.getUTCDate()).padStart(2, "0");
-    const bookingDateString = `${year}-${month}-${day}`;
-    return bookingDateString === todayDateString;
-  });
+  const todayBookings = bookings.filter(
+    (b) => toUTCDateString(new Date(b.date)) === todayDateString
+  );
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
 
   const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
@@ -164,7 +158,6 @@ export default function AdminDashboardScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Stack.Screen options={{ title: "Dashboard" }} />
-      {/* Page header */}
       <View style={styles.pageHeader}>
         <View>
           <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
@@ -208,7 +201,6 @@ export default function AdminDashboardScreen() {
         <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
       ) : (
         <>
-          {/* Metrics bento */}
           <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
             {stats.map((stat) => (
               <View
@@ -233,9 +225,7 @@ export default function AdminDashboardScreen() {
             ))}
           </View>
 
-          {/* Today's Flow + Quick Actions */}
           <View style={[styles.mainRow, isWide && styles.mainRowWide]}>
-            {/* Bar chart — 2/3 width on wide */}
             <View
               style={[
                 styles.chartCard,
@@ -274,7 +264,6 @@ export default function AdminDashboardScreen() {
               </View>
             </View>
 
-            {/* Quick Actions — 1/3 width on wide */}
             <View style={[styles.actionsCol, isWide && styles.actionsColWide]}>
               {QUICK_ACTIONS.map((action) => (
                 <Pressable
@@ -332,7 +321,6 @@ export default function AdminDashboardScreen() {
             </View>
           </View>
 
-          {/* Today's reservations list */}
           <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.listHeader}>
               <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>

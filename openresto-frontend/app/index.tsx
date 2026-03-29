@@ -51,7 +51,6 @@ export default function HomeScreen() {
         style={[styles.scroll, { backgroundColor: colors.page }]}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Hero */}
         <View
           style={[
             styles.hero,
