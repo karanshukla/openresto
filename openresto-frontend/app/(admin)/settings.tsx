@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
+import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,6 +86,7 @@ export default function AdminSettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen options={{ title: "Settings" }} />
       {/* Page header */}
       <View style={styles.pageHeader}>
         <View>

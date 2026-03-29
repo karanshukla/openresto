@@ -16,6 +16,7 @@ import Navbar from "@/components/layout/Navbar";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Stack } from "expo-router";
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -44,6 +45,7 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={{ flex: 1 }}>
+      <Stack.Screen options={{ title: "Browse Restaurants" }} />
       <Navbar />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.page }]}

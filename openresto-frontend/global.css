@@ -4,9 +4,18 @@
 }
 
 html,
-body {
+body,
+#root,
+#__next,
+[data-expo-root] {
   margin: 0;
   padding: 0;
+  background-color: #f2f3f5;
+  color: #000000;
+}
+
+html,
+body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
     "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -14,14 +23,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+body.light,
+body.light #root,
+body.light #__next {
   background-color: #f2f3f5;
   color: #000000;
 }
 
-body.dark {
-  background-color: #111214;
-  color: #ffffff;
+body.dark,
+body.dark #root {
+  background-color: #111214 !important;
+  color: #ffffff !important;
 }
 
 /* Scrollbar styling */
@@ -30,23 +42,32 @@ body.dark {
   height: 10px;
 }
 
-::-webkit-scrollbar-track {
+body.light ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+body.light ::-webkit-scrollbar-thumb {
   background: #9ca3af;
   border-radius: 5px;
   border: 2px solid #f2f3f5;
 }
 
-::-webkit-scrollbar-thumb:hover {
+body.light ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+body.dark ::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 body.dark ::-webkit-scrollbar-thumb {
   background: #4b5563;
+  border-radius: 5px;
   border: 2px solid #111214;
+}
+
+body.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 
 body.dark ::-webkit-scrollbar-thumb:hover {

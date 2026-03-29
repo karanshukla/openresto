@@ -1,9 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
-import { getBookingByRef, BookingDto } from "@/api/bookings";
+import { getBookingByRef, BookingDto, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -13,11 +14,13 @@ import {
 } from "react-native";
 import Input from "@/components/common/Input";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import { BUTTON_SIZES, COLORS, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
 import { useBrand } from "@/context/BrandContext";
+import { Stack } from "expo-router";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -27,6 +30,8 @@ export default function LookupScreen() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [cached, setCached] = useState<CachedBooking[]>([]);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const isDark = useColorScheme() === "dark";
   const brand = useBrand();
   const accent = brand.primaryColor || "#0a7ea4";
@@ -56,6 +61,7 @@ export default function LookupScreen() {
     !loading && booking
       ? (() => {
           const ref = booking.bookingRef;
+          // Ensure dates are treated as UTC
           const startDate = new Date(booking.date);
           const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
           const restaurantName = restaurant?.name ?? "Restaurant";
@@ -71,11 +77,16 @@ export default function LookupScreen() {
             .filter(Boolean)
             .join("\n");
 
-          const fmtCal = (d: Date) =>
-            d
-              .toISOString()
-              .replace(/[-:]/g, "")
-              .replace(/\.\d{3}/, "");
+          const fmtCal = (d: Date) => {
+            // Create proper UTC format for iCal (YYYYMMDDTHHMMSSZ)
+            const year = d.getUTCFullYear();
+            const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+            const day = String(d.getUTCDate()).padStart(2, "0");
+            const hours = String(d.getUTCHours()).padStart(2, "0");
+            const minutes = String(d.getUTCMinutes()).padStart(2, "0");
+            const seconds = String(d.getUTCSeconds()).padStart(2, "0");
+            return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+          };
 
           const googleUrl = `https://calendar.google.com/calendar/r/eventedit?text=${encodeURIComponent(calTitle)}&dates=${fmtCal(startDate)}/${fmtCal(endDate)}&details=${encodeURIComponent(calDescription)}&location=${encodeURIComponent(restaurantAddress)}`;
 
@@ -121,6 +132,7 @@ export default function LookupScreen() {
     setRestaurant(null);
     try {
       const result = await getBookingByRef(ref, email);
+      console.log("Lookup result from API:", result);
       setBooking(result);
       if (result?.restaurantId) {
         const r = await fetchRestaurantById(result.restaurantId);
@@ -138,6 +150,37 @@ export default function LookupScreen() {
     performLookup(ref, email);
   };
 
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+    const ref = (booking as any).bookingRef || (booking as any).BookingRef;
+    const email = booking.customerEmail || (booking as any).CustomerEmail;
+    if (!ref) {
+      console.error("Booking reference not found in booking object:", booking);
+      return;
+    }
+    console.log("Attempting to cancel booking with ref:", ref, "and email:", email);
+    setCancelling(true);
+    try {
+      const ok = await cancelBookingByRef(ref, email);
+      console.log("Cancellation result:", ok);
+      if (ok) {
+        // Refresh lookup to show cancelled state
+        await performLookup(ref, email);
+        setShowCancelConfirm(false);
+      } else {
+        if (Platform.OS === "web") {
+          window.alert("Failed to cancel booking. Please try again or contact the restaurant.");
+        } else {
+          Alert.alert("Error", "Failed to cancel booking. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Cancellation error:", error);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <ScrollView
       style={[styles.scroll, { backgroundColor: colors.page }]}
@@ -145,6 +188,7 @@ export default function LookupScreen() {
       horizontal={false}
       showsHorizontalScrollIndicator={false}
     >
+      <Stack.Screen options={{ title: "Manage My Booking" }} />
       <PageContainer>
         <View style={styles.header}>
           <Ionicons name="search-outline" size={32} color={accent} />
@@ -261,22 +305,33 @@ export default function LookupScreen() {
                 ]}
               >
                 {/* Header inside card */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.resultHeader}>
-                    <Ionicons name="checkmark-circle" size={20} color="#16a34a" />
-                    <ThemedText style={styles.resultTitle}>Booking Found</ThemedText>
-                  </View>
-                  <View
-                    style={[
-                      styles.refBadge,
-                      { backgroundColor: isDark ? `${accent}22` : `${accent}14` },
-                    ]}
-                  >
-                    <ThemedText style={[styles.refText, { color: accent }]}>
-                      {booking.bookingRef}
-                    </ThemedText>
-                  </View>
-                </View>
+                {(() => {
+                  const isC = booking.isCancelled || (booking as any).IsCancelled;
+                  return (
+                    <View style={styles.cardHeader}>
+                      <View style={styles.resultHeader}>
+                        <Ionicons
+                          name={isC ? "close-circle" : "checkmark-circle"}
+                          size={20}
+                          color={isC ? COLORS.error : "#16a34a"}
+                        />
+                        <ThemedText style={styles.resultTitle}>
+                          {isC ? "Booking Cancelled" : "Booking Found"}
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          styles.refBadge,
+                          { backgroundColor: isDark ? `${accent}22` : `${accent}14` },
+                        ]}
+                      >
+                        <ThemedText style={[styles.refText, { color: accent }]}>
+                          {(booking as any).bookingRef || (booking as any).BookingRef}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  );
+                })()}
                 <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
 
                 {/* Calendar actions - only on web */}
@@ -421,6 +476,34 @@ export default function LookupScreen() {
                     </View>
                   </View>
                 ))}
+
+                {/* Cancel Booking Action */}
+                {!booking.isCancelled && (
+                  <View style={styles.cancelSection}>
+                    <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+                    <Pressable
+                      style={({ hovered }) => [
+                        styles.cancelBtn,
+                        hovered && { backgroundColor: isDark ? "rgba(220, 38, 38, 0.05)" : "rgba(220, 38, 38, 0.02)" },
+                      ]}
+                      onPress={() => setShowCancelConfirm(true)}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                      <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
+                    </Pressable>
+                  </View>
+                )}
+                {booking.isCancelled && (
+                  <View style={styles.cancelledBadge}>
+                    <View style={[styles.detailDivider, { backgroundColor: borderColor }]} />
+                    <View style={styles.cancelledContent}>
+                      <Ionicons name="close-circle" size={15} color={COLORS.error} />
+                      <ThemedText style={[styles.cancelledText, { color: COLORS.error }]}>
+                        This booking has been cancelled.
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -461,6 +544,17 @@ export default function LookupScreen() {
             ))}
           </View>
         )}
+
+        <ConfirmModal
+          visible={showCancelConfirm}
+          title="Cancel Reservation"
+          message="Are you sure you want to cancel this booking? This action cannot be undone."
+          confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
+          cancelLabel="Keep Booking"
+          destructive
+          onConfirm={handleCancelBooking}
+          onCancel={() => !cancelling && setShowCancelConfirm(false)}
+        />
       </PageContainer>
     </ScrollView>
   );
@@ -643,6 +737,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     flex: 1,
+    flexShrink: 1,
   },
   detailDivider: {
     height: 1,
@@ -681,5 +776,34 @@ const styles = StyleSheet.create({
   },
   recentMeta: {
     fontSize: 12,
+  },
+  cancelSection: {
+    marginTop: 0,
+  },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  cancelBtnText: {
+    color: COLORS.error,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  cancelledBadge: {
+    marginTop: 0,
+  },
+  cancelledContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  cancelledText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

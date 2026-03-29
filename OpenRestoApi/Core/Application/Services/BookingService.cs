@@ -130,4 +130,27 @@ public class BookingService(
     {
         await _bookingRepository.DeleteAsync(id);
     }
+
+    public async Task<bool> CancelBookingAsync(string bookingRef, string email)
+    {
+        Booking? booking = await _bookingRepository.GetByRefAsync(bookingRef);
+        if (booking == null)
+        {
+            Console.WriteLine($"[CancelBookingAsync] Booking not found for ref: {bookingRef}");
+            return false;
+        }
+
+        if (!string.Equals(booking.CustomerEmail?.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine($"[CancelBookingAsync] Email mismatch for ref: {bookingRef}. DB: {booking.CustomerEmail}, Input: {email}");
+            return false;
+        }
+
+        if (booking.IsCancelled) return true;
+
+        booking.IsCancelled = true;
+        booking.CancelledAt = DateTime.UtcNow;
+        await _bookingRepository.UpdateAsync(booking);
+        return true;
+    }
 }

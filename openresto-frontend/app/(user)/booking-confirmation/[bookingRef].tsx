@@ -17,6 +17,7 @@ import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { useBrand } from "@/context/BrandContext";
+import { Stack } from "expo-router";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -61,6 +62,7 @@ export default function BookingConfirmationScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: pageBg }]}>
+        <Stack.Screen options={{ title: "Booking Confirmation" }} />
         <ActivityIndicator size="large" color={accent} />
       </View>
     );
@@ -69,6 +71,7 @@ export default function BookingConfirmationScreen() {
   if (!booking) {
     return (
       <View style={[styles.center, { backgroundColor: pageBg }]}>
+        <Stack.Screen options={{ title: "Not Found" }} />
         <Ionicons name="alert-circle-outline" size={40} color={mutedColor} />
         <ThemedText style={[styles.notFoundText, { color: mutedColor }]}>
           Booking not found.
@@ -184,6 +187,7 @@ export default function BookingConfirmationScreen() {
       style={{ flex: 1, backgroundColor: colors.page }}
       contentContainerStyle={styles.scrollContent}
     >
+      <Stack.Screen options={{ title: "Booking Confirmed" }} />
       <PageContainer>
         {/* Success header */}
         <View style={styles.successHeader}>

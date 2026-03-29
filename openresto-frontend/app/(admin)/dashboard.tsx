@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import {
@@ -169,6 +169,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen options={{ title: "Dashboard" }} />
       {/* Page header */}
       <View style={styles.pageHeader}>
         <View>

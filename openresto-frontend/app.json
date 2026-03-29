@@ -28,7 +28,7 @@
       "shortName": "OpenResto",
       "description": "Restaurant table booking system",
       "themeColor": "#0a7ea4",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#111214"
     },
     "plugins": [
       "expo-router",
@@ -38,9 +38,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#111214",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#111214"
           }
         }
       ]

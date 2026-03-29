@@ -5,7 +5,7 @@ import Button from "@/components/common/Button";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
@@ -349,6 +349,7 @@ export default function AdminLoginScreen() {
 
   return (
     <ThemedView style={styles.root}>
+      <Stack.Screen options={{ title: "Admin Login" }} />
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>

@@ -14,6 +14,7 @@ export interface BookingDto {
   tableName?: string;
   sectionName?: string;
   tableSeats?: number;
+  isCancelled?: boolean;
 }
 
 export interface BookingCreationDto {
@@ -81,6 +82,16 @@ export async function deleteBooking(id: number): Promise<boolean> {
     return res.ok;
   } catch (err) {
     console.error("deleteBooking error:", err);
+    return false;
+  }
+}
+
+export async function cancelBookingByRef(bookingRef: string, email: string): Promise<boolean> {
+  try {
+    const res = await del(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
+    return res.ok;
+  } catch (err) {
+    console.error("cancelBookingByRef error:", err);
     return false;
   }
 }

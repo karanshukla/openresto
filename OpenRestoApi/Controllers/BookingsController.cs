@@ -122,5 +122,22 @@ namespace OpenRestoApi.Controllers
             await _bookingService.DeleteBookingAsync(id);
             return NoContent();
         }
+
+        [HttpDelete("ref/{bookingRef}")]
+        public async Task<IActionResult> CancelBookingByRef(string bookingRef, [FromQuery] string email)
+        {
+            Console.WriteLine($"[CancelBookingByRef] Received request for ref: {bookingRef}, email: {email}");
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new { message = "Email is required to cancel a booking." });
+            }
+
+            bool ok = await _bookingService.CancelBookingAsync(bookingRef, email);
+            if (!ok)
+            {
+                return NotFound(new { message = "No booking found matching that reference and email." });
+            }
+            return NoContent();
+        }
     }
 }

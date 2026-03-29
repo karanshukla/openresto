@@ -1,19 +1,63 @@
 import "@/global.css";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef, usePathname, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import "react-native-reanimated";
 
 import { AppThemeProvider, useTheme } from "@/context/ThemeContext";
-import { BrandProvider } from "@/context/BrandContext";
+import { BrandProvider, useBrand } from "@/context/BrandContext";
 
 function AppWithTheme() {
   const { colorScheme } = useTheme();
+  const brand = useBrand();
+  const navigationRef = useNavigationContainerRef();
+  const segments = useSegments();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+
+    const updateTitle = () => {
+      // Use a small timeout to ensure hydration and other effects have finished
+      setTimeout(() => {
+        const options = navigationRef.getCurrentOptions();
+        const route = navigationRef.getCurrentRoute();
+        if (options?.title) {
+          if (
+            options.title === "Home" ||
+            options.title === "index" ||
+            options.title === brand.appName ||
+            options.title === "Browse Restaurants"
+          ) {
+            document.title = brand.appName;
+          } else {
+            document.title = `${options.title} | ${brand.appName}`;
+          }
+        } else if (route?.name) {
+          if (route.name === "index") {
+            document.title = brand.appName;
+          } else {
+            // Fallback to capitalizing the route name
+            const name = route.name.split("/").pop() || route.name;
+            const title = name.charAt(0).toUpperCase() + name.slice(1);
+            document.title = `${title} | ${brand.appName}`;
+          }
+        }
+      }, 50);
+    };
+
+    const unsubscribe = navigationRef.addListener("state", updateTitle);
+    // Also update on segments/pathname change as fallback
+    updateTitle();
+
+    return unsubscribe;
+  }, [navigationRef, brand.appName, segments, pathname]);
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, title: brand.appName }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(user)" />
         <Stack.Screen name="(admin)" />

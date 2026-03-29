@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Platform } from "react-native";
-import { useColorScheme as useSystemColorScheme } from "react-native";
+import { Platform, useColorScheme as useSystemColorScheme } from "react-native";
 
 export type ColorScheme = "light" | "dark";
 export type ThemePreference = "light" | "dark" | "system";
@@ -13,7 +12,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  colorScheme: "light",
+  colorScheme: "dark",
   preference: "system",
   setPreference: () => {},
   toggle: () => {},
@@ -32,21 +31,29 @@ function writeStorage(pref: ThemePreference) {
   else localStorage.setItem(STORAGE_KEY, pref);
 }
 
+function getSystemScheme(): ColorScheme {
+  if (Platform.OS !== "web" || typeof window === "undefined") return "dark";
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "dark";
+  }
+  return "light";
+}
+
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const systemScheme = useSystemColorScheme() ?? "light";
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [hydrated, setHydrated] = useState(false);
+  const [preference, setPreferenceState] = useState<ThemePreference>(() => readStorage());
+  const [systemScheme] = useState<ColorScheme>(getSystemScheme);
+
+  const colorScheme: ColorScheme = preference === "system" ? systemScheme : preference;
 
   useEffect(() => {
-    setPreferenceState(readStorage());
-    setHydrated(true);
-  }, []);
+    if (Platform.OS !== "web") return;
 
-  const colorScheme: ColorScheme = !hydrated
-    ? "light"
-    : preference === "system"
-      ? systemScheme
-      : preference;
+    if (colorScheme === "light") {
+      document.body.classList.add("light");
+    } else {
+      document.body.classList.remove("light");
+    }
+  }, [colorScheme]);
 
   const setPreference = (pref: ThemePreference) => {
     setPreferenceState(pref);
