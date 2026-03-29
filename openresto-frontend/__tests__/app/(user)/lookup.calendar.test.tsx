@@ -68,7 +68,11 @@ describe("Lookup Calendar", () => {
     });
 
     it("handles missing optional fields", () => {
-      const { googleUrl } = buildCalendarUrls({ ...input, specialRequests: undefined, restaurantAddress: "" });
+      const { googleUrl } = buildCalendarUrls({
+        ...input,
+        specialRequests: undefined,
+        restaurantAddress: "",
+      });
       const details = decodeURIComponent(googleUrl.split("details=")[1].split("&")[0]);
       expect(details).not.toContain("Address:");
       expect(details).not.toContain("Requests:");

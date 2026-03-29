@@ -72,7 +72,12 @@ function buildRows(booking: BookingDto, restaurant: RestaurantDto | null): RowDa
   return rows;
 }
 
-export default function BookingDetailRows({ booking, restaurant, mutedColor, borderColor }: BookingDetailRowsProps) {
+export default function BookingDetailRows({
+  booking,
+  restaurant,
+  mutedColor,
+  borderColor,
+}: BookingDetailRowsProps) {
   const rows = buildRows(booking, restaurant);
 
   return (
@@ -94,7 +99,13 @@ export default function BookingDetailRows({ booking, restaurant, mutedColor, bor
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
   content: { flex: 1, gap: 2 },
   label: { fontSize: 11, fontWeight: "600", letterSpacing: 0.4, textTransform: "uppercase" },
   value: { fontSize: 15, fontWeight: "500" },

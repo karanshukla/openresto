@@ -41,9 +41,8 @@ function applyTheme(scheme: ColorScheme) {
   const bg = scheme === "dark" ? "#111214" : "#f2f3f5";
   document.documentElement.className = scheme;
   document.documentElement.style.backgroundColor = bg;
-  document.body.className = document.body.className
-    .replace(/\b(light|dark)\b/g, "")
-    .trim() + " " + scheme;
+  document.body.className =
+    document.body.className.replace(/\b(light|dark)\b/g, "").trim() + " " + scheme;
   document.body.style.backgroundColor = bg;
 }
 

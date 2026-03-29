@@ -25,7 +25,6 @@ const NAV_LINKS = [
   },
 ];
 
-
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -63,17 +62,19 @@ export default function Navbar() {
 
           <Link href="/" asChild>
             <Pressable style={styles.brand}>
-            {brand.logoUrl ? (
-              <img
-                src={brand.logoUrl}
-                alt={brand.appName}
-                style={{ height: 32, objectFit: "contain" }}
-              />
-            ) : (
-              <ThemedText style={[styles.brandText, { color: accent }]}>{brand.appName}</ThemedText>
-            )}
-          </Pressable>
-        </Link>
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.appName}
+                  style={{ height: 32, objectFit: "contain" }}
+                />
+              ) : (
+                <ThemedText style={[styles.brandText, { color: accent }]}>
+                  {brand.appName}
+                </ThemedText>
+              )}
+            </Pressable>
+          </Link>
         </View>
 
         {/* Nav links + theme toggle */}
