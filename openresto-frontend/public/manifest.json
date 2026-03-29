@@ -3,10 +3,12 @@
   "short_name": "OpenResto",
   "description": "Restaurant table booking system",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "theme_color": "#0a7ea4",
-  "background_color": "#ffffff",
+  "background_color": "#111214",
   "icons": [
     {
       "src": "/icon-192.png",

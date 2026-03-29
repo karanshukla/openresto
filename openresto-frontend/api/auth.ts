@@ -15,7 +15,7 @@ export async function logout(): Promise<void> {
   try {
     await post("/admin/auth/logout");
   } catch {
-    console.log("Error logging out, if you see this, clear your cache and cookies!");
+    // Logout failed — non-critical, session will expire
   }
 }
 
@@ -58,7 +58,7 @@ export async function getPvqStatus(): Promise<PvqStatus | null> {
     const res = await get("/admin/auth/pvq", { credentials: "omit" });
     if (!res.ok) return null;
     return await res.json();
-  } catch /* istanbul ignore next */ {
+  } catch {
     return null;
   }
 }
@@ -85,7 +85,7 @@ export async function verifyPvq(
     const res = await post("/admin/auth/pvq/verify", { email, answer });
     if (!res.ok) return null;
     return await res.json();
-  } catch /* istanbul ignore next */ {
+  } catch {
     return null;
   }
 }

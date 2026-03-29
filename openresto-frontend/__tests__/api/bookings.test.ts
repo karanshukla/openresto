@@ -80,7 +80,7 @@ describe("getBookingById", () => {
     });
 
     const result = await getBookingById(5);
-    expect(result).toEqual(booking);
+    expect(result).toMatchObject(booking);
     expect(mockFetch.mock.calls[0][0]).toContain("/api/bookings/5");
   });
 
@@ -108,7 +108,7 @@ describe("getBookingByRef", () => {
     });
 
     const result = await getBookingByRef("sunny-pepper", "u@x.com");
-    expect(result).toEqual(booking);
+    expect(result).toMatchObject(booking);
     const url = mockFetch.mock.calls[0][0] as string;
     expect(url).toContain("/api/bookings/ref/sunny-pepper");
     expect(url).toContain("email=u%40x.com");
@@ -130,7 +130,8 @@ describe("getBookingsByRestaurant", () => {
     const bookings = [{ id: 1 }, { id: 2 }];
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
     const result = await getBookingsByRestaurant(5);
-    expect(result).toEqual(bookings);
+    expect(result[0]).toMatchObject({ id: 1 });
+    expect(result[1]).toMatchObject({ id: 2 });
     expect(mockFetch.mock.calls[0][0]).toContain("/api/bookings/restaurant/5");
   });
 

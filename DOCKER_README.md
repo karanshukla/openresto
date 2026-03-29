@@ -12,6 +12,8 @@ docker-compose up
 
 Access the app at: **http://localhost:5062**
 
+HOT RELOAD: ```docker compose -f docker-compose.yml -f docker-compose.dev.yml up```
+
 Services:
 
 - Frontend: http://localhost:8081 (direct)

@@ -34,7 +34,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
     Platform.OS === "web"
       ? isDark
         ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as const)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const) // TODO: Use theme shadows
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const)
       : {};
 
   return (

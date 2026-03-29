@@ -75,7 +75,7 @@ export default function HomeScreen() {
         </View>
 
         <PageContainer>
-          <ThemedText style={styles.sectionLabel}>
+          <ThemedText style={[styles.sectionLabel, { color: colors.muted }]}>
             {loading
               ? "Loading…"
               : `${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    color: "#6b7280",
   },
   grid: {
     flexDirection: "row",

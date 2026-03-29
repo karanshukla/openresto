@@ -8,9 +8,8 @@ import { getAdminBookings, getAdminOverview } from "@/api/admin";
 jest.mock("@/api/restaurants");
 jest.mock("@/api/admin");
 jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-  }),
+  useRouter: () => ({ push: jest.fn() }),
+  Stack: { Screen: () => null },
 }));
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",

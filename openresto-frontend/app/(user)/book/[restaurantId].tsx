@@ -8,6 +8,7 @@ import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -16,7 +17,7 @@ export default function BookScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? "#9ca3af" : "#6b7280";
+  const mutedColor = getThemeColors(isDark).muted;
 
   useEffect(() => {
     if (restaurantId) {

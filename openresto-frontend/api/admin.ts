@@ -229,7 +229,7 @@ export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   try {
     const res = await del(`/admin/restaurants/${id}`);
     return res.ok;
-  } catch (err) /* istanbul ignore next */ {
+  } catch (err) {
     console.error("adminDeleteRestaurant error:", err);
     return false;
   }

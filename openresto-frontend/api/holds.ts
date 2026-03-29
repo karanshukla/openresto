@@ -29,6 +29,6 @@ export async function releaseHold(holdId: string): Promise<void> {
   try {
     await del(`/holds/${holdId}`);
   } catch {
-    console.log("Hold was not released, that's okay...");
+    // Hold release failed — it will expire on its own
   }
 }

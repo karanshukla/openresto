@@ -1,0 +1,45 @@
+services:
+  backend:
+    # Fix: Targeting .NET 10.0 requires the preview SDK image
+    image: mcr.microsoft.com/dotnet/sdk:10.0-preview
+    working_dir: /app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+    env_file:
+      - ./OpenRestoApi/.env.docker
+    volumes:
+      - ./OpenRestoApi:/app
+      - /app/bin
+      - /app/obj
+    # Runs the watcher on the project root
+    command: dotnet watch run --non-interactive --urls http://0.0.0.0:8080
+
+  frontend:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./openresto-frontend:/app
+      - /app/node_modules
+    ports:
+      - "8081:8081"
+    # Ensures modules are synced before starting Metro
+    command: sh -c "npm install --prefer-offline && npm start"
+
+  reverse-proxy:
+    volumes:
+      # Fix: Mount to a specific filename to prevent Docker from creating a folder
+      # Also ensures your custom start.sh can find it
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "5062:80"
+    environment:
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8080
+      - FRONTEND_HOST=frontend
+      - FRONTEND_PORT=8081
+    depends_on:
+      - backend
+      - frontend

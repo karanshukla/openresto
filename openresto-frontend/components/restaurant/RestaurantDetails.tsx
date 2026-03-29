@@ -4,6 +4,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function RestaurantDetails({ restaurant }: { restaurant: RestaurantDto }) {
   const isDark = useColorScheme() === "dark";
@@ -19,9 +20,12 @@ export default function RestaurantDetails({ restaurant }: { restaurant: Restaura
       </ThemedText>
 
       {restaurant.address ? (
-        <ThemedText style={[styles.address, { color: mutedColor }]}>
-          📍 {restaurant.address}
-        </ThemedText>
+        <View style={styles.addressRow}>
+          <Ionicons name="location-outline" size={16} color={mutedColor} />
+          <ThemedText style={[styles.address, { color: mutedColor }]}>
+            {restaurant.address}
+          </ThemedText>
+        </View>
       ) : null}
 
       <View style={[styles.divider, { backgroundColor: borderColor }]} />
@@ -61,6 +65,11 @@ const styles = StyleSheet.create({
   },
   name: {
     marginBottom: 4,
+  },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   address: {
     fontSize: 15,

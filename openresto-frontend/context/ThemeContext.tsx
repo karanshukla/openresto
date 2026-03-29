@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Platform, useColorScheme as useSystemColorScheme } from "react-native";
+import { createContext, useContext, useLayoutEffect, useState, ReactNode } from "react";
+import { Platform } from "react-native";
 
 export type ColorScheme = "light" | "dark";
 export type ThemePreference = "light" | "dark" | "system";
@@ -33,25 +33,33 @@ function writeStorage(pref: ThemePreference) {
 
 function getSystemScheme(): ColorScheme {
   if (Platform.OS !== "web" || typeof window === "undefined") return "dark";
-  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-    return "dark";
-  }
-  return "light";
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(scheme: ColorScheme) {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  const bg = scheme === "dark" ? "#111214" : "#f2f3f5";
+  document.documentElement.className = scheme;
+  document.documentElement.style.backgroundColor = bg;
+  document.body.className = document.body.className
+    .replace(/\b(light|dark)\b/g, "")
+    .trim() + " " + scheme;
+  document.body.style.backgroundColor = bg;
 }
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(() => readStorage());
   const [systemScheme] = useState<ColorScheme>(getSystemScheme);
-
   const colorScheme: ColorScheme = preference === "system" ? systemScheme : preference;
 
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
+  // useLayoutEffect fires BEFORE paint — no flash
+  useLayoutEffect(() => {
+    applyTheme(colorScheme);
 
-    if (colorScheme === "light") {
-      document.body.classList.add("light");
-    } else {
-      document.body.classList.remove("light");
+    if (!document.body.classList.contains("theme-ready")) {
+      requestAnimationFrame(() => {
+        document.body.classList.add("theme-ready");
+      });
     }
   }, [colorScheme]);
 
