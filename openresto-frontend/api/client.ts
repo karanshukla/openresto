@@ -3,7 +3,6 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export function buildUrl(path: string): string {
   const base = API_URL?.replace(/\/$/, "") ?? "";
   if (!base) return `/api${path}`;
-  /* istanbul ignore next -- branch depends on EXPO_PUBLIC_API_URL env var */
   return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
 }
 

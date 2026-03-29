@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { Modal, Pressable, StyleSheet, View, TouchableWithoutFeedback } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
@@ -30,33 +30,32 @@ export default function ConfirmModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel}>
-        <Pressable
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => {}}
-        >
-          <ThemedText style={styles.title}>{title}</ThemedText>
-          <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
-          <View style={[styles.actions, { borderTopColor: colors.border }]}>
-            <Pressable
-              style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]}
-              onPress={onCancel}
-            >
-              <ThemedText style={[styles.btnText, { color: colors.muted }]}>
-                {cancelLabel}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.btn,
-                styles.confirmBtn,
-                { backgroundColor: destructive ? COLORS.error : COLORS.primary },
-              ]}
-              onPress={onConfirm}
-            >
-              <ThemedText style={styles.confirmBtnText}>{confirmLabel}</ThemedText>
-            </Pressable>
+        <TouchableWithoutFeedback>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <ThemedText style={styles.title}>{title}</ThemedText>
+            <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
+            <View style={[styles.actions, { borderTopColor: colors.border }]}>
+              <Pressable
+                style={[styles.btn, styles.cancelBtn, { borderColor: colors.border }]}
+                onPress={onCancel}
+              >
+                <ThemedText style={[styles.btnText, { color: colors.muted }]}>
+                  {cancelLabel}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.btn,
+                  styles.confirmBtn,
+                  { backgroundColor: destructive ? COLORS.error : COLORS.primary },
+                ]}
+                onPress={onConfirm}
+              >
+                <ThemedText style={styles.confirmBtnText}>{confirmLabel}</ThemedText>
+              </Pressable>
+            </View>
           </View>
-        </Pressable>
+        </TouchableWithoutFeedback>
       </Pressable>
     </Modal>
   );

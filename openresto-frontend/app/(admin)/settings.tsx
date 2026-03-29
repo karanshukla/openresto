@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
+import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,10 +65,15 @@ export default function AdminSettingsScreen() {
   }
 
   useEffect(() => {
+    let cancelled = false;
     fetchRestaurants().then((data) => {
+      if (cancelled) return;
       setRestaurants(data);
       setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -80,6 +86,7 @@ export default function AdminSettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen options={{ title: "Settings" }} />
       {/* Page header */}
       <View style={styles.pageHeader}>
         <View>

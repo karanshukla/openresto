@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import {
@@ -19,13 +19,14 @@ import {
   AdminOverviewDto,
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { hexToRgba } from "@/utils/colors";
 
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-};
+function toUTCDateString(d: Date): string {
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 const QUICK_ACTIONS = [
   {
@@ -69,18 +70,24 @@ export default function AdminDashboardScreen() {
   const subtleBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const [data, ov] = await Promise.all([fetchRestaurants(), getAdminOverview()]);
+      if (cancelled) return;
       setRestaurants(data);
       setOverview(ov);
       if (data.length > 0) {
         setSelectedRestaurant(data[0]);
         const b = await getAdminBookings(data[0].id);
+        if (cancelled) return;
         setBookings(b);
       }
       setLoading(false);
     }
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSelectRestaurant = async (r: RestaurantDto) => {
@@ -90,18 +97,11 @@ export default function AdminDashboardScreen() {
     setBookings(b);
     setLoading(false);
   };
-  // Get today's local date string for comparison (handles timezone correctly)
-  const getTodayDateString = (): string => {
-    const d = new Date();
-    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
-  };
+  const todayDateString = toUTCDateString(new Date());
 
-  const todayDateString = getTodayDateString();
-
-  const todayBookings = bookings.filter((b) => {
-    const bookingDateString = new Date(b.date).toLocaleDateString("en-CA");
-    return bookingDateString === todayDateString;
-  });
+  const todayBookings = bookings.filter(
+    (b) => toUTCDateString(new Date(b.date)) === todayDateString
+  );
   const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
 
   const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
@@ -157,7 +157,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Page header */}
+      <Stack.Screen options={{ title: "Dashboard" }} />
       <View style={styles.pageHeader}>
         <View>
           <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
@@ -201,7 +201,6 @@ export default function AdminDashboardScreen() {
         <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
       ) : (
         <>
-          {/* Metrics bento */}
           <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
             {stats.map((stat) => (
               <View
@@ -226,9 +225,7 @@ export default function AdminDashboardScreen() {
             ))}
           </View>
 
-          {/* Today's Flow + Quick Actions */}
           <View style={[styles.mainRow, isWide && styles.mainRowWide]}>
-            {/* Bar chart — 2/3 width on wide */}
             <View
               style={[
                 styles.chartCard,
@@ -267,7 +264,6 @@ export default function AdminDashboardScreen() {
               </View>
             </View>
 
-            {/* Quick Actions — 1/3 width on wide */}
             <View style={[styles.actionsCol, isWide && styles.actionsColWide]}>
               {QUICK_ACTIONS.map((action) => (
                 <Pressable
@@ -325,7 +321,6 @@ export default function AdminDashboardScreen() {
             </View>
           </View>
 
-          {/* Today's reservations list */}
           <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.listHeader}>
               <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>

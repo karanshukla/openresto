@@ -35,19 +35,20 @@
     "expo-web-browser": "~15.0.10",
     "react": "19.1.4",
     "react-dom": "19.1.4",
-    "react-native": "0.81.6",
+    "react-native": "0.81.5",
+    "react-native-reanimated": "~4.1.1",
     "react-native-web": "~0.21.1",
-    "react-native-worklets": "0.5.2"
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.8",
     "jest": "^29.7.0",
-    "jest-expo": "^55.0.11",
+    "jest-expo": "~54.0.17",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },

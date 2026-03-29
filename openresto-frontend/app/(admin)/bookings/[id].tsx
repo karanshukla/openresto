@@ -14,7 +14,7 @@ import {
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
@@ -64,7 +64,9 @@ export default function AdminBookingDetailScreen() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     getAdminBooking(parseInt(id, 10)).then((b) => {
+      if (cancelled) return;
       setBooking(b);
       if (b) {
         setEditSeats(String(b.seats));
@@ -83,6 +85,9 @@ export default function AdminBookingDetailScreen() {
       }
       setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -90,10 +95,19 @@ export default function AdminBookingDetailScreen() {
       return;
     }
 
+    let cancelled = false;
     setLoadingRestaurants(true);
     fetchRestaurants()
-      .then((data) => setRestaurants(data))
-      .finally(() => setLoadingRestaurants(false));
+      .then((data) => {
+        if (cancelled) return;
+        setRestaurants(data);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingRestaurants(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [editing, restaurants.length]);
 
   const selectedRestaurant = restaurants.find((r) => r.id === editRestaurantId) ?? null;
@@ -266,6 +280,7 @@ export default function AdminBookingDetailScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen options={{ title: "Booking Details" }} />
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
         <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>

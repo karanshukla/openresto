@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useState, ReactNode } from "react";
 import { Platform } from "react-native";
-import { useColorScheme as useSystemColorScheme } from "react-native";
 
 export type ColorScheme = "light" | "dark";
 export type ThemePreference = "light" | "dark" | "system";
@@ -13,7 +12,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  colorScheme: "light",
+  colorScheme: "dark",
   preference: "system",
   setPreference: () => {},
   toggle: () => {},
@@ -32,21 +31,36 @@ function writeStorage(pref: ThemePreference) {
   else localStorage.setItem(STORAGE_KEY, pref);
 }
 
+function getSystemScheme(): ColorScheme {
+  if (Platform.OS !== "web" || typeof window === "undefined") return "dark";
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(scheme: ColorScheme) {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  const bg = scheme === "dark" ? "#111214" : "#f2f3f5";
+  document.documentElement.className = scheme;
+  document.documentElement.style.backgroundColor = bg;
+  document.body.className =
+    document.body.className.replace(/\b(light|dark)\b/g, "").trim() + " " + scheme;
+  document.body.style.backgroundColor = bg;
+}
+
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const systemScheme = useSystemColorScheme() ?? "light";
-  const [preference, setPreferenceState] = useState<ThemePreference>("system");
-  const [hydrated, setHydrated] = useState(false);
+  const [preference, setPreferenceState] = useState<ThemePreference>(() => readStorage());
+  const [systemScheme] = useState<ColorScheme>(getSystemScheme);
+  const colorScheme: ColorScheme = preference === "system" ? systemScheme : preference;
 
-  useEffect(() => {
-    setPreferenceState(readStorage());
-    setHydrated(true);
-  }, []);
+  // useLayoutEffect fires BEFORE paint — no flash
+  useLayoutEffect(() => {
+    applyTheme(colorScheme);
 
-  const colorScheme: ColorScheme = !hydrated
-    ? "light"
-    : preference === "system"
-      ? systemScheme
-      : preference;
+    if (!document.body.classList.contains("theme-ready")) {
+      requestAnimationFrame(() => {
+        document.body.classList.add("theme-ready");
+      });
+    }
+  }, [colorScheme]);
 
   const setPreference = (pref: ThemePreference) => {
     setPreferenceState(pref);

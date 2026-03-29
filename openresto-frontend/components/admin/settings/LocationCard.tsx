@@ -39,7 +39,6 @@ export function LocationCard({
         isSelected && { borderColor: COLORS.primary },
       ]}
     >
-      {/* Card header */}
       <View style={styles.locationCardHeader}>
         <View style={[styles.locationIcon, { backgroundColor: `${COLORS.primary}14` }]}>
           <Ionicons name="storefront-outline" size={22} color={COLORS.primary} />
@@ -57,7 +56,6 @@ export function LocationCard({
         </View>
       </View>
 
-      {/* Stats row */}
       <View style={[styles.locationStats, { borderTopColor: borderColor }]}>
         <View style={styles.locationStat}>
           <ThemedText style={styles.locationStatValue}>{restaurant.sections.length}</ThemedText>
@@ -94,7 +92,6 @@ export function LocationCard({
         </View>
       </View>
 
-      {/* Expanded editor */}
       {isSelected && (
         <View style={[styles.expandedEditor, { borderTopColor: borderColor }]}>
           <ThemedText style={styles.editorSectionTitle}>Restaurant Info</ThemedText>

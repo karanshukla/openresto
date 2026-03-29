@@ -1,12 +1,20 @@
-/* Global styles for web platform only */
 * {
   box-sizing: border-box;
 }
 
 html,
-body {
+body,
+#root,
+#__next,
+[data-expo-root] {
   margin: 0;
   padding: 0;
+  background-color: #f2f3f5;
+  color: #000000;
+}
+
+html,
+body {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
     "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -14,68 +22,79 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+html.light,
+html.light body,
+body.light,
+body.light #root,
+body.light #__next {
   background-color: #f2f3f5;
   color: #000000;
 }
 
-body.dark {
+html.dark,
+html.dark body,
+body.dark,
+body.dark #root {
   background-color: #111214;
   color: #ffffff;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-::-webkit-scrollbar-track {
+.light ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+.light ::-webkit-scrollbar-thumb {
   background: #9ca3af;
   border-radius: 5px;
   border: 2px solid #f2f3f5;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.light ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 
-body.dark ::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
   background: #4b5563;
+  border-radius: 5px;
   border: 2px solid #111214;
 }
 
-body.dark ::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 
-/* Focus styles for accessibility */
 :focus-visible {
   outline: 2px solid #0a7ea4;
   outline-offset: 2px;
 }
 
-/* Input focus styles - override default outline behavior */
 input:focus-visible,
 textarea:focus-visible {
   outline: none;
 }
 
-/* Smooth transitions */
 * {
+  transition: none !important;
+}
+
+body.theme-ready * {
   transition:
     background-color 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
 }
 
-/* Disable transitions for reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  body.theme-ready * {
     transition: none !important;
   }
 }

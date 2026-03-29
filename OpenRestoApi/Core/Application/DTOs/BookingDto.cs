@@ -17,6 +17,8 @@ public class BookingDto
     public string? TableName { get; set; }
     public string? SectionName { get; set; }
     public int TableSeats { get; set; }
+    public bool IsCancelled { get; set; }
+    public DateTime? CancelledAt { get; set; }
 
     /// <summary>
     /// Optional hold ID obtained from POST /api/holds.

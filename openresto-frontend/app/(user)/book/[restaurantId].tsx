@@ -3,11 +3,12 @@ import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, StyleSheet } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -16,16 +17,21 @@ export default function BookScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
-  const mutedColor = isDark ? "#9ca3af" : "#6b7280";
+  const mutedColor = getThemeColors(isDark).muted;
 
   useEffect(() => {
     if (restaurantId) {
+      let cancelled = false;
       async function loadRestaurant() {
         const data = await fetchRestaurantById(parseInt(restaurantId, 10));
+        if (cancelled) return;
         setRestaurant(data);
         setLoading(false);
       }
       loadRestaurant();
+      return () => {
+        cancelled = true;
+      };
     }
   }, [restaurantId]);
 
@@ -64,6 +70,7 @@ export default function BookScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
+        <Stack.Screen options={{ title: "Reserve a Table" }} />
         <ActivityIndicator size="large" />
       </ThemedView>
     );
@@ -72,6 +79,7 @@ export default function BookScreen() {
   if (!restaurant) {
     return (
       <ThemedView style={styles.center}>
+        <Stack.Screen options={{ title: "Not Found" }} />
         <ThemedText>Restaurant not found.</ThemedText>
       </ThemedView>
     );
@@ -79,6 +87,7 @@ export default function BookScreen() {
 
   return (
     <ThemedView style={styles.root}>
+      <Stack.Screen options={{ title: `Reserve at ${restaurant.name}` }} />
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
           <ThemedText type="title" style={styles.title}>

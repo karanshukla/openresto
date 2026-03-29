@@ -5,7 +5,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
   slug: "openresto-frontend",
   version: "1.0.0",
-  orientation: "portrait",
+  orientation: "default",
   icon: "./assets/images/icon.png",
   scheme: "openrestofrontend",
   userInterfaceStyle: "automatic",
@@ -26,6 +26,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     output: "static",
     favicon: "./assets/images/favicon.png",
+    name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
+    shortName: "OpenResto",
+    description: "Restaurant table booking system",
+    themeColor: "#0a7ea4",
+    backgroundColor: "#111214",
   },
   plugins: [
     "expo-router",
@@ -35,9 +40,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#111214",
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#111214",
         },
       },
     ],

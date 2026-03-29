@@ -1,5 +1,5 @@
 import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
-import { Link, usePathname } from "expo-router";
+import { Link, usePathname, useRouter } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -27,6 +27,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
@@ -35,6 +36,7 @@ export default function Navbar() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
+  const showBack = pathname !== "/";
 
   return (
     <ThemedView
@@ -46,20 +48,34 @@ export default function Navbar() {
       ]}
     >
       <View style={styles.inner}>
-        {/* Brand */}
-        <Link href="/" asChild>
-          <Pressable style={styles.brand}>
-            {brand.logoUrl ? (
-              <img
-                src={brand.logoUrl}
-                alt={brand.appName}
-                style={{ height: 32, objectFit: "contain" }}
-              />
-            ) : (
-              <ThemedText style={[styles.brandText, { color: accent }]}>{brand.appName}</ThemedText>
-            )}
-          </Pressable>
-        </Link>
+        <View style={styles.leftGroup}>
+          {/* Back button — shown in standalone PWA mode on inner pages */}
+          {showBack && (
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.backBtn}
+              accessibilityLabel="Go back"
+            >
+              <Ionicons name="chevron-back" size={22} color={accent} />
+            </Pressable>
+          )}
+
+          <Link href="/" asChild>
+            <Pressable style={styles.brand}>
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.appName}
+                  style={{ height: 32, objectFit: "contain" }}
+                />
+              ) : (
+                <ThemedText style={[styles.brandText, { color: accent }]}>
+                  {brand.appName}
+                </ThemedText>
+              )}
+            </Pressable>
+          </Link>
+        </View>
 
         {/* Nav links + theme toggle */}
         <View style={styles.links}>
@@ -113,6 +129,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 24,
     height: "100%",
+  },
+  leftGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -18,
+    marginRight: 4,
   },
   brand: {
     paddingVertical: 4,
