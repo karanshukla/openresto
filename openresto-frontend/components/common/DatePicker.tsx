@@ -1,9 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 function generateDateOptions(): { label: string; value: string }[] {
   const options = [];
@@ -34,7 +35,12 @@ export default function DatePicker({
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const borderColor = colors.border;
+  const placeholderColor = colors.muted;
+  const backgroundColor = colors.input;
+
   const allOptions = generateDateOptions();
   const options = openDays
     ? allOptions.filter((o) => {
@@ -64,17 +70,17 @@ export default function DatePicker({
               style={styles.list}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.option, item.value === selectedDate && styles.selectedOption]}
+                  style={[styles.option, item.value === selectedDate && { backgroundColor: `${primaryColor}14` }]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
                 >
-                  <ThemedText style={item.value === selectedDate && styles.selectedText}>
+                  <ThemedText style={item.value === selectedDate && { color: primaryColor, fontWeight: "600" }}>
                     {item.label}
                   </ThemedText>
                   {item.value === selectedDate && (
-                    <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
                   )}
                 </TouchableOpacity>
               )}
@@ -86,15 +92,15 @@ export default function DatePicker({
       <Pressable
         style={(state) => [
           styles.trigger,
-          { borderColor },
-          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
+          { borderColor, backgroundColor },
+          (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText style={!selected && styles.placeholder}>
+        <ThemedText style={!selected && { color: placeholderColor }}>
           {selected?.label ?? "Select a date"}
         </ThemedText>
-        <ThemedText style={styles.chevron}>▾</ThemedText>
+        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
     </>
   );
@@ -109,17 +115,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  triggerHovered: {
-    borderColor: "#0a7ea4",
-  },
-  placeholder: {
-    color: "#9ca3af",
   },
   chevron: {
     fontSize: 14,
-    color: "#9ca3af",
   },
   backdrop: {
     flex: 1,
@@ -152,15 +150,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  selectedOption: {
-    backgroundColor: "rgba(10,126,164,0.08)",
-  },
-  selectedText: {
-    fontWeight: "600",
-    color: "#0a7ea4",
+  optionText: {
+    fontSize: 15,
   },
   checkmark: {
-    color: "#0a7ea4",
     fontWeight: "600",
   },
 });

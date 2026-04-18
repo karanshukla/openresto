@@ -1,6 +1,7 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -17,7 +18,13 @@ export function ThemedText({
 }: ThemedTextProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
-  const color = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : colors.text;
+  const brand = useBrand();
+  
+  let color = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : colors.text;
+  
+  if (type === "link" && !lightColor && !darkColor) {
+    color = brand.primaryColor || COLORS.primary;
+  }
 
   return (
     <Text
@@ -57,6 +64,5 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: COLORS.primary,
   },
 });

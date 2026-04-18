@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
-import BookScreen from "@/app/(user)/book/[restaurantId]";
+import BookScreen from "@/app/(user)/book";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",

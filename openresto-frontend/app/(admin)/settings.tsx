@@ -8,6 +8,7 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
 
 // Components
 import { LocationCard } from "@/components/admin/settings/LocationCard";
@@ -55,6 +56,8 @@ export default function AdminSettingsScreen() {
     handleCancel,
   } = useConfirmLocal();
 
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
   const cardBg = colors.card;
@@ -79,7 +82,7 @@ export default function AdminSettingsScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={primaryColor} />
       </ThemedView>
     );
   }
@@ -133,15 +136,6 @@ export default function AdminSettingsScreen() {
         </ThemedText>
         <BrandSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
         <EmailSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
-        <GlobalSettingRow
-          icon="globe-outline"
-          title="API & Network"
-          sub="API keys, webhooks, and integrations"
-          mutedColor={mutedColor}
-          borderColor={borderColor}
-          cardBg={cardBg}
-          comingSoon
-        />
       </View>
 
       {/* Account Security */}

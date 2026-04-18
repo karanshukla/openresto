@@ -3,6 +3,7 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import TimePicker from "@/components/common/TimePicker";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { RestaurantDto, updateRestaurant } from "@/api/restaurants";
@@ -57,22 +58,16 @@ export function RestaurantInfoForm({
       <View style={styles.hoursRow}>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Opens</ThemedText>
-          <input
-            type="time"
-            value={openTime}
-            step={900}
-            onChange={(e) => e.target.value && setOpenTime(e.target.value)}
-            style={hoursInputStyle}
+          <TimePicker
+            selectedTime={openTime}
+            onSelect={setOpenTime}
           />
         </View>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Closes</ThemedText>
-          <input
-            type="time"
-            value={closeTime}
-            step={900}
-            onChange={(e) => e.target.value && setCloseTime(e.target.value)}
-            style={hoursInputStyle}
+          <TimePicker
+            selectedTime={closeTime}
+            onSelect={setCloseTime}
           />
         </View>
       </View>
@@ -215,16 +210,3 @@ export function RestaurantInfoForm({
     </View>
   );
 }
-
-const hoursInputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 44,
-  border: `1px solid ${COLORS.border.light}`,
-  borderRadius: 8,
-  paddingLeft: 12,
-  paddingRight: 12,
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  cursor: "pointer",
-};

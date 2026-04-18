@@ -9,6 +9,7 @@ import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -18,22 +19,36 @@ export default function BookScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = getThemeColors(isDark).muted;
+  const brand = useBrand();
 
   useEffect(() => {
     if (restaurantId) {
       let cancelled = false;
       async function loadRestaurant() {
-        const data = await fetchRestaurantById(parseInt(restaurantId, 10));
-        if (cancelled) return;
-        setRestaurant(data);
-        setLoading(false);
+        try {
+          const data = await fetchRestaurantById(parseInt(restaurantId, 10));
+          if (cancelled) return;
+          setRestaurant(data);
+        } catch (err) {
+          console.error("Failed to fetch restaurant:", err);
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
       }
       loadRestaurant();
       return () => {
         cancelled = true;
       };
+    } else {
+      setLoading(false);
     }
   }, [restaurantId]);
+
+  useEffect(() => {
+    if (Platform.OS === "web" && restaurant) {
+      document.title = `Reserve at ${restaurant.name}`;
+    }
+  }, [restaurant]);
 
   const handleSubmit = async (data: BookingFormData) => {
     if (!restaurant) return;
@@ -106,7 +121,7 @@ export default function BookScreen() {
           <BookingForm
             restaurant={restaurant}
             onSubmit={handleSubmit}
-            onRefresh={() => router.replace(`/book/${restaurantId}`)}
+            onRefresh={() => router.replace(`/book?restaurantId=${restaurantId}`)}
           />
         </PageContainer>
       </ScrollView>

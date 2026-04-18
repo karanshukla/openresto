@@ -104,106 +104,145 @@ export function EmailSettingsCard({
       </Pressable>
 
       {expanded && (
-        <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-          <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
-            {PRESETS.map((p) => (
-              <Pressable
-                key={p.label}
-                style={[styles.secBtn, { borderColor }]}
-                onPress={() => {
-                  setHost(p.host);
-                  setPort(String(p.port));
-                  setEnableSsl(true);
-                }}
-              >
-                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
-                  {p.label}
-                </ThemedText>
-              </Pressable>
-            ))}
+        <View style={[styles.secForm, { borderTopColor: borderColor, gap: 16 }]}>
+          <View>
+            <ThemedText style={[styles.fieldLabel, { marginBottom: 8, opacity: 0.6 }]}>
+              QUICK PRESETS
+            </ThemedText>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {PRESETS.map((p) => (
+                <Pressable
+                  key={p.label}
+                  style={[
+                    styles.dayChip,
+                    { borderColor, backgroundColor: host === p.host ? `${COLORS.primary}15` : "transparent" },
+                    host === p.host && { borderColor: COLORS.primary }
+                  ]}
+                  onPress={() => {
+                    setHost(p.host);
+                    setPort(String(p.port));
+                    setEnableSsl(true);
+                  }}
+                >
+                  <ThemedText style={[styles.secBtnText, { color: host === p.host ? COLORS.primary : mutedColor }]}>
+                    {p.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>SMTP Host</ThemedText>
-            <Input value={host} onChangeText={setHost} placeholder="smtp.gmail.com" />
-          </View>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={[styles.field, { flex: 1 }]}>
-              <ThemedText style={styles.fieldLabel}>Port</ThemedText>
-              <Input value={port} onChangeText={setPort} placeholder="587" keyboardType="numeric" />
+          <View style={{ gap: 12 }}>
+            <ThemedText style={styles.editorSectionTitle}>Server Settings</ThemedText>
+            
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>SMTP Host</ThemedText>
+              <Input value={host} onChangeText={setHost} placeholder="smtp.gmail.com" />
             </View>
-            <View style={[styles.field, { flex: 1 }]}>
-              <ThemedText style={styles.fieldLabel}>SSL/TLS</ThemedText>
-              <Pressable
-                style={[styles.secBtn, { borderColor, alignItems: "center" as const }]}
-                onPress={() => setEnableSsl((v) => !v)}
-              >
-                <Ionicons
-                  name={enableSsl ? "checkmark-circle" : "ellipse-outline"}
-                  size={16}
-                  color={enableSsl ? COLORS.primary : mutedColor}
-                />
-                <ThemedText
-                  style={[styles.secBtnText, { color: enableSsl ? COLORS.primary : mutedColor }]}
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={[styles.field, { flex: 1 }]}>
+                <ThemedText style={styles.fieldLabel}>Port</ThemedText>
+                <Input value={port} onChangeText={setPort} placeholder="587" keyboardType="numeric" />
+              </View>
+              <View style={[styles.field, { flex: 1 }]}>
+                <ThemedText style={styles.fieldLabel}>Security</ThemedText>
+                <Pressable
+                  style={[
+                    styles.secBtn,
+                    {
+                      borderColor: enableSsl ? COLORS.primary : borderColor,
+                      backgroundColor: enableSsl ? `${COLORS.primary}10` : "transparent",
+                      alignItems: "center" as const,
+                      flexDirection: "row",
+                      gap: 8,
+                      paddingHorizontal: 12,
+                    },
+                  ]}
+                  onPress={() => setEnableSsl((v) => !v)}
                 >
-                  {enableSsl ? "Enabled" : "Disabled"}
-                </ThemedText>
-              </Pressable>
+                  <Ionicons
+                    name={enableSsl ? "shield-checkmark" : "shield-outline"}
+                    size={16}
+                    color={enableSsl ? COLORS.primary : mutedColor}
+                  />
+                  <ThemedText
+                    style={[
+                      styles.secBtnText,
+                      {
+                        color: enableSsl ? COLORS.primary : mutedColor,
+                        fontWeight: enableSsl ? "600" : "400",
+                      },
+                    ]}
+                  >
+                    {enableSsl ? "SSL/TLS Enabled" : "No Encryption"}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>Username</ThemedText>
+              <Input
+                value={username}
+                onChangeText={setUsername}
+                placeholder="your@email.com"
+                autoCapitalize="none"
+              />
+            </View>
+            
+            <View style={styles.field}>
+              <ThemedText style={styles.fieldLabel}>Password</ThemedText>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <View style={{ flex: 1 }}>
+                  <Input
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="SMTP Password"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <Pressable onPress={() => setShowPassword((v) => !v)} style={{ padding: 8 }}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={mutedColor}
+                  />
+                </Pressable>
+              </View>
             </View>
           </View>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Username</ThemedText>
-            <Input
-              value={username}
-              onChangeText={setUsername}
-              placeholder="your@email.com"
-              autoCapitalize="none"
-            />
-          </View>
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Password</ThemedText>
-            <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
+
+          <View style={{ gap: 12, marginTop: 4 }}>
+            <ThemedText style={styles.editorSectionTitle}>Sender Identity</ThemedText>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={[styles.field, { flex: 1 }]}>
+                <ThemedText style={styles.fieldLabel}>From Name</ThemedText>
+                <Input value={fromName} onChangeText={setFromName} placeholder="OpenResto" />
+              </View>
+              <View style={[styles.field, { flex: 1 }]}>
+                <ThemedText style={styles.fieldLabel}>From Email</ThemedText>
                 <Input
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="App password or SMTP password"
-                  secureTextEntry={!showPassword}
+                  value={fromEmail}
+                  onChangeText={setFromEmail}
+                  placeholder="noreply@site.com"
                   autoCapitalize="none"
                 />
               </View>
-              <Pressable onPress={() => setShowPassword((v) => !v)} style={{ padding: 4 }}>
-                <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color={mutedColor}
-                />
-              </Pressable>
-            </View>
-          </View>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={[styles.field, { flex: 1 }]}>
-              <ThemedText style={styles.fieldLabel}>From Name (optional)</ThemedText>
-              <Input value={fromName} onChangeText={setFromName} placeholder="OpenResto" />
-            </View>
-            <View style={[styles.field, { flex: 1 }]}>
-              <ThemedText style={styles.fieldLabel}>From Email (optional)</ThemedText>
-              <Input
-                value={fromEmail}
-                onChangeText={setFromEmail}
-                placeholder="noreply@yoursite.com"
-                autoCapitalize="none"
-              />
             </View>
           </View>
 
           {msg && (
-            <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
-              {msg.text}
-            </ThemedText>
+            <View style={[styles.successBanner, { backgroundColor: msg.ok ? `${COLORS.success}10` : `${COLORS.error}10`, borderRadius: 8, marginTop: 8 }]}>
+               <Ionicons name={msg.ok ? "checkmark-circle" : "alert-circle"} size={18} color={msg.ok ? COLORS.success : COLORS.error} />
+               <ThemedText style={[msg.ok ? styles.successText : styles.errorText, { padding: 8 }]}>
+                {msg.text}
+              </ThemedText>
+            </View>
           )}
 
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
             <Button
               onPress={handleSave}
               disabled={saving || !host || !username}
@@ -212,22 +251,20 @@ export function EmailSettingsCard({
               {saving ? "Saving…" : "Save Settings"}
             </Button>
             <Pressable
-              style={[styles.secBtn, { borderColor }, (!host || !username) && { opacity: 0.4 }]}
+              style={[
+                styles.secBtn, 
+                { borderColor, flexDirection: "row", gap: 8, paddingHorizontal: 16 }, 
+                (!host || !username) && { opacity: 0.4 }
+              ]}
               onPress={() => {
                 if (testing || !host || !username) return;
                 handleTest();
               }}
             >
-              {testing ? (
-                <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>Testing…</ThemedText>
-              ) : (
-                <>
-                  <Ionicons name="flash-outline" size={14} color={COLORS.primary} />
-                  <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
-                    Test
-                  </ThemedText>
-                </>
-              )}
+              <Ionicons name="flash-outline" size={16} color={COLORS.primary} />
+              <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+                {testing ? "Testing…" : "Test Connection"}
+              </ThemedText>
             </Pressable>
           </View>
         </View>

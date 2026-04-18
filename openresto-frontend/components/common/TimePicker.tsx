@@ -1,27 +1,24 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
-function generateTimeOptions(minTime: string, maxTime: string): { label: string; value: string }[] {
+function generateTimeOptions(minTime = "09:00", maxTime = "22:00"): { label: string; value: string }[] {
+  const options = [];
   const [minH, minM] = minTime.split(":").map(Number);
   const [maxH, maxM] = maxTime.split(":").map(Number);
-  const minTotal = minH * 60 + minM;
-  const maxTotal = maxH * 60 + maxM;
 
-  const options = [];
-  for (let total = minTotal; total <= maxTotal; total += 15) {
-    const hour = Math.floor(total / 60);
-    const minute = total % 60;
-    const h = hour.toString().padStart(2, "0");
-    const m = minute.toString().padStart(2, "0");
-    const value = `${h}:${m}`;
-    const period = hour < 12 ? "AM" : "PM";
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    const label = `${displayHour}:${m} ${period}`;
-    options.push({ label, value });
+  const start = minH * 60 + minM;
+  const end = maxH * 60 + maxM;
+
+  for (let m = start; m <= end; m += 15) {
+    const hh = Math.floor(m / 60);
+    const mm = m % 60;
+    const time = `${hh.toString().padStart(2, "0")}:${mm.toString().padStart(2, "0")}`;
+    options.push({ label: time, value: time });
   }
   return options;
 }
@@ -40,7 +37,11 @@ export default function TimePicker({
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const borderColor = colors.border;
+  const placeholderColor = colors.muted;
+  const backgroundColor = colors.input;
   const options = generateTimeOptions(minTime, maxTime);
   const selected = options.find((o) => o.value === selectedTime);
 
@@ -63,17 +64,17 @@ export default function TimePicker({
               style={styles.list}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.option, item.value === selectedTime && styles.selectedOption]}
+                  style={[styles.option, item.value === selectedTime && { backgroundColor: `${primaryColor}14` }]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
                 >
-                  <ThemedText style={item.value === selectedTime && styles.selectedText}>
+                  <ThemedText style={item.value === selectedTime && { color: primaryColor, fontWeight: "600" }}>
                     {item.label}
                   </ThemedText>
                   {item.value === selectedTime && (
-                    <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
                   )}
                 </TouchableOpacity>
               )}
@@ -85,15 +86,15 @@ export default function TimePicker({
       <Pressable
         style={(state) => [
           styles.trigger,
-          { borderColor },
-          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
+          { borderColor, backgroundColor },
+          (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText style={!selected && styles.placeholder}>
+        <ThemedText style={!selected && { color: placeholderColor }}>
           {selected?.label ?? "Select a time"}
         </ThemedText>
-        <ThemedText style={styles.chevron}>▾</ThemedText>
+        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
     </>
   );
@@ -108,17 +109,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  triggerHovered: {
-    borderColor: "#0a7ea4",
-  },
-  placeholder: {
-    color: "#9ca3af",
   },
   chevron: {
     fontSize: 14,
-    color: "#9ca3af",
   },
   backdrop: {
     flex: 1,
@@ -130,9 +123,9 @@ const styles = StyleSheet.create({
   modalView: {
     borderRadius: 12,
     borderWidth: 1,
-    maxHeight: 360,
+    maxHeight: 400,
     width: "100%",
-    maxWidth: 280,
+    maxWidth: 320,
     overflow: "hidden",
     paddingVertical: 8,
   },
@@ -151,15 +144,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  selectedOption: {
-    backgroundColor: "rgba(10,126,164,0.08)",
-  },
-  selectedText: {
-    fontWeight: "600",
-    color: "#0a7ea4",
+  optionText: {
+    fontSize: 15,
   },
   checkmark: {
-    color: "#0a7ea4",
     fontWeight: "600",
   },
 });

@@ -29,6 +29,12 @@ export default function RestaurantScreen() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (Platform.OS === "web" && restaurant) {
+      document.title = restaurant.name;
+    }
+  }, [restaurant]);
+
   if (loading) {
     return (
       <ThemedView style={styles.center}>
@@ -53,7 +59,7 @@ export default function RestaurantScreen() {
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
           <RestaurantDetails restaurant={restaurant} />
-          <Link href={`/book/${id}`} asChild>
+          <Link href={`/(user)/book?restaurantId=${id}`} asChild>
             <Button style={styles.bookButton}>Book a Table</Button>
           </Link>
         </PageContainer>

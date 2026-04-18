@@ -41,10 +41,6 @@ function AppWithTheme() {
     if (Platform.OS !== "web") return;
     if (pathname === "/") {
       document.title = brand.appName;
-    } else {
-      const segment = pathname.split("/").filter(Boolean).pop() ?? "";
-      const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
-      document.title = `${title} | ${brand.appName}`;
     }
   }, [pathname, brand.appName]);
 

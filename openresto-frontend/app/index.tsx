@@ -56,10 +56,10 @@ export default function HomeScreen() {
             styles.hero,
             Platform.OS === "web"
               ? ({
-                  background: "linear-gradient(135deg, #0a7ea4 0%, #085f7a 60%, #065168 100%)",
+                  background: `linear-gradient(135deg, ${brand.primaryColor} 0%, ${brand.primaryColor}dd 60%, ${brand.primaryColor}bb 100%)`,
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any)
-              : { backgroundColor: COLORS.primary },
+              : { backgroundColor: brand.primaryColor },
           ]}
         >
           <View style={styles.heroOverlay}>

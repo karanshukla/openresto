@@ -4,6 +4,8 @@ import { SectionDto, TableDto, updateSection, deleteSection, addTable } from "@/
 import { EditableRow } from "./EditableRow";
 import { TableRow } from "./TableRow";
 import { AddRow } from "./AddRow";
+import { COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function SectionBlock({
@@ -32,30 +34,33 @@ export function SectionBlock({
   onTableDeleted: (id: number) => void;
 }) {
   const sectionBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   return (
-    <View style={[styles.sectionBlock, { borderColor, backgroundColor: sectionBg }]}>
-      <EditableRow
-        value={section.name}
-        placeholder="Section name"
-        isDark={isDark}
-        deleteLabel="Delete section"
-        confirmAction={confirmAction}
-        onSave={async (name) => {
-          const result = await updateSection(restaurantId, section.id, name);
-          if (result) onSectionRenamed(result.name);
-        }}
-        onDelete={async () => {
-          const ok = await confirmAction(`Delete section "${section.name}" and all its tables?`);
-          if (!ok) return;
-          const success = await deleteSection(restaurantId, section.id);
-          if (success) onSectionDeleted();
-        }}
-      />
-      <View style={styles.tableList}>
-        {section.tables.length === 0 && (
-          <ThemedText style={[styles.emptyNote, { color: mutedColor }]}>No tables yet.</ThemedText>
-        )}
+    <View style={[styles.sectionBlock, { borderBottomColor: borderColor, borderBottomWidth: 1, marginBottom: 24, paddingBottom: 16 }]}>
+      <View style={{ marginBottom: 4 }}>
+        <ThemedText style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: primaryColor, marginBottom: 4 }}>DINING SECTION</ThemedText>
+        <EditableRow
+          value={section.name}
+          placeholder="e.g. Main Dining Room"
+          isDark={isDark}
+          deleteLabel="Delete section"
+          confirmAction={confirmAction}
+          onSave={async (name) => {
+            const result = await updateSection(restaurantId, section.id, name);
+            if (result) onSectionRenamed(result.name);
+          }}
+          onDelete={async () => {
+            const ok = await confirmAction(`Delete section "${section.name}" and all its tables?`);
+            if (!ok) return;
+            const success = await deleteSection(restaurantId, section.id);
+            if (success) onSectionDeleted();
+          }}
+        />
+      </View>
+      <View style={[styles.tableList, { borderLeftColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)", borderLeftWidth: 3, marginLeft: 6, paddingLeft: 16, marginTop: 8 }]}>
+        <ThemedText style={{ fontSize: 11, fontWeight: "700", color: mutedColor, marginBottom: 4, letterSpacing: 0.8, opacity: 0.8 }}>TABLES IN THIS AREA</ThemedText>
         {section.tables.map((t) => (
           <TableRow
             key={t.id}
@@ -69,19 +74,26 @@ export function SectionBlock({
             confirmAction={confirmAction}
           />
         ))}
-        <AddRow
-          label="Add Table"
-          placeholder="e.g. T1, Window Booth"
-          extraPlaceholder="Seats (e.g. 4)"
-          onAdd={async (name, extra) => {
-            const seats = parseInt(extra ?? "2", 10);
-            const result = await addTable(restaurantId, section.id, {
-              name,
-              seats: isNaN(seats) ? 2 : seats,
-            });
-            if (result) onTableAdded(result);
-          }}
-        />
+        {section.tables.length === 0 && (
+          <ThemedText style={styles.emptyNote}>
+            No tables in this section.
+          </ThemedText>
+        )}
+        <View style={{ marginTop: 12, marginLeft: -20 }}>
+          <AddRow
+            label="Add Table"
+            placeholder="Table name (e.g. Table 1)"
+            extraPlaceholder="Guests"
+            onAdd={async (name, extra) => {
+              const seats = parseInt(extra ?? "2", 10);
+              const result = await addTable(restaurantId, section.id, {
+                name,
+                seats: isNaN(seats) ? 2 : seats,
+              });
+              if (result) onTableAdded(result);
+            }}
+          />
+        </View>
       </View>
     </View>
   );

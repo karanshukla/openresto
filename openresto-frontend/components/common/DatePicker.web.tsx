@@ -1,6 +1,8 @@
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemedText } from "@/components/themed-text";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 /** Convert a YYYY-MM-DD string to ISO day-of-week (1=Mon, 7=Sun) */
 function getIsoDay(dateStr: string): number {
@@ -19,10 +21,13 @@ export default function DatePicker({
   openDays?: number[];
 }) {
   const isDark = useColorScheme() === "dark";
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const bg = isDark ? "#1c1c1e" : "#ffffff";
-  const textColor = isDark ? "#ffffff" : "#000000";
-  const placeholderColor = "#9ca3af";
+  const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
+  const borderColor = colors.border;
+  const bg = colors.input;
+  const textColor = colors.text;
+  const placeholderColor = colors.muted;
 
   const today = new Date().toISOString().split("T")[0];
   const maxDate = (() => {
@@ -31,29 +36,16 @@ export default function DatePicker({
     return d.toISOString().split("T")[0];
   })();
 
-  const isClosedDay =
-    selectedDate && openDays ? !openDays.includes(getIsoDay(selectedDate)) : false;
-
-  const DAY_NAMES: Record<number, string> = {
-    1: "Monday",
-    2: "Tuesday",
-    3: "Wednesday",
-    4: "Thursday",
-    5: "Friday",
-    6: "Saturday",
-    7: "Sunday",
-  };
+  const isClosedDay = !!(selectedDate && openDays && !openDays.includes(getIsoDay(selectedDate)));
 
   return (
     <View style={styles.wrapper}>
       <input
         type="date"
-        value={selectedDate ?? ""}
+        value={selectedDate || ""}
         min={today}
         max={maxDate}
-        onChange={(e) => {
-          if (e.target.value) onSelect(e.target.value);
-        }}
+        onChange={(e) => onSelect(e.target.value)}
         style={
           {
             width: "100%",
@@ -65,23 +57,25 @@ export default function DatePicker({
             paddingLeft: 12,
             paddingRight: 12,
             fontSize: 15,
+            fontFamily: "inherit",
             backgroundColor: bg,
             color: selectedDate ? textColor : placeholderColor,
             outline: "none",
             boxSizing: "border-box",
             cursor: "pointer",
+            transition: "border-color 0.2s",
           } as React.CSSProperties
         }
         onFocus={(e) => {
-          e.target.style.borderColor = isClosedDay ? "#dc2626" : "#0a7ea4";
+          e.target.style.borderColor = primaryColor;
         }}
         onBlur={(e) => {
           e.target.style.borderColor = isClosedDay ? "#dc2626" : borderColor;
         }}
       />
-      {isClosedDay && selectedDate && (
+      {isClosedDay && (
         <ThemedText style={styles.closedWarning}>
-          Closed on {DAY_NAMES[getIsoDay(selectedDate)] ?? "this day"}. Please pick another date.
+          Note: This restaurant is normally closed on this day. Please double-check another date.
         </ThemedText>
       )}
     </View>
@@ -90,7 +84,7 @@ export default function DatePicker({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   closedWarning: {
     fontSize: 12,
