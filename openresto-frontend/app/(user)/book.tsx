@@ -68,7 +68,7 @@ export default function BookScreen() {
       const diff = tempDate.getTime() - targetDate.getTime();
       
       dateTime = new Date(tempDate.getTime() + diff).toISOString();
-    } catch (e) {
+    } catch {
       // Fallback to original behavior if timezone parsing fails
       dateTime = new Date(`${data.date}T${data.time}:00`).toISOString();
     }
