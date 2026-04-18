@@ -53,7 +53,7 @@ function AdminLayoutInner() {
       setTabTitle("Dashboard");
     } else if (last === "settings") {
       setTabTitle("Settings");
-    } else if (segments.includes("bookings")) {
+    } else if ((segments as any).includes("bookings")) {
       if (last === "new") setTabTitle("New Walk-in");
       else if (last && last.match(/^\d+$/)) setTabTitle("Booking Detail");
       else setTabTitle("Bookings");

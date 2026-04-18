@@ -50,7 +50,7 @@ function AppWithTheme() {
     const actualSegments = segments.filter((s) => !s.startsWith("("));
     const primarySegment = actualSegments[0];
 
-    if (!primarySegment || primarySegment === "index") {
+    if (!primarySegment || (primarySegment as string) === "index") {
       setTabTitle();
     } else if (primarySegment === "book") {
       setTabTitle("Reserve a Table");

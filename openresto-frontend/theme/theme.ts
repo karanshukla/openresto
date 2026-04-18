@@ -226,6 +226,10 @@ export const getThemeColors = (isDark: boolean) => ({
   input: isDark ? COLORS.input.dark : COLORS.input.light,
   border: isDark ? COLORS.border.dark : COLORS.border.light,
   overlay: isDark ? COLORS.overlay.dark : COLORS.overlay.light,
+  success: COLORS.success,
+  error: COLORS.error,
+  warning: COLORS.warning,
+  info: COLORS.info,
 });
 
 export const commonStyles = StyleSheet.create({
