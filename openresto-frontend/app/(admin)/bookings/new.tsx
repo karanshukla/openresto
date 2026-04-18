@@ -3,11 +3,10 @@ import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { adminCreateBooking } from "@/api/admin";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, getThemeColors } from "@/theme/theme";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
@@ -29,8 +28,9 @@ function nextSlotTime(openTime = "09:00", closeTime = "22:00") {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-export default function AdminNewBookingScreen() {
+export default function NewBookingScreen() {
   const router = useRouter();
+
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
@@ -143,7 +143,8 @@ export default function AdminNewBookingScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "New Booking" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "New Walk-in" }} />}
+
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
         <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>

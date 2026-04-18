@@ -3,13 +3,12 @@ import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, StyleSheet } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -19,7 +18,6 @@ export default function BookScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = getThemeColors(isDark).muted;
-  const brand = useBrand();
 
   useEffect(() => {
     if (restaurantId) {
@@ -44,17 +42,36 @@ export default function BookScreen() {
     }
   }, [restaurantId]);
 
-  useEffect(() => {
-    if (Platform.OS === "web" && restaurant) {
-      document.title = `Reserve at ${restaurant.name}`;
-    }
-  }, [restaurant]);
-
   const handleSubmit = async (data: BookingFormData) => {
     if (!restaurant) return;
     setSubmitError(null);
 
-    const dateTime = new Date(`${data.date}T${data.time}:00`).toISOString();
+    // Parse the date/time in the context of the restaurant's timezone.
+    // If restaurant.timezone is "America/New_York", and user enters 15:00, 
+    // it should be exactly 15:00 in New York, regardless of user's local time.
+    let dateTime: string;
+    try {
+      // Use Intl.DateTimeFormat to help with timezone-aware construction if needed, 
+      // but simpler is to construct a string and let the server handle it or parse it here.
+      // For now, construct a valid ISO-like string with the correct offset.
+      // To be safest, we'll send the local string and the timezone, 
+      // but our API currently expects a UTC ISO string.
+      
+      // Construct a Date object that reflects the target time in the target timezone.
+      const localStr = `${data.date}T${data.time}:00`;
+      const tz = restaurant.timezone || "UTC";
+      
+      // We use a trick: parse the string as local, then adjust by the difference between local and target TZ
+      const tempDate = new Date(localStr);
+      const targetStr = tempDate.toLocaleString("en-US", { timeZone: tz });
+      const targetDate = new Date(targetStr);
+      const diff = tempDate.getTime() - targetDate.getTime();
+      
+      dateTime = new Date(tempDate.getTime() + diff).toISOString();
+    } catch (e) {
+      // Fallback to original behavior if timezone parsing fails
+      dateTime = new Date(`${data.date}T${data.time}:00`).toISOString();
+    }
     const bookingData = {
       customerEmail: data.customerEmail,
       seats: data.seats,
@@ -85,7 +102,6 @@ export default function BookScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <Stack.Screen options={{ title: "Reserve a Table" }} />
         <ActivityIndicator size="large" />
       </ThemedView>
     );
@@ -94,7 +110,6 @@ export default function BookScreen() {
   if (!restaurant) {
     return (
       <ThemedView style={styles.center}>
-        <Stack.Screen options={{ title: "Not Found" }} />
         <ThemedText>Restaurant not found.</ThemedText>
       </ThemedView>
     );
@@ -102,7 +117,6 @@ export default function BookScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <Stack.Screen options={{ title: `Reserve at ${restaurant.name}` }} />
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
           <ThemedText type="title" style={styles.title}>

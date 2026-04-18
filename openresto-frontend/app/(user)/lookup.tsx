@@ -19,7 +19,6 @@ import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
 import { useBrand } from "@/context/BrandContext";
-import { Stack } from "expo-router";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
@@ -100,7 +99,6 @@ export default function LookupScreen() {
       style={[styles.scroll, { backgroundColor: colors.page }]}
       contentContainerStyle={styles.scrollContent}
     >
-      <Stack.Screen options={{ title: "Manage My Booking" }} />
       <PageContainer>
         <View style={styles.header}>
           <Ionicons name="search-outline" size={32} color={accent} />

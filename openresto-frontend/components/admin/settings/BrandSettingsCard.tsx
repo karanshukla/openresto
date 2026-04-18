@@ -175,7 +175,7 @@ export function BrandSettingsCard({
                 </View>
               )}
               <Pressable style={[styles.secBtn, { borderColor }]} onPress={handlePickLogo}>
-                <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+                <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
                   {logoPreview ? "Change" : "Upload"}
                 </ThemedText>
               </Pressable>

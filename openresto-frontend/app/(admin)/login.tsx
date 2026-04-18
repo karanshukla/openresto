@@ -4,7 +4,7 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
@@ -350,13 +350,11 @@ export default function AdminLoginScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <Stack.Screen options={{ title: "Admin Login" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Admin Login" }} />}
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <ThemedText style={[styles.brand, { color: primaryColor }]}>
-              {brand.appName}
-            </ThemedText>
+            <ThemedText style={[styles.brand, { color: primaryColor }]}>{brand.appName}</ThemedText>
             <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
           </View>
 

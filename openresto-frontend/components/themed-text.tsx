@@ -19,9 +19,9 @@ export function ThemedText({
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const brand = useBrand();
-  
+
   let color = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : colors.text;
-  
+
   if (type === "link" && !lightColor && !darkColor) {
     color = brand.primaryColor || COLORS.primary;
   }

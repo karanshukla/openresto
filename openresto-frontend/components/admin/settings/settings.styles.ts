@@ -117,7 +117,7 @@ export const styles = StyleSheet.create({
   editableValue: { ...TYPOGRAPHY.bodyBold, flex: 1, fontSize: 16 },
   editableInput: { flex: 1 },
   rowActions: { flexDirection: "row", gap: SPACING.md, alignItems: "center" },
-  smallBtn: { 
+  smallBtn: {
     borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
@@ -150,13 +150,18 @@ export const styles = StyleSheet.create({
   sectionBlock: {
     paddingBottom: SPACING.md,
   },
-  tableList: { 
-    paddingLeft: SPACING.md, 
+  tableList: {
+    paddingLeft: SPACING.md,
     borderLeftWidth: 2,
     marginLeft: 4,
     gap: 2,
   },
-  emptyNote: { ...TYPOGRAPHY.label, fontStyle: "italic", paddingVertical: SPACING.sm, opacity: 0.5 },
+  emptyNote: {
+    ...TYPOGRAPHY.label,
+    fontStyle: "italic",
+    paddingVertical: SPACING.sm,
+    opacity: 0.5,
+  },
   tableItemRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -224,12 +229,6 @@ export const styles = StyleSheet.create({
   },
   comingSoonText: { ...TYPOGRAPHY.captionSmall, fontWeight: "700", color: COLORS.primary },
   // Security card
-  secCard: {
-    borderRadius: BORDER_RADIUS.card,
-    borderWidth: 1,
-    overflow: "hidden",
-    ...SHADOWS.sm,
-  },
   secHeader: { flexDirection: "row", alignItems: "center", gap: SPACING.md, padding: SPACING.lg },
   secIcon: {
     width: 40,

@@ -26,12 +26,13 @@ export default function AlertModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <View
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-        >
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
-          <Pressable style={[styles.btn, { backgroundColor: brand.primaryColor || COLORS.primary }]} onPress={onClose}>
+          <Pressable
+            style={[styles.btn, { backgroundColor: brand.primaryColor || COLORS.primary }]}
+            onPress={onClose}
+          >
             <ThemedText style={styles.btnText}>{buttonLabel}</ThemedText>
           </Pressable>
         </View>

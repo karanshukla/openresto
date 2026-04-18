@@ -7,6 +7,7 @@ import TimePicker from "@/components/common/TimePicker";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { RestaurantDto, updateRestaurant } from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function RestaurantInfoForm({
@@ -18,6 +19,9 @@ export function RestaurantInfoForm({
 }) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
+
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
@@ -58,17 +62,11 @@ export function RestaurantInfoForm({
       <View style={styles.hoursRow}>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Opens</ThemedText>
-          <TimePicker
-            selectedTime={openTime}
-            onSelect={setOpenTime}
-          />
+          <TimePicker selectedTime={openTime} onSelect={setOpenTime} />
         </View>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Closes</ThemedText>
-          <TimePicker
-            selectedTime={closeTime}
-            onSelect={setCloseTime}
-          />
+          <TimePicker selectedTime={closeTime} onSelect={setCloseTime} />
         </View>
       </View>
       <View style={styles.field}>
@@ -84,7 +82,7 @@ export function RestaurantInfoForm({
                 style={[
                   styles.dayChip,
                   active
-                    ? { backgroundColor: COLORS.primary, borderColor: COLORS.primary }
+                    ? { backgroundColor: primaryColor, borderColor: primaryColor }
                     : { borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" },
                 ]}
               >

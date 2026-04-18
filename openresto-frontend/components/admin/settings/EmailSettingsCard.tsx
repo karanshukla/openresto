@@ -6,6 +6,7 @@ import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { getEmailSettings, saveEmailSettings, testEmailConnection } from "@/api/admin";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 const PRESETS: { label: string; host: string; port: number }[] = [
@@ -35,6 +36,9 @@ export function EmailSettingsCard({
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   useEffect(() => {
     getEmailSettings().then((s) => {
@@ -91,8 +95,8 @@ export function EmailSettingsCard({
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
-        <View style={[styles.secIcon, { backgroundColor: "rgba(10,126,164,0.1)" }]}>
-          <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
+        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
+          <Ionicons name="mail-outline" size={20} color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Email (SMTP)</ThemedText>
@@ -115,8 +119,11 @@ export function EmailSettingsCard({
                   key={p.label}
                   style={[
                     styles.dayChip,
-                    { borderColor, backgroundColor: host === p.host ? `${COLORS.primary}15` : "transparent" },
-                    host === p.host && { borderColor: COLORS.primary }
+                    {
+                      borderColor,
+                      backgroundColor: host === p.host ? `${primaryColor}15` : "transparent",
+                    },
+                    host === p.host && { borderColor: primaryColor },
                   ]}
                   onPress={() => {
                     setHost(p.host);
@@ -124,7 +131,12 @@ export function EmailSettingsCard({
                     setEnableSsl(true);
                   }}
                 >
-                  <ThemedText style={[styles.secBtnText, { color: host === p.host ? COLORS.primary : mutedColor }]}>
+                  <ThemedText
+                    style={[
+                      styles.secBtnText,
+                      { color: host === p.host ? primaryColor : mutedColor },
+                    ]}
+                  >
                     {p.label}
                   </ThemedText>
                 </Pressable>
@@ -134,7 +146,7 @@ export function EmailSettingsCard({
 
           <View style={{ gap: 12 }}>
             <ThemedText style={styles.editorSectionTitle}>Server Settings</ThemedText>
-            
+
             <View style={styles.field}>
               <ThemedText style={styles.fieldLabel}>SMTP Host</ThemedText>
               <Input value={host} onChangeText={setHost} placeholder="smtp.gmail.com" />
@@ -143,7 +155,12 @@ export function EmailSettingsCard({
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={[styles.field, { flex: 1 }]}>
                 <ThemedText style={styles.fieldLabel}>Port</ThemedText>
-                <Input value={port} onChangeText={setPort} placeholder="587" keyboardType="numeric" />
+                <Input
+                  value={port}
+                  onChangeText={setPort}
+                  placeholder="587"
+                  keyboardType="numeric"
+                />
               </View>
               <View style={[styles.field, { flex: 1 }]}>
                 <ThemedText style={styles.fieldLabel}>Security</ThemedText>
@@ -151,8 +168,8 @@ export function EmailSettingsCard({
                   style={[
                     styles.secBtn,
                     {
-                      borderColor: enableSsl ? COLORS.primary : borderColor,
-                      backgroundColor: enableSsl ? `${COLORS.primary}10` : "transparent",
+                      borderColor: enableSsl ? primaryColor : borderColor,
+                      backgroundColor: enableSsl ? `${primaryColor}10` : "transparent",
                       alignItems: "center" as const,
                       flexDirection: "row",
                       gap: 8,
@@ -164,13 +181,13 @@ export function EmailSettingsCard({
                   <Ionicons
                     name={enableSsl ? "shield-checkmark" : "shield-outline"}
                     size={16}
-                    color={enableSsl ? COLORS.primary : mutedColor}
+                    color={enableSsl ? primaryColor : mutedColor}
                   />
                   <ThemedText
                     style={[
                       styles.secBtnText,
                       {
-                        color: enableSsl ? COLORS.primary : mutedColor,
+                        color: enableSsl ? primaryColor : mutedColor,
                         fontWeight: enableSsl ? "600" : "400",
                       },
                     ]}
@@ -190,7 +207,7 @@ export function EmailSettingsCard({
                 autoCapitalize="none"
               />
             </View>
-            
+
             <View style={styles.field}>
               <ThemedText style={styles.fieldLabel}>Password</ThemedText>
               <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
@@ -234,9 +251,22 @@ export function EmailSettingsCard({
           </View>
 
           {msg && (
-            <View style={[styles.successBanner, { backgroundColor: msg.ok ? `${COLORS.success}10` : `${COLORS.error}10`, borderRadius: 8, marginTop: 8 }]}>
-               <Ionicons name={msg.ok ? "checkmark-circle" : "alert-circle"} size={18} color={msg.ok ? COLORS.success : COLORS.error} />
-               <ThemedText style={[msg.ok ? styles.successText : styles.errorText, { padding: 8 }]}>
+            <View
+              style={[
+                styles.successBanner,
+                {
+                  backgroundColor: msg.ok ? `${COLORS.success}10` : `${COLORS.error}10`,
+                  borderRadius: 8,
+                  marginTop: 8,
+                },
+              ]}
+            >
+              <Ionicons
+                name={msg.ok ? "checkmark-circle" : "alert-circle"}
+                size={18}
+                color={msg.ok ? COLORS.success : COLORS.error}
+              />
+              <ThemedText style={[msg.ok ? styles.successText : styles.errorText, { padding: 8 }]}>
                 {msg.text}
               </ThemedText>
             </View>
@@ -252,17 +282,17 @@ export function EmailSettingsCard({
             </Button>
             <Pressable
               style={[
-                styles.secBtn, 
-                { borderColor, flexDirection: "row", gap: 8, paddingHorizontal: 16 }, 
-                (!host || !username) && { opacity: 0.4 }
+                styles.secBtn,
+                { borderColor, flexDirection: "row", gap: 8, paddingHorizontal: 16 },
+                (!host || !username) && { opacity: 0.4 },
               ]}
               onPress={() => {
                 if (testing || !host || !username) return;
                 handleTest();
               }}
             >
-              <Ionicons name="flash-outline" size={16} color={COLORS.primary} />
-              <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+              <Ionicons name="flash-outline" size={16} color={primaryColor} />
+              <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
                 {testing ? "Testing…" : "Test Connection"}
               </ThemedText>
             </Pressable>

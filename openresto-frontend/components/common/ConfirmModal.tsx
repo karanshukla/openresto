@@ -49,7 +49,11 @@ export default function ConfirmModal({
                 style={[
                   styles.btn,
                   styles.confirmBtn,
-                  { backgroundColor: destructive ? COLORS.error : (brand.primaryColor || COLORS.primary) },
+                  {
+                    backgroundColor: destructive
+                      ? COLORS.error
+                      : brand.primaryColor || COLORS.primary,
+                  },
                 ]}
                 onPress={onConfirm}
               >

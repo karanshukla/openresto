@@ -45,7 +45,7 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: "Browse Restaurants" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Browse Restaurants" }} />}
       <Navbar />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.page }]}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -12,7 +12,6 @@ import { useBrand } from "@/context/BrandContext";
 
 // Components
 import { LocationCard } from "@/components/admin/settings/LocationCard";
-import { GlobalSettingRow } from "@/components/admin/settings/GlobalSettingRow";
 import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard";
 import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard";
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
@@ -89,7 +88,7 @@ export default function AdminSettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "Settings" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Settings" }} />}
       {/* Page header */}
       <View style={styles.pageHeader}>
         <View>

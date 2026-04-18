@@ -106,7 +106,7 @@ export default function AdminDashboardScreen() {
   const todayBookings = bookings.filter(
     (b) => toUTCDateString(new Date(b.date)) === todayDateString
   );
-  const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
+  const upcomingTodayCount = todayBookings.filter((b) => new Date(b.date) > new Date()).length;
 
   const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
     const totalSeats = todayBookings
@@ -132,7 +132,7 @@ export default function AdminDashboardScreen() {
     {
       label: "Today's Bookings",
       value: String(overview?.todayBookings ?? todayBookings.length),
-      sub: `${upcomingBookings.length} still upcoming`,
+      sub: `${upcomingTodayCount} still upcoming`,
       icon: "calendar-outline" as const,
       accent: primaryColor,
     },
@@ -161,7 +161,7 @@ export default function AdminDashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "Dashboard" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Dashboard" }} />}
       <View style={styles.pageHeader}>
         <View>
           <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>

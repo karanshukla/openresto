@@ -54,7 +54,9 @@ export function EditableRow({
                 if (ok) await onDelete();
               }}
             >
-              <ThemedText style={[styles.smallBtnText, { color: COLORS.error }]}>{deleteLabel}</ThemedText>
+              <ThemedText style={[styles.smallBtnText, { color: COLORS.error }]}>
+                {deleteLabel}
+              </ThemedText>
             </Pressable>
           )}
         </View>
@@ -65,12 +67,7 @@ export function EditableRow({
   return (
     <View style={styles.editableRow}>
       <View style={{ flex: 1 }}>
-        <Input
-          value={draft}
-          onChangeText={setDraft}
-          placeholder={placeholder}
-          autoFocus
-        />
+        <Input value={draft} onChangeText={setDraft} placeholder={placeholder} autoFocus />
       </View>
       <View style={styles.rowActions}>
         <Pressable
@@ -88,10 +85,7 @@ export function EditableRow({
             {saving ? "…" : "Save"}
           </ThemedText>
         </Pressable>
-        <Pressable
-          style={[styles.smallBtn, { padding: 8 }]}
-          onPress={() => setEditing(false)}
-        >
+        <Pressable style={[styles.smallBtn, { padding: 8 }]} onPress={() => setEditing(false)}>
           <Ionicons name="close-outline" size={20} color={mutedColor} />
         </Pressable>
       </View>

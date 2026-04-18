@@ -7,6 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { logout } from "@/api/auth";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import { hexToRgba } from "@/utils/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
@@ -43,7 +44,7 @@ export default function AdminSidebar() {
   const PRIMARY = brand.primaryColor || COLORS.primary;
 
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
-  const activeBg = isDark ? "rgba(10,126,164,0.18)" : "rgba(10,126,164,0.09)";
+  const activeBg = isDark ? hexToRgba(PRIMARY, 0.18) : hexToRgba(PRIMARY, 0.09);
 
   useEffect(() => {
     fetchRestaurants().then((data) => setLocationCount(data.length));
@@ -87,8 +88,7 @@ export default function AdminSidebar() {
             <Pressable
               key={href}
               onPress={() => router.push(href)}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              style={(state: any) => [
+              style={(state: { hovered?: boolean }) => [
                 styles.navItem,
                 active
                   ? { backgroundColor: activeBg }
@@ -138,15 +138,19 @@ export default function AdminSidebar() {
       <View style={styles.footer}>
         <Pressable
           onPress={() => router.push("/")}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
+          style={(state: { hovered?: boolean }) => [
+            styles.footerItem,
+            state.hovered && { backgroundColor: hoverBg },
+          ]}
         >
           <Ionicons name="arrow-back-outline" size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>Back to site</ThemedText>
         </Pressable>
         <Pressable
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
+          style={(state: { hovered?: boolean }) => [
+            styles.footerItem,
+            state.hovered && { backgroundColor: hoverBg },
+          ]}
           onPress={toggle}
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
@@ -160,7 +164,10 @@ export default function AdminSidebar() {
           </ThemedText>
         </Pressable>
         <Pressable
-          style={(state: any) => [styles.footerItem, state.hovered && { backgroundColor: hoverBg }]}
+          style={(state: { hovered?: boolean }) => [
+            styles.footerItem,
+            state.hovered && { backgroundColor: hoverBg },
+          ]}
           onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={15} color={colors.muted} />

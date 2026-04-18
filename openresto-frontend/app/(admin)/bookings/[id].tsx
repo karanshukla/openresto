@@ -13,11 +13,11 @@ import {
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View, Platform } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { getThemeColors, COLORS } from "@/theme/theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 
@@ -28,8 +28,9 @@ import { ExtendBookingActions } from "@/components/admin/bookings/ExtendBookingA
 import { EmailGuestForm } from "@/components/admin/bookings/EmailGuestForm";
 import { BookingActionButtons } from "@/components/admin/bookings/BookingActionButtons";
 
-export default function AdminBookingDetailScreen() {
+export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+
   const [booking, setBooking] = useState<BookingDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -280,7 +281,8 @@ export default function AdminBookingDetailScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "Booking Details" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Detail" }} />}
+
       <Pressable onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
         <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>

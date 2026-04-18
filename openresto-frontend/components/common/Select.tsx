@@ -54,7 +54,10 @@ export default function Select({
               )}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.option, item.value === selectedValue && { backgroundColor: `${primaryColor}14` }]}
+                  style={[
+                    styles.option,
+                    item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
+                  ]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
@@ -86,9 +89,7 @@ export default function Select({
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText
-          style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
-        >
+        <ThemedText style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}>
           {selectedOption?.label ?? placeholder}
         </ThemedText>
         <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>

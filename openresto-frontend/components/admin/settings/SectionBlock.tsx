@@ -33,14 +33,33 @@ export function SectionBlock({
   onTableUpdated: (t: TableDto) => void;
   onTableDeleted: (id: number) => void;
 }) {
-  const sectionBg = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)";
   const brand = useBrand();
   const primaryColor = brand.primaryColor || COLORS.primary;
 
   return (
-    <View style={[styles.sectionBlock, { borderBottomColor: borderColor, borderBottomWidth: 1, marginBottom: 24, paddingBottom: 16 }]}>
+    <View
+      style={[
+        styles.sectionBlock,
+        {
+          borderBottomColor: borderColor,
+          borderBottomWidth: 1,
+          marginBottom: 24,
+          paddingBottom: 16,
+        },
+      ]}
+    >
       <View style={{ marginBottom: 4 }}>
-        <ThemedText style={{ fontSize: 10, fontWeight: "800", letterSpacing: 1.5, color: primaryColor, marginBottom: 4 }}>DINING SECTION</ThemedText>
+        <ThemedText
+          style={{
+            fontSize: 10,
+            fontWeight: "800",
+            letterSpacing: 1.5,
+            color: primaryColor,
+            marginBottom: 4,
+          }}
+        >
+          DINING SECTION
+        </ThemedText>
         <EditableRow
           value={section.name}
           placeholder="e.g. Main Dining Room"
@@ -59,8 +78,30 @@ export function SectionBlock({
           }}
         />
       </View>
-      <View style={[styles.tableList, { borderLeftColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)", borderLeftWidth: 3, marginLeft: 6, paddingLeft: 16, marginTop: 8 }]}>
-        <ThemedText style={{ fontSize: 11, fontWeight: "700", color: mutedColor, marginBottom: 4, letterSpacing: 0.8, opacity: 0.8 }}>TABLES IN THIS AREA</ThemedText>
+      <View
+        style={[
+          styles.tableList,
+          {
+            borderLeftColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)",
+            borderLeftWidth: 3,
+            marginLeft: 6,
+            paddingLeft: 16,
+            marginTop: 8,
+          },
+        ]}
+      >
+        <ThemedText
+          style={{
+            fontSize: 11,
+            fontWeight: "700",
+            color: mutedColor,
+            marginBottom: 4,
+            letterSpacing: 0.8,
+            opacity: 0.8,
+          }}
+        >
+          TABLES IN THIS AREA
+        </ThemedText>
         {section.tables.map((t) => (
           <TableRow
             key={t.id}
@@ -75,9 +116,7 @@ export function SectionBlock({
           />
         ))}
         {section.tables.length === 0 && (
-          <ThemedText style={styles.emptyNote}>
-            No tables in this section.
-          </ThemedText>
+          <ThemedText style={styles.emptyNote}>No tables in this section.</ThemedText>
         )}
         <View style={{ marginTop: 12, marginLeft: -20 }}>
           <AddRow

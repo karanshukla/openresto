@@ -11,7 +11,7 @@ namespace OpenRestoApi.Controllers;
 [Authorize]
 public class AdminController(AdminService adminService, IEmailService emailService) : ControllerBase
 {
-    public enum bookingStatus { active, cancelled, all }
+    public enum bookingStatus { active, cancelled, all, past, upcoming }
     private readonly AdminService _adminService = adminService;
     private readonly IEmailService _email = emailService;
 

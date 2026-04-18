@@ -6,6 +6,7 @@ import { COLORS, getThemeColors } from "@/theme/theme";
 import { TableDto, deleteTable, updateTable } from "@/api/restaurants";
 import { Ionicons } from "@expo/vector-icons";
 import { useBrand } from "@/context/BrandContext";
+import { hexToRgba } from "@/utils/colors";
 import { styles } from "./settings.styles";
 
 export function TableRow({
@@ -38,7 +39,17 @@ export function TableRow({
 
   if (!editing) {
     return (
-      <View style={[styles.tableItemRow, { borderBottomColor: borderColor, paddingVertical: 14, borderBottomWidth: 1, borderStyle: "dotted" }]}>
+      <View
+        style={[
+          styles.tableItemRow,
+          {
+            borderBottomColor: borderColor,
+            paddingVertical: 14,
+            borderBottomWidth: 1,
+            borderStyle: "dotted",
+          },
+        ]}
+      >
         <View style={styles.tableInfo}>
           <View style={{ backgroundColor: `${primaryColor}10`, padding: 8, borderRadius: 8 }}>
             <Ionicons name="grid-outline" size={16} color={primaryColor} />
@@ -46,8 +57,26 @@ export function TableRow({
           <View>
             <ThemedText style={styles.tableName}>{table.name ?? `Table ${table.id}`}</ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-              <ThemedText style={{ fontSize: 11, fontWeight: "600", color: mutedColor, textTransform: "uppercase", letterSpacing: 0.5 }}>Table</ThemedText>
-              <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: mutedColor, opacity: 0.5 }} />
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  color: mutedColor,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Table
+              </ThemedText>
+              <View
+                style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: 2,
+                  backgroundColor: mutedColor,
+                  opacity: 0.5,
+                }}
+              />
               <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
                 {table.seats} guests
               </ThemedText>
@@ -84,14 +113,31 @@ export function TableRow({
   }
 
   return (
-    <View style={[styles.tableItemRow, { borderBottomColor: primaryColor, borderBottomWidth: 1, paddingVertical: 16, backgroundColor: isDark ? "rgba(10,126,164,0.05)" : "rgba(10,126,164,0.02)", marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 8 }]}>
+    <View
+      style={[
+        styles.tableItemRow,
+        {
+          borderBottomColor: primaryColor,
+          borderBottomWidth: 1,
+          paddingVertical: 16,
+          backgroundColor: isDark ? hexToRgba(primaryColor, 0.08) : hexToRgba(primaryColor, 0.03),
+          marginHorizontal: -8,
+          paddingHorizontal: 8,
+          borderRadius: 8,
+        },
+      ]}
+    >
       <View style={[styles.tableEditFields, { flexDirection: "column", gap: 8 }]}>
         <View style={{ gap: 4 }}>
-          <ThemedText style={{ fontSize: 11, fontWeight: "700", color: primaryColor }}>TABLE NAME</ThemedText>
+          <ThemedText style={{ fontSize: 11, fontWeight: "700", color: primaryColor }}>
+            TABLE NAME
+          </ThemedText>
           <Input value={draftName} onChangeText={setDraftName} placeholder="e.g. Table 1" />
         </View>
         <View style={{ gap: 4 }}>
-          <ThemedText style={{ fontSize: 11, fontWeight: "700", color: primaryColor }}>MAX GUESTS</ThemedText>
+          <ThemedText style={{ fontSize: 11, fontWeight: "700", color: primaryColor }}>
+            MAX GUESTS
+          </ThemedText>
           <Input
             value={draftSeats}
             onChangeText={setDraftSeats}
@@ -102,7 +148,10 @@ export function TableRow({
       </View>
       <View style={[styles.rowActions, { alignSelf: "flex-end", marginTop: 12 }]}>
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 20, height: 40 }]}
+          style={[
+            styles.actionBtn,
+            { backgroundColor: primaryColor, paddingHorizontal: 20, height: 40 },
+          ]}
           disabled={saving}
           onPress={async () => {
             const seats = parseInt(draftSeats, 10);
@@ -123,11 +172,10 @@ export function TableRow({
             {saving ? "…" : "SAVE TABLE"}
           </ThemedText>
         </Pressable>
-        <Pressable
-          style={[styles.smallBtn, { padding: 10 }]}
-          onPress={() => setEditing(false)}
-        >
-          <ThemedText style={{ color: mutedColor, fontSize: 14, fontWeight: "600" }}>Cancel</ThemedText>
+        <Pressable style={[styles.smallBtn, { padding: 10 }]} onPress={() => setEditing(false)}>
+          <ThemedText style={{ color: mutedColor, fontSize: 14, fontWeight: "600" }}>
+            Cancel
+          </ThemedText>
         </Pressable>
       </View>
     </View>
