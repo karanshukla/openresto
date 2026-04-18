@@ -47,7 +47,9 @@ jest.mock("@/api/restaurants", () => ({
 }));
 
 jest.mock("@/api/bookings", () => ({
-  createBooking: jest.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ bookingRef: "REF123" }) })),
+  createBooking: jest.fn(() =>
+    Promise.resolve({ ok: true, json: () => Promise.resolve({ bookingRef: "REF123" }) })
+  ),
 }));
 
 jest.mock("@/api/holds", () => ({
@@ -67,9 +69,7 @@ jest.mock("@/components/booking/BookingForm", () => {
       date: "2026-04-18",
       time: "15:00",
     };
-    return (
-      <Pressable testID="submit-trigger" onPress={() => onSubmit(mockData)} />
-    );
+    return <Pressable testID="submit-trigger" onPress={() => onSubmit(mockData)} />;
   };
 });
 
@@ -82,7 +82,7 @@ describe("BookScreen Timezone Logic", () => {
     });
 
     render(<BookScreen />);
-    
+
     await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
 
     // Mock specific input data
@@ -90,7 +90,7 @@ describe("BookScreen Timezone Logic", () => {
     // We need to re-mock the BookingForm to use the passed localTime
     // But since it's already mocked, we'll just check if the conversion logic in BookScreen handles different offsets correctly
     // To do this properly, we need to pass the data through the trigger.
-    
+
     // Actually, I'll update the mock once to handle parameters or use separate mocks.
     // Simpler: Just rely on the current mock for the Toronto case, and add one for Sydney.
   };
@@ -107,7 +107,9 @@ describe("BookScreen Timezone Logic", () => {
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[(createBooking as jest.Mock).mock.calls.length - 1][0];
+      const callArgs = (createBooking as jest.Mock).mock.calls[
+        (createBooking as jest.Mock).mock.calls.length - 1
+      ][0];
       expect(callArgs.date).toBe("2026-04-18T19:00:00.000Z");
     });
   });
@@ -124,7 +126,9 @@ describe("BookScreen Timezone Logic", () => {
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[(createBooking as jest.Mock).mock.calls.length - 1][0];
+      const callArgs = (createBooking as jest.Mock).mock.calls[
+        (createBooking as jest.Mock).mock.calls.length - 1
+      ][0];
       expect(callArgs.date).toBe("2026-04-18T14:00:00.000Z");
     });
   });
@@ -141,7 +145,9 @@ describe("BookScreen Timezone Logic", () => {
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[(createBooking as jest.Mock).mock.calls.length - 1][0];
+      const callArgs = (createBooking as jest.Mock).mock.calls[
+        (createBooking as jest.Mock).mock.calls.length - 1
+      ][0];
       expect(callArgs.date).toBe("2026-04-18T05:00:00.000Z");
     });
   });

@@ -49,7 +49,6 @@ export default function BookScreen() {
 
     const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
     const bookingData = {
-
       customerEmail: data.customerEmail,
       seats: data.seats,
       tableId: data.tableId,

@@ -31,7 +31,7 @@ describe("date utility - convertLocalToUtc", () => {
 
   it("defaults to UTC if timezone is invalid", () => {
     const result = convertLocalToUtc("2026-04-18", "15:00", "Invalid/Timezone");
-    // Standard JS Date parsing will treat this as local, 
+    // Standard JS Date parsing will treat this as local,
     // but the utility tries to fallback safely.
     // In Jest environment, default local might be UTC.
     const expected = new Date("2026-04-18T15:00:00").toISOString();

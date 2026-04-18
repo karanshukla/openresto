@@ -1,5 +1,5 @@
 /**
- * Converts a local date and time string (e.g. "2026-04-18" and "15:00") 
+ * Converts a local date and time string (e.g. "2026-04-18" and "15:00")
  * into a UTC ISO string, interpreted in the context of a specific timezone.
  */
 export function convertLocalToUtc(date: string, time: string, timezone: string): string {
@@ -28,7 +28,7 @@ export function isTodayInTimezone(utcDateStr: string, timezone: string): boolean
   try {
     const date = new Date(utcDateStr);
     const tz = timezone || "UTC";
-    
+
     const nowInTz = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
     const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: tz }));
 
