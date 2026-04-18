@@ -44,7 +44,7 @@ describe("Booking Confirmation Calendar", () => {
     it("includes booking details in description", () => {
       const { googleUrl } = buildCalendarUrls(input);
       const details = decodeURIComponent(googleUrl.split("details=")[1].split("&")[0]);
-      expect(details).toContain("Booking ref: test-booking-123");
+      expect(details).toContain("Booking reference: test-booking-123");
       expect(details).toContain("Guests: 4");
       expect(details).toContain("Address: 123 Test Street, Test City");
       expect(details).toContain("Requests: Window seat preferred");

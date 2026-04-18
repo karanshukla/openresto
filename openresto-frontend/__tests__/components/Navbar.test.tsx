@@ -40,9 +40,9 @@ describe("Navbar", () => {
     expect(screen.getByText("Home")).toBeTruthy();
   });
 
-  it("renders My Booking link", () => {
+  it("renders My Bookings link", () => {
     render(<Navbar />);
-    expect(screen.getByText("My Booking")).toBeTruthy();
+    expect(screen.getByText("My Bookings")).toBeTruthy();
   });
 
   it("renders Admin link on wide screens", () => {

@@ -9,6 +9,7 @@ import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
+import { convertLocalToUtc } from "@/utils/date";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -46,33 +47,9 @@ export default function BookScreen() {
     if (!restaurant) return;
     setSubmitError(null);
 
-    // Parse the date/time in the context of the restaurant's timezone.
-    // If restaurant.timezone is "America/New_York", and user enters 15:00, 
-    // it should be exactly 15:00 in New York, regardless of user's local time.
-    let dateTime: string;
-    try {
-      // Use Intl.DateTimeFormat to help with timezone-aware construction if needed, 
-      // but simpler is to construct a string and let the server handle it or parse it here.
-      // For now, construct a valid ISO-like string with the correct offset.
-      // To be safest, we'll send the local string and the timezone, 
-      // but our API currently expects a UTC ISO string.
-      
-      // Construct a Date object that reflects the target time in the target timezone.
-      const localStr = `${data.date}T${data.time}:00`;
-      const tz = restaurant.timezone || "UTC";
-      
-      // We use a trick: parse the string as local, then adjust by the difference between local and target TZ
-      const tempDate = new Date(localStr);
-      const targetStr = tempDate.toLocaleString("en-US", { timeZone: tz });
-      const targetDate = new Date(targetStr);
-      const diff = tempDate.getTime() - targetDate.getTime();
-      
-      dateTime = new Date(tempDate.getTime() + diff).toISOString();
-    } catch {
-      // Fallback to original behavior if timezone parsing fails
-      dateTime = new Date(`${data.date}T${data.time}:00`).toISOString();
-    }
+    const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
     const bookingData = {
+
       customerEmail: data.customerEmail,
       seats: data.seats,
       tableId: data.tableId,
