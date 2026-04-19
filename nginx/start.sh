@@ -1,9 +1,9 @@
 #!/bin/sh
 # Extract an IPv4 DNS resolver from resolv.conf (nginx can't parse bare IPv6)
 export RESOLVER=$(awk '/^nameserver/{ip=$2; if(ip !~ /:/){print ip; exit}}' /etc/resolv.conf)
-# Fallback: if no IPv4 found, wrap the IPv6 address in brackets for nginx
+# Fallback: if no nameserver found, use Docker's default internal DNS
 if [ -z "$RESOLVER" ]; then
-  export RESOLVER=$(awk '/^nameserver/{print "[" $2 "]"; exit}' /etc/resolv.conf)
+  export RESOLVER="127.0.0.11"
 fi
 
 # Substitute our custom env vars — leave nginx's $host, $remote_addr etc. untouched

@@ -140,7 +140,7 @@ jobs:
 
       - name: Verify security headers present
         run: |
-          HEADERS=$(curl -sI http://localhost:5062/api/brand)
+          HEADERS=$(curl -sD - -o /dev/null http://localhost:5062/api/brand)
           echo "$HEADERS"
           echo "$HEADERS" | grep -qi "x-content-type-options: nosniff" || exit 1
           echo "$HEADERS" | grep -qi "x-frame-options: DENY" || exit 1

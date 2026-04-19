@@ -15,5 +15,7 @@ FROM node:20-alpine
 RUN npm install -g serve
 WORKDIR /app
 COPY --from=build /app/dist ./dist
+RUN chown -R node:node /app
 
+USER node
 CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:${PORT:-8081}"]

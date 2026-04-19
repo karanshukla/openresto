@@ -1,18 +1,43 @@
 server {
     listen ${PORT};
+    server_tokens off;
 
     # DNS resolver — dynamically read from /etc/resolv.conf by start.sh
     resolver ${RESOLVER} valid=10s;
 
     # ── Security headers ──────────────────────────────────────────────────
-    add_header X-Content-Type-Options  "nosniff" always;
-    add_header X-Frame-Options         "DENY" always;
-    add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    # We define them here, but Nginx inheritance rules mean we must be careful.
+    # To ensure they are applied even when a location block has its own add_header,
+    # we'll use a variable or simply repeat them where needed for robustness.
+    set $security_headers 1;
+
+    # ── Block common sensitive patterns ───────────────────────────────────
+    location ~ /\.(?!well-known) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* \.(php|aspx?|jsp|cgi|pl|py|sh|sql|bak|old|swp|txt|ini|xml|class)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
 
     # ── API — proxy to backend ────────────────────────────────────────────
     location /api/ {
+        add_header X-Content-Type-Options  "nosniff" always;
+        add_header X-Frame-Options         "DENY" always;
+        add_header X-XSS-Protection        "1; mode=block" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Cache-Control "no-store, max-age=0" always;
+        add_header Server "OpenResto" always;
+
         set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_pass $backend_upstream;
         proxy_set_header Host $host;
@@ -20,10 +45,35 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cookie_path / /;
+
+        proxy_hide_header X-Powered-By;
+        proxy_hide_header Server;
+
+        proxy_intercept_errors on;
+        error_page 404 /api-404;
+    }
+
+    location = /api-404 {
+        add_header X-Content-Type-Options  "nosniff" always;
+        add_header X-Frame-Options         "DENY" always;
+        add_header Server "OpenResto" always;
+        return 404 '{"error": "Not Found", "message": "The requested API endpoint does not exist."}';
+        default_type application/json;
     }
 
     # ── Frontend — proxy to static server ─────────────────────────────────
     location / {
+        add_header X-Content-Type-Options  "nosniff" always;
+        add_header X-Frame-Options         "DENY" always;
+        add_header X-XSS-Protection        "1; mode=block" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Server "OpenResto" always;
+
         set $frontend_upstream http://${FRONTEND_HOST}:${FRONTEND_PORT};
         proxy_pass $frontend_upstream;
         proxy_set_header Host $host;

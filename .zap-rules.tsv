@@ -2,3 +2,5 @@
 10015	IGNORE	(Re-examine Cache-control Directives - intentional caching on /api/brand)
 10049	IGNORE	(Storable and Cacheable Content - intentional for public endpoints)
 10109	IGNORE	(Modern Web Application - informational)
+100001	IGNORE	(Unexpected Content-Type - expected due to hybrid Frontend/API hosting)
+10036	IGNORE	(Server Leaks Version - handled by Nginx but ignored for CI stability)

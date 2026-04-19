@@ -18,4 +18,10 @@ RUN dotnet publish "OpenRestoApi.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Ensure the app user owns the files and directory to allow SQLite to create/write the DB
+USER root
+RUN chown -R app:app /app
+USER app
+
 ENTRYPOINT ["dotnet", "OpenRestoApi.dll"]

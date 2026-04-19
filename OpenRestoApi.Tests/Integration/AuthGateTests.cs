@@ -90,6 +90,26 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
             (await _client.PostAsync("/api/admin/bookings/1/email",
                 Json(new { subject = "Hi", body = "Test" }))).StatusCode);
 
+    [Fact]
+    public async Task Admin_RestoreBooking_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsync("/api/admin/bookings/1/restore", null)).StatusCode);
+
+    [Fact]
+    public async Task Admin_FullUpdateBooking_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PutAsync("/api/admin/bookings/1", Json(new { }))).StatusCode);
+
+    [Fact]
+    public async Task Admin_GetRestaurants_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.GetAsync("/api/admin/restaurants")).StatusCode);
+
+    [Fact]
+    public async Task Admin_GetSections_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.GetAsync("/api/admin/restaurants/1/sections")).StatusCode);
+
     // ── AuthController (protected endpoints) ─────────────────────────────────
 
     [Fact]
