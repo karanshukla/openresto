@@ -93,6 +93,9 @@ function AdminLayoutInner() {
         </ThemedView>
       );
     }
+
+    if (authState !== "authenticated") return null;
+
     return (
       <ThemedView style={{ flex: 1, flexDirection: "row" }}>
         <AdminSidebar />
@@ -101,6 +104,11 @@ function AdminLayoutInner() {
         </View>
       </ThemedView>
     );
+  }
+
+  if (authState !== "authenticated") {
+    const onLoginScreen = segments.includes("login" as never);
+    if (!onLoginScreen) return null;
   }
 
   return (

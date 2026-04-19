@@ -75,7 +75,7 @@ export default function Navbar() {
                   style={{ height: 32, objectFit: "contain" }}
                 />
               ) : (
-                <ThemedText style={[styles.brandText, { color: accent }]}>
+                <ThemedText style={[styles.brandText, { color: accent }]} numberOfLines={1}>
                   {brand.appName}
                 </ThemedText>
               )}

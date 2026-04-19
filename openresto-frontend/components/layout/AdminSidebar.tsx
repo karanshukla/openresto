@@ -75,9 +75,11 @@ export default function AdminSidebar() {
         <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
           <Ionicons name="restaurant-outline" size={16} color="#fff" />
         </View>
-        <View style={styles.brandText}>
-          <ThemedText style={styles.brandName}>{brand.appName}</ThemedText>
-          <ThemedText style={[styles.brandSub, { color: colors.muted }]}>
+        <View style={[styles.brandText, { flex: 1 }]}>
+          <ThemedText style={styles.brandName} numberOfLines={1}>
+            {brand.appName}
+          </ThemedText>
+          <ThemedText style={[styles.brandSub, { color: colors.muted }]} numberOfLines={1}>
             {locationCount > 0
               ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`
               : "Admin Panel"}

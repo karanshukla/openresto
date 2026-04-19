@@ -95,7 +95,7 @@ export function BrandSettingsCard({
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Brand Identity</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
+          <ThemedText style={[styles.secSub, { color: mutedColor }]} numberOfLines={1}>
             {appName} · {primaryColor}
           </ThemedText>
         </View>
@@ -105,8 +105,18 @@ export function BrandSettingsCard({
       {expanded && (
         <View style={[styles.secForm, { borderTopColor: borderColor }]}>
           <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>App Name</ThemedText>
-            <Input value={appName} onChangeText={setAppName} placeholder="Open Resto" />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <ThemedText style={styles.fieldLabel}>App Name</ThemedText>
+              <ThemedText style={{ fontSize: 11, color: appName.length > 32 ? COLORS.error : mutedColor }}>
+                {appName.length}/32
+              </ThemedText>
+            </View>
+            <Input 
+              value={appName} 
+              onChangeText={setAppName} 
+              placeholder="Open Resto" 
+              maxLength={32}
+            />
           </View>
 
           <View style={styles.field}>

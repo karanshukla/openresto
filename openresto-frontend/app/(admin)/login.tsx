@@ -354,7 +354,9 @@ export default function AdminLoginScreen() {
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <ThemedText style={[styles.brand, { color: primaryColor }]}>{brand.appName}</ThemedText>
+            <ThemedText style={[styles.brand, { color: primaryColor, flex: 1 }]} numberOfLines={1}>
+              {brand.appName}
+            </ThemedText>
             <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
           </View>
 
