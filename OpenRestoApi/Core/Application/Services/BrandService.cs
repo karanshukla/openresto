@@ -23,6 +23,11 @@ public class BrandService(AppDbContext db)
 
     public async Task SaveAsync(string? appName, string? primaryColor, string? accentColor, string? logoBase64)
     {
+        if (appName != null && appName.Length > 32)
+        {
+            throw new ArgumentException("App name cannot exceed 32 characters.");
+        }
+
         if (primaryColor != null && !IsValidHexColor(primaryColor))
         {
             throw new ArgumentException("Invalid primary color hex code.");

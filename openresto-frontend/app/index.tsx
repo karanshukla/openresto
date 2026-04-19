@@ -65,7 +65,9 @@ export default function HomeScreen() {
           <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
               <ThemedText style={styles.heroEyebrow}>Reserve online, instantly</ThemedText>
-              <ThemedText style={styles.heroTitle}>{brand.appName}</ThemedText>
+              <ThemedText style={styles.heroTitle} numberOfLines={2}>
+                {brand.appName}
+              </ThemedText>
               <ThemedText style={styles.heroSubtitle}>
                 Browse available restaurants and book a table in seconds.
               </ThemedText>

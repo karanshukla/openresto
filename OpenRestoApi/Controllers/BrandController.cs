@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -44,6 +45,7 @@ public class BrandController(BrandService brandService) : ControllerBase
 
 public class BrandRequest
 {
+    [StringLength(32, ErrorMessage = "App name cannot exceed 32 characters.")]
     public string? AppName { get; set; }
     public string? PrimaryColor { get; set; }
     public string? AccentColor { get; set; }

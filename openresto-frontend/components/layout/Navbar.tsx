@@ -1,5 +1,6 @@
 import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
 import { Link, usePathname, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -34,6 +35,7 @@ export default function Navbar() {
   const brand = useBrand();
   const accent = brand.primaryColor || COLORS.primary;
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isMobile = width < 768;
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
   const showBack = pathname !== "/";
@@ -42,7 +44,11 @@ export default function Navbar() {
     <ThemedView
       style={[
         styles.nav,
-        { borderBottomColor: colors.border },
+        {
+          borderBottomColor: colors.border,
+          paddingTop: insets.top,
+          height: 64 + insets.top,
+        },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         Platform.OS === "web" ? { position: "sticky" as any, top: 0, zIndex: 100 } : undefined,
       ]}
@@ -69,7 +75,7 @@ export default function Navbar() {
                   style={{ height: 32, objectFit: "contain" }}
                 />
               ) : (
-                <ThemedText style={[styles.brandText, { color: accent }]}>
+                <ThemedText style={[styles.brandText, { color: accent }]} numberOfLines={1}>
                   {brand.appName}
                 </ThemedText>
               )}
