@@ -158,14 +158,26 @@ jobs:
             -config spider.maxDuration=2
             -config scanner.maxScanDurationInMins=5"
           allow_issue_writing: false
-        continue-on-error: true
+          fail_action: true
+
+      - name: Show ZAP vulnerabilities
+        if: failure()
+        run: |
+          if [ -f report_md.md ]; then
+            cat report_md.md
+            cat report_md.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No markdown report found."
+          fi
 
       - name: Upload ZAP Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
-          path: report_html.html
+          path: |
+            report_html.html
+            report_md.md
           if-no-files-found: ignore
 
       - name: Show container logs on failure
