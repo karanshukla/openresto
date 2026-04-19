@@ -205,6 +205,33 @@ using (IServiceScope scope = app.Services.CreateScope())
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
+    logger.LogInformation("Startup Diagnostics:");
+    logger.LogInformation("  - Connection String: {ConnectionString}", connectionString);
+    logger.LogInformation("  - Current User: {User}", Environment.UserName);
+    logger.LogInformation("  - Is 64-bit Process: {Is64Bit}", Environment.Is64BitProcess);
+    
+    string? dbFile = connectionString.Split('=', StringSplitOptions.TrimEntries).LastOrDefault();
+    if (!string.IsNullOrEmpty(dbFile))
+    {
+        string? dir = Path.GetDirectoryName(Path.GetFullPath(dbFile));
+        if (dir != null)
+        {
+            bool dirExists = Directory.Exists(dir);
+            logger.LogInformation("  - DB Directory: {Dir} (Exists: {Exists})", dir, dirExists);
+            if (dirExists)
+            {
+                try {
+                    string testFile = Path.Combine(dir, ".write-test");
+                    File.WriteAllText(testFile, "test");
+                    File.Delete(testFile);
+                    logger.LogInformation("  - DB Directory is writable.");
+                } catch (Exception ex) {
+                    logger.LogError("  - DB Directory IS NOT WRITABLE: {Message}", ex.Message);
+                }
+            }
+        }
+    }
+
     int maxRetries = 10;
     int retryDelayMs = 2000;
     bool success = false;
