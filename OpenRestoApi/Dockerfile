@@ -21,7 +21,7 @@ COPY --from=publish /app/publish .
 
 # Ensure the app user owns the files and directory to allow SQLite to create/write the DB
 USER root
-RUN chown -R app:app /app
+RUN mkdir -p /data && chown -R app:app /app /data
 USER app
 
 ENTRYPOINT ["dotnet", "OpenRestoApi.dll"]
