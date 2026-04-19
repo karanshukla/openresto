@@ -14,7 +14,6 @@ public class BrandController(BrandService brandService) : ControllerBase
     private readonly BrandService _brand = brandService;
 
     [HttpGet]
-    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> Get()
     {
         var brand = await _brand.GetAsync();
