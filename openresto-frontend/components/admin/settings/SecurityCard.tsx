@@ -6,6 +6,7 @@ import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { getPvqStatus, setupPvq, changePassword, PvqStatus } from "@/api/auth";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function SecurityCard({
@@ -27,6 +28,9 @@ export function SecurityCard({
   const [confirmPw, setConfirmPw] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   useEffect(() => {
     getPvqStatus().then(setPvqStatus);
@@ -70,8 +74,8 @@ export function SecurityCard({
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <View style={styles.secHeader}>
-        <View style={[styles.secIcon, { backgroundColor: `${COLORS.primary}14` }]}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Account Security</ThemedText>
@@ -103,7 +107,7 @@ export function SecurityCard({
             setMsg(null);
           }}
         >
-          <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>
+          <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
             {pvqStatus?.isConfigured ? "Change" : "Set up"}
           </ThemedText>
         </Pressable>
@@ -160,7 +164,7 @@ export function SecurityCard({
             setMsg(null);
           }}
         >
-          <ThemedText style={[styles.secBtnText, { color: COLORS.primary }]}>Change</ThemedText>
+          <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>Change</ThemedText>
         </Pressable>
       </View>
 

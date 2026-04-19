@@ -2,6 +2,8 @@ import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { ThemedText } from "../themed-text";
 import { ThemedView } from "../themed-view";
 import { HoldStatus } from "./useTableHold";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 interface HoldStatusBannerProps {
   holdStatus: HoldStatus;
@@ -16,6 +18,9 @@ export default function HoldStatusBanner({
   hasSelection,
   onRefresh,
 }: HoldStatusBannerProps) {
+  const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
+
   if (!hasSelection) {
     return null;
   }
@@ -33,7 +38,7 @@ export default function HoldStatusBanner({
       const secs = secondsLeft % 60;
       return (
         <ThemedView style={styles.holdRow}>
-          <ThemedText style={styles.holdHeld}>
+          <ThemedText style={[styles.holdHeld, { color: colors.success }]}>
             ✓ Table held — expires in {mins}:{secs.toString().padStart(2, "0")}
           </ThemedText>
         </ThemedView>
@@ -42,7 +47,7 @@ export default function HoldStatusBanner({
     case "unavailable":
       return (
         <ThemedView style={styles.holdRow}>
-          <ThemedText style={styles.holdUnavailable}>
+          <ThemedText style={[styles.holdUnavailable, { color: colors.error }]}>
             ✗ Table not available for this date. Please choose another.
           </ThemedText>
         </ThemedView>
@@ -50,12 +55,20 @@ export default function HoldStatusBanner({
     case "expired":
       return (
         <ThemedView style={styles.expiredBox}>
-          <ThemedText style={styles.holdUnavailable}>
+          <ThemedText style={[styles.holdUnavailable, { color: colors.error }]}>
             Your table hold expired. Availability may have changed.
           </ThemedText>
           {onRefresh && (
-            <Pressable onPress={onRefresh} style={styles.refreshBtn}>
-              <ThemedText style={styles.refreshBtnText}>Refresh page</ThemedText>
+            <Pressable
+              onPress={onRefresh}
+              style={[
+                styles.refreshBtn,
+                { backgroundColor: isDark ? "rgba(220,38,38,0.15)" : "rgba(220,38,38,0.1)" },
+              ]}
+            >
+              <ThemedText style={[styles.refreshBtnText, { color: colors.error }]}>
+                Refresh page
+              </ThemedText>
             </Pressable>
           )}
         </ThemedView>
@@ -78,12 +91,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   holdHeld: {
-    color: "#16a34a",
     fontSize: 13,
     fontWeight: "600",
   },
   holdUnavailable: {
-    color: "#e53e3e",
     fontSize: 13,
   },
   expiredBox: {
@@ -96,10 +107,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 6,
-    backgroundColor: "rgba(229,62,62,0.12)",
   },
   refreshBtnText: {
-    color: "#e53e3e",
     fontSize: 13,
     fontWeight: "600",
   },

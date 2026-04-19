@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Pressable, PressableProps, StyleSheet, ViewStyle } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, BORDER_RADIUS, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 interface ButtonProps extends Omit<PressableProps, "style"> {
   children: React.ReactNode;
@@ -19,6 +20,8 @@ export default function Button({
 }: ButtonProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const disabledBg = COLORS.disabled[isDark ? "dark" : "light"];
   const disabledTextColor = colors.muted;
   const sizeStyles = BUTTON_SIZES[size];
@@ -27,8 +30,9 @@ export default function Button({
     <Pressable
       style={(state) => [
         styles.button,
+        { backgroundColor: primaryColor },
         sizeStyles,
-        (state as { hovered?: boolean }).hovered && !disabled && styles.buttonHovered,
+        (state as { hovered?: boolean }).hovered && !disabled && { opacity: 0.85 },
         disabled && { backgroundColor: disabledBg },
         style,
       ]}
@@ -44,13 +48,9 @@ export default function Button({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: COLORS.primary,
     borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-  },
-  buttonHovered: {
-    backgroundColor: COLORS.primaryDark,
   },
   buttonText: {
     color: "#fff",

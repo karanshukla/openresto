@@ -5,13 +5,6 @@ using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Controllers
 {

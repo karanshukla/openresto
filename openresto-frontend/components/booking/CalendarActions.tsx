@@ -104,7 +104,7 @@ function CalBtn({
   onPress,
 }: {
   label: string;
-  icon: any;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
   color: string;
   isDark: boolean;
   onPress: () => void;
@@ -132,11 +132,11 @@ function FullCalBtn({
 }: {
   label: string;
   sub: string;
-  icon: any;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
   color?: string;
   isDark: boolean;
   onPress: () => void;
-  trailingIcon: any;
+  trailingIcon: React.ComponentProps<typeof Ionicons>["name"];
   mutedColor: string;
 }) {
   const textColor = color || mutedColor;

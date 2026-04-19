@@ -146,7 +146,10 @@ public class BookingService(
             return false;
         }
 
-        if (booking.IsCancelled) return true;
+        if (booking.IsCancelled)
+        {
+            return true;
+        }
 
         booking.IsCancelled = true;
         booking.CancelledAt = DateTime.UtcNow;

@@ -25,7 +25,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   web: {
     output: "static",
-    favicon: "./assets/images/favicon.png",
     name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
     shortName: "OpenResto",
     description: "Restaurant table booking system",

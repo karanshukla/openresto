@@ -4,7 +4,7 @@ import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
-import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import PageContainer from "@/components/layout/PageContainer";
 import Button from "@/components/common/Button";
 
@@ -32,7 +32,6 @@ export default function RestaurantScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <Stack.Screen options={{ title: "Loading..." }} />
         <ActivityIndicator size="large" />
       </ThemedView>
     );
@@ -41,7 +40,6 @@ export default function RestaurantScreen() {
   if (!restaurant) {
     return (
       <ThemedView style={styles.center}>
-        <Stack.Screen options={{ title: "Not Found" }} />
         <ThemedText>Restaurant not found.</ThemedText>
       </ThemedView>
     );
@@ -49,11 +47,10 @@ export default function RestaurantScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <Stack.Screen options={{ title: restaurant.name }} />
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
           <RestaurantDetails restaurant={restaurant} />
-          <Link href={`/book/${id}`} asChild>
+          <Link href={`/(user)/book?restaurantId=${id}`} asChild>
             <Button style={styles.bookButton}>Book a Table</Button>
           </Link>
         </PageContainer>

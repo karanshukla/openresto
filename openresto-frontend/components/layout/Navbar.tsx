@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 const NAV_LINKS = [
   { label: "Home", href: "/" as const, match: (p: string) => p === "/", adminOnly: false },
   {
-    label: "My Booking",
+    label: "My Bookings",
     href: "/(user)/lookup" as const,
     match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
     adminOnly: false,
@@ -149,7 +149,6 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.primary,
     letterSpacing: -0.5,
   },
   links: {

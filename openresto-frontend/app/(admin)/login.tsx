@@ -4,7 +4,7 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
@@ -37,6 +37,7 @@ export default function AdminLoginScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const colors = getThemeColors(isDark);
   const mutedColor = colors.muted;
 
@@ -167,7 +168,7 @@ export default function AdminLoginScreen() {
                 setFpError(null);
               }}
             >
-              <ThemedText style={[styles.forgotLink, { color: COLORS.primary }]}>
+              <ThemedText style={[styles.forgotLink, { color: primaryColor }]}>
                 Forgot password?
               </ThemedText>
             </Pressable>
@@ -240,7 +241,7 @@ export default function AdminLoginScreen() {
               },
             ]}
           >
-            <Ionicons name="help-circle-outline" size={18} color={COLORS.primary} />
+            <Ionicons name="help-circle-outline" size={18} color={primaryColor} />
             <ThemedText style={[styles.questionText, { color: mutedColor }]}>
               {pvqQuestion}
             </ThemedText>
@@ -279,7 +280,7 @@ export default function AdminLoginScreen() {
       return (
         <>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle-outline" size={32} color="#16a34a" />
+            <Ionicons name="checkmark-circle-outline" size={32} color={COLORS.success} />
           </View>
           <ThemedText style={styles.title}>Set new password</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
@@ -328,7 +329,7 @@ export default function AdminLoginScreen() {
     return (
       <>
         <View style={styles.successIcon}>
-          <Ionicons name="checkmark-circle" size={40} color="#16a34a" />
+          <Ionicons name="checkmark-circle" size={40} color={COLORS.success} />
         </View>
         <ThemedText style={styles.title}>Password reset!</ThemedText>
         <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
@@ -349,13 +350,11 @@ export default function AdminLoginScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <Stack.Screen options={{ title: "Admin Login" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Admin Login" }} />}
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
-            <ThemedText style={[styles.brand, { color: COLORS.primary }]}>
-              {brand.appName}
-            </ThemedText>
+            <ThemedText style={[styles.brand, { color: primaryColor }]}>{brand.appName}</ThemedText>
             <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
           </View>
 

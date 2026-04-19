@@ -1,5 +1,13 @@
 import "@/global.css";
 import { Platform } from "react-native";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Stack, usePathname, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
+
+import { AppThemeProvider, useTheme } from "@/context/ThemeContext";
+import { BrandProvider, useBrand } from "@/context/BrandContext";
 
 // Synchronous theme init — runs at module load, before React mounts.
 // This is the earliest possible moment to set the correct background.
@@ -23,30 +31,41 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
   } catch {}
 }
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack, usePathname } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import "react-native-reanimated";
-
-import { AppThemeProvider, useTheme } from "@/context/ThemeContext";
-import { BrandProvider, useBrand } from "@/context/BrandContext";
-
 function AppWithTheme() {
   const { colorScheme } = useTheme();
   const brand = useBrand();
   const pathname = usePathname();
+  const segments = useSegments();
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
-    if (pathname === "/") {
-      document.title = brand.appName;
+
+    // Helper to format title: "Page | App Name"
+    const setTabTitle = (page?: string) => {
+      document.title = page ? `${page} | ${brand.appName}` : brand.appName;
+    };
+
+    // segments is an array of the path components.
+    // We filter out groups like (admin) or (user) to get the actual functional segments.
+    const actualSegments = segments.filter((s) => !s.startsWith("("));
+    const primarySegment = actualSegments[0];
+
+    if (!primarySegment || (primarySegment as string) === "index") {
+      setTabTitle();
+    } else if (primarySegment === "book") {
+      setTabTitle("Reserve a Table");
+    } else if (primarySegment === "lookup") {
+      setTabTitle("Find My Booking");
+    } else if (primarySegment === "booking-confirmation") {
+      setTabTitle("Booking Confirmed");
+    } else if (primarySegment === "restaurant") {
+      setTabTitle("Restaurant Details");
     } else {
-      const segment = pathname.split("/").filter(Boolean).pop() ?? "";
-      const title = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
-      document.title = `${title} | ${brand.appName}`;
+      // Default fallback for other sections
+      const fallbackTitle = primarySegment.charAt(0).toUpperCase() + primarySegment.slice(1);
+      setTabTitle(fallbackTitle);
     }
-  }, [pathname, brand.appName]);
+  }, [segments, brand.appName, pathname]);
 
   useEffect(() => {
     if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;

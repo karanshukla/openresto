@@ -62,7 +62,7 @@ describe("Lookup Calendar", () => {
     it("includes all booking details", () => {
       const { googleUrl } = buildCalendarUrls(input);
       const details = decodeURIComponent(googleUrl.split("details=")[1].split("&")[0]);
-      expect(details).toContain("Booking ref: sunny-pepper");
+      expect(details).toContain("Booking reference: sunny-pepper");
       expect(details).toContain("Guests: 2");
       expect(details).toContain("Requests: Quiet table");
     });

@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { COLORS } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function AddRow({
@@ -22,9 +23,15 @@ export function AddRow({
   const [extra, setExtra] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
+
   if (!open) {
     return (
-      <Pressable style={styles.addBtn} onPress={() => setOpen(true)}>
+      <Pressable
+        style={[styles.addBtn, { backgroundColor: primaryColor }]}
+        onPress={() => setOpen(true)}
+      >
         <Ionicons name="add-circle-outline" size={16} color="#fff" />
         <ThemedText style={styles.addBtnText}>{label}</ThemedText>
       </Pressable>
@@ -33,15 +40,26 @@ export function AddRow({
 
   return (
     <View style={styles.addForm}>
-      <Input value={name} onChangeText={setName} placeholder={placeholder ?? "Name"} />
-      {extraPlaceholder && (
-        <Input
-          value={extra}
-          onChangeText={setExtra}
-          placeholder={extraPlaceholder}
-          keyboardType="numeric"
-        />
-      )}
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={{ flex: extraPlaceholder ? 3 : 1 }}>
+          <Input
+            value={name}
+            onChangeText={setName}
+            placeholder={placeholder ?? "Name"}
+            autoFocus
+          />
+        </View>
+        {extraPlaceholder && (
+          <View style={{ flex: 1 }}>
+            <Input
+              value={extra}
+              onChangeText={setExtra}
+              placeholder={extraPlaceholder}
+              keyboardType="numeric"
+            />
+          </View>
+        )}
+      </View>
       <View style={styles.rowActions}>
         <Pressable
           onPress={async () => {
@@ -54,23 +72,21 @@ export function AddRow({
             setOpen(false);
           }}
           disabled={saving || !name.trim()}
-          style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 16 }]}
         >
           <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
             {saving ? "Adding…" : "Add"}
           </ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.actionBtn, { borderWidth: 1, borderColor: `${COLORS.primary}30` }]}
+          style={[styles.smallBtn, { padding: 8 }]}
           onPress={() => {
             setOpen(false);
             setName("");
             setExtra("");
           }}
         >
-          <ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}>
-            Cancel
-          </ThemedText>
+          <Ionicons name="close-outline" size={20} color={COLORS.muted.light} />
         </Pressable>
       </View>
     </View>

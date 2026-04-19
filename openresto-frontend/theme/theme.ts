@@ -41,8 +41,8 @@ export const COLORS = {
   },
 
   border: {
-    light: "rgba(0,0,0,0.08)",
-    dark: "rgba(255,255,255,0.1)",
+    light: "rgba(0,0,0,0.12)", // Increased from 0.08 for better visibility
+    dark: "rgba(255,255,255,0.16)", // Increased from 0.1 for better visibility
   },
 
   overlay: {
@@ -226,6 +226,10 @@ export const getThemeColors = (isDark: boolean) => ({
   input: isDark ? COLORS.input.dark : COLORS.input.light,
   border: isDark ? COLORS.border.dark : COLORS.border.light,
   overlay: isDark ? COLORS.overlay.dark : COLORS.overlay.light,
+  success: COLORS.success,
+  error: COLORS.error,
+  warning: COLORS.warning,
+  info: COLORS.info,
 });
 
 export const commonStyles = StyleSheet.create({

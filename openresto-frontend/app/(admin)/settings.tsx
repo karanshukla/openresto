@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -8,10 +8,10 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
 
 // Components
 import { LocationCard } from "@/components/admin/settings/LocationCard";
-import { GlobalSettingRow } from "@/components/admin/settings/GlobalSettingRow";
 import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard";
 import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard";
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
@@ -55,6 +55,8 @@ export default function AdminSettingsScreen() {
     handleCancel,
   } = useConfirmLocal();
 
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
   const cardBg = colors.card;
@@ -79,14 +81,14 @@ export default function AdminSettingsScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={primaryColor} />
       </ThemedView>
     );
   }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "Settings" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Settings" }} />}
       {/* Page header */}
       <View style={styles.pageHeader}>
         <View>
@@ -133,15 +135,6 @@ export default function AdminSettingsScreen() {
         </ThemedText>
         <BrandSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
         <EmailSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
-        <GlobalSettingRow
-          icon="globe-outline"
-          title="API & Network"
-          sub="API keys, webhooks, and integrations"
-          mutedColor={mutedColor}
-          borderColor={borderColor}
-          cardBg={cardBg}
-          comingSoon
-        />
       </View>
 
       {/* Account Security */}

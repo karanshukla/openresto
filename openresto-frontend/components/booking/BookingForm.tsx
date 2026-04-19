@@ -9,6 +9,8 @@ import { ThemedText } from "../themed-text";
 import { Platform, StyleSheet, View } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 
 const isWeb = Platform.OS === "web";
 
@@ -67,6 +69,8 @@ export default function BookingForm({
   onSubmit: (data: BookingFormData) => void;
   onRefresh?: () => void;
 }) {
+  const isDark = useColorScheme() === "dark";
+  const colors = getThemeColors(isDark);
   const [customerEmail, setCustomerEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [seats, setSeats] = useState(2);
@@ -195,7 +199,9 @@ export default function BookingForm({
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Table</ThemedText>
           {eligibleTables.length === 0 ? (
-            <ThemedText style={styles.noTables}>No tables available for {seats} guests.</ThemedText>
+            <ThemedText style={[styles.noTables, { color: colors.error }]}>
+              No tables available for {seats} guests.
+            </ThemedText>
           ) : (
             <Select
               selectedValue={tableId}
@@ -213,12 +219,14 @@ export default function BookingForm({
       </View>
 
       {restaurant.timezone && restaurant.timezone !== "UTC" && (
-        <ThemedText style={styles.timezoneHint}>
+        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
           All times are in {restaurant.timezone.replace(/_/g, " ")} timezone
         </ThemedText>
       )}
       {restaurant.timezone === "UTC" && (
-        <ThemedText style={styles.timezoneHint}>All times are in UTC</ThemedText>
+        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
+          All times are in UTC
+        </ThemedText>
       )}
 
       {/* Row 3: Email + Special Requests */}

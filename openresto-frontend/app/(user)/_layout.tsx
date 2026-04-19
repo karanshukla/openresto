@@ -17,7 +17,7 @@ export default function UserLayout() {
   return (
     <Stack>
       <Stack.Screen name="restaurant/[id]" options={{ title: "Restaurant" }} />
-      <Stack.Screen name="book/[restaurantId]" options={{ title: "Book a Table" }} />
+      <Stack.Screen name="book" options={{ title: "Book a Table" }} />
       <Stack.Screen
         name="booking-confirmation/[bookingId]"
         options={{ title: "Booking Confirmed", headerBackVisible: false }}

@@ -3,7 +3,8 @@ import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 export interface SelectOption {
   label: string;
@@ -25,7 +26,11 @@ export default function Select({
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
   const borderColor = colors.border;
+  const placeholderColor = colors.muted;
+  const backgroundColor = colors.input;
   const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
 
   const selectedOption = options.find((o) => o.value === selectedValue);
@@ -49,7 +54,10 @@ export default function Select({
               )}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.option, item.value === selectedValue && styles.selectedOption]}
+                  style={[
+                    styles.option,
+                    item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
+                  ]}
                   onPress={() => {
                     onSelect(item.value);
                     setModalVisible(false);
@@ -58,13 +66,13 @@ export default function Select({
                   <ThemedText
                     style={[
                       styles.optionText,
-                      item.value === selectedValue && styles.selectedOptionText,
+                      item.value === selectedValue && { color: primaryColor, fontWeight: "600" },
                     ]}
                   >
                     {item.label}
                   </ThemedText>
                   {item.value === selectedValue && (
-                    <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
                   )}
                 </TouchableOpacity>
               )}
@@ -76,15 +84,15 @@ export default function Select({
       <Pressable
         style={(state) => [
           styles.trigger,
-          { borderColor },
-          (state as { hovered?: boolean }).hovered && styles.triggerHovered,
+          { borderColor, backgroundColor },
+          (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText style={[styles.triggerText, !selectedOption && styles.placeholderText]}>
+        <ThemedText style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}>
           {selectedOption?.label ?? placeholder}
         </ThemedText>
-        <ThemedText style={styles.chevron}>▾</ThemedText>
+        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
     </>
   );
@@ -99,20 +107,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 44,
-    marginBottom: 16,
-  },
-  triggerHovered: {
-    borderColor: "#0a7ea4",
   },
   triggerText: {
     fontSize: 15,
   },
-  placeholderText: {
-    color: "#9ca3af",
-  },
   chevron: {
     fontSize: 14,
-    color: "#9ca3af",
   },
   backdrop: {
     flex: 1,
@@ -142,18 +142,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
   },
-  selectedOption: {
-    backgroundColor: "rgba(10,126,164,0.08)",
-  },
   optionText: {
     fontSize: 15,
   },
-  selectedOptionText: {
-    fontWeight: "600",
-    color: "#0a7ea4",
-  },
   checkmark: {
-    color: "#0a7ea4",
     fontWeight: "600",
   },
 });

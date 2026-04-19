@@ -6,6 +6,7 @@ import { COLORS } from "@/theme/theme";
 import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function LocationCard({
@@ -30,18 +31,20 @@ export function LocationCard({
   confirmAction: (msg: string) => Promise<boolean>;
 }) {
   const tableCount = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   return (
     <View
       style={[
         styles.locationCard,
         { backgroundColor: cardBg, borderColor },
-        isSelected && { borderColor: COLORS.primary },
+        isSelected && { borderColor: primaryColor },
       ]}
     >
       <View style={styles.locationCardHeader}>
-        <View style={[styles.locationIcon, { backgroundColor: `${COLORS.primary}14` }]}>
-          <Ionicons name="storefront-outline" size={22} color={COLORS.primary} />
+        <View style={[styles.locationIcon, { backgroundColor: `${primaryColor}14` }]}>
+          <Ionicons name="storefront-outline" size={22} color={primaryColor} />
         </View>
         <View style={styles.locationMeta}>
           <ThemedText style={styles.locationName}>{restaurant.name}</ThemedText>
@@ -73,18 +76,18 @@ export function LocationCard({
             style={[
               styles.configureBtn,
               isSelected
-                ? { backgroundColor: COLORS.primary }
-                : { backgroundColor: `${COLORS.primary}14` },
+                ? { backgroundColor: primaryColor }
+                : { backgroundColor: `${primaryColor}14` },
             ]}
             onPress={onSelect}
           >
             <Ionicons
               name={isSelected ? "chevron-up" : "settings-outline"}
               size={14}
-              color={isSelected ? "#fff" : COLORS.primary}
+              color={isSelected ? "#fff" : primaryColor}
             />
             <ThemedText
-              style={[styles.configureBtnText, { color: isSelected ? "#fff" : COLORS.primary }]}
+              style={[styles.configureBtnText, { color: isSelected ? "#fff" : primaryColor }]}
             >
               {isSelected ? "Close" : "Configure"}
             </ThemedText>

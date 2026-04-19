@@ -11,28 +11,30 @@ namespace OpenRestoApi.Controllers;
 [Authorize]
 public class AdminController(AdminService adminService, IEmailService emailService) : ControllerBase
 {
-    private readonly AdminService _admin = adminService;
+    public enum bookingStatus { active, cancelled, all, past, upcoming }
+    private readonly AdminService _adminService = adminService;
     private readonly IEmailService _email = emailService;
 
     [HttpGet("overview")]
     public async Task<IActionResult> Overview()
-        => Ok(await _admin.GetOverviewAsync());
+        => Ok(await _adminService.GetOverviewAsync());
 
     [HttpGet("bookings")]
     public async Task<IActionResult> GetBookings(
         [FromQuery] int? restaurantId,
         [FromQuery] DateTime? date,
-        [FromQuery] string status = "active",
+        [FromQuery] bookingStatus status = bookingStatus.active,
         [FromQuery] bool cancelled = false)
     {
-        string effectiveStatus = cancelled ? "cancelled" : status;
-        return Ok(await _admin.GetBookingsAsync(restaurantId, date, effectiveStatus));
+        //this is business logic that should likely belong in the service but its OK for now
+        string effectiveStatus = cancelled ? nameof(bookingStatus.cancelled) : status.ToString();
+        return Ok(await _adminService.GetBookingsAsync(restaurantId, date, effectiveStatus));
     }
 
     [HttpGet("bookings/{id}")]
     public async Task<IActionResult> GetBooking(int id)
     {
-        BookingDetailDto? result = await _admin.GetBookingAsync(id);
+        BookingDetailDto? result = await _adminService.GetBookingAsync(id);
         return result == null ? NotFound() : Ok(result);
     }
 
@@ -41,7 +43,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         try
         {
-            BookingDetailDto result = await _admin.CreateBookingAsync(req);
+            BookingDetailDto result = await _adminService.CreateBookingAsync(req);
             return CreatedAtAction(nameof(GetBooking), new { id = result.Id }, result);
         }
         catch (ArgumentException ex)
@@ -59,7 +61,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         try
         {
-            BookingDetailDto? result = await _admin.UpdateBookingAsync(id, req);
+            BookingDetailDto? result = await _adminService.UpdateBookingAsync(id, req);
             return result == null ? NotFound() : Ok(result);
         }
         catch (ArgumentException ex)
@@ -75,17 +77,17 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     [HttpPost("bookings/{id}/extend")]
     public async Task<IActionResult> ExtendBooking(int id, [FromBody] ExtendBookingRequest req)
     {
-        DateTime? endTime = await _admin.ExtendBookingAsync(id, req.Minutes);
+        DateTime? endTime = await _adminService.ExtendBookingAsync(id, req.Minutes);
         return endTime == null ? NotFound() : Ok(new { endTime });
     }
 
     [HttpDelete("bookings/{id}")]
     public async Task<IActionResult> CancelBooking(int id)
-        => await _admin.CancelBookingAsync(id) ? NoContent() : NotFound();
+        => await _adminService.CancelBookingAsync(id) ? NoContent() : NotFound();
 
     [HttpDelete("bookings/{id}/purge")]
     public async Task<IActionResult> PurgeBooking(int id)
-        => await _admin.PurgeBookingAsync(id) ? NoContent() : NotFound();
+        => await _adminService.PurgeBookingAsync(id) ? NoContent() : NotFound();
 
     [HttpPost("restaurants")]
     public async Task<IActionResult> CreateRestaurant([FromBody] CreateRestaurantRequest req)
@@ -95,32 +97,32 @@ public class AdminController(AdminService adminService, IEmailService emailServi
             return BadRequest(new MessageResponse { Message = "Name is required." });
         }
 
-        RestaurantDto result = await _admin.CreateRestaurantAsync(req.Name, req.Address);
+        RestaurantDto result = await _adminService.CreateRestaurantAsync(req.Name, req.Address);
         return CreatedAtAction(nameof(Overview), new { }, result);
     }
 
     [HttpDelete("restaurants/{id}")]
     public async Task<IActionResult> DeleteRestaurant(int id)
-        => await _admin.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
+        => await _adminService.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 
     [HttpGet("restaurants")]
     public async Task<IActionResult> GetRestaurants()
     {
-        var restaurants = await _admin.GetRestaurantsAsync();
+        var restaurants = await _adminService.GetRestaurantsAsync();
         return Ok(restaurants);
     }
 
     [HttpGet("restaurants/{restaurantId}/sections")]
     public async Task<IActionResult> GetSections(int restaurantId)
     {
-        var sections = await _admin.GetSectionsAsync(restaurantId);
+        var sections = await _adminService.GetSectionsAsync(restaurantId);
         return Ok(sections);
     }
 
     [HttpGet("restaurants/{restaurantId}/tables")]
     public async Task<IActionResult> GetTables(int restaurantId)
     {
-        List<SectionDto>? result = await _admin.GetTablesAsync(restaurantId);
+        List<SectionDto>? result = await _adminService.GetTablesAsync(restaurantId);
         return result == null
             ? NotFound(new MessageResponse { Message = "Restaurant not found or has no sections." })
             : Ok(result);
@@ -129,7 +131,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     [HttpPost("bookings/{id}/email")]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
     {
-        BookingDetailDto? booking = await _admin.GetBookingAsync(id);
+        BookingDetailDto? booking = await _adminService.GetBookingAsync(id);
         if (booking == null)
         {
             return NotFound();
@@ -165,7 +167,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         try
         {
-            BookingDetailDto? result = await _admin.RestoreBookingAsync(id);
+            BookingDetailDto? result = await _adminService.RestoreBookingAsync(id);
             return result == null ? NotFound() : Ok(new MessageResponse { Message = "Booking restored successfully." });
         }
         catch (InvalidOperationException ex)
@@ -179,7 +181,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     {
         try
         {
-            BookingDetailDto? result = await _admin.AdminUpdateBookingAsync(id, req);
+            BookingDetailDto? result = await _adminService.AdminUpdateBookingAsync(id, req);
             return result == null ? NotFound() : Ok(result);
         }
         catch (ArgumentException ex)

@@ -10,11 +10,19 @@ import {
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+  Platform,
+} from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useBrand } from "@/context/BrandContext";
 
 // Refactored components
 import { StatusBadge } from "@/components/admin/bookings/StatusBadge";
@@ -51,6 +59,8 @@ export default function AdminBookingsScreen() {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const { width } = useWindowDimensions();
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || COLORS.primary;
 
   const borderColor = colors.border;
   const cardBg = colors.card;
@@ -122,37 +132,32 @@ export default function AdminBookingsScreen() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const getTodayUTCDateString = (): string => {
-    const d = new Date();
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(d.getUTCDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
   const todayCount = bookings.filter((b) => {
     const bookingDate = new Date(b.date);
-    const year = bookingDate.getUTCFullYear();
-    const month = String(bookingDate.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(bookingDate.getUTCDate()).padStart(2, "0");
-    const bookingDateString = `${year}-${month}-${day}`;
-    return bookingDateString === getTodayUTCDateString();
+    const today = new Date();
+    return (
+      bookingDate.getUTCDate() === today.getUTCDate() &&
+      bookingDate.getUTCMonth() === today.getUTCMonth() &&
+      bookingDate.getUTCFullYear() === today.getUTCFullYear()
+    );
   }).length;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen
-        options={{
-          title:
-            viewMode === "grid"
-              ? "Availability"
-              : statusFilter === "past"
-                ? "Past Bookings"
-                : statusFilter === "cancelled"
-                  ? "Cancelled Bookings"
-                  : "Live Bookings",
-        }}
-      />
+      {Platform.OS !== "web" && (
+        <Stack.Screen
+          options={{
+            title:
+              viewMode === "grid"
+                ? "Availability"
+                : statusFilter === "past"
+                  ? "Past Bookings"
+                  : statusFilter === "cancelled"
+                    ? "Cancelled Bookings"
+                    : "Live Bookings",
+          }}
+        />
+      )}
       {/* Header */}
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
@@ -182,8 +187,8 @@ export default function AdminBookingsScreen() {
                   styles.chip,
                   { borderColor },
                   r.id === selectedRestaurantId && {
-                    backgroundColor: COLORS.primary,
-                    borderColor: COLORS.primary,
+                    backgroundColor: PRIMARY,
+                    borderColor: PRIMARY,
                   },
                 ]}
                 onPress={() => handleSelectRestaurant(r.id)}
@@ -209,7 +214,7 @@ export default function AdminBookingsScreen() {
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             {(
               [
-                { key: "active", label: "Active", color: COLORS.primary },
+                { key: "active", label: "Active", color: PRIMARY },
                 { key: "past", label: "Past", color: "#7c3aed" },
                 { key: "cancelled", label: "Cancelled", color: "#dc2626" },
               ] as const
@@ -238,7 +243,7 @@ export default function AdminBookingsScreen() {
           {statusFilter === "active" && (
             <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
               <Pressable
-                style={[styles.modeBtn, viewMode === "list" && { backgroundColor: COLORS.primary }]}
+                style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
                 onPress={() => setViewMode("list")}
               >
                 <Ionicons
@@ -248,7 +253,7 @@ export default function AdminBookingsScreen() {
                 />
               </Pressable>
               <Pressable
-                style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: COLORS.primary }]}
+                style={[styles.modeBtn, viewMode === "grid" && { backgroundColor: PRIMARY }]}
                 onPress={switchToGrid}
               >
                 <Ionicons
@@ -263,14 +268,14 @@ export default function AdminBookingsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
+        <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
       ) : viewMode === "grid" && statusFilter === "active" ? (
         /* ── Grid view ── */
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           {/* Date navigation */}
           <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
             <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(-1)}>
-              <Ionicons name="chevron-back" size={18} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={18} color={PRIMARY} />
             </Pressable>
             <Pressable
               onPress={() => {
@@ -281,20 +286,20 @@ export default function AdminBookingsScreen() {
             >
               <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
               {gridDate.toDateString() !== new Date().toDateString() && (
-                <ThemedText style={[styles.gridTodayHint, { color: COLORS.primary }]}>
+                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
                   tap for today
                 </ThemedText>
               )}
             </Pressable>
             <Pressable style={styles.gridNavBtn} onPress={() => handleGridDateChange(1)}>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+              <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
             </Pressable>
           </View>
 
           {/* Legend */}
           <View style={[styles.gridLegend, { borderBottomColor: borderColor }]}>
-            <View style={[styles.legendItem, { backgroundColor: `${COLORS.primary}22` }]}>
-              <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+            <View style={[styles.legendItem, { backgroundColor: `${PRIMARY}22` }]}>
+              <View style={[styles.legendDot, { backgroundColor: PRIMARY }]} />
               <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
             </View>
             <View style={styles.legendItem}>
@@ -312,7 +317,7 @@ export default function AdminBookingsScreen() {
           </View>
 
           {gridLoading ? (
-            <ActivityIndicator style={{ padding: 40 }} size="large" color={COLORS.primary} />
+            <ActivityIndicator style={{ padding: 40 }} size="large" color={PRIMARY} />
           ) : (
             <AvailabilityGrid
               sections={gridSections}
@@ -413,13 +418,13 @@ export default function AdminBookingsScreen() {
               </View>
               <View style={styles.colAction}>
                 <Pressable
-                  style={[styles.rowActionBtn, { backgroundColor: `${COLORS.primary}14` }]}
+                  style={[styles.rowActionBtn, { backgroundColor: `${PRIMARY}14` }]}
                   onPress={(e) => {
                     (e as { stopPropagation?: () => void }).stopPropagation?.();
                     router.push(`/(admin)/bookings/${b.id}`);
                   }}
                 >
-                  <Ionicons name="eye-outline" size={14} color={COLORS.primary} />
+                  <Ionicons name="eye-outline" size={14} color={PRIMARY} />
                 </Pressable>
                 {statusFilter === "active" && (
                   <Pressable

@@ -3,9 +3,11 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import TimePicker from "@/components/common/TimePicker";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { RestaurantDto, updateRestaurant } from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
 export function RestaurantInfoForm({
@@ -17,6 +19,9 @@ export function RestaurantInfoForm({
 }) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
+
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
@@ -57,23 +62,11 @@ export function RestaurantInfoForm({
       <View style={styles.hoursRow}>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Opens</ThemedText>
-          <input
-            type="time"
-            value={openTime}
-            step={900}
-            onChange={(e) => e.target.value && setOpenTime(e.target.value)}
-            style={hoursInputStyle}
-          />
+          <TimePicker selectedTime={openTime} onSelect={setOpenTime} />
         </View>
         <View style={styles.hoursField}>
           <ThemedText style={styles.fieldLabel}>Closes</ThemedText>
-          <input
-            type="time"
-            value={closeTime}
-            step={900}
-            onChange={(e) => e.target.value && setCloseTime(e.target.value)}
-            style={hoursInputStyle}
-          />
+          <TimePicker selectedTime={closeTime} onSelect={setCloseTime} />
         </View>
       </View>
       <View style={styles.field}>
@@ -89,7 +82,7 @@ export function RestaurantInfoForm({
                 style={[
                   styles.dayChip,
                   active
-                    ? { backgroundColor: COLORS.primary, borderColor: COLORS.primary }
+                    ? { backgroundColor: primaryColor, borderColor: primaryColor }
                     : { borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" },
                 ]}
               >
@@ -215,16 +208,3 @@ export function RestaurantInfoForm({
     </View>
   );
 }
-
-const hoursInputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 44,
-  border: `1px solid ${COLORS.border.light}`,
-  borderRadius: 8,
-  paddingLeft: 12,
-  paddingRight: 12,
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  cursor: "pointer",
-};

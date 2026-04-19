@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
-import { Slot, Stack, useRouter, useSegments } from "expo-router";
+import { Slot, Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 const MIN_WIDTH = 900;
 
@@ -34,9 +35,32 @@ export default function AdminLayout() {
 function AdminLayoutInner() {
   const router = useRouter();
   const segments = useSegments();
+  const pathname = usePathname();
+  const brand = useBrand();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">(
     "loading"
   );
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+
+    const setTabTitle = (page: string) => {
+      document.title = `${page} | ${brand.appName}`;
+    };
+
+    const last = segments[segments.length - 1];
+    if (last === "dashboard") {
+      setTabTitle("Dashboard");
+    } else if (last === "settings") {
+      setTabTitle("Settings");
+    } else if ((segments as any).includes("bookings")) {
+      if (last === "new") setTabTitle("New Walk-in");
+      else if (last && last.match(/^\d+$/)) setTabTitle("Booking Detail");
+      else setTabTitle("Bookings");
+    } else if (last === "login") {
+      setTabTitle("Admin Login");
+    }
+  }, [segments, brand.appName, pathname]);
 
   useEffect(() => {
     const onLoginScreen = segments.includes("login" as never);

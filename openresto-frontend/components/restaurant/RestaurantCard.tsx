@@ -4,6 +4,7 @@ import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 import { Ionicons } from "@expo/vector-icons";
 
@@ -11,6 +12,8 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const mutedColor = colors.muted;
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   const totalTables = restaurant.sections.reduce((acc, s) => acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
@@ -18,12 +21,9 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
     0
   );
 
-  // Pick a consistent hue offset from the name so cards feel distinct
-  const hues = [195, 210, 165, 220, 180, 200];
-  const hue = hues[restaurant.name.charCodeAt(0) % hues.length];
-  const headerBg = isDark ? `hsl(${hue}, 60%, 26%)` : `hsl(${hue}, 68%, 82%)`;
-  const iconBg = `hsl(${hue}, 65%, ${isDark ? "34%" : "72%"})`;
-  const iconColor = `hsl(${hue}, 70%, ${isDark ? "78%" : "26%"})`;
+  const headerBg = isDark ? `${primaryColor}33` : `${primaryColor}15`;
+  const iconBg = isDark ? `${primaryColor}44` : `${primaryColor}22`;
+  const iconColor = primaryColor;
   const initial = restaurant.name.charAt(0).toUpperCase();
 
   const cardBg = colors.card;
@@ -38,7 +38,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
       : {};
 
   return (
-    <Link href={`/(user)/book/${restaurant.id}`} asChild>
+    <Link href={`/(user)/book?restaurantId=${restaurant.id}`} asChild>
       <Pressable
         style={(state) => [
           styles.outer,
@@ -99,7 +99,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
             </View>
 
             {/* CTA */}
-            <View style={[styles.ctaBtn, { backgroundColor: COLORS.primary }]}>
+            <View style={[styles.ctaBtn, { backgroundColor: primaryColor }]}>
               <ThemedText style={styles.ctaBtnText}>Book a table</ThemedText>
               <Ionicons name="arrow-forward" size={14} color="#fff" />
             </View>

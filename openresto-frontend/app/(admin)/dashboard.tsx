@@ -8,6 +8,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
+  Platform,
 } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -20,6 +21,7 @@ import {
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { hexToRgba } from "@/utils/colors";
+import { useBrand } from "@/context/BrandContext";
 
 function toUTCDateString(d: Date): string {
   const year = d.getUTCFullYear();
@@ -61,6 +63,8 @@ export default function AdminDashboardScreen() {
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const { width } = useWindowDimensions();
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
 
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
@@ -102,7 +106,7 @@ export default function AdminDashboardScreen() {
   const todayBookings = bookings.filter(
     (b) => toUTCDateString(new Date(b.date)) === todayDateString
   );
-  const upcomingBookings = bookings.filter((b) => new Date(b.date) > new Date());
+  const upcomingTodayCount = todayBookings.filter((b) => new Date(b.date) > new Date()).length;
 
   const flowData = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((hour) => {
     const totalSeats = todayBookings
@@ -128,36 +132,36 @@ export default function AdminDashboardScreen() {
     {
       label: "Today's Bookings",
       value: String(overview?.todayBookings ?? todayBookings.length),
-      sub: `${upcomingBookings.length} still upcoming`,
+      sub: `${upcomingTodayCount} still upcoming`,
       icon: "calendar-outline" as const,
-      accent: COLORS.primary,
+      accent: primaryColor,
     },
     {
       label: "Total Bookings",
       value: String(overview?.totalBookings ?? bookings.length),
       sub: "all time",
       icon: "book-outline" as const,
-      accent: COLORS.primary,
+      accent: primaryColor,
     },
     {
       label: "Total Covers",
       value: String(overview?.totalSeats ?? 0),
       sub: "seats reserved",
       icon: "people-outline" as const,
-      accent: COLORS.primary,
+      accent: primaryColor,
     },
     {
       label: "Locations",
       value: String(overview?.totalRestaurants ?? restaurants.length),
       sub: "active",
       icon: "location-outline" as const,
-      accent: COLORS.primary,
+      accent: primaryColor,
     },
   ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: "Dashboard" }} />
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Dashboard" }} />}
       <View style={styles.pageHeader}>
         <View>
           <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
@@ -176,8 +180,8 @@ export default function AdminDashboardScreen() {
                   styles.locationChip,
                   { borderColor },
                   selectedRestaurant?.id === r.id && {
-                    backgroundColor: COLORS.primary,
-                    borderColor: COLORS.primary,
+                    backgroundColor: primaryColor,
+                    borderColor: primaryColor,
                   },
                 ]}
                 onPress={() => handleSelectRestaurant(r)}
@@ -198,7 +202,7 @@ export default function AdminDashboardScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={styles.spinner} size="large" color={COLORS.primary} />
+        <ActivityIndicator style={styles.spinner} size="large" color={primaryColor} />
       ) : (
         <>
           <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
@@ -250,8 +254,8 @@ export default function AdminDashboardScreen() {
                             height: `${pct}%` as const,
                             backgroundColor:
                               pct >= 85
-                                ? COLORS.primary
-                                : hexToRgba(COLORS.primary, (pct / 100) * 0.7 + 0.15),
+                                ? primaryColor
+                                : hexToRgba(primaryColor, (pct / 100) * 0.7 + 0.15),
                           },
                         ]}
                       />
@@ -273,8 +277,8 @@ export default function AdminDashboardScreen() {
                     styles.actionCard,
                     { backgroundColor: cardBg, borderColor, cursor: "pointer" } as const,
                     action.primary && {
-                      backgroundColor: COLORS.primary,
-                      borderColor: COLORS.primary,
+                      backgroundColor: primaryColor,
+                      borderColor: primaryColor,
                     },
                     !action.primary &&
                       (state as { hovered?: boolean }).hovered && {
@@ -288,14 +292,14 @@ export default function AdminDashboardScreen() {
                       {
                         backgroundColor: action.primary
                           ? "rgba(255,255,255,0.18)"
-                          : hexToRgba(COLORS.primary, 0.08),
+                          : hexToRgba(primaryColor, 0.08),
                       },
                     ]}
                   >
                     <Ionicons
                       name={action.icon}
                       size={18}
-                      color={action.primary ? "#fff" : COLORS.primary}
+                      color={action.primary ? "#fff" : primaryColor}
                     />
                   </View>
                   <View style={styles.actionText}>
@@ -325,7 +329,7 @@ export default function AdminDashboardScreen() {
             <View style={styles.listHeader}>
               <ThemedText style={styles.cardTitle}>Today's Bookings</ThemedText>
               <Pressable onPress={() => router.push("/(admin)/bookings")}>
-                <ThemedText style={[styles.viewAll, { color: COLORS.primary }]}>
+                <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
                   View all →
                 </ThemedText>
               </Pressable>

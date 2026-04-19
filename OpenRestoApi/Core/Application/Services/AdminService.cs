@@ -14,18 +14,36 @@ public class AdminService(AppDbContext db)
         "upcoming" => "active",
         "past" => "past",
         "cancelled" => "cancelled",
+        "active" => "active",
+        "all" => "all",
         _ => "active",
     };
 
     public async Task<AdminOverviewDto> GetOverviewAsync()
     {
-        DateTime todayUtc = DateTime.UtcNow.Date;
+        DateTime nowUtc = DateTime.UtcNow;
+        var restaurants = await _db.Restaurants.ToListAsync();
+        
+        int totalRestaurants = restaurants.Count;
+        int totalBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled);
+        int totalSeats = await _db.Bookings.Where(b => !b.IsCancelled).SumAsync(b => (int?)b.Seats) ?? 0;
+        
+        int todayBookingsCount = 0;
+        foreach (var r in restaurants)
+        {
+            var (start, end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
+            todayBookingsCount += await _db.Bookings.CountAsync(b => 
+                b.RestaurantId == r.Id && 
+                b.Date >= start && b.Date < end && 
+                !b.IsCancelled);
+        }
+
         return new AdminOverviewDto
         {
-            TotalRestaurants = await _db.Restaurants.CountAsync(),
-            TotalBookings = await _db.Bookings.CountAsync(),
-            TodayBookings = await _db.Bookings.CountAsync(b => b.Date.Date == todayUtc),
-            TotalSeats = await _db.Bookings.SumAsync(b => (int?)b.Seats) ?? 0,
+            TotalRestaurants = totalRestaurants,
+            TotalBookings = totalBookings,
+            TodayBookings = todayBookingsCount,
+            TotalSeats = totalSeats,
         };
     }
 
@@ -37,23 +55,63 @@ public class AdminService(AppDbContext db)
             .Include(b => b.Table)
             .AsQueryable();
 
-        DateTime utcNow = DateTime.UtcNow;
-        DateTime todayUtc = utcNow.Date;
+        DateTime nowUtc = DateTime.UtcNow;
+        string normalized = NormalizeStatus(status);
 
-        q = NormalizeStatus(status) switch
-        {
-            "cancelled" => q.Where(b => b.IsCancelled),
-            "past" => q.Where(b => !b.IsCancelled && b.Date < todayUtc),
-            _ => q.Where(b => !b.IsCancelled && b.Date >= todayUtc),
-        };
+        // Grid view logic: if a date is explicitly provided, we usually want all bookings for that day
+        // unless a specific status (like cancelled) is requested.
+        bool isGridMode = date.HasValue && normalized == "active";
+
         if (restaurantId.HasValue)
         {
             q = q.Where(b => b.RestaurantId == restaurantId.Value);
-        }
+            var restaurant = await _db.Restaurants.FindAsync(restaurantId.Value);
+            string tz = restaurant?.Timezone ?? "UTC";
+            
+            DateTime cutoff = nowUtc.AddMinutes(-90);
 
-        if (date.HasValue)
+            if (isGridMode)
+            {
+                // In grid mode for a specific date, show everything non-cancelled for that day
+                q = q.Where(b => !b.IsCancelled);
+            }
+            else
+            {
+                q = normalized switch
+                {
+                    "cancelled" => q.Where(b => b.IsCancelled),
+                    "past" => q.Where(b => !b.IsCancelled && b.Date < cutoff),
+                    "all" => q,
+                    "active" => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
+                    _ => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
+                };
+            }
+
+            if (date.HasValue)
+            {
+                var (start, end) = GetUtcRangeForLocalDay(date.Value, tz);
+                q = q.Where(b => b.Date >= start && b.Date < end);
+            }
+        }
+        else
         {
-            q = q.Where(b => b.Date.Date == date.Value.Date);
+            DateTime globalCutoff = nowUtc.AddMinutes(-90);
+            
+            q = normalized switch
+            {
+                "cancelled" => q.Where(b => b.IsCancelled),
+                "past" => q.Where(b => !b.IsCancelled && b.Date < globalCutoff),
+                "all" => q,
+                "active" => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
+                _ => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
+            };
+
+            if (date.HasValue)
+            {
+                DateTime dayStart = date.Value.Date;
+                DateTime nextDayStart = dayStart.AddDays(1);
+                q = q.Where(b => b.Date >= dayStart && b.Date < nextDayStart);
+            }
         }
 
         return await q
@@ -437,6 +495,26 @@ public class AdminService(AppDbContext db)
     }
 
     // ── Mapping ─────────────────────────────────────────────────────────────
+
+    private static (DateTime Start, DateTime End) GetUtcRangeForLocalDay(DateTime referenceDate, string timezoneId)
+    {
+        TimeZoneInfo tz;
+        try {
+            tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        } catch {
+            tz = TimeZoneInfo.Utc;
+        }
+
+        DateTime localDay = TimeZoneInfo.ConvertTimeFromUtc(referenceDate.ToUniversalTime(), tz).Date;
+        
+        DateTime localStart = localDay;
+        DateTime localEnd = localDay.AddDays(1);
+
+        DateTime utcStart = TimeZoneInfo.ConvertTimeToUtc(localStart, tz);
+        DateTime utcEnd = TimeZoneInfo.ConvertTimeToUtc(localEnd, tz);
+
+        return (utcStart, utcEnd);
+    }
 
     private static BookingDetailDto ToDetailDto(Booking b)
     {

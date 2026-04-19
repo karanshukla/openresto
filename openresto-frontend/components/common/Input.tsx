@@ -6,8 +6,8 @@ import { getThemeColors } from "@/theme/theme";
 const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const placeholderColor = isDark ? "#6b7280" : "#9ca3af";
+  const borderColor = colors.border;
+  const placeholderColor = colors.muted;
 
   return (
     <View style={styles.container}>

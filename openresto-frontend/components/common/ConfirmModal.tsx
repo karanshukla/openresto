@@ -2,6 +2,7 @@ import { Modal, Pressable, StyleSheet, View, TouchableWithoutFeedback } from "re
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export default function ConfirmModal({
 }: ConfirmModalProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -47,7 +49,11 @@ export default function ConfirmModal({
                 style={[
                   styles.btn,
                   styles.confirmBtn,
-                  { backgroundColor: destructive ? COLORS.error : COLORS.primary },
+                  {
+                    backgroundColor: destructive
+                      ? COLORS.error
+                      : brand.primaryColor || COLORS.primary,
+                  },
                 ]}
                 onPress={onConfirm}
               >

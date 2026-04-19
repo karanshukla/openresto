@@ -1,5 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 function roundTo15(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -27,10 +29,13 @@ export default function TimePicker({
   maxTime?: string;
 }) {
   const isDark = useColorScheme() === "dark";
-  const borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";
-  const bg = isDark ? "#1c1c1e" : "#ffffff";
-  const textColor = isDark ? "#ffffff" : "#000000";
-  const placeholderColor = "#9ca3af";
+  const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || COLORS.primary;
+  const borderColor = colors.border;
+  const bg = colors.input;
+  const textColor = colors.text;
+  const placeholderColor = colors.muted;
 
   const handleChange = (value: string) => {
     if (!value) return;
@@ -42,15 +47,9 @@ export default function TimePicker({
     <View style={styles.wrapper}>
       <input
         type="time"
-        value={selectedTime ?? ""}
-        min={minTime}
-        max={maxTime}
+        value={selectedTime || ""}
         step={900}
         onChange={(e) => handleChange(e.target.value)}
-        onBlur={(e) => {
-          if (e.target.value) handleChange(e.target.value);
-          e.target.style.borderColor = borderColor;
-        }}
         style={
           {
             width: "100%",
@@ -62,15 +61,20 @@ export default function TimePicker({
             paddingLeft: 12,
             paddingRight: 12,
             fontSize: 15,
+            fontFamily: "inherit",
             backgroundColor: bg,
             color: selectedTime ? textColor : placeholderColor,
             outline: "none",
             boxSizing: "border-box",
             cursor: "pointer",
+            transition: "border-color 0.2s",
           } as React.CSSProperties
         }
         onFocus={(e) => {
-          e.target.style.borderColor = "#0a7ea4";
+          e.target.style.borderColor = primaryColor;
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = borderColor;
         }}
       />
     </View>
@@ -79,6 +83,6 @@ export default function TimePicker({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
 });
