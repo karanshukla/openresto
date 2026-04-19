@@ -8,6 +8,9 @@ RUN dotnet restore "./OpenRestoApi.csproj"
 
 # Copy the remaining source code
 COPY . .
+# Remove local db files so they don't get copied into the image
+RUN rm -f openresto.db*
+
 WORKDIR "/src/."
 RUN dotnet build "OpenRestoApi.csproj" -c Release -o /app/build
 
@@ -19,9 +22,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Ensure the app user owns the files and directory to allow SQLite to create/write the DB
+# Ensure the /data directory exists and is owned by the app user
 USER root
-RUN mkdir -p /data && chown -R app:app /app /data
+RUN mkdir -p /data && chown -R app:app /data && chmod 777 /data
 USER app
 
 ENTRYPOINT ["dotnet", "OpenRestoApi.dll"]
