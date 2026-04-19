@@ -13,6 +13,18 @@ using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// Ensure the app listens on the PORT environment variable if provided (for Railway)
+string? port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+else
+{
+    // Default to 8080 if PORT is not set (standard ASP.NET Core 8+ behavior)
+    builder.WebHost.UseUrls("http://+:8080");
+}
+
 // Add services to the container.
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -185,99 +197,125 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure DB is created for first run
+// Ensure DB is created for first run - with retry loop for volume availability
 using (IServiceScope scope = app.Services.CreateScope())
 {
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    int maxRetries = 10;
+    int retryDelayMs = 2000;
+    bool success = false;
 
-    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
-    db.Database.ExecuteSqlRaw("PRAGMA busy_timeout=5000;");
-
-    db.Database.ExecuteSqlRaw("""
-        CREATE TABLE IF NOT EXISTS "AdminCredentials" (
-            "Id"               INTEGER NOT NULL CONSTRAINT "PK_AdminCredentials" PRIMARY KEY AUTOINCREMENT,
-            "Email"            TEXT    NOT NULL,
-            "PasswordHash"     TEXT    NOT NULL,
-            "PasswordSalt"     TEXT    NOT NULL,
-            "PvqQuestion"      TEXT,
-            "PvqAnswerHash"    TEXT,
-            "PvqAnswerSalt"    TEXT,
-            "ResetToken"       TEXT,
-            "ResetTokenExpiry" TEXT
-        )
-        """);
-
-    bool ColumnExists(string table, string column)
+    for (int i = 1; i <= maxRetries; i++)
     {
-        using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-        cmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'";
-        db.Database.OpenConnection();
-        int result = Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
-        return result > 0;
-    }
-
-    void AddColumnIfMissing(string table, string column, string definition)
-    {
-        if (!ColumnExists(table, column))
+        try
         {
+            db.Database.EnsureCreated();
+
+            db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+            db.Database.ExecuteSqlRaw("PRAGMA busy_timeout=5000;");
+
+            db.Database.ExecuteSqlRaw("""
+                CREATE TABLE IF NOT EXISTS "AdminCredentials" (
+                    "Id"               INTEGER NOT NULL CONSTRAINT "PK_AdminCredentials" PRIMARY KEY AUTOINCREMENT,
+                    "Email"            TEXT    NOT NULL,
+                    "PasswordHash"     TEXT    NOT NULL,
+                    "PasswordSalt"     TEXT    NOT NULL,
+                    "PvqQuestion"      TEXT,
+                    "PvqAnswerHash"    TEXT,
+                    "PvqAnswerSalt"    TEXT,
+                    "ResetToken"       TEXT,
+                    "ResetTokenExpiry" TEXT
+                )
+                """);
+
+            bool ColumnExists(string table, string column)
+            {
+                using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
+                cmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'";
+                db.Database.OpenConnection();
+                int result = Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+                return result > 0;
+            }
+
+            void AddColumnIfMissing(string table, string column, string definition)
+            {
+                if (!ColumnExists(table, column))
+                {
 #pragma warning disable EF1002
-            db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition}");
+                    db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition}");
 #pragma warning restore EF1002
+                }
+            }
+
+            AddColumnIfMissing("Bookings", "BookingRef", "TEXT NOT NULL DEFAULT ''");
+            AddColumnIfMissing("Bookings", "SpecialRequests", "TEXT");
+            AddColumnIfMissing("Bookings", "EndTime", "TEXT");
+            AddColumnIfMissing("Bookings", "IsCancelled", "INTEGER NOT NULL DEFAULT 0");
+            AddColumnIfMissing("Bookings", "CancelledAt", "TEXT");
+
+            AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
+            AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
+            AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
+            AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
+
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
+                    ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ""Host"" TEXT NOT NULL DEFAULT '',
+                    ""Port"" INTEGER NOT NULL DEFAULT 587,
+                    ""Username"" TEXT NOT NULL DEFAULT '',
+                    ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
+                    ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
+                    ""FromName"" TEXT,
+                    ""FromEmail"" TEXT
+                )");
+
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
+                    ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
+                    ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
+                    ""AccentColor"" TEXT,
+                    ""LogoBase64"" TEXT
+                )");
+
+            DbSeeder.Seed(db);
+
+            if (!db.AdminCredentials.Any())
+            {
+                string email = builder.Configuration["Admin:Email"] ?? "example@example.com";
+                string password = builder.Configuration["Admin:Password"] ?? "password";
+                byte[] saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+                string salt = Convert.ToBase64String(saltBytes);
+                byte[] hashBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                    password, saltBytes, 100_000,
+                    System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+                string hash = Convert.ToBase64String(hashBytes);
+                db.AdminCredentials.Add(new OpenRestoApi.Core.Domain.AdminCredential
+                {
+                    Email = email,
+                    PasswordHash = hash,
+                    PasswordSalt = salt,
+                });
+                db.SaveChanges();
+            }
+
+            success = true;
+            break;
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8)
+        {
+            logger.LogWarning("Database volume not yet writable (SQLite Error 8). Retry {RetryCount}/{MaxRetries} in {Delay}ms...", i, maxRetries, retryDelayMs);
+            if (i == maxRetries) throw;
+            Thread.Sleep(retryDelayMs);
         }
     }
-
-    AddColumnIfMissing("Bookings", "BookingRef", "TEXT NOT NULL DEFAULT ''");
-    AddColumnIfMissing("Bookings", "SpecialRequests", "TEXT");
-    AddColumnIfMissing("Bookings", "EndTime", "TEXT");
-    AddColumnIfMissing("Bookings", "IsCancelled", "INTEGER NOT NULL DEFAULT 0");
-    AddColumnIfMissing("Bookings", "CancelledAt", "TEXT");
-
-    AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
-    AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
-    AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
-    AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
-
-    db.Database.ExecuteSqlRaw(@"
-        CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
-            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-            ""Host"" TEXT NOT NULL DEFAULT '',
-            ""Port"" INTEGER NOT NULL DEFAULT 587,
-            ""Username"" TEXT NOT NULL DEFAULT '',
-            ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
-            ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
-            ""FromName"" TEXT,
-            ""FromEmail"" TEXT
-        )");
-
-    db.Database.ExecuteSqlRaw(@"
-        CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
-            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-            ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
-            ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
-            ""AccentColor"" TEXT,
-            ""LogoBase64"" TEXT
-        )");
-
-    DbSeeder.Seed(db);
-
-    if (!db.AdminCredentials.Any())
+    
+    if (!success)
     {
-        string email = builder.Configuration["Admin:Email"] ?? "example@example.com";
-        string password = builder.Configuration["Admin:Password"] ?? "password";
-        byte[] saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
-        string salt = Convert.ToBase64String(saltBytes);
-        byte[] hashBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
-            password, saltBytes, 100_000,
-            System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
-        string hash = Convert.ToBase64String(hashBytes);
-        db.AdminCredentials.Add(new OpenRestoApi.Core.Domain.AdminCredential
-        {
-            Email = email,
-            PasswordHash = hash,
-            PasswordSalt = salt,
-        });
-        db.SaveChanges();
+        throw new InvalidOperationException("Failed to initialize database after multiple retries.");
     }
 }
 
