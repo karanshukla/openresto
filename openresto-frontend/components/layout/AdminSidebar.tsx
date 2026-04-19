@@ -1,5 +1,6 @@
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { usePathname, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -42,6 +43,7 @@ export default function AdminSidebar() {
   const [locationCount, setLocationCount] = useState(0);
   const brand = useBrand();
   const PRIMARY = brand.primaryColor || COLORS.primary;
+  const insets = useSafeAreaInsets();
 
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
   const activeBg = isDark ? hexToRgba(PRIMARY, 0.18) : hexToRgba(PRIMARY, 0.09);
@@ -60,7 +62,11 @@ export default function AdminSidebar() {
       lightColor="#ffffff"
       style={[
         styles.sidebar,
-        { borderRightColor: colors.border },
+        {
+          borderRightColor: colors.border,
+          paddingTop: Math.max(insets.top, 8),
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         Platform.OS === "web" ? { position: "sticky" as any, top: 0 } : { height: "100%" },
       ]}
