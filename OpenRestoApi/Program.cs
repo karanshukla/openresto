@@ -188,11 +188,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Add a simple health check endpoint for Railway
-// Placing this here (after redirection) might still cause issues if not careful, 
-// but usually, health checkers hit the internal port directly.
-app.MapGet("/health", () => Results.Ok("OK")).AllowAnonymous();
-
 // Ensure DB is created for first run - with retry loop for volume availability
 using (IServiceScope scope = app.Services.CreateScope())
 {
