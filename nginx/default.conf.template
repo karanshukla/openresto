@@ -1,5 +1,6 @@
 server {
     listen ${PORT};
+    server_tokens off;
 
     # DNS resolver — dynamically read from /etc/resolv.conf by start.sh
     resolver ${RESOLVER} valid=10s;
@@ -14,6 +15,21 @@ server {
     add_header Cross-Origin-Opener-Policy "same-origin" always;
     add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
     add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    # ── Block common sensitive patterns ───────────────────────────────────
+    # Hidden files (.env, .git, .htaccess, etc.)
+    location ~ /\.(?!well-known) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Common probe extensions (.php, .asp, .jsp, etc.)
+    location ~* \.(php|aspx?|jsp|cgi|pl|py|sh|sql|bak|old|swp|txt|ini|xml|class)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
 
     # ── API — proxy to backend ────────────────────────────────────────────
     location /api/ {
@@ -31,6 +47,15 @@ server {
         # Hide backend information leaks
         proxy_hide_header X-Powered-By;
         proxy_hide_header Server;
+
+        # Ensure API 404s return JSON, not the frontend's HTML or backend default HTML
+        proxy_intercept_errors on;
+        error_page 404 /api-404;
+    }
+
+    location = /api-404 {
+        return 404 '{"error": "Not Found", "message": "The requested API endpoint does not exist."}';
+        default_type application/json;
     }
 
 
