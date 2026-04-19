@@ -22,9 +22,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Ensure the /data directory exists and is owned by the app user
+# Install gosu for secure user switching
 USER root
-RUN mkdir -p /data && chown -R app:app /data && chmod 777 /data
-USER app
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["dotnet", "OpenRestoApi.dll"]
+# Copy and prepare entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Entrypoint runs as root to fix permissions, then switches to app
+ENTRYPOINT ["/app/entrypoint.sh"]

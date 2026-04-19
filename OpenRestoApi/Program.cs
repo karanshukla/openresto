@@ -204,28 +204,47 @@ using (IServiceScope scope = app.Services.CreateScope())
 {
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    
+
     logger.LogInformation("Startup Diagnostics:");
     logger.LogInformation("  - Connection String: {ConnectionString}", connectionString);
     logger.LogInformation("  - Current User: {User}", Environment.UserName);
-    logger.LogInformation("  - Is 64-bit Process: {Is64Bit}", Environment.Is64BitProcess);
-    
-    string? dbFile = connectionString.Split('=', StringSplitOptions.TrimEntries).LastOrDefault();
+
+    // Parse Data Source path correctly
+    string dbFile = connectionString;
+    if (connectionString.Contains(';'))
+    {
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        var dataSourcePart = parts.FirstOrDefault(p => p.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase));
+        if (dataSourcePart != null)
+        {
+            dbFile = dataSourcePart.Substring("Data Source=".Length);
+        }
+    }
+    else if (connectionString.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
+    {
+        dbFile = connectionString.Substring("Data Source=".Length);
+    }
+
     if (!string.IsNullOrEmpty(dbFile))
     {
-        string? dir = Path.GetDirectoryName(Path.GetFullPath(dbFile));
+        string fullPath = Path.GetFullPath(dbFile);
+        string? dir = Path.GetDirectoryName(fullPath);
+        logger.LogInformation("  - Resolved DB Path: {Path}", fullPath);
         if (dir != null)
         {
             bool dirExists = Directory.Exists(dir);
             logger.LogInformation("  - DB Directory: {Dir} (Exists: {Exists})", dir, dirExists);
             if (dirExists)
             {
-                try {
-                    string testFile = Path.Combine(dir, ".write-test");
+                try
+                {
+                    string testFile = Path.Combine(dir, ".write-test-" + Guid.NewGuid().ToString("N"));
                     File.WriteAllText(testFile, "test");
                     File.Delete(testFile);
                     logger.LogInformation("  - DB Directory is writable.");
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     logger.LogError("  - DB Directory IS NOT WRITABLE: {Message}", ex.Message);
                 }
             }
@@ -341,7 +360,7 @@ using (IServiceScope scope = app.Services.CreateScope())
             Thread.Sleep(retryDelayMs);
         }
     }
-    
+
     if (!success)
     {
         throw new InvalidOperationException("Failed to initialize database after multiple retries.");
