@@ -3,7 +3,12 @@ server {
     server_tokens off;
 
     # DNS resolver — dynamically read from /etc/resolv.conf by start.sh
-    resolver ${RESOLVER} valid=10s;
+    resolver ${RESOLVER} valid=5s;
+
+    # ── Proxy timeouts ────────────────────────────────────────────────────
+    proxy_connect_timeout 30s;
+    proxy_send_timeout    30s;
+    proxy_read_timeout    30s;
 
     # ── Security headers ──────────────────────────────────────────────────
     # To ensure they are applied even when a location block has its own add_header,
