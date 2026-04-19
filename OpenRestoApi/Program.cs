@@ -13,17 +13,8 @@ using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Ensure the app listens on the PORT environment variable if provided (for Railway)
-string? port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
-{
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-}
-else
-{
-    // Default to 8080 if PORT is not set (standard ASP.NET Core 8+ behavior)
-    builder.WebHost.UseUrls("http://+:8080");
-}
+// Ensure the app listens on the PORT environment variable for Railway, defaulting to 8080
+builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
 // Add services to the container.
 builder.WebHost.ConfigureKestrel(options =>
@@ -196,6 +187,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add a simple health check endpoint for Railway
+app.MapGet("/health", () => Results.Ok("OK"));
 
 // Ensure DB is created for first run - with retry loop for volume availability
 using (IServiceScope scope = app.Services.CreateScope())

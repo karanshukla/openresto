@@ -6,10 +6,8 @@ server {
     resolver ${RESOLVER} valid=10s;
 
     # ── Security headers ──────────────────────────────────────────────────
-    # We define them here, but Nginx inheritance rules mean we must be careful.
     # To ensure they are applied even when a location block has its own add_header,
-    # we'll use a variable or simply repeat them where needed for robustness.
-    set $security_headers 1;
+    # we repeat them where needed for robustness.
 
     # ── Block common sensitive patterns ───────────────────────────────────
     location ~ /\.(?!well-known) {
@@ -61,7 +59,15 @@ server {
         default_type application/json;
     }
 
+    # ── Health — for Railway ──────────────────────────────────────────────
+    location /health {
+        access_log off;
+        return 200 "OK";
+    }
+
     # ── Frontend — proxy to static server ─────────────────────────────────
+
+
     location / {
         add_header X-Content-Type-Options  "nosniff" always;
         add_header X-Frame-Options         "DENY" always;
