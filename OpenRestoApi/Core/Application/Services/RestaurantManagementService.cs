@@ -13,11 +13,12 @@ public class RestaurantManagementService(AppDbContext db)
 
     public async Task<List<RestaurantDto>> GetAllAsync()
     {
-        return await _db.Restaurants
+        var restaurants = await _db.Restaurants
             .Include(r => r.Sections)
                 .ThenInclude(s => s.Tables)
-            .Select(r => ToDto(r))
             .ToListAsync();
+
+        return restaurants.Select(ToDto).ToList();
     }
 
     public async Task<RestaurantDto?> GetByIdAsync(int id)

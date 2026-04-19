@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,6 +16,14 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Ensure the app listens on the PORT environment variable for Railway, defaulting to 8080
 builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
+
+// Configure ForwardedHeaders for Nginx
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Add services to the container.
 builder.WebHost.ConfigureKestrel(options =>
@@ -170,13 +179,11 @@ builder.Services.AddSession(options =>
 
 WebApplication app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-}
-else
-{
-    app.UseHttpsRedirection();
 }
 
 app.UseCors("AllowFrontend");

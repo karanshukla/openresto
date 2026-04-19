@@ -41,8 +41,7 @@ server {
         add_header Cache-Control "no-store, max-age=0" always;
         add_header Server "OpenResto" always;
 
-        set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
-        proxy_pass $backend_upstream;
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -85,8 +84,7 @@ server {
         add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
         add_header Server "OpenResto" always;
 
-        set $frontend_upstream http://${FRONTEND_HOST}:${FRONTEND_PORT};
-        proxy_pass $frontend_upstream;
+        proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
