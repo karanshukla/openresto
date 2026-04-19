@@ -154,8 +154,13 @@ builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookings
 builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? Environment.GetEnvironmentVariable("CONNECTION_STRING")
-    ?? "Data Source=./openresto.db";
+    ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    string dbPath = builder.Environment.IsDevelopment() ? "./openresto.db" : "/data/openresto.db";
+    connectionString = $"Data Source={dbPath}";
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -163,12 +168,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     {
         sqliteOptions.CommandTimeout(30);
     });
-    options.ConfigureWarnings(w => 
+    options.ConfigureWarnings(w =>
         w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.MultipleCollectionIncludeWarning));
     options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
     options.EnableDetailedErrors(builder.Environment.IsDevelopment());
 });
-
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromSeconds(10);
@@ -303,9 +307,9 @@ using (IServiceScope scope = app.Services.CreateScope())
             success = true;
             break;
         }
-        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8)
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8 || ex.SqliteErrorCode == 14 || ex.SqliteErrorCode == 5)
         {
-            logger.LogWarning("Database volume not yet writable (SQLite Error 8). Retry {RetryCount}/{MaxRetries} in {Delay}ms...", i, maxRetries, retryDelayMs);
+            logger.LogWarning("Database volume not yet writable/available (SQLite Error {ErrorCode}). Retry {RetryCount}/{MaxRetries} in {Delay}ms...", ex.SqliteErrorCode, i, maxRetries, retryDelayMs);
             if (i == maxRetries) throw;
             Thread.Sleep(retryDelayMs);
         }
