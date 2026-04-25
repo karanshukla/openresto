@@ -386,11 +386,12 @@ public class AdminService(AppDbContext db)
         }
         if (req.Seats.HasValue)
         {
-            // If table is also changing, we use the new table's capacity
-            int tableId = req.TableId ?? booking.TableId;
-            Table currentTable = (req.TableId.HasValue && req.TableId.Value != booking.TableId)
-                ? (await _db.Tables.FindAsync(req.TableId.Value))!
-                : booking.Table;
+            // If table is also changing, we must check against the new table's capacity.
+            // Since booking.TableId was already updated above if req.TableId was provided,
+            // we can just use the current booking.TableId.
+            // We use FindAsync to ensure we have the correct table metadata.
+            Table currentTable = await _db.Tables.FindAsync(req.TableId ?? booking.TableId)
+                ?? throw new ArgumentException("Table not found.");
 
             if (req.Seats.Value > currentTable.Seats)
             {

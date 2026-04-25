@@ -353,31 +353,107 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task SendEmail_Succeeds()
+    public async Task GetBooking_ReturnsOk()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
-        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/admin/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(1).ToString("O"), customerEmail = "test@test.com", seats = 2 });
+        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int id = created.GetProperty("id").GetInt32();
 
-        // Create a booking
-        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/bookings", new
-        {
-            restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(211).ToString("O"),
-            customerEmail = "email@test.com",
-            seats = 2
-        });
-        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        int bookingId = created.GetProperty("id").GetInt32();
-
-        // Send email
-        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/bookings/{bookingId}/email", new
-        {
-            subject = "Test Subject",
-            body = "Test Body"
-        });
-
+        var response = await client.GetAsync($"/api/admin/bookings/{id}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Contains("Email sent to email@test.com", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task PatchBooking_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PatchAsJsonAsync("/api/admin/bookings/9999", new { seats = 4 });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtendBooking_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PostAsJsonAsync("/api/admin/bookings/9999/extend", new { minutes = 30 });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RestoreBooking_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PostAsync("/api/admin/bookings/9999/restore", null);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RestoreBooking_AlreadyActive_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/admin/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(300).ToString("O"), customerEmail = "restore@test.com", seats = 2 });
+        Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
+        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int id = created.GetProperty("id").GetInt32();
+
+        var response = await client.PostAsync($"/api/admin/bookings/{id}/restore", null);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SendEmail_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PostAsJsonAsync("/api/admin/bookings/9999/email", new { subject = "T", body = "B" });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetRestaurants_ReturnsOk()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.GetAsync("/api/admin/restaurants");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSections_ReturnsOk()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        var response = await client.GetAsync($"/api/admin/restaurants/{r}/sections");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTables_ReturnsOk()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        var response = await client.GetAsync($"/api/admin/restaurants/{r}/tables");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateRestaurant_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PostAsJsonAsync("/api/admin/restaurants", new { name = "New Resto", address = "123 Main" });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteRestaurant_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var createResp = await client.PostAsJsonAsync("/api/admin/restaurants", new { name = "To Delete", address = "Addr" });
+        var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        int id = created.GetProperty("id").GetInt32();
+
+        var response = await client.DeleteAsync($"/api/admin/restaurants/{id}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 }

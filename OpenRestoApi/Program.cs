@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Text;
 using System.Threading.RateLimiting;
+using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
@@ -151,6 +152,7 @@ builder.Services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapp
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
 builder.Services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
+builder.Services.AddScoped<Func<ISmtpClient>>(_ => () => new SmtpClient());
 builder.Services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")

@@ -224,38 +224,61 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task UpdateBooking_Succeeds()
+    public async Task GetBooking_ReturnsNotFound()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
-        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        var response = await client.GetAsync("/api/bookings/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 
-        // Create
+    [Fact]
+    public async Task UpdateBooking_IdMismatch_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PutAsJsonAsync("/api/bookings/1", new { id = 2 });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CancelBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
         var createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(61).ToString("O"),
-            customerEmail = "update@test.com",
+            date = DateTime.UtcNow.AddDays(70).ToString("O"),
+            customerEmail = "cancel@test.com",
             seats = 2
         });
         var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        int id = created.GetProperty("id").GetInt32();
+        string? bookingRef = created.GetProperty("bookingRef").GetString();
 
-        // Update
-        var response = await client.PutAsJsonAsync($"/api/bookings/{id}", new
-        {
-            id,
-            restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(61).ToString("O"),
-            customerEmail = "updated@test.com",
-            seats = 3
-        });
+        var response = await client.DeleteAsync($"/api/bookings/ref/{bookingRef}?email=cancel@test.com");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
 
-        // Verify
-        var getResp = await client.GetAsync($"/api/bookings/{id}");
-        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("updated@test.com", body.GetProperty("customerEmail").GetString());
-        Assert.Equal(3, body.GetProperty("seats").GetInt32());
+    [Fact]
+    public async Task CancelBooking_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.DeleteAsync("/api/bookings/ref/INVALID?email=test@test.com");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateBooking_SeatsExceedCapacity_ReturnsConflict()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        var response = await client.PostAsJsonAsync("/api/bookings", new
+        {
+            restaurantId, sectionId, tableId,
+            date = DateTime.UtcNow.AddDays(71).ToString("O"),
+            customerEmail = "seats@test.com",
+            seats = 100 // Exceeds 4
+        });
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 }

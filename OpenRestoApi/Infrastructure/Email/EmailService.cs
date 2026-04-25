@@ -8,10 +8,11 @@ using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Infrastructure.Email;
 
-public class EmailService(AppDbContext db, CredentialProtector protector) : IEmailService
+public class EmailService(AppDbContext db, CredentialProtector protector, Func<ISmtpClient> clientFactory) : IEmailService
 {
     private readonly AppDbContext _db = db;
     private readonly CredentialProtector _protector = protector;
+    private readonly Func<ISmtpClient> _clientFactory = clientFactory;
 
     private async Task<EmailSettings?> GetSettingsAsync()
     {
@@ -26,7 +27,7 @@ public class EmailService(AppDbContext db, CredentialProtector protector) : IEma
             return false;
         }
 
-        using var client = new SmtpClient();
+        using ISmtpClient client = _clientFactory();
         SecureSocketOptions options = settings.Port == 587
             ? SecureSocketOptions.StartTls
             : settings.EnableSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None;
@@ -50,7 +51,7 @@ public class EmailService(AppDbContext db, CredentialProtector protector) : IEma
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = htmlBody };
 
-        using var client = new SmtpClient();
+        using ISmtpClient client = _clientFactory();
         SecureSocketOptions options = settings.Port == 587
             ? SecureSocketOptions.StartTls
             : settings.EnableSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None;

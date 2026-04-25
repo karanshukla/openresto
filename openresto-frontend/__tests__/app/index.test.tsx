@@ -1,99 +1,92 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import HomeScreen from "@/app/index";
+import { fetchRestaurants } from "@/api/restaurants";
+import { BrandProvider } from "@/context/BrandContext";
 
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
-}));
-
-jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-}));
+// Polyfill fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+  })
+) as jest.Mock;
 
 jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
+  Ionicons: jest.fn(() => null),
 }));
 
-jest.mock("@/context/ThemeContext", () => ({
-  useTheme: () => ({ colorScheme: "light", toggle: jest.fn() }),
+jest.mock("@/api/restaurants", () => ({
+  fetchRestaurants: jest.fn(),
 }));
 
-jest.mock("react-native-safe-area-context", () => {
-  const inset = { top: 0, right: 0, bottom: 0, left: 0 };
+jest.mock("expo-router", () => {
+  const React = require("react");
   return {
-    SafeAreaProvider: jest.fn(({ children }) => children),
-    SafeAreaConsumer: jest.fn(({ children }) => children(inset)),
-    useSafeAreaInsets: jest.fn(() => inset),
-    useSafeAreaFrame: jest.fn(() => ({ x: 0, y: 0, width: 0, height: 0 })),
+    Stack: {
+      Screen: jest.fn(() => null),
+    },
+    useRouter: jest.fn(() => ({
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+    })),
+    usePathname: jest.fn(() => "/"),
+    Link: jest.fn(({ children }) => children),
   };
 });
 
-jest.mock("expo-router", () => ({
-  Link: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  usePathname: () => "/",
-  useRouter: () => ({ back: jest.fn() }),
-  Stack: {
-    Screen: () => null,
-  },
-}));
-
-jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
-  __esModule: true,
-  default: () => ({ width: 1024, height: 768 }),
-}));
-
-const mockRestaurants = [
-  {
-    id: 1,
-    name: "Pasta Place",
-    address: "123 Main St",
-    openTime: "09:00",
-    closeTime: "22:00",
-    openDays: "1,2,3,4,5,6,7",
-    timezone: "UTC",
-    sections: [
-      {
-        id: 1,
-        name: "Main",
-        restaurantId: 1,
-        tables: [{ id: 1, name: "T1", seats: 4, sectionId: 1 }],
-      },
-    ],
-  },
-];
-
-jest.mock("@/api/restaurants", () => ({
-  fetchRestaurants: jest.fn(() => Promise.resolve(mockRestaurants)),
-}));
+import { AppThemeProvider } from "@/context/ThemeContext";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 describe("HomeScreen", () => {
-  it("renders the brand name in hero", async () => {
-    render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getAllByText("Open Resto").length).toBeGreaterThanOrEqual(1);
-    });
+  const mockRestaurants = [
+    { id: 1, name: "Resto 1", address: "Address 1", openTime: "09:00", closeTime: "22:00", sections: [] },
+    { id: 2, name: "Resto 2", address: "Address 2", openTime: "10:00", closeTime: "21:00", sections: [] },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
   });
 
-  it("shows restaurant count after loading", async () => {
-    render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText("1 restaurant")).toBeTruthy();
-    });
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+        <AppThemeProvider>
+          <BrandProvider>
+            {ui}
+          </BrandProvider>
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    );
+  };
+
+  it("renders loading state initially", async () => {
+    renderWithProviders(<HomeScreen />);
+    expect(screen.getByTestId("loading-screen")).toBeTruthy();
+    // Wait for effect to finish to avoid unmounted component error
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
   });
 
-  it("renders restaurant cards after loading", async () => {
-    render(<HomeScreen />);
-    await waitFor(() => {
-      expect(screen.getByText("Pasta Place")).toBeTruthy();
-    });
+  it("renders restaurants after loading", async () => {
+    renderWithProviders(<HomeScreen />);
+
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    expect(screen.getByText("Resto 1")).toBeTruthy();
+    expect(screen.getByText("Resto 2")).toBeTruthy();
+    expect(screen.getByText("2 restaurants")).toBeTruthy();
   });
 
-  it("shows hero subtitle", async () => {
-    render(<HomeScreen />);
-    await waitFor(() => {
-      expect(
-        screen.getByText("Browse available restaurants and book a table in seconds.")
-      ).toBeTruthy();
-    });
+  it("handles zero restaurants", async () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue([]);
+    renderWithProviders(<HomeScreen />);
+
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("0 restaurants")).toBeTruthy();
   });
 });

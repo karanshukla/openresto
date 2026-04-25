@@ -10,6 +10,10 @@ import {
   adminCreateRestaurant,
   adminDeleteRestaurant,
   adminGetTables,
+  adminGetRestaurants,
+  adminGetSections,
+  adminRestoreBooking,
+  adminUpdateBookingFull,
   getEmailSettings,
   saveEmailSettings,
   testEmailConnection,
@@ -410,9 +414,84 @@ describe("testEmailConnection", () => {
   });
 });
 
-// ---------- Brand Settings ----------
+describe("adminRestoreBooking", () => {
+  it("posts to restore endpoint and returns true", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    const result = await adminRestoreBooking(5);
+    expect(result).toBe(true);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/bookings/5/restore");
+  });
 
-describe("saveBrandSettings", () => {
+  it("throws error with server message on failure", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Cannot restore past booking" }),
+    });
+    await expect(adminRestoreBooking(5)).rejects.toThrow("Cannot restore past booking");
+  });
+
+  it("throws generic error when JSON fails on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => {
+        throw new Error("no json");
+      },
+    });
+    await expect(adminRestoreBooking(5)).rejects.toThrow("Failed to restore booking");
+  });
+});
+
+describe("adminUpdateBookingFull", () => {
+  const req = { seats: 10 };
+
+  it("puts to booking endpoint and returns updated data", async () => {
+    const updated = { id: 5, seats: 10 };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
+    const result = await adminUpdateBookingFull(5, req);
+    expect(result).toEqual(updated);
+    expect(mockFetch.mock.calls[0][1].method).toBe("PUT");
+  });
+
+  it("throws error on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: "Table too small" }) });
+    await expect(adminUpdateBookingFull(5, req)).rejects.toThrow("Table too small");
+  });
+
+  it("throws generic error when JSON fails", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => { throw new Error(); } });
+    await expect(adminUpdateBookingFull(5, req)).rejects.toThrow("Failed to update booking");
+  });
+});
+
+describe("adminGetRestaurants", () => {
+  it("fetches restaurants list", async () => {
+    const list = [{ id: 1, name: "R1" }];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => list });
+    const result = await adminGetRestaurants();
+    expect(result).toEqual(list);
+  });
+
+  it("returns empty array on error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error());
+    expect(await adminGetRestaurants()).toEqual([]);
+  });
+});
+
+describe("adminGetSections", () => {
+  it("fetches sections for restaurant", async () => {
+    const list = [{ id: 1, name: "S1" }];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => list });
+    const result = await adminGetSections(2);
+    expect(result).toEqual(list);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/restaurants/2/sections");
+  });
+
+  it("returns empty array on error", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminGetSections(2)).toEqual([]);
+  });
+});
+describe("brand settings", () => {
   const brandData = { appName: "My Resto", primaryColor: "#ff0000" };
 
   it("posts brand settings and returns response", async () => {
