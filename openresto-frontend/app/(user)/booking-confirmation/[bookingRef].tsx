@@ -3,7 +3,6 @@ import { getBookingByRef, getBookingById, BookingDto } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { useBrand } from "@/context/BrandContext";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();

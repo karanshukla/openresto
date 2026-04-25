@@ -358,7 +358,11 @@ using (IServiceScope scope = app.Services.CreateScope())
         catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8 || ex.SqliteErrorCode == 14 || ex.SqliteErrorCode == 5)
         {
             logger.LogWarning("Database volume not yet writable/available (SQLite Error {ErrorCode}). Retry {RetryCount}/{MaxRetries} in {Delay}ms...", ex.SqliteErrorCode, i, maxRetries, retryDelayMs);
-            if (i == maxRetries) throw;
+            if (i == maxRetries)
+            {
+                throw;
+            }
+
             Thread.Sleep(retryDelayMs);
         }
     }

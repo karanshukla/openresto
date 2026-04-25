@@ -23,18 +23,18 @@ public class AdminService(AppDbContext db)
     {
         DateTime nowUtc = DateTime.UtcNow;
         var restaurants = await _db.Restaurants.ToListAsync();
-        
+
         int totalRestaurants = restaurants.Count;
         int totalBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled);
         int totalSeats = await _db.Bookings.Where(b => !b.IsCancelled).SumAsync(b => (int?)b.Seats) ?? 0;
-        
+
         int todayBookingsCount = 0;
         foreach (var r in restaurants)
         {
             var (start, end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
-            todayBookingsCount += await _db.Bookings.CountAsync(b => 
-                b.RestaurantId == r.Id && 
-                b.Date >= start && b.Date < end && 
+            todayBookingsCount += await _db.Bookings.CountAsync(b =>
+                b.RestaurantId == r.Id &&
+                b.Date >= start && b.Date < end &&
                 !b.IsCancelled);
         }
 
@@ -67,7 +67,7 @@ public class AdminService(AppDbContext db)
             q = q.Where(b => b.RestaurantId == restaurantId.Value);
             var restaurant = await _db.Restaurants.FindAsync(restaurantId.Value);
             string tz = restaurant?.Timezone ?? "UTC";
-            
+
             DateTime cutoff = nowUtc.AddMinutes(-90);
 
             if (isGridMode)
@@ -96,7 +96,7 @@ public class AdminService(AppDbContext db)
         else
         {
             DateTime globalCutoff = nowUtc.AddMinutes(-90);
-            
+
             q = normalized switch
             {
                 "cancelled" => q.Where(b => b.IsCancelled),
@@ -257,8 +257,8 @@ public class AdminService(AppDbContext db)
         }
 
         // Use EndTime if it's valid (after Date), otherwise fall back to Date + 1h
-        DateTime from = (booking.EndTime.HasValue && booking.EndTime.Value > booking.Date) 
-            ? booking.EndTime.Value 
+        DateTime from = (booking.EndTime.HasValue && booking.EndTime.Value > booking.Date)
+            ? booking.EndTime.Value
             : booking.Date.AddHours(1);
 
         booking.EndTime = from.AddMinutes(minutes);
@@ -343,7 +343,7 @@ public class AdminService(AppDbContext db)
             Table? table = await _db.Tables
                 .Include(t => t.Section)
                 .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.Section!.RestaurantId == booking.RestaurantId);
-            
+
             if (table == null)
             {
                 throw new ArgumentException("Invalid table for this restaurant.");
@@ -500,14 +500,17 @@ public class AdminService(AppDbContext db)
     private static (DateTime Start, DateTime End) GetUtcRangeForLocalDay(DateTime referenceDate, string timezoneId)
     {
         TimeZoneInfo tz;
-        try {
+        try
+        {
             tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        } catch {
+        }
+        catch
+        {
             tz = TimeZoneInfo.Utc;
         }
 
         DateTime localDay = TimeZoneInfo.ConvertTimeFromUtc(referenceDate.ToUniversalTime(), tz).Date;
-        
+
         DateTime localStart = localDay;
         DateTime localEnd = localDay.AddDays(1);
 

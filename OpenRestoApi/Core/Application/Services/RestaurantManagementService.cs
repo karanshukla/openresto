@@ -88,8 +88,8 @@ public class RestaurantManagementService(AppDbContext db)
             Address = r.Address,
             OpenTime = r.OpenTime,
             CloseTime = r.CloseTime,
-        OpenDays = r.OpenDays,
-        Timezone = r.Timezone,
+            OpenDays = r.OpenDays,
+            Timezone = r.Timezone,
             Sections = []
         };
     }
