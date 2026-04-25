@@ -22,9 +22,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Install gosu for secure user switching
+# Install gosu and curl for secure user switching and healthchecks
 USER root
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gosu curl && rm -rf /var/lib/apt/lists/*
 
 # Copy and prepare entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh

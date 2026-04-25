@@ -9,6 +9,11 @@ services:
       - CORS_ORIGINS=http://localhost:5062
     env_file:
       - ./OpenRestoApi/.env.docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   frontend:
     build:
@@ -28,5 +33,7 @@ services:
       - FRONTEND_HOST=frontend
       - FRONTEND_PORT=8081
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
