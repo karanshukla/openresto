@@ -4,7 +4,7 @@ server {
 
     # DNS resolver — REQUIRED for Railway internal networking
     # ipv6=off prevents connection delays when internal DNS returns unreachable IPv6 addresses
-    resolver 127.0.0.11 8.8.8.8 8.8.4.4 valid=5s ipv6=off;
+    resolver ${RESOLVER} valid=5s ipv6=off;
     resolver_timeout 5s;
 
     # ── Logging ───────────────────────────────────────────────────────────
@@ -45,8 +45,8 @@ server {
     }
 
     location @error_plain {
-        return 403 "Forbidden";
         default_type text/plain;
+        return 403 "Forbidden";
     }
 
     # ── Proxy timeouts ────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ server {
         add_header Cross-Origin-Resource-Policy "same-origin" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
         add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
         
         add_header Cache-Control "no-store, max-age=0" always;
         add_header X-Proxy-Target "Backend" always;
@@ -90,8 +90,8 @@ server {
     }
 
     location @api_error {
-        return 500 '{"error": "Internal Server Error"}';
         default_type application/json;
+        return 500 '{"error": "Internal Server Error"}';
     }
 
     # ── Health — for Railway/Docker ───────────────────────────────────────
@@ -118,7 +118,7 @@ server {
         add_header Cross-Origin-Resource-Policy "same-origin" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
         add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
         add_header X-Proxy-Target "Frontend" always;
     }
