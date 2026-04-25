@@ -49,8 +49,8 @@ describe("AlertModal", () => {
   });
 
   it("renders in dark mode", () => {
-      (useColorScheme as jest.Mock).mockReturnValue("dark");
-      renderWithBrand(<AlertModal {...defaultProps} />);
-      expect(screen.getByText("OK")).toBeTruthy();
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    renderWithBrand(<AlertModal {...defaultProps} />);
+    expect(screen.getByText("OK")).toBeTruthy();
   });
 });

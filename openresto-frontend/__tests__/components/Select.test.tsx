@@ -43,7 +43,7 @@ describe("Select", () => {
   it("calls onClose when backdrop pressed", () => {
     renderWithBrand(<Select options={options} onSelect={jest.fn()} />);
     fireEvent.press(screen.getByText("Select an option")); // Open
-    
+
     // In our component, backdrop is a Pressable wrapping modal content.
     const backdrop = screen.getByText("Option A").parent?.parent?.parent;
     fireEvent.press(backdrop as any);
@@ -61,8 +61,8 @@ describe("Select", () => {
   });
 
   it("renders correctly in dark mode", () => {
-      (useColorScheme as jest.Mock).mockReturnValue("dark");
-      renderWithBrand(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
-      expect(screen.getByText("Option B")).toBeTruthy();
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
+    expect(screen.getByText("Option B")).toBeTruthy();
   });
 });

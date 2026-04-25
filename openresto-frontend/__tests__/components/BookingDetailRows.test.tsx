@@ -51,10 +51,10 @@ describe("BookingDetailRows", () => {
   });
 
   it("handles missing restaurant and optional fields", () => {
-    const incompleteBooking: BookingDto = { 
-        ...mockBooking, 
-        tableName: undefined, 
-        specialRequests: undefined 
+    const incompleteBooking: BookingDto = {
+      ...mockBooking,
+      tableName: undefined,
+      specialRequests: undefined,
     };
     render(
       <BookingDetailRows
@@ -70,20 +70,20 @@ describe("BookingDetailRows", () => {
     expect(screen.queryByText("Requests")).toBeNull();
     expect(screen.queryByText("Table")).toBeNull();
   });
-  
+
   it("renders table name without section if section missing", () => {
-      const noSectionBooking: BookingDto = { 
-          ...mockBooking, 
-          sectionName: undefined 
-      };
-      render(
-        <BookingDetailRows
-          booking={noSectionBooking}
-          restaurant={null}
-          mutedColor="gray"
-          borderColor="black"
-        />
-      );
-      expect(screen.getByText("Table 5")).toBeTruthy();
+    const noSectionBooking: BookingDto = {
+      ...mockBooking,
+      sectionName: undefined,
+    };
+    render(
+      <BookingDetailRows
+        booking={noSectionBooking}
+        restaurant={null}
+        mutedColor="gray"
+        borderColor="black"
+      />
+    );
+    expect(screen.getByText("Table 5")).toBeTruthy();
   });
 });
