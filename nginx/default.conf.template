@@ -21,9 +21,33 @@ server {
     add_header X-XSS-Protection        "1; mode=block" always;
     add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
     
     # Strict Content Security Policy
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    # Block access to hidden files and sensitive directories
+    location ~ /\.(?!well-known).* {
+        deny all;
+        access_log off;
+        log_not_found off;
+        error_page 403 = @error_plain;
+    }
+
+    # Proactive protection against common probes and leaked sensitive files
+    location ~* (?:^|/)\.(?:env|git|htaccess|ssh|svn|hg|bzr|darcs)$|(?:\.(?:php|aspx|jsp|cgi|bak|config|sql|log|xml))$|/(?:WEB-INF|CVS|BitKeeper|FileZilla\.xml|CHANGELOG\.txt|README\.md) {
+        deny all;
+        access_log off;
+        log_not_found off;
+        error_page 403 = @error_plain;
+    }
+
+    location @error_plain {
+        return 403 "Forbidden";
+        default_type text/plain;
+    }
 
     # ── Proxy timeouts ────────────────────────────────────────────────────
     proxy_connect_timeout 60s;
@@ -47,21 +71,33 @@ server {
 
         proxy_buffering off;
         
-        # Security Headers
+        # Security Headers (Must be repeated as add_header in location block overrides server block)
         add_header X-Content-Type-Options  "nosniff" always;
         add_header X-Frame-Options         "DENY" always;
         add_header X-XSS-Protection        "1; mode=block" always;
         add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
         add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
         
         add_header Cache-Control "no-store, max-age=0" always;
         add_header X-Proxy-Target "Backend" always;
+
+        # Ensure API errors are not HTML
+        error_page 404 500 502 503 504 = @api_error;
+    }
+
+    location @api_error {
+        return 500 '{"error": "Internal Server Error"}';
+        default_type application/json;
     }
 
     # ── Health — for Railway/Docker ───────────────────────────────────────
     location /health {
         access_log off;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
         return 200 "OK";
     }
 
@@ -79,6 +115,9 @@ server {
         add_header X-XSS-Protection        "1; mode=block" always;
         add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
         add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
         add_header X-Proxy-Target "Frontend" always;
