@@ -2,39 +2,57 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
 import { Link, useLocalSearchParams } from "expo-router";
 import PageContainer from "@/components/layout/PageContainer";
 import Button from "@/components/common/Button";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoading(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (id) {
       let cancelled = false;
       async function loadRestaurant() {
-        const data = await fetchRestaurantById(parseInt(id, 10));
-        if (cancelled) return;
-        setRestaurant(data);
-        setLoading(false);
+        try {
+          const data = await fetchRestaurantById(parseInt(id, 10));
+          if (!cancelled) {
+            setRestaurant(data);
+          }
+        } catch (error) {
+          console.error("Failed to load restaurant:", error);
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
       }
       loadRestaurant();
       return () => {
         cancelled = true;
       };
+    } else {
+      setLoading(false);
     }
   }, [id]);
 
   if (loading) {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" />
-      </ThemedView>
-    );
+    if (!showLoading) {
+      return <ThemedView style={styles.root} />;
+    }
+    return <LoadingScreen />;
   }
 
   if (!restaurant) {

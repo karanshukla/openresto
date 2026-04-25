@@ -6,11 +6,13 @@ import Select from "../common/Select";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
+import PopularTimesPicker from "./PopularTimesPicker";
+import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { getThemeColors, COLORS } from "@/theme/theme";
 
 const isWeb = Platform.OS === "web";
 
@@ -91,6 +93,34 @@ export default function BookingForm({
   const [date, setDate] = useState<string>(() => suggestDate(closeH));
   const [time, setTime] = useState<string>(() => suggestTime(openTime, closeTime));
 
+  const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  // Fetch availability when date/seats change
+  useEffect(() => {
+    async function loadAvailability() {
+      setLoadingAvailability(true);
+      try {
+        const res = await fetchAvailability(restaurant.id, date, seats);
+        if (res && res.slots) {
+          setAvailabilitySlots(res.slots);
+          // If current time is not in available slots, pick the first available one
+          const isCurrentValid = res.slots.find((s) => s.time === time && s.isAvailable);
+          if (!isCurrentValid) {
+            const firstAvail = res.slots.find((s) => s.isAvailable);
+            if (firstAvail) setTime(firstAvail.time);
+          }
+        } else {
+          setAvailabilitySlots([]);
+        }
+      } finally {
+        setLoadingAvailability(false);
+      }
+    }
+    loadAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, seats, restaurant.id]);
+
   const { holdStatus, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } = useTableHold({
     restaurantId: restaurant.id,
     sections: restaurant.sections,
@@ -165,6 +195,14 @@ export default function BookingForm({
 
   return (
     <View style={styles.form}>
+      <View style={styles.availabilityHeader}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <ThemedText style={styles.label}>Popular Times</ThemedText>
+          {loadingAvailability && <ActivityIndicator size="small" color={COLORS.primary} />}
+        </View>
+        <PopularTimesPicker slots={availabilitySlots} selectedTime={time} onSelectTime={setTime} />
+      </View>
+
       {/* Row 1: Guests + Date */}
       <View style={isWeb ? styles.fieldRow : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
@@ -285,6 +323,11 @@ export default function BookingForm({
 const styles = StyleSheet.create({
   form: {
     gap: 4,
+  },
+  availabilityHeader: {
+    marginBottom: 8,
+    width: "100%",
+    overflow: "hidden",
   },
   fieldRow: {
     flexDirection: "row",

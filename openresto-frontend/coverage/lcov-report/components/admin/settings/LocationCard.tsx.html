@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/28</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>0/19</span>
             </div>
         
             
@@ -234,7 +234,12 @@
 <a name='L169'></a><a href='#L169'>169</a>
 <a name='L170'></a><a href='#L170'>170</a>
 <a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -266,8 +271,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -413,6 +421,7 @@ import { COLORS } from "@/theme/theme";
 import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >LocationCard(</span>{
@@ -437,19 +446,20 @@ export function <span class="fstat-no" title="function not covered" >LocationCar
   confirmAction: (msg: string) =&gt; Promise&lt;boolean&gt;;
 }) {
   const tableCount = <span class="cstat-no" title="statement not covered" >restaurant.sections.reduce(<span class="fstat-no" title="function not covered" >(a</span>cc, s) =&gt; <span class="cstat-no" title="statement not covered" >acc + s.tables.length,</span> 0);</span>
+  const brand = <span class="cstat-no" title="statement not covered" >useBrand();</span>
+  const primaryColor = <span class="cstat-no" title="statement not covered" >brand.primaryColor || COLORS.primary;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View
       style={[
         styles.locationCard,
         { backgroundColor: cardBg, borderColor },
-        isSelected &amp;&amp; { borderColor: COLORS.primary },
+        isSelected &amp;&amp; { borderColor: primaryColor },
       ]}
     &gt;
-      {/* Card header */}
       &lt;View style={styles.locationCardHeader}&gt;
-        &lt;View style={[styles.locationIcon, { backgroundColor: `${COLORS.primary}14` }]}&gt;
-          &lt;Ionicons name="storefront-outline" size={22} color={COLORS.primary} /&gt;
+        &lt;View style={[styles.locationIcon, { backgroundColor: `${primaryColor}14` }]}&gt;
+          &lt;Ionicons name="storefront-outline" size={22} color={primaryColor} /&gt;
         &lt;/View&gt;
         &lt;View style={styles.locationMeta}&gt;
           &lt;ThemedText style={styles.locationName}&gt;{restaurant.name}&lt;/ThemedText&gt;
@@ -464,7 +474,6 @@ export function <span class="fstat-no" title="function not covered" >LocationCar
         &lt;/View&gt;
       &lt;/View&gt;
 &nbsp;
-      {/* Stats row */}
       &lt;View style={[styles.locationStats, { borderTopColor: borderColor }]}&gt;
         &lt;View style={styles.locationStat}&gt;
           &lt;ThemedText style={styles.locationStatValue}&gt;{restaurant.sections.length}&lt;/ThemedText&gt;
@@ -481,23 +490,26 @@ export function <span class="fstat-no" title="function not covered" >LocationCar
           &lt;Pressable
             style={[
               styles.configureBtn,
-              isSelected ? { backgroundColor: COLORS.primary } : { backgroundColor: `${COLORS.primary}14` },
+              isSelected
+                ? { backgroundColor: primaryColor }
+                : { backgroundColor: `${primaryColor}14` },
             ]}
             onPress={onSelect}
           &gt;
             &lt;Ionicons
               name={isSelected ? "chevron-up" : "settings-outline"}
               size={14}
-              color={isSelected ? "#fff" : COLORS.primary}
+              color={isSelected ? "#fff" : primaryColor}
             /&gt;
-            &lt;ThemedText style={[styles.configureBtnText, { color: isSelected ? "#fff" : COLORS.primary }]}&gt;
+            &lt;ThemedText
+              style={[styles.configureBtnText, { color: isSelected ? "#fff" : primaryColor }]}
+            &gt;
               {isSelected ? "Close" : "Configure"}
             &lt;/ThemedText&gt;
           &lt;/Pressable&gt;
         &lt;/View&gt;
       &lt;/View&gt;
 &nbsp;
-      {/* Expanded editor */}
       {isSelected &amp;&amp; (
         &lt;View style={[styles.expandedEditor, { borderTopColor: borderColor }]}&gt;
           &lt;ThemedText style={styles.editorSectionTitle}&gt;Restaurant Info&lt;/ThemedText&gt;
@@ -583,7 +595,7 @@ export function <span class="fstat-no" title="function not covered" >LocationCar
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -8,8 +8,30 @@ beforeEach(() => {
 });
 
 describe("buildUrl", () => {
+  const originalEnv = process.env.EXPO_PUBLIC_API_URL;
+
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_API_URL = originalEnv;
+  });
+
   it("prepends /api when no EXPO_PUBLIC_API_URL is set", () => {
+    process.env.EXPO_PUBLIC_API_URL = "";
     expect(buildUrl("/test")).toBe("/api/test");
+  });
+
+  it("handles base URL with trailing slash", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.test.com/";
+    expect(buildUrl("/foo")).toBe("https://api.test.com/api/foo");
+  });
+
+  it("handles base URL that already includes /api", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://test.com/api";
+    expect(buildUrl("/foo")).toBe("https://test.com/api/foo");
+  });
+
+  it("handles base URL without /api", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://test.com";
+    expect(buildUrl("/foo")).toBe("https://test.com/api/foo");
   });
 });
 
@@ -31,6 +53,13 @@ describe("api", () => {
     expect(opts.method).toBe("POST");
     expect(opts.headers["Content-Type"]).toBe("application/json");
     expect(JSON.parse(opts.body)).toEqual({ key: "value" });
+  });
+
+  it("allows passing custom headers", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    await api("GET", "/headers", { headers: { "X-Custom": "test" } });
+    const [, opts] = mockFetch.mock.calls[0];
+    expect(opts.headers["X-Custom"]).toBe("test");
   });
 
   it("does not set Content-Type when no body provided", async () => {

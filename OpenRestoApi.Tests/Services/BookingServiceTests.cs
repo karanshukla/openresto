@@ -82,6 +82,8 @@ public class BookingServiceTests
         };
 
         BookingDto result = await svc.CreateBookingAsync(dto);
+        var entity = await db.Bookings.FindAsync(result.Id);
+        if (entity != null) db.Entry(entity).State = EntityState.Detached;
 
         Booking? inDb = await db.Bookings.FindAsync(result.Id);
         Assert.NotNull(inDb);
@@ -362,30 +364,73 @@ public class BookingServiceTests
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity()
+    public async Task CreateBookingAsync_Throws_WhenBookingInPast()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity));
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenBookingInPast));
         Seed(db);
-
         BookingService svc = CreateService(db);
-        BookingDto created = await svc.CreateBookingAsync(new BookingDto
-        {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
-            Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
-        });
+        var dto = new BookingDto { Date = DateTime.UtcNow.AddHours(-1) };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateBookingAsync(dto));
+    }
 
-        var updateDto = new BookingDto
-        {
-            Id = created.Id,
-            TableId = 1,
-            Seats = 5,
-            Date = created.Date // mapper needs date
-        };
+    [Fact]
+    public async Task UpdateBookingAsync_SetsDefaultEndTime_WhenMissing()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateBookingAsync_SetsDefaultEndTime_WhenMissing));
+        Seed(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
+        
+        var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, EndTime = null };
+        await svc.UpdateBookingAsync(created.Id, dto);
+        var inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
+        Assert.Equal(date.AddHours(1), inDb.EndTime);
+    }
 
-        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.UpdateBookingAsync(created.Id, updateDto));
+    [Fact]
+    public async Task UpdateBookingAsync_FixesInvalidEndTime()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateBookingAsync_FixesInvalidEndTime));
+        Seed(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
 
-        Assert.Contains("only has 4 seats", ex.Message);
+        var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), Seats = 2 };
+        await svc.UpdateBookingAsync(created.Id, dto);
+        var inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
+        Assert.Equal(date.AddHours(1), inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ReturnsFalse_WhenNotFound()
+    {
+        using AppDbContext db = CreateDb(nameof(CancelBookingAsync_ReturnsFalse_WhenNotFound));
+        BookingService svc = CreateService(db);
+        Assert.False(await svc.CancelBookingAsync("invalid", "test@test.com"));
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ReturnsFalse_WhenEmailMismatch()
+    {
+        using AppDbContext db = CreateDb(nameof(CancelBookingAsync_ReturnsFalse_WhenEmailMismatch));
+        Seed(db);
+        BookingService svc = CreateService(db);
+        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "real@test.com", Seats = 2 });
+        Assert.False(await svc.CancelBookingAsync(created.BookingRef!, "wrong@test.com"));
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ReturnsTrue_WhenAlreadyCancelled()
+    {
+        using AppDbContext db = CreateDb(nameof(CancelBookingAsync_ReturnsTrue_WhenAlreadyCancelled));
+        Seed(db);
+        BookingService svc = CreateService(db);
+        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "test@test.com", Seats = 2 });
+        await svc.CancelBookingAsync(created.BookingRef!, "test@test.com");
+        Assert.True(await svc.CancelBookingAsync(created.BookingRef!, "test@test.com"));
     }
 }

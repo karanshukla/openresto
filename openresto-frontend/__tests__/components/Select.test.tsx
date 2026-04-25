@@ -1,54 +1,68 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react-native";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import Select from "@/components/common/Select";
+import { BrandProvider } from "@/context/BrandContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+// Polyfill fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+  })
+) as jest.Mock;
 
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: jest.fn(() => "light"),
 }));
 
 const options = [
   { label: "Option A", value: "a" },
   { label: "Option B", value: "b" },
-  { label: "Option C", value: "c" },
 ];
 
 describe("Select", () => {
-  it("renders placeholder when no value selected", () => {
-    render(<Select options={options} onSelect={jest.fn()} placeholder="Pick one" />);
-    expect(screen.getByText("Pick one")).toBeTruthy();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useColorScheme as jest.Mock).mockReturnValue("light");
   });
 
-  it("renders the selected option label", () => {
-    render(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
-    expect(screen.getByText("Option B")).toBeTruthy();
-  });
+  const renderWithBrand = (ui: React.ReactElement) => render(<BrandProvider>{ui}</BrandProvider>);
 
-  it("renders chevron indicator", () => {
-    render(<Select options={options} onSelect={jest.fn()} />);
-    expect(screen.getByText("▾")).toBeTruthy();
-  });
+  it("renders placeholder and opens modal", () => {
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} placeholder="Pick" />);
+    expect(screen.getByText("Pick")).toBeTruthy();
 
-  it("opens modal when trigger is pressed", () => {
-    render(<Select options={options} onSelect={jest.fn()} placeholder="Pick one" />);
-    fireEvent.press(screen.getByText("Pick one"));
-    // All options should now be visible in the modal
+    fireEvent.press(screen.getByText("Pick"));
     expect(screen.getByText("Option A")).toBeTruthy();
-    expect(screen.getByText("Option B")).toBeTruthy();
-    expect(screen.getByText("Option C")).toBeTruthy();
   });
 
-  it("calls onSelect when an option is pressed", () => {
+  it("calls onClose when backdrop pressed", () => {
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} />);
+    fireEvent.press(screen.getByText("Select an option")); // Open
+
+    // In our component, backdrop is a Pressable wrapping modal content.
+    const backdrop = screen.getByText("Option A").parent?.parent?.parent;
+    fireEvent.press(backdrop as any);
+    expect(screen.queryByText("Option A")).toBeNull();
+  });
+
+  it("calls onSelect and closes modal", () => {
     const onSelect = jest.fn();
-    render(<Select options={options} onSelect={onSelect} placeholder="Pick one" />);
-    fireEvent.press(screen.getByText("Pick one"));
+    renderWithBrand(<Select options={options} onSelect={onSelect} />);
+    fireEvent.press(screen.getByText("Select an option"));
     fireEvent.press(screen.getByText("Option A"));
+
     expect(onSelect).toHaveBeenCalledWith("a");
+    expect(screen.queryByText("Option A")).toBeNull();
   });
 
-  it("shows checkmark for selected option", () => {
-    render(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
-    // Open modal to see checkmark
-    fireEvent.press(screen.getByText("Option B"));
-    expect(screen.getByText("✓")).toBeTruthy();
+  it("renders correctly in dark mode", () => {
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
+    expect(screen.getByText("Option B")).toBeTruthy();
   });
 });

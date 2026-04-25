@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, ScrollView, StyleSheet } from "react-native";
+import { Platform, ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
@@ -10,6 +10,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
 import { convertLocalToUtc } from "@/utils/date";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -76,11 +77,7 @@ export default function BookScreen() {
   };
 
   if (loading) {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" />
-      </ThemedView>
-    );
+    return <LoadingScreen />;
   }
 
   if (!restaurant) {

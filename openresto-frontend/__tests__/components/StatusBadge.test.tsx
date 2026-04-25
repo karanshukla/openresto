@@ -34,21 +34,37 @@ describe("getStatus", () => {
 });
 
 describe("StatusBadge", () => {
-  it("renders the correct label for a completed booking", () => {
-    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
-    render(<StatusBadge date={date} isDark={false} />);
-    expect(screen.getByText("Completed")).toBeTruthy();
+  it("renders all variants in light mode", () => {
+    const variants: any[] = [
+      { d: -100, l: "Completed" },
+      { d: -30, l: "Seated" },
+      { d: 0, l: "Arrived" },
+      { d: 30, l: "Upcoming" },
+      { d: 120, l: "Scheduled" },
+    ];
+    variants.forEach((v) => {
+      const { unmount } = render(
+        <StatusBadge date={new Date(Date.now() + v.d * 60 * 1000).toISOString()} isDark={false} />
+      );
+      expect(screen.getByText(v.l)).toBeTruthy();
+      unmount();
+    });
   });
 
-  it("renders the correct label for an upcoming booking", () => {
-    const date = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    render(<StatusBadge date={date} isDark={false} />);
-    expect(screen.getByText("Upcoming")).toBeTruthy();
-  });
-
-  it("renders with dark mode styles", () => {
-    const date = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    render(<StatusBadge date={date} isDark={true} />);
-    expect(screen.getByText("Upcoming")).toBeTruthy();
+  it("renders all variants in dark mode (triggering fallbacks)", () => {
+    const variants: any[] = [
+      { d: -100, l: "Completed" },
+      { d: -30, l: "Seated" },
+      { d: 0, l: "Arrived" },
+      { d: 30, l: "Upcoming" },
+      { d: 120, l: "Scheduled" },
+    ];
+    variants.forEach((v) => {
+      const { unmount } = render(
+        <StatusBadge date={new Date(Date.now() + v.d * 60 * 1000).toISOString()} isDark={true} />
+      );
+      expect(screen.getByText(v.l)).toBeTruthy();
+      unmount();
+    });
   });
 });

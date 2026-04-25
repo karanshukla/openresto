@@ -114,9 +114,10 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
         }
     }
 
-    private class MockEmailService : IEmailService
+    private class MockEmailService(AppDbContext db) : IEmailService
     {
-        public Task<bool> TestConnectionAsync() => Task.FromResult(true);
+        private readonly AppDbContext _db = db;
+        public async Task<bool> TestConnectionAsync() => await _db.Set<OpenRestoApi.Core.Domain.EmailSettings>().AnyAsync();
         public Task SendEmailAsync(string recipient, string subject, string htmlBody) => Task.CompletedTask;
     }
 }

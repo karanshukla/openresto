@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>0/22</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>0/20</span>
             </div>
         
             
@@ -154,7 +154,10 @@
 <a name='L89'></a><a href='#L89'>89</a>
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
-<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,6 +181,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -214,10 +221,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -250,6 +256,8 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { COLORS, getThemeColors } from "@/theme/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >EditableRow(</span>{
@@ -273,11 +281,13 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
   const [draft, setDraft] = <span class="cstat-no" title="statement not covered" >useState(value);</span>
   const [saving, setSaving] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
   const colors = <span class="cstat-no" title="statement not covered" >getThemeColors(isDark);</span>
-  const borderColor = <span class="cstat-no" title="statement not covered" >colors.border;</span>
+  const mutedColor = <span class="cstat-no" title="statement not covered" >colors.muted;</span>
+  const brand = <span class="cstat-no" title="statement not covered" >useBrand();</span>
+  const primaryColor = <span class="cstat-no" title="statement not covered" >brand.primaryColor || COLORS.primary;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!editing) {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-      &lt;View style={[styles.editableRow, { borderBottomColor: borderColor }]}&gt;
+      &lt;View style={styles.editableRow}&gt;
         &lt;ThemedText style={styles.editableValue}&gt;{value}&lt;/ThemedText&gt;
         &lt;View style={styles.rowActions}&gt;
           &lt;Pressable
@@ -287,7 +297,7 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
 <span class="cstat-no" title="statement not covered" >              setEditing(true);</span>
             }}
           &gt;
-            &lt;ThemedText style={[styles.smallBtnText, { color: COLORS.primary }]}&gt;Edit&lt;/ThemedText&gt;
+            &lt;ThemedText style={[styles.smallBtnText, { color: primaryColor }]}&gt;Edit&lt;/ThemedText&gt;
           &lt;/Pressable&gt;
           {onDelete &amp;&amp; (
             &lt;Pressable
@@ -297,7 +307,9 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
 <span class="cstat-no" title="statement not covered" >                if (ok) <span class="cstat-no" title="statement not covered" >await onDelete();</span></span>
               }}
             &gt;
-              &lt;ThemedText style={styles.deleteText}&gt;{deleteLabel}&lt;/ThemedText&gt;
+              &lt;ThemedText style={[styles.smallBtnText, { color: COLORS.error }]}&gt;
+                {deleteLabel}
+              &lt;/ThemedText&gt;
             &lt;/Pressable&gt;
           )}
         &lt;/View&gt;
@@ -306,16 +318,13 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-    &lt;View style={[styles.editableRow, { borderBottomColor: borderColor }]}&gt;
-      &lt;Input
-        value={draft}
-        onChangeText={setDraft}
-        placeholder={placeholder}
-        style={styles.editableInput}
-      /&gt;
+    &lt;View style={styles.editableRow}&gt;
+      &lt;View style={{ flex: 1 }}&gt;
+        &lt;Input value={draft} onChangeText={setDraft} placeholder={placeholder} autoFocus /&gt;
+      &lt;/View&gt;
       &lt;View style={styles.rowActions}&gt;
         &lt;Pressable
-          style={styles.smallBtn}
+          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 12 }]}
           disabled={saving}
           onPress={<span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {
 <span class="cstat-no" title="statement not covered" >            if (!draft.trim()) <span class="cstat-no" title="statement not covered" >return;</span></span>
@@ -325,12 +334,12 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
 <span class="cstat-no" title="statement not covered" >            setEditing(false);</span>
           }}
         &gt;
-          &lt;ThemedText style={[styles.smallBtnText, { color: COLORS.primary }]}&gt;
+          &lt;ThemedText style={[styles.actionBtnText, { color: "#fff" }]}&gt;
             {saving ? "…" : "Save"}
           &lt;/ThemedText&gt;
         &lt;/Pressable&gt;
-        &lt;Pressable style={styles.smallBtn} onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setEditing(false)}</span>&gt;
-          &lt;ThemedText style={[styles.smallBtnText, { color: COLORS.muted.light }]}&gt;Cancel&lt;/ThemedText&gt;
+        &lt;Pressable style={[styles.smallBtn, { padding: 8 }]} onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setEditing(false)}</span>&gt;
+          &lt;Ionicons name="close-outline" size={20} color={mutedColor} /&gt;
         &lt;/Pressable&gt;
       &lt;/View&gt;
     &lt;/View&gt;
@@ -343,7 +352,7 @@ export function <span class="fstat-no" title="function not covered" >EditableRow
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

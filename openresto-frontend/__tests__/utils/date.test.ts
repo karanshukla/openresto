@@ -1,4 +1,4 @@
-import { convertLocalToUtc } from "@/utils/date";
+import { convertLocalToUtc, isTodayInTimezone } from "@/utils/date";
 
 describe("date utility - convertLocalToUtc", () => {
   it("converts Toronto local time (EDT, UTC-4) to UTC", () => {
@@ -36,5 +36,33 @@ describe("date utility - convertLocalToUtc", () => {
     // In Jest environment, default local might be UTC.
     const expected = new Date("2026-04-18T15:00:00").toISOString();
     expect(result).toBe(expected);
+  });
+});
+
+describe("date utility - isTodayInTimezone", () => {
+  it("returns true for now in UTC", () => {
+    const now = new Date().toISOString();
+    expect(isTodayInTimezone(now, "UTC")).toBe(true);
+  });
+
+  it("returns true for now in specific timezone", () => {
+    const now = new Date().toISOString();
+    expect(isTodayInTimezone(now, "America/Toronto")).toBe(true);
+  });
+
+  it("returns false for yesterday", () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    expect(isTodayInTimezone(yesterday.toISOString(), "UTC")).toBe(false);
+  });
+
+  it("returns false for tomorrow", () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expect(isTodayInTimezone(tomorrow.toISOString(), "UTC")).toBe(false);
+  });
+
+  it("returns false for invalid date string", () => {
+    expect(isTodayInTimezone("not-a-date", "UTC")).toBe(false);
   });
 });

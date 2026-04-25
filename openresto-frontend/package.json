@@ -61,6 +61,15 @@
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"
     },
+    "collectCoverageFrom": [
+      "app/**/*.{ts,tsx}",
+      "components/**/*.{ts,tsx}",
+      "api/**/*.{ts,tsx}",
+      "context/**/*.{ts,tsx}",
+      "hooks/**/*.{ts,tsx}",
+      "utils/**/*.{ts,tsx}",
+      "!**/*.d.ts"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/android/",

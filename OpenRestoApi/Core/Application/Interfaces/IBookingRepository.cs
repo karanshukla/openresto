@@ -12,4 +12,6 @@ public interface IBookingRepository
     Task DeleteAsync(int id);
     /// <summary>Returns true if a confirmed booking exists for this table on the given date (any time).</summary>
     Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate);
+    /// <summary>Returns all non-cancelled bookings for a specific restaurant and local date.</summary>
+    Task<IEnumerable<Booking>> GetActiveBookingsForDateAsync(int restaurantId, DateTime bookingDate);
 }

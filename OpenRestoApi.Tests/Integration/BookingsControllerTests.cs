@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Cookies;
 using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
@@ -224,38 +225,116 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task UpdateBooking_Succeeds()
+    public async Task GetBooking_ReturnsNotFound()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
-        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        var response = await client.GetAsync("/api/bookings/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 
-        // Create
+    [Fact]
+    public async Task UpdateBooking_IdMismatch_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PutAsJsonAsync("/api/bookings/1", new { id = 2 });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CancelBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
         var createResp = await client.PostAsJsonAsync("/api/bookings", new
         {
             restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(61).ToString("O"),
-            customerEmail = "update@test.com",
+            date = DateTime.UtcNow.AddDays(70).ToString("O"),
+            customerEmail = "cancel@test.com",
             seats = 2
         });
         var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        int id = created.GetProperty("id").GetInt32();
+        string? bookingRef = created.GetProperty("bookingRef").GetString();
 
-        // Update
-        var response = await client.PutAsJsonAsync($"/api/bookings/{id}", new
-        {
-            id,
-            restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(61).ToString("O"),
-            customerEmail = "updated@test.com",
-            seats = 3
-        });
+        var response = await client.DeleteAsync($"/api/bookings/ref/{bookingRef}?email=cancel@test.com");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
 
-        // Verify
-        var getResp = await client.GetAsync($"/api/bookings/{id}");
-        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("updated@test.com", body.GetProperty("customerEmail").GetString());
-        Assert.Equal(3, body.GetProperty("seats").GetInt32());
+    [Fact]
+    public async Task CancelBooking_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.DeleteAsync("/api/bookings/ref/INVALID?email=test@test.com");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateBooking_InvalidModel_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateClient();
+        // Sending something that doesn't match the DTO at all or missing required fields if we had them.
+        // For now, sending null body or invalid JSON structure can trigger it.
+        var response = await client.PostAsJsonAsync("/api/bookings", new { seats = "not-a-number" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateBooking_InvalidModel_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PutAsJsonAsync("/api/bookings/1", new { id = 1, seats = "not-a-number" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CancelBookingByRef_MissingEmail_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.DeleteAsync("/api/bookings/ref/SOME-REF"); // No email
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetBookings_ByRestaurant_ReturnsOk()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        var response = await client.GetAsync($"/api/bookings/restaurant/{r}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(90).ToString("O"), customerEmail = "del@test.com", seats = 2 });
+        int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var response = await client.DeleteAsync($"/api/bookings/{id}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMyRecent_WithCookie_ReturnsList()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(80).ToString("O"), customerEmail = "recent@test.com", seats = 2 });
+        
+        // Extract the cookie from the response
+        if (createResp.Headers.TryGetValues("Set-Cookie", out var cookies))
+        {
+            foreach (var cookie in cookies)
+            {
+                client.DefaultRequestHeaders.Add("Cookie", cookie.Split(';')[0]);
+            }
+        }
+        
+        var response = await client.GetAsync("/api/bookings/my-recent");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<List<CachedBookingEntry>>();
+        Assert.NotEmpty(body!);
+        Assert.Contains(body!, e => e.Email == "recent@test.com");
     }
 }

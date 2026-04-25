@@ -163,4 +163,23 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         // Let's assume for now we want to reach the code paths.
         Assert.True(response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task Test_NotConfigured_ReturnsBadRequest()
+    {
+        // Ensure no email settings exist
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            List<EmailSettings> existing = await db.Set<OpenRestoApi.Core.Domain.EmailSettings>().ToListAsync();
+            db.Set<OpenRestoApi.Core.Domain.EmailSettings>().RemoveRange(existing);
+            await db.SaveChangesAsync();
+        }
+
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsync("/api/admin/email-settings/test", null);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Email is not configured.", body.GetProperty("message").GetString());
+    }
 }
