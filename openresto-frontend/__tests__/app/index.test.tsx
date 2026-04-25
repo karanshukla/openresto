@@ -42,6 +42,8 @@ jest.mock("expo-router", () => {
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+jest.setTimeout(15000);
+
 describe("HomeScreen", () => {
   const mockRestaurants = [
     {

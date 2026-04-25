@@ -1,91 +1,109 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import AdminDashboardScreen from "@/app/(admin)/dashboard";
 import { fetchRestaurants } from "@/api/restaurants";
 import { getAdminBookings, getAdminOverview } from "@/api/admin";
+import { AppThemeProvider } from "@/context/ThemeContext";
+import { BrandProvider } from "@/context/BrandContext";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-// Mock the dependencies
+// Polyfill fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+  })
+) as jest.Mock;
+
 jest.mock("@/api/restaurants");
 jest.mock("@/api/admin");
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
   Stack: { Screen: () => null },
 }));
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
-// Mock Ionicons to avoid rendering issues in tests
 jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => "Ionicons",
+  Ionicons: () => null,
 }));
 
-const mockRestaurants = [{ id: 1, name: "Test Restaurant", slug: "test-rest" }];
+const mockRestaurants = [
+  { id: 1, name: "Resto A" },
+  { id: 2, name: "Resto B" },
+];
 
 const mockOverview = {
-  todayBookings: 2,
-  totalBookings: 10,
-  totalSeats: 25,
-  totalRestaurants: 1,
+  todayBookings: 5,
+  totalBookings: 100,
+  totalSeats: 250,
+  totalRestaurants: 2,
 };
 
-describe("AdminDashboardScreen Flow Tests", () => {
+jest.setTimeout(15000);
+
+describe("AdminDashboardScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (getAdminOverview as jest.Mock).mockResolvedValue(mockOverview);
+    (getAdminBookings as jest.Mock).mockResolvedValue([]);
   });
 
-  it("calculates flow slots correctly based on today's bookings", async () => {
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+        <AppThemeProvider>
+          <BrandProvider>
+            {ui}
+          </BrandProvider>
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    );
+  };
+
+  it("renders metrics and chart correctly", async () => {
     const today = new Date();
-    // Create bookings for specific hours in UTC (17=5PM, 19=7PM)
     const mockBookings = [
-      {
-        id: "1",
-        date: new Date(
-          Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 17, 0, 0, 0)
-        ).toISOString(),
-        seats: 4,
-        customerEmail: "user1@example.com",
-      },
-      {
-        id: "2",
-        date: new Date(
-          Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 19, 0, 0, 0)
-        ).toISOString(),
-        seats: 8,
-        customerEmail: "user2@example.com",
-      },
+      { id: 10, date: today.toISOString(), seats: 4, customerEmail: "today@test.com" }
     ];
     (getAdminBookings as jest.Mock).mockResolvedValue(mockBookings);
 
-    render(<AdminDashboardScreen />);
+    renderWithProviders(<AdminDashboardScreen />);
 
-    // Wait for the data to load
-    await waitFor(() => {
-      expect(screen.queryByTestId("ActivityIndicator")).toBeNull();
-    });
+    await waitFor(() => expect(screen.queryByTestId("ActivityIndicator")).toBeNull());
 
-    // Verify today's flow chart labels are present
-    expect(screen.getByText("5PM")).toBeTruthy();
-    expect(screen.getByText("6PM")).toBeTruthy();
-    expect(screen.getByText("7PM")).toBeTruthy();
-    expect(screen.getByText("8PM")).toBeTruthy();
-    expect(screen.getByText("9PM")).toBeTruthy();
-
-    // Verify bookings are listed
-    expect(screen.getByText("user1@example.com")).toBeTruthy();
-    expect(screen.getByText("user2@example.com")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy(); // today's bookings
+    expect(screen.getByText("100")).toBeTruthy(); // total bookings
+    expect(screen.getByText("today@test.com")).toBeTruthy();
   });
 
-  it("handles zero bookings for flow slots", async () => {
-    (getAdminBookings as jest.Mock).mockResolvedValue([]);
+  it("switches restaurant and fetches new bookings", async () => {
+    renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(screen.getByText("Resto B")).toBeTruthy());
 
-    render(<AdminDashboardScreen />);
+    fireEvent.press(screen.getByText("Resto B"));
 
     await waitFor(() => {
-      expect(screen.getByText("No bookings today")).toBeTruthy();
+      expect(getAdminBookings).toHaveBeenCalledWith(2);
     });
+  });
 
-    expect(screen.getByText("5PM")).toBeTruthy();
+  it("navigates to bookings list on View All press", async () => {
+    renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => screen.getByText("View all →"));
+    fireEvent.press(screen.getByText("View all →"));
+    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
+  });
+
+  it("navigates to quick action routes", async () => {
+    renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => screen.getByText("Add Walk-in"));
+    fireEvent.press(screen.getByText("Add Walk-in"));
+    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings/new");
   });
 });

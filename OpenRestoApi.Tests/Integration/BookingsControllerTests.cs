@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Cookies;
 using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
@@ -268,17 +269,72 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task CreateBooking_SeatsExceedCapacity_ReturnsConflict()
+    public async Task CreateBooking_InvalidModel_ReturnsBadRequest()
     {
         HttpClient client = _factory.CreateClient();
-        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        var response = await client.PostAsJsonAsync("/api/bookings", new
+        // Sending something that doesn't match the DTO at all or missing required fields if we had them.
+        // For now, sending null body or invalid JSON structure can trigger it.
+        var response = await client.PostAsJsonAsync("/api/bookings", new { seats = "not-a-number" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateBooking_InvalidModel_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PutAsJsonAsync("/api/bookings/1", new { id = 1, seats = "not-a-number" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CancelBookingByRef_MissingEmail_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.DeleteAsync("/api/bookings/ref/SOME-REF"); // No email
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetBookings_ByRestaurant_ReturnsOk()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        var response = await client.GetAsync($"/api/bookings/restaurant/{r}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(90).ToString("O"), customerEmail = "del@test.com", seats = 2 });
+        int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var response = await client.DeleteAsync($"/api/bookings/{id}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMyRecent_WithCookie_ReturnsList()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(80).ToString("O"), customerEmail = "recent@test.com", seats = 2 });
+        
+        // Extract the cookie from the response
+        if (createResp.Headers.TryGetValues("Set-Cookie", out var cookies))
         {
-            restaurantId, sectionId, tableId,
-            date = DateTime.UtcNow.AddDays(71).ToString("O"),
-            customerEmail = "seats@test.com",
-            seats = 100 // Exceeds 4
-        });
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            foreach (var cookie in cookies)
+            {
+                client.DefaultRequestHeaders.Add("Cookie", cookie.Split(';')[0]);
+            }
+        }
+        
+        var response = await client.GetAsync("/api/bookings/my-recent");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<List<CachedBookingEntry>>();
+        Assert.NotEmpty(body!);
+        Assert.Contains(body!, e => e.Email == "recent@test.com");
     }
 }

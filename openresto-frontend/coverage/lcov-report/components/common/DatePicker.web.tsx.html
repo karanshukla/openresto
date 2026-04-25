@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/29</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
@@ -157,13 +157,9 @@
 <a name='L92'></a><a href='#L92'>92</a>
 <a name='L93'></a><a href='#L93'>93</a>
 <a name='L94'></a><a href='#L94'>94</a>
-<a name='L95'></a><a href='#L95'>95</a>
-<a name='L96'></a><a href='#L96'>96</a>
-<a name='L97'></a><a href='#L97'>97</a>
-<a name='L98'></a><a href='#L98'>98</a>
-<a name='L99'></a><a href='#L99'>99</a>
-<a name='L100'></a><a href='#L100'>100</a>
-<a name='L101'></a><a href='#L101'>101</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L95'></a><a href='#L95'>95</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -188,6 +184,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -196,7 +195,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -206,18 +204,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -266,6 +254,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemedText } from "@/components/themed-text";
+import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 &nbsp;
 /** Convert a YYYY-MM-DD string to ISO day-of-week (1=Mon, 7=Sun) */
 function <span class="fstat-no" title="function not covered" >getIsoDay(</span>dateStr: string): number {
@@ -284,10 +274,13 @@ export default function <span class="fstat-no" title="function not covered" >Dat
   openDays?: number[];
 }) {
   const isDark = <span class="cstat-no" title="statement not covered" >useColorScheme() === "dark";</span>
-  const borderColor = <span class="cstat-no" title="statement not covered" >isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.18)";</span>
-  const bg = <span class="cstat-no" title="statement not covered" >isDark ? "#1c1c1e" : "#ffffff";</span>
-  const textColor = <span class="cstat-no" title="statement not covered" >isDark ? "#ffffff" : "#000000";</span>
-  const placeholderColor = <span class="cstat-no" title="statement not covered" >"#9ca3af";</span>
+  const colors = <span class="cstat-no" title="statement not covered" >getThemeColors(isDark);</span>
+  const brand = <span class="cstat-no" title="statement not covered" >useBrand();</span>
+  const primaryColor = <span class="cstat-no" title="statement not covered" >brand.primaryColor || COLORS.primary;</span>
+  const borderColor = <span class="cstat-no" title="statement not covered" >colors.border;</span>
+  const bg = <span class="cstat-no" title="statement not covered" >colors.input;</span>
+  const textColor = <span class="cstat-no" title="statement not covered" >colors.text;</span>
+  const placeholderColor = <span class="cstat-no" title="statement not covered" >colors.muted;</span>
 &nbsp;
   const today = <span class="cstat-no" title="statement not covered" >new Date().toISOString().split("T")[0];</span>
   const maxDate = <span class="cstat-no" title="statement not covered" >(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
@@ -296,29 +289,16 @@ export default function <span class="fstat-no" title="function not covered" >Dat
 <span class="cstat-no" title="statement not covered" >    return d.toISOString().split("T")[0];</span>
   })();
 &nbsp;
-  const isClosedDay =
-<span class="cstat-no" title="statement not covered" >    selectedDate &amp;&amp; openDays ? !openDays.includes(getIsoDay(selectedDate)) : false;</span>
-&nbsp;
-  const DAY_NAMES: Record&lt;number, string&gt; = <span class="cstat-no" title="statement not covered" >{</span>
-    1: "Monday",
-    2: "Tuesday",
-    3: "Wednesday",
-    4: "Thursday",
-    5: "Friday",
-    6: "Saturday",
-    7: "Sunday",
-  };
+  const isClosedDay = <span class="cstat-no" title="statement not covered" >!!(selectedDate &amp;&amp; openDays &amp;&amp; !openDays.includes(getIsoDay(selectedDate)));</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View style={styles.wrapper}&gt;
       &lt;input
         type="date"
-        value={selectedDate ?? ""}
+        value={selectedDate || ""}
         min={today}
         max={maxDate}
-        onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; {
-<span class="cstat-no" title="statement not covered" >          if (e.target.value) <span class="cstat-no" title="statement not covered" >onSelect(e.target.value);</span></span>
-        }}
+        onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >onSelect(e.target.value)}</span>
         style={
           {
             width: "100%",
@@ -330,23 +310,25 @@ export default function <span class="fstat-no" title="function not covered" >Dat
             paddingLeft: 12,
             paddingRight: 12,
             fontSize: 15,
+            fontFamily: "inherit",
             backgroundColor: bg,
             color: selectedDate ? textColor : placeholderColor,
             outline: "none",
             boxSizing: "border-box",
             cursor: "pointer",
+            transition: "border-color 0.2s",
           } as React.CSSProperties
         }
         onFocus={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; {
-<span class="cstat-no" title="statement not covered" >          e.target.style.borderColor = isClosedDay ? "#dc2626" : "#0a7ea4";</span>
+<span class="cstat-no" title="statement not covered" >          e.target.style.borderColor = primaryColor;</span>
         }}
         onBlur={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; {
 <span class="cstat-no" title="statement not covered" >          e.target.style.borderColor = isClosedDay ? "#dc2626" : borderColor;</span>
         }}
       /&gt;
-      {isClosedDay &amp;&amp; selectedDate &amp;&amp; (
+      {isClosedDay &amp;&amp; (
         &lt;ThemedText style={styles.closedWarning}&gt;
-          Closed on {DAY_NAMES[getIsoDay(selectedDate)] ?? "this day"}. Please pick another date.
+          Note: This restaurant is normally closed on this day. Please double-check another date.
         &lt;/ThemedText&gt;
       )}
     &lt;/View&gt;
@@ -355,7 +337,7 @@ export default function <span class="fstat-no" title="function not covered" >Dat
 &nbsp;
 const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.create({</span>
   wrapper: {
-    marginBottom: 16,
+    marginBottom: 0,
   },
   closedWarning: {
     fontSize: 12,
@@ -370,7 +352,7 @@ const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

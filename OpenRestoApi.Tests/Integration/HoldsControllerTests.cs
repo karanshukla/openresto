@@ -122,4 +122,12 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PlaceHold_InvalidModel_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/holds", new { restaurantId = "invalid" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

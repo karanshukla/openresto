@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -204,10 +204,30 @@
 <a name='L139'></a><a href='#L139'>139</a>
 <a name='L140'></a><a href='#L140'>140</a>
 <a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -348,7 +368,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { StyleSheet } from "react-native";
 import { COLORS, BUTTON_SIZES, SPACING, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from "@/theme/theme";
 &nbsp;
-export const styles = <span class="cstat-no" title="statement not covered" >StyleSheet.create({</span>
+export const styles = StyleSheet.create({
   container: {
     padding: SPACING.xxl,
     paddingTop: SPACING.xxxl,
@@ -373,7 +393,12 @@ export const styles = <span class="cstat-no" title="statement not covered" >Styl
     flexWrap: "wrap",
   },
   headerSep: { width: 1, height: 24, marginHorizontal: SPACING.xs },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: BORDER_RADIUS.full, borderWidth: 1 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+  },
   chipText: { ...TYPOGRAPHY.label },
   chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
   modeToggle: {
@@ -394,7 +419,7 @@ export const styles = <span class="cstat-no" title="statement not covered" >Styl
   spinner: { marginTop: 40 },
   emptyState: { alignItems: "center", paddingVertical: 60, gap: SPACING.md },
   emptyText: { ...TYPOGRAPHY.body, fontStyle: "italic" },
-  
+&nbsp;
   // Grid card
   gridCard: {
     borderRadius: BORDER_RADIUS.card,
@@ -432,7 +457,7 @@ export const styles = <span class="cstat-no" title="statement not covered" >Styl
   gridCellSeats: { fontSize: 9 },
   gridTableName: { ...TYPOGRAPHY.caption, fontWeight: "600" },
   gridTableSeats: { fontSize: 10 },
-  
+&nbsp;
   // Table (list)
   tableCard: {
     borderRadius: BORDER_RADIUS.card,
@@ -465,10 +490,15 @@ export const styles = <span class="cstat-no" title="statement not covered" >Styl
   partyPill: { flexDirection: "row", alignItems: "center", gap: 4 },
   tdParty: { ...TYPOGRAPHY.label },
   tdTableNum: { ...TYPOGRAPHY.body, fontSize: 14 },
-  badge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full, alignSelf: "flex-start" },
+  badge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 3,
+    borderRadius: BORDER_RADIUS.full,
+    alignSelf: "flex-start",
+  },
   badgeText: { ...TYPOGRAPHY.labelSmall, fontWeight: "700" },
   rowActionBtn: { padding: 6, borderRadius: BORDER_RADIUS.md },
-  
+&nbsp;
   // Card list (mobile)
   cardList: { gap: SPACING.md },
   listCard: {
@@ -493,7 +523,7 @@ export const styles = <span class="cstat-no" title="statement not covered" >Styl
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

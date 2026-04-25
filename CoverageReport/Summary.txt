@@ -1,29 +1,29 @@
 Summary
-  Generated on: 25/04/2026 - 11:00:00 AM
-  Coverage date: 25/04/2026 - 10:55:28 AM
+  Generated on: 25/04/2026 - 12:15:45 PM
+  Coverage date: 25/04/2026 - 12:15:00 PM
   Parser: Cobertura
   Assemblies: 1
   Classes: 69
   Files: 39
-  Line coverage: 78.1%
-  Covered lines: 1929
-  Uncovered lines: 538
-  Coverable lines: 2467
-  Total lines: 3953
-  Branch coverage: 60.5% (442 of 730)
-  Covered branches: 442
+  Line coverage: 79%
+  Covered lines: 1952
+  Uncovered lines: 516
+  Coverable lines: 2468
+  Total lines: 3955
+  Branch coverage: 61.7% (451 of 730)
+  Covered branches: 451
   Total branches: 730
-  Method coverage: 91.9% (355 of 386)
-  Full method coverage: 86.7% (335 of 386)
-  Covered methods: 355
-  Fully covered methods: 335
+  Method coverage: 92.4% (357 of 386)
+  Full method coverage: 88% (340 of 386)
+  Covered methods: 357
+  Fully covered methods: 340
   Total methods: 386
 
-OpenRestoApi                                                                  78.1%
+OpenRestoApi                                                                    79%
   Microsoft.AspNetCore.OpenApi.Generated                                       0.9%
-  OpenRestoApi.Controllers.AdminController                                    86.2%
-  OpenRestoApi.Controllers.AuthController                                     93.6%
-  OpenRestoApi.Controllers.BookingsController                                 75.3%
+  OpenRestoApi.Controllers.AdminController                                    88.2%
+  OpenRestoApi.Controllers.AuthController                                      100%
+  OpenRestoApi.Controllers.BookingsController                                 85.7%
   OpenRestoApi.Controllers.BrandController                                     100%
   OpenRestoApi.Controllers.BrandRequest                                        100%
   OpenRestoApi.Controllers.BrandResponse                                       100%
@@ -87,5 +87,5 @@ OpenRestoApi                                                                  78
   OpenRestoApi.Infrastructure.Persistence.Repositories.RestaurantRepository    100%
   OpenRestoApi.Infrastructure.Persistence.Repositories.SectionRepository       100%
   OpenRestoApi.Infrastructure.Persistence.Repositories.TableRepository         100%
-  Program                                                                     82.6%
+  Program                                                                     83.7%
   System.Runtime.CompilerServices                                                0%

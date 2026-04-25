@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>0/18</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>0/20</span>
             </div>
         
             
@@ -139,7 +139,26 @@
 <a name='L74'></a><a href='#L74'>74</a>
 <a name='L75'></a><a href='#L75'>75</a>
 <a name='L76'></a><a href='#L76'>76</a>
-<a name='L77'></a><a href='#L77'>77</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -165,6 +184,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -172,7 +196,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -221,6 +257,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { COLORS } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 &nbsp;
 export function <span class="fstat-no" title="function not covered" >AddRow(</span>{
@@ -239,9 +276,15 @@ export function <span class="fstat-no" title="function not covered" >AddRow(</sp
   const [extra, setExtra] = <span class="cstat-no" title="statement not covered" >useState("");</span>
   const [saving, setSaving] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
 &nbsp;
+  const brand = <span class="cstat-no" title="statement not covered" >useBrand();</span>
+  const primaryColor = <span class="cstat-no" title="statement not covered" >brand.primaryColor || COLORS.primary;</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!open) {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-      &lt;Pressable style={styles.addBtn} onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setOpen(true)}</span>&gt;
+      &lt;Pressable
+        style={[styles.addBtn, { backgroundColor: primaryColor }]}
+        onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setOpen(true)}</span>
+      &gt;
         &lt;Ionicons name="add-circle-outline" size={16} color="#fff" /&gt;
         &lt;ThemedText style={styles.addBtnText}&gt;{label}&lt;/ThemedText&gt;
       &lt;/Pressable&gt;
@@ -250,15 +293,26 @@ export function <span class="fstat-no" title="function not covered" >AddRow(</sp
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
     &lt;View style={styles.addForm}&gt;
-      &lt;Input value={name} onChangeText={setName} placeholder={placeholder ?? "Name"} /&gt;
-      {extraPlaceholder &amp;&amp; (
-        &lt;Input
-          value={extra}
-          onChangeText={setExtra}
-          placeholder={extraPlaceholder}
-          keyboardType="numeric"
-        /&gt;
-      )}
+      &lt;View style={{ flexDirection: "row", gap: 12 }}&gt;
+        &lt;View style={{ flex: extraPlaceholder ? 3 : 1 }}&gt;
+          &lt;Input
+            value={name}
+            onChangeText={setName}
+            placeholder={placeholder ?? "Name"}
+            autoFocus
+          /&gt;
+        &lt;/View&gt;
+        {extraPlaceholder &amp;&amp; (
+          &lt;View style={{ flex: 1 }}&gt;
+            &lt;Input
+              value={extra}
+              onChangeText={setExtra}
+              placeholder={extraPlaceholder}
+              keyboardType="numeric"
+            /&gt;
+          &lt;/View&gt;
+        )}
+      &lt;/View&gt;
       &lt;View style={styles.rowActions}&gt;
         &lt;Pressable
           onPress={<span class="fstat-no" title="function not covered" >as</span>ync () =&gt; {
@@ -271,21 +325,21 @@ export function <span class="fstat-no" title="function not covered" >AddRow(</sp
 <span class="cstat-no" title="statement not covered" >            setOpen(false);</span>
           }}
           disabled={saving || !name.trim()}
-          style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 16 }]}
         &gt;
           &lt;ThemedText style={[styles.actionBtnText, { color: "#fff" }]}&gt;
             {saving ? "Adding…" : "Add"}
           &lt;/ThemedText&gt;
         &lt;/Pressable&gt;
         &lt;Pressable
-          style={[styles.actionBtn, { borderWidth: 1, borderColor: `${COLORS.primary}30` }]}
+          style={[styles.smallBtn, { padding: 8 }]}
           onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >            setOpen(false);</span>
 <span class="cstat-no" title="statement not covered" >            setName("");</span>
 <span class="cstat-no" title="statement not covered" >            setExtra("");</span>
           }}
         &gt;
-          &lt;ThemedText style={[styles.actionBtnText, { color: COLORS.muted.light }]}&gt;Cancel&lt;/ThemedText&gt;
+          &lt;Ionicons name="close-outline" size={20} color={COLORS.muted.light} /&gt;
         &lt;/Pressable&gt;
       &lt;/View&gt;
     &lt;/View&gt;
@@ -298,7 +352,7 @@ export function <span class="fstat-no" title="function not covered" >AddRow(</sp
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

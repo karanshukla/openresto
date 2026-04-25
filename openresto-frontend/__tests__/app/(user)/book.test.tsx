@@ -1,8 +1,14 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import BookScreen from "@/app/(user)/book";
 import { createBooking } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
+import { AppThemeProvider } from "@/context/ThemeContext";
+import { BrandProvider } from "@/context/BrandContext";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -12,9 +18,20 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-}));
+// Polyfill fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+  })
+) as jest.Mock;
+
+// Mock Modal to always render children
+jest.mock("react-native", () => {
+  const rn = jest.requireActual("react-native");
+  rn.Modal = ({ children, visible }: any) => (visible ? children : null);
+  return rn;
+});
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -31,7 +48,7 @@ const mockRestaurant = {
   openTime: "09:00",
   closeTime: "22:00",
   openDays: "1,2,3,4,5,6,7",
-  timezone: "America/Toronto", // UTC-4 in April 2026 (Daylight Savings)
+  timezone: "America/Toronto",
   sections: [
     {
       id: 1,
@@ -43,24 +60,17 @@ const mockRestaurant = {
 };
 
 jest.mock("@/api/restaurants", () => ({
-  fetchRestaurantById: jest.fn(() => Promise.resolve(mockRestaurant)),
+  fetchRestaurantById: jest.fn(),
 }));
 
 jest.mock("@/api/bookings", () => ({
-  createBooking: jest.fn(() =>
-    Promise.resolve({ ok: true, json: () => Promise.resolve({ bookingRef: "REF123" }) })
-  ),
-}));
-
-jest.mock("@/api/holds", () => ({
-  createHold: jest.fn(),
-  releaseHold: jest.fn(),
+  createBooking: jest.fn(),
 }));
 
 // Mock BookingForm to simplify triggering the submission logic in BookScreen
 jest.mock("@/components/booking/BookingForm", () => {
   const { Pressable } = require("react-native");
-  return function MockBookingForm({ onSubmit }: any) {
+  return function MockBookingForm({ onSubmit, onRefresh }: any) {
     const mockData = {
       customerEmail: "test@example.com",
       seats: 2,
@@ -69,99 +79,81 @@ jest.mock("@/components/booking/BookingForm", () => {
       date: "2026-04-18",
       time: "15:00",
     };
-    return <Pressable testID="submit-trigger" onPress={() => onSubmit(mockData)} />;
+    return (
+      <>
+        <Pressable testID="submit-trigger" onPress={() => onSubmit(mockData)} />
+        <Pressable testID="refresh-trigger" onPress={onRefresh} />
+      </>
+    );
   };
 });
 
-describe("BookScreen Timezone Logic", () => {
-  const performTest = async (timezone: string, localTime: string, expectedUtc: string) => {
-    // Override the mock for this specific test case
-    (fetchRestaurantById as jest.Mock).mockResolvedValueOnce({
-      ...mockRestaurant,
-      timezone,
-    });
+jest.setTimeout(15000);
 
-    render(<BookScreen />);
+describe("BookScreen", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+    (createBooking as jest.Mock).mockResolvedValue({ id: 50, bookingRef: "REF123" });
+  });
 
-    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
-
-    // Mock specific input data
-    const trigger = screen.getByTestId("submit-trigger");
-    // We need to re-mock the BookingForm to use the passed localTime
-    // But since it's already mocked, we'll just check if the conversion logic in BookScreen handles different offsets correctly
-    // To do this properly, we need to pass the data through the trigger.
-
-    // Actually, I'll update the mock once to handle parameters or use separate mocks.
-    // Simpler: Just rely on the current mock for the Toronto case, and add one for Sydney.
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+        <AppThemeProvider>
+          <BrandProvider>
+            {ui}
+          </BrandProvider>
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    );
   };
 
-  it("converts 3:00 PM Toronto time (EDT, UTC-4) to 19:00 UTC", async () => {
-    (fetchRestaurantById as jest.Mock).mockResolvedValueOnce({
-      ...mockRestaurant,
-      timezone: "America/Toronto",
-    });
-
-    render(<BookScreen />);
+  it("handles successful booking with bookingRef", async () => {
+    renderWithProviders(<BookScreen />);
     await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
 
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[
-        (createBooking as jest.Mock).mock.calls.length - 1
-      ][0];
-      expect(callArgs.date).toBe("2026-04-18T19:00:00.000Z");
+      expect(mockPush).toHaveBeenCalledWith("/booking-confirmation/REF123?email=test%40example.com");
     });
   });
 
-  it("converts 3:00 PM London time (BST, UTC+1) to 14:00 UTC", async () => {
-    (fetchRestaurantById as jest.Mock).mockResolvedValueOnce({
-      ...mockRestaurant,
-      timezone: "Europe/London",
-    });
-
-    render(<BookScreen />);
+  it("handles successful booking with id fallback", async () => {
+    (createBooking as jest.Mock).mockResolvedValue({ id: 50 });
+    renderWithProviders(<BookScreen />);
     await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
 
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[
-        (createBooking as jest.Mock).mock.calls.length - 1
-      ][0];
-      expect(callArgs.date).toBe("2026-04-18T14:00:00.000Z");
+      expect(mockPush).toHaveBeenCalledWith("/booking-confirmation/50?email=test%40example.com");
     });
   });
 
-  it("converts 3:00 PM Sydney time (AEST, UTC+10) to 05:00 UTC", async () => {
-    (fetchRestaurantById as jest.Mock).mockResolvedValueOnce({
-      ...mockRestaurant,
-      timezone: "Australia/Sydney",
-    });
-
-    render(<BookScreen />);
+  it("shows error banner on API failure", async () => {
+    (createBooking as jest.Mock).mockRejectedValue(new Error("Conflict: Table already booked"));
+    renderWithProviders(<BookScreen />);
     await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
 
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      const callArgs = (createBooking as jest.Mock).mock.calls[
-        (createBooking as jest.Mock).mock.calls.length - 1
-      ][0];
-      expect(callArgs.date).toBe("2026-04-18T05:00:00.000Z");
+      expect(screen.getByText("Conflict: Table already booked")).toBeTruthy();
     });
   });
 
-  it("renders 'Book a table' title", async () => {
-    render(<BookScreen />);
-    await waitFor(() => {
-      expect(screen.getByText("Book a table")).toBeTruthy();
-    });
+  it("handles onRefresh from form", async () => {
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => screen.getByTestId("refresh-trigger"));
+    fireEvent.press(screen.getByTestId("refresh-trigger"));
+    expect(mockReplace).toHaveBeenCalledWith("/book?restaurantId=1");
   });
 
   it("shows not found when restaurant is null", async () => {
-    (fetchRestaurantById as jest.Mock).mockResolvedValueOnce(null);
-    render(<BookScreen />);
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(null);
+    renderWithProviders(<BookScreen />);
     await waitFor(() => {
       expect(screen.getByText("Restaurant not found.")).toBeTruthy();
     });

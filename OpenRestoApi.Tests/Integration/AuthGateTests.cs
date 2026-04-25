@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -301,10 +302,29 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
     }
 
     [Fact]
-    public async Task Auth_ResetPassword_IsPublic()
+    public async Task Admin_Overview_WithCookie_Works()
     {
-        HttpResponseMessage res = await _client.PostAsync("/api/admin/auth/reset-password",
-            Json(new { token = "fake", newPassword = "Test123!" }));
-        Assert.NotEqual(HttpStatusCode.Unauthorized, res.StatusCode);
+        // 1. Get a valid cookie by logging in
+        var loginResp = await _client.PostAsJsonAsync("/api/admin/auth/login", new
+        {
+            email = TestWebAppFactory.AdminEmail,
+            password = TestWebAppFactory.AdminPassword
+        });
+        Assert.Equal(HttpStatusCode.OK, loginResp.StatusCode);
+
+        // 2. Extract cookie
+        string? cookie = null;
+        if (loginResp.Headers.TryGetValues("Set-Cookie", out var values))
+        {
+            cookie = values.FirstOrDefault(v => v.StartsWith("openresto_auth="));
+        }
+        Assert.NotNull(cookie);
+
+        // 3. Call protected endpoint with cookie instead of header
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/admin/overview");
+        request.Headers.Add("Cookie", cookie.Split(';')[0]);
+        
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

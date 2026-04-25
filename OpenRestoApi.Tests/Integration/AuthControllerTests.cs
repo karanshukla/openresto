@@ -288,4 +288,38 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Security question not configured for this account.", body.GetProperty("message").GetString());
     }
+
+    [Fact]
+    public async Task ResetPassword_WithShortPassword_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new { question = "Q", answer = "A" });
+
+        HttpClient unauth = _factory.CreateClient();
+        var verifyResp = await unauth.PostAsJsonAsync("/api/admin/auth/pvq/verify", new { email = TestWebAppFactory.AdminEmail, answer = "A" });
+        var token = (await verifyResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("resetToken").GetString();
+
+        var response = await unauth.PostAsJsonAsync("/api/admin/auth/reset-password", new { resetToken = token, newPassword = "123" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_InitializesCredentials_IfNoneExist()
+    {
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            db.AdminCredentials.RemoveRange(db.AdminCredentials);
+            await db.SaveChangesAsync();
+        }
+
+        HttpClient client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/admin/auth/login", new
+        {
+            email = TestWebAppFactory.AdminEmail,
+            password = TestWebAppFactory.AdminPassword
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

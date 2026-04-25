@@ -271,39 +271,40 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">19x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -372,8 +373,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -465,6 +465,7 @@ import { Link } from "expo-router";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 &nbsp;
 import { Ionicons } from "@expo/vector-icons";
 &nbsp;
@@ -472,6 +473,8 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const mutedColor = colors.muted;
+  const brand = useBrand();
+  const primaryColor = brand.primaryColor || <span class="branch-1 cbranch-no" title="branch not covered" >COLORS.primary;</span>
 &nbsp;
   const totalTables = restaurant.sections.reduce((acc, s) =&gt; acc + s.tables.length, 0);
   const totalSeats = restaurant.sections.reduce(
@@ -479,12 +482,9 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
     0
   );
 &nbsp;
-  // Pick a consistent hue offset from the name so cards feel distinct
-  const hues = [195, 210, 165, 220, 180, 200];
-  const hue = hues[restaurant.name.charCodeAt(0) % hues.length];
-  const headerBg = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >`hsl(${hue}, 60%, 26%)` </span>: `hsl(${hue}, 68%, 82%)`;
-  const iconBg = `hsl(${hue}, 65%, ${isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >"34%" </span>: "72%"})`;
-  const iconColor = `hsl(${hue}, 70%, ${isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >"78%" </span>: "26%"})`;
+  const headerBg = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >`${primaryColor}33` </span>: `${primaryColor}15`;
+  const iconBg = isDark ? <span class="branch-0 cbranch-no" title="branch not covered" >`${primaryColor}44` </span>: `${primaryColor}22`;
+  const iconColor = primaryColor;
   const initial = restaurant.name.charAt(0).toUpperCase();
 &nbsp;
   const cardBg = colors.card;
@@ -495,11 +495,11 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
     Platform.OS === "web"
       ? <span class="branch-0 cbranch-no" title="branch not covered" >isDark</span>
         ? ({ boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14)" } as const)
-        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const) // TODO: Use theme shadows
+        : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const)
       : {};
 &nbsp;
   return (
-    &lt;Link href={`/(user)/book/${restaurant.id}`} asChild&gt;
+    &lt;Link href={`/(user)/book?restaurantId=${restaurant.id}`} asChild&gt;
       &lt;Pressable
         style={(state) =&gt; [
           styles.outer,
@@ -560,7 +560,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
             &lt;/View&gt;
 &nbsp;
             {/* CTA */}
-            &lt;View style={[styles.ctaBtn, { backgroundColor: COLORS.primary }]}&gt;
+            &lt;View style={[styles.ctaBtn, { backgroundColor: primaryColor }]}&gt;
               &lt;ThemedText style={styles.ctaBtnText}&gt;Book a table&lt;/ThemedText&gt;
               &lt;Ionicons name="arrow-forward" size={14} color="#fff" /&gt;
             &lt;/View&gt;
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

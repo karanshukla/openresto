@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">52.63% </span>
+                <span class="strong">88.46% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>10/19</span>
+                <span class='fraction'>23/26</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -126,7 +126,12 @@
 <a name='L61'></a><a href='#L61'>61</a>
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
-<a name='L64'></a><a href='#L64'>64</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -143,20 +148,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">147x</span>
-<span class="cline-any cline-yes">147x</span>
-<span class="cline-any cline-yes">147x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">147x</span>
+<span class="cline-any cline-yes">1498x</span>
+<span class="cline-any cline-yes">1498x</span>
+<span class="cline-any cline-yes">1498x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1498x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1498x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1498x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -164,8 +167,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -192,6 +202,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { StyleSheet, Text, type TextProps } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 &nbsp;
 export type ThemedTextProps = TextProps &amp; {
   lightColor?: string;
@@ -208,18 +219,23 @@ export function ThemedText({
 }: ThemedTextProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
-  const color = lightColor &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >!isDark </span>? <span class="branch-0 cbranch-no" title="branch not covered" >lightColor </span>: darkColor &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >isDark </span>? <span class="branch-0 cbranch-no" title="branch not covered" >darkColor </span>: colors.text;
+  const brand = useBrand();
+&nbsp;
+  let color = lightColor &amp;&amp; !isDark ? lightColor : darkColor &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >isDark </span>? <span class="branch-0 cbranch-no" title="branch not covered" >darkColor </span>: colors.text;
+&nbsp;
+  if (type === "link" &amp;&amp; !lightColor &amp;&amp; !darkColor) {
+    color = brand.primaryColor || <span class="branch-1 cbranch-no" title="branch not covered" >COLORS.primary;</span>
+  }
 &nbsp;
   return (
     &lt;Text
-      /* istanbul ignore next -- type variant branches */
       style={[
         { color },
-        type === "default" ? styles.default : <span class="branch-1 cbranch-no" title="branch not covered" >undefined,</span>
-        type === "title" ? <span class="branch-0 cbranch-no" title="branch not covered" >styles.title </span>: undefined,
-        type === "defaultSemiBold" ? <span class="branch-0 cbranch-no" title="branch not covered" >styles.defaultSemiBold </span>: undefined,
-        type === "subtitle" ? <span class="branch-0 cbranch-no" title="branch not covered" >styles.subtitle </span>: undefined,
-        type === "link" ? <span class="branch-0 cbranch-no" title="branch not covered" >styles.link </span>: undefined,
+        type === "default" ? styles.default : undefined,
+        type === "title" ? styles.title : undefined,
+        type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
+        type === "subtitle" ? styles.subtitle : undefined,
+        type === "link" ? styles.link : undefined,
         style,
       ]}
       {...rest}
@@ -249,7 +265,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: COLORS.primary,
   },
 });
 &nbsp;</pre></td></tr></table></pre>
@@ -259,7 +274,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-28T12:51:47.233Z
+                at 2026-04-25T15:53:54.804Z
             </div>
         <script src="../prettify.js"></script>
         <script>

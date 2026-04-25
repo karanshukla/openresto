@@ -456,4 +456,84 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         var response = await client.DeleteAsync($"/api/admin/restaurants/{id}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
+
+    [Fact]
+    public async Task CreateRestaurant_EmptyName_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.PostAsJsonAsync("/api/admin/restaurants", new { name = "", address = "Addr" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteRestaurant_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.DeleteAsync("/api/admin/restaurants/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTables_NotFound_ReturnsNotFound()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        var response = await client.GetAsync("/api/admin/restaurants/9999/tables");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SendEmail_MissingFields_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/admin/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(301).ToString("O"), customerEmail = "test@test.com", seats = 2 });
+        int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var response = await client.PostAsJsonAsync($"/api/admin/bookings/{id}/email", new { subject = "", body = "" });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SendEmail_MissingCustomerEmail_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        // Create booking without email if allowed by DTO, or use service to force it.
+        // Actually, CreateAdminBookingRequest might require it. Let's see.
+        // Or just use service to create one manually in DB.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var b = new Booking { RestaurantId = r, SectionId = s, TableId = t, Date = DateTime.UtcNow.AddDays(302), BookingRef = "NOEMAIL", CustomerEmail = null, Seats = 2 };
+            db.Bookings.Add(b);
+            await db.SaveChangesAsync();
+            
+            var response = await client.PostAsJsonAsync($"/api/admin/bookings/{b.Id}/email", new { subject = "S", body = "B" });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task AdminUpdateBooking_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/admin/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(303).ToString("O"), customerEmail = "orig@test.com", seats = 2 });
+        int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var response = await client.PutAsJsonAsync($"/api/admin/bookings/{id}", new { customerEmail = "new@test.com", seats = 3 });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminUpdateBooking_InvalidTable_ReturnsBadRequest()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+        var createResp = await client.PostAsJsonAsync("/api/admin/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(304).ToString("O"), customerEmail = "test@test.com", seats = 2 });
+        int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var response = await client.PutAsJsonAsync($"/api/admin/bookings/{id}", new { tableId = 9999 });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

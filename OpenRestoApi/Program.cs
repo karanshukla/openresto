@@ -373,4 +373,6 @@ using (IServiceScope scope = app.Services.CreateScope())
     }
 }
 
+app.MapGet("/api/health", () => "OK");
+
 app.Run();
