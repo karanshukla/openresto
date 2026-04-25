@@ -24,6 +24,11 @@ services:
         - EXPO_PUBLIC_API_URL=http://localhost:5062
     environment:
       - EXPO_PUBLIC_API_URL=http://localhost:5062
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   reverse-proxy:
     build:
@@ -38,5 +43,7 @@ services:
       - FRONTEND_HOST=frontend
       - FRONTEND_PORT=8081
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy

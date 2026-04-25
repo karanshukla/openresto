@@ -85,8 +85,8 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
 
             {restaurant.address ? (
               <View style={styles.addressRow}>
-                <Ionicons name="location-outline" size={13} color={mutedColor} />
-                <ThemedText style={[styles.address, { color: mutedColor }]} numberOfLines={1}>
+                <Ionicons name="location-outline" size={14} color={mutedColor} />
+                <ThemedText style={[styles.address, { color: mutedColor }]} numberOfLines={2}>
                   {restaurant.address}
                 </ThemedText>
               </View>
@@ -96,13 +96,13 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
               {/* Chips */}
               <View style={styles.chips}>
                 <View style={styles.metaItem}>
-                  <Ionicons name="grid-outline" size={12} color={mutedColor} />
+                  <Ionicons name="grid-outline" size={14} color={mutedColor} />
                   <ThemedText style={[styles.metaText, { color: mutedColor }]}>
                     {totalTables} {totalTables === 1 ? "table" : "tables"}
                   </ThemedText>
                 </View>
                 <View style={styles.metaItem}>
-                  <Ionicons name="people-outline" size={12} color={mutedColor} />
+                  <Ionicons name="people-outline" size={14} color={mutedColor} />
                   <ThemedText style={[styles.metaText, { color: mutedColor }]}>
                     {totalSeats} seats
                   </ThemedText>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
   },
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   name: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   address: {
-    fontSize: 13,
+    fontSize: 14,
     flex: 1,
   },
   footer: {
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
   },
   ctaCircle: {
