@@ -1,3 +1,4 @@
 {
-  "jest.rootPath": "openresto-frontend"
+  "jest.rootPath": "openresto-frontend",
+  "jest.jestCommandLine": "npm test --"
 }
