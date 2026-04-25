@@ -197,7 +197,7 @@ export default function PopularTimesPicker({
             style={[
               styles.scrollIndicator,
               styles.leftIndicator,
-              { backgroundColor: colors.background + "99" },
+              { backgroundColor: colors.page + "99" },
             ]}
           >
             <Pressable
@@ -219,7 +219,7 @@ export default function PopularTimesPicker({
             style={[
               styles.scrollIndicator,
               styles.rightIndicator,
-              { backgroundColor: colors.background + "99" },
+              { backgroundColor: colors.page + "99" },
             ]}
           >
             <Pressable
