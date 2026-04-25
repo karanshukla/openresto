@@ -78,18 +78,18 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task RestoreBooking_WithValidCancelledBooking_ReturnsSuccess()
         {
             // Arrange
-            var cancelledBooking = await _dbContext.Bookings
+            Booking cancelledBooking = await _dbContext.Bookings
                 .FirstAsync(b => b.BookingRef == "CANCELLED001");
 
             // Act
-            var result = await _adminController.RestoreBooking(cancelledBooking.Id);
+            IActionResult result = await _adminController.RestoreBooking(cancelledBooking.Id);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult.Value);
 
             // Verify booking is restored in database
-            var restoredBooking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
+            Booking? restoredBooking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
             Assert.False(restoredBooking.IsCancelled);
             Assert.Null(restoredBooking.CancelledAt);
         }
@@ -98,7 +98,7 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task RestoreBooking_WithNonExistentBooking_ReturnsNotFound()
         {
             // Act
-            var result = await _adminController.RestoreBooking(99999);
+            IActionResult result = await _adminController.RestoreBooking(99999);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
@@ -108,15 +108,15 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task RestoreBooking_WithActiveBooking_ReturnsBadRequest()
         {
             // Arrange
-            var activeBooking = await _dbContext.Bookings
+            Booking activeBooking = await _dbContext.Bookings
                 .FirstAsync(b => b.BookingRef == "ACTIVE001");
 
             // Act
-            var result = await _adminController.RestoreBooking(activeBooking.Id);
+            IActionResult result = await _adminController.RestoreBooking(activeBooking.Id);
 
             // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(badRequestResult.Value);
+            BadRequestObjectResult badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequestResult.Value);
             Assert.Equal("Booking is already active.", response.Message);
         }
 
@@ -124,23 +124,23 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task RestoreBooking_MultipleRestores_OnlyWorksOnce()
         {
             // Arrange
-            var cancelledBooking = await _dbContext.Bookings
+            Booking cancelledBooking = await _dbContext.Bookings
                 .FirstAsync(b => b.BookingRef == "CANCELLED001");
 
             // Act - First restore
-            var firstResult = await _adminController.RestoreBooking(cancelledBooking.Id);
-            
+            IActionResult firstResult = await _adminController.RestoreBooking(cancelledBooking.Id);
+
             // Act - Second restore attempt
-            var secondResult = await _adminController.RestoreBooking(cancelledBooking.Id);
+            IActionResult secondResult = await _adminController.RestoreBooking(cancelledBooking.Id);
 
             // Assert
             Assert.IsType<OkObjectResult>(firstResult);
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(secondResult);
-            var response = Assert.IsType<MessageResponse>(badRequestResult.Value);
+            BadRequestObjectResult badRequestResult = Assert.IsType<BadRequestObjectResult>(secondResult);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequestResult.Value);
             Assert.Equal("Booking is already active.", response.Message);
 
             // Verify booking is still active
-            var booking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
+            Booking? booking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
             Assert.NotNull(booking);
             Assert.False(booking.IsCancelled);
             Assert.Null(booking.CancelledAt);
@@ -150,15 +150,15 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task RestoreBooking_VerifyResponseMessage()
         {
             // Arrange
-            var cancelledBooking = await _dbContext.Bookings
+            Booking cancelledBooking = await _dbContext.Bookings
                 .FirstAsync(b => b.BookingRef == "CANCELLED001");
 
             // Act
-            var result = await _adminController.RestoreBooking(cancelledBooking.Id);
+            IActionResult result = await _adminController.RestoreBooking(cancelledBooking.Id);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(okResult.Value);
             Assert.Equal("Booking restored successfully.", response.Message);
         }
 

@@ -120,7 +120,7 @@ public class HoldServiceTests
         _clock.Advance(HoldService.HoldDuration + TimeSpan.FromSeconds(1));
 
         // First expired; a new hold can be placed
-        HoldResult second = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
+        _ = _svc.PlaceHold(RestaurantId, TableId, SectionId, BookingDate)!;
 
         // Releasing the old hold ID should not affect the new hold
         _svc.ReleaseHold(first.HoldId);

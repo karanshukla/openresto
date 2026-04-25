@@ -1,12 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using Moq;
 using MailKit;
 using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using MimeKit;
+using Moq;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
-using OpenRestoApi.Core.Domain;
-using MailKit.Security;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -23,7 +23,7 @@ public class EmailServiceTests
     [Fact]
     public async Task TestConnectionAsync_ReturnsFalse_WhenNoSettings()
     {
-        using var db = CreateDb(nameof(TestConnectionAsync_ReturnsFalse_WhenNoSettings));
+        using AppDbContext db = CreateDb(nameof(TestConnectionAsync_ReturnsFalse_WhenNoSettings));
         var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
         var clientMock = new Mock<ISmtpClient>();
         var service = new EmailService(db, protector.Object, () => clientMock.Object);
@@ -36,13 +36,13 @@ public class EmailServiceTests
     [Fact]
     public async Task TestConnectionAsync_ConnectsAndAuthenticates_WhenSettingsExist_Port587()
     {
-        using var db = CreateDb(nameof(TestConnectionAsync_ConnectsAndAuthenticates_WhenSettingsExist_Port587));
-        db.Set<EmailSettings>().Add(new EmailSettings 
-        { 
-            Host = "smtp.test.com", 
-            Port = 587, 
-            Username = "user", 
-            EncryptedPassword = "encrypted" 
+        using AppDbContext db = CreateDb(nameof(TestConnectionAsync_ConnectsAndAuthenticates_WhenSettingsExist_Port587));
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com",
+            Port = 587,
+            Username = "user",
+            EncryptedPassword = "encrypted"
         });
         db.SaveChanges();
 
@@ -63,12 +63,12 @@ public class EmailServiceTests
     [Fact]
     public async Task TestConnectionAsync_Connects_WhenSettingsExist_Port25_NoSsl()
     {
-        using var db = CreateDb(nameof(TestConnectionAsync_Connects_WhenSettingsExist_Port25_NoSsl));
-        db.Set<EmailSettings>().Add(new EmailSettings 
-        { 
-            Host = "smtp.test.com", 
-            Port = 25, 
-            Username = "user", 
+        using AppDbContext db = CreateDb(nameof(TestConnectionAsync_Connects_WhenSettingsExist_Port25_NoSsl));
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com",
+            Port = 25,
+            Username = "user",
             EncryptedPassword = "encrypted",
             EnableSsl = false
         });
@@ -89,24 +89,24 @@ public class EmailServiceTests
     [Fact]
     public async Task SendEmailAsync_Throws_WhenNoSettings()
     {
-        using var db = CreateDb(nameof(SendEmailAsync_Throws_WhenNoSettings));
+        using AppDbContext db = CreateDb(nameof(SendEmailAsync_Throws_WhenNoSettings));
         var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
         var clientMock = new Mock<ISmtpClient>();
         var service = new EmailService(db, protector.Object, () => clientMock.Object);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.SendEmailAsync("to@test.com", "Subject", "Body"));
     }
 
     [Fact]
     public async Task SendEmailAsync_SendsMessage_WhenSettingsExist()
     {
-        using var db = CreateDb(nameof(SendEmailAsync_SendsMessage_WhenSettingsExist));
-        db.Set<EmailSettings>().Add(new EmailSettings 
-        { 
-            Host = "smtp.test.com", 
-            Port = 465, 
-            Username = "user", 
+        using AppDbContext db = CreateDb(nameof(SendEmailAsync_SendsMessage_WhenSettingsExist));
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com",
+            Port = 465,
+            Username = "user",
             EncryptedPassword = "encrypted",
             EnableSsl = true,
             FromName = "Sender",
@@ -131,12 +131,12 @@ public class EmailServiceTests
     [Fact]
     public async Task SendEmailAsync_UsesUsername_WhenFromEmailMissing()
     {
-        using var db = CreateDb(nameof(SendEmailAsync_UsesUsername_WhenFromEmailMissing));
-        db.Set<EmailSettings>().Add(new EmailSettings 
-        { 
-            Host = "smtp.test.com", 
-            Port = 587, 
-            Username = "user@test.com", 
+        using AppDbContext db = CreateDb(nameof(SendEmailAsync_UsesUsername_WhenFromEmailMissing));
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com",
+            Port = 587,
+            Username = "user@test.com",
             EncryptedPassword = "encrypted",
             FromName = null,
             FromEmail = null
@@ -151,11 +151,11 @@ public class EmailServiceTests
 
         await service.SendEmailAsync("to@test.com", "Subject", "Body");
 
-        clientMock.Verify(c => c.SendAsync(It.Is<MimeMessage>(m => 
-            m.From.Count == 1 && 
+        clientMock.Verify(c => c.SendAsync(It.Is<MimeMessage>(m =>
+            m.From.Count == 1 &&
             ((MailboxAddress)m.From[0]).Name == "OpenResto" &&
-            ((MailboxAddress)m.From[0]).Address == "user@test.com"), 
-            It.IsAny<System.Threading.CancellationToken>(), 
+            ((MailboxAddress)m.From[0]).Address == "user@test.com"),
+            It.IsAny<System.Threading.CancellationToken>(),
             It.IsAny<ITransferProgress>()), Times.Once);
     }
 }

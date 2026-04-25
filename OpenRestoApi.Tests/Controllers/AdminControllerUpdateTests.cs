@@ -68,9 +68,9 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task AdminUpdateBooking_WithValidData_UpdatesBooking()
         {
             // Arrange
-            var booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
-            var table2 = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 2");
-            var newDate = DateTime.UtcNow.AddDays(2);
+            Booking booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
+            Table table2 = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 2");
+            DateTime newDate = DateTime.UtcNow.AddDays(2);
             var req = new AdminUpdateBookingRequest
             {
                 TableId = table2.Id,
@@ -81,11 +81,11 @@ namespace OpenRestoApi.Tests.Controllers
             };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(booking.Id, req);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var updatedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            BookingDetailDto updatedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
 
             Assert.Equal(table2.Id, updatedDto.TableId);
             Assert.Equal(newDate, updatedDto.Date);
@@ -94,7 +94,7 @@ namespace OpenRestoApi.Tests.Controllers
             Assert.Equal("Lots of requests", updatedDto.SpecialRequests);
 
             // Verify database
-            var dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
+            Booking? dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
             Assert.Equal(table2.Id, dbBooking.TableId);
             Assert.Equal(newDate, dbBooking.Date);
             Assert.Equal(2, dbBooking.Seats);
@@ -106,10 +106,10 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task AdminUpdateBooking_ChangeRestaurantAndSection_UpdatesBooking()
         {
             // Arrange
-            var booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
-            var restaurant2 = await _dbContext.Restaurants.FirstAsync(r => r.Name == "Test Restaurant 2");
-            var section2 = await _dbContext.Sections.FirstAsync(s => s.Name == "Section 2");
-            var table3 = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 3");
+            Booking booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
+            Restaurant restaurant2 = await _dbContext.Restaurants.FirstAsync(r => r.Name == "Test Restaurant 2");
+            Section section2 = await _dbContext.Sections.FirstAsync(s => s.Name == "Section 2");
+            Table table3 = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 3");
 
             var req = new AdminUpdateBookingRequest
             {
@@ -119,18 +119,18 @@ namespace OpenRestoApi.Tests.Controllers
             };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(booking.Id, req);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var updatedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            BookingDetailDto updatedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
 
             Assert.Equal(restaurant2.Id, updatedDto.RestaurantId);
             Assert.Equal(section2.Id, updatedDto.SectionId);
             Assert.Equal(table3.Id, updatedDto.TableId);
 
             // Verify database
-            var dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
+            Booking? dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
             Assert.Equal(restaurant2.Id, dbBooking.RestaurantId);
             Assert.Equal(section2.Id, dbBooking.SectionId);
             Assert.Equal(table3.Id, dbBooking.TableId);
@@ -140,15 +140,15 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task AdminUpdateBooking_WithInvalidTable_ReturnsBadRequest()
         {
             // Arrange
-            var booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
-            var tableInOtherRestaurant = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 3");
+            Booking booking = await _dbContext.Bookings.FirstAsync(b => b.BookingRef == "UPDATE001");
+            Table tableInOtherRestaurant = await _dbContext.Tables.FirstAsync(t => t.Name == "Table 3");
             var req = new AdminUpdateBookingRequest
             {
                 TableId = tableInOtherRestaurant.Id
             };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(booking.Id, req);
 
             // Assert
             Assert.IsType<BadRequestObjectResult>(result);
@@ -161,7 +161,7 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new AdminUpdateBookingRequest { Seats = 5 };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(99999, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(99999, req);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
@@ -199,10 +199,10 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new AdminUpdateBookingRequest { Seats = 5 };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(booking.Id, req);
 
             // Assert
-            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
             var json = System.Text.Json.JsonSerializer.Serialize(badRequest.Value);
             Assert.Contains("only has 2 seats", json);
         }
@@ -239,12 +239,12 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new AdminUpdateBookingRequest { Seats = 4 };
 
             // Act
-            var result = await _adminController.AdminUpdateBooking(booking.Id, req);
+            IActionResult result = await _adminController.AdminUpdateBooking(booking.Id, req);
 
             // Assert
             Assert.IsType<OkObjectResult>(result);
             var okResult = (OkObjectResult)result;
-            var returnedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
+            BookingDetailDto returnedDto = Assert.IsType<BookingDetailDto>(okResult.Value);
             Assert.Equal(4, returnedDto.Seats);
         }
 

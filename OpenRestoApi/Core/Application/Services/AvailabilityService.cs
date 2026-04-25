@@ -24,10 +24,10 @@ public class AvailabilityService(
 
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, date);
-        
+
         // 2. Define the local operating hours for the requested date
         DateTime localDate = TimeZoneInfo.ConvertTimeFromUtc(date.ToUniversalTime(), tz).Date;
-        
+
         if (!TryParseTime(restaurant.OpenTime, out int openHour, out int openMin))
         {
             openHour = 9; openMin = 0;
@@ -50,6 +50,11 @@ public class AvailabilityService(
             .Where(t => t.Seats >= seats)
             .ToList();
 
+        // Optimize: Group bookings by table ID for faster lookup in the loop
+        var bookingsByTable = activeBookings
+            .GroupBy(b => b.TableId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         while (current < localEnd)
         {
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
@@ -58,17 +63,19 @@ public class AvailabilityService(
             // A slot is available if AT LEAST ONE eligible table is free for the next hour
             DateTime slotEndUtc = slotUtc.AddHours(1);
 
-            foreach (var table in eligibleTables)
+            foreach (Table? table in eligibleTables)
             {
                 // Check bookings
-                bool hasBookingConflict = activeBookings.Any(b =>
-                    b.TableId == table.Id &&
-                    b.Date < slotEndUtc &&
-                    (b.EndTime ?? b.Date.AddHours(1)) > slotUtc);
-
-                if (hasBookingConflict)
+                if (bookingsByTable.TryGetValue(table.Id, out List<Booking>? tableBookings))
                 {
-                    continue;
+                    bool hasBookingConflict = tableBookings.Any(b =>
+                        b.Date < slotEndUtc &&
+                        (b.EndTime ?? b.Date.AddHours(1)) > slotUtc);
+
+                    if (hasBookingConflict)
+                    {
+                        continue;
+                    }
                 }
 
                 // Check holds
@@ -102,7 +109,7 @@ public class AvailabilityService(
 
     private static string GetCategory(DateTime time)
     {
-        var t = time.TimeOfDay;
+        TimeSpan t = time.TimeOfDay;
         if (t >= new TimeSpan(11, 30, 0) && t < new TimeSpan(14, 30, 0))
         {
             return "Lunch";

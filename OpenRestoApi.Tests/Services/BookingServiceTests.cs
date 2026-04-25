@@ -55,8 +55,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -76,14 +79,20 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
         BookingDto result = await svc.CreateBookingAsync(dto);
-        var entity = await db.Bookings.FindAsync(result.Id);
-        if (entity != null) db.Entry(entity).State = EntityState.Detached;
+        Booking? entity = await db.Bookings.FindAsync(result.Id);
+        if (entity != null)
+        {
+            db.Entry(entity).State = EntityState.Detached;
+        }
 
         Booking? inDb = await db.Bookings.FindAsync(result.Id);
         Assert.NotNull(inDb);
@@ -103,9 +112,9 @@ public class BookingServiceTests
         var date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc);
 
         BookingDto a = await svc.CreateBookingAsync(new BookingDto
-            { RestaurantId = 1, SectionId = 1, TableId = 1, CustomerEmail = "a@x.com", Seats = 2, Date = date });
+        { RestaurantId = 1, SectionId = 1, TableId = 1, CustomerEmail = "a@x.com", Seats = 2, Date = date });
         BookingDto b = await svc.CreateBookingAsync(new BookingDto
-            { RestaurantId = 1, SectionId = 1, TableId = 2, CustomerEmail = "b@x.com", Seats = 2, Date = date });
+        { RestaurantId = 1, SectionId = 1, TableId = 2, CustomerEmail = "b@x.com", Seats = 2, Date = date });
 
         Assert.NotEqual(a.BookingRef, b.BookingRef);
     }
@@ -119,8 +128,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "first@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "first@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -128,8 +140,11 @@ public class BookingServiceTests
 
         var dto2 = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "second@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "second@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -153,8 +168,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db, holdMock.Object);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -178,8 +196,12 @@ public class BookingServiceTests
         BookingService svc = CreateService(db, holdMock.Object);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2, HoldId = "my-hold-id",
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            HoldId = "my-hold-id",
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -197,8 +219,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc),
             SpecialRequests = "nut allergy"
         };
@@ -219,8 +244,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         BookingDto created = await svc.CreateBookingAsync(new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         });
 
@@ -252,8 +280,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         BookingDto created = await svc.CreateBookingAsync(new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         });
 
@@ -290,9 +321,9 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc);
         await svc.CreateBookingAsync(new BookingDto
-            { RestaurantId = 1, SectionId = 1, TableId = 1, CustomerEmail = "a@x.com", Seats = 2, Date = date });
+        { RestaurantId = 1, SectionId = 1, TableId = 1, CustomerEmail = "a@x.com", Seats = 2, Date = date });
         await svc.CreateBookingAsync(new BookingDto
-            { RestaurantId = 2, SectionId = 2, TableId = 2, CustomerEmail = "b@x.com", Seats = 2, Date = date });
+        { RestaurantId = 2, SectionId = 2, TableId = 2, CustomerEmail = "b@x.com", Seats = 2, Date = date });
 
         var results = (await svc.GetBookingsByRestaurantAsync(1)).ToList();
 
@@ -311,8 +342,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         BookingDto created = await svc.CreateBookingAsync(new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 2,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         });
 
@@ -332,8 +366,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 5,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 5,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -352,8 +389,11 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         var dto = new BookingDto
         {
-            RestaurantId = 1, SectionId = 1, TableId = 1,
-            CustomerEmail = "guest@example.com", Seats = 4,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 4,
             Date = new DateTime(2026, 6, 15, 19, 0, 0, DateTimeKind.Utc)
         };
 
@@ -380,12 +420,12 @@ public class BookingServiceTests
         Seed(db);
         BookingService svc = CreateService(db);
         DateTime date = DateTime.UtcNow.AddHours(1);
-        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
         db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
-        
+
         var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, EndTime = null };
         await svc.UpdateBookingAsync(created.Id, dto);
-        var inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
+        Booking inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
         Assert.Equal(date.AddHours(1), inDb.EndTime);
     }
 
@@ -396,12 +436,12 @@ public class BookingServiceTests
         Seed(db);
         BookingService svc = CreateService(db);
         DateTime date = DateTime.UtcNow.AddHours(1);
-        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
         db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
 
         var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), Seats = 2 };
         await svc.UpdateBookingAsync(created.Id, dto);
-        var inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
+        Booking inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
         Assert.Equal(date.AddHours(1), inDb.EndTime);
     }
 
@@ -419,7 +459,7 @@ public class BookingServiceTests
         using AppDbContext db = CreateDb(nameof(CancelBookingAsync_ReturnsFalse_WhenEmailMismatch));
         Seed(db);
         BookingService svc = CreateService(db);
-        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "real@test.com", Seats = 2 });
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "real@test.com", Seats = 2 });
         Assert.False(await svc.CancelBookingAsync(created.BookingRef!, "wrong@test.com"));
     }
 
@@ -429,7 +469,7 @@ public class BookingServiceTests
         using AppDbContext db = CreateDb(nameof(CancelBookingAsync_ReturnsTrue_WhenAlreadyCancelled));
         Seed(db);
         BookingService svc = CreateService(db);
-        var created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "test@test.com", Seats = 2 });
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = "test@test.com", Seats = 2 });
         await svc.CancelBookingAsync(created.BookingRef!, "test@test.com");
         Assert.True(await svc.CancelBookingAsync(created.BookingRef!, "test@test.com"));
     }

@@ -305,7 +305,7 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
     public async Task Admin_Overview_WithCookie_Works()
     {
         // 1. Get a valid cookie by logging in
-        var loginResp = await _client.PostAsJsonAsync("/api/admin/auth/login", new
+        HttpResponseMessage loginResp = await _client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = TestWebAppFactory.AdminPassword
@@ -314,7 +314,7 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
 
         // 2. Extract cookie
         string? cookie = null;
-        if (loginResp.Headers.TryGetValues("Set-Cookie", out var values))
+        if (loginResp.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values))
         {
             cookie = values.FirstOrDefault(v => v.StartsWith("openresto_auth="));
         }
@@ -323,8 +323,8 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
         // 3. Call protected endpoint with cookie instead of header
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/admin/overview");
         request.Headers.Add("Cookie", cookie.Split(';')[0]);
-        
-        var response = await _client.SendAsync(request);
+
+        HttpResponseMessage response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

@@ -15,17 +15,17 @@ public class AvailabilityControllerTests(TestWebAppFactory factory) : IClassFixt
     {
         HttpClient client = _factory.CreateClient();
         int restaurantId;
-        using (var scope = _factory.Services.CreateScope())
+        using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             restaurantId = db.Restaurants.First().Id;
         }
 
         var date = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
-        var response = await client.GetAsync($"/api/availability/{restaurantId}?date={date}&seats=2");
+        HttpResponseMessage response = await client.GetAsync($"/api/availability/{restaurantId}?date={date}&seats=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<AvailabilityResponseDto>();
+        AvailabilityResponseDto? result = await response.Content.ReadFromJsonAsync<AvailabilityResponseDto>();
         Assert.NotNull(result);
         Assert.Equal(restaurantId, result.RestaurantId);
         Assert.NotEmpty(result.Slots);
@@ -36,7 +36,7 @@ public class AvailabilityControllerTests(TestWebAppFactory factory) : IClassFixt
     {
         HttpClient client = _factory.CreateClient();
         var date = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
-        var response = await client.GetAsync($"/api/availability/9999?date={date}&seats=2");
+        HttpResponseMessage response = await client.GetAsync($"/api/availability/9999?date={date}&seats=2");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

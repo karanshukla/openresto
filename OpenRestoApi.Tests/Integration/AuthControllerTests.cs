@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
 
@@ -256,9 +258,9 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         HttpResponseMessage response = await client.PostAsync("/api/admin/auth/logout", null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Logged out.", body.GetProperty("message").GetString());
-        
+
         // Note: We can't easily verify the cookie is deleted in this test client setup without more complex logic, 
         // but we verify the endpoint responds correctly.
     }
@@ -269,8 +271,8 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         // Ensure we have a fresh DB or at least clear the PVQ for this account
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
-            var cred = await db.AdminCredentials.FirstAsync();
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            AdminCredential cred = await db.AdminCredentials.FirstAsync();
             cred.PvqQuestion = null;
             cred.PvqAnswerHash = null;
             cred.PvqAnswerSalt = null;
@@ -285,7 +287,7 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Security question not configured for this account.", body.GetProperty("message").GetString());
     }
 
@@ -296,10 +298,10 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new { question = "Q", answer = "A" });
 
         HttpClient unauth = _factory.CreateClient();
-        var verifyResp = await unauth.PostAsJsonAsync("/api/admin/auth/pvq/verify", new { email = TestWebAppFactory.AdminEmail, answer = "A" });
+        HttpResponseMessage verifyResp = await unauth.PostAsJsonAsync("/api/admin/auth/pvq/verify", new { email = TestWebAppFactory.AdminEmail, answer = "A" });
         var token = (await verifyResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("resetToken").GetString();
 
-        var response = await unauth.PostAsJsonAsync("/api/admin/auth/reset-password", new { resetToken = token, newPassword = "123" });
+        HttpResponseMessage response = await unauth.PostAsJsonAsync("/api/admin/auth/reset-password", new { resetToken = token, newPassword = "123" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -308,13 +310,13 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
     {
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
             db.AdminCredentials.RemoveRange(db.AdminCredentials);
             await db.SaveChangesAsync();
         }
 
         HttpClient client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/admin/auth/login", new
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
         {
             email = TestWebAppFactory.AdminEmail,
             password = TestWebAppFactory.AdminPassword

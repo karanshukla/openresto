@@ -17,7 +17,7 @@ public class AdminServiceTests : IDisposable
         _connection = new SqliteConnection("Data Source=:memory:");
         _connection.Open();
 
-        var opts = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> opts = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
@@ -50,7 +50,7 @@ public class AdminServiceTests : IDisposable
         SeedBase(1);
         await _db.SaveChangesAsync();
         // No bookings, totalSeats should be 0
-        var overview = await svc.GetOverviewAsync();
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
         Assert.Equal(0, overview.TotalSeats);
     }
 
@@ -65,7 +65,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 2, SectionId = 2, TableId = 2, Date = nowUtc.AddHours(5), BookingRef = "FUTURE" });
         await _db.SaveChangesAsync();
 
-        var past = await svc.GetBookingsAsync(null, null, "past");
+        List<BookingDetailDto> past = await svc.GetBookingsAsync(null, null, "past");
         Assert.Single(past);
         Assert.Equal("PAST", past[0].BookingRef);
     }
@@ -78,11 +78,11 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "CANCELLED", IsCancelled = true });
         await _db.SaveChangesAsync();
 
-        var cancelled = await svc.GetBookingsAsync(1, null, "cancelled");
+        List<BookingDetailDto> cancelled = await svc.GetBookingsAsync(1, null, "cancelled");
         Assert.Single(cancelled);
         Assert.Equal("CANCELLED", cancelled[0].BookingRef);
 
-        var globalCancelled = await svc.GetBookingsAsync(null, null, "cancelled");
+        List<BookingDetailDto> globalCancelled = await svc.GetBookingsAsync(null, null, "cancelled");
         Assert.Single(globalCancelled);
     }
 
@@ -95,10 +95,10 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(5), BookingRef = "FUTURE" });
         await _db.SaveChangesAsync();
 
-        var all = await svc.GetBookingsAsync(1, null, "all");
+        List<BookingDetailDto> all = await svc.GetBookingsAsync(1, null, "all");
         Assert.Equal(2, all.Count);
 
-        var globalAll = await svc.GetBookingsAsync(null, null, "all");
+        List<BookingDetailDto> globalAll = await svc.GetBookingsAsync(null, null, "all");
         Assert.Equal(2, globalAll.Count);
     }
 
@@ -111,7 +111,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = today.AddHours(12), BookingRef = "TODAY" });
         await _db.SaveChangesAsync();
 
-        var results = await svc.GetBookingsAsync(null, today, "all");
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(null, today, "all");
         Assert.Single(results);
     }
 
@@ -119,7 +119,7 @@ public class AdminServiceTests : IDisposable
     public async Task GetBookingAsync_ReturnsNull_WhenNotFound()
     {
         AdminService svc = CreateService();
-        var result = await svc.GetBookingAsync(999);
+        BookingDetailDto? result = await svc.GetBookingAsync(999);
         Assert.Null(result);
     }
 
@@ -169,7 +169,7 @@ public class AdminServiceTests : IDisposable
     public async Task UpdateBookingAsync_ReturnsNull_WhenNotFound()
     {
         AdminService svc = CreateService();
-        var result = await svc.UpdateBookingAsync(999, new UpdateBookingRequest());
+        BookingDetailDto? result = await svc.UpdateBookingAsync(999, new UpdateBookingRequest());
         Assert.Null(result);
     }
 
@@ -219,7 +219,7 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         DateTime newDate = original.AddDays(1);
-        var result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
+        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
         Assert.Equal(newDate.AddHours(2), result!.EndTime);
     }
 
@@ -233,7 +233,7 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         DateTime newDate = original.AddDays(1);
-        var result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
+        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
         Assert.Equal(newDate.AddHours(1), result!.EndTime);
     }
 
@@ -246,7 +246,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        var result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { CustomerEmail = "new@test.com" });
+        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { CustomerEmail = "new@test.com" });
         Assert.True(result!.EndTime > result.Date);
     }
 
@@ -266,7 +266,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        var newEnd = await svc.ExtendBookingAsync(1, 30);
+        DateTime? newEnd = await svc.ExtendBookingAsync(1, 30);
         Assert.Equal(date.AddHours(1).AddMinutes(30), newEnd);
     }
 
@@ -363,7 +363,7 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         DateTime newDate = original.AddHours(5);
-        var result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = newDate });
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = newDate });
         Assert.Equal(newDate.AddHours(1), result!.EndTime);
     }
 
@@ -373,7 +373,7 @@ public class AdminServiceTests : IDisposable
         AdminService svc = CreateService();
         SeedBase(1);
         await _db.SaveChangesAsync();
-        var list = await svc.GetRestaurantsAsync();
+        List<LookupDto> list = await svc.GetRestaurantsAsync();
         Assert.Single(list);
     }
 
@@ -383,7 +383,7 @@ public class AdminServiceTests : IDisposable
         AdminService svc = CreateService();
         SeedBase(1);
         await _db.SaveChangesAsync();
-        var list = await svc.GetSectionsAsync(1);
+        List<LookupDto> list = await svc.GetSectionsAsync(1);
         Assert.Single(list);
     }
 
@@ -391,7 +391,7 @@ public class AdminServiceTests : IDisposable
     public async Task CreateRestaurantAsync_Works()
     {
         AdminService svc = CreateService();
-        var r = await svc.CreateRestaurantAsync(" New ", " Addr ");
+        RestaurantDto r = await svc.CreateRestaurantAsync(" New ", " Addr ");
         Assert.Equal("New", r.Name);
         Assert.Equal("Addr", r.Address);
     }
@@ -418,7 +418,7 @@ public class AdminServiceTests : IDisposable
         AdminService svc = CreateService();
         _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "Invalid/Zone" });
         await _db.SaveChangesAsync();
-        var result = await svc.GetOverviewAsync();
+        AdminOverviewDto result = await svc.GetOverviewAsync();
         Assert.NotNull(result);
     }
 
@@ -431,7 +431,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = local, EndTime = local.AddHours(1), BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        var result = await svc.GetBookingAsync(1);
+        BookingDetailDto? result = await svc.GetBookingAsync(1);
         Assert.Equal(DateTimeKind.Utc, result!.Date.Kind);
         Assert.Equal(DateTimeKind.Utc, result.EndTime!.Value.Kind);
     }
@@ -441,27 +441,27 @@ public class AdminServiceTests : IDisposable
     {
         AdminService svc = CreateService();
         SeedBase(1);
-        
+
         DateTime nowUtc = DateTime.UtcNow;
-        
+
         // 1. Just started (10 mins ago) - should be ACTIVE
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-10), BookingRef = "LIVE" });
-        
+
         // 2. Started 2 hours ago - should be PAST
         _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-120), BookingRef = "OLD" });
-        
+
         // 3. Future - should be ACTIVE
         _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(2), BookingRef = "FUTURE" });
 
         await _db.SaveChangesAsync();
 
-        var active = await svc.GetBookingsAsync(1, null, "active");
-        var past = await svc.GetBookingsAsync(1, null, "past");
+        List<BookingDetailDto> active = await svc.GetBookingsAsync(1, null, "active");
+        List<BookingDetailDto> past = await svc.GetBookingsAsync(1, null, "past");
 
         Assert.Equal(2, active.Count);
         Assert.Contains(active, b => b.BookingRef == "LIVE");
         Assert.Contains(active, b => b.BookingRef == "FUTURE");
-        
+
         Assert.Single(past);
         Assert.Equal("OLD", past[0].BookingRef);
     }
@@ -471,7 +471,7 @@ public class AdminServiceTests : IDisposable
     {
         AdminService svc = CreateService();
         SeedBase(1);
-        
+
         DateTime today = DateTime.UtcNow.Date;
 
         // Morning booking (now past)
@@ -482,7 +482,7 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         // When requesting a specific date, both should show up regardless of current time
-        var results = await svc.GetBookingsAsync(1, today, "active");
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(1, today, "active");
 
         Assert.Equal(2, results.Count);
     }

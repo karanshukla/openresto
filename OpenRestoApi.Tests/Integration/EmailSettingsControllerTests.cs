@@ -155,11 +155,11 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         // In the test factory, we might need to ensure a mock is being used or the real one is safe.
         // If it's the real MailKit service, it will fail if no real server.
         // However, the test environment should ideally mock the external dependencies.
-        
+
         // Since we can't easily change the service registration here without modifying TestWebAppFactory,
         // and TestWebAppFactory doesn't seem to mock EmailSettingsService or its internal MailKit usage,
         // this test might actually attempt a real connection or fail if not configured.
-        
+
         // Let's assume for now we want to reach the code paths.
         Assert.True(response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.BadRequest);
     }

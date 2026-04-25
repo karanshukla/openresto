@@ -48,13 +48,13 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task GetRestaurants_ReturnsSortedRestaurants()
         {
             // Act
-            var result = await _adminController.GetRestaurants();
+            IActionResult result = await _adminController.GetRestaurants();
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var restaurants = Assert.IsType<List<LookupDto>>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            List<LookupDto> restaurants = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Equal(2, restaurants.Count);
-            
+
             // Check sorting (A should be first)
             Assert.Equal("A Restaurant", restaurants[0].Name);
             Assert.Equal("B Restaurant", restaurants[1].Name);
@@ -64,14 +64,14 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task GetSections_ReturnsSectionsForRestaurant()
         {
             // Arrange
-            var restaurant = await _dbContext.Restaurants.FirstAsync(r => r.Name == "B Restaurant");
+            Restaurant restaurant = await _dbContext.Restaurants.FirstAsync(r => r.Name == "B Restaurant");
 
             // Act
-            var result = await _adminController.GetSections(restaurant.Id);
+            IActionResult result = await _adminController.GetSections(restaurant.Id);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var sections = Assert.IsType<List<LookupDto>>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            List<LookupDto> sections = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Equal(2, sections.Count);
         }
 
@@ -79,11 +79,11 @@ namespace OpenRestoApi.Tests.Controllers
         public async Task GetSections_WithInvalidId_ReturnsEmptyList()
         {
             // Act
-            var result = await _adminController.GetSections(99999);
+            IActionResult result = await _adminController.GetSections(99999);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var sections = Assert.IsType<List<LookupDto>>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            List<LookupDto> sections = Assert.IsType<List<LookupDto>>(okResult.Value);
             Assert.Empty(sections);
         }
 

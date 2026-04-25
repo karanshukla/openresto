@@ -39,7 +39,7 @@ public class RecentBookingsCookieTests
     [Fact]
     public void Append_ThenRead_ReturnsSameEntry()
     {
-        (HttpContext? ctx, DefaultHttpContext? inner) = CreateContext();
+        (HttpContext? ctx, _) = CreateContext();
         CachedBookingEntry entry = MakeEntry();
 
         _cookie.Append(ctx.Request, ctx.Response, entry);
@@ -147,11 +147,17 @@ public class RecentBookingsCookieTests
     private static string? ExtractCookieValue(HttpResponse response)
     {
         if (!response.Headers.TryGetValue("Set-Cookie", out Microsoft.Extensions.Primitives.StringValues values))
+        {
             return null;
+        }
 
         foreach (string? header in values)
         {
-            if (header == null || !header.StartsWith("openresto_recent=")) continue;
+            if (header == null || !header.StartsWith("openresto_recent="))
+            {
+                continue;
+            }
+
             int valueEnd = header.IndexOf(';');
             string value = valueEnd >= 0
                 ? header["openresto_recent=".Length..valueEnd]

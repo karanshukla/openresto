@@ -3,14 +3,17 @@ services:
     build:
       context: ./OpenRestoApi
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+      - PORT=8080
       - CORS_ORIGINS=http://localhost:5062
     env_file:
       - ./OpenRestoApi/.env.docker
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/health"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -33,7 +36,5 @@ services:
       - FRONTEND_HOST=frontend
       - FRONTEND_PORT=8081
     depends_on:
-      backend:
-        condition: service_healthy
-      frontend:
-        condition: service_started
+      - backend
+      - frontend

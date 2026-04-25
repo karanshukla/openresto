@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence;
@@ -26,9 +27,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             v => !v.HasValue ? v : (v.Value.Kind == DateTimeKind.Utc ? v : v.Value.ToUniversalTime()),
             v => !v.HasValue ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
 
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
         {
-            foreach (var property in entityType.GetProperties())
+            foreach (IMutableProperty property in entityType.GetProperties())
             {
                 if (property.ClrType == typeof(DateTime))
                 {

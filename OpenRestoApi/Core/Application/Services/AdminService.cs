@@ -22,16 +22,16 @@ public class AdminService(AppDbContext db)
     public async Task<AdminOverviewDto> GetOverviewAsync()
     {
         DateTime nowUtc = DateTime.UtcNow;
-        var restaurants = await _db.Restaurants.ToListAsync();
+        List<Restaurant> restaurants = await _db.Restaurants.ToListAsync();
 
         int totalRestaurants = restaurants.Count;
         int totalBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled);
         int totalSeats = await _db.Bookings.Where(b => !b.IsCancelled).SumAsync(b => (int?)b.Seats) ?? 0;
 
         int todayBookingsCount = 0;
-        foreach (var r in restaurants)
+        foreach (Restaurant? r in restaurants)
         {
-            var (start, end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
+            (DateTime start, DateTime end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
             todayBookingsCount += await _db.Bookings.CountAsync(b =>
                 b.RestaurantId == r.Id &&
                 b.Date >= start && b.Date < end &&
@@ -65,7 +65,7 @@ public class AdminService(AppDbContext db)
         if (restaurantId.HasValue)
         {
             q = q.Where(b => b.RestaurantId == restaurantId.Value);
-            var restaurant = await _db.Restaurants.FindAsync(restaurantId.Value);
+            Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId.Value);
             string tz = restaurant?.Timezone ?? "UTC";
 
             DateTime cutoff = nowUtc.AddMinutes(-90);
@@ -89,7 +89,7 @@ public class AdminService(AppDbContext db)
 
             if (date.HasValue)
             {
-                var (start, end) = GetUtcRangeForLocalDay(date.Value, tz);
+                (DateTime start, DateTime end) = GetUtcRangeForLocalDay(date.Value, tz);
                 q = q.Where(b => b.Date >= start && b.Date < end);
             }
         }
@@ -199,7 +199,7 @@ public class AdminService(AppDbContext db)
         {
             if (booking.EndTime.HasValue)
             {
-                var duration = booking.EndTime.Value - booking.Date;
+                TimeSpan duration = booking.EndTime.Value - booking.Date;
                 booking.EndTime = req.Date.Value + duration;
             }
             else
@@ -368,7 +368,7 @@ public class AdminService(AppDbContext db)
             // If date changed, we should also shift EndTime by the same amount to keep duration
             if (booking.EndTime.HasValue)
             {
-                var duration = booking.EndTime.Value - booking.Date;
+                TimeSpan duration = booking.EndTime.Value - booking.Date;
                 booking.EndTime = req.Date.Value + duration;
             }
             else

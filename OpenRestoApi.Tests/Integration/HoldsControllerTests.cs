@@ -51,14 +51,20 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         // Place first hold
         HttpResponseMessage first = await client.PostAsJsonAsync("/api/holds", new
         {
-            restaurantId, sectionId, tableId, date
+            restaurantId,
+            sectionId,
+            tableId,
+            date
         });
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
 
         // Place second hold on same table+date
         HttpResponseMessage second = await client.PostAsJsonAsync("/api/holds", new
         {
-            restaurantId, sectionId, tableId, date
+            restaurantId,
+            sectionId,
+            tableId,
+            date
         });
 
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
@@ -95,7 +101,10 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         // Place hold
         HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
         {
-            restaurantId, sectionId, tableId, date
+            restaurantId,
+            sectionId,
+            tableId,
+            date
         });
         JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
         string? holdId = holdBody.GetProperty("holdId").GetString();
@@ -106,7 +115,10 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         // Place again on same table+date
         HttpResponseMessage secondResp = await client.PostAsJsonAsync("/api/holds", new
         {
-            restaurantId, sectionId, tableId, date
+            restaurantId,
+            sectionId,
+            tableId,
+            date
         });
 
         Assert.Equal(HttpStatusCode.OK, secondResp.StatusCode);
@@ -127,7 +139,7 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     public async Task PlaceHold_InvalidModel_ReturnsBadRequest()
     {
         HttpClient client = _factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/holds", new { restaurantId = "invalid" });
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new { restaurantId = "invalid" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

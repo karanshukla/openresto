@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
 
@@ -14,7 +15,7 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var settings = await _emailSettings.GetAsync();
+        EmailSettings? settings = await _emailSettings.GetAsync();
         if (settings == null)
         {
             return Ok(new EmailSettingsResponse());

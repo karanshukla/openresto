@@ -20,15 +20,26 @@ RUN dotnet publish "OpenRestoApi.csproj" -c Release -o /app/publish
 # Use the official ASP.NET runtime image for the final application
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+
+# Install curl for healthchecks
+USER root
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy the published app
 COPY --from=publish /app/publish .
 
-# Install gosu and curl for secure user switching and healthchecks
-USER root
-RUN apt-get update && apt-get install -y gosu curl && rm -rf /var/lib/apt/lists/*
+# Create data directory and ensure 'app' user owns everything
+RUN mkdir -p /data && \
+    chown -R app:app /app /data && \
+    chmod -R 775 /app /data
 
-# Copy and prepare entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Switch to the non-root 'app' user
+USER app
 
-# Entrypoint runs as root to fix permissions, then switches to app
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ASP.NET defaults
+ENV ASPNETCORE_URLS=http://+:8080
+ENV PORT=8080
+EXPOSE 8080
+
+# Standard entry point
+ENTRYPOINT ["dotnet", "OpenRestoApi.dll"]

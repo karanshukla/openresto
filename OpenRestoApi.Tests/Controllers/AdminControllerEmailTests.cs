@@ -70,11 +70,11 @@ namespace OpenRestoApi.Tests.Controllers
             };
 
             // Act
-            var result = await _adminController.SendEmail(1, req);
+            IActionResult result = await _adminController.SendEmail(1, req);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(okResult.Value);
+            OkObjectResult okResult = Assert.IsType<OkObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(okResult.Value);
             Assert.Contains("Email sent to guest@test.com", response.Message);
         }
 
@@ -85,7 +85,7 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new SendBookingEmailRequest { Subject = "S", Body = "B" };
 
             // Act
-            var result = await _adminController.SendEmail(999, req);
+            IActionResult result = await _adminController.SendEmail(999, req);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
@@ -98,11 +98,11 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new SendBookingEmailRequest { Subject = "", Body = "B" };
 
             // Act
-            var result = await _adminController.SendEmail(1, req);
+            IActionResult result = await _adminController.SendEmail(1, req);
 
             // Assert
-            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(badRequest.Value);
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequest.Value);
             Assert.Equal("Subject and body are required.", response.Message);
         }
 
@@ -113,11 +113,11 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new SendBookingEmailRequest { Subject = "S", Body = " " };
 
             // Act
-            var result = await _adminController.SendEmail(1, req);
+            IActionResult result = await _adminController.SendEmail(1, req);
 
             // Assert
-            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(badRequest.Value);
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequest.Value);
             Assert.Equal("Subject and body are required.", response.Message);
         }
 
@@ -142,11 +142,11 @@ namespace OpenRestoApi.Tests.Controllers
             var req = new SendBookingEmailRequest { Subject = "S", Body = "B" };
 
             // Act
-            var result = await _adminController.SendEmail(booking.Id, req);
+            IActionResult result = await _adminController.SendEmail(booking.Id, req);
 
             // Assert
-            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<MessageResponse>(badRequest.Value);
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequest.Value);
             Assert.Equal("Customer email is not available.", response.Message);
         }
 

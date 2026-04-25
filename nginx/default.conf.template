@@ -2,92 +2,67 @@ server {
     listen ${PORT};
     server_tokens off;
 
-    # DNS resolver — dynamically read from /etc/resolv.conf by start.sh
-    resolver ${RESOLVER} valid=5s;
+    # DNS resolver — REQUIRED for Railway internal networking
+    # ipv6=off prevents connection delays when internal DNS returns unreachable IPv6 addresses
+    resolver 127.0.0.11 8.8.8.8 8.8.4.4 valid=5s ipv6=off;
+    resolver_timeout 5s;
+
+    # ── Logging ───────────────────────────────────────────────────────────
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    # ── Gzip Compression ──────────────────────────────────────────────────
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+
+    # Strict Security Headers
+    add_header X-Content-Type-Options  "nosniff" always;
+    add_header X-Frame-Options         "DENY" always;
+    add_header X-XSS-Protection        "1; mode=block" always;
+    add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # Strict Content Security Policy
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
     # ── Proxy timeouts ────────────────────────────────────────────────────
-    proxy_connect_timeout 30s;
-    proxy_send_timeout    30s;
-    proxy_read_timeout    30s;
-
-    # ── Security headers ──────────────────────────────────────────────────
-    # To ensure they are applied even when a location block has its own add_header,
-    # we repeat them where needed for robustness.
-
-    # ── Block common sensitive patterns ───────────────────────────────────
-    location ~ /\.(?!well-known) {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
-
-    location ~* \.(php|aspx?|jsp|cgi|pl|py|sh|sql|bak|old|swp|txt|ini|xml|class)$ {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
+    proxy_connect_timeout 60s;
+    proxy_send_timeout    60s;
+    proxy_read_timeout    60s;
 
     # ── API — proxy to backend ────────────────────────────────────────────
     location /api/ {
-        add_header X-Content-Type-Options  "nosniff" always;
-        add_header X-Frame-Options         "DENY" always;
-        add_header X-XSS-Protection        "1; mode=block" always;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
-        add_header Cross-Origin-Resource-Policy "same-origin" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
-        add_header Cache-Control "no-store, max-age=0" always;
-        add_header Server "OpenResto" always;
-
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+        # The trailing slash on both the location and proxy_pass is the most 
+        # reliable way to ensure /api/foo -> http://backend:8080/api/foo
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT}/api/;
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cookie_path / /;
 
-        proxy_hide_header X-Powered-By;
-        proxy_hide_header Server;
-
-        proxy_intercept_errors on;
-        error_page 404 /api-404;
+        proxy_buffering off;
+        add_header Cache-Control "no-store, max-age=0" always;
+        add_header X-Proxy-Target "Backend" always;
     }
 
-    location = /api-404 {
-        add_header X-Content-Type-Options  "nosniff" always;
-        add_header X-Frame-Options         "DENY" always;
-        add_header Server "OpenResto" always;
-        return 404 '{"error": "Not Found", "message": "The requested API endpoint does not exist."}';
-        default_type application/json;
-    }
-
-    # ── Health — for Railway ──────────────────────────────────────────────
+    # ── Health — for Railway/Docker ───────────────────────────────────────
     location /health {
         access_log off;
         return 200 "OK";
     }
 
     # ── Frontend — proxy to static server ─────────────────────────────────
-
-
     location / {
-        add_header X-Content-Type-Options  "nosniff" always;
-        add_header X-Frame-Options         "DENY" always;
-        add_header X-XSS-Protection        "1; mode=block" always;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
-        add_header Cross-Origin-Resource-Policy "same-origin" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
-        add_header Server "OpenResto" always;
-
         proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        add_header X-Proxy-Target "Frontend" always;
     }
 }

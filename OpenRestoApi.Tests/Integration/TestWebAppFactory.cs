@@ -55,7 +55,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
             });
 
             // Replace IEmailService with a mock for testing
-            var emailServiceDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IEmailService));
+            ServiceDescriptor? emailServiceDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IEmailService));
             if (emailServiceDescriptor != null)
             {
                 services.Remove(emailServiceDescriptor);

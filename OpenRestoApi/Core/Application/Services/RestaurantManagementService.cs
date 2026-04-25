@@ -13,7 +13,7 @@ public class RestaurantManagementService(AppDbContext db)
 
     public async Task<List<RestaurantDto>> GetAllAsync()
     {
-        var restaurants = await _db.Restaurants
+        List<Restaurant> restaurants = await _db.Restaurants
             .Include(r => r.Sections)
                 .ThenInclude(s => s.Tables)
             .ToListAsync();

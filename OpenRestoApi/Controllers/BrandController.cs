@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
 
@@ -16,7 +17,7 @@ public class BrandController(BrandService brandService) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var brand = await _brand.GetAsync();
+        BrandSettings brand = await _brand.GetAsync();
         return Ok(new BrandResponse
         {
             AppName = brand.AppName ?? "Open Resto",

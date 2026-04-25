@@ -108,14 +108,14 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     [HttpGet("restaurants")]
     public async Task<IActionResult> GetRestaurants()
     {
-        var restaurants = await _adminService.GetRestaurantsAsync();
+        List<LookupDto> restaurants = await _adminService.GetRestaurantsAsync();
         return Ok(restaurants);
     }
 
     [HttpGet("restaurants/{restaurantId}/sections")]
     public async Task<IActionResult> GetSections(int restaurantId)
     {
-        var sections = await _adminService.GetSectionsAsync(restaurantId);
+        List<LookupDto> sections = await _adminService.GetSectionsAsync(restaurantId);
         return Ok(sections);
     }
 

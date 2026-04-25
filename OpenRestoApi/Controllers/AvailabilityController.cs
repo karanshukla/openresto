@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
@@ -16,7 +17,7 @@ public class AvailabilityController(AvailabilityService availabilityService) : C
     {
         try
         {
-            var result = await _availabilityService.GetAvailabilityAsync(restaurantId, date, seats);
+            AvailabilityResponseDto result = await _availabilityService.GetAvailabilityAsync(restaurantId, date, seats);
             return Ok(result);
         }
         catch (ArgumentException ex)

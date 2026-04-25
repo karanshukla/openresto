@@ -146,14 +146,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<ISectionRepository, SectionRepository>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
-        
+
         services.AddScoped<BookingService>();
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();
         services.AddScoped<BrandService>();
         services.AddScoped<EmailSettingsService>();
         services.AddScoped<AvailabilityService>();
-        
+
         services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
 
         services.AddDataProtection();
