@@ -2,8 +2,8 @@ using OpenRestoApi.Extensions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Ensure the app listens on the PORT environment variable for Railway, defaulting to 5062
-builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "5062"}");
+// Ensure the app listens on the PORT environment variable for Railway, defaulting to 8080
+builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
 builder.WebHost.ConfigureKestrel(options =>
 {
