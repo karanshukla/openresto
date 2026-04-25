@@ -66,7 +66,9 @@ describe("AdminLoginScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("••••••••"), "wrong");
     fireEvent.press(screen.getByText("Sign In"));
 
-    await waitFor(() => expect(screen.getByText("Invalid email or password. Please try again.")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("Invalid email or password. Please try again.")).toBeTruthy()
+    );
   });
 
   it("navigates through forgot password flow", async () => {

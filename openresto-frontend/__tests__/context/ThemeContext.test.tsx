@@ -9,7 +9,7 @@ import { Platform, Text, TouchableOpacity } from "react-native";
 // Mock Platform.OS specifically
 Object.defineProperty(Platform, "OS", {
   get: jest.fn(() => "web"),
-  configurable: true
+  configurable: true,
 });
 
 const TestComponent = () => {
@@ -69,7 +69,6 @@ describe("ThemeContext", () => {
 
     expect(getByTestId("scheme").props.children).toBe("light");
   });
-
 
   it("applies theme to document element on web", () => {
     render(

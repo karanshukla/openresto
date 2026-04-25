@@ -2,13 +2,17 @@ export function buildUrl(path: string): string {
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const base = API_URL?.replace(/\/$/, "") ?? "";
   if (!base) return `/api${path}`;
-  
+
   // Check if the URL path already contains /api as a segment
   const urlObj = (() => {
-    try { return new URL(base); } catch { return null; }
+    try {
+      return new URL(base);
+    } catch {
+      return null;
+    }
   })();
-  
-  const hasApi = urlObj ? urlObj.pathname.split('/').includes('api') : base.includes('/api');
+
+  const hasApi = urlObj ? urlObj.pathname.split("/").includes("api") : base.includes("/api");
 
   return hasApi ? `${base}${path}` : `${base}/api${path}`;
 }

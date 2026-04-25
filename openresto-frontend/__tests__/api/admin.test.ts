@@ -453,12 +453,20 @@ describe("adminUpdateBookingFull", () => {
   });
 
   it("throws error on failure", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: "Table too small" }) });
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Table too small" }),
+    });
     await expect(adminUpdateBookingFull(5, req)).rejects.toThrow("Table too small");
   });
 
   it("throws generic error when JSON fails", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => { throw new Error(); } });
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => {
+        throw new Error();
+      },
+    });
     await expect(adminUpdateBookingFull(5, req)).rejects.toThrow("Failed to update booking");
   });
 });

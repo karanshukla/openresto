@@ -11,12 +11,15 @@ interface LoadingScreenProps {
   message?: string;
 }
 
-export default function LoadingScreen({ brand: propBrand, message = "Preparing your table..." }: LoadingScreenProps) {
+export default function LoadingScreen({
+  brand: propBrand,
+  message = "Preparing your table...",
+}: LoadingScreenProps) {
   const contextBrand = useBrand();
   const brand = propBrand || contextBrand;
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -43,7 +46,7 @@ export default function LoadingScreen({ brand: propBrand, message = "Preparing y
           easing: Easing.linear,
           useNativeDriver: true,
         })
-      )
+      ),
     ]).start();
   }, [fadeAnim, scaleAnim, rotateAnim]);
 
@@ -63,31 +66,25 @@ export default function LoadingScreen({ brand: propBrand, message = "Preparing y
 
   return (
     <View style={[styles.container, { backgroundColor: colors.page }]}>
-      <Animated.View 
+      <Animated.View
         style={[
-          styles.content, 
-          { 
+          styles.content,
+          {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
+            transform: [{ scale: scaleAnim }],
+          },
         ]}
       >
         <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <MaterialCommunityIcons 
-            name="silverware-fork-knife" 
-            size={80} 
-            color={brand.primaryColor} 
+          <MaterialCommunityIcons
+            name="silverware-fork-knife"
+            size={80}
+            color={brand.primaryColor}
           />
         </Animated.View>
-        <ActivityIndicator 
-          size="large" 
-          color={brand.primaryColor} 
-          style={styles.spinner} 
-        />
+        <ActivityIndicator size="large" color={brand.primaryColor} style={styles.spinner} />
         <ThemedText style={styles.text}>{message}</ThemedText>
-        <ThemedText style={[styles.subtext, { color: colors.muted }]}>
-          {brand.appName}
-        </ThemedText>
+        <ThemedText style={[styles.subtext, { color: colors.muted }]}>{brand.appName}</ThemedText>
       </Animated.View>
     </View>
   );

@@ -42,10 +42,12 @@ describe("calendar utility - buildCalendarUrls", () => {
       download: "",
       click: jest.fn(),
     };
-    const createElementSpy = jest.spyOn(document, "createElement").mockReturnValue(mockAnchor as any);
+    const createElementSpy = jest
+      .spyOn(document, "createElement")
+      .mockReturnValue(mockAnchor as any);
     const createObjectURLSpy = jest.spyOn(URL, "createObjectURL").mockReturnValue("blob-url");
     const revokeObjectURLSpy = jest.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-    
+
     const { downloadIcs } = buildCalendarUrls(input);
     downloadIcs();
 

@@ -44,8 +44,22 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 describe("HomeScreen", () => {
   const mockRestaurants = [
-    { id: 1, name: "Resto 1", address: "Address 1", openTime: "09:00", closeTime: "22:00", sections: [] },
-    { id: 2, name: "Resto 2", address: "Address 2", openTime: "10:00", closeTime: "21:00", sections: [] },
+    {
+      id: 1,
+      name: "Resto 1",
+      address: "Address 1",
+      openTime: "09:00",
+      closeTime: "22:00",
+      sections: [],
+    },
+    {
+      id: 2,
+      name: "Resto 2",
+      address: "Address 2",
+      openTime: "10:00",
+      closeTime: "21:00",
+      sections: [],
+    },
   ];
 
   beforeEach(() => {
@@ -55,11 +69,14 @@ describe("HomeScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
