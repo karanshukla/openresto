@@ -59,16 +59,16 @@ describe("BookingDetailRows", () => {
     expect(screen.queryByText("Requests")).toBeNull();
     expect(screen.queryByText("Table")).toBeNull();
   });
-  
+
   it("renders table name without section if section missing", () => {
-      render(
-        <BookingDetailRows
-          booking={{ ...mockBooking, sectionName: undefined }}
-          restaurant={null}
-          mutedColor="gray"
-          borderColor="black"
-        />
-      );
-      expect(screen.getByText("Table 5")).toBeTruthy();
+    render(
+      <BookingDetailRows
+        booking={{ ...mockBooking, sectionName: undefined }}
+        restaurant={null}
+        mutedColor="gray"
+        borderColor="black"
+      />
+    );
+    expect(screen.getByText("Table 5")).toBeTruthy();
   });
 });

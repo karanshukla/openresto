@@ -43,10 +43,14 @@ jest.mock("@/components/admin/settings/LocationCard", () => ({
         </Pressable>
       </View>
     );
-  }
+  },
 }));
-jest.mock("@/components/admin/settings/BrandSettingsCard", () => ({ BrandSettingsCard: () => null }));
-jest.mock("@/components/admin/settings/EmailSettingsCard", () => ({ EmailSettingsCard: () => null }));
+jest.mock("@/components/admin/settings/BrandSettingsCard", () => ({
+  BrandSettingsCard: () => null,
+}));
+jest.mock("@/components/admin/settings/EmailSettingsCard", () => ({
+  EmailSettingsCard: () => null,
+}));
 jest.mock("@/components/admin/settings/SecurityCard", () => ({ SecurityCard: () => null }));
 
 jest.setTimeout(15000);
@@ -61,11 +65,14 @@ describe("AdminSettingsScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -90,7 +97,7 @@ describe("AdminSettingsScreen", () => {
     // 1. Trigger confirm
     let confirmResult: boolean | undefined;
     fireEvent.press(screen.getByTestId("trigger-confirm"));
-    
+
     expect(screen.getByText("Test Message")).toBeTruthy();
 
     // 2. Cancel

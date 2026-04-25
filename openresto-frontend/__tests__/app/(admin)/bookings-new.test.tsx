@@ -44,17 +44,13 @@ describe("NewBookingScreen", () => {
       name: "Resto A",
       openTime: "09:00",
       closeTime: "22:00",
-      sections: [
-        { id: 1, name: "Main", tables: [{ id: 1, name: "T1", seats: 4 }] }
-      ]
+      sections: [{ id: 1, name: "Main", tables: [{ id: 1, name: "T1", seats: 4 }] }],
     },
     {
-        id: 2,
-        name: "Resto B",
-        sections: [
-          { id: 2, name: "Patio", tables: [{ id: 2, name: "T2", seats: 2 }] }
-        ]
-      }
+      id: 2,
+      name: "Resto B",
+      sections: [{ id: 2, name: "Patio", tables: [{ id: 2, name: "T2", seats: 2 }] }],
+    },
   ];
 
   beforeEach(() => {
@@ -66,11 +62,14 @@ describe("NewBookingScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -85,10 +84,12 @@ describe("NewBookingScreen", () => {
     fireEvent.press(screen.getByText("Create Booking"));
 
     await waitFor(() => {
-        expect(adminCreateBooking).toHaveBeenCalledWith(expect.objectContaining({
-            customerEmail: "new@test.com"
-        }));
-        expect(mockReplace).toHaveBeenCalledWith("/(admin)/bookings/99");
+      expect(adminCreateBooking).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerEmail: "new@test.com",
+        })
+      );
+      expect(mockReplace).toHaveBeenCalledWith("/(admin)/bookings/99");
     });
   });
 

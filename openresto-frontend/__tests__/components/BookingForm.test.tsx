@@ -72,11 +72,14 @@ describe("BookingForm", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -92,10 +95,12 @@ describe("BookingForm", () => {
     // Click submit
     fireEvent.press(screen.getByText("Confirm Booking"));
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      customerEmail: "test@test.com",
-      holdId: "h-123"
-    }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerEmail: "test@test.com",
+        holdId: "h-123",
+      })
+    );
   });
 
   it("shows warning when seats exceed table capacity", async () => {
@@ -107,12 +112,12 @@ describe("BookingForm", () => {
     // Let's force a smaller table if we can.
     // Actually, it auto-selects. Let's change guests to 4, it should pick T2.
     // Then change guests back to 2, it should pick T1.
-    
+
     // Manual selection of table:
     fireEvent.press(screen.getByText("T1 (2 seats)")); // Opens Select
     // In our Select mock/impl, we just need to find the option.
     fireEvent.press(screen.getByText("T2 (4 seats)"));
-    
+
     // Now change guests to 5 (more than T2)
     // We need to mock seat options or just find the one.
     fireEvent.press(screen.getByText("2 seats"));
@@ -127,14 +132,14 @@ describe("BookingForm", () => {
 
   it("disables submit when invalid", () => {
     (useTableHold as jest.Mock).mockReturnValue({
-        holdStatus: "idle",
-        secondsLeft: 0,
-        holdId: null,
-        setHoldStatus: mockSetHoldStatus,
-        releaseCurrentHold: mockReleaseCurrentHold,
-      });
+      holdStatus: "idle",
+      secondsLeft: 0,
+      holdId: null,
+      setHoldStatus: mockSetHoldStatus,
+      releaseCurrentHold: mockReleaseCurrentHold,
+    });
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
-    
+
     const btn = screen.getByText("Confirm Booking");
     // Button component renders a Pressable.
     // We check if it's disabled via props if we can, or just try to press it.
@@ -144,7 +149,7 @@ describe("BookingForm", () => {
 
   it("renders 'No tables available' when guests exceed all tables", () => {
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
-    
+
     fireEvent.press(screen.getByText("2 seats"));
     fireEvent.press(screen.getByText("10 seats")); // mockRestaurant max is 4
 
@@ -155,7 +160,7 @@ describe("BookingForm", () => {
     // mockRestaurant openDays is 1,2,3,4,5 (Mon-Fri)
     // 2026-04-18 is Saturday (Day 6)
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
-    
+
     // DatePicker onSelect
     // We need to trigger DatePicker change.
     // Assuming DatePicker is mocked or we can find its trigger.

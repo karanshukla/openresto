@@ -55,7 +55,9 @@ jest.mock("@/components/common/ConfirmModal", () => {
     return (
       <View testID="confirm-modal">
         <Text>{message}</Text>
-        <Pressable onPress={onConfirm}><Text>{confirmLabel || "Confirm"}</Text></Pressable>
+        <Pressable onPress={onConfirm}>
+          <Text>{confirmLabel || "Confirm"}</Text>
+        </Pressable>
       </View>
     );
   };
@@ -90,11 +92,14 @@ describe("LookupScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -111,10 +116,15 @@ describe("LookupScreen", () => {
     renderWithProviders(<LookupScreen />);
 
     fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF");
-    fireEvent.changeText(screen.getByPlaceholderText("The email used when booking"), "test@test.com");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
     fireEvent.press(screen.getByText("Look Up"));
 
-    await waitFor(() => expect(screen.getByText("No booking found matching that reference and email.")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("No booking found matching that reference and email.")).toBeTruthy()
+    );
   });
 
   it("shows booking details when found", async () => {
@@ -123,7 +133,10 @@ describe("LookupScreen", () => {
     renderWithProviders(<LookupScreen />);
 
     fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
-    fireEvent.changeText(screen.getByPlaceholderText("The email used when booking"), "test@test.com");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
     fireEvent.press(screen.getByText("Look Up"));
 
     await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
@@ -138,7 +151,10 @@ describe("LookupScreen", () => {
 
     // Perform lookup first
     fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
-    fireEvent.changeText(screen.getByPlaceholderText("The email used when booking"), "test@test.com");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
     fireEvent.press(screen.getByText("Look Up"));
 
     await waitFor(() => expect(screen.getByText("Cancel This Booking")).toBeTruthy());
@@ -164,7 +180,10 @@ describe("LookupScreen", () => {
     renderWithProviders(<LookupScreen />);
 
     fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
-    fireEvent.changeText(screen.getByPlaceholderText("The email used when booking"), "test@test.com");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
     fireEvent.press(screen.getByText("Look Up"));
 
     await waitFor(() => screen.getByText("Cancel This Booking"));
@@ -177,9 +196,17 @@ describe("LookupScreen", () => {
   });
 
   it("renders recent bookings from cache and triggers lookup on press", async () => {
-    const mockCached = [{ bookingRef: "CACHED1", email: "cached@test.com", restaurantName: "Cached Resto", date: "2026-01-01", seats: 4 }];
+    const mockCached = [
+      {
+        bookingRef: "CACHED1",
+        email: "cached@test.com",
+        restaurantName: "Cached Resto",
+        date: "2026-01-01",
+        seats: 4,
+      },
+    ];
     (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
-    
+
     renderWithProviders(<LookupScreen />);
 
     await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());

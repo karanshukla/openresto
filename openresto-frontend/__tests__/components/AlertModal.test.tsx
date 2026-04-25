@@ -25,10 +25,14 @@ jest.mock("react-native", () => {
   rn.Modal = ({ children, visible, onRequestClose }: any) => {
     if (!visible) return null;
     return (
-        <rn.View testID="modal-container" accessibilityHint="modal" accessibilityLabel="modal" 
-                onAccessibilityEscape={onRequestClose}>
-            {children}
-        </rn.View>
+      <rn.View
+        testID="modal-container"
+        accessibilityHint="modal"
+        accessibilityLabel="modal"
+        onAccessibilityEscape={onRequestClose}
+      >
+        {children}
+      </rn.View>
     );
   };
   return rn;
@@ -58,7 +62,7 @@ describe("AlertModal", () => {
     renderWithBrand(<AlertModal {...defaultProps} />);
     // backdrop is the outer Pressable.
     // In our Modal mock, it's just in the tree.
-    // We can find by text "Something happened" then go to parent? 
+    // We can find by text "Something happened" then go to parent?
     // Or just look for the first pressable.
     const backdrop = screen.getByText("Something happened").parent?.parent;
     fireEvent.press(backdrop as any);
@@ -66,15 +70,15 @@ describe("AlertModal", () => {
   });
 
   it("calls onClose on request close (android back)", () => {
-      renderWithBrand(<AlertModal {...defaultProps} />);
-      const modal = screen.getByTestId("modal-container");
-      modal.props.onAccessibilityEscape(); // Trigger the mock callback
-      expect(defaultProps.onClose).toHaveBeenCalled();
+    renderWithBrand(<AlertModal {...defaultProps} />);
+    const modal = screen.getByTestId("modal-container");
+    modal.props.onAccessibilityEscape(); // Trigger the mock callback
+    expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
   it("renders in dark mode", () => {
-      (useColorScheme as jest.Mock).mockReturnValue("dark");
-      renderWithBrand(<AlertModal {...defaultProps} />);
-      expect(screen.getByText("OK")).toBeTruthy();
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    renderWithBrand(<AlertModal {...defaultProps} />);
+    expect(screen.getByText("OK")).toBeTruthy();
   });
 });

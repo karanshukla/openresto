@@ -25,9 +25,9 @@ jest.mock("react-native", () => {
   rn.Modal = ({ children, visible, onRequestClose }: any) => {
     if (!visible) return null;
     return (
-        <rn.View testID="modal-container" onAccessibilityEscape={onRequestClose}>
-            {children}
-        </rn.View>
+      <rn.View testID="modal-container" onAccessibilityEscape={onRequestClose}>
+        {children}
+      </rn.View>
     );
   };
   return rn;
@@ -57,7 +57,7 @@ describe("Select", () => {
   it("calls onClose when backdrop pressed", () => {
     renderWithBrand(<Select options={options} onSelect={jest.fn()} />);
     fireEvent.press(screen.getByText("Select an option")); // Open
-    
+
     // In our component, backdrop is a Pressable wrapping modal content.
     // We can find by text and go up.
     const backdrop = screen.getByText("Option A").parent?.parent?.parent;
@@ -76,16 +76,16 @@ describe("Select", () => {
   });
 
   it("handles onRequestClose", () => {
-      renderWithBrand(<Select options={options} onSelect={jest.fn()} />);
-      fireEvent.press(screen.getByText("Select an option"));
-      const modal = screen.getByTestId("modal-container");
-      modal.props.onAccessibilityEscape();
-      expect(screen.queryByText("Option A")).toBeNull();
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} />);
+    fireEvent.press(screen.getByText("Select an option"));
+    const modal = screen.getByTestId("modal-container");
+    modal.props.onAccessibilityEscape();
+    expect(screen.queryByText("Option A")).toBeNull();
   });
 
   it("renders correctly in dark mode", () => {
-      (useColorScheme as jest.Mock).mockReturnValue("dark");
-      renderWithBrand(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
-      expect(screen.getByText("Option B")).toBeTruthy();
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    renderWithBrand(<Select options={options} onSelect={jest.fn()} selectedValue="b" />);
+    expect(screen.getByText("Option B")).toBeTruthy();
   });
 });

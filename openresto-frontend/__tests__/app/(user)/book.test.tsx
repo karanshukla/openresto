@@ -99,11 +99,14 @@ describe("BookScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -116,7 +119,9 @@ describe("BookScreen", () => {
     fireEvent.press(screen.getByTestId("submit-trigger"));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/booking-confirmation/REF123?email=test%40example.com");
+      expect(mockPush).toHaveBeenCalledWith(
+        "/booking-confirmation/REF123?email=test%40example.com"
+      );
     });
   });
 

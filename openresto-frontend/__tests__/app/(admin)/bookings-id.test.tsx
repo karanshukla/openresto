@@ -52,14 +52,16 @@ jest.mock("react-native", () => {
 
 // Mock sub-components if they cause string fragmentation
 jest.mock("@/components/admin/bookings/ExtendBookingActions", () => {
-    const { View, Pressable, Text } = require("react-native");
-    return {
-        ExtendBookingActions: ({ onExtend }: any) => (
-            <View>
-                <Pressable testID="extend-30" onPress={() => onExtend(30)}><Text>+30m</Text></Pressable>
-            </View>
-        )
-    };
+  const { View, Pressable, Text } = require("react-native");
+  return {
+    ExtendBookingActions: ({ onExtend }: any) => (
+      <View>
+        <Pressable testID="extend-30" onPress={() => onExtend(30)}>
+          <Text>+30m</Text>
+        </Pressable>
+      </View>
+    ),
+  };
 });
 
 jest.setTimeout(20000);
@@ -82,10 +84,8 @@ describe("BookingDetailScreen", () => {
     {
       id: 1,
       name: "Resto A",
-      sections: [
-        { id: 1, name: "S1", tables: [{ id: 1, name: "T1", seats: 4 }] }
-      ]
-    }
+      sections: [{ id: 1, name: "S1", tables: [{ id: 1, name: "T1", seats: 4 }] }],
+    },
   ];
 
   beforeEach(() => {
@@ -98,11 +98,14 @@ describe("BookingDetailScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -118,7 +121,7 @@ describe("BookingDetailScreen", () => {
   it("handles uncancel flow", async () => {
     (getAdminBooking as jest.Mock).mockResolvedValue({ ...mockBooking, isCancelled: true });
     (adminRestoreBooking as jest.Mock).mockResolvedValue(true);
-    
+
     renderWithProviders(<BookingDetailScreen />);
     await waitFor(() => expect(screen.getByText("Restore Booking")).toBeTruthy());
 

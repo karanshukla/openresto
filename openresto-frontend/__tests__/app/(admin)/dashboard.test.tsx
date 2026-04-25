@@ -56,11 +56,14 @@ describe("AdminDashboardScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
@@ -69,7 +72,7 @@ describe("AdminDashboardScreen", () => {
   it("renders metrics and chart correctly", async () => {
     const today = new Date();
     const mockBookings = [
-      { id: 10, date: today.toISOString(), seats: 4, customerEmail: "today@test.com" }
+      { id: 10, date: today.toISOString(), seats: 4, customerEmail: "today@test.com" },
     ];
     (getAdminBookings as jest.Mock).mockResolvedValue(mockBookings);
 

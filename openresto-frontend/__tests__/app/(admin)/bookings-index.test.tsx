@@ -48,19 +48,28 @@ jest.mock("@/components/admin/bookings/AvailabilityGrid", () => ({
         ))}
       </View>
     );
-  }
+  },
 }));
 
 // Set wide width for table view
 (window as any).innerWidth = 1024;
-(window as any).dispatchEvent(new Event('resize'));
+(window as any).dispatchEvent(new Event("resize"));
 
 jest.setTimeout(20000);
 
 describe("AdminBookingsScreen", () => {
-  const mockRestaurants = [{ id: 1, name: "Resto A" }, { id: 2, name: "Resto B" }];
+  const mockRestaurants = [
+    { id: 1, name: "Resto A" },
+    { id: 2, name: "Resto B" },
+  ];
   const mockBookings = [
-    { id: 10, date: new Date().toISOString(), seats: 2, customerEmail: "active@test.com", tableName: "T1" }
+    {
+      id: 10,
+      date: new Date().toISOString(),
+      seats: 2,
+      customerEmail: "active@test.com",
+      tableName: "T1",
+    },
   ];
 
   beforeEach(() => {
@@ -72,11 +81,14 @@ describe("AdminBookingsScreen", () => {
 
   const renderWithProviders = (ui: React.ReactElement) => {
     return render(
-      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 0, height: 0 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 },
+        }}
+      >
         <AppThemeProvider>
-          <BrandProvider>
-            {ui}
-          </BrandProvider>
+          <BrandProvider>{ui}</BrandProvider>
         </AppThemeProvider>
       </SafeAreaProvider>
     );
