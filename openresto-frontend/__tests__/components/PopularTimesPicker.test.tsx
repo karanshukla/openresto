@@ -21,11 +21,7 @@ describe("PopularTimesPicker", () => {
   it("renders correctly and filters by category", () => {
     const onSelectTime = jest.fn();
     render(
-      <PopularTimesPicker
-        slots={mockSlots}
-        selectedTime="12:00"
-        onSelectTime={onSelectTime}
-      />
+      <PopularTimesPicker slots={mockSlots} selectedTime="12:00" onSelectTime={onSelectTime} />
     );
 
     // Default active is Lunch
@@ -40,13 +36,7 @@ describe("PopularTimesPicker", () => {
 
   it("handles slot selection", () => {
     const onSelectTime = jest.fn();
-    render(
-      <PopularTimesPicker
-        slots={mockSlots}
-        selectedTime=""
-        onSelectTime={onSelectTime}
-      />
-    );
+    render(<PopularTimesPicker slots={mockSlots} selectedTime="" onSelectTime={onSelectTime} />);
 
     fireEvent.press(screen.getByText("12:00"));
     expect(onSelectTime).toHaveBeenCalledWith("12:00");
@@ -54,26 +44,14 @@ describe("PopularTimesPicker", () => {
 
   it("disables unavailable slots", () => {
     const onSelectTime = jest.fn();
-    render(
-      <PopularTimesPicker
-        slots={mockSlots}
-        selectedTime=""
-        onSelectTime={onSelectTime}
-      />
-    );
+    render(<PopularTimesPicker slots={mockSlots} selectedTime="" onSelectTime={onSelectTime} />);
 
     fireEvent.press(screen.getByText("13:00"));
     expect(onSelectTime).not.toHaveBeenCalled();
   });
 
   it("shows empty state message", () => {
-    render(
-      <PopularTimesPicker
-        slots={[]}
-        selectedTime=""
-        onSelectTime={jest.fn()}
-      />
-    );
+    render(<PopularTimesPicker slots={[]} selectedTime="" onSelectTime={jest.fn()} />);
     expect(screen.getByText(/No slots available/i)).toBeTruthy();
   });
 });

@@ -1,5 +1,13 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Pressable, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Platform,
+} from "react-native";
 import { ThemedText } from "../themed-text";
 import { TimeSlotDto } from "@/api/availability";
 import { COLORS, getThemeColors } from "@/theme/theme";
@@ -22,7 +30,7 @@ export default function PopularTimesPicker({
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
-  
+
   const scrollRef = useRef<ScrollView>(null);
   const [scrollPos, setScrollPos] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
@@ -47,7 +55,7 @@ export default function PopularTimesPicker({
   // Web-specific: Mouse Wheel and Drag-to-scroll
   useEffect(() => {
     if (Platform.OS !== "web") return;
-    
+
     // @ts-ignore
     const node = scrollRef.current?.getScrollableNode?.();
     if (!node) return;
@@ -72,13 +80,13 @@ export default function PopularTimesPicker({
       scrollLeft = node.scrollLeft;
       node.style.cursor = "grabbing";
     };
-    const onMouseLeave = () => { 
-        isDown = false; 
-        node.style.cursor = "grab";
+    const onMouseLeave = () => {
+      isDown = false;
+      node.style.cursor = "grab";
     };
-    const onMouseUp = () => { 
-        isDown = false; 
-        node.style.cursor = "grab";
+    const onMouseUp = () => {
+      isDown = false;
+      node.style.cursor = "grab";
     };
     const onMouseMove = (e: MouseEvent) => {
       if (!isDown) return;
@@ -114,7 +122,8 @@ export default function PopularTimesPicker({
   };
 
   const showLeftArrow = scrollPos > 15;
-  const showRightArrow = contentWidth > containerWidth && scrollPos < contentWidth - containerWidth - 15;
+  const showRightArrow =
+    contentWidth > containerWidth && scrollPos < contentWidth - containerWidth - 15;
 
   return (
     <View style={styles.container}>
@@ -137,7 +146,7 @@ export default function PopularTimesPicker({
         })}
       </View>
 
-      <View 
+      <View
         style={styles.scrollWrapper}
         onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
       >
@@ -183,37 +192,45 @@ export default function PopularTimesPicker({
         </ScrollView>
 
         {showLeftArrow && (
-          <View 
-            pointerEvents="box-none" 
-            style={[styles.scrollIndicator, styles.leftIndicator, { backgroundColor: colors.background + "99" }]}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.scrollIndicator,
+              styles.leftIndicator,
+              { backgroundColor: colors.background + "99" },
+            ]}
           >
             <Pressable
-                onPress={() => scrollBy(-180)}
-                style={({ pressed }) => [
-                    styles.arrowCircle, 
-                    { backgroundColor: colors.card, borderColor: COLORS.primary },
-                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }
-                ]}
+              onPress={() => scrollBy(-180)}
+              style={({ pressed }) => [
+                styles.arrowCircle,
+                { backgroundColor: colors.card, borderColor: COLORS.primary },
+                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+              ]}
             >
-               <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
             </Pressable>
           </View>
         )}
 
         {showRightArrow && (
-          <View 
-            pointerEvents="box-none" 
-            style={[styles.scrollIndicator, styles.rightIndicator, { backgroundColor: colors.background + "99" }]}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.scrollIndicator,
+              styles.rightIndicator,
+              { backgroundColor: colors.background + "99" },
+            ]}
           >
             <Pressable
-                onPress={() => scrollBy(180)}
-                style={({ pressed }) => [
-                    styles.arrowCircle, 
-                    { backgroundColor: colors.card, borderColor: COLORS.primary },
-                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }
-                ]}
+              onPress={() => scrollBy(180)}
+              style={({ pressed }) => [
+                styles.arrowCircle,
+                { backgroundColor: colors.card, borderColor: COLORS.primary },
+                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+              ]}
             >
-               <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
             </Pressable>
           </View>
         )}
@@ -276,17 +293,17 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
   },
   arrowCircle: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      borderWidth: 1.5,
-      justifyContent: "center",
-      alignItems: "center",
-      elevation: 4,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   slotChip: {
     paddingHorizontal: 16,

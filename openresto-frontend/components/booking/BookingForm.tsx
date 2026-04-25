@@ -200,11 +200,7 @@ export default function BookingForm({
           <ThemedText style={styles.label}>Popular Times</ThemedText>
           {loadingAvailability && <ActivityIndicator size="small" color={COLORS.primary} />}
         </View>
-        <PopularTimesPicker
-          slots={availabilitySlots}
-          selectedTime={time}
-          onSelectTime={setTime}
-        />
+        <PopularTimesPicker slots={availabilitySlots} selectedTime={time} onSelectTime={setTime} />
       </View>
 
       {/* Row 1: Guests + Date */}
