@@ -37,6 +37,10 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
         : ({ boxShadow: "0 4px 24px rgba(0,0,0,0.13), 0 0 0 1px rgba(0,0,0,0.12)" } as const)
       : {};
 
+  // Heuristic for tags
+  const isPopular = totalSeats > 20;
+  const isNew = restaurant.id > 10;
+
   return (
     <Link href={`/(user)/book?restaurantId=${restaurant.id}`} asChild>
       <Pressable
@@ -51,17 +55,33 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
         <View style={[styles.inner, { borderColor }]}>
           {/* Coloured header band */}
           <View style={[styles.header, { backgroundColor: headerBg }]}>
-            <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-              <Ionicons name="restaurant" size={20} color={iconColor} />
+            <View style={styles.headerTop}>
+              <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+                <Ionicons name="restaurant" size={20} color={iconColor} />
+              </View>
+              <View style={styles.tags}>
+                {isPopular && (
+                  <View style={[styles.tag, { backgroundColor: COLORS.warning }]}>
+                    <ThemedText style={styles.tagText}>Popular</ThemedText>
+                  </View>
+                )}
+                {isNew && (
+                  <View style={[styles.tag, { backgroundColor: COLORS.success }]}>
+                    <ThemedText style={styles.tagText}>New</ThemedText>
+                  </View>
+                )}
+              </View>
             </View>
             <ThemedText style={[styles.initial, { color: iconColor }]}>{initial}</ThemedText>
           </View>
 
           {/* Body */}
           <View style={styles.body}>
-            <ThemedText style={styles.name} numberOfLines={1}>
-              {restaurant.name}
-            </ThemedText>
+            <View style={styles.titleRow}>
+              <ThemedText style={styles.name} numberOfLines={1}>
+                {restaurant.name}
+              </ThemedText>
+            </View>
 
             {restaurant.address ? (
               <View style={styles.addressRow}>
@@ -72,36 +92,26 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
               </View>
             ) : null}
 
-            {/* Chips */}
-            <View style={styles.chips}>
-              <View
-                style={[
-                  styles.chip,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" },
-                ]}
-              >
-                <Ionicons name="grid-outline" size={11} color={mutedColor} />
-                <ThemedText style={[styles.chipText, { color: mutedColor }]}>
-                  {totalTables} {totalTables === 1 ? "table" : "tables"}
-                </ThemedText>
+            <View style={styles.footer}>
+              {/* Chips */}
+              <View style={styles.chips}>
+                <View style={styles.metaItem}>
+                  <Ionicons name="grid-outline" size={12} color={mutedColor} />
+                  <ThemedText style={[styles.metaText, { color: mutedColor }]}>
+                    {totalTables} {totalTables === 1 ? "table" : "tables"}
+                  </ThemedText>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons name="people-outline" size={12} color={mutedColor} />
+                  <ThemedText style={[styles.metaText, { color: mutedColor }]}>
+                    {totalSeats} seats
+                  </ThemedText>
+                </View>
               </View>
-              <View
-                style={[
-                  styles.chip,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" },
-                ]}
-              >
-                <Ionicons name="people-outline" size={11} color={mutedColor} />
-                <ThemedText style={[styles.chipText, { color: mutedColor }]}>
-                  {totalSeats} seats
-                </ThemedText>
-              </View>
-            </View>
 
-            {/* CTA */}
-            <View style={[styles.ctaBtn, { backgroundColor: primaryColor }]}>
-              <ThemedText style={styles.ctaBtnText}>Book a table</ThemedText>
-              <Ionicons name="arrow-forward" size={14} color="#fff" />
+              <View style={[styles.ctaCircle, { backgroundColor: primaryColor }]}>
+                <Ionicons name="chevron-forward" size={18} color="#fff" />
+              </View>
             </View>
           </View>
         </View>
@@ -113,86 +123,112 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
 const styles = StyleSheet.create({
   // Outer pressable: has shadow, no overflow:hidden
   outer: {
-    borderRadius: 16,
+    borderRadius: 20,
     elevation: 4,
   },
   outerHovered: {
-    transform: [{ translateY: -3 }],
+    transform: [{ translateY: -4 }],
   },
   // Inner view: clips header to border radius
   inner: {
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: "hidden",
     borderWidth: 1,
   },
   header: {
-    height: 100,
+    height: 110,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "flex-end",
     justifyContent: "space-between",
   },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  tags: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  tagText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
   iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   initial: {
-    fontSize: 44,
-    fontWeight: "800",
-    opacity: 0.2,
-    lineHeight: 52,
+    fontSize: 52,
+    fontWeight: "900",
+    opacity: 0.15,
+    position: "absolute",
+    right: 15,
+    bottom: -5,
   },
   body: {
-    padding: 18,
-    gap: 8,
+    padding: 20,
+    gap: 6,
+  },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   name: {
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: -0.3,
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
   addressRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    marginBottom: 8,
   },
   address: {
     fontSize: 13,
     flex: 1,
   },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
   chips: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 2,
+    gap: 12,
   },
-  chip: {
+  metaItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
   },
-  chipText: {
-    fontSize: 11,
-    fontWeight: "500",
+  metaText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
-  ctaBtn: {
-    flexDirection: "row",
+  ctaCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  ctaBtnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
 });

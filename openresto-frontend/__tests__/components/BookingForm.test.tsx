@@ -29,6 +29,18 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+jest.mock("@/api/availability", () => ({
+  fetchAvailability: jest.fn(() =>
+    Promise.resolve({
+      slots: [
+        { time: "12:00", isAvailable: true, category: "Lunch" },
+        { time: "13:00", isAvailable: true, category: "Lunch" },
+        { time: "18:00", isAvailable: true, category: "Dinner" },
+      ],
+    })
+  ),
+}));
+
 // Mock Modal to always render children (react-native-testing-library doesn't render it by default)
 jest.mock("react-native", () => {
   const rn = jest.requireActual("react-native");

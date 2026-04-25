@@ -71,5 +71,17 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 b.Date < newEnd &&
                 (b.EndTime != null ? b.EndTime > newStart : b.Date.AddHours(1) > newStart));
         }
+
+        public async Task<IEnumerable<Booking>> GetActiveBookingsForDateAsync(int restaurantId, DateTime bookingDate)
+        {
+            // Define a range in UTC that is guaranteed to cover the entire day regardless of timezone.
+            // A 48-hour window centered on the UTC date is safe.
+            DateTime start = bookingDate.Date.AddDays(-1);
+            DateTime end = bookingDate.Date.AddDays(2);
+
+            return await _db.Bookings
+                .Where(b => b.RestaurantId == restaurantId && !b.IsCancelled && b.Date >= start && b.Date < end)
+                .ToListAsync();
+        }
     }
 }
