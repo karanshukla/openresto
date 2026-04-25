@@ -2,6 +2,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Accept build arguments
+ARG EXPO_PUBLIC_API_URL
+ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
+
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps
