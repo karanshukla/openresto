@@ -15,7 +15,7 @@ using OpenRestoApi.Infrastructure.Persistence.Repositories;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Ensure the app listens on the PORT environment variable for Railway, defaulting to 8080
-builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
+builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "5062"}");
 
 // Configure ForwardedHeaders for Nginx
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

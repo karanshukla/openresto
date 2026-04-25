@@ -2,21 +2,15 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import PageContainer from "@/components/layout/PageContainer";
 import Navbar from "@/components/layout/Navbar";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Stack } from "expo-router";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -35,7 +29,12 @@ export default function HomeScreen() {
     loadRestaurants();
   }, []);
 
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   const numColumns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
+
   const cardWidth: string | number =
     numColumns === 1
       ? "100%"
@@ -77,29 +76,23 @@ export default function HomeScreen() {
 
         <PageContainer>
           <ThemedText style={[styles.sectionLabel, { color: colors.muted }]}>
-            {loading
-              ? "Loading…"
-              : `${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
+            {`${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
           </ThemedText>
 
-          {loading ? (
-            <ActivityIndicator size="large" style={styles.spinner} color={COLORS.primary} />
-          ) : (
-            <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
-              {restaurants.map((r) => (
-                <View
-                  key={r.id}
-                  style={[
-                    styles.cardWrapper,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    { width: cardWidth as any },
-                  ]}
-                >
-                  <RestaurantCard restaurant={r} />
-                </View>
-              ))}
-            </View>
-          )}
+          <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
+            {restaurants.map((r) => (
+              <View
+                key={r.id}
+                style={[
+                  styles.cardWrapper,
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  { width: cardWidth as any },
+                ]}
+              >
+                <RestaurantCard restaurant={r} />
+              </View>
+            ))}
+          </View>
         </PageContainer>
       </ScrollView>
     </ThemedView>

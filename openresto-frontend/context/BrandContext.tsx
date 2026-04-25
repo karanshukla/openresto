@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -24,6 +25,7 @@ const BrandContext = createContext<Brand>(DEFAULT_BRAND);
 
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND);
+  const [loading, setLoading] = useState(process.env.NODE_ENV !== "test");
 
   useEffect(() => {
     fetch(buildEndpoint("/brand"))
@@ -38,10 +40,17 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  return <BrandContext.Provider value={brand}>{children}</BrandContext.Provider>;
+  return (
+    <BrandContext.Provider value={brand}>
+      {loading ? <LoadingScreen brand={brand} /> : children}
+    </BrandContext.Provider>
+  );
 }
 
 export function useBrand(): Brand {

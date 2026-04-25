@@ -10,6 +10,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
 import { convertLocalToUtc } from "@/utils/date";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 export default function BookScreen() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -76,11 +77,7 @@ export default function BookScreen() {
   };
 
   if (loading) {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" />
-      </ThemedView>
-    );
+    return <LoadingScreen />;
   }
 
   if (!restaurant) {

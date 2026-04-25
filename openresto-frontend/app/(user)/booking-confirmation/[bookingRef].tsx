@@ -59,10 +59,10 @@ export default function BookingConfirmationScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.page }]}>
+      <>
         {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Confirmation" }} />}
-        <ActivityIndicator size="large" color={accent} />
-      </View>
+        <LoadingScreen message="Confirming your reservation..." />
+      </>
     );
   }
 

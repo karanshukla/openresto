@@ -8,6 +8,7 @@ import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import LoadingScreen from "@/components/common/LoadingScreen";
 
 const MIN_WIDTH = 900;
 
@@ -82,7 +83,7 @@ function AdminLayoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
-  if (authState === "loading") return null;
+  if (authState === "loading") return <LoadingScreen message="Authenticating..." />;
 
   if (Platform.OS === "web") {
     const onLoginScreen = segments.includes("login" as never);

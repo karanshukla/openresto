@@ -88,10 +88,12 @@ describe("HomeScreen", () => {
     });
   });
 
-  it("shows hero subtitle", () => {
+  it("shows hero subtitle", async () => {
     render(<HomeScreen />);
-    expect(
-      screen.getByText("Browse available restaurants and book a table in seconds.")
-    ).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Browse available restaurants and book a table in seconds.")
+      ).toBeTruthy();
+    });
   });
 });
