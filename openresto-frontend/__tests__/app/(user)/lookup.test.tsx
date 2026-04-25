@@ -1,7 +1,6 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import LookupScreen from "@/app/(user)/lookup";
-import { lookupBookings } from "@/api/bookings";
 import { BrandProvider } from "@/context/BrandContext";
 
 jest.mock("@/api/bookings", () => ({
@@ -16,7 +15,6 @@ jest.mock("expo-router", () => ({
 describe("LookupScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (lookupBookings as jest.Mock).mockResolvedValue([]);
   });
 
   it("renders search form by default", () => {
