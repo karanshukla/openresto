@@ -11,6 +11,7 @@ body,
   padding: 0;
   background-color: #f2f3f5;
   color: #000000;
+  overflow-x: hidden;
 }
 
 html,

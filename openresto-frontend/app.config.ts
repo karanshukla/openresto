@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: "static",
+    output: "single",
     name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
     shortName: "OpenResto",
     description: "Restaurant table booking system",
