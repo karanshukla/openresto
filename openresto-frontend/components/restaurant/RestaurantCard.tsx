@@ -187,8 +187,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 20,
-    fontWeight: "800",
-    letterSpacing: -0.5,
+    fontWeight: "700",
   },
   addressRow: {
     flexDirection: "row",

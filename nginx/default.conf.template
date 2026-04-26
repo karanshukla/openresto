@@ -2,9 +2,8 @@ server {
     listen ${PORT};
     server_tokens off;
 
-    # DNS resolver — REQUIRED for Railway internal networking
-    # ipv6=off prevents connection delays when internal DNS returns unreachable IPv6 addresses
-    resolver ${RESOLVER} valid=5s ipv6=off;
+    # DNS resolver — REQUIRED for Railway internal networking when using variables in proxy_pass
+    resolver ${RESOLVER} valid=10s ipv6=off;
     resolver_timeout 5s;
 
     # ── Logging ───────────────────────────────────────────────────────────
@@ -15,110 +14,88 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml;
 
-    # Strict Security Headers
-    add_header X-Content-Type-Options  "nosniff" always;
-    add_header X-Frame-Options         "DENY" always;
-    add_header X-XSS-Protection        "1; mode=block" always;
-    add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+    # ── Security Header Macro ─────────────────────────────────────────────
+    add_header X-Content-Type-Options    "nosniff" always;
+    add_header X-Frame-Options           "DENY" always;
+    add_header X-XSS-Protection          "1; mode=block" always;
+    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header Cross-Origin-Resource-Policy "same-origin" always;
-    add_header Cross-Origin-Opener-Policy "same-origin" always;
-    add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-    
-    # Strict Content Security Policy
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
-    # Block access to hidden files and sensitive directories
+    # ── Proxy Defaults ────────────────────────────────────────────────────
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    
+    proxy_connect_timeout 10s;
+    proxy_send_timeout    60s;
+    proxy_read_timeout    60s;
+    proxy_buffering       off;
+
+    # ── Information Disclosure Prevention ─────────────────────────────────
     location ~ /\.(?!well-known).* {
         deny all;
         access_log off;
         log_not_found off;
-        error_page 403 = @error_plain;
     }
 
-    # Proactive protection against common probes and leaked sensitive files
-    location ~* (?:^|/)\.(?:env|git|htaccess|ssh|svn|hg|bzr|darcs)$|(?:\.(?:php|aspx|jsp|cgi|bak|config|sql|log|xml))$|/(?:WEB-INF|CVS|BitKeeper|FileZilla\.xml|CHANGELOG\.txt|README\.md) {
+    location ~* (?:^|/)\.(?:env|git|htaccess|config|sql|log)$ {
         deny all;
         access_log off;
         log_not_found off;
-        error_page 403 = @error_plain;
     }
 
-    location @error_plain {
-        default_type text/plain;
-        return 403 "Forbidden";
-    }
-
-    # ── Proxy timeouts ────────────────────────────────────────────────────
-    proxy_connect_timeout 60s;
-    proxy_send_timeout    60s;
-    proxy_read_timeout    60s;
-
-    # ── API — proxy to backend ────────────────────────────────────────────
+    # ── API — Proxy to Backend ────────────────────────────────────────────
     location /api/ {
-        # The trailing slash on both the location and proxy_pass is the most 
-        # reliable way to ensure /api/foo -> http://backend:8080/api/foo
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT}/api/;
+        set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
+        proxy_pass $backend_upstream;
         
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_buffering off;
-        
-        # Security Headers (Must be repeated as add_header in location block overrides server block)
-        add_header X-Content-Type-Options  "nosniff" always;
-        add_header X-Frame-Options         "DENY" always;
-        add_header X-XSS-Protection        "1; mode=block" always;
-        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+        # Security Headers (Must be repeated in location blocks for inheritance)
+        add_header X-Content-Type-Options    "nosniff" always;
+        add_header X-Frame-Options           "DENY" always;
+        add_header X-XSS-Protection          "1; mode=block" always;
+        add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Cross-Origin-Resource-Policy "same-origin" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
         
+        # API Specific
         add_header Cache-Control "no-store, max-age=0" always;
         add_header X-Proxy-Target "Backend" always;
 
-        # Ensure API errors are not HTML
         error_page 404 500 502 503 504 = @api_error;
     }
 
     location @api_error {
         default_type application/json;
-        return 500 '{"error": "Internal Server Error"}';
+        return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
     }
 
-    # ── Health — for Railway/Docker ───────────────────────────────────────
+    # ── Health Check ──────────────────────────────────────────────────────
     location /health {
         access_log off;
-        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        default_type text/plain;
         return 200 "OK";
     }
 
-    # ── Frontend — proxy to static server ─────────────────────────────────
+    # ── Frontend — Proxy to Static Server ─────────────────────────────────
     location / {
-        proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        set $frontend_upstream http://${FRONTEND_HOST}:${FRONTEND_PORT};
+        proxy_pass $frontend_upstream;
 
-        # Security Headers
-        add_header X-Content-Type-Options  "nosniff" always;
-        add_header X-Frame-Options         "DENY" always;
-        add_header X-XSS-Protection        "1; mode=block" always;
-        add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+        add_header X-Content-Type-Options    "nosniff" always;
+        add_header X-Frame-Options           "DENY" always;
+        add_header X-XSS-Protection          "1; mode=block" always;
+        add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Cross-Origin-Resource-Policy "same-origin" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Permissions-Policy      "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
+        add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
         add_header X-Proxy-Target "Frontend" always;
     }
