@@ -37,6 +37,7 @@ export default function Navbar() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isMobile = width < 768;
+  const isTiny = width < 380;
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
   const showBack = pathname !== "/";
 
@@ -53,13 +54,13 @@ export default function Navbar() {
         Platform.OS === "web" ? { position: "sticky" as any, top: 0, zIndex: 100 } : undefined,
       ]}
     >
-      <View style={styles.inner}>
+      <View style={[styles.inner, isMobile && { paddingHorizontal: 12 }]}>
         <View style={styles.leftGroup}>
           {/* Back button — shown in standalone PWA mode on inner pages */}
           {showBack && (
             <Pressable
               onPress={() => router.back()}
-              style={styles.backBtn}
+              style={[styles.backBtn, isMobile && { marginLeft: -8 }]}
               accessibilityLabel="Go back"
             >
               <Ionicons name="chevron-back" size={22} color={accent} />
@@ -67,7 +68,7 @@ export default function Navbar() {
           )}
 
           <Link href="/" asChild>
-            <Pressable style={styles.brand}>
+            <Pressable style={[styles.brand, { flexShrink: 1 }]}>
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
@@ -75,7 +76,14 @@ export default function Navbar() {
                   style={{ height: 32, objectFit: "contain" }}
                 />
               ) : (
-                <ThemedText style={[styles.brandText, { color: accent }]} numberOfLines={1}>
+                <ThemedText
+                  style={[
+                    styles.brandText,
+                    { color: accent },
+                    isTiny && { fontSize: 18 },
+                  ]}
+                  numberOfLines={1}
+                >
                   {brand.appName}
                 </ThemedText>
               )}
@@ -84,16 +92,35 @@ export default function Navbar() {
         </View>
 
         {/* Nav links + theme toggle */}
-        <View style={styles.links}>
+        <View style={[styles.links, isMobile && { gap: 0 }]}>
           {visibleLinks.map(({ label, href, match }) => {
             const active = match(pathname);
             return (
               <Link key={href} href={href} asChild>
-                <Pressable style={styles.linkBtn}>
-                  <ThemedText style={[styles.linkText, { color: active ? accent : colors.muted }]}>
+                <Pressable
+                  style={[
+                    styles.linkBtn,
+                    isMobile && { paddingHorizontal: 10 },
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.linkText,
+                      { color: active ? accent : colors.muted },
+                      isMobile && { fontSize: 14 },
+                    ]}
+                  >
                     {label}
                   </ThemedText>
-                  {active && <View style={[styles.linkUnderline, { backgroundColor: accent }]} />}
+                  {active && (
+                    <View
+                      style={[
+                        styles.linkUnderline,
+                        { backgroundColor: accent },
+                        isMobile && { left: 8, right: 8 },
+                      ]}
+                    />
+                  )}
                 </Pressable>
               </Link>
             );
@@ -103,6 +130,7 @@ export default function Navbar() {
             onPress={toggle}
             style={(state) => [
               styles.themeBtn,
+              isMobile && { marginLeft: 0 },
               (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
             ]}
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -135,10 +163,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 24,
     height: "100%",
+    overflow: "hidden",
   },
   leftGroup: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
+    marginRight: 8,
   },
   backBtn: {
     width: 36,
@@ -162,6 +193,7 @@ const styles = StyleSheet.create({
     gap: 4,
     alignItems: "center",
     height: "100%",
+    flexShrink: 0,
   },
   linkBtn: {
     ...BUTTON_SIZES.secondary,

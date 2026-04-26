@@ -114,7 +114,7 @@ public static class DatabaseExtensions
                 {
                     db.Database.EnsureCreated();
 
-                    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+                    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=DELETE;");
                     db.Database.ExecuteSqlRaw("PRAGMA busy_timeout=5000;");
 
                     db.Database.ExecuteSqlRaw("""
