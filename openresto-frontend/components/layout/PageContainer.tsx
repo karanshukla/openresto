@@ -10,9 +10,7 @@ export default function PageContainer({ children, style, ...props }: ViewProps) 
 
   return (
     <View style={styles.outer} {...props}>
-      <View style={[styles.inner, isMobile && { paddingHorizontal: 16 }, style]}>
-        {children}
-      </View>
+      <View style={[styles.inner, isMobile && { paddingHorizontal: 16 }, style]}>{children}</View>
     </View>
   );
 }

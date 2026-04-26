@@ -77,11 +77,7 @@ export default function Navbar() {
                 />
               ) : (
                 <ThemedText
-                  style={[
-                    styles.brandText,
-                    { color: accent },
-                    isTiny && { fontSize: 18 },
-                  ]}
+                  style={[styles.brandText, { color: accent }, isTiny && { fontSize: 18 }]}
                   numberOfLines={1}
                 >
                   {brand.appName}
@@ -97,12 +93,7 @@ export default function Navbar() {
             const active = match(pathname);
             return (
               <Link key={href} href={href} asChild>
-                <Pressable
-                  style={[
-                    styles.linkBtn,
-                    isMobile && { paddingHorizontal: 10 },
-                  ]}
-                >
+                <Pressable style={[styles.linkBtn, isMobile && { paddingHorizontal: 10 }]}>
                   <ThemedText
                     style={[
                       styles.linkText,
