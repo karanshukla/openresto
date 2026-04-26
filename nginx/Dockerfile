@@ -6,8 +6,9 @@ RUN apk add --no-cache gettext curl
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy template and startup script
+# Copy template, security headers and startup script
 COPY default.conf.template /tmp/default.conf.template
+COPY security-headers.conf /etc/nginx/conf.d/security-headers.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 

@@ -2,28 +2,19 @@ server {
     listen ${PORT};
     server_tokens off;
 
-    # DNS resolver — REQUIRED for Railway internal networking when using variables in proxy_pass
+    # DNS resolver — REQUIRED for Railway internal networking
     resolver ${RESOLVER} valid=10s ipv6=off;
     resolver_timeout 5s;
 
-    # ── Logging ───────────────────────────────────────────────────────────
+    # Logging
     access_log /dev/stdout;
     error_log /dev/stderr warn;
 
-    # ── Gzip Compression ──────────────────────────────────────────────────
+    # Gzip Compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml;
 
-    # ── Security Header Macro ─────────────────────────────────────────────
-    add_header X-Content-Type-Options    "nosniff" always;
-    add_header X-Frame-Options           "DENY" always;
-    add_header X-XSS-Protection          "1; mode=block" always;
-    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
-    add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
-
-    # ── Proxy Defaults ────────────────────────────────────────────────────
+    # Proxy Defaults
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -38,7 +29,10 @@ server {
     proxy_read_timeout    60s;
     proxy_buffering       off;
 
-    # ── Information Disclosure Prevention ─────────────────────────────────
+    # Max body size for uploads
+    client_max_body_size 10M;
+
+    # Information Disclosure Prevention
     location ~ /\.(?!well-known).* {
         deny all;
         access_log off;
@@ -51,23 +45,16 @@ server {
         log_not_found off;
     }
 
-    # ── API — Proxy to Backend ────────────────────────────────────────────
+    # API — Proxy to Backend
     location /api/ {
+        set $proxy_target "Backend";
+        include /etc/nginx/conf.d/security-headers.conf;
+        
         set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_pass $backend_upstream;
         
-        # Security Headers (Must be repeated in location blocks for inheritance)
-        add_header X-Content-Type-Options    "nosniff" always;
-        add_header X-Frame-Options           "DENY" always;
-        add_header X-XSS-Protection          "1; mode=block" always;
-        add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
-        
         # API Specific
         add_header Cache-Control "no-store, max-age=0" always;
-        add_header X-Proxy-Target "Backend" always;
 
         error_page 404 500 502 503 504 = @api_error;
     }
@@ -77,26 +64,19 @@ server {
         return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
     }
 
-    # ── Health Check ──────────────────────────────────────────────────────
+    # Health Check
     location /health {
         access_log off;
         default_type text/plain;
         return 200 "OK";
     }
 
-    # ── Frontend — Proxy to Static Server ─────────────────────────────────
+    # Frontend — Proxy to Static Server
     location / {
+        set $proxy_target "Frontend";
+        include /etc/nginx/conf.d/security-headers.conf;
+
         set $frontend_upstream http://${FRONTEND_HOST}:${FRONTEND_PORT};
         proxy_pass $frontend_upstream;
-
-        add_header X-Content-Type-Options    "nosniff" always;
-        add_header X-Frame-Options           "DENY" always;
-        add_header X-XSS-Protection          "1; mode=block" always;
-        add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header Permissions-Policy        "camera=(), microphone=(), geolocation=()" always;
-        add_header Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: *; font-src 'self' data:; connect-src *; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
-
-        add_header X-Proxy-Target "Frontend" always;
     }
 }
