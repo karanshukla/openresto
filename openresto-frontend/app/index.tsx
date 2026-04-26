@@ -35,12 +35,11 @@ export default function HomeScreen() {
 
   const numColumns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
 
-  const cardWidth: string | number =
+  const gap = numColumns > 1 ? 20 : 16;
+  const cardWidth =
     numColumns === 1
       ? "100%"
-      : Math.floor(
-          (Math.min(width, 1200) - 48 - (numColumns > 1 ? 20 : 16) * (numColumns - 1)) / numColumns
-        );
+      : `${(100 - (gap * (numColumns - 1)) / (Math.min(width, 1200) / 100)) / numColumns}%`;
 
   return (
     <ThemedView style={{ flex: 1 }}>
@@ -79,14 +78,13 @@ export default function HomeScreen() {
             {`${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
           </ThemedText>
 
-          <View style={[styles.grid, { gap: numColumns > 1 ? 20 : 16 }]}>
+          <View style={[styles.grid, { gap }]}>
             {restaurants.map((r) => (
               <View
                 key={r.id}
                 style={[
                   styles.cardWrapper,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  { width: cardWidth as any },
+                  { width: cardWidth as any, minWidth: numColumns === 1 ? "100%" : 280 },
                 ]}
               >
                 <RestaurantCard restaurant={r} />
