@@ -5,6 +5,7 @@ import {
   Platform,
   useWindowDimensions,
   ViewStyle,
+  Image,
 } from "react-native";
 import { Link, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -77,10 +78,10 @@ export default function Navbar() {
           <Link href="/" asChild>
             <Pressable style={StyleSheet.flatten([styles.brand, { flexShrink: 1 }])}>
               {brand.logoUrl ? (
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.appName}
-                  style={{ height: "32px", objectFit: "contain" }}
+                <Image
+                  source={{ uri: brand.logoUrl }}
+                  style={{ height: 32, width: 120, resizeMode: "contain" }}
+                  accessibilityLabel={brand.appName}
                 />
               ) : (
                 <ThemedText
@@ -134,7 +135,7 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: any) =>
               StyleSheet.flatten([
                 styles.themeBtn,
                 isMobile && { marginLeft: 0 },
