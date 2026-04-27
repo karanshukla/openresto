@@ -56,10 +56,10 @@ export default function AdminDashboardScreen() {
           accent: "#16a34a",
         },
         {
-          label: "Restaurant Score",
-          value: "Coming Soon",
-          sub: "Feature in development",
-          icon: "star-outline" as const,
+          label: "Total Covers",
+          value: stats.totalCovers.toLocaleString(),
+          sub: "Total guests served (all time)",
+          icon: "people-outline" as const,
           accent: "#d97706",
         },
       ]
@@ -129,7 +129,7 @@ export default function AdminDashboardScreen() {
                   primaryColor={primaryColor}
                   colors={colors}
                   isDark={isDark}
-                  data={stats.occupancyData}
+                  data={stats?.occupancyData ?? []}
                 />
               </View>
 

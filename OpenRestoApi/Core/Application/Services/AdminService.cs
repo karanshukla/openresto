@@ -565,6 +565,14 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 : b.EndTime.Value.ToUniversalTime();
         }
 
+        DateTime? cancelledAtUtc = null;
+        if (b.CancelledAt.HasValue)
+        {
+            cancelledAtUtc = b.CancelledAt.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(b.CancelledAt.Value, DateTimeKind.Utc)
+                : b.CancelledAt.Value.ToUniversalTime();
+        }
+
         return new BookingDetailDto
         {
             Id = b.Id,
@@ -581,7 +589,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             SpecialRequests = b.SpecialRequests,
             BookingRef = b.BookingRef,
             IsCancelled = b.IsCancelled,
-            CancelledAt = b.CancelledAt,
+            CancelledAt = cancelledAtUtc,
         };
     }
 }

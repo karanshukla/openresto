@@ -58,7 +58,7 @@ describe("getAdminOverview", () => {
 
 describe("getAdminDashboardStats", () => {
   it("combines overview and bookings for today", async () => {
-    const overview = { todayBookings: 5 };
+    const overview = { todayBookings: 5, totalSeats: 100 };
     const bookings = [
       {
         id: 1,
@@ -80,6 +80,8 @@ describe("getAdminDashboardStats", () => {
       todayCount: 5,
       activeHoldsCount: 0,
       weeklyTrend: 0,
+      totalCovers: 100,
+      occupancyData: [],
       recentBookings: [
         {
           id: 1,

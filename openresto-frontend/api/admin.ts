@@ -25,6 +25,7 @@ export interface AdminDashboardStats {
   todayCount: number;
   activeHoldsCount: number;
   weeklyTrend: number;
+  totalCovers: number;
   occupancyData: number[];
   recentBookings: BookingSummaryDto[];
 }
@@ -40,6 +41,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
       weeklyTrend: overview.weeklyTrend ?? 0,
+      totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
       recentBookings: bookings.map((b) => ({
         id: b.id,
