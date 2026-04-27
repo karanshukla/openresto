@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemedText } from "@/components/themed-text";
@@ -38,6 +39,8 @@ export default function DatePicker({
 
   const isClosedDay = !!(selectedDate && openDays && !openDays.includes(getIsoDay(selectedDate)));
 
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.wrapper}>
       <input
@@ -49,14 +52,14 @@ export default function DatePicker({
         style={
           {
             width: "100%",
-            height: 44,
-            borderWidth: 1,
+            height: "44px",
+            borderWidth: "1px",
             borderStyle: "solid",
-            borderColor: isClosedDay ? "#dc2626" : borderColor,
-            borderRadius: 8,
-            paddingLeft: 12,
-            paddingRight: 12,
-            fontSize: 15,
+            borderColor: isFocused ? primaryColor : isClosedDay ? "#dc2626" : borderColor,
+            borderRadius: "8px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            fontSize: "15px",
             fontFamily: "inherit",
             backgroundColor: bg,
             color: selectedDate ? textColor : placeholderColor,
@@ -66,12 +69,8 @@ export default function DatePicker({
             transition: "border-color 0.2s",
           } as React.CSSProperties
         }
-        onFocus={(e) => {
-          e.target.style.borderColor = primaryColor;
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = isClosedDay ? "#dc2626" : borderColor;
-        }}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
       />
       {isClosedDay && (
         <ThemedText style={styles.closedWarning}>

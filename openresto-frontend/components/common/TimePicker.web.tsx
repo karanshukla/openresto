@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
@@ -43,6 +44,8 @@ export default function TimePicker({
     onSelect(rounded);
   };
 
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.wrapper}>
       <input
@@ -53,14 +56,14 @@ export default function TimePicker({
         style={
           {
             width: "100%",
-            height: 44,
-            borderWidth: 1,
+            height: "44px",
+            borderWidth: "1px",
             borderStyle: "solid",
-            borderColor,
-            borderRadius: 8,
-            paddingLeft: 12,
-            paddingRight: 12,
-            fontSize: 15,
+            borderColor: isFocused ? primaryColor : borderColor,
+            borderRadius: "8px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            fontSize: "15px",
             fontFamily: "inherit",
             backgroundColor: bg,
             color: selectedTime ? textColor : placeholderColor,
@@ -70,12 +73,8 @@ export default function TimePicker({
             transition: "border-color 0.2s",
           } as React.CSSProperties
         }
-        onFocus={(e) => {
-          e.target.style.borderColor = primaryColor;
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = borderColor;
-        }}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
       />
     </View>
   );

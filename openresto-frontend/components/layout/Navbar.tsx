@@ -3,11 +3,10 @@ import { Link, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
-import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { BUTTON_SIZES } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" as const, match: (p: string) => p === "/", adminOnly: false },
@@ -29,13 +28,11 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
-  const brand = useBrand();
-  const accent = brand.primaryColor || COLORS.primary;
+  const { brand, colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+
   const isMobile = width < 768;
   const isTiny = width < 380;
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
@@ -43,41 +40,43 @@ export default function Navbar() {
 
   return (
     <ThemedView
-      style={[
+      style={StyleSheet.flatten([
         styles.nav,
         {
           borderBottomColor: colors.border,
           paddingTop: insets.top,
           height: 64 + insets.top,
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Platform.OS === "web" ? { position: "sticky" as any, top: 0, zIndex: 100 } : undefined,
-      ]}
+        Platform.OS === "web" && ({ position: "sticky", top: 0, zIndex: 100 } as any),
+      ])}
     >
-      <View style={[styles.inner, isMobile && { paddingHorizontal: 12 }]}>
+      <View style={StyleSheet.flatten([styles.inner, isMobile && { paddingHorizontal: 12 }])}>
         <View style={styles.leftGroup}>
-          {/* Back button — shown in standalone PWA mode on inner pages */}
           {showBack && (
             <Pressable
               onPress={() => router.back()}
-              style={[styles.backBtn, isMobile && { marginLeft: -8 }]}
+              style={StyleSheet.flatten([styles.backBtn, isMobile && { marginLeft: -8 }])}
               accessibilityLabel="Go back"
             >
-              <Ionicons name="chevron-back" size={22} color={accent} />
+              <Ionicons name="chevron-back" size={22} color={primaryColor} />
             </Pressable>
           )}
 
           <Link href="/" asChild>
-            <Pressable style={[styles.brand, { flexShrink: 1 }]}>
+            <Pressable style={StyleSheet.flatten([styles.brand, { flexShrink: 1 }])}>
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
                   alt={brand.appName}
-                  style={{ height: 32, objectFit: "contain" }}
+                  style={{ height: "32px", objectFit: "contain" }}
                 />
               ) : (
                 <ThemedText
-                  style={[styles.brandText, { color: accent }, isTiny && { fontSize: 18 }]}
+                  style={StyleSheet.flatten([
+                    styles.brandText,
+                    { color: primaryColor },
+                    isTiny && { fontSize: 18 },
+                  ])}
                   numberOfLines={1}
                 >
                   {brand.appName}
@@ -87,29 +86,33 @@ export default function Navbar() {
           </Link>
         </View>
 
-        {/* Nav links + theme toggle */}
-        <View style={[styles.links, isMobile && { gap: 0 }]}>
+        <View style={StyleSheet.flatten([styles.links, isMobile && { gap: 0 }])}>
           {visibleLinks.map(({ label, href, match }) => {
             const active = match(pathname);
             return (
               <Link key={href} href={href} asChild>
-                <Pressable style={[styles.linkBtn, isMobile && { paddingHorizontal: 10 }]}>
+                <Pressable
+                  style={StyleSheet.flatten([
+                    styles.linkBtn,
+                    isMobile && { paddingHorizontal: 10 },
+                  ])}
+                >
                   <ThemedText
-                    style={[
+                    style={StyleSheet.flatten([
                       styles.linkText,
-                      { color: active ? accent : colors.muted },
+                      { color: active ? primaryColor : colors.muted },
                       isMobile && { fontSize: 14 },
-                    ]}
+                    ])}
                   >
                     {label}
                   </ThemedText>
                   {active && (
                     <View
-                      style={[
+                      style={StyleSheet.flatten([
                         styles.linkUnderline,
-                        { backgroundColor: accent },
+                        { backgroundColor: primaryColor },
                         isMobile && { left: 8, right: 8 },
-                      ]}
+                      ])}
                     />
                   )}
                 </Pressable>
@@ -119,11 +122,13 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state) => [
-              styles.themeBtn,
-              isMobile && { marginLeft: 0 },
-              (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
-            ]}
+            style={(state: any) =>
+              StyleSheet.flatten([
+                styles.themeBtn,
+                isMobile && { marginLeft: 0 },
+                state.hovered && { opacity: 0.7 },
+              ])
+            }
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Ionicons
@@ -212,6 +217,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
-    cursor: "pointer" as const,
   },
 });

@@ -174,7 +174,7 @@ export function BrandSettingsCard({
                   <img
                     src={logoPreview}
                     alt="Logo"
-                    style={{ width: 48, height: 48, objectFit: "contain" }}
+                    style={{ width: "48px", height: "48px", objectFit: "contain" }}
                   />
                 </View>
               ) : (

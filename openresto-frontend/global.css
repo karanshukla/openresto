@@ -99,3 +99,11 @@ body.theme-ready * {
     transition: none !important;
   }
 }
+
+/* Custom cursors for horizontal scroll areas */
+.grab-scroll {
+  cursor: grab !important;
+}
+.grabbing {
+  cursor: grabbing !important;
+}

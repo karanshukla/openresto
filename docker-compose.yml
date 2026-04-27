@@ -21,9 +21,9 @@ services:
       context: ./openresto-frontend
       dockerfile: Dockerfile
       args:
-        - EXPO_PUBLIC_API_URL=http://localhost:5062
+        - EXPO_PUBLIC_API_URL=/api
     environment:
-      - EXPO_PUBLIC_API_URL=http://localhost:5062
+      - EXPO_PUBLIC_API_URL=/api
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/"]
       interval: 5s

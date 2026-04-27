@@ -78,15 +78,15 @@ export default function PopularTimesPicker({
       isDown = true;
       startX = e.pageX - node.offsetLeft;
       scrollLeft = node.scrollLeft;
-      node.style.cursor = "grabbing";
+      node.classList.add("grabbing");
     };
     const onMouseLeave = () => {
       isDown = false;
-      node.style.cursor = "grab";
+      node.classList.remove("grabbing");
     };
     const onMouseUp = () => {
       isDown = false;
-      node.style.cursor = "grab";
+      node.classList.remove("grabbing");
     };
     const onMouseMove = (e: MouseEvent) => {
       if (!isDown) return;
@@ -97,7 +97,7 @@ export default function PopularTimesPicker({
       setScrollPos(node.scrollLeft);
     };
 
-    node.style.cursor = "grab";
+    node.classList.add("grab-scroll");
     node.addEventListener("wheel", handleWheel, { passive: false });
     node.addEventListener("mousedown", onMouseDown);
     node.addEventListener("mouseleave", onMouseLeave);
@@ -110,6 +110,7 @@ export default function PopularTimesPicker({
       node.removeEventListener("mouseleave", onMouseLeave);
       node.removeEventListener("mouseup", onMouseUp);
       node.removeEventListener("mousemove", onMouseMove);
+      node.classList.remove("grab-scroll", "grabbing");
     };
   }, [activeCategory]);
 

@@ -1,7 +1,6 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { COLORS } from "@/theme/theme";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -9,6 +8,10 @@ export type ThemedTextProps = TextProps & {
   type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
 };
 
+/**
+ * Enhanced Text that automatically responds to theme changes and handles
+ * style flattening to prevent React Native Web crashes on native DOM elements.
+ */
 export function ThemedText({
   style,
   lightColor,
@@ -16,30 +19,17 @@ export function ThemedText({
   type = "default",
   ...rest
 }: ThemedTextProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
+  const { isDark, colors, primaryColor } = useAppTheme();
 
   let color = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : colors.text;
 
   if (type === "link" && !lightColor && !darkColor) {
-    color = brand.primaryColor || COLORS.primary;
+    color = primaryColor;
   }
 
-  return (
-    <Text
-      style={[
-        { color },
-        type === "default" ? styles.default : undefined,
-        type === "title" ? styles.title : undefined,
-        type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
-        type === "subtitle" ? styles.subtitle : undefined,
-        type === "link" ? styles.link : undefined,
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  const flattenedStyle = StyleSheet.flatten([{ color }, styles[type], style]);
+
+  return <Text style={flattenedStyle} {...rest} />;
 }
 
 const styles = StyleSheet.create({

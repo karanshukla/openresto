@@ -44,13 +44,16 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   return (
     <Link href={`/(user)/book?restaurantId=${restaurant.id}`} asChild>
       <Pressable
-        style={(state) => [
-          styles.outer,
-          outerShadow,
-          { backgroundColor: cardBg },
-          (state as { hovered?: boolean }).hovered && styles.outerHovered,
-        ]}
+        style={({ pressed, hovered }: any) =>
+          StyleSheet.flatten([
+            styles.outer,
+            outerShadow,
+            { backgroundColor: cardBg },
+            (hovered || pressed) && Platform.OS === "web" && { transform: [{ translateY: -4 }] },
+          ])
+        }
       >
+        {" "}
         {/* Inner view clips header to card border radius */}
         <View style={[styles.inner, { borderColor }]}>
           {/* Coloured header band */}

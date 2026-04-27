@@ -33,8 +33,8 @@ server {
     proxy_send_timeout    120s;
     proxy_read_timeout    120s;
     
-    # Robust Buffering for static assets and API
-    proxy_buffering       on;
+    # Off for development speed, let Railway handle caching
+    proxy_buffering       off;
     proxy_buffer_size     128k;
     proxy_buffers         4 256k;
     proxy_busy_buffers_size 256k;
