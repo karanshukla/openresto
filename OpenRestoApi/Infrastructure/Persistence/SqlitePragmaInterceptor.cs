@@ -36,15 +36,33 @@ public sealed class SqlitePragmaInterceptor : DbConnectionInterceptor
 
     private static void ApplyPragmas(DbConnection connection)
     {
-        using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = PragmaSql;
-        cmd.ExecuteNonQuery();
+        try
+        {
+            using DbCommand cmd = connection.CreateCommand();
+            cmd.CommandText = PragmaSql;
+            cmd.ExecuteNonQuery();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8 || ex.SqliteErrorCode == 14)
+        {
+            // Database is temporarily read-only (e.g. volume not yet fully mounted).
+            // Skip PRAGMAs on this connection — they will be applied on subsequent
+            // connections once the volume is writable.
+        }
     }
 
     private static async Task ApplyPragmasAsync(DbConnection connection, CancellationToken ct)
     {
-        await using DbCommand cmd = connection.CreateCommand();
-        cmd.CommandText = PragmaSql;
-        await cmd.ExecuteNonQueryAsync(ct);
+        try
+        {
+            await using DbCommand cmd = connection.CreateCommand();
+            cmd.CommandText = PragmaSql;
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8 || ex.SqliteErrorCode == 14)
+        {
+            // Database is temporarily read-only (e.g. volume not yet fully mounted).
+            // Skip PRAGMAs on this connection — they will be applied on subsequent
+            // connections once the volume is writable.
+        }
     }
 }
