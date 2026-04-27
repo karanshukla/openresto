@@ -55,12 +55,15 @@ public static partial class DatabaseExtensions
 
     public static IServiceCollection AddDatabaseSetup(this IServiceCollection services, string connectionString, IWebHostEnvironment env)
     {
+        SqlitePragmaInterceptor pragmaInterceptor = new();
+
         services.AddDbContext<AppDbContext>(options =>
         {
             options.UseSqlite(connectionString, sqliteOptions =>
             {
                 sqliteOptions.CommandTimeout(30);
             });
+            options.AddInterceptors(pragmaInterceptor);
             options.ConfigureWarnings(w =>
                 w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.MultipleCollectionIncludeWarning));
             options.EnableSensitiveDataLogging(env.IsDevelopment());
@@ -147,8 +150,9 @@ public static partial class DatabaseExtensions
                 {
                     db.Database.EnsureCreated();
 
-                    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=DELETE;");
-                    db.Database.ExecuteSqlRaw("PRAGMA busy_timeout=5000;");
+                    // journal_mode/busy_timeout/synchronous/foreign_keys are now applied
+                    // on every opened connection by SqlitePragmaInterceptor, so we don't
+                    // need to set them here.
 
                     db.Database.ExecuteSqlRaw("""
                         CREATE TABLE IF NOT EXISTS "AdminCredentials" (
