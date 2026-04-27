@@ -49,9 +49,11 @@ server {
     proxy_next_upstream_tries   3;
     proxy_next_upstream_timeout 15s;
 
-    # Route upstream HTTP errors through our error_page handlers (otherwise
-    # only nginx-level errors are intercepted).
-    proxy_intercept_errors on;
+    # Do NOT intercept upstream HTTP errors — the backend already returns
+    # well-formed RFC 7807 ProblemDetails JSON for 4xx/5xx, and we want those
+    # to flow through unchanged. nginx's own error_page handlers (below) only
+    # need to handle the cases nginx itself generates (i.e. upstream
+    # unreachable), not rewrite legitimate backend responses.
 
     # Max body size for uploads
     client_max_body_size 10M;
@@ -76,19 +78,22 @@ server {
     location /api/ {
         set $proxy_target "Backend";
         include /etc/nginx/conf.d/security-headers.conf;
-        
+
         set $backend_upstream http://${BACKEND_HOST}:${BACKEND_PORT};
         proxy_pass $backend_upstream;
-        
+
         # API Specific
         add_header Cache-Control "no-store, max-age=0" always;
 
-        error_page 404 500 502 503 504 = @api_error;
+        # Only intercept the cases nginx itself generates when the backend is
+        # unreachable. Legitimate backend 4xx/5xx (which now ship as
+        # ProblemDetails JSON from Program.cs) pass through unchanged.
+        error_page 502 503 504 = @upstream_unavailable;
     }
 
-    location @api_error {
-        default_type application/json;
-        return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
+    location @upstream_unavailable {
+        default_type application/problem+json;
+        return 503 '{"type":"about:blank","title":"Service Unavailable","status":503,"detail":"The backend service is temporarily unavailable. Please retry."}';
     }
 
     # Health Check

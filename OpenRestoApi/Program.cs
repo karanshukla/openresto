@@ -53,6 +53,9 @@ app.MapFallback("/api/{**catchAll}", (HttpContext ctx) =>
 
 app.InitializeDatabase(connectionString, builder.Configuration);
 
-app.MapGet("/api/health", () => "OK");
+// Health endpoint: JSON body (consistent with the rest of the API), and opted
+// out of rate limiting so liveness probes / scanners never get throttled.
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }))
+    .DisableRateLimiting();
 
 app.Run();
