@@ -64,7 +64,12 @@ export default function HomeScreen() {
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator style={styles.spinner} size="large" color={primaryColor} />
+            <ActivityIndicator
+              testID="loading-screen"
+              style={styles.spinner}
+              size="large"
+              color={primaryColor}
+            />
           ) : (
             <View style={styles.grid}>
               {restaurants.map((r) => (

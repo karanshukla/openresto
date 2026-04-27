@@ -77,7 +77,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/android/",
-      "/ios/"
+      "/ios/",
+      "/e2e/"
     ]
   },
   "overrides": {
