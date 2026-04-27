@@ -12,14 +12,12 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
         <meta name="theme-color" content="#0a7ea4" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="icon" type="image/png" href="/icon-192.png" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
-
-        {/* Blocking theme script — sets the correct theme class on <html>
-            BEFORE the browser paints, preventing any flash. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){

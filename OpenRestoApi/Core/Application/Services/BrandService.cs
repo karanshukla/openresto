@@ -8,7 +8,7 @@ namespace OpenRestoApi.Core.Application.Services;
 public class BrandService(AppDbContext db)
 {
     private readonly AppDbContext _db = db;
-    private const int MaxLogoBytes = 256 * 1024; // 256 KB
+    private const int _maxLogoBytes = 256 * 1024; // 256 KB
 
     private static bool IsValidHexColor(string color)
     {
@@ -43,9 +43,9 @@ public class BrandService(AppDbContext db)
             int commaIdx = logoBase64.IndexOf(',');
             string base64Part = commaIdx >= 0 ? logoBase64[(commaIdx + 1)..] : logoBase64;
             int sizeBytes = (int)(base64Part.Length * 0.75);
-            if (sizeBytes > MaxLogoBytes)
+            if (sizeBytes > _maxLogoBytes)
             {
-                throw new ArgumentException($"Logo must be under {MaxLogoBytes / 1024} KB.");
+                throw new ArgumentException($"Logo must be under {_maxLogoBytes / 1024} KB.");
             }
         }
 

@@ -31,20 +31,20 @@ export default function LoadingScreen({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 8,
         tension: 40,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
           duration: 3000,
           easing: Easing.linear,
-          useNativeDriver: true,
+          useNativeDriver: false,
         })
       ),
     ]).start();
@@ -67,13 +67,13 @@ export default function LoadingScreen({
   return (
     <View style={[styles.container, { backgroundColor: colors.page }]}>
       <Animated.View
-        style={[
+        style={StyleSheet.flatten([
           styles.content,
           {
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }],
           },
-        ]}
+        ])}
       >
         <Animated.View style={{ transform: [{ rotate: spin }] }}>
           <MaterialCommunityIcons

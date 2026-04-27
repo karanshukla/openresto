@@ -1,5 +1,6 @@
 import {
   getAdminOverview,
+  getAdminDashboardStats,
   getAdminBookings,
   getAdminBooking,
   adminCreateBooking,
@@ -52,6 +53,52 @@ describe("getAdminOverview", () => {
   it("returns null on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await getAdminOverview()).toBeNull();
+  });
+});
+
+describe("getAdminDashboardStats", () => {
+  it("combines overview and bookings for today", async () => {
+    const overview = { todayBookings: 5, totalSeats: 100 };
+    const bookings = [
+      {
+        id: 1,
+        date: "2026-06-15T19:00:00Z",
+        customerEmail: "a@b.com",
+        seats: 2,
+        restaurantName: "R1",
+      },
+    ];
+
+    // mock getAdminOverview
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    // mock getAdminBookings
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
+
+    const result = await getAdminDashboardStats();
+
+    expect(result).toEqual({
+      todayCount: 5,
+      activeHoldsCount: 0,
+      weeklyTrend: 0,
+      totalCovers: 100,
+      occupancyData: [],
+      recentBookings: [
+        {
+          id: 1,
+          date: "2026-06-15T19:00:00Z",
+          customerEmail: "a@b.com",
+          seats: 2,
+          restaurantName: "R1",
+          bookingRef: "",
+        },
+      ],
+    });
+  });
+
+  it("returns null if overview fails", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const result = await getAdminDashboardStats();
+    expect(result).toBeNull();
   });
 });
 

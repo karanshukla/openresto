@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -26,7 +28,8 @@ namespace OpenRestoApi.Tests.Controllers
             // Seed test data
             SeedTestData();
 
-            var adminService = new OpenRestoApi.Core.Application.Services.AdminService(_dbContext);
+            var holdService = new Mock<IHoldService>().Object;
+            var adminService = new OpenRestoApi.Core.Application.Services.AdminService(_dbContext, holdService);
             var emailService = new MockEmailService();
             _adminController = new AdminController(adminService, emailService);
         }

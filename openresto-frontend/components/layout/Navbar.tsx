@@ -1,13 +1,20 @@
-import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Platform,
+  useWindowDimensions,
+  ViewStyle,
+  Image,
+} from "react-native";
 import { Link, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
-import { COLORS, BUTTON_SIZES, getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { BUTTON_SIZES } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" as const, match: (p: string) => p === "/", adminOnly: false },
@@ -29,53 +36,62 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
-  const brand = useBrand();
-  const accent = brand.primaryColor || COLORS.primary;
+  const { brand, colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+
   const isMobile = width < 768;
+  const isTiny = width < 380;
   const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
   const showBack = pathname !== "/";
 
   return (
     <ThemedView
-      style={[
+      style={StyleSheet.flatten([
         styles.nav,
         {
           borderBottomColor: colors.border,
           paddingTop: insets.top,
           height: 64 + insets.top,
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Platform.OS === "web" ? { position: "sticky" as any, top: 0, zIndex: 100 } : undefined,
-      ]}
+        Platform.OS === "web" &&
+          ({
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+          } as unknown as ViewStyle),
+      ])}
     >
-      <View style={styles.inner}>
+      <View style={StyleSheet.flatten([styles.inner, isMobile && { paddingHorizontal: 12 }])}>
         <View style={styles.leftGroup}>
-          {/* Back button — shown in standalone PWA mode on inner pages */}
           {showBack && (
             <Pressable
               onPress={() => router.back()}
-              style={styles.backBtn}
+              style={StyleSheet.flatten([styles.backBtn, isMobile && { marginLeft: -8 }])}
               accessibilityLabel="Go back"
             >
-              <Ionicons name="chevron-back" size={22} color={accent} />
+              <Ionicons name="chevron-back" size={22} color={primaryColor} />
             </Pressable>
           )}
 
           <Link href="/" asChild>
-            <Pressable style={styles.brand}>
+            <Pressable style={StyleSheet.flatten([styles.brand, { flexShrink: 1 }])}>
               {brand.logoUrl ? (
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.appName}
-                  style={{ height: 32, objectFit: "contain" }}
+                <Image
+                  source={{ uri: brand.logoUrl }}
+                  style={{ height: 32, width: 120, resizeMode: "contain" }}
+                  accessibilityLabel={brand.appName}
                 />
               ) : (
-                <ThemedText style={[styles.brandText, { color: accent }]} numberOfLines={1}>
+                <ThemedText
+                  style={StyleSheet.flatten([
+                    styles.brandText,
+                    { color: primaryColor },
+                    isTiny && { fontSize: 18 },
+                  ])}
+                  numberOfLines={1}
+                >
                   {brand.appName}
                 </ThemedText>
               )}
@@ -83,17 +99,35 @@ export default function Navbar() {
           </Link>
         </View>
 
-        {/* Nav links + theme toggle */}
-        <View style={styles.links}>
+        <View style={StyleSheet.flatten([styles.links, isMobile && { gap: 0 }])}>
           {visibleLinks.map(({ label, href, match }) => {
             const active = match(pathname);
             return (
               <Link key={href} href={href} asChild>
-                <Pressable style={styles.linkBtn}>
-                  <ThemedText style={[styles.linkText, { color: active ? accent : colors.muted }]}>
+                <Pressable
+                  style={StyleSheet.flatten([
+                    styles.linkBtn,
+                    isMobile && { paddingHorizontal: 10 },
+                  ])}
+                >
+                  <ThemedText
+                    style={StyleSheet.flatten([
+                      styles.linkText,
+                      { color: active ? primaryColor : colors.muted },
+                      isMobile && { fontSize: 14 },
+                    ])}
+                  >
                     {label}
                   </ThemedText>
-                  {active && <View style={[styles.linkUnderline, { backgroundColor: accent }]} />}
+                  {active && (
+                    <View
+                      style={StyleSheet.flatten([
+                        styles.linkUnderline,
+                        { backgroundColor: primaryColor },
+                        isMobile && { left: 8, right: 8 },
+                      ])}
+                    />
+                  )}
                 </Pressable>
               </Link>
             );
@@ -101,10 +135,13 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state) => [
-              styles.themeBtn,
-              (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
-            ]}
+            style={({ hovered }: any) =>
+              StyleSheet.flatten([
+                styles.themeBtn,
+                isMobile && { marginLeft: 0 },
+                hovered && { opacity: 0.7 },
+              ])
+            }
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             <Ionicons
@@ -135,10 +172,13 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 24,
     height: "100%",
+    overflow: "hidden",
   },
   leftGroup: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
+    marginRight: 8,
   },
   backBtn: {
     width: 36,
@@ -162,6 +202,7 @@ const styles = StyleSheet.create({
     gap: 4,
     alignItems: "center",
     height: "100%",
+    flexShrink: 0,
   },
   linkBtn: {
     ...BUTTON_SIZES.secondary,
@@ -189,6 +230,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
-    cursor: "pointer" as const,
   },
 });

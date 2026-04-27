@@ -316,7 +316,7 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
         string? cookie = null;
         if (loginResp.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values))
         {
-            cookie = values.FirstOrDefault(v => v.StartsWith("openresto_auth="));
+            cookie = values.FirstOrDefault(v => v.StartsWith("openresto_auth=", StringComparison.OrdinalIgnoreCase));
         }
         Assert.NotNull(cookie);
 

@@ -17,4 +17,5 @@ public interface IHoldService
     void ReleaseHold(string holdId);
     bool IsTableHeld(int tableId, DateTime bookingDate, string? excludeHoldId = null);
     HoldEntry? GetHold(string holdId);
+    int GetActiveHoldsCount();
 }

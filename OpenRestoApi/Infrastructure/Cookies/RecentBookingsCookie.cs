@@ -18,16 +18,16 @@ public record CachedBookingEntry(
 /// </summary>
 public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvironment env)
 {
-    private const string CookieName = "openresto_recent";
-    private const int MaxEntries = 10;
-    private const int CookieMaxAgeDays = 90;
+    private const string _cookieName = "openresto_recent";
+    private const int _maxEntries = 10;
+    private const int _cookieMaxAgeDays = 90;
     private readonly IDataProtector _protector = provider.CreateProtector("RecentBookings.v1");
     private readonly bool _isDevelopment = env.IsDevelopment();
 
     /// <summary>Read and decrypt the recent bookings from the request cookie.</summary>
     public List<CachedBookingEntry> Read(HttpRequest request)
     {
-        if (!request.Cookies.TryGetValue(CookieName, out string? encrypted) || string.IsNullOrEmpty(encrypted))
+        if (!request.Cookies.TryGetValue(_cookieName, out string? encrypted) || string.IsNullOrEmpty(encrypted))
         {
             return [];
         }
@@ -58,9 +58,9 @@ public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvi
         entries.Insert(0, entry);
 
         // Trim to max
-        if (entries.Count > MaxEntries)
+        if (entries.Count > _maxEntries)
         {
-            entries = entries.Take(MaxEntries).ToList();
+            entries = entries.Take(_maxEntries).ToList();
         }
 
         Write(response, entries);
@@ -74,12 +74,12 @@ public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvi
 
         // In dev (HTTP, cross-origin ports), use Lax + no Secure flag.
         // In production (HTTPS, same origin), use Strict + Secure.
-        response.Cookies.Append(CookieName, encrypted, new CookieOptions
+        response.Cookies.Append(_cookieName, encrypted, new CookieOptions
         {
             HttpOnly = true,
             Secure = !_isDevelopment,
             SameSite = _isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict,
-            MaxAge = TimeSpan.FromDays(CookieMaxAgeDays),
+            MaxAge = TimeSpan.FromDays(_cookieMaxAgeDays),
             Path = "/api/bookings",
             IsEssential = true,
         });

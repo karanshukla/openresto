@@ -4,8 +4,8 @@ namespace OpenRestoApi.Infrastructure.Email;
 
 public class CredentialProtector(IDataProtectionProvider provider)
 {
-    private const string Purpose = "EmailSettings.Password";
-    private readonly IDataProtector _protector = provider.CreateProtector(Purpose);
+    private const string _purpose = "EmailSettings.Password";
+    private readonly IDataProtector _protector = provider.CreateProtector(_purpose);
 
     public virtual string Encrypt(string plainText) => _protector.Protect(plainText);
 

@@ -74,7 +74,13 @@ function AppWithTheme() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false, title: brand.appName }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          title: brand.appName,
+          animation: Platform.OS === "web" ? "none" : "default",
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="(user)" />
         <Stack.Screen name="(admin)" />

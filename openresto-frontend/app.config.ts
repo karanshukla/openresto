@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0a7ea4",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -24,7 +24,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: "single",
+    output: "static",
+    favicon: "./assets/images/favicon.png",
     name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
     shortName: "OpenResto",
     description: "Restaurant table booking system",
@@ -39,7 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#111214",
+        backgroundColor: "#0a7ea4",
         dark: {
           backgroundColor: "#111214",
         },

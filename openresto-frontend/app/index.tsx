@@ -2,64 +2,49 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { Platform, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
-import RestaurantCard from "@/components/restaurant/RestaurantCard";
-import PageContainer from "@/components/layout/PageContainer";
-import Navbar from "@/components/layout/Navbar";
-import { getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type DimensionValue,
+} from "react-native";
 import { Stack } from "expo-router";
-import LoadingScreen from "@/components/common/LoadingScreen";
+import Navbar from "@/components/layout/Navbar";
+import PageContainer from "@/components/layout/PageContainer";
+import RestaurantCard from "@/components/restaurant/RestaurantCard";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
+  const { brand, colors, primaryColor } = useAppTheme();
 
   useEffect(() => {
-    async function loadRestaurants() {
-      const data = await fetchRestaurants();
+    fetchRestaurants().then((data) => {
       setRestaurants(data);
       setLoading(false);
-    }
-    loadRestaurants();
+    });
   }, []);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  const numColumns = width >= 1024 ? 3 : width >= 640 ? 2 : 1;
-
+  const numColumns = width < 600 ? 1 : width < 900 ? 2 : 3;
   const gap = numColumns > 1 ? 20 : 16;
   const cardWidth =
     numColumns === 1
       ? "100%"
-      : `${(100 - (gap * (numColumns - 1)) / (Math.min(width, 1200) / 100)) / numColumns}%`;
+      : width > 0
+        ? `${(100 - (gap * (numColumns - 1)) / (Math.min(width, 1200) / 100)) / numColumns}%`
+        : "30%";
 
   return (
     <ThemedView style={{ flex: 1 }}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Browse Restaurants" }} />}
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: brand.appName }} />}
       <Navbar />
-      <ScrollView
-        style={[styles.scroll, { backgroundColor: colors.page }]}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View
-          style={[
-            styles.hero,
-            Platform.OS === "web"
-              ? ({
-                  background: `linear-gradient(135deg, ${brand.primaryColor} 0%, ${brand.primaryColor}dd 60%, ${brand.primaryColor}bb 100%)`,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
-              : { backgroundColor: brand.primaryColor },
-          ]}
-        >
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={StyleSheet.flatten([styles.hero, { backgroundColor: primaryColor }])}>
           <View style={styles.heroOverlay}>
             <View style={styles.heroContent}>
               <ThemedText style={styles.heroEyebrow}>Reserve online, instantly</ThemedText>
@@ -74,23 +59,35 @@ export default function HomeScreen() {
         </View>
 
         <PageContainer>
-          <ThemedText style={[styles.sectionLabel, { color: colors.muted }]}>
+          <ThemedText style={StyleSheet.flatten([styles.sectionLabel, { color: colors.muted }])}>
             {`${restaurants.length} restaurant${restaurants.length !== 1 ? "s" : ""}`}
           </ThemedText>
 
-          <View style={[styles.grid, { gap }]}>
-            {restaurants.map((r) => (
-              <View
-                key={r.id}
-                style={[
-                  styles.cardWrapper,
-                  { width: cardWidth as any, minWidth: numColumns === 1 ? "100%" : 280 },
-                ]}
-              >
-                <RestaurantCard restaurant={r} />
-              </View>
-            ))}
-          </View>
+          {loading ? (
+            <ActivityIndicator
+              testID="loading-screen"
+              style={styles.spinner}
+              size="large"
+              color={primaryColor}
+            />
+          ) : (
+            <View style={styles.grid}>
+              {restaurants.map((r) => (
+                <View
+                  key={r.id}
+                  style={StyleSheet.flatten([
+                    styles.cardWrapper,
+                    {
+                      width: cardWidth as DimensionValue,
+                      minWidth: numColumns === 1 ? "100%" : 280,
+                    },
+                  ])}
+                >
+                  <RestaurantCard restaurant={r} />
+                </View>
+              ))}
+            </View>
+          )}
         </PageContainer>
       </ScrollView>
     </ThemedView>
@@ -102,49 +99,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 40,
   },
   hero: {
+    height: 320,
     width: "100%",
-    minHeight: 300,
   },
   heroOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.18)",
-    paddingVertical: 72,
-    paddingHorizontal: 24,
-    alignItems: "center",
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    justifyContent: "center",
   },
   heroContent: {
-    maxWidth: 640,
+    maxWidth: 1200,
     width: "100%",
-    alignItems: "flex-start",
+    alignSelf: "center",
+    paddingHorizontal: 24,
   },
   heroEyebrow: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.8)",
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1.5,
     marginBottom: 12,
+    opacity: 0.9,
   },
   heroTitle: {
-    fontSize: 52,
-    fontWeight: "800",
-    lineHeight: 56,
     color: "#fff",
-    letterSpacing: -1.5,
+    fontSize: 48,
+    fontWeight: "900",
+    letterSpacing: -1,
+    lineHeight: 52,
     marginBottom: 16,
   },
   heroSubtitle: {
+    color: "#fff",
     fontSize: 18,
-    color: "rgba(255,255,255,0.82)",
-    lineHeight: 28,
+    opacity: 0.9,
+    maxWidth: 500,
+    lineHeight: 26,
   },
   sectionLabel: {
-    marginBottom: 20,
-    marginTop: 32,
     fontSize: 12,
+    marginBottom: 20,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -152,6 +150,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 16,
   },
   cardWrapper: {
     marginBottom: 20,

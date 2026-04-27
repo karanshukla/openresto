@@ -1,6 +1,8 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -11,6 +13,7 @@ public class AdminServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _db;
+    private readonly Mock<IHoldService> _holdServiceMock = new();
 
     public AdminServiceTests()
     {
@@ -33,7 +36,7 @@ public class AdminServiceTests : IDisposable
 
     private AdminService CreateService()
     {
-        return new AdminService(_db);
+        return new AdminService(_db, _holdServiceMock.Object);
     }
 
     private void SeedBase(int restaurantId = 1)
