@@ -68,7 +68,7 @@ export default function BookingForm({
   onRefresh,
 }: {
   restaurant: RestaurantDto;
-  onSubmit: (data: BookingFormData) => void;
+  onSubmit: (data: BookingFormData) => Promise<void> | void;
   onRefresh?: () => void;
 }) {
   const isDark = useColorScheme() === "dark";
@@ -76,6 +76,7 @@ export default function BookingForm({
   const [customerEmail, setCustomerEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [seats, setSeats] = useState(2);
+  const [submitting, setSubmitting] = useState(false);
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
 
@@ -168,18 +169,20 @@ export default function BookingForm({
     holdStatus === "held" &&
     !isClosedDay;
 
-  const handleSubmit = () => {
-    if (isValid) {
-      // Check seat capacity warning
-      const selectedTable = allTables.find((t) => t.id === tableId);
-      if (selectedTable && seats > selectedTable.seats) {
-        const confirmed = window.confirm(
-          `Warning: This table only has ${selectedTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
-        );
-        if (!confirmed) return;
-      }
+  const handleSubmit = async () => {
+    if (!isValid || submitting) return;
 
-      onSubmit({
+    const selectedTable = allTables.find((t) => t.id === tableId);
+    if (selectedTable && seats > selectedTable.seats) {
+      const confirmed = window.confirm(
+        `Warning: This table only has ${selectedTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    setSubmitting(true);
+    try {
+      await onSubmit({
         customerEmail,
         seats,
         tableId,
@@ -188,6 +191,8 @@ export default function BookingForm({
         holdId,
         specialRequests,
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -309,11 +314,18 @@ export default function BookingForm({
         the restaurant.
       </ThemedText>
 
-      <Button onPress={handleSubmit} disabled={!isValid} style={styles.submitBtn}>
-        Confirm Booking
+      <Button onPress={handleSubmit} disabled={!isValid || submitting} style={styles.submitBtn}>
+        {submitting ? (
+          <View style={styles.submitContent}>
+            <ActivityIndicator size="small" color="#fff" />
+            <ThemedText style={styles.submitText}>Confirming…</ThemedText>
+          </View>
+        ) : (
+          "Confirm Booking"
+        )}
       </Button>
 
-      {holdStatus !== "held" && tableId && date && time && (
+      {!submitting && holdStatus !== "held" && tableId && date && time && (
         <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
       )}
     </View>
@@ -364,6 +376,16 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 8,
+  },
+  submitContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  submitText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
   textarea: {
     height: 80,
