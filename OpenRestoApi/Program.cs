@@ -10,6 +10,7 @@ builder.WebHost.ConfigureKestrel(options =>
     options.AddServerHeader = false;
 });
 
+builder.Services.AddProblemDetails();
 builder.Services.AddProjectDependencies();
 builder.Services.AddCustomCors();
 builder.Services.AddCustomRateLimiting(builder.Environment);
@@ -19,6 +20,12 @@ string connectionString = builder.Configuration.GetAppConnectionString(builder.E
 builder.Services.AddDatabaseSetup(connectionString, builder.Environment);
 
 WebApplication app = builder.Build();
+
+// Convert unhandled exceptions and bare status-code responses (404/405/etc.)
+// into RFC 7807 ProblemDetails JSON. Must be one of the first middlewares so
+// it can wrap the rest of the pipeline.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.UseForwardedHeaders();
 
@@ -35,6 +42,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Anything under /api/* that isn't matched by a controller route returns a
+// JSON ProblemDetails 404 — never the SPA's HTML index or an empty body.
+app.MapFallback("/api/{**catchAll}", (HttpContext ctx) =>
+    Results.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Not Found",
+        detail: $"The requested API endpoint '{ctx.Request.Path}' does not exist."));
 
 app.InitializeDatabase(connectionString, builder.Configuration);
 
