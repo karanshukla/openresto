@@ -5,6 +5,11 @@ export type HoldStatus = "idle" | "pending" | "held" | "unavailable" | "expired"
 
 const HOLD_DEBOUNCE_MS = 2000;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(value: string): boolean {
+  return EMAIL_REGEX.test(value.trim());
+}
+
 interface UseTableHoldParams {
   restaurantId: number;
   sections: { id: number; tables: { id: number }[] }[];
@@ -74,8 +79,11 @@ export function useTableHold({
 
   // Debounced hold trigger
   useEffect(() => {
-    if (!tableId || !date || !time || !email.trim()) {
-      setHoldStatus("idle");
+    if (!tableId || !date || !time || !isValidEmail(email)) {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      releaseCurrentHold();
       return;
     }
 
