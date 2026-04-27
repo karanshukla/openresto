@@ -217,6 +217,8 @@ export const SHADOWS = {
   },
 };
 
+export type ThemeColors = ReturnType<typeof getThemeColors>;
+
 export const getThemeColors = (isDark: boolean) => ({
   text: isDark ? COLORS.text.dark : COLORS.text.light,
   muted: isDark ? COLORS.muted.dark : COLORS.muted.light,

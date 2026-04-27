@@ -47,7 +47,12 @@ export default function Navbar() {
           paddingTop: insets.top,
           height: 64 + insets.top,
         },
-        Platform.OS === "web" && ({ position: "sticky", top: 0, zIndex: 100 } as any),
+        Platform.OS === "web" &&
+          ({
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+          } as unknown as ViewStyle),
       ])}
     >
       <View style={StyleSheet.flatten([styles.inner, isMobile && { paddingHorizontal: 12 }])}>
@@ -122,11 +127,11 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={(state: any) =>
+            style={({ hovered }: { hovered?: boolean }) =>
               StyleSheet.flatten([
                 styles.themeBtn,
                 isMobile && { marginLeft: 0 },
-                state.hovered && { opacity: 0.7 },
+                hovered && { opacity: 0.7 },
               ])
             }
             accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}

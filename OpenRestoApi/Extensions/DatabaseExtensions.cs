@@ -4,8 +4,41 @@ using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Extensions;
 
-public static class DatabaseExtensions
+public static partial class DatabaseExtensions
 {
+    [LoggerMessage(Level = LogLevel.Information, Message = "Startup Diagnostics:")]
+    private static partial void LogStartupDiagnostics(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - Connection String: {ConnectionString}")]
+    private static partial void LogConnectionString(ILogger logger, string connectionString);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - Current User: {User}")]
+    private static partial void LogCurrentUser(ILogger logger, string user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - Resolved DB Path: {Path}")]
+    private static partial void LogResolvedDbPath(ILogger logger, string path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - DB Directory: {Dir} (Exists: {Exists})")]
+    private static partial void LogDbDirectoryInfo(ILogger logger, string dir, bool exists);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - DB Directory is writable.")]
+    private static partial void LogDbDirectoryWritable(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "  - DB Directory IS NOT WRITABLE: {Message}")]
+    private static partial void LogDbDirectoryNotWritable(ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - Created DB Directory: {Dir}")]
+    private static partial void LogCreatedDbDirectory(ILogger logger, string dir);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "  - Failed to create DB Directory: {Message}")]
+    private static partial void LogFailedToCreateDbDirectory(ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Database volume not yet writable/available (SQLite Error {ErrorCode}). Retry {RetryCount}/{MaxRetries} in {Delay}ms...")]
+    private static partial void LogDatabaseRetry(ILogger logger, int errorCode, int retryCount, int maxRetries, int delay);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "FATAL ERROR during database initialization. The application cannot start.")]
+    private static partial void LogFatalError(ILogger logger, Exception ex);
+
     public static string GetAppConnectionString(this IConfiguration configuration, IWebHostEnvironment env)
     {
         string? connectionString = configuration.GetConnectionString("DefaultConnection")
@@ -46,9 +79,9 @@ public static class DatabaseExtensions
 
         try
         {
-            logger.LogInformation("Startup Diagnostics:");
-            logger.LogInformation("  - Connection String: {ConnectionString}", connectionString);
-            logger.LogInformation("  - Current User: {User}", Environment.UserName);
+            LogStartupDiagnostics(logger);
+            LogConnectionString(logger, connectionString);
+            LogCurrentUser(logger, Environment.UserName);
 
             // Parse Data Source path correctly
             string dbFile = connectionString;
@@ -70,11 +103,11 @@ public static class DatabaseExtensions
             {
                 string fullPath = Path.GetFullPath(dbFile);
                 string? dir = Path.GetDirectoryName(fullPath);
-                logger.LogInformation("  - Resolved DB Path: {Path}", fullPath);
+                LogResolvedDbPath(logger, fullPath);
                 if (dir != null)
                 {
                     bool dirExists = Directory.Exists(dir);
-                    logger.LogInformation("  - DB Directory: {Dir} (Exists: {Exists})", dir, dirExists);
+                    LogDbDirectoryInfo(logger, dir, dirExists);
                     if (dirExists)
                     {
                         try
@@ -82,11 +115,11 @@ public static class DatabaseExtensions
                             string testFile = Path.Combine(dir, ".write-test-" + Guid.NewGuid().ToString("N"));
                             File.WriteAllText(testFile, "test");
                             File.Delete(testFile);
-                            logger.LogInformation("  - DB Directory is writable.");
+                            LogDbDirectoryWritable(logger);
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError("  - DB Directory IS NOT WRITABLE: {Message}", ex.Message);
+                            LogDbDirectoryNotWritable(logger, ex.Message);
                         }
                     }
                     else
@@ -94,11 +127,11 @@ public static class DatabaseExtensions
                         try
                         {
                             Directory.CreateDirectory(dir);
-                            logger.LogInformation("  - Created DB Directory: {Dir}", dir);
+                            LogCreatedDbDirectory(logger, dir);
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError("  - Failed to create DB Directory: {Message}", ex.Message);
+                            LogFailedToCreateDbDirectory(logger, ex.Message);
                         }
                     }
                 }
@@ -208,7 +241,7 @@ public static class DatabaseExtensions
                 }
                 catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 8 || ex.SqliteErrorCode == 14 || ex.SqliteErrorCode == 5)
                 {
-                    logger.LogWarning("Database volume not yet writable/available (SQLite Error {ErrorCode}). Retry {RetryCount}/{MaxRetries} in {Delay}ms...", ex.SqliteErrorCode, i, maxRetries, retryDelayMs);
+                    LogDatabaseRetry(logger, ex.SqliteErrorCode, i, maxRetries, retryDelayMs);
                     if (i == maxRetries)
                     {
                         throw;
@@ -225,7 +258,7 @@ public static class DatabaseExtensions
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "FATAL ERROR during database initialization. The application cannot start.");
+            LogFatalError(logger, ex);
             // Do not rethrow here if you want the app to stay alive but "broken", 
             // but usually it's better to let it fail so Docker restarts it.
             throw;

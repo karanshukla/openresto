@@ -14,6 +14,7 @@ import {
 import { useRouter, Stack } from "expo-router";
 import { getAdminDashboardStats, AdminDashboardStats, BookingSummaryDto } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { ThemeColors } from "@/theme/theme";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -23,7 +24,6 @@ export default function AdminDashboardScreen() {
   const { colors, primaryColor, isDark } = useAppTheme();
 
   const isWide = Platform.OS === "web" && width >= 1024;
-  const isMobile = width < 768;
 
   useEffect(() => {
     getAdminDashboardStats().then((data) => {
@@ -135,7 +135,7 @@ export default function AdminDashboardScreen() {
                   <Pressable
                     key={action.title}
                     onPress={() => router.push(action.route)}
-                    style={(state: any) =>
+                    style={({ hovered }: { hovered?: boolean }) =>
                       StyleSheet.flatten([
                         styles.actionCard,
                         { backgroundColor: colors.card, borderColor: colors.border },
@@ -143,7 +143,7 @@ export default function AdminDashboardScreen() {
                           backgroundColor: primaryColor,
                           borderColor: primaryColor,
                         },
-                        state.hovered && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                        hovered && { opacity: 0.9, transform: [{ scale: 0.98 }] },
                       ])
                     }
                   >
@@ -200,7 +200,19 @@ export default function AdminDashboardScreen() {
   );
 }
 
-function MetricCard({ stat, colors }: any) {
+function MetricCard({
+  stat,
+  colors,
+}: {
+  stat: {
+    label: string;
+    value: string | number;
+    sub: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    accent: string;
+  };
+  colors: ThemeColors;
+}) {
   return (
     <View
       style={StyleSheet.flatten([
@@ -224,7 +236,15 @@ function MetricCard({ stat, colors }: any) {
   );
 }
 
-function OccupancyChart({ primaryColor, colors, isDark }: any) {
+function OccupancyChart({
+  primaryColor,
+  colors,
+  isDark,
+}: {
+  primaryColor: string;
+  colors: ThemeColors;
+  isDark: boolean;
+}) {
   const chartData = [35, 45, 30, 55, 70, 85, 60];
   return (
     <View style={styles.chartArea}>
@@ -237,7 +257,7 @@ function OccupancyChart({ primaryColor, colors, isDark }: any) {
                   styles.barFill,
                   {
                     backgroundColor: isDark ? `${primaryColor}CC` : primaryColor,
-                    height: `${val}%` as any,
+                    height: `${val}%` as `${number}%`,
                   },
                 ])}
               />
@@ -258,24 +278,24 @@ function BookingItem({
   router,
 }: {
   booking: BookingSummaryDto;
-  colors: any;
-  router: any;
+  colors: ThemeColors;
+  router: ReturnType<typeof useRouter>;
 }) {
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
-      style={(state: any) =>
+      style={({ hovered }: { hovered?: boolean }) =>
         StyleSheet.flatten([
           styles.bookingItem,
           { borderTopColor: colors.border },
-          state.hovered && { backgroundColor: `${colors.muted}08` },
+          hovered && { backgroundColor: `${colors.muted}08` },
         ])
       }
     >
       <View
-        style={StyleSheet.flatten([styles.bookingTime, { backgroundColor: `${COLORS.success}10` }])}
+        style={StyleSheet.flatten([styles.bookingTime, { backgroundColor: `${colors.success}10` }])}
       >
-        <ThemedText style={StyleSheet.flatten([styles.bookingTimeText, { color: COLORS.success }])}>
+        <ThemedText style={StyleSheet.flatten([styles.bookingTimeText, { color: colors.success }])}>
           {new Date(booking.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </ThemedText>
       </View>

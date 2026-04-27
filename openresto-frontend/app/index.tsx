@@ -9,6 +9,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
+  type DimensionValue,
 } from "react-native";
 import { Stack } from "expo-router";
 import Navbar from "@/components/layout/Navbar";
@@ -71,7 +72,10 @@ export default function HomeScreen() {
                   key={r.id}
                   style={StyleSheet.flatten([
                     styles.cardWrapper,
-                    { width: cardWidth as any, minWidth: numColumns === 1 ? "100%" : 280 },
+                    {
+                      width: cardWidth as DimensionValue,
+                      minWidth: numColumns === 1 ? "100%" : 280,
+                    },
                   ])}
                 >
                   <RestaurantCard restaurant={r} />

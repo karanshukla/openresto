@@ -153,7 +153,7 @@ public class RecentBookingsCookieTests
 
         foreach (string? header in values)
         {
-            if (header == null || !header.StartsWith("openresto_recent="))
+            if (header == null || !header.StartsWith("openresto_recent=", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

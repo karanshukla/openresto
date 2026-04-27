@@ -12,9 +12,11 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import Input from "@/components/common/Input";
-import { BUTTON_SIZES, COLORS } from "@/theme/theme";
+import { BUTTON_SIZES, COLORS, ThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
@@ -219,14 +221,24 @@ export default function LookupScreen() {
   );
 }
 
-function RecentBookingsList({ cached, colors, style, onSelect }: any) {
+function RecentBookingsList({
+  cached,
+  colors,
+  style,
+  onSelect,
+}: {
+  cached: CachedBooking[];
+  colors: ThemeColors;
+  style?: StyleProp<ViewStyle>;
+  onSelect: (c: CachedBooking) => void;
+}) {
   if (cached.length === 0) return null;
   return (
     <View style={StyleSheet.flatten([styles.recentSection, style])}>
       <ThemedText style={StyleSheet.flatten([styles.recentTitle, { color: colors.muted }])}>
         YOUR RECENT BOOKINGS
       </ThemedText>
-      {cached.map((c: any) => (
+      {cached.map((c) => (
         <Pressable
           key={c.bookingRef}
           style={StyleSheet.flatten([
@@ -261,7 +273,15 @@ function BookingResultCard({
   isDark,
   isWide,
   onCancel,
-}: any) {
+}: {
+  booking: BookingDto;
+  restaurant: RestaurantDto | null;
+  primaryColor: string;
+  colors: ThemeColors;
+  isDark: boolean;
+  isWide: boolean;
+  onCancel: () => void;
+}) {
   return (
     <View
       style={StyleSheet.flatten([

@@ -44,7 +44,7 @@ export default function RestaurantCard({ restaurant }: { restaurant: RestaurantD
   return (
     <Link href={`/(user)/book?restaurantId=${restaurant.id}`} asChild>
       <Pressable
-        style={({ pressed, hovered }: any) =>
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
           StyleSheet.flatten([
             styles.outer,
             outerShadow,
