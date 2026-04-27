@@ -7,6 +7,53 @@ export interface AdminOverviewDto {
   totalBookings: number;
   todayBookings: number;
   totalSeats: number;
+  activeHoldsCount?: number;
+  weeklyTrend?: number;
+  occupancyData?: number[];
+}
+
+export interface BookingSummaryDto {
+  id: number;
+  date: string;
+  customerEmail: string;
+  seats: number;
+  restaurantName: string;
+  bookingRef: string;
+}
+
+export interface AdminDashboardStats {
+  todayCount: number;
+  activeHoldsCount: number;
+  weeklyTrend: number;
+  occupancyData: number[];
+  recentBookings: BookingSummaryDto[];
+}
+
+export async function getAdminDashboardStats(): Promise<AdminDashboardStats | null> {
+  try {
+    const overview = await getAdminOverview();
+    if (!overview) return null;
+
+    const bookings = await getAdminBookings(undefined, new Date().toISOString().split("T")[0]);
+
+    return {
+      todayCount: overview.todayBookings,
+      activeHoldsCount: overview.activeHoldsCount ?? 0,
+      weeklyTrend: overview.weeklyTrend ?? 0,
+      occupancyData: overview.occupancyData ?? [],
+      recentBookings: bookings.map((b) => ({
+        id: b.id,
+        date: b.date,
+        customerEmail: b.customerEmail,
+        seats: b.seats,
+        restaurantName: b.restaurantName,
+        bookingRef: b.bookingRef ?? "",
+      })),
+    };
+  } catch (err) {
+    console.error("getAdminDashboardStats error:", err);
+    return null;
+  }
 }
 
 export interface BookingDetailDto {

@@ -89,6 +89,12 @@ public class HoldService(ISystemClock clock) : IHoldService
         return null;
     }
 
+    public int GetActiveHoldsCount()
+    {
+        Cleanup();
+        return _holds.Count;
+    }
+
     private void Cleanup()
     {
         DateTime now = _clock.UtcNow;

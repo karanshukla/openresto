@@ -1,4 +1,11 @@
-import { View, StyleSheet, Pressable, Platform, useWindowDimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Platform,
+  useWindowDimensions,
+  ViewStyle,
+} from "react-native";
 import { Link, usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";

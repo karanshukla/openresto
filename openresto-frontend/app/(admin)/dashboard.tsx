@@ -26,7 +26,7 @@ export default function AdminDashboardScreen() {
   const isWide = Platform.OS === "web" && width >= 1024;
 
   useEffect(() => {
-    getAdminDashboardStats().then((data) => {
+    getAdminDashboardStats().then((data: AdminDashboardStats | null) => {
       setStats(data);
       setLoading(false);
     });
@@ -57,8 +57,8 @@ export default function AdminDashboardScreen() {
         },
         {
           label: "Restaurant Score",
-          value: "4.8",
-          sub: "Based on 124 reviews",
+          value: "Coming Soon",
+          sub: "Feature in development",
           icon: "star-outline" as const,
           accent: "#d97706",
         },
@@ -125,7 +125,12 @@ export default function AdminDashboardScreen() {
                     Last 7 days
                   </ThemedText>
                 </View>
-                <OccupancyChart primaryColor={primaryColor} colors={colors} isDark={isDark} />
+                <OccupancyChart
+                  primaryColor={primaryColor}
+                  colors={colors}
+                  isDark={isDark}
+                  data={stats.occupancyData}
+                />
               </View>
 
               <View
@@ -188,7 +193,7 @@ export default function AdminDashboardScreen() {
                   </ThemedText>
                 </View>
               ) : (
-                stats?.recentBookings.map((b) => (
+                stats?.recentBookings.map((b: BookingSummaryDto) => (
                   <BookingItem key={b.bookingRef} booking={b} colors={colors} router={router} />
                 ))
               )}
@@ -240,12 +245,14 @@ function OccupancyChart({
   primaryColor,
   colors,
   isDark,
+  data,
 }: {
   primaryColor: string;
   colors: ThemeColors;
   isDark: boolean;
+  data: number[];
 }) {
-  const chartData = [35, 45, 30, 55, 70, 85, 60];
+  const chartData = data?.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
   return (
     <View style={styles.chartArea}>
       <View style={styles.chartBars}>
@@ -257,13 +264,13 @@ function OccupancyChart({
                   styles.barFill,
                   {
                     backgroundColor: isDark ? `${primaryColor}CC` : primaryColor,
-                    height: `${val}%` as `${number}%`,
+                    height: `${Math.max(2, val)}%` as `${number}%`,
                   },
                 ])}
               />
             </View>
             <ThemedText style={StyleSheet.flatten([styles.barLabel, { color: colors.muted }])}>
-              {["M", "T", "W", "T", "F", "S", "S"][i]}
+              {["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"][i]}
             </ThemedText>
           </View>
         ))}

@@ -16,6 +16,9 @@ public class AdminOverviewDto
     public int TotalBookings { get; set; }
     public int TodayBookings { get; set; }
     public int TotalSeats { get; set; }
+    public int ActiveHoldsCount { get; set; }
+    public double WeeklyTrend { get; set; }
+    public List<int> OccupancyData { get; set; } = [];
 }
 
 // ── Booking detail (admin view — includes resolved names) ────────────────────

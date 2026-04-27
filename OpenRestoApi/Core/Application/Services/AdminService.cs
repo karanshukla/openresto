@@ -1,13 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class AdminService(AppDbContext db)
+public class AdminService(AppDbContext db, IHoldService holdService)
 {
     private readonly AppDbContext _db = db;
+    private readonly IHoldService _holdService = holdService;
 
     private static string NormalizeStatus(string status) => status.ToLowerInvariant() switch
     {
@@ -38,12 +40,40 @@ public class AdminService(AppDbContext db)
                 !b.IsCancelled);
         }
 
+        // Calculate Weekly Trend
+        DateTime sevenDaysAgo = nowUtc.AddDays(-7);
+        DateTime fourteenDaysAgo = nowUtc.AddDays(-14);
+        
+        int lastSevenDaysCount = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= sevenDaysAgo && b.Date < nowUtc);
+        int previousSevenDaysCount = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= fourteenDaysAgo && b.Date < sevenDaysAgo);
+        
+        double weeklyTrend = 0;
+        if (previousSevenDaysCount > 0)
+        {
+            weeklyTrend = Math.Round(((double)(lastSevenDaysCount - previousSevenDaysCount) / previousSevenDaysCount) * 100, 1);
+        }
+
+        // Calculate Occupancy Data (Last 7 days)
+        List<int> occupancyData = [];
+        int totalTables = await _db.Tables.CountAsync();
+        for (int i = 6; i >= 0; i--)
+        {
+            DateTime dayStart = nowUtc.Date.AddDays(-i);
+            DateTime dayEnd = dayStart.AddDays(1);
+            int dayBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= dayStart && b.Date < dayEnd);
+            int occupancyPercent = totalTables > 0 ? (int)Math.Round((double)dayBookings / totalTables * 100) : 0;
+            occupancyData.Add(Math.Min(100, occupancyPercent));
+        }
+
         return new AdminOverviewDto
         {
             TotalRestaurants = totalRestaurants,
             TotalBookings = totalBookings,
             TodayBookings = todayBookingsCount,
             TotalSeats = totalSeats,
+            ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
+            WeeklyTrend = weeklyTrend,
+            OccupancyData = occupancyData
         };
     }
 
