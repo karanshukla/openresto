@@ -1,0 +1,105 @@
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+    server_tokens off;
+
+    # Redirect all HTTP requests to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+
+    # Health Check
+    location /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "OK";
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name ${DOMAIN_NAME};
+    server_tokens off;
+
+    # PositiveSSL Certificate Files
+    # Note: server.crt should be the concatenated version of your domain cert and the CA bundle
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    # SSL optimization
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    resolver ${RESOLVER} valid=10s ipv6=off;
+    resolver_timeout 5s;
+
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    proxy_redirect off;
+
+    proxy_connect_timeout 60s;
+    proxy_send_timeout    120s;
+    proxy_read_timeout    120s;
+    proxy_buffering       off;
+
+    client_max_body_size 10M;
+
+    # Block dotfiles
+    location ~ /\.(?!well-known).* {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* (?:^|/)\.(?:env|git|htaccess|config|sql|log)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Health Check
+    location /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "OK";
+    }
+
+    # API — Proxy to Backend
+    location /api/ {
+        include /etc/nginx/conf.d/security-headers.conf;
+        add_header Cache-Control "no-store, max-age=0" always;
+
+        set $backend_host ${BACKEND_HOST};
+        proxy_pass http://$backend_host:${BACKEND_PORT};
+
+        error_page 404 500 502 503 504 = @api_error;
+    }
+
+    location @api_error {
+        default_type application/json;
+        return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
+    }
+
+    # Frontend — Proxy to Static Server
+    location / {
+        include /etc/nginx/conf.d/security-headers.conf;
+
+        set $frontend_host ${FRONTEND_HOST};
+        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+    }
+}
