@@ -108,6 +108,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create backend env file
+        run: |
+          cat > ./OpenRestoApi/.env.docker << EOF
+          CORS_ORIGINS=http://localhost:5062,http://localhost:8081,http://frontend:8081
+          CONNECTION_STRING=Data Source=/tmp/openresto.db
+          EOF
+
       - name: Build all containers
         run: docker compose build
 
@@ -117,24 +124,22 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Waiting for services to start..."
-          # Max wait 3 minutes (90 * 2s)
           for i in $(seq 1 90); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5062/api/health || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "Backend is ready (HTTP 200)!"
               exit 0
             fi
-            
-            # Check if any container has exited
-            if [ $(docker compose ps | grep -c "Exited") -gt 0 ]; then
+
+            EXITED=$(docker compose ps --status exited --quiet)
+            if [ -n "$EXITED" ]; then
               echo "Error: One or more containers have exited!"
               docker compose ps
               docker compose logs
               exit 1
             fi
-            
+
             echo "Attempt $i/90: Backend not ready yet (HTTP $STATUS)..."
-            # Optional: show container status every 5 attempts
             if [ $((i % 5)) -eq 0 ]; then
               docker compose ps
             fi
@@ -212,4 +217,4 @@ jobs:
 
       - name: Show container logs on failure
         if: failure()
-        run: docker compose logs
+        run: docker compose logs --tail=100
