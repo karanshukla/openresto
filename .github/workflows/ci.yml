@@ -215,6 +215,14 @@ jobs:
         working-directory: openresto-frontend
         run: npm ci
 
+      - name: Debug nginx config on failure
+        if: failure()
+        run: |
+          echo "=== Rendered Nginx config ==="
+          docker compose exec -T reverse-proxy cat /etc/nginx/conf.d/default.conf || echo "Could not read config"
+          echo "=== Full Nginx config dump ==="
+          docker compose exec -T reverse-proxy nginx -T || echo "Could not dump config"
+
       - name: Show container logs on failure
         if: failure()
         run: docker compose logs --tail=100
