@@ -1,6 +1,6 @@
 # Nginx VPS Configuration with PositiveSSL
 
-This directory contains a specialized Nginx configuration designed for Namecheap VPS hosting using PositiveSSL.
+This directory contains a specialized Nginx configuration designed for Namecheap VPS hosting using PositiveSSL (including automatic setups on Ubuntu).
 
 ## Features
 - HTTP (Port 80) to HTTPS (Port 443) redirect.
@@ -10,59 +10,62 @@ This directory contains a specialized Nginx configuration designed for Namecheap
 - Dynamic configuration via environment variables.
 
 ## SSL Certificate Preparation
-PositiveSSL usually provides two main files:
-1. `your_domain.crt`
-2. `your_domain.ca-bundle`
 
-Nginx requires the full certificate chain in a single file. You must concatenate them:
+### Option A: Manual PositiveSSL (Standard)
+If you purchased a PositiveSSL certificate and have the `.crt` and `.ca-bundle` files:
 
-```bash
-cat your_domain.crt your_domain.ca-bundle > server.crt
-```
+1. Concatenate them into a single file:
+   ```bash
+   cat your_domain.crt your_domain.ca-bundle > server.crt
+   ```
+2. Use your private key as `server.key`.
 
-You should also have your private key:
-- `server.key` (This was generated when you created the CSR).
+### Option B: Automatic Setup (Ubuntu/Debian)
+If your Namecheap VPS has Ubuntu and the SSL was set up automatically (e.g., via a plugin or standard system tools), certificates are typically found at:
+
+- **Certificate Path:** `/etc/ssl/certs/yourdomain_com.crt` (or similar combined file)
+- **Private Key Path:** `/etc/ssl/private/yourdomain_com.key`
+
+You can mount these directly into the Docker container or copy them to your project's `ssl/` directory.
 
 ## Deployment
 
 ### 1. Place SSL Files
-Ensure `server.crt` and `server.key` are available on your VPS.
+Ensure your SSL files are available on your VPS. By default, the configuration looks for:
+- `/etc/nginx/ssl/server.crt`
+- `/etc/nginx/ssl/server.key`
 
 ### 2. Run with Docker Compose
-If you are using Docker Compose, mount the SSL files and set the `DOMAIN_NAME`:
+You can customize the SSL paths using environment variables `SSL_CERT_PATH` and `SSL_KEY_PATH`.
 
 ```yaml
 services:
-  nginx:
+  reverse-proxy:
     build: ./nginx-vps
     ports:
       - "80:80"
       - "443:443"
     environment:
       - DOMAIN_NAME=yourdomain.com
-      - BACKEND_HOST=api-service
+      - BACKEND_HOST=backend
       - BACKEND_PORT=8080
-      - FRONTEND_HOST=frontend-service
+      - FRONTEND_HOST=frontend
       - FRONTEND_PORT=8081
+      # Optional: Override SSL paths inside the container
+      # - SSL_CERT_PATH=/etc/nginx/ssl/custom.crt
+      # - SSL_KEY_PATH=/etc/nginx/ssl/custom.key
     volumes:
-      - /path/to/your/ssl/server.crt:/etc/nginx/ssl/server.crt:ro
-      - /path/to/your/ssl/server.key:/etc/nginx/ssl/server.key:ro
+      # Mount from VPS host to container
+      - /etc/ssl/certs/your_combined_cert.crt:/etc/nginx/ssl/server.crt:ro
+      - /etc/ssl/private/your_key.key:/etc/nginx/ssl/server.key:ro
     restart: always
 ```
 
-### 3. Non-Docker Deployment
-If you are installing Nginx directly on the VPS (e.g., `apt install nginx`):
-
-1. Copy `security-headers.conf` to `/etc/nginx/conf.d/`.
-2. Copy `default.conf.template` to `/etc/nginx/sites-available/yourdomain.conf`.
-3. Manually replace the `${VARIABLE}` placeholders in the `.conf` file with your actual values (Domain, Hosts, Ports).
-4. Create a symbolic link: `ln -s /etc/nginx/sites-available/yourdomain.conf /etc/nginx/sites-enabled/`.
-5. Place your SSL files in `/etc/nginx/ssl/`.
-6. Test and restart Nginx: `nginx -t && systemctl restart nginx`.
-
-### 4. Environment Variables
+## Environment Variables
 - `DOMAIN_NAME`: Your domain name (e.g., `openresto.com`).
-- `BACKEND_HOST`: The hostname of your backend service (e.g., `localhost` or `backend`).
-- `BACKEND_PORT`: The port your backend is listening on (e.g., `8080`).
-- `FRONTEND_HOST`: The hostname of your frontend service (e.g., `localhost` or `frontend`).
-- `FRONTEND_PORT`: The port your frontend is listening on (e.g., `8081`).
+- `BACKEND_HOST`: The hostname of your backend service.
+- `BACKEND_PORT`: The port your backend is listening on.
+- `FRONTEND_HOST`: The hostname of your frontend service.
+- `FRONTEND_PORT`: The port your frontend is listening on.
+- `SSL_CERT_PATH`: (Optional) Path to the certificate inside the container. Defaults to `/etc/nginx/ssl/server.crt`.
+- `SSL_KEY_PATH`: (Optional) Path to the private key inside the container. Defaults to `/etc/nginx/ssl/server.key`.

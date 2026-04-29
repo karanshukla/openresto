@@ -22,8 +22,9 @@ ENV BACKEND_PORT=8080
 ENV FRONTEND_HOST=frontend
 ENV FRONTEND_PORT=8081
 
-# Note: You MUST provide server.crt and server.key in /etc/nginx/ssl/
-# Either by mounting a volume or copying them in a custom build step.
+# Note: You MUST provide SSL certificates in /etc/nginx/ssl/ (default)
+# or specify custom paths via SSL_CERT_PATH and SSL_KEY_PATH.
+# These can be provided by mounting a volume or copying them in a custom build step.
 
 # Docker healthcheck (checks port 80 /health)
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \

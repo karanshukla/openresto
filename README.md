@@ -16,6 +16,7 @@ A self-hosted restaurant booking management system. Customers browse restaurants
 
 ### Docker (recommended)
 
+For local development:
 ```bash
 docker-compose up
 ```
