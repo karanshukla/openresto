@@ -7,9 +7,15 @@ server {
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    # Redirect all HTTP requests to HTTPS
+    # Only redirect to HTTPS if not already forwarded as HTTPS by a proxy
     location / {
-        return 301 https://$host$request_uri;
+        if ($http_x_forwarded_proto != "https") {
+            return 301 https://$host$request_uri;
+        }
+        
+        # If it IS already https, proxy it normally
+        set $frontend_host ${FRONTEND_HOST};
+        proxy_pass http://$frontend_host:${FRONTEND_PORT};
     }
 
     # Health Check
