@@ -34,11 +34,11 @@ services:
       - BACKEND_PORT=8080
       - FRONTEND_HOST=frontend
       - FRONTEND_PORT=8081
-      - SSL_CERT_PATH=${SSL_CERT_PATH:-/etc/nginx/ssl/server.crt}
-      - SSL_KEY_PATH=${SSL_KEY_PATH:-/etc/nginx/ssl/server.key}
+      - SSL_CERT_PATH=/etc/nginx/ssl/server.crt
+      - SSL_KEY_PATH=/etc/nginx/ssl/server.key
     volumes:
-      - ${HOST_SSL_CERT_PATH:-./ssl/server.crt}:${SSL_CERT_PATH:-/etc/nginx/ssl/server.crt}:ro
-      - ${HOST_SSL_KEY_PATH:-./ssl/server.key}:${SSL_KEY_PATH:-/etc/nginx/ssl/server.key}:ro
+      - ${HOST_SSL_CERT_PATH}:/etc/nginx/ssl/server.crt:ro
+      - ${HOST_SSL_KEY_PATH}:/etc/nginx/ssl/server.key:ro
     depends_on:
       - backend
       - frontend
