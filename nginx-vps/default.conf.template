@@ -7,15 +7,15 @@ server {
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    # Only redirect to HTTPS if not already forwarded as HTTPS by a proxy
+    # Trust the proxy's SSL termination - do NOT redirect to 443 here
     location / {
-        if ($http_x_forwarded_proto != "https") {
-            return 301 https://$host$request_uri;
-        }
-        
-        # If it IS already https, proxy it normally
         set $frontend_host ${FRONTEND_HOST};
         proxy_pass http://$frontend_host:${FRONTEND_PORT};
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # Health Check
@@ -32,7 +32,6 @@ server {
     server_tokens off;
 
     # PositiveSSL Certificate Files
-    # These paths can be overridden via environment variables
     ssl_certificate ${SSL_CERT_PATH};
     ssl_certificate_key ${SSL_KEY_PATH};
 
@@ -59,6 +58,7 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
     proxy_cache_bypass $http_upgrade;
     proxy_redirect off;
 
