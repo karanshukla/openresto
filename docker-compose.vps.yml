@@ -19,6 +19,12 @@ services:
         - EXPO_PUBLIC_API_URL=/api
     environment:
       - EXPO_PUBLIC_API_URL=/api
+      - PORT=8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: always
 
   reverse-proxy:
