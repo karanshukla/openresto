@@ -2,15 +2,28 @@
 limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
 
+# Common API Proxy settings to avoid repetition
+# We use a snippet approach inside the template
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
     # Trust the proxy's SSL termination (APISIX) - just serve the traffic
+    
+    # API — Proxy to Backend (needed if proxy connects over port 80)
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass http://backend:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Frontend — Proxy to Static Server
     location / {
         proxy_pass http://frontend:8081;
-        
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -68,12 +81,9 @@ server {
     # API — Proxy to Backend
     location /api/ {
         limit_req zone=api burst=20 nodelay;
-
         include /etc/nginx/conf.d/security-headers.conf;
         add_header Cache-Control "no-store, max-age=0" always;
-
         proxy_pass http://backend:8080;
-
         error_page 404 500 502 503 504 = @api_error;
     }
 
@@ -85,9 +95,7 @@ server {
     # Frontend — Proxy to Static Server
     location / {
         limit_req zone=general burst=50 nodelay;
-
         include /etc/nginx/conf.d/security-headers.conf;
-
         proxy_pass http://frontend:8081;
     }
 
