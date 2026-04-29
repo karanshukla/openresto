@@ -1,36 +1,35 @@
-# Rate limiting zones (defined in http context)
+# Rate limiting zones
 limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
 
-# Common API Proxy settings to avoid repetition
-# We use a snippet approach inside the template
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    # Trust the proxy's SSL termination (APISIX) - just serve the traffic
+    # Trust the proxy's SSL termination (APISIX)
+    # We pass through the X-Forwarded-Proto so the app knows it's secure
     
-    # API — Proxy to Backend (needed if proxy connects over port 80)
     location /api/ {
         limit_req zone=api burst=20 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
         proxy_pass http://backend:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
     }
 
-    # Frontend — Proxy to Static Server
     location / {
+        limit_req zone=general burst=50 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
         proxy_pass http://frontend:8081;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
     }
 
-    # Health Check
     location /health {
         access_log off;
         default_type text/plain;
@@ -43,11 +42,9 @@ server {
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    # PositiveSSL Certificate Files
     ssl_certificate /etc/nginx/ssl/server.crt;
     ssl_certificate_key /etc/nginx/ssl/server.key;
 
-    # SSL optimization
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -71,14 +68,8 @@ server {
     proxy_cache_bypass $http_upgrade;
     proxy_redirect off;
 
-    proxy_connect_timeout 60s;
-    proxy_send_timeout    120s;
-    proxy_read_timeout    120s;
-    proxy_buffering       off;
-
     client_max_body_size 10M;
 
-    # API — Proxy to Backend
     location /api/ {
         limit_req zone=api burst=20 nodelay;
         include /etc/nginx/conf.d/security-headers.conf;
@@ -92,14 +83,12 @@ server {
         return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
     }
 
-    # Frontend — Proxy to Static Server
     location / {
         limit_req zone=general burst=50 nodelay;
         include /etc/nginx/conf.d/security-headers.conf;
         proxy_pass http://frontend:8081;
     }
 
-    # Health Check
     location /health {
         access_log off;
         default_type text/plain;
