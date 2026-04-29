@@ -1,3 +1,7 @@
+# Rate limiting zones (defined in http context)
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
+
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
@@ -81,6 +85,8 @@ server {
 
     # API — Proxy to Backend
     location /api/ {
+        limit_req zone=api burst=20 nodelay;
+
         include /etc/nginx/conf.d/security-headers.conf;
         add_header Cache-Control "no-store, max-age=0" always;
 
@@ -97,6 +103,8 @@ server {
 
     # Frontend — Proxy to Static Server
     location / {
+        limit_req zone=general burst=50 nodelay;
+
         include /etc/nginx/conf.d/security-headers.conf;
 
         set $frontend_host ${FRONTEND_HOST};
