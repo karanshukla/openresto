@@ -9,8 +9,7 @@ server {
 
     # Trust the proxy's SSL termination - do NOT redirect to 443 here
     location / {
-        set $frontend_host ${FRONTEND_HOST};
-        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+        proxy_pass http://frontend:8081;
         
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -96,8 +95,7 @@ server {
         include /etc/nginx/conf.d/security-headers.conf;
         add_header Cache-Control "no-store, max-age=0" always;
 
-        set $backend_host ${BACKEND_HOST};
-        proxy_pass http://$backend_host:${BACKEND_PORT};
+        proxy_pass http://backend:8080;
 
         error_page 404 500 502 503 504 = @api_error;
     }
@@ -113,7 +111,6 @@ server {
 
         include /etc/nginx/conf.d/security-headers.conf;
 
-        set $frontend_host ${FRONTEND_HOST};
-        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+        proxy_pass http://frontend:8081;
     }
 }
