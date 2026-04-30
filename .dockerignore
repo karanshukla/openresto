@@ -1,0 +1,12 @@
+**/.git
+**/.vscode
+**/node_modules
+**/bin
+**/obj
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/dist
+**/coverage
+**/playwright-report
+**/test-results

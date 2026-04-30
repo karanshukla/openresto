@@ -1,0 +1,51 @@
+services:
+  backend:
+    build:
+      context: ./OpenRestoApi
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      - CORS_ORIGINS=https://${DOMAIN_NAME}
+    volumes:
+      - ./data:/data
+    restart: always
+
+  frontend:
+    build:
+      context: ./openresto-frontend
+      dockerfile: Dockerfile
+      args:
+        - EXPO_PUBLIC_API_URL=/api
+    environment:
+      - EXPO_PUBLIC_API_URL=/api
+      - PORT=8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+  reverse-proxy:
+    build:
+      context: ./nginx-vps
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8080
+      - FRONTEND_HOST=frontend
+      - FRONTEND_PORT=8081
+      - SSL_CERT_PATH=/etc/nginx/ssl/server.crt
+      - SSL_KEY_PATH=/etc/nginx/ssl/server.key
+    volumes:
+      - ${HOST_SSL_CERT_PATH}:/etc/nginx/ssl/server.crt:ro
+      - ${HOST_SSL_KEY_PATH}:/etc/nginx/ssl/server.key:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: always

@@ -1,0 +1,97 @@
+# Rate limiting zones
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
+
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+    server_tokens off;
+
+    # Trust the proxy's SSL termination (APISIX)
+    # We pass through the X-Forwarded-Proto so the app knows it's secure
+    
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
+        proxy_pass http://backend:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    }
+
+    location / {
+        limit_req zone=general burst=50 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
+        proxy_pass http://frontend:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    }
+
+    location /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "OK";
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name ${DOMAIN_NAME};
+    server_tokens off;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_redirect off;
+
+    client_max_body_size 10M;
+
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
+        add_header Cache-Control "no-store, max-age=0" always;
+        proxy_pass http://backend:8080;
+        error_page 404 500 502 503 504 = @api_error;
+    }
+
+    location @api_error {
+        default_type application/json;
+        return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
+    }
+
+    location / {
+        limit_req zone=general burst=50 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
+        proxy_pass http://frontend:8081;
+    }
+
+    location /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "OK";
+    }
+}
