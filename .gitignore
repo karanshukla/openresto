@@ -40,3 +40,7 @@ yarn-error.log*
 
 # Docker
 **/docker-compose.override.yml
+
+# Coverage
+CoverageReport/
+coverage/

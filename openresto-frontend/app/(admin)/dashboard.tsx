@@ -140,7 +140,8 @@ export default function AdminDashboardScreen() {
                   <Pressable
                     key={action.title}
                     onPress={() => router.push(action.route)}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    style={({ hovered }: any) =>
                       StyleSheet.flatten([
                         styles.actionCard,
                         { backgroundColor: colors.card, borderColor: colors.border },
@@ -291,7 +292,7 @@ function BookingItem({
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: any) =>
         StyleSheet.flatten([
           styles.bookingItem,
           { borderTopColor: colors.border },
