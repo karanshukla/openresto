@@ -140,6 +140,7 @@ export default function AdminDashboardScreen() {
                   <Pressable
                     key={action.title}
                     onPress={() => router.push(action.route)}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     style={({ hovered }: any) =>
                       StyleSheet.flatten([
                         styles.actionCard,

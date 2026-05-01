@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.{cs,csproj,sln} text eol=lf
+*.{js,jsx,ts,tsx,json,css,html,md} text eol=lf

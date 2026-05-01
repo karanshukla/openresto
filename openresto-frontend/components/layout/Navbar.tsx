@@ -135,6 +135,7 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={({ hovered }: any) =>
               StyleSheet.flatten([
                 styles.themeBtn,

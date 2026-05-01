@@ -117,4 +117,4 @@ cd openresto-frontend && npx prettier --check "**/*.{ts,tsx,js,json}"
 
 ## License
 
-All rights reserved.
+MIT, do what you want with it

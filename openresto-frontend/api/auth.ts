@@ -21,9 +21,10 @@ export async function logout(): Promise<void> {
 
 // ---------- Session check ----------
 
-export async function checkSession(): Promise<{ email: string } | null> {
+export async function checkSession(): Promise<{ email: string } | "rate-limited" | null> {
   try {
     const res = await get("/admin/auth/me");
+    if (res.status === 429) return "rate-limited";
     if (!res.ok) return null;
     return await res.json();
   } catch {

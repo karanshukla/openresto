@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "lint:fix": "expo lint --fix",
+    "lint:staged": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest",

@@ -73,7 +73,11 @@ function AdminLayoutInner() {
     if (authState === "authenticated") return;
 
     checkSession().then((session) => {
-      if (session) {
+      if (session === "rate-limited") {
+        // We're being rate limited, but we likely have a session.
+        // Don't log out, just assume we're still authenticated.
+        setAuthState("authenticated");
+      } else if (session) {
         setAuthState("authenticated");
       } else {
         setAuthState("unauthenticated");
