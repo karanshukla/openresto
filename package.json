@@ -1,0 +1,29 @@
+{
+  "name": "openresto",
+  "version": "1.0.0",
+  "description": "A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/karanshukla/openresto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/karanshukla/openresto/issues"
+  },
+  "homepage": "https://github.com/karanshukla/openresto#readme",
+  "devDependencies": {
+    "eslint": "^9.20.1",
+    "eslint-config-expo": "^10.0.0",
+    "eslint-config-prettier": "^10.0.2",
+    "husky": "^9.1.7",
+    "prettier": "^3.5.1"
+  }
+}
