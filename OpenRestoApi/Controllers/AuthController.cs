@@ -60,6 +60,7 @@ public class AuthController(IConfiguration config, AppDbContext db) : Controller
 
     [HttpGet("me")]
     [Authorize]
+    [EnableRateLimiting("public")]
     public IActionResult Me()
     {
         string? email = User.FindFirst(ClaimTypes.Email)?.Value;
