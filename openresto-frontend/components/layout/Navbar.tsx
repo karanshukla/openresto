@@ -135,7 +135,7 @@ export default function Navbar() {
 
           <Pressable
             onPress={toggle}
-            style={({ hovered }) =>
+            style={({ hovered }: { hovered?: boolean }) =>
               StyleSheet.flatten([
                 styles.themeBtn,
                 isMobile && { marginLeft: 0 },

@@ -140,7 +140,7 @@ export default function AdminDashboardScreen() {
                   <Pressable
                     key={action.title}
                     onPress={() => router.push(action.route)}
-                    style={({ hovered }) =>
+                    style={({ hovered }: { hovered?: boolean }) =>
                       StyleSheet.flatten([
                         styles.actionCard,
                         { backgroundColor: colors.card, borderColor: colors.border },
@@ -291,7 +291,7 @@ function BookingItem({
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
-      style={({ hovered }) =>
+      style={({ hovered }: { hovered?: boolean }) =>
         StyleSheet.flatten([
           styles.bookingItem,
           { borderTopColor: colors.border },
