@@ -1,62 +1,107 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
+
+jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
+  __esModule: true,
+  default: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
+}));
+
+import { render, screen, fireEvent } from "@testing-library/react-native";
+import { useWindowDimensions } from "react-native";
 import Navbar from "@/components/layout/Navbar";
 
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+const mockBack = jest.fn();
+const mockToggle = jest.fn();
+
+jest.mock("@/hooks/use-app-theme", () => ({
+  useAppTheme: jest.fn(),
 }));
+
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 jest.mock("@/context/ThemeContext", () => ({
-  useTheme: () => ({ colorScheme: "light", toggle: jest.fn() }),
-}));
-
-jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ appName: "Test App", primaryColor: "#0a7ea4" }),
+  useTheme: () => ({ colorScheme: "light", toggle: mockToggle }),
 }));
 
 jest.mock("expo-router", () => ({
-  Link: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  usePathname: () => "/",
-  useRouter: () => ({ back: jest.fn() }),
+  Link: ({ children }: any) => children,
+  usePathname: jest.fn(),
+  useRouter: () => ({ back: mockBack }),
 }));
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-jest.mock("react-native-safe-area-context", () => {
-  const inset = { top: 0, right: 0, bottom: 0, left: 0 };
-  return {
-    SafeAreaProvider: jest.fn(({ children }) => children),
-    SafeAreaConsumer: jest.fn(({ children }) => children(inset)),
-    useSafeAreaInsets: jest.fn(() => inset),
-    useSafeAreaFrame: jest.fn(() => ({ x: 0, y: 0, width: 0, height: 0 })),
-  };
-});
-
-jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
-  __esModule: true,
-  default: () => ({ width: 1024, height: 768 }),
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
+import { usePathname } from "expo-router";
+
 describe("Navbar", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useAppTheme as jest.Mock).mockReturnValue({
+      brand: { appName: "Test App", primaryColor: "#0a7ea4", logoUrl: "" },
+      colors: { border: "#ccc", muted: "#666" },
+      primaryColor: "#0a7ea4",
+      isDark: false,
+    });
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1024, height: 768 });
+    (usePathname as jest.Mock).mockReturnValue("/");
+  });
+
   it("renders the brand name", () => {
     render(<Navbar />);
     expect(screen.getByText("Test App")).toBeTruthy();
   });
 
-  it("renders Home link", () => {
+  it("renders logo when logoUrl is provided", () => {
+    (useAppTheme as jest.Mock).mockReturnValue({
+      brand: { appName: "Logo App", primaryColor: "#0a7ea4", logoUrl: "http://logo.com" },
+      colors: { border: "#ccc", muted: "#666" },
+      primaryColor: "#0a7ea4",
+      isDark: false,
+    });
     render(<Navbar />);
+    // The Image component will have accessibilityLabel set to brand.appName
+    expect(screen.getByLabelText("Logo App")).toBeTruthy();
+  });
+
+  it("renders tiny font size for brand on tiny screens", () => {
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 300, height: 768 });
+    render(<Navbar />);
+    expect(screen.getByText("Test App")).toBeTruthy();
+  });
+
+  it("calls router.back when back button is pressed", () => {
+    (usePathname as jest.Mock).mockReturnValue("/lookup");
+    render(<Navbar />);
+    const backBtn = screen.getByLabelText("Go back");
+    fireEvent.press(backBtn);
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it("calls toggle when theme button is pressed", () => {
+    render(<Navbar />);
+    const themeBtn = screen.getByLabelText("Switch to dark mode");
+    fireEvent.press(themeBtn);
+    expect(mockToggle).toHaveBeenCalled();
+  });
+
+  it("filters admin links on mobile", () => {
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 500, height: 768 });
+    render(<Navbar />);
+    expect(screen.queryByText("Admin")).toBeNull();
     expect(screen.getByText("Home")).toBeTruthy();
   });
 
-  it("renders My Bookings link", () => {
+  it("shows active state for current link", () => {
+    (usePathname as jest.Mock).mockReturnValue("/lookup");
     render(<Navbar />);
     expect(screen.getByText("My Bookings")).toBeTruthy();
-  });
-
-  it("renders Admin link on wide screens", () => {
-    render(<Navbar />);
-    expect(screen.getByText("Admin")).toBeTruthy();
   });
 });

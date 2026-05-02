@@ -292,6 +292,7 @@ function BookingItem({
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       style={({ hovered }: any) =>
         StyleSheet.flatten([
           styles.bookingItem,

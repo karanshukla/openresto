@@ -78,7 +78,7 @@ function AppWithTheme() {
         screenOptions={{
           headerShown: false,
           title: brand.appName,
-          animation: Platform.OS === "web" ? "none" : "default",
+          animation: Platform.OS === "web" ? "fade" : "default",
         }}
       >
         <Stack.Screen name="index" />
