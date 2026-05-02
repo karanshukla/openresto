@@ -47,9 +47,10 @@ export default function TimePicker({
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper} testID="time-picker-web">
       <input
         type="time"
+        data-testid="time-input"
         value={selectedTime || ""}
         step={900}
         onChange={(e) => handleChange(e.target.value)}

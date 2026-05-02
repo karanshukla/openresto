@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
   Platform,
+  PressableStateCallbackType,
 } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { getAdminDashboardStats, AdminDashboardStats, BookingSummaryDto } from "@/api/admin";
@@ -292,7 +293,7 @@ function BookingItem({
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
-      style={({ hovered }: any) =>
+      style={({ hovered }: PressableStateCallbackType) =>
         StyleSheet.flatten([
           styles.bookingItem,
           { borderTopColor: colors.border },

@@ -7,20 +7,12 @@ import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
 import { Link, useLocalSearchParams } from "expo-router";
 import PageContainer from "@/components/layout/PageContainer";
 import Button from "@/components/common/Button";
-import LoadingScreen from "@/components/common/LoadingScreen";
+import RestaurantSkeleton from "@/components/restaurant/RestaurantSkeleton";
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showLoading, setShowLoading] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowLoading(true);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (id) {
@@ -49,10 +41,7 @@ export default function RestaurantScreen() {
   }, [id]);
 
   if (loading) {
-    if (!showLoading) {
-      return <ThemedView style={styles.root} />;
-    }
-    return <LoadingScreen />;
+    return <RestaurantSkeleton />;
   }
 
   if (!restaurant) {

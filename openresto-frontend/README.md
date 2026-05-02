@@ -1,50 +1,69 @@
-# Welcome to your Expo app 👋
+# OpenResto Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The mobile and web frontend for OpenResto, built with Expo and React Native.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Multi-platform:** Runs on Android, iOS, and Web.
+- **Modern UI:** Built with custom themed components and a responsive layout.
+- **Fast Navigation:** Uses `expo-router` for file-based routing with smooth animations.
+- **Intelligent Loading:** Features a rich branded initial loading screen and high-performance skeleton loaders for subsequent page transitions.
+- **Admin Dashboard:** Comprehensive management interface for restaurant owners.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm or yarn
+- Expo Go (for mobile testing)
+
+### Installation
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables:
 
+   ```bash
+   cp .env.template .env
+   ```
+
+   Update the `.env` file with your API URL.
+
+3. Start the development server:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Testing
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+The project aims for 100% test coverage. To run tests:
 
 ```bash
-npm run reset-project
+npm test
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+To view coverage report:
 
-## Learn more
+```bash
+npm test -- --coverage
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Project Structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `app/`: Expo Router pages and layouts.
+- `components/`: Reusable UI components.
+- `api/`: API client and service functions.
+- `context/`: React context providers (Theme, Brand).
+- `hooks/`: Custom React hooks.
+- `theme/`: Theme configuration and color constants.
+- `utils/`: Helper utilities and formatting functions.
 
-## Join the community
+## Learn More
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)

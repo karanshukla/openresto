@@ -3,3 +3,10 @@ declare namespace NodeJS {
     EXPO_PUBLIC_API_URL: string;
   }
 }
+
+export interface Brand {
+  appName: string;
+  primaryColor: string;
+  accentColor?: string;
+  logoUrl?: string;
+}

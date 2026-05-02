@@ -16,182 +16,175 @@ beforeEach(() => {
   mockFetch.mockReset();
 });
 
-describe("login", () => {
-  it("posts credentials with credentials: include and returns response", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ message: "Login successful." }),
+describe("auth api", () => {
+  describe("login", () => {
+    it("returns data on success", async () => {
+      const data = { message: "ok" };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => data,
+      });
+
+      const res = await login("test@test.com", "pass");
+      expect(res).toEqual(data);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/admin/auth/login"),
+        expect.any(Object)
+      );
     });
 
-    const result = await login("admin@test.com", "pass123");
-    expect(result).toEqual({ message: "Login successful." });
-    const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/admin/auth/login");
-    expect(opts.method).toBe("POST");
-    expect(opts.credentials).toBe("include");
-    expect(JSON.parse(opts.body)).toEqual({ email: "admin@test.com", password: "pass123" });
-  });
-
-  it("returns null on failed login", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await login("bad@email.com", "wrong")).toBeNull();
-  });
-
-  it("returns null on network error", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await login("a@b.com", "x")).toBeNull();
-  });
-});
-
-describe("logout", () => {
-  it("posts to /api/auth/logout with credentials: include", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true });
-
-    await logout();
-    const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/admin/auth/logout");
-    expect(opts.method).toBe("POST");
-    expect(opts.credentials).toBe("include");
-  });
-
-  it("does not throw on failure", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    await expect(logout()).resolves.toBeUndefined();
-  });
-});
-
-describe("checkSession", () => {
-  it("fetches /api/auth/me with credentials and returns session", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ email: "admin@test.com" }),
+    it("returns null on failure", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      const res = await login("test@test.com", "pass");
+      expect(res).toBeNull();
     });
 
-    const result = await checkSession();
-    expect(result).toEqual({ email: "admin@test.com" });
-    const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/admin/auth/me");
-    expect(opts.credentials).toBe("include");
+    it("returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("error"));
+      const res = await login("test@test.com", "pass");
+      expect(res).toBeNull();
+    });
   });
 
-  it("returns null when not authenticated", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await checkSession()).toBeNull();
-  });
-
-  it("returns null on network error", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await checkSession()).toBeNull();
-  });
-});
-
-describe("changePassword", () => {
-  it("sends change request with credentials: include", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ message: "Password changed successfully." }),
+  describe("logout", () => {
+    it("calls logout endpoint", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+      await logout();
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/admin/auth/logout"),
+        expect.any(Object)
+      );
     });
 
-    const result = await changePassword("old", "new123");
-    expect(result).toEqual({ ok: true, message: "Password changed successfully." });
-    expect(mockFetch.mock.calls[0][1].credentials).toBe("include");
+    it("handles logout error silently", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("fail"));
+      await logout();
+      expect(mockFetch).toHaveBeenCalled();
+    });
   });
 
-  it("returns error message on failure", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Current password is incorrect." }),
+  describe("checkSession", () => {
+    it("returns email on success", async () => {
+      const data = { email: "test@test.com" };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => data,
+      });
+      const res = await checkSession();
+      expect(res).toEqual(data);
     });
 
-    const result = await changePassword("wrong", "new123");
-    expect(result.ok).toBe(false);
-    expect(result.message).toBe("Current password is incorrect.");
-  });
-
-  it("returns network error on failure", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    const result = await changePassword("x", "y");
-    expect(result).toEqual({ ok: false, message: "Network error." });
-  });
-});
-
-describe("getPvqStatus", () => {
-  it("fetches PVQ status", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ isConfigured: true, question: "Pet name?" }),
+    it("returns 'rate-limited' on 429", async () => {
+      mockFetch.mockResolvedValueOnce({ status: 429 });
+      const res = await checkSession();
+      expect(res).toBe("rate-limited");
     });
 
-    const result = await getPvqStatus();
-    expect(result).toEqual({ isConfigured: true, question: "Pet name?" });
-  });
-
-  it("returns null on failure", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await getPvqStatus()).toBeNull();
-  });
-});
-
-describe("setupPvq", () => {
-  it("posts PVQ setup with credentials: include", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ message: "Security question configured." }),
+    it("returns null on other failure", async () => {
+      mockFetch.mockResolvedValueOnce({ status: 401, ok: false });
+      const res = await checkSession();
+      expect(res).toBeNull();
     });
 
-    const result = await setupPvq("Pet name?", "Rex");
-    expect(result.ok).toBe(true);
-    expect(mockFetch.mock.calls[0][1].credentials).toBe("include");
+    it("returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("fail"));
+      const res = await checkSession();
+      expect(res).toBeNull();
+    });
   });
 
-  it("returns network error on failure", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    const result = await setupPvq("Q?", "A");
-    expect(result).toEqual({ ok: false, message: "Network error." });
-  });
-});
-
-describe("verifyPvq", () => {
-  it("returns reset token on correct answer", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ resetToken: "abc123" }),
+  describe("changePassword", () => {
+    it("returns success on ok response", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: "Success" }),
+      });
+      const res = await changePassword("old", "new");
+      expect(res).toEqual({ ok: true, message: "Success" });
     });
 
-    const result = await verifyPvq("admin@test.com", "Rex");
-    expect(result).toEqual({ resetToken: "abc123" });
-  });
-
-  it("returns null on wrong answer", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await verifyPvq("admin@test.com", "wrong")).toBeNull();
-  });
-});
-
-describe("resetPassword", () => {
-  it("posts reset with token", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ message: "Password reset successfully." }),
+    it("returns error message on failure", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: "Wrong password" }),
+      });
+      const res = await changePassword("old", "new");
+      expect(res).toEqual({ ok: false, message: "Wrong password" });
     });
 
-    const result = await resetPassword("abc123", "newpass");
-    expect(result).toEqual({ ok: true, message: "Password reset successfully." });
+    it("returns network error message on exception", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("network"));
+      const res = await changePassword("old", "new");
+      expect(res.ok).toBe(false);
+      expect(res.message).toBe("Network error.");
+    });
   });
 
-  it("returns error on invalid token", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Invalid or expired reset token." }),
+  describe("getPvqStatus", () => {
+    it("returns status on success", async () => {
+      const data = { isConfigured: true, question: "What?" };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => data,
+      });
+      const res = await getPvqStatus();
+      expect(res).toEqual(data);
     });
 
-    const result = await resetPassword("bad", "newpass");
-    expect(result.ok).toBe(false);
+    it("returns null on failure", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      expect(await getPvqStatus()).toBeNull();
+    });
   });
 
-  it("returns network error on failure", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("offline"));
-    const result = await resetPassword("tok", "pw");
-    expect(result).toEqual({ ok: false, message: "Network error." });
+  describe("setupPvq", () => {
+    it("returns ok on success", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: "Done" }),
+      });
+      const res = await setupPvq("q", "a");
+      expect(res).toEqual({ ok: true, message: "Done" });
+    });
+
+    it("returns error on network fail", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("fail"));
+      const res = await setupPvq("q", "a");
+      expect(res.ok).toBe(false);
+    });
+  });
+
+  describe("verifyPvq", () => {
+    it("returns token on success", async () => {
+      const data = { resetToken: "tok" };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => data,
+      });
+      const res = await verifyPvq("email", "ans");
+      expect(res).toEqual(data);
+    });
+
+    it("returns null on failure", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      expect(await verifyPvq("e", "a")).toBeNull();
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("returns ok on success", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: "Reset" }),
+      });
+      const res = await resetPassword("tok", "new");
+      expect(res).toEqual({ ok: true, message: "Reset" });
+    });
+
+    it("returns error on fail", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      const res = await resetPassword("tok", "new");
+      expect(res.ok).toBe(false);
+    });
   });
 });

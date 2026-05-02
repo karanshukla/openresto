@@ -1,22 +1,19 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, ActivityIndicator, Animated, Easing, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useBrand, Brand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
-import { ThemedText } from "@/components/themed-text";
+import { Brand } from "@/types";
 
 interface LoadingScreenProps {
-  brand?: Brand;
+  brand: Brand;
   message?: string;
 }
 
 export default function LoadingScreen({
-  brand: propBrand,
+  brand,
   message = "Preparing your table...",
 }: LoadingScreenProps) {
-  const contextBrand = useBrand();
-  const brand = propBrand || contextBrand;
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
 
@@ -83,8 +80,8 @@ export default function LoadingScreen({
           />
         </Animated.View>
         <ActivityIndicator size="large" color={brand.primaryColor} style={styles.spinner} />
-        <ThemedText style={styles.text}>{message}</ThemedText>
-        <ThemedText style={[styles.subtext, { color: colors.muted }]}>{brand.appName}</ThemedText>
+        <Text style={[styles.text, { color: colors.text }]}>{message}</Text>
+        <Text style={[styles.subtext, { color: colors.muted }]}>{brand.appName}</Text>
       </Animated.View>
     </View>
   );

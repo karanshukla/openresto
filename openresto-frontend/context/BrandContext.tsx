@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import LoadingScreen from "@/components/common/LoadingScreen";
+import { Brand } from "@/types";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -7,13 +8,6 @@ function buildEndpoint(path: string): string {
   const base = API_URL?.replace(/\/$/, "") ?? "";
   if (!base) return `/api${path}`;
   return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
-
-export interface Brand {
-  appName: string;
-  primaryColor: string;
-  accentColor?: string;
-  logoUrl?: string;
 }
 
 const DEFAULT_BRAND: Brand = {

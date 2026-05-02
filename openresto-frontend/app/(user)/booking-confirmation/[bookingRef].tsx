@@ -18,7 +18,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { useBrand } from "@/context/BrandContext";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
-import LoadingScreen from "@/components/common/LoadingScreen";
+import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -61,7 +61,7 @@ export default function BookingConfirmationScreen() {
     return (
       <>
         {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Confirmation" }} />}
-        <LoadingScreen message="Confirming your reservation..." />
+        <BookingConfirmationSkeleton />
       </>
     );
   }

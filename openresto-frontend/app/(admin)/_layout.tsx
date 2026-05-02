@@ -8,7 +8,7 @@ import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
-import LoadingScreen from "@/components/common/LoadingScreen";
+import PageLoader from "@/components/common/PageLoader";
 
 const MIN_WIDTH = 900;
 
@@ -28,7 +28,7 @@ function DesktopOnlyWall() {
 export default function AdminLayout() {
   const { width } = useWindowDimensions();
 
-  if (Platform.OS !== "web" || width < MIN_WIDTH) return <DesktopOnlyWall />;
+  if (Platform.OS === "web" && width < MIN_WIDTH) return <DesktopOnlyWall />;
 
   return <AdminLayoutInner />;
 }
@@ -87,7 +87,7 @@ function AdminLayoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
-  if (authState === "loading") return <LoadingScreen message="Authenticating..." />;
+  if (authState === "loading") return <PageLoader />;
 
   if (Platform.OS === "web") {
     const onLoginScreen = segments.includes("login" as never);

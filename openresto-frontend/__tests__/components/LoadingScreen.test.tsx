@@ -9,11 +9,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
 
 describe("LoadingScreen", () => {
   it("renders message and brand in test mode", () => {
+    const mockBrand = { appName: "Test App", primaryColor: "#000" };
     render(
       <BrandProvider>
-        <LoadingScreen message="Test Loading..." />
+        <LoadingScreen brand={mockBrand} message="Test Loading..." />
       </BrandProvider>
     );
     expect(screen.getByText("Test Loading...")).toBeTruthy();
+    expect(screen.getByText("Test App")).toBeTruthy();
   });
 });

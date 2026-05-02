@@ -4,19 +4,20 @@ A self-hosted restaurant booking management system. Customers browse restaurants
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | ASP.NET Core 10, C#, Entity Framework Core, SQLite |
+| Layer    | Technology                                                      |
+| -------- | --------------------------------------------------------------- |
+| Backend  | ASP.NET Core 10, C#, Entity Framework Core, SQLite              |
 | Frontend | React Native (Expo Router), TypeScript, NativeWind/Tailwind CSS |
-| Auth | JWT Bearer Tokens (HS256) |
-| Email | MailKit (SMTP) |
-| Infra | Docker Compose, Nginx reverse proxy |
+| Auth     | JWT Bearer Tokens (HS256)                                       |
+| Email    | MailKit (SMTP)                                                  |
+| Infra    | Docker Compose, Nginx reverse proxy                             |
 
 ## Quick Start
 
 ### Docker (recommended)
 
 For local development:
+
 ```bash
 docker-compose up
 ```
@@ -73,18 +74,18 @@ openresto/
 
 Set via environment variables or `appsettings.json`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_KEY` | JWT signing key (min 32 chars) | Dev key in appsettings |
-| `CONNECTION_STRING` | SQLite connection string | `Data Source=./openresto.db` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | localhost ports |
-| `Admin:Email` | Default admin email | Set in appsettings |
-| `Admin:Password` | Default admin password | Set in appsettings |
+| Variable            | Description                     | Default                      |
+| ------------------- | ------------------------------- | ---------------------------- |
+| `JWT_KEY`           | JWT signing key (min 32 chars)  | Dev key in appsettings       |
+| `CONNECTION_STRING` | SQLite connection string        | `Data Source=./openresto.db` |
+| `CORS_ORIGINS`      | Comma-separated allowed origins | localhost ports              |
+| `Admin:Email`       | Default admin email             | Set in appsettings           |
+| `Admin:Password`    | Default admin password          | Set in appsettings           |
 
 ### Frontend
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+| Variable              | Description          | Default                 |
+| --------------------- | -------------------- | ----------------------- |
 | `EXPO_PUBLIC_API_URL` | Backend API base URL | `http://localhost:5062` |
 
 ## Testing
@@ -93,20 +94,18 @@ Set via environment variables or `appsettings.json`:
 # Backend tests
 dotnet test
 
-# Backend tests with coverage
-dotnet test --collect:"XPlat Code Coverage"
+# Frontend tests (100% coverage target)
+cd openresto-frontend && npm test
 
-# Frontend lint
-cd openresto-frontend && npm run lint
-
-# Frontend format check
-cd openresto-frontend && npx prettier --check "**/*.{ts,tsx,js,json}"
+# Full frontend coverage report
+cd openresto-frontend && npm test -- --coverage
 ```
 
 ## Key Features
 
 - **Multi-restaurant support** — manage multiple locations from one instance
 - **Real-time table holds** — 5-minute holds prevent double-booking during checkout
+- **Intelligent Loading System** — branded splash screens and high-performance skeleton loaders
 - **Admin dashboard** — live bookings, availability grid, status filtering (active/past/cancelled)
 - **Booking management** — create, extend, cancel; view by reference
 - **Customizable branding** — app name, primary color, logo (stored in DB, no CDN needed)

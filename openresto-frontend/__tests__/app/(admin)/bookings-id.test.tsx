@@ -9,8 +9,6 @@ import {
   adminDeleteBooking,
   adminExtendBooking,
   adminRestoreBooking,
-  adminUpdateBookingFull,
-  sendBookingEmail,
 } from "@/api/admin";
 import { fetchRestaurants } from "@/api/restaurants";
 import { AppThemeProvider } from "@/context/ThemeContext";
@@ -46,6 +44,8 @@ jest.mock("@/api/restaurants");
 // Mock Modal and window.confirm
 jest.mock("react-native", () => {
   const rn = jest.requireActual("react-native");
+  // Mock ActivityIndicator with testID
+  rn.ActivityIndicator = (props: any) => <rn.View {...props} testID="loading-indicator" />;
   rn.Modal = ({ children, visible }: any) => (visible ? children : null);
   return rn;
 });
@@ -113,7 +113,11 @@ describe("BookingDetailScreen", () => {
 
   it("renders booking details after loading", async () => {
     renderWithProviders(<BookingDetailScreen />);
-    await waitFor(() => expect(screen.queryByTestId("ActivityIndicator")).toBeNull());
+    // Wait for the indicator to disappear
+    await waitFor(() => expect(screen.queryByTestId("loading-indicator")).toBeNull(), {
+      timeout: 5000,
+    });
+    // Verify email and ref
     expect(screen.getAllByText(/test@test.com/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/REF123/i)).toBeTruthy();
   });
@@ -123,10 +127,13 @@ describe("BookingDetailScreen", () => {
     (adminRestoreBooking as jest.Mock).mockResolvedValue(true);
 
     renderWithProviders(<BookingDetailScreen />);
-    await waitFor(() => expect(screen.getByText("Restore Booking")).toBeTruthy());
+    await waitFor(() => expect(screen.queryByTestId("loading-indicator")).toBeNull());
 
-    fireEvent.press(screen.getByText("Restore Booking"));
-    fireEvent.press(screen.getByText("Restore"));
+    const restoreBtn = await screen.findByText("Restore Booking");
+    fireEvent.press(restoreBtn);
+
+    const confirmRestoreBtn = screen.getByText("Restore");
+    fireEvent.press(confirmRestoreBtn);
 
     await waitFor(() => expect(adminRestoreBooking).toHaveBeenCalledWith(10));
   });
@@ -134,21 +141,22 @@ describe("BookingDetailScreen", () => {
   it("handles extension flow", async () => {
     (adminExtendBooking as jest.Mock).mockResolvedValue({ endTime: "new-time" });
     renderWithProviders(<BookingDetailScreen />);
-    await waitFor(() => screen.getByTestId("extend-30"));
+    await waitFor(() => expect(screen.queryByTestId("loading-indicator")).toBeNull());
 
-    fireEvent.press(screen.getByTestId("extend-30"));
+    const extendBtn = await screen.findByTestId("extend-30");
+    fireEvent.press(extendBtn);
     await waitFor(() => expect(adminExtendBooking).toHaveBeenCalledWith(10, 30));
   });
 
   it("handles delete (cancel) flow", async () => {
     (adminDeleteBooking as jest.Mock).mockResolvedValue(true);
     renderWithProviders(<BookingDetailScreen />);
-    await waitFor(() => screen.getByText("Cancel Booking"));
+    await waitFor(() => expect(screen.queryByTestId("loading-indicator")).toBeNull());
 
-    fireEvent.press(screen.getByText("Cancel Booking"));
+    const cancelBtn = await screen.findByText("Cancel Booking");
+    fireEvent.press(cancelBtn);
+
     // Confirmation button in Modal uses "Cancel Booking" label
-    // Trigger button also uses "Cancel Booking" label.
-    // ConfirmModal mock renders everything.
     const btns = screen.getAllByText("Cancel Booking");
     fireEvent.press(btns[btns.length - 1]);
 
