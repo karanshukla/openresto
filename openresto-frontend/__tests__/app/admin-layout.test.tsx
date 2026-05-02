@@ -7,10 +7,14 @@ import React from "react";
 jest.mock("react-native", () => {
   const rn = jest.requireActual("react-native");
   rn.Platform.OS = "web";
-  return rn;
+  return {
+    ...rn,
+    useWindowDimensions: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
+  };
 });
 
 import { render, screen, waitFor } from "@testing-library/react-native";
+import { useWindowDimensions } from "react-native";
 import AdminLayout from "@/app/(admin)/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, useSegments } from "expo-router";
@@ -47,14 +51,6 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ appName: "Test App", primaryColor: "#000" }),
 }));
-
-// Mock useWindowDimensions
-jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
-  __esModule: true,
-  default: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
-}));
-
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
 
 describe("AdminLayout", () => {
   const mockRouter = {

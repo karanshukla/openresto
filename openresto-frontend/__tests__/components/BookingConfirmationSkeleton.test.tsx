@@ -5,18 +5,20 @@ import React from "react";
 import { render } from "@testing-library/react-native";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
 import { AppThemeProvider } from "@/context/ThemeContext";
+import { useWindowDimensions } from "react-native";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
 // Mock useWindowDimensions more safely
-jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
-  __esModule: true,
-  default: jest.fn().mockReturnValue({ width: 375, height: 812 }),
-}));
-
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
+jest.mock("react-native", () => {
+  const rn = jest.requireActual("react-native");
+  return {
+    ...rn,
+    useWindowDimensions: jest.fn().mockReturnValue({ width: 375, height: 812 }),
+  };
+});
 
 describe("BookingConfirmationSkeleton", () => {
   beforeEach(() => {

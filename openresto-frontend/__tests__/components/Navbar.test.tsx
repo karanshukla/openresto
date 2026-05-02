@@ -32,12 +32,16 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
-  __esModule: true,
-  default: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
-}));
+import { useWindowDimensions } from "react-native";
 
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
+jest.mock("react-native", () => {
+  const rn = jest.requireActual("react-native");
+  return {
+    ...rn,
+    useWindowDimensions: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
+  };
+});
+
 import { usePathname } from "expo-router";
 
 describe("Navbar", () => {

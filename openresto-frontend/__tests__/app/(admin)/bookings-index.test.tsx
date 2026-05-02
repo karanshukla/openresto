@@ -4,11 +4,11 @@
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import AdminBookingsScreen from "@/app/(admin)/bookings/index";
-import { getAdminBookings, getRestaurants } from "@/api/admin";
+import { getAdminBookings, adminGetRestaurants } from "@/api/admin";
 
 jest.mock("@/api/admin", () => ({
   getAdminBookings: jest.fn(),
-  getRestaurants: jest.fn(),
+  adminGetRestaurants: jest.fn(),
 }));
 
 jest.mock("expo-router", () => {
@@ -57,7 +57,7 @@ describe("AdminBookingsScreen", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (getRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (getAdminBookings as jest.Mock).mockResolvedValue(mockBookings);
   });
 
