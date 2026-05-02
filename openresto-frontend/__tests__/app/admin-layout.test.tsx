@@ -10,7 +10,7 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 import { render, screen, waitFor } from "@testing-library/react-native";
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
+import { useWindowDimensions } from "react-native";
 import AdminLayout from "@/app/(admin)/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, useSegments } from "expo-router";

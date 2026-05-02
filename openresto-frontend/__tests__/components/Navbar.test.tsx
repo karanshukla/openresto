@@ -9,7 +9,7 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
+import { useWindowDimensions } from "react-native";
 import Navbar from "@/components/layout/Navbar";
 
 const mockBack = jest.fn();

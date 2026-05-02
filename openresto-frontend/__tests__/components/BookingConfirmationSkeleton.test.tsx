@@ -10,7 +10,7 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 import { render } from "@testing-library/react-native";
-import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
+import { useWindowDimensions } from "react-native";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
 import { AppThemeProvider } from "@/context/ThemeContext";
 
