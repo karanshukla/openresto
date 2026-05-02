@@ -3,18 +3,14 @@
  */
 import React from "react";
 
-// Mock react-native early
-jest.mock("react-native", () => {
-  const rn = jest.requireActual("react-native");
-  rn.Platform.OS = "web";
-  return {
-    ...rn,
-    useWindowDimensions: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
-  };
-});
+// Mock useWindowDimensions by targeting the internal module
+jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
+  __esModule: true,
+  default: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
+}));
 
 import { render, screen, waitFor } from "@testing-library/react-native";
-import { useWindowDimensions } from "react-native";
+import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
 import AdminLayout from "@/app/(admin)/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, useSegments } from "expo-router";

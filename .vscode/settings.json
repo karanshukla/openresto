@@ -1,5 +1,12 @@
 {
-  "jest.rootPath": "openresto-frontend",
-  "jest.jestCommandLine": "npm test --",
+  "jest.projects": [
+    {
+      "name": "Frontend",
+      "rootPath": "openresto-frontend",
+      "jestCommandLine": "node node_modules/jest/bin/jest.js",
+      "autoRun": { "watch": false, "onSave": "test-file" }
+    }
+  ],
+  "jest.debug": true,
   "files.eol": "\n"
 }

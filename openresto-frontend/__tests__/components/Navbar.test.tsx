@@ -2,7 +2,14 @@
  * @jest-environment jsdom
  */
 import React from "react";
+
+jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
+  __esModule: true,
+  default: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
+}));
+
 import { render, screen, fireEvent } from "@testing-library/react-native";
+import useWindowDimensions from "react-native/Libraries/Utilities/useWindowDimensions";
 import Navbar from "@/components/layout/Navbar";
 
 const mockBack = jest.fn();
@@ -31,16 +38,6 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-
-import { useWindowDimensions } from "react-native";
-
-jest.mock("react-native", () => {
-  const rn = jest.requireActual("react-native");
-  return {
-    ...rn,
-    useWindowDimensions: jest.fn().mockReturnValue({ width: 1024, height: 768 }),
-  };
-});
 
 import { usePathname } from "expo-router";
 
