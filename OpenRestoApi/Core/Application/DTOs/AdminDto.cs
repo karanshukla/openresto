@@ -17,7 +17,7 @@ public class AdminOverviewDto
     public int TodayBookings { get; set; }
     public int TotalSeats { get; set; }
     public int ActiveHoldsCount { get; set; }
-    public double WeeklyTrend { get; set; }
+    public int PausedRestaurantsCount { get; set; }
     public List<int> OccupancyData { get; set; } = [];
 }
 
@@ -130,6 +130,7 @@ public class LookupDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
+    public DateTime? BookingsPausedUntil { get; set; }
 }
 
 public class MessageResponse

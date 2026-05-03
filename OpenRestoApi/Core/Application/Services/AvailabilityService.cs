@@ -22,6 +22,9 @@ public class AvailabilityService(
         try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
         catch { tz = TimeZoneInfo.Utc; }
 
+        // Check if restaurant is paused
+        bool isPaused = restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow;
+
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, date);
 
@@ -60,33 +63,36 @@ public class AvailabilityService(
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
             bool isAvailable = false;
 
-            // A slot is available if AT LEAST ONE eligible table is free for the next hour
-            DateTime slotEndUtc = slotUtc.AddHours(1);
-
-            foreach (Table? table in eligibleTables)
+            if (!isPaused)
             {
-                // Check bookings
-                if (bookingsByTable.TryGetValue(table.Id, out List<Booking>? tableBookings))
-                {
-                    bool hasBookingConflict = tableBookings.Any(b =>
-                        b.Date < slotEndUtc &&
-                        (b.EndTime ?? b.Date.AddHours(1)) > slotUtc);
+                // A slot is available if AT LEAST ONE eligible table is free for the next hour
+                DateTime slotEndUtc = slotUtc.AddHours(1);
 
-                    if (hasBookingConflict)
+                foreach (Table? table in eligibleTables)
+                {
+                    // Check bookings
+                    if (bookingsByTable.TryGetValue(table.Id, out List<Booking>? tableBookings))
+                    {
+                        bool hasBookingConflict = tableBookings.Any(b =>
+                            b.Date < slotEndUtc &&
+                            (b.EndTime ?? b.Date.AddHours(1)) > slotUtc);
+
+                        if (hasBookingConflict)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // Check holds
+                    bool isHeld = _holdService.IsTableHeld(table.Id, slotUtc);
+                    if (isHeld)
                     {
                         continue;
                     }
-                }
 
-                // Check holds
-                bool isHeld = _holdService.IsTableHeld(table.Id, slotUtc);
-                if (isHeld)
-                {
-                    continue;
+                    isAvailable = true;
+                    break;
                 }
-
-                isAvailable = true;
-                break;
             }
 
             slots.Add(new TimeSlotDto

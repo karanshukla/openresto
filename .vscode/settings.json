@@ -1,6 +1,5 @@
 {
   "jest.rootPath": "openresto-frontend",
   "jest.jestCommandLine": "npm test --",
-  "jest.debug": true,
   "files.eol": "\n"
 }

@@ -8,13 +8,14 @@ export interface AdminOverviewDto {
   todayBookings: number;
   totalSeats: number;
   activeHoldsCount?: number;
-  weeklyTrend?: number;
+  pausedRestaurantsCount?: number;
   occupancyData?: number[];
 }
 
 export interface BookingSummaryDto {
   id: number;
   date: string;
+  endTime?: string;
   customerEmail: string;
   seats: number;
   restaurantName: string;
@@ -24,7 +25,7 @@ export interface BookingSummaryDto {
 export interface AdminDashboardStats {
   todayCount: number;
   activeHoldsCount: number;
-  weeklyTrend: number;
+  pausedCount: number;
   totalCovers: number;
   occupancyData: number[];
   recentBookings: BookingSummaryDto[];
@@ -35,17 +36,26 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
     const overview = await getAdminOverview();
     if (!overview) return null;
 
-    const bookings = await getAdminBookings(undefined, new Date().toISOString().split("T")[0]);
+    const todayLocal = (() => {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    })();
+
+    const bookings = await getAdminBookings(undefined, todayLocal);
 
     return {
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
-      weeklyTrend: overview.weeklyTrend ?? 0,
+      pausedCount: overview.pausedRestaurantsCount ?? 0,
       totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
       recentBookings: bookings.map((b) => ({
         id: b.id,
         date: b.date,
+        endTime: b.endTime,
         customerEmail: b.customerEmail,
         seats: b.seats,
         restaurantName: b.restaurantName,
@@ -284,6 +294,41 @@ export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   }
 }
 
+export async function pauseRestaurantBookings(id: number, minutes: number): Promise<boolean> {
+  try {
+    const res = await post(`/admin/restaurants/${id}/pause`, { minutes });
+    return res.ok;
+  } catch (err) {
+    console.error("pauseRestaurantBookings error:", err);
+    return false;
+  }
+}
+
+export async function unpauseRestaurantBookings(id: number): Promise<boolean> {
+  try {
+    const res = await post(`/admin/restaurants/${id}/unpause`, {});
+    return res.ok;
+  } catch (err) {
+    console.error("unpauseRestaurantBookings error:", err);
+    return false;
+  }
+}
+
+export async function extendRestaurantBookings(
+  id: number,
+  minutes: number
+): Promise<{ ok: boolean; extendedBookings: BookingDetailDto[] }> {
+  try {
+    const res = await post(`/admin/restaurants/${id}/extend`, { minutes });
+    if (!res.ok) return { ok: false, extendedBookings: [] };
+    const data = await res.json();
+    return { ok: true, extendedBookings: data.extendedBookings || [] };
+  } catch (err) {
+    console.error("extendRestaurantBookings error:", err);
+    return { ok: false, extendedBookings: [] };
+  }
+}
+
 export interface SectionWithTables {
   id: number;
   name: string;
@@ -301,7 +346,9 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
   }
 }
 
-export async function adminGetRestaurants(): Promise<{ id: number; name: string }[]> {
+export async function adminGetRestaurants(): Promise<
+  { id: number; name: string; bookingsPausedUntil?: string }[]
+> {
   try {
     const res = await get("/admin/restaurants");
     if (!res.ok) return [];

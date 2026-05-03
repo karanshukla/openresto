@@ -31,6 +31,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         int totalSeats = await _db.Bookings.Where(b => !b.IsCancelled).SumAsync(b => (int?)b.Seats) ?? 0;
 
         int todayBookingsCount = 0;
+        int pausedRestaurantsCount = 0;
         foreach (Restaurant? r in restaurants)
         {
             (DateTime start, DateTime end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
@@ -38,19 +39,11 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 b.RestaurantId == r.Id &&
                 b.Date >= start && b.Date < end &&
                 !b.IsCancelled);
-        }
 
-        // Calculate Weekly Trend
-        DateTime sevenDaysAgo = nowUtc.AddDays(-7);
-        DateTime fourteenDaysAgo = nowUtc.AddDays(-14);
-        
-        int lastSevenDaysCount = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= sevenDaysAgo && b.Date < nowUtc);
-        int previousSevenDaysCount = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= fourteenDaysAgo && b.Date < sevenDaysAgo);
-        
-        double weeklyTrend = 0;
-        if (previousSevenDaysCount > 0)
-        {
-            weeklyTrend = Math.Round(((double)(lastSevenDaysCount - previousSevenDaysCount) / previousSevenDaysCount) * 100, 1);
+            if (r.BookingsPausedUntil.HasValue && r.BookingsPausedUntil.Value > nowUtc)
+            {
+                pausedRestaurantsCount++;
+            }
         }
 
         // Calculate Occupancy Data (Last 7 days)
@@ -72,7 +65,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             TodayBookings = todayBookingsCount,
             TotalSeats = totalSeats,
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
-            WeeklyTrend = weeklyTrend,
+            PausedRestaurantsCount = pausedRestaurantsCount,
             OccupancyData = occupancyData
         };
     }
@@ -125,16 +118,24 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         }
         else
         {
-            DateTime globalCutoff = nowUtc.AddMinutes(-90);
-
-            q = normalized switch
+            if (isGridMode)
             {
-                "cancelled" => q.Where(b => b.IsCancelled),
-                "past" => q.Where(b => !b.IsCancelled && b.Date < globalCutoff),
-                "all" => q,
-                "active" => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-                _ => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-            };
+                // In grid mode for a specific date, show everything non-cancelled for that day
+                q = q.Where(b => !b.IsCancelled);
+            }
+            else
+            {
+                DateTime globalCutoff = nowUtc.AddMinutes(-90);
+
+                q = normalized switch
+                {
+                    "cancelled" => q.Where(b => b.IsCancelled),
+                    "past" => q.Where(b => !b.IsCancelled && b.Date < globalCutoff),
+                    "all" => q,
+                    "active" => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
+                    _ => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
+                };
+            }
 
             if (date.HasValue)
             {
@@ -452,7 +453,12 @@ public class AdminService(AppDbContext db, IHoldService holdService)
     {
         return await _db.Restaurants
             .OrderBy(r => r.Name)
-            .Select(r => new LookupDto { Id = r.Id, Name = r.Name })
+            .Select(r => new LookupDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                BookingsPausedUntil = r.BookingsPausedUntil
+            })
             .ToListAsync();
     }
 
@@ -466,6 +472,62 @@ public class AdminService(AppDbContext db, IHoldService holdService)
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────
+
+    public async Task<bool> PauseRestaurantBookingsAsync(int restaurantId, int durationMinutes)
+    {
+        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        if (restaurant == null)
+        {
+            return false;
+        }
+
+        restaurant.BookingsPausedUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UnpauseRestaurantBookingsAsync(int restaurantId)
+    {
+        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        if (restaurant == null)
+        {
+            return false;
+        }
+
+        restaurant.BookingsPausedUntil = null;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<BookingDetailDto>?> ExtendAllActiveBookingsAsync(int restaurantId, int extensionMinutes)
+    {
+        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        if (restaurant == null)
+        {
+            return null;
+        }
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        // Active bookings are those that haven't ended yet and are not cancelled
+        List<Booking> activeBookings = await _db.Bookings
+            .Include(b => b.Restaurant)
+            .Include(b => b.Section)
+            .Include(b => b.Table)
+            .Where(b => b.RestaurantId == restaurantId &&
+                        !b.IsCancelled &&
+                        (b.EndTime == null || b.EndTime > nowUtc))
+            .ToListAsync();
+
+        foreach (Booking? booking in activeBookings)
+        {
+            DateTime currentEndTime = booking.EndTime ?? booking.Date.AddHours(1);
+            booking.EndTime = currentEndTime.AddMinutes(extensionMinutes);
+        }
+
+        await _db.SaveChangesAsync();
+        return activeBookings.Select(ToDetailDto).ToList();
+    }
 
     public async Task<RestaurantDto> CreateRestaurantAsync(string name, string? address)
     {

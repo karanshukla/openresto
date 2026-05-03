@@ -105,6 +105,29 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     public async Task<IActionResult> DeleteRestaurant(int id)
         => await _adminService.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 
+    [HttpPost("restaurants/{id}/pause")]
+    public async Task<IActionResult> PauseBookings(int id, [FromBody] PauseRestaurantRequest req)
+    {
+        bool success = await _adminService.PauseRestaurantBookingsAsync(id, req.Minutes);
+        return success ? Ok(new MessageResponse { Message = "Bookings paused successfully." }) : NotFound();
+    }
+
+    [HttpPost("restaurants/{id}/unpause")]
+    public async Task<IActionResult> UnpauseBookings(int id)
+    {
+        bool success = await _adminService.UnpauseRestaurantBookingsAsync(id);
+        return success ? Ok(new MessageResponse { Message = "Bookings unpaused successfully." }) : NotFound();
+    }
+
+    [HttpPost("restaurants/{id}/extend")]
+    public async Task<IActionResult> ExtendBookings(int id, [FromBody] ExtendRestaurantRequest req)
+    {
+        List<BookingDetailDto>? extendedBookings = await _adminService.ExtendAllActiveBookingsAsync(id, req.Minutes);
+        return extendedBookings != null
+            ? Ok(new { Message = "Bookings extended successfully.", ExtendedBookings = extendedBookings })
+            : NotFound();
+    }
+
     [HttpGet("restaurants")]
     public async Task<IActionResult> GetRestaurants()
     {

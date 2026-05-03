@@ -30,7 +30,13 @@ export default function DatePicker({
   const textColor = colors.text;
   const placeholderColor = colors.muted;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
   const maxDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() + 29);

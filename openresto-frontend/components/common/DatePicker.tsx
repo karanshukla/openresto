@@ -17,7 +17,11 @@ function generateDateOptions(): { label: string; value: string }[] {
       month: "short",
       day: "numeric",
     });
-    const value = d.toISOString().split("T")[0];
+    // Generate value in local YYYY-MM-DD format
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const value = `${year}-${month}-${day}`;
     options.push({ label, value });
   }
   return options;

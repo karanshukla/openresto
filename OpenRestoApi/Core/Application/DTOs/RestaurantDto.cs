@@ -12,6 +12,16 @@ public class UpdateRestaurantRequest
     public string? Timezone { get; set; }
 }
 
+public class PauseRestaurantRequest
+{
+    public int Minutes { get; set; }
+}
+
+public class ExtendRestaurantRequest
+{
+    public int Minutes { get; set; }
+}
+
 public class CreateSectionRequest
 {
     public string Name { get; set; } = null!;

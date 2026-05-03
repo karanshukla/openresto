@@ -15,6 +15,8 @@ import { useRouter, Stack } from "expo-router";
 import { getAdminDashboardStats, AdminDashboardStats, BookingSummaryDto } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ThemeColors } from "@/theme/theme";
+import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
+import AlertModal from "@/components/common/AlertModal";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -22,6 +24,11 @@ export default function AdminDashboardScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { colors, primaryColor, isDark } = useAppTheme();
+
+  const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [actionType, setActionType] = useState<"pause" | "extend">("pause");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const isWide = Platform.OS === "web" && width >= 1024;
 
@@ -49,11 +56,17 @@ export default function AdminDashboardScreen() {
           accent: primaryColor,
         },
         {
-          label: "Weekly Trend",
-          value: stats.weeklyTrend > 0 ? `+${stats.weeklyTrend}%` : `${stats.weeklyTrend}%`,
-          sub: "Vs. previous 7 days",
-          icon: "trending-up-outline" as const,
-          accent: "#16a34a",
+          label: "Restaurant Status",
+          value: stats.pausedCount > 0 ? "Paused" : "Active",
+          sub:
+            stats.pausedCount > 0
+              ? `${stats.pausedCount} venues are currently paused`
+              : "All venues are accepting bookings",
+          icon:
+            stats.pausedCount > 0
+              ? ("pause-circle-outline" as const)
+              : ("checkmark-circle-outline" as const),
+          accent: stats.pausedCount > 0 ? "#ef4444" : "#16a34a",
         },
         {
           label: "Total Covers",
@@ -76,6 +89,22 @@ export default function AdminDashboardScreen() {
       title: "View All Bookings",
       icon: "list-outline" as const,
       route: "/(admin)/bookings" as const,
+    },
+    {
+      title: "Pause Bookings",
+      icon: "pause-circle-outline" as const,
+      onPress: () => {
+        setActionType("pause");
+        setActionModalVisible(true);
+      },
+    },
+    {
+      title: "Extend Bookings",
+      icon: "time-outline" as const,
+      onPress: () => {
+        setActionType("extend");
+        setActionModalVisible(true);
+      },
     },
     {
       title: "Manage Settings",
@@ -139,7 +168,7 @@ export default function AdminDashboardScreen() {
                 {QUICK_ACTIONS.map((action) => (
                   <Pressable
                     key={action.title}
-                    onPress={() => router.push(action.route)}
+                    onPress={() => (action.route ? router.push(action.route) : action.onPress?.())}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     style={({ hovered }: any) =>
                       StyleSheet.flatten([
@@ -202,6 +231,23 @@ export default function AdminDashboardScreen() {
           </>
         )}
       </ScrollView>
+
+      <RestaurantActionModal
+        visible={actionModalVisible}
+        actionType={actionType}
+        onClose={() => setActionModalVisible(false)}
+        onSuccess={(msg) => {
+          setAlertMessage(msg);
+          setAlertVisible(true);
+        }}
+      />
+
+      <AlertModal
+        visible={alertVisible}
+        title="Success"
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -289,6 +335,13 @@ function BookingItem({
   colors: ThemeColors;
   router: ReturnType<typeof useRouter>;
 }) {
+  const now = new Date();
+  const startTime = new Date(booking.date);
+  const endTime = booking.endTime
+    ? new Date(booking.endTime)
+    : new Date(startTime.getTime() + 60 * 60 * 1000);
+  const isActive = now >= startTime && now <= endTime;
+
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/bookings/${booking.id}`)}
@@ -298,20 +351,45 @@ function BookingItem({
           styles.bookingItem,
           { borderTopColor: colors.border },
           hovered && { backgroundColor: `${colors.muted}08` },
+          isActive && { backgroundColor: `${colors.success}05` },
         ])
       }
     >
       <View
-        style={StyleSheet.flatten([styles.bookingTime, { backgroundColor: `${colors.success}10` }])}
+        style={StyleSheet.flatten([
+          styles.bookingTime,
+          { backgroundColor: isActive ? colors.success : `${colors.success}10` },
+        ])}
       >
-        <ThemedText style={StyleSheet.flatten([styles.bookingTimeText, { color: colors.success }])}>
-          {new Date(booking.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        <ThemedText
+          style={StyleSheet.flatten([
+            styles.bookingTimeText,
+            { color: isActive ? "#fff" : colors.success },
+          ])}
+        >
+          {startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </ThemedText>
       </View>
       <View style={styles.bookingInfo}>
-        <ThemedText style={styles.bookingEmail} numberOfLines={1}>
-          {booking.customerEmail}
-        </ThemedText>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <ThemedText style={styles.bookingEmail} numberOfLines={1}>
+            {booking.customerEmail}
+          </ThemedText>
+          {isActive && (
+            <View
+              style={{
+                backgroundColor: colors.success,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                borderRadius: 4,
+              }}
+            >
+              <ThemedText style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>
+                ACTIVE
+              </ThemedText>
+            </View>
+          )}
+        </View>
         <ThemedText style={StyleSheet.flatten([styles.bookingMeta, { color: colors.muted }])}>
           {booking.seats} guests · {booking.restaurantName}
         </ThemedText>
