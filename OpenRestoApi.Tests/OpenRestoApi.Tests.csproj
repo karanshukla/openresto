@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <NoWarn>$(NoWarn);CA1707;CA1305;CA1304;CA1311</NoWarn>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    <Exclude>[OpenRestoApi]OpenRestoApi.Migrations.*,[*]Microsoft.AspNetCore.OpenApi.*,[*]System.Runtime.CompilerServices.*</Exclude>
   </PropertyGroup>
 
   <ItemGroup>
