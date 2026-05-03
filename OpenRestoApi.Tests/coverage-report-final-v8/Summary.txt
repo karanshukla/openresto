@@ -1,0 +1,103 @@
+Summary
+  Generated on: 2026-05-03 - 6:27:59 PM
+  Parser: OpenCover
+  Assemblies: 1
+  Classes: 82
+  Files: 53
+  Line coverage: 58.9%
+  Covered lines: 2324
+  Uncovered lines: 1617
+  Coverable lines: 3941
+  Total lines: 5939
+  Branch coverage: 65% (539 of 828)
+  Covered branches: 539
+  Total branches: 828
+  Method coverage: 90.3% (403 of 446)
+  Full method coverage: 86.3% (385 of 446)
+  Covered methods: 403
+  Fully covered methods: 385
+  Total methods: 446
+
+OpenRestoApi                                                                  58.9%
+  Microsoft.AspNetCore.OpenApi.Generated                                       0.9%
+  OpenRestoApi.Controllers.AdminController                                     100%
+  OpenRestoApi.Controllers.AuthController                                      100%
+  OpenRestoApi.Controllers.AvailabilityController                              100%
+  OpenRestoApi.Controllers.BookingsController                                 97.4%
+  OpenRestoApi.Controllers.BrandController                                     100%
+  OpenRestoApi.Controllers.BrandRequest                                        100%
+  OpenRestoApi.Controllers.BrandResponse                                       100%
+  OpenRestoApi.Controllers.EmailSettingsController                             100%
+  OpenRestoApi.Controllers.EmailSettingsRequest                                100%
+  OpenRestoApi.Controllers.EmailSettingsResponse                               100%
+  OpenRestoApi.Controllers.HoldsController                                     100%
+  OpenRestoApi.Controllers.RestaurantsController                               100%
+  OpenRestoApi.Core.Application.DTOs.AdminCreateBookingRequest                 100%
+  OpenRestoApi.Core.Application.DTOs.AdminOverviewDto                          100%
+  OpenRestoApi.Core.Application.DTOs.AdminUpdateBookingRequest                 100%
+  OpenRestoApi.Core.Application.DTOs.AvailabilityResponseDto                   100%
+  OpenRestoApi.Core.Application.DTOs.BookingDetailDto                          100%
+  OpenRestoApi.Core.Application.DTOs.BookingDto                                100%
+  OpenRestoApi.Core.Application.DTOs.ChangePasswordRequest                     100%
+  OpenRestoApi.Core.Application.DTOs.CreateRestaurantRequest                   100%
+  OpenRestoApi.Core.Application.DTOs.CreateSectionRequest                      100%
+  OpenRestoApi.Core.Application.DTOs.CreateTableRequest                        100%
+  OpenRestoApi.Core.Application.DTOs.ExtendBookingRequest                      100%
+  OpenRestoApi.Core.Application.DTOs.ExtendRestaurantRequest                   100%
+  OpenRestoApi.Core.Application.DTOs.HoldResponse                              100%
+  OpenRestoApi.Core.Application.DTOs.LoginRequest                              100%
+  OpenRestoApi.Core.Application.DTOs.LookupDto                                 100%
+  OpenRestoApi.Core.Application.DTOs.MessageResponse                           100%
+  OpenRestoApi.Core.Application.DTOs.PauseRestaurantRequest                    100%
+  OpenRestoApi.Core.Application.DTOs.PlaceHoldRequest                          100%
+  OpenRestoApi.Core.Application.DTOs.PvqStatusDto                              100%
+  OpenRestoApi.Core.Application.DTOs.ResetPasswordRequest                      100%
+  OpenRestoApi.Core.Application.DTOs.RestaurantDto                             100%
+  OpenRestoApi.Core.Application.DTOs.SectionDto                                100%
+  OpenRestoApi.Core.Application.DTOs.SendBookingEmailRequest                   100%
+  OpenRestoApi.Core.Application.DTOs.SetupPvqRequest                           100%
+  OpenRestoApi.Core.Application.DTOs.TableDto                                  100%
+  OpenRestoApi.Core.Application.DTOs.TimeSlotDto                               100%
+  OpenRestoApi.Core.Application.DTOs.UpdateBookingRequest                      100%
+  OpenRestoApi.Core.Application.DTOs.UpdateRestaurantRequest                   100%
+  OpenRestoApi.Core.Application.DTOs.UpdateSectionRequest                      100%
+  OpenRestoApi.Core.Application.DTOs.UpdateTableRequest                        100%
+  OpenRestoApi.Core.Application.DTOs.VerifyPvqRequest                          100%
+  OpenRestoApi.Core.Application.Interfaces.HoldEntry                           100%
+  OpenRestoApi.Core.Application.Interfaces.HoldResult                          100%
+  OpenRestoApi.Core.Application.Interfaces.SystemClock                         100%
+  OpenRestoApi.Core.Application.Mappings.BookingMapper                         100%
+  OpenRestoApi.Core.Application.Services.AdminService                         94.9%
+  OpenRestoApi.Core.Application.Services.AvailabilityService                   100%
+  OpenRestoApi.Core.Application.Services.BookingService                         95%
+  OpenRestoApi.Core.Application.Services.BrandService                          100%
+  OpenRestoApi.Core.Application.Services.EmailSettingsService                  100%
+  OpenRestoApi.Core.Application.Services.RestaurantManagementService           100%
+  OpenRestoApi.Core.Domain.AdminCredential                                     100%
+  OpenRestoApi.Core.Domain.Booking                                             100%
+  OpenRestoApi.Core.Domain.BookingRefGenerator                                 100%
+  OpenRestoApi.Core.Domain.BrandSettings                                       100%
+  OpenRestoApi.Core.Domain.EmailSettings                                       100%
+  OpenRestoApi.Core.Domain.Restaurant                                          100%
+  OpenRestoApi.Core.Domain.Section                                              80%
+  OpenRestoApi.Core.Domain.Table                                               100%
+  OpenRestoApi.Extensions.DatabaseExtensions                                  74.1%
+  OpenRestoApi.Extensions.ServiceCollectionExtensions                         92.5%
+  OpenRestoApi.Infrastructure.Cookies.CachedBookingEntry                       100%
+  OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie                     100%
+  OpenRestoApi.Infrastructure.Email.CredentialProtector                        100%
+  OpenRestoApi.Infrastructure.Email.EmailService                               100%
+  OpenRestoApi.Infrastructure.Holds.HoldService                                100%
+  OpenRestoApi.Infrastructure.Persistence.AppDbContext                         100%
+  OpenRestoApi.Infrastructure.Persistence.DbSeeder                             100%
+  OpenRestoApi.Infrastructure.Persistence.Repositories.BookingRepository       100%
+  OpenRestoApi.Infrastructure.Persistence.Repositories.RestaurantRepository    100%
+  OpenRestoApi.Infrastructure.Persistence.Repositories.SectionRepository       100%
+  OpenRestoApi.Infrastructure.Persistence.Repositories.TableRepository         100%
+  OpenRestoApi.Infrastructure.Persistence.SqlitePragmaInterceptor               50%
+  OpenRestoApi.Migrations.AddBookingsTable                                       0%
+  OpenRestoApi.Migrations.AddRestaurantPauseUntil                                0%
+  OpenRestoApi.Migrations.AddSectionsAndTables                                   0%
+  OpenRestoApi.Migrations.AppDbContextModelSnapshot                              0%
+  Program                                                                     85.7%
+  System.Runtime.CompilerServices                                                0%

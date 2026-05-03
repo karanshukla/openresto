@@ -18,6 +18,7 @@ public class DbSeederTests : IDisposable
     public void Dispose()
     {
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private AppDbContext CreateContext()

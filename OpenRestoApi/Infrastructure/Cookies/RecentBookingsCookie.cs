@@ -25,7 +25,7 @@ public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvi
     private readonly bool _isDevelopment = env.IsDevelopment();
 
     /// <summary>Read and decrypt the recent bookings from the request cookie.</summary>
-    public List<CachedBookingEntry> Read(HttpRequest request)
+    public virtual List<CachedBookingEntry> Read(HttpRequest request)
     {
         if (!request.Cookies.TryGetValue(_cookieName, out string? encrypted) || string.IsNullOrEmpty(encrypted))
         {
@@ -45,7 +45,7 @@ public class RecentBookingsCookie(IDataProtectionProvider provider, IWebHostEnvi
     }
 
     /// <summary>Add a booking entry and write the encrypted cookie to the response.</summary>
-    public void Append(HttpRequest request, HttpResponse response, CachedBookingEntry entry)
+    public virtual void Append(HttpRequest request, HttpResponse response, CachedBookingEntry entry)
     {
         List<CachedBookingEntry> entries = Read(request);
 

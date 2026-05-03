@@ -10,7 +10,7 @@ function isValidEmail(value: string): boolean {
   return EMAIL_REGEX.test(value.trim());
 }
 
-interface UseTableHoldParams {
+export interface UseTableHoldParams {
   restaurantId: number;
   sections: { id: number; tables: { id: number }[] }[];
   tableId: number | undefined;
@@ -19,7 +19,7 @@ interface UseTableHoldParams {
   email: string;
 }
 
-interface UseTableHoldResult {
+export interface UseTableHoldResult {
   hold: HoldResponse | null;
   holdStatus: HoldStatus;
   secondsLeft: number;
@@ -43,6 +43,8 @@ export function useTableHold({
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentHoldId = useRef<string | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const lastAppliedParams = useRef<string>("");
 
   function clearCountdown() {
     if (countdownTimer.current) {
@@ -84,10 +86,12 @@ export function useTableHold({
         clearTimeout(debounceTimer.current);
       }
       releaseCurrentHold();
+      lastAppliedParams.current = "";
       return;
     }
 
-    if (hold && holdStatus === "held") {
+    const paramsKey = `${restaurantId}-${tableId}-${date}-${time}`;
+    if (hold && holdStatus === "held" && lastAppliedParams.current === paramsKey) {
       return;
     }
 
@@ -98,6 +102,7 @@ export function useTableHold({
 
     debounceTimer.current = setTimeout(async () => {
       releaseCurrentHold();
+      lastAppliedParams.current = paramsKey;
 
       const sectionId = sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
       const isoDate = new Date(`${date}T${time}:00`).toISOString();

@@ -32,6 +32,7 @@ public class AdminServiceTests : IDisposable
     {
         _db.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private AdminService CreateService()

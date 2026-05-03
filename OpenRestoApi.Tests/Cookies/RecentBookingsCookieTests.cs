@@ -167,10 +167,13 @@ public class RecentBookingsCookieTests
         return null;
     }
 
-    private static DefaultHttpContext CreateContextWithCookie(string cookieValue)
+    private static DefaultHttpContext CreateContextWithCookie(string? cookieValue)
     {
         var ctx = new DefaultHttpContext();
-        ctx.Request.Headers.Append("Cookie", $"openresto_recent={cookieValue}");
+        if (cookieValue != null)
+        {
+            ctx.Request.Headers.Append("Cookie", $"openresto_recent={cookieValue}");
+        }
         ctx.Response.Body = new MemoryStream();
         return ctx;
     }

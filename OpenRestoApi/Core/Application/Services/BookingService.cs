@@ -27,7 +27,7 @@ public class BookingService(
     /// If a holdId is provided and valid, it is released after the booking is persisted.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the table is unavailable.</exception>
-    public async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
+    public virtual async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
         // 1. Validate restaurant-level pause first
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId);
@@ -87,25 +87,25 @@ public class BookingService(
         return _mapper.ToDto(newBooking);
     }
 
-    public async Task<BookingDto?> GetBookingByIdAsync(int id)
+    public virtual async Task<BookingDto?> GetBookingByIdAsync(int id)
     {
         Booking? booking = await _bookingRepository.GetByIdAsync(id);
         return booking == null ? null : _mapper.ToDto(booking);
     }
 
-    public async Task<BookingDto?> GetBookingByRefAsync(string bookingRef)
+    public virtual async Task<BookingDto?> GetBookingByRefAsync(string bookingRef)
     {
         Booking? booking = await _bookingRepository.GetByRefAsync(bookingRef);
         return booking == null ? null : _mapper.ToDto(booking);
     }
 
-    public async Task<IEnumerable<BookingDto>> GetBookingsByRestaurantAsync(int restaurantId)
+    public virtual async Task<IEnumerable<BookingDto>> GetBookingsByRestaurantAsync(int restaurantId)
     {
         IEnumerable<Booking> bookings = await _bookingRepository.GetBookingsByRestaurantIdAsync(restaurantId);
         return _mapper.ToDtoList(bookings);
     }
 
-    public async Task UpdateBookingAsync(int id, BookingDto bookingDto)
+    public virtual async Task UpdateBookingAsync(int id, BookingDto bookingDto)
     {
         _ = id; // Required by REST convention (PUT /bookings/{id}) but entity ID comes from DTO
         Booking booking = _mapper.ToEntity(bookingDto);
@@ -133,12 +133,12 @@ public class BookingService(
         await _bookingRepository.UpdateAsync(booking);
     }
 
-    public async Task DeleteBookingAsync(int id)
+    public virtual async Task DeleteBookingAsync(int id)
     {
         await _bookingRepository.DeleteAsync(id);
     }
 
-    public async Task<bool> CancelBookingAsync(string bookingRef, string email)
+    public virtual async Task<bool> CancelBookingAsync(string bookingRef, string email)
     {
         Booking? booking = await _bookingRepository.GetByRefAsync(bookingRef);
         if (booking == null)

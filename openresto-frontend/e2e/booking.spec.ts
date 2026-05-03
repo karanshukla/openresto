@@ -6,12 +6,7 @@ test.describe("Booking Flow", () => {
     await page.goto("/");
 
     // 2. Click the first restaurant card
-    const restaurantCards = page
-      .getByRole("link")
-      .filter({ has: page.locator("text=/./") })
-      .filter({ hasNotText: "Home" })
-      .filter({ hasNotText: "My Bookings" })
-      .filter({ hasNotText: "Admin" });
+    const restaurantCards = page.getByText("Pasta Place");
 
     await expect(restaurantCards.first()).toBeVisible({ timeout: 15000 });
     await restaurantCards.first().click({ force: true });
@@ -28,7 +23,7 @@ test.describe("Booking Flow", () => {
     await expect(page.locator("text=Table held")).toBeVisible({ timeout: 15000 });
 
     // 5. Confirm the booking
-    const confirmButton = page.getByRole("button", { name: "Confirm Booking" });
+    const confirmButton = page.getByText("Confirm Booking");
     await expect(confirmButton).toBeEnabled();
     await confirmButton.click();
 

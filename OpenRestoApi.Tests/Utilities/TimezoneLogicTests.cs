@@ -5,7 +5,7 @@ namespace OpenRestoApi.Tests.Utilities;
 
 public class TimezoneLogicTests
 {
-    private (DateTime Start, DateTime End) InvokeGetUtcRange(DateTime reference, string tzId)
+    private static (DateTime Start, DateTime End) InvokeGetUtcRange(DateTime reference, string tzId)
     {
         // Accessing the private static method via reflection for precise unit testing
         MethodInfo? method = typeof(AdminService).GetMethod("GetUtcRangeForLocalDay",

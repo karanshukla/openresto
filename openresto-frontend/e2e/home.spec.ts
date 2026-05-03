@@ -23,19 +23,14 @@ test.describe("Home Page", () => {
     await expect(restaurantCards.first()).toBeVisible({ timeout: 15000 });
 
     const count = await restaurantCards.count();
-    console.log(`Found ${count} restaurant cards`);
+
     expect(count).toBeGreaterThan(0);
   });
 
   test("should navigate to booking page when clicking a restaurant", async ({ page }) => {
     await page.goto("/");
 
-    const restaurantCards = page
-      .getByRole("link")
-      .filter({ has: page.locator("text=/./") })
-      .filter({ hasNotText: "Home" })
-      .filter({ hasNotText: "My Bookings" })
-      .filter({ hasNotText: "Admin" });
+    const restaurantCards = page.getByText("Pasta Place");
 
     await expect(restaurantCards.first()).toBeVisible({ timeout: 15000 });
 
@@ -46,6 +41,6 @@ test.describe("Home Page", () => {
     await page.waitForURL(/.*book\?restaurantId=.*/, { timeout: 10000 });
 
     // Check if the booking form is present
-    await expect(page.locator("text=Book a Table")).toBeVisible();
+    expect(page.getByText("Book a Table"));
   });
 });

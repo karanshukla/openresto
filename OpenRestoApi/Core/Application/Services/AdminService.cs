@@ -21,7 +21,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         _ => "active",
     };
 
-    public async Task<AdminOverviewDto> GetOverviewAsync()
+    public virtual async Task<AdminOverviewDto> GetOverviewAsync()
     {
         DateTime nowUtc = DateTime.UtcNow;
         List<Restaurant> restaurants = await _db.Restaurants.ToListAsync();
@@ -70,7 +70,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         };
     }
 
-    public async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? date, string status)
+    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? date, string status)
     {
         IQueryable<Booking> q = _db.Bookings
             .Include(b => b.Restaurant)
@@ -151,7 +151,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             .ToListAsync();
     }
 
-    public async Task<BookingDetailDto?> GetBookingAsync(int id)
+    public virtual async Task<BookingDetailDto?> GetBookingAsync(int id)
     {
         Booking? b = await _db.Bookings
             .Include(b => b.Restaurant)
@@ -162,7 +162,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return b == null ? null : ToDetailDto(b);
     }
 
-    public async Task<BookingDetailDto> CreateBookingAsync(AdminCreateBookingRequest req)
+    public virtual async Task<BookingDetailDto> CreateBookingAsync(AdminCreateBookingRequest req)
     {
         Table table = await _db.Tables
             .Include(t => t.Section)
@@ -213,7 +213,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return ToDetailDto(booking);
     }
 
-    public async Task<BookingDetailDto?> UpdateBookingAsync(int id, UpdateBookingRequest req)
+    public virtual async Task<BookingDetailDto?> UpdateBookingAsync(int id, UpdateBookingRequest req)
     {
         Booking? booking = await _db.Bookings
             .Include(b => b.Restaurant)
@@ -279,7 +279,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return ToDetailDto(booking);
     }
 
-    public async Task<DateTime?> ExtendBookingAsync(int id, int minutes)
+    public virtual async Task<DateTime?> ExtendBookingAsync(int id, int minutes)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
         if (booking == null)
@@ -297,7 +297,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return booking.EndTime;
     }
 
-    public async Task<bool> CancelBookingAsync(int id)
+    public virtual async Task<bool> CancelBookingAsync(int id)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
         if (booking == null)
@@ -311,7 +311,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return true;
     }
 
-    public async Task<bool> PurgeBookingAsync(int id)
+    public virtual async Task<bool> PurgeBookingAsync(int id)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
         if (booking == null)
@@ -324,7 +324,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return true;
     }
 
-    public async Task<BookingDetailDto?> RestoreBookingAsync(int id)
+    public virtual async Task<BookingDetailDto?> RestoreBookingAsync(int id)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
         if (booking == null)
@@ -344,7 +344,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return ToDetailDto(booking);
     }
 
-    public async Task<BookingDetailDto?> AdminUpdateBookingAsync(int id, AdminUpdateBookingRequest req)
+    public virtual async Task<BookingDetailDto?> AdminUpdateBookingAsync(int id, AdminUpdateBookingRequest req)
     {
         Booking? booking = await _db.Bookings
             .Include(b => b.Restaurant)
@@ -449,20 +449,26 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return ToDetailDto(booking);
     }
 
-    public async Task<List<LookupDto>> GetRestaurantsAsync()
+    public virtual async Task<List<LookupDto>> GetRestaurantsAsync()
     {
+        DateTime nowUtc = DateTime.UtcNow;
+
         return await _db.Restaurants
             .OrderBy(r => r.Name)
             .Select(r => new LookupDto
             {
                 Id = r.Id,
                 Name = r.Name,
-                BookingsPausedUntil = r.BookingsPausedUntil
+                BookingsPausedUntil = r.BookingsPausedUntil,
+                ActiveBookingsCount = _db.Bookings.Count(b =>
+                    b.RestaurantId == r.Id &&
+                    !b.IsCancelled &&
+                    (b.EndTime == null || b.EndTime > nowUtc))
             })
             .ToListAsync();
     }
 
-    public async Task<List<LookupDto>> GetSectionsAsync(int restaurantId)
+    public virtual async Task<List<LookupDto>> GetSectionsAsync(int restaurantId)
     {
         return await _db.Sections
             .Where(s => s.RestaurantId == restaurantId)
@@ -473,7 +479,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
     // ── Restaurants ─────────────────────────────────────────────────────────
 
-    public async Task<bool> PauseRestaurantBookingsAsync(int restaurantId, int durationMinutes)
+    public virtual async Task<bool> PauseRestaurantBookingsAsync(int restaurantId, int durationMinutes)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
         if (restaurant == null)
@@ -486,7 +492,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return true;
     }
 
-    public async Task<bool> UnpauseRestaurantBookingsAsync(int restaurantId)
+    public virtual async Task<bool> UnpauseRestaurantBookingsAsync(int restaurantId)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
         if (restaurant == null)
@@ -499,7 +505,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return true;
     }
 
-    public async Task<List<BookingDetailDto>?> ExtendAllActiveBookingsAsync(int restaurantId, int extensionMinutes)
+    public virtual async Task<List<BookingDetailDto>?> ExtendAllActiveBookingsAsync(int restaurantId, int extensionMinutes)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
         if (restaurant == null)
@@ -529,7 +535,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return activeBookings.Select(ToDetailDto).ToList();
     }
 
-    public async Task<RestaurantDto> CreateRestaurantAsync(string name, string? address)
+    public virtual async Task<RestaurantDto> CreateRestaurantAsync(string name, string? address)
     {
         var restaurant = new Restaurant { Name = name.Trim(), Address = address?.Trim() };
         _db.Restaurants.Add(restaurant);
@@ -544,7 +550,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         };
     }
 
-    public async Task<bool> DeleteRestaurantAsync(int id)
+    public virtual async Task<bool> DeleteRestaurantAsync(int id)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
         if (restaurant == null)
@@ -561,7 +567,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
     // ── Tables ──────────────────────────────────────────────────────────────
 
-    public async Task<List<SectionDto>?> GetTablesAsync(int restaurantId)
+    public virtual async Task<List<SectionDto>?> GetTablesAsync(int restaurantId)
     {
         List<Section> sections = await _db.Sections
             .Where(s => s.RestaurantId == restaurantId)

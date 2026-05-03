@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react-native";
-import { useTableHold } from "@/components/booking/useTableHold";
+import { useTableHold, UseTableHoldParams } from "@/components/booking/useTableHold";
 
 const mockCreateHold = jest.fn();
 const mockReleaseHold = jest.fn();
@@ -166,5 +166,47 @@ describe("useTableHold", () => {
     expect(mockReleaseHold).toHaveBeenCalledWith("hold-manual");
     expect(result.current.holdStatus).toBe("idle");
     expect(result.current.hold).toBeNull();
+  });
+
+  it("re-triggers hold when date changes", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      holdId: "hold-date-1",
+      expiresAt: new Date(Date.now() + 120_000).toISOString(),
+      secondsRemaining: 120,
+    });
+
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100 },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+    expect(mockCreateHold).toHaveBeenCalledTimes(1);
+
+    // Change date
+    const newProps = { ...defaultParams, tableId: 100, date: "2026-06-16" };
+
+    mockCreateHold.mockResolvedValueOnce({
+      holdId: "hold-date-2",
+      expiresAt: new Date(Date.now() + 120_000).toISOString(),
+      secondsRemaining: 120,
+    });
+
+    rerender(newProps);
+
+    // It should go to pending immediately
+    expect(result.current.holdStatus).toBe("pending");
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    // Should have released the old one and created a new one
+    expect(mockReleaseHold).toHaveBeenCalledWith("hold-date-1");
+    expect(mockCreateHold).toHaveBeenCalledTimes(2);
+    expect(result.current.hold?.holdId).toBe("hold-date-2");
   });
 });

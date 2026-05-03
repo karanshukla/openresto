@@ -12,12 +12,12 @@ public class EmailSettingsService(AppDbContext db, CredentialProtector protector
     private readonly CredentialProtector _protector = protector;
     private readonly IEmailService _emailService = emailService;
 
-    public async Task<EmailSettings?> GetAsync()
+    public virtual async Task<EmailSettings?> GetAsync()
     {
         return await _db.Set<EmailSettings>().FirstOrDefaultAsync();
     }
 
-    public async Task SaveAsync(
+    public virtual async Task SaveAsync(
         string host, int port, string username, string? password,
         bool enableSsl, string? fromName, string? fromEmail)
     {
@@ -43,7 +43,7 @@ public class EmailSettingsService(AppDbContext db, CredentialProtector protector
         await _db.SaveChangesAsync();
     }
 
-    public async Task<bool> TestConnectionAsync()
+    public virtual async Task<bool> TestConnectionAsync()
     {
         return await _emailService.TestConnectionAsync();
     }

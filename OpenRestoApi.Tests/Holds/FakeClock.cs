@@ -2,7 +2,7 @@ using OpenRestoApi.Core.Application.Interfaces;
 
 namespace OpenRestoApi.Tests.Holds;
 
-internal class FakeClock(DateTime initial) : ISystemClock
+internal sealed class FakeClock(DateTime initial) : ISystemClock
 {
     public DateTime UtcNow { get; set; } = initial;
 

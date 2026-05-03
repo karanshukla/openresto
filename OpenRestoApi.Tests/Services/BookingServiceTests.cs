@@ -421,7 +421,7 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         DateTime date = DateTime.UtcNow.AddHours(1);
         BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
-        db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
+        db.Entry((await db.Bookings.FindAsync(created.Id))!).State = EntityState.Detached;
 
         var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, EndTime = null };
         await svc.UpdateBookingAsync(created.Id, dto);
@@ -437,7 +437,7 @@ public class BookingServiceTests
         BookingService svc = CreateService(db);
         DateTime date = DateTime.UtcNow.AddHours(1);
         BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
-        db.Entry(await db.Bookings.FindAsync(created.Id)).State = EntityState.Detached;
+        db.Entry((await db.Bookings.FindAsync(created.Id))!).State = EntityState.Detached;
 
         var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), Seats = 2 };
         await svc.UpdateBookingAsync(created.Id, dto);

@@ -52,6 +52,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseSqlite(_connection);
+                options.AddInterceptors(new OpenRestoApi.Infrastructure.Persistence.SqlitePragmaInterceptor());
             });
 
             // Replace IEmailService with a mock for testing
@@ -114,7 +115,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
         }
     }
 
-    private class MockEmailService(AppDbContext db) : IEmailService
+    private sealed class MockEmailService(AppDbContext db) : IEmailService
     {
         private readonly AppDbContext _db = db;
         public async Task<bool> TestConnectionAsync() => await _db.Set<OpenRestoApi.Core.Domain.EmailSettings>().AnyAsync();

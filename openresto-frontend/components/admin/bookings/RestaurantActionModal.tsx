@@ -34,7 +34,7 @@ export default function RestaurantActionModal({
 }: RestaurantActionModalProps) {
   const { colors, primaryColor } = useAppTheme();
   const [restaurants, setRestaurants] = useState<
-    { id: number; name: string; bookingsPausedUntil?: string }[]
+    { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<number | null>(null);
@@ -96,7 +96,7 @@ export default function RestaurantActionModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View
           style={[styles.content, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -109,7 +109,7 @@ export default function RestaurantActionModal({
                   ? "Pause Bookings"
                   : "Extend Bookings"}
             </ThemedText>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Pressable onPress={onClose} style={styles.closeBtn} testID="close-modal-button">
               <Ionicons name="close" size={24} color={colors.muted} />
             </Pressable>
           </View>
@@ -123,7 +123,11 @@ export default function RestaurantActionModal({
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator style={styles.spinner} color={primaryColor} />
+            <ActivityIndicator
+              style={styles.spinner}
+              color={primaryColor}
+              testID="loading-indicator"
+            />
           ) : extendedBookings ? (
             <>
               <ScrollView style={styles.list}>
@@ -209,7 +213,7 @@ export default function RestaurantActionModal({
                           ? `Paused until ${new Date(r.bookingsPausedUntil!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
                           : actionType === "pause"
                             ? `Will pause for 1 hour (until ${willPauseUntil})`
-                            : `ID: ${r.id}`}
+                            : `${r.activeBookingsCount ?? 0} active bookings`}
                       </ThemedText>
                     </View>
                     {submitting === r.id ? (
