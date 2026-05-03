@@ -123,7 +123,11 @@ export default function RestaurantActionModal({
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator style={styles.spinner} color={primaryColor} testID="loading-indicator" />
+            <ActivityIndicator
+              style={styles.spinner}
+              color={primaryColor}
+              testID="loading-indicator"
+            />
           ) : extendedBookings ? (
             <>
               <ScrollView style={styles.list}>
