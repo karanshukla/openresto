@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react-native";
-import { useTableHold } from "@/components/booking/useTableHold";
+import { useTableHold, UseTableHoldParams } from "@/components/booking/useTableHold";
 
 const mockCreateHold = jest.fn();
 const mockReleaseHold = jest.fn();
@@ -175,7 +175,7 @@ describe("useTableHold", () => {
       secondsRemaining: 120,
     });
 
-    const { result, rerender } = renderHook((props) => useTableHold(props), {
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
       initialProps: { ...defaultParams, tableId: 100 },
     });
 

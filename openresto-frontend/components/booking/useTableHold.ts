@@ -10,7 +10,7 @@ function isValidEmail(value: string): boolean {
   return EMAIL_REGEX.test(value.trim());
 }
 
-interface UseTableHoldParams {
+export interface UseTableHoldParams {
   restaurantId: number;
   sections: { id: number; tables: { id: number }[] }[];
   tableId: number | undefined;
@@ -19,7 +19,7 @@ interface UseTableHoldParams {
   email: string;
 }
 
-interface UseTableHoldResult {
+export interface UseTableHoldResult {
   hold: HoldResponse | null;
   holdStatus: HoldStatus;
   secondsLeft: number;
