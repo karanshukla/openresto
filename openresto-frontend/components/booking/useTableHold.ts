@@ -44,6 +44,8 @@ export function useTableHold({
   const currentHoldId = useRef<string | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const lastAppliedParams = useRef<string>("");
+
   function clearCountdown() {
     if (countdownTimer.current) {
       clearInterval(countdownTimer.current);
@@ -84,10 +86,12 @@ export function useTableHold({
         clearTimeout(debounceTimer.current);
       }
       releaseCurrentHold();
+      lastAppliedParams.current = "";
       return;
     }
 
-    if (hold && holdStatus === "held") {
+    const paramsKey = `${restaurantId}-${tableId}-${date}-${time}`;
+    if (hold && holdStatus === "held" && lastAppliedParams.current === paramsKey) {
       return;
     }
 
@@ -98,6 +102,7 @@ export function useTableHold({
 
     debounceTimer.current = setTimeout(async () => {
       releaseCurrentHold();
+      lastAppliedParams.current = paramsKey;
 
       const sectionId = sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
       const isoDate = new Date(`${date}T${time}:00`).toISOString();

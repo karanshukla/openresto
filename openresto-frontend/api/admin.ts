@@ -347,7 +347,7 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
 }
 
 export async function adminGetRestaurants(): Promise<
-  { id: number; name: string; bookingsPausedUntil?: string }[]
+  { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
 > {
   try {
     const res = await get("/admin/restaurants");

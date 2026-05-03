@@ -34,7 +34,7 @@ export default function RestaurantActionModal({
 }: RestaurantActionModalProps) {
   const { colors, primaryColor } = useAppTheme();
   const [restaurants, setRestaurants] = useState<
-    { id: number; name: string; bookingsPausedUntil?: string }[]
+    { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<number | null>(null);
@@ -209,7 +209,7 @@ export default function RestaurantActionModal({
                           ? `Paused until ${new Date(r.bookingsPausedUntil!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
                           : actionType === "pause"
                             ? `Will pause for 1 hour (until ${willPauseUntil})`
-                            : `ID: ${r.id}`}
+                            : `${r.activeBookingsCount ?? 0} active bookings`}
                       </ThemedText>
                     </View>
                     {submitting === r.id ? (

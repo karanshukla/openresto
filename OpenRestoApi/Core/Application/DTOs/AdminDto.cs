@@ -131,6 +131,7 @@ public class LookupDto
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public DateTime? BookingsPausedUntil { get; set; }
+    public int ActiveBookingsCount { get; set; }
 }
 
 public class MessageResponse

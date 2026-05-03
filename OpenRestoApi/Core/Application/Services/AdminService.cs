@@ -451,13 +451,19 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
     public async Task<List<LookupDto>> GetRestaurantsAsync()
     {
+        DateTime nowUtc = DateTime.UtcNow;
+
         return await _db.Restaurants
             .OrderBy(r => r.Name)
             .Select(r => new LookupDto
             {
                 Id = r.Id,
                 Name = r.Name,
-                BookingsPausedUntil = r.BookingsPausedUntil
+                BookingsPausedUntil = r.BookingsPausedUntil,
+                ActiveBookingsCount = _db.Bookings.Count(b =>
+                    b.RestaurantId == r.Id &&
+                    !b.IsCancelled &&
+                    (b.EndTime == null || b.EndTime > nowUtc))
             })
             .ToListAsync();
     }
