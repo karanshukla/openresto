@@ -562,4 +562,110 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         HttpResponseMessage response = await client.PutAsJsonAsync($"/api/admin/bookings/{id}", new { tableId = 9999 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PauseRestaurant_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Bookings paused successfully.", body.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task UnpauseRestaurant_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+
+        // Pause first
+        await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        // Then unpause
+        HttpResponseMessage response = await client.PostAsync($"/api/admin/restaurants/{r}/unpause", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Bookings unpaused successfully.", body.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task ExtendRestaurantBookings_Succeeds()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+
+        // Create a booking
+        await client.PostAsJsonAsync("/api/admin/bookings", new
+        {
+            restaurantId = r,
+            sectionId = s,
+            tableId = t,
+            date = DateTime.UtcNow.AddHours(1).ToString("O"),
+            customerEmail = "bulk-extend@test.com",
+            seats = 2
+        });
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/extend", new { minutes = 60 });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Bookings extended successfully.", body.GetProperty("message").GetString());
+        Assert.True(body.GetProperty("extendedBookings").GetArrayLength() >= 1);
+    }
+
+    [Fact]
+    public async Task CreateBooking_WhenRestaurantPaused_ReturnsConflict()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+
+        // Pause restaurant
+        await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        // Try to book (non-admin booking route)
+        HttpResponseMessage response = await _factory.CreateClient().PostAsJsonAsync("/api/bookings", new
+        {
+            restaurantId = r,
+            sectionId = s,
+            tableId = t,
+            date = DateTime.UtcNow.AddHours(2).ToString("O"),
+            customerEmail = "blocked@test.com",
+            seats = 2
+        });
+
+        // BookingService throws InvalidOperationException which BookingsController returns as Conflict
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("paused", body.GetProperty("message").GetString()?.ToLower() ?? "");
+    }
+
+    [Fact]
+    public async Task GetAvailability_WhenRestaurantPaused_ReturnsNoAvailableSlots()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int r, _, _) = GetSeededIds();
+
+        // 1. Pause restaurant via admin
+        HttpClient adminClient = _factory.CreateAuthenticatedClient();
+        await adminClient.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        // 2. Check availability (Note: Correct path is api/availability/{r})
+        string date = DateTime.UtcNow.AddHours(2).ToString("yyyy-MM-dd");
+        HttpResponseMessage response = await client.GetAsync($"/api/availability/{r}?date={date}&seats=2");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement slots = body.GetProperty("slots");
+        
+        // All slots should be unavailable
+        foreach (JsonElement slot in slots.EnumerateArray())
+        {
+            Assert.False(slot.GetProperty("isAvailable").GetBoolean());
+        }
+    }
 }

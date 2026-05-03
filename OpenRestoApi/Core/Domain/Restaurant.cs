@@ -22,4 +22,9 @@ public class Restaurant
 
     // A restaurant can have multiple sections (e.g., indoor, patio)
     public ICollection<Section> Sections { get; set; } = new List<Section>();
+
+    /// <summary>
+    /// If set, new bookings are disabled until this time (UTC).
+    /// </summary>
+    public DateTime? BookingsPausedUntil { get; set; }
 }

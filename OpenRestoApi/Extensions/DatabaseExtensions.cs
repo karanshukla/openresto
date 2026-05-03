@@ -197,6 +197,7 @@ public static partial class DatabaseExtensions
                     AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
                     AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
                     AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
+                    AddColumnIfMissing("Restaurants", "BookingsPausedUntil", "TEXT");
 
                     db.Database.ExecuteSqlRaw(@"
                         CREATE TABLE IF NOT EXISTS ""EmailSettings"" (

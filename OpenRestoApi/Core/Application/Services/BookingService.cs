@@ -29,6 +29,13 @@ public class BookingService(
     /// <exception cref="InvalidOperationException">Thrown when the table is unavailable.</exception>
     public async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
+        // 1. Validate restaurant-level pause first
+        Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId);
+        if (restaurant?.BookingsPausedUntil.HasValue == true && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Bookings for this restaurant are currently paused. Please try again later.");
+        }
+
         // 0. Reject bookings in the past
         if (bookingDto.Date < DateTime.UtcNow.AddMinutes(-5))
         {

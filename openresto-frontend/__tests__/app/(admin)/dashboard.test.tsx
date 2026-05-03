@@ -32,7 +32,7 @@ jest.mock("@expo/vector-icons", () => ({
 const mockStats: AdminDashboardStats = {
   todayCount: 5,
   activeHoldsCount: 3,
-  weeklyTrend: 12,
+  pausedCount: 1,
   totalCovers: 100,
   occupancyData: [10, 20, 30, 40, 50, 60, 70],
   recentBookings: [
@@ -76,7 +76,7 @@ describe("AdminDashboardScreen", () => {
     await waitFor(() => expect(screen.getByText("today@test.com")).toBeTruthy());
 
     expect(screen.getByText("5")).toBeTruthy();
-    expect(screen.getByText("+12%")).toBeTruthy();
+    expect(screen.getByText("1 venues are currently paused")).toBeTruthy();
     expect(screen.getByText("100")).toBeTruthy();
     expect(screen.getByText("today@test.com")).toBeTruthy();
   });
