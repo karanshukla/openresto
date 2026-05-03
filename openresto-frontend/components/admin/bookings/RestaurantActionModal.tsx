@@ -96,7 +96,7 @@ export default function RestaurantActionModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View
           style={[styles.content, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -109,7 +109,7 @@ export default function RestaurantActionModal({
                   ? "Pause Bookings"
                   : "Extend Bookings"}
             </ThemedText>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Pressable onPress={onClose} style={styles.closeBtn} testID="close-modal-button">
               <Ionicons name="close" size={24} color={colors.muted} />
             </Pressable>
           </View>
@@ -123,7 +123,7 @@ export default function RestaurantActionModal({
           </ThemedText>
 
           {loading ? (
-            <ActivityIndicator style={styles.spinner} color={primaryColor} />
+            <ActivityIndicator style={styles.spinner} color={primaryColor} testID="loading-indicator" />
           ) : extendedBookings ? (
             <>
               <ScrollView style={styles.list}>

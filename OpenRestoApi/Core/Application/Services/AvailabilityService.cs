@@ -13,7 +13,7 @@ public class AvailabilityService(
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IHoldService _holdService = holdService;
 
-    public async Task<AvailabilityResponseDto> GetAvailabilityAsync(int restaurantId, DateTime date, int seats)
+    public virtual async Task<AvailabilityResponseDto> GetAvailabilityAsync(int restaurantId, DateTime date, int seats)
     {
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId)
             ?? throw new ArgumentException("Restaurant not found.");

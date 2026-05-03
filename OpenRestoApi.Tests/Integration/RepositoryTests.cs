@@ -19,6 +19,7 @@ public class RepositoryTests : IDisposable
     public void Dispose()
     {
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private AppDbContext CreateContext()
@@ -31,7 +32,7 @@ public class RepositoryTests : IDisposable
         return db;
     }
 
-    private (Restaurant restaurant, Section section, Table table) SeedRestaurantData(AppDbContext db)
+    private static (Restaurant restaurant, Section section, Table table) SeedRestaurantData(AppDbContext db)
     {
         var restaurant = new Restaurant
         {

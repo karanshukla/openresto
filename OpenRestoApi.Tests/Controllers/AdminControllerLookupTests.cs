@@ -94,6 +94,7 @@ namespace OpenRestoApi.Tests.Controllers
         {
             _dbContext.Dispose();
             _serviceProvider.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

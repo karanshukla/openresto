@@ -93,6 +93,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Verify booking is restored in database
             Booking? restoredBooking = await _dbContext.Bookings.FindAsync(cancelledBooking.Id);
+            Assert.NotNull(restoredBooking);
             Assert.False(restoredBooking.IsCancelled);
             Assert.Null(restoredBooking.CancelledAt);
         }
@@ -169,6 +170,7 @@ namespace OpenRestoApi.Tests.Controllers
         {
             _dbContext.Dispose();
             _serviceProvider.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

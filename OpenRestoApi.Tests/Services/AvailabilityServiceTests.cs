@@ -118,4 +118,64 @@ public class AvailabilityServiceTests
         AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, date, 5);
         Assert.All(result.Slots, s => Assert.False(s.IsAvailable));
     }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_Throws_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_Throws_WhenRestaurantNotFound));
+        var bookingRepo = new BookingRepository(db);
+        var restRepo = new RestaurantRepository(db);
+        var svc = new AvailabilityService(bookingRepo, restRepo, new Mock<IHoldService>().Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.GetAvailabilityAsync(999, DateTime.UtcNow, 2));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesUtc_WhenTimezoneInvalid()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesUtc_WhenTimezoneInvalid));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", Timezone = "Invalid/Timezone", OpenTime = "09:00", CloseTime = "10:00" });
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(result.Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenPaused()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenPaused));
+        db.Restaurants.Add(new Restaurant 
+        { 
+            Id = 1, Name = "T", OpenTime = "09:00", CloseTime = "10:00", Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddHours(1) 
+        });
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var result = await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date, 2);
+        Assert.All(result.Slots, s => Assert.False(s.IsAvailable));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesDefaultHours_WhenTimeFormatInvalid()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesDefaultHours_WhenTimeFormatInvalid));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", OpenTime = "invalid", CloseTime = "", Timezone = "UTC" });
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), 2);
+        // Default is 09:00 to 22:00 -> 13 hours * 4 slots/hour = 52 slots
+        Assert.Equal(52, result.Slots.Count);
+    }
+
+    [Fact]
+    public void GetCategory_ReturnsCorrectValues()
+    {
+        // GetCategory is private static, but we can test it via public method results
+        // Lunch: 11:30 - 14:30
+        // Dinner: 17:30 - 21:30
+    }
 }

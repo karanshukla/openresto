@@ -71,14 +71,14 @@ describe("AdminDashboardScreen", () => {
   };
 
   it("renders metrics and recent bookings after loading", async () => {
-    renderWithProviders(<AdminDashboardScreen />);
+    const { getByTestId, queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
 
-    await waitFor(() => expect(screen.getByText("today@test.com")).toBeTruthy());
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
 
+    expect(screen.getByText("today@test.com")).toBeTruthy();
     expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getByText("1 venues are currently paused")).toBeTruthy();
     expect(screen.getByText("100")).toBeTruthy();
-    expect(screen.getByText("today@test.com")).toBeTruthy();
   });
 
   it("renders empty state when there are no recent bookings", async () => {
@@ -87,13 +87,16 @@ describe("AdminDashboardScreen", () => {
       recentBookings: [],
     });
 
-    renderWithProviders(<AdminDashboardScreen />);
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
 
-    await waitFor(() => expect(screen.getByText("No bookings for today yet.")).toBeTruthy());
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("No bookings for today yet.")).toBeTruthy();
   });
 
   it("navigates to bookings list on View all press", async () => {
-    renderWithProviders(<AdminDashboardScreen />);
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
     await waitFor(() => screen.getByText("View all →"));
 
     fireEvent.press(screen.getByText("View all →"));
@@ -102,7 +105,8 @@ describe("AdminDashboardScreen", () => {
   });
 
   it("navigates to quick action routes", async () => {
-    renderWithProviders(<AdminDashboardScreen />);
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
     await waitFor(() => screen.getByText("New Booking"));
 
     fireEvent.press(screen.getByText("New Booking"));

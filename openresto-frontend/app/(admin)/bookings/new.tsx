@@ -137,7 +137,7 @@ export default function NewBookingScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary} testID="new-booking-spinner" />
       </ThemedView>
     );
   }

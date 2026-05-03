@@ -77,8 +77,8 @@ describe("NewBookingScreen", () => {
 
   it("renders form and handles creation", async () => {
     (adminCreateBooking as jest.Mock).mockResolvedValue({ id: 99 });
-    renderWithProviders(<NewBookingScreen />);
-    await waitFor(() => expect(screen.queryByTestId("ActivityIndicator")).toBeNull());
+    const { queryByTestId } = renderWithProviders(<NewBookingScreen />);
+    await waitFor(() => expect(queryByTestId("new-booking-spinner")).toBeNull());
 
     fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "new@test.com");
     fireEvent.press(screen.getByText("Create Booking"));
@@ -94,7 +94,8 @@ describe("NewBookingScreen", () => {
   });
 
   it("handles restaurant and section changes", async () => {
-    renderWithProviders(<NewBookingScreen />);
+    const { queryByTestId } = renderWithProviders(<NewBookingScreen />);
+    await waitFor(() => expect(queryByTestId("new-booking-spinner")).toBeNull());
     await waitFor(() => expect(screen.getByText("Resto A")).toBeTruthy());
 
     fireEvent.press(screen.getByText("Resto A"));
@@ -105,7 +106,8 @@ describe("NewBookingScreen", () => {
 
   it("shows error on creation failure", async () => {
     (adminCreateBooking as jest.Mock).mockRejectedValue(new Error("Network Error"));
-    renderWithProviders(<NewBookingScreen />);
+    const { queryByTestId } = renderWithProviders(<NewBookingScreen />);
+    await waitFor(() => expect(queryByTestId("new-booking-spinner")).toBeNull());
     await waitFor(() => screen.getByPlaceholderText("guest@example.com"));
 
     fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "new@test.com");

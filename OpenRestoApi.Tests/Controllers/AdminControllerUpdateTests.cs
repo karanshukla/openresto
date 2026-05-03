@@ -98,6 +98,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Verify database
             Booking? dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
+            Assert.NotNull(dbBooking);
             Assert.Equal(table2.Id, dbBooking.TableId);
             Assert.Equal(newDate, dbBooking.Date);
             Assert.Equal(2, dbBooking.Seats);
@@ -134,6 +135,7 @@ namespace OpenRestoApi.Tests.Controllers
 
             // Verify database
             Booking? dbBooking = await _dbContext.Bookings.FindAsync(booking.Id);
+            Assert.NotNull(dbBooking);
             Assert.Equal(restaurant2.Id, dbBooking.RestaurantId);
             Assert.Equal(section2.Id, dbBooking.SectionId);
             Assert.Equal(table3.Id, dbBooking.TableId);
@@ -255,6 +257,7 @@ namespace OpenRestoApi.Tests.Controllers
         {
             _dbContext.Dispose();
             _serviceProvider.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

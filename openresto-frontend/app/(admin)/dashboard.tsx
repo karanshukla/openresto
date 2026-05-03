@@ -127,7 +127,7 @@ export default function AdminDashboardScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator style={styles.spinner} size="large" color={primaryColor} />
+          <ActivityIndicator style={styles.spinner} size="large" color={primaryColor} testID="dashboard-spinner" />
         ) : (
           <>
             <View
