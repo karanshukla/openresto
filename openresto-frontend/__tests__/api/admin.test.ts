@@ -79,13 +79,14 @@ describe("getAdminDashboardStats", () => {
     expect(result).toEqual({
       todayCount: 5,
       activeHoldsCount: 0,
-      weeklyTrend: 0,
+      pausedCount: 0,
       totalCovers: 100,
       occupancyData: [],
       recentBookings: [
         {
           id: 1,
           date: "2026-06-15T19:00:00Z",
+          endTime: undefined,
           customerEmail: "a@b.com",
           seats: 2,
           restaurantName: "R1",
