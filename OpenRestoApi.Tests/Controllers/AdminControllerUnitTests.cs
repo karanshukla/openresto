@@ -77,7 +77,7 @@ public class AdminControllerUnitTests
         _mockAdminService.Setup(s => s.GetBookingAsync(It.IsAny<int>()))
             .ReturnsAsync(new BookingDetailDto { CustomerEmail = "t@t.com" });
         _mockEmailService.Setup(s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(new Exception("Fail"));
+            .ThrowsAsync(new InvalidOperationException("Fail"));
 
         var result = await _controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
 

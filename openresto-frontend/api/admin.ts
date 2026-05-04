@@ -44,7 +44,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       return `${year}-${month}-${day}`;
     })();
 
-    const bookings = await getAdminBookings(undefined, todayLocal);
+    const bookings = await getAdminBookings(undefined, todayLocal, "all");
 
     return {
       todayCount: overview.todayBookings,

@@ -105,13 +105,14 @@ export function useTableHold({
       lastAppliedParams.current = paramsKey;
 
       const sectionId = sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
-      const isoDate = new Date(`${date}T${time}:00`).toISOString();
+      // Send naive ISO string (no 'Z' or offset) so backend can interpret as restaurant-local
+      const naiveIsoDate = `${date}T${time}:00`;
 
       const result = await createHold({
         restaurantId,
         tableId,
         sectionId,
-        date: isoDate,
+        date: naiveIsoDate,
       });
 
       if (result) {

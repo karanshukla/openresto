@@ -4,6 +4,7 @@ public class TimeSlotDto
 {
     public string Time { get; set; } = string.Empty; // e.g. "12:15"
     public bool IsAvailable { get; set; }
+    public List<int> AvailableTableIds { get; set; } = new();
     public string Category { get; set; } = "Off-Peak"; // "Lunch", "Dinner", or "Off-Peak"
 }
 
