@@ -599,13 +599,13 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int r, int s, int t) = GetSeededIds();
 
-        // Create a booking
+        // Create an active booking (started 30 mins ago)
         await client.PostAsJsonAsync("/api/admin/bookings", new
         {
             restaurantId = r,
             sectionId = s,
             tableId = t,
-            date = DateTime.UtcNow.AddHours(1).ToString("O"),
+            date = DateTime.UtcNow.AddMinutes(-30).ToString("O"),
             customerEmail = "bulk-extend@test.com",
             seats = 2
         });

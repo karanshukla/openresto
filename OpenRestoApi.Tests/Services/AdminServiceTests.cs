@@ -490,4 +490,38 @@ public class AdminServiceTests : IDisposable
 
         Assert.Equal(2, results.Count);
     }
+
+    [Fact]
+    public async Task ExtendAllActiveBookingsAsync_OnlyExtendsCurrentlyActiveBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        // 1. Currently active (started 30 mins ago)
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-30), BookingRef = "ACTIVE" });
+
+        // 2. Future (starting in 1 hour)
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(1), BookingRef = "FUTURE" });
+
+        // 3. Past (ended 1 hour ago)
+        _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(-3), EndTime = nowUtc.AddHours(-1), BookingRef = "PAST" });
+
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto>? results = await svc.ExtendAllActiveBookingsAsync(1, 60);
+
+        Assert.NotNull(results);
+        Assert.Single(results);
+        Assert.Equal("ACTIVE", results[0].BookingRef);
+
+        // Verify the active booking was extended (default 1h -> 2h)
+        Booking? activeBooking = await _db.Bookings.FindAsync(1);
+        Assert.Equal(nowUtc.AddMinutes(-30).AddMinutes(60).AddMinutes(60), activeBooking!.EndTime);
+
+        // Verify the future booking was NOT extended
+        Booking? futureBooking = await _db.Bookings.FindAsync(2);
+        Assert.Null(futureBooking!.EndTime);
+    }
 }

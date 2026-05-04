@@ -515,13 +515,14 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
         DateTime nowUtc = DateTime.UtcNow;
 
-        // Active bookings are those that haven't ended yet and are not cancelled
+        // Active bookings are those that are currently in progress and not cancelled
         List<Booking> activeBookings = await _db.Bookings
             .Include(b => b.Restaurant)
             .Include(b => b.Section)
             .Include(b => b.Table)
             .Where(b => b.RestaurantId == restaurantId &&
                         !b.IsCancelled &&
+                        b.Date <= nowUtc &&
                         (b.EndTime == null || b.EndTime > nowUtc))
             .ToListAsync();
 
