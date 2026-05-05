@@ -3,6 +3,7 @@ import { get } from "./client";
 export interface TimeSlotDto {
   time: string;
   isAvailable: boolean;
+  availableTableIds: number[];
   category: "Lunch" | "Dinner" | "Off-Peak";
 }
 

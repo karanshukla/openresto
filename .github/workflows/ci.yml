@@ -46,6 +46,13 @@ jobs:
       - name: Run Tests
         run: npm test -- --ci --coverage --forceExit
 
+      - name: Upload Frontend Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: openresto-frontend/coverage/
+
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
@@ -69,27 +76,35 @@ jobs:
           dotnet test --no-build --configuration Release --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage"
+          --results-directory TestResults
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[OpenRestoApi]*"
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"Html;Cobertura"
 
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: "**/TestResults/*.trx"
+          path: "TestResults/*.trx"
 
-      - name: Upload Coverage Report
+      - name: Upload Backend Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: "**/TestResults/**/coverage.cobertura.xml"
+          name: backend-coverage
+          path: "CoverageReport/"
 
-      - name: Coverage Summary
+      - name: Backend Coverage Summary
         if: always()
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: "**/coverage.cobertura.xml"
+          filename: "CoverageReport/Cobertura.xml"
           badge: true
           format: markdown
           output: both
@@ -214,6 +229,22 @@ jobs:
       - name: Install Frontend Dependencies
         working-directory: openresto-frontend
         run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: openresto-frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Tests
+        working-directory: openresto-frontend
+        run: npm run test:e2e
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: openresto-frontend/playwright-report/
+          if-no-files-found: ignore
 
       - name: Debug nginx config on failure
         if: failure()

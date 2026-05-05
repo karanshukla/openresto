@@ -70,7 +70,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         };
     }
 
-    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? date, string status)
+    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status)
     {
         IQueryable<Booking> q = _db.Bookings
             .Include(b => b.Restaurant)
@@ -83,7 +83,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
         // Grid view logic: if a date is explicitly provided, we usually want all bookings for that day
         // unless a specific status (like cancelled) is requested.
-        bool isGridMode = date.HasValue && normalized == "active";
+        bool isGridMode = bookingDate.HasValue && normalized == "active";
 
         if (restaurantId.HasValue)
         {
@@ -110,9 +110,9 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 };
             }
 
-            if (date.HasValue)
+            if (bookingDate.HasValue)
             {
-                (DateTime start, DateTime end) = GetUtcRangeForLocalDay(date.Value, tz);
+                (DateTime start, DateTime end) = GetUtcRangeForLocalDay(bookingDate.Value, tz);
                 q = q.Where(b => b.Date >= start && b.Date < end);
             }
         }
@@ -137,9 +137,9 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 };
             }
 
-            if (date.HasValue)
+            if (bookingDate.HasValue)
             {
-                DateTime dayStart = date.Value.Date;
+                DateTime dayStart = bookingDate.Value.Date;
                 DateTime nextDayStart = dayStart.AddDays(1);
                 q = q.Where(b => b.Date >= dayStart && b.Date < nextDayStart);
             }
@@ -175,14 +175,31 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             throw new ArgumentException("Section does not belong to this restaurant.");
         }
 
+        // Normalize date: if Unspecified, treat as restaurant local and convert to UTC
+        DateTime newStart;
+        if (req.Date.Kind == DateTimeKind.Unspecified)
+        {
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById(table.Section.Restaurant!.Timezone); }
+            catch { tz = TimeZoneInfo.Utc; }
+            newStart = TimeZoneInfo.ConvertTimeToUtc(req.Date, tz);
+        }
+        else
+        {
+            newStart = req.Date.ToUniversalTime();
+        }
+
+        DateTime newEnd = newStart.AddHours(1);
+
         bool conflict = await _db.Bookings.AnyAsync(b =>
             b.TableId == req.TableId &&
-            b.Date.Date == req.Date.Date &&
-            !b.IsCancelled);
+            !b.IsCancelled &&
+            b.Date < newEnd &&
+            (b.EndTime != null ? b.EndTime > newStart : b.Date.AddHours(1) > newStart));
 
         if (conflict)
         {
-            throw new InvalidOperationException("This table already has a booking on that date.");
+            throw new InvalidOperationException("This table already has a booking that overlaps with the requested time.");
         }
 
         if (req.Seats > table.Seats)
@@ -195,8 +212,8 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             RestaurantId = req.RestaurantId,
             SectionId = req.SectionId,
             TableId = req.TableId,
-            Date = req.Date,
-            EndTime = req.Date.AddHours(1),
+            Date = newStart,
+            EndTime = newStart.AddHours(1),
             CustomerEmail = req.CustomerEmail,
             Seats = req.Seats,
             BookingRef = BookingRefGenerator.Generate(),
@@ -415,6 +432,27 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         {
             booking.EndTime = booking.Date.AddHours(1);
         }
+
+        // --- CONFLICT CHECK ---
+        // If either the Date or Table changed, verify that the new slot doesn't conflict with existing bookings
+        if ((req.Date.HasValue && req.Date.Value != booking.Date) || (req.TableId.HasValue && req.TableId.Value != booking.TableId))
+        {
+            DateTime newStart = booking.Date.ToUniversalTime();
+            DateTime newEnd = booking.EndTime ?? newStart.AddHours(1);
+
+            bool conflict = await _db.Bookings.AnyAsync(b =>
+                b.Id != id && // Exclude the current booking itself
+                b.TableId == booking.TableId &&
+                !b.IsCancelled &&
+                b.Date < newEnd &&
+                (b.EndTime != null ? b.EndTime > newStart : b.Date.AddHours(1) > newStart));
+
+            if (conflict)
+            {
+                throw new InvalidOperationException("This update would cause a conflict with an existing booking.");
+            }
+        }
+
         if (req.Seats.HasValue)
         {
             // If table is also changing, we must check against the new table's capacity.
@@ -515,13 +553,14 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
         DateTime nowUtc = DateTime.UtcNow;
 
-        // Active bookings are those that haven't ended yet and are not cancelled
+        // Active bookings are those that are currently in progress and not cancelled
         List<Booking> activeBookings = await _db.Bookings
             .Include(b => b.Restaurant)
             .Include(b => b.Section)
             .Include(b => b.Table)
             .Where(b => b.RestaurantId == restaurantId &&
                         !b.IsCancelled &&
+                        b.Date <= nowUtc &&
                         (b.EndTime == null || b.EndTime > nowUtc))
             .ToListAsync();
 

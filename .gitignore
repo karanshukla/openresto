@@ -44,3 +44,7 @@ yarn-error.log*
 # Coverage
 CoverageReport/
 coverage/
+**/coverage.opencover.xml
+**/coverage.openclover.xml
+**/TestResults/
+**/coverage-report*/

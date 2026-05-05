@@ -34,7 +34,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(10).ToString("O")
+            date = DateTime.UtcNow.AddDays(10).ToString("yyyy-MM-ddT12:00:00")
         });
         JsonElement holdBody = await holdResponse.Content.ReadFromJsonAsync<JsonElement>();
         string? holdId = holdBody.GetProperty("holdId").GetString();
@@ -44,7 +44,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(10).ToString("O"),
+            date = DateTime.UtcNow.AddDays(10).ToString("yyyy-MM-ddT12:00:00"),
             customerEmail = "customer@test.com",
             seats = 2,
             holdId
@@ -60,7 +60,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     {
         HttpClient client = _factory.CreateClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        string bookingDate = DateTime.UtcNow.AddDays(20).ToString("O");
+        string bookingDate = DateTime.UtcNow.AddDays(20).ToString("yyyy-MM-ddT12:00:00");
 
         // First place a hold and create booking
         HttpResponseMessage holdResponse = await client.PostAsJsonAsync("/api/holds", new
@@ -103,7 +103,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     {
         HttpClient client = _factory.CreateClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        string bookingDate = DateTime.UtcNow.AddDays(30).ToString("O");
+        string bookingDate = DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-ddT12:00:00");
 
         // Place hold + create booking
         HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
@@ -151,7 +151,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Table table2 = db.Tables.Where(t => t.SectionId == sectionId).Skip(1).First();
 
-        string bookingDate = DateTime.UtcNow.AddDays(31).ToString("O");
+        string bookingDate = DateTime.UtcNow.AddDays(31).ToString("yyyy-MM-ddT12:00:00");
 
         HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
         {
@@ -215,7 +215,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(60).ToString("O"),
+            date = DateTime.UtcNow.AddDays(60).ToString("yyyy-MM-ddT12:00:00"),
             customerEmail = "get@test.com",
             seats = 2
         });
@@ -264,7 +264,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(70).ToString("O"),
+            date = DateTime.UtcNow.AddDays(70).ToString("yyyy-MM-ddT12:00:00"),
             customerEmail = "cancel@test.com",
             seats = 2
         });
@@ -324,7 +324,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int r, int s, int t) = GetSeededIds();
-        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(90).ToString("O"), customerEmail = "del@test.com", seats = 2 });
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(90).ToString("yyyy-MM-ddT12:00:00"), customerEmail = "del@test.com", seats = 2 });
         int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
 
         HttpResponseMessage response = await client.DeleteAsync($"/api/bookings/{id}");
@@ -336,7 +336,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     {
         HttpClient client = _factory.CreateClient();
         (int r, int s, int t) = GetSeededIds();
-        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(80).ToString("O"), customerEmail = "recent@test.com", seats = 2 });
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/bookings", new { restaurantId = r, sectionId = s, tableId = t, date = DateTime.UtcNow.AddDays(80).ToString("yyyy-MM-ddT12:00:00"), customerEmail = "recent@test.com", seats = 2 });
 
         // Extract the cookie from the response
         if (createResp.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookies))

@@ -27,13 +27,21 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         HttpClient client = _factory.CreateClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
 
+        var date = "2026-10-10T12:00:00"; // A Saturday
+
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
         {
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(100).ToString("O")
+            date
         });
+
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            var err = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed with {response.StatusCode}: {err}");
+        }
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -46,7 +54,7 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        string date = DateTime.UtcNow.AddDays(101).ToString("O");
+        string date = DateTime.UtcNow.AddDays(101).ToString("yyyy-MM-ddT12:00:00");
 
         // Place first hold
         HttpResponseMessage first = await client.PostAsJsonAsync("/api/holds", new
@@ -81,7 +89,7 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
             restaurantId,
             sectionId,
             tableId,
-            date = DateTime.UtcNow.AddDays(102).ToString("O")
+            date = DateTime.UtcNow.AddDays(102).ToString("yyyy-MM-ddT12:00:00")
         });
         JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
         string? holdId = holdBody.GetProperty("holdId").GetString();
@@ -96,7 +104,7 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
-        string date = DateTime.UtcNow.AddDays(103).ToString("O");
+        string date = DateTime.UtcNow.AddDays(103).ToString("yyyy-MM-ddT12:00:00");
 
         // Place hold
         HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new

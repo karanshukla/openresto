@@ -44,7 +44,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       return `${year}-${month}-${day}`;
     })();
 
-    const bookings = await getAdminBookings(undefined, todayLocal);
+    const bookings = await getAdminBookings(undefined, todayLocal, "all");
 
     return {
       todayCount: overview.todayBookings,
@@ -121,7 +121,7 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
 
 // ---------- Bookings ----------
 
-export type BookingStatusFilter = "active" | "past" | "cancelled";
+export type BookingStatusFilter = "active" | "past" | "cancelled" | "all";
 
 export async function getAdminBookings(
   restaurantId?: number,

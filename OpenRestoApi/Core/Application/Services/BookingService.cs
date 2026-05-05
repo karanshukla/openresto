@@ -31,30 +31,48 @@ public class BookingService(
     {
         // 1. Validate restaurant-level pause first
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId);
-        if (restaurant?.BookingsPausedUntil.HasValue == true && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
+        if (restaurant == null)
+        {
+            throw new ArgumentException("Restaurant not found.");
+        }
+
+        if (restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
         {
             throw new InvalidOperationException("Bookings for this restaurant are currently paused. Please try again later.");
         }
 
+        // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
+        DateTime bookingDate;
+        if (bookingDto.Date.Kind == DateTimeKind.Unspecified)
+        {
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
+            catch { tz = TimeZoneInfo.Utc; }
+            bookingDate = TimeZoneInfo.ConvertTimeToUtc(bookingDto.Date, tz);
+        }
+        else
+        {
+            bookingDate = bookingDto.Date.ToUniversalTime();
+        }
+
         // 0. Reject bookings in the past
-        if (bookingDto.Date < DateTime.UtcNow.AddMinutes(-5))
+        if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
         {
             throw new InvalidOperationException("Cannot create a booking in the past.");
         }
 
         // 1. Check DB for an existing confirmed booking on the same table+date
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            bookingDto.TableId, bookingDto.Date);
+            bookingDto.TableId, bookingDate);
 
         if (alreadyBooked)
         {
-            throw new InvalidOperationException("This table is already booked for that date.");
+            throw new InvalidOperationException("This table is already booked for that time.");
         }
 
         // 2. Check for an active hold by someone else
-        //    (exclude the submitter's own hold so they're not blocked by themselves)
         bool heldByOther = _holdService.IsTableHeld(
-            bookingDto.TableId, bookingDto.Date, excludeHoldId: bookingDto.HoldId);
+            bookingDto.TableId, bookingDate, excludeHoldId: bookingDto.HoldId);
 
         if (heldByOther)
         {
@@ -70,11 +88,12 @@ public class BookingService(
 
         // 4. Persist the booking
         Booking booking = _mapper.ToEntity(bookingDto);
+        booking.Date = bookingDate; // Use normalized date
         booking.BookingRef = BookingRefGenerator.Generate();
-        booking.EndTime = bookingDto.Date.AddHours(1);
+        booking.EndTime = bookingDate.AddHours(1);
         booking.Table = table!;
         booking.Section = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId))!;
-        booking.Restaurant = (await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId))!;
+        booking.Restaurant = restaurant;
 
         Booking newBooking = await _bookingRepository.AddAsync(booking);
 

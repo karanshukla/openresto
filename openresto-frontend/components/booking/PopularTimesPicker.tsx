@@ -40,8 +40,9 @@ export default function PopularTimesPicker({
 
   const filteredSlots = useMemo(() => {
     if (!slots) return [];
-    if (activeCategory === "All") return slots;
-    return slots.filter((s) => s.category === activeCategory);
+    const availableSlots = slots.filter((s) => s.isAvailable);
+    if (activeCategory === "All") return availableSlots;
+    return availableSlots.filter((s) => s.category === activeCategory);
   }, [slots, activeCategory]);
 
   // If active category has no slots, default to 'All'
@@ -166,12 +167,10 @@ export default function PopularTimesPicker({
           ) : (
             filteredSlots.map((slot) => {
               const isSelected = selectedTime === slot.time;
-              const canSelect = slot.isAvailable;
 
               return (
                 <Pressable
                   key={slot.time}
-                  disabled={!canSelect}
                   onPress={() => onSelectTime(slot.time)}
                   style={[
                     styles.slotChip,
@@ -180,7 +179,6 @@ export default function PopularTimesPicker({
                       backgroundColor: COLORS.primary,
                       borderColor: COLORS.primary,
                     },
-                    !canSelect && { opacity: 0.3 },
                   ]}
                 >
                   <ThemedText style={[styles.slotText, isSelected && { color: "#fff" }]}>

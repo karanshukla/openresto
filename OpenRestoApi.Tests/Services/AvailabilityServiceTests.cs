@@ -172,6 +172,41 @@ public class AvailabilityServiceTests
     }
 
     [Fact]
+    public async Task GetAvailabilityAsync_PopulatesAvailableTableIds()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_PopulatesAvailableTableIds));
+        SeedRestaurant(db); // Table 1 (2 seats), Table 2 (4 seats)
+
+        // Book Table 1 at 12:00
+        var date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = date, BookingRef = "B1" });
+        db.SaveChanges();
+
+        var bookingRepo = new BookingRepository(db);
+        var restRepo = new RestaurantRepository(db);
+        var holdSvc = new Mock<IHoldService>();
+        var svc = new AvailabilityService(bookingRepo, restRepo, holdSvc.Object);
+
+        // Case 1: Request 2 seats. At 12:00, only Table 2 should be available.
+        var result2Seats = await svc.GetAvailabilityAsync(1, date, 2);
+        var slot1200_2 = result2Seats.Slots.First(s => s.Time == "12:00");
+        Assert.Single(slot1200_2.AvailableTableIds);
+        Assert.Equal(2, slot1200_2.AvailableTableIds[0]);
+
+        // Case 2: Request 4 seats. At 12:00, Table 2 should be available. Table 1 is too small.
+        var result4Seats = await svc.GetAvailabilityAsync(1, date, 4);
+        var slot1200_4 = result4Seats.Slots.First(s => s.Time == "12:00");
+        Assert.Single(slot1200_4.AvailableTableIds);
+        Assert.Equal(2, slot1200_4.AvailableTableIds[0]);
+
+        // Case 3: At 11:00, both tables should be available for 2 seats.
+        var slot1100 = result2Seats.Slots.First(s => s.Time == "11:00");
+        Assert.Equal(2, slot1100.AvailableTableIds.Count);
+        Assert.Contains(1, slot1100.AvailableTableIds);
+        Assert.Contains(2, slot1100.AvailableTableIds);
+    }
+
+    [Fact]
     public void GetCategory_ReturnsCorrectValues()
     {
         // GetCategory is private static, but we can test it via public method results

@@ -31,7 +31,7 @@ public class EmailSettingsControllerUnitTests
     [Fact]
     public async Task Test_ReturnsBadRequest_WhenConnectionFails()
     {
-        _mockService.Setup(s => s.TestConnectionAsync()).ThrowsAsync(new Exception("Fail"));
+        _mockService.Setup(s => s.TestConnectionAsync()).ThrowsAsync(new InvalidOperationException("Fail"));
         var result = await _controller.Test();
         Assert.IsType<BadRequestObjectResult>(result);
     }

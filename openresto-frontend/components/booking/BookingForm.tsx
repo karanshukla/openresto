@@ -80,22 +80,37 @@ export default function BookingForm({
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
 
-  function bestTableFor(seatCount: number) {
-    const eligible = allTables.filter((t) => t.seats >= seatCount);
-    eligible.sort((a, b) => a.seats - b.seats);
-    return eligible[0]?.id ?? allTables[0]?.id;
-  }
-
   const openTime = restaurant.openTime ?? "09:00";
   const closeTime = restaurant.closeTime ?? "22:00";
   const [closeH] = closeTime.split(":").map(Number);
 
-  const [tableId, setTableId] = useState<number | undefined>(() => bestTableFor(2));
+  const [tableId, setTableId] = useState<number | undefined>();
   const [date, setDate] = useState<string>(() => suggestDate(closeH));
   const [time, setTime] = useState<string>(() => suggestTime(openTime, closeTime));
 
   const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  const currentSlot = availabilitySlots.find((s) => s.time === time);
+  const availableTableIds = currentSlot?.availableTableIds ?? [];
+
+  function bestTableFor(seatCount: number, availableIds?: number[]) {
+    let eligible = allTables.filter((t) => t.seats >= seatCount);
+    if (availableIds && availableIds.length > 0) {
+      eligible = eligible.filter((t) => availableIds.includes(t.id));
+    }
+    eligible.sort((a, b) => a.seats - b.seats);
+    return eligible[0]?.id ?? allTables[0]?.id;
+  }
+
+  const { holdStatus, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } = useTableHold({
+    restaurantId: restaurant.id,
+    sections: restaurant.sections,
+    tableId,
+    date,
+    time,
+    email: customerEmail,
+  });
 
   // Fetch availability when date/seats change
   useEffect(() => {
@@ -109,7 +124,9 @@ export default function BookingForm({
           const isCurrentValid = res.slots.find((s) => s.time === time && s.isAvailable);
           if (!isCurrentValid) {
             const firstAvail = res.slots.find((s) => s.isAvailable);
-            if (firstAvail) setTime(firstAvail.time);
+            if (firstAvail) {
+              setTime(firstAvail.time);
+            }
           }
         } else {
           setAvailabilitySlots([]);
@@ -122,18 +139,20 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, seats, restaurant.id]);
 
-  const { holdStatus, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } = useTableHold({
-    restaurantId: restaurant.id,
-    sections: restaurant.sections,
-    tableId,
-    date,
-    time,
-    email: customerEmail,
-  });
-
-  // When seats change, auto-update table to smallest fitting one
+  // When availability or time changes, ensure we have a valid table selected
   useEffect(() => {
-    setTableId(bestTableFor(seats));
+    if (availableTableIds.length > 0) {
+      if (!tableId || !availableTableIds.includes(tableId)) {
+        setTableId(bestTableFor(seats, availableTableIds));
+      }
+    } else {
+      setTableId(bestTableFor(seats));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableTableIds, seats]);
+
+  // When seats change, release current hold
+  useEffect(() => {
     releaseCurrentHold();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seats]);
@@ -147,6 +166,13 @@ export default function BookingForm({
 
   const eligibleTables = allTables
     .filter((t) => t.seats >= seats)
+    .filter((t) => {
+      // Strictly filter only if we have availability data for the selected time
+      if (currentSlot) {
+        return availableTableIds.includes(t.id);
+      }
+      return true;
+    })
     .sort((a, b) => a.seats - b.seats);
 
   const tableOptions = eligibleTables.map((table) => ({
