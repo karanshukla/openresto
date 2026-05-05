@@ -13,9 +13,9 @@ jest.mock("@expo/vector-icons", () => ({
 
 describe("PopularTimesPicker", () => {
   const mockSlots: TimeSlotDto[] = [
-    { time: "12:00", isAvailable: true, category: "Lunch" },
-    { time: "13:00", isAvailable: false, category: "Lunch" },
-    { time: "18:00", isAvailable: true, category: "Dinner" },
+    { time: "12:00", isAvailable: true, availableTableIds: [1], category: "Lunch" },
+    { time: "13:00", isAvailable: false, availableTableIds: [], category: "Lunch" },
+    { time: "18:00", isAvailable: true, availableTableIds: [2], category: "Dinner" },
   ];
 
   it("renders correctly and filters by category", () => {
@@ -42,12 +42,12 @@ describe("PopularTimesPicker", () => {
     expect(onSelectTime).toHaveBeenCalledWith("12:00");
   });
 
-  it("disables unavailable slots", () => {
+  it("filters out unavailable slots", () => {
     const onSelectTime = jest.fn();
     render(<PopularTimesPicker slots={mockSlots} selectedTime="" onSelectTime={onSelectTime} />);
 
-    fireEvent.press(screen.getByText("13:00"));
-    expect(onSelectTime).not.toHaveBeenCalled();
+    // 13:00 is unavailable, so it should not be rendered
+    expect(screen.queryByText("13:00")).toBeNull();
   });
 
   it("shows empty state message", () => {

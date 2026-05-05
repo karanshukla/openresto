@@ -121,7 +121,7 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
 
 // ---------- Bookings ----------
 
-export type BookingStatusFilter = "active" | "past" | "cancelled";
+export type BookingStatusFilter = "active" | "past" | "cancelled" | "all";
 
 export async function getAdminBookings(
   restaurantId?: number,

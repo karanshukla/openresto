@@ -5,8 +5,8 @@ public class Restaurant
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
-    public string OpenTime { get; set; } = "09:00";
-    public string CloseTime { get; set; } = "22:00";
+    public string OpenTime { get; set; } = "00:00";
+    public string CloseTime { get; set; } = "23:59";
 
     /// <summary>
     /// Comma-separated day numbers (ISO 8601: 1=Monday, 7=Sunday).

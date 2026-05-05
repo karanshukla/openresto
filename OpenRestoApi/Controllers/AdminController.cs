@@ -177,7 +177,7 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new MessageResponse { Message = ex.Message });
+            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}" });
         }
         catch (Exception ex)
         {

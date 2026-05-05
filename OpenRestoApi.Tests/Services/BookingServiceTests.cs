@@ -409,7 +409,7 @@ public class BookingServiceTests
         using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenBookingInPast));
         Seed(db);
         BookingService svc = CreateService(db);
-        var dto = new BookingDto { Date = DateTime.UtcNow.AddHours(-1) };
+        var dto = new BookingDto { RestaurantId = 1, Date = DateTime.UtcNow.AddHours(-1) };
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateBookingAsync(dto));
     }
 

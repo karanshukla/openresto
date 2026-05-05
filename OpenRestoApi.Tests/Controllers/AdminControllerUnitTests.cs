@@ -98,7 +98,7 @@ public class AdminControllerUnitTests
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var response = Assert.IsType<MessageResponse>(badRequest.Value);
-        Assert.Equal("IO Fail", response.Message);
+        Assert.Equal("Failed to send: IO Fail", response.Message);
     }
 
     [Fact]

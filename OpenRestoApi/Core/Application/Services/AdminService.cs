@@ -175,7 +175,20 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             throw new ArgumentException("Section does not belong to this restaurant.");
         }
 
-        DateTime newStart = req.Date.ToUniversalTime();
+        // Normalize date: if Unspecified, treat as restaurant local and convert to UTC
+        DateTime newStart;
+        if (req.Date.Kind == DateTimeKind.Unspecified)
+        {
+            TimeZoneInfo tz;
+            try { tz = TimeZoneInfo.FindSystemTimeZoneById(table.Section.Restaurant!.Timezone); }
+            catch { tz = TimeZoneInfo.Utc; }
+            newStart = TimeZoneInfo.ConvertTimeToUtc(req.Date, tz);
+        }
+        else
+        {
+            newStart = req.Date.ToUniversalTime();
+        }
+
         DateTime newEnd = newStart.AddHours(1);
 
         bool conflict = await _db.Bookings.AnyAsync(b =>
@@ -199,8 +212,8 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             RestaurantId = req.RestaurantId,
             SectionId = req.SectionId,
             TableId = req.TableId,
-            Date = req.Date,
-            EndTime = req.Date.AddHours(1),
+            Date = newStart,
+            EndTime = newStart.AddHours(1),
             CustomerEmail = req.CustomerEmail,
             Seats = req.Seats,
             BookingRef = BookingRefGenerator.Generate(),
