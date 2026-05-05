@@ -55,15 +55,12 @@ jobs:
 
       - name: Frontend Coverage Annotation
         if: github.event_name == 'pull_request'
-        uses: 5monkeys/cobertura-action@v1.4.0
+        uses: insidewhy/github-action-cobertura-report@v2.0.2
         with:
-          path: openresto-frontend/coverage/cobertura-coverage.xml
+          path_to_code: openresto-frontend
+          path_to_report: openresto-frontend/coverage/cobertura-coverage.xml
+          publish_report: true
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          minimum_coverage: 50
-          show_line: true
-          show_branch: true
-          show_class_names: true
-          only_changed_files: true
 
   backend:
     name: Backend CI
@@ -123,15 +120,12 @@ jobs:
 
       - name: Backend Coverage Annotation
         if: github.event_name == 'pull_request'
-        uses: 5monkeys/cobertura-action@v1.4.0
+        uses: insidewhy/github-action-cobertura-report@v2.0.2
         with:
-          path: CoverageReport/Cobertura.xml
+          path_to_code: OpenRestoApi
+          path_to_report: CoverageReport/Cobertura.xml
+          publish_report: true
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          minimum_coverage: 50
-          show_line: true
-          show_branch: true
-          show_class_names: true
-          only_changed_files: true
 
       - name: Add Coverage to PR
         if: github.event_name == 'pull_request'
