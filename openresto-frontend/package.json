@@ -76,6 +76,11 @@
       "utils/**/*.{ts,tsx}",
       "!**/*.d.ts"
     ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "cobertura"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/android/",

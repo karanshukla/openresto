@@ -46,6 +46,25 @@ jobs:
       - name: Run Tests
         run: npm test -- --ci --coverage --forceExit
 
+      - name: Upload Frontend Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: openresto-frontend/coverage/
+
+      - name: Frontend Coverage Annotation
+        if: github.event_name == 'pull_request'
+        uses: 5monkeys/cobertura-action@v1.4.0
+        with:
+          path: openresto-frontend/coverage/cobertura-coverage.xml
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_coverage: 50
+          show_line: true
+          show_branch: true
+          show_class_names: true
+          only_changed_files: true
+
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
@@ -68,10 +87,16 @@ jobs:
         run: >
           dotnet test --no-build --configuration Release --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
-          --collect:"Code Coverage"
+          --collect:"XPlat Code Coverage"
           --results-directory TestResults
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[OpenRestoApi]*"
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"Html;Cobertura"
 
       - name: Upload Test Results
         if: always()
@@ -80,21 +105,33 @@ jobs:
           name: test-results
           path: "TestResults/*.trx"
 
-      - name: Upload Coverage Report
+      - name: Upload Backend Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: "TestResults/**/coverage.cobertura.xml"
+          name: backend-coverage
+          path: "CoverageReport/"
 
-      - name: Coverage Summary
+      - name: Backend Coverage Summary
         if: always()
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: "TestResults/**/coverage.cobertura.xml"
+          filename: "CoverageReport/Cobertura.xml"
           badge: true
           format: markdown
           output: both
+
+      - name: Backend Coverage Annotation
+        if: github.event_name == 'pull_request'
+        uses: 5monkeys/cobertura-action@v1.4.0
+        with:
+          path: CoverageReport/Cobertura.xml
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_coverage: 50
+          show_line: true
+          show_branch: true
+          show_class_names: true
+          only_changed_files: true
 
       - name: Add Coverage to PR
         if: github.event_name == 'pull_request'
