@@ -381,6 +381,84 @@ public class AdminServiceTests : IDisposable
         Assert.Single(list);
     }
 
+    // Regression: ActiveBookingsCount was missing b.Date <= nowUtc, causing future
+    // bookings to be counted as active and inflating the count shown in the Extend modal.
+    [Fact]
+    public async Task GetRestaurantsAsync_ActiveBookingsCount_ExcludesFutureBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        // Booking that started 30 min ago and has not ended → ACTIVE
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-30), EndTime = nowUtc.AddMinutes(30), BookingRef = "CURRENT" });
+        // Booking starting in 2 hours → NOT active yet
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(2), EndTime = nowUtc.AddHours(3), BookingRef = "FUTURE" });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> list = await svc.GetRestaurantsAsync();
+
+        Assert.Equal(1, list[0].ActiveBookingsCount);
+    }
+
+    [Fact]
+    public async Task GetRestaurantsAsync_ActiveBookingsCount_ExcludesCancelledBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-30), EndTime = nowUtc.AddMinutes(30), BookingRef = "ACTIVE" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-20), EndTime = nowUtc.AddMinutes(40), BookingRef = "CANCELLED", IsCancelled = true });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> list = await svc.GetRestaurantsAsync();
+
+        Assert.Equal(1, list[0].ActiveBookingsCount);
+    }
+
+    [Fact]
+    public async Task GetRestaurantsAsync_ActiveBookingsCount_ExcludesPastBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        // Booking that ended 1 hour ago
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(-2), EndTime = nowUtc.AddHours(-1), BookingRef = "PAST" });
+        // Current booking
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-15), EndTime = nowUtc.AddMinutes(45), BookingRef = "CURRENT" });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> list = await svc.GetRestaurantsAsync();
+
+        Assert.Equal(1, list[0].ActiveBookingsCount);
+    }
+
+    [Fact]
+    public async Task GetRestaurantsAsync_ActiveBookingsCount_MatchesExtendAllActiveBookings()
+    {
+        // The count shown in the UI before extending should equal the number of bookings
+        // that ExtendAllActiveBookingsAsync will actually extend.
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-30), EndTime = nowUtc.AddMinutes(30), BookingRef = "CURRENT" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(2), EndTime = nowUtc.AddHours(3), BookingRef = "FUTURE" });
+        _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(-3), EndTime = nowUtc.AddHours(-2), BookingRef = "PAST" });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> restaurantList = await svc.GetRestaurantsAsync();
+        List<BookingDetailDto>? extended = await svc.ExtendAllActiveBookingsAsync(1, 30);
+
+        Assert.Equal(restaurantList[0].ActiveBookingsCount, extended!.Count);
+    }
+
     [Fact]
     public async Task GetSectionsAsync_ReturnsList()
     {
@@ -487,6 +565,45 @@ public class AdminServiceTests : IDisposable
 
         // When requesting a specific date, both should show up regardless of current time
         List<BookingDetailDto> results = await svc.GetBookingsAsync(1, today, "active");
+
+        Assert.Equal(2, results.Count);
+    }
+
+    // Regression test: dashboard's "Today's Bookings" was showing cancelled bookings
+    // because getAdminDashboardStats called the API with status=all instead of status=active.
+    // When status=active + a date are both supplied, the backend enters isGridMode which
+    // applies !b.IsCancelled — this test verifies that behaviour.
+    [Fact]
+    public async Task GetBookingsAsync_ActiveStatusWithDate_ExcludesCancelledBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime today = DateTime.UtcNow.Date;
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = today.AddHours(12), BookingRef = "ACTIVE", IsCancelled = false });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = today.AddHours(14), BookingRef = "CANCELLED", IsCancelled = true, CancelledAt = DateTime.UtcNow });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(null, today, "active");
+
+        Assert.Single(results);
+        Assert.Equal("ACTIVE", results[0].BookingRef);
+    }
+
+    [Fact]
+    public async Task GetBookingsAsync_AllStatusWithDate_IncludesCancelledBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime today = DateTime.UtcNow.Date;
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = today.AddHours(12), BookingRef = "ACTIVE", IsCancelled = false });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = today.AddHours(14), BookingRef = "CANCELLED", IsCancelled = true, CancelledAt = DateTime.UtcNow });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(null, today, "all");
 
         Assert.Equal(2, results.Count);
     }

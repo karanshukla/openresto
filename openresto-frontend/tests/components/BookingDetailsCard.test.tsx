@@ -43,6 +43,16 @@ describe("BookingDetailsCard", () => {
     expect(screen.getByText("CANCELLED")).toBeTruthy();
   });
 
+  it("shows None when there are no special requests", () => {
+    render(
+      <BookingDetailsCard
+        {...props}
+        booking={{ ...mockBooking, specialRequests: undefined }}
+      />
+    );
+    expect(screen.getByText("None")).toBeTruthy();
+  });
+
   it("handles different time duration and party label", () => {
     render(
       <BookingDetailsCard

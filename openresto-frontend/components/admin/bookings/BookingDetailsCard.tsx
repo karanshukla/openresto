@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { COLORS } from "@/theme/theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
@@ -20,6 +20,7 @@ interface BookingDetailsCardProps {
   borderColor: string;
   mutedColor: string;
   cardColor: string;
+  style?: ViewStyle;
 }
 
 export function BookingDetailsCard({
@@ -27,6 +28,7 @@ export function BookingDetailsCard({
   borderColor,
   mutedColor,
   cardColor,
+  style,
 }: BookingDetailsCardProps) {
   const startTime = new Date(booking.date);
   const endTime = booking.endTime
@@ -76,18 +78,15 @@ export function BookingDetailsCard({
     { label: "Restaurant", value: booking.restaurantName },
     { label: "Section", value: booking.sectionName },
     { label: "Table", value: booking.tableName },
+    { label: "Requests", value: booking.specialRequests || "None" },
   ];
-
-  if (booking.specialRequests) {
-    rows.push({ label: "Requests", value: booking.specialRequests });
-  }
 
   if (booking.isCancelled) {
     rows.push({ label: "Status", value: "CANCELLED" });
   }
 
   return (
-    <View style={[styles.card, { backgroundColor: cardColor, borderColor }]}>
+    <View style={[styles.card, { backgroundColor: cardColor, borderColor }, style]}>
       {rows.map(({ label, value }, i) => (
         <View key={label}>
           {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}

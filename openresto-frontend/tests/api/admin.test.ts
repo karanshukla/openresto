@@ -101,6 +101,33 @@ describe("getAdminDashboardStats", () => {
     const result = await getAdminDashboardStats();
     expect(result).toBeNull();
   });
+
+  it("fetches today's bookings with all status to show every booking state", async () => {
+    const overview = { todayBookings: 1, totalSeats: 10 };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    await getAdminDashboardStats();
+
+    const bookingsUrl = mockFetch.mock.calls[1][0] as string;
+    expect(bookingsUrl).toContain("status=all");
+  });
+
+  it("includes cancelled bookings in recentBookings with isCancelled flag", async () => {
+    const overview = { todayBookings: 1, totalSeats: 10 };
+    const bookings = [
+      { id: 1, date: "2026-05-12T12:00:00Z", customerEmail: "active@test.com", seats: 2, restaurantName: "R1", isCancelled: false },
+      { id: 2, date: "2026-05-12T14:00:00Z", customerEmail: "cancelled@test.com", seats: 3, restaurantName: "R1", isCancelled: true },
+    ];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
+
+    const result = await getAdminDashboardStats();
+
+    expect(result?.recentBookings).toHaveLength(2);
+    expect(result?.recentBookings[0].isCancelled).toBe(false);
+    expect(result?.recentBookings[1].isCancelled).toBe(true);
+  });
 });
 
 // ---------- Bookings ----------

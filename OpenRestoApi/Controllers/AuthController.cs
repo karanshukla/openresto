@@ -172,7 +172,11 @@ public class AuthController(IConfiguration config, AppDbContext db) : Controller
         }
 
         string email = _config["Admin:Email"] ?? "admin@openresto.com";
-        string password = _config["Admin:Password"] ?? "admin";
+        string? password = _config["Admin:Password"];
+
+        if (string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException(
+                "Admin:Password must be configured before first use. Set it via config or the ADMIN_PASSWORD env var.");
 
         (string? hash, string? salt) = HashPassword(password);
         cred = new AdminCredential { Email = email, PasswordHash = hash, PasswordSalt = salt };

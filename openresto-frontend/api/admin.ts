@@ -20,6 +20,7 @@ export interface BookingSummaryDto {
   seats: number;
   restaurantName: string;
   bookingRef: string;
+  isCancelled?: boolean;
 }
 
 export interface AdminDashboardStats {
@@ -60,6 +61,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
         seats: b.seats,
         restaurantName: b.restaurantName,
         bookingRef: b.bookingRef ?? "",
+        isCancelled: b.isCancelled,
       })),
     };
   } catch (err) {
