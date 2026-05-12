@@ -12,7 +12,7 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddProblemDetails();
 builder.Services.AddProjectDependencies();
-builder.Services.AddCustomCors();
+builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddCustomRateLimiting(builder.Environment);
 builder.Services.AddCustomAuthentication(builder.Configuration);
 

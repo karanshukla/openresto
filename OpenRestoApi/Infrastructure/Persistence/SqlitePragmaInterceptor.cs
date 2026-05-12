@@ -17,6 +17,8 @@ public sealed class SqlitePragmaInterceptor : DbConnectionInterceptor
         PRAGMA busy_timeout=10000;
         PRAGMA foreign_keys=ON;
         PRAGMA temp_store=MEMORY;
+        PRAGMA cache_size=-65536;
+        PRAGMA mmap_size=134217728;
         """;
 
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)

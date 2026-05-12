@@ -283,116 +283,126 @@ export default function BookingDetailScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Detail" }} />}
 
-      <Pressable onPress={() => router.back()} style={styles.backBtn}>
-        <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
-        <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
-      </Pressable>
-
-      <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
-
-      {editing ? (
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Pressable
-            style={[styles.actionBtn, { backgroundColor: COLORS.primary, flex: 1 }]}
-            onPress={handleSaveEdit}
-            disabled={editLoading}
-          >
-            <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
-              {editLoading ? "Saving…" : "Save Changes"}
-            </ThemedText>
+      {/* Page header: title on left, action buttons on right */}
+      <View style={styles.pageHeader}>
+        <View style={styles.headerLeft}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
+            <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
           </Pressable>
-          <Pressable
-            style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border, flex: 1 }]}
-            onPress={handleCancelEdit}
-            disabled={editLoading}
-          >
-            <ThemedText style={[styles.actionBtnText, { color: colors.text }]}>Cancel</ThemedText>
-          </Pressable>
+          <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
         </View>
-      ) : (
-        <Pressable
-          style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
-          onPress={() => setEditing(true)}
-          disabled={booking.isCancelled}
-        >
-          <Ionicons
-            name="create-outline"
-            size={16}
-            color={booking.isCancelled ? colors.muted : COLORS.primary}
+
+        <View style={styles.headerActions}>
+          {editing ? (
+            <>
+              <Pressable
+                style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
+                onPress={handleCancelEdit}
+                disabled={editLoading}
+              >
+                <ThemedText style={[styles.actionBtnText, { color: colors.text }]}>
+                  Cancel
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+                onPress={handleSaveEdit}
+                disabled={editLoading}
+              >
+                <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
+                  {editLoading ? "Saving…" : "Save Changes"}
+                </ThemedText>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
+              onPress={() => setEditing(true)}
+              disabled={booking.isCancelled}
+            >
+              <Ionicons
+                name="create-outline"
+                size={16}
+                color={booking.isCancelled ? colors.muted : COLORS.primary}
+              />
+              <ThemedText
+                style={[
+                  styles.actionBtnText,
+                  { color: booking.isCancelled ? colors.muted : COLORS.primary },
+                ]}
+              >
+                Edit Booking
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Main content: two-column layout — details on left, actions on right */}
+      <View style={styles.twoCol}>
+        <View style={styles.colLeft}>
+          <BookingDetailsCard
+            booking={booking}
+            borderColor={borderColor}
+            mutedColor={mutedColor}
+            cardColor={colors.card}
           />
-          <ThemedText
-            style={[
-              styles.actionBtnText,
-              { color: booking.isCancelled ? colors.muted : COLORS.primary },
-            ]}
-          >
-            Edit Booking
-          </ThemedText>
-        </Pressable>
-      )}
+        </View>
 
-      <BookingDetailsCard
-        booking={booking}
-        borderColor={borderColor}
-        mutedColor={mutedColor}
-        cardColor={colors.card}
-      />
-
-      {editing && (
-        <EditBookingForm
-          borderColor={borderColor}
-          loadingRestaurants={loadingRestaurants}
-          restaurantOptions={restaurantOptions}
-          sectionOptions={sectionOptions}
-          tableOptions={tableOptions}
-          seatOptions={seatOptions}
-          editRestaurantId={editRestaurantId}
-          editSectionId={editSectionId}
-          editTableId={editTableId}
-          editSeats={editSeats}
-          editEmail={editEmail}
-          editSpecialRequests={editSpecialRequests}
-          editDate={editDate}
-          editTime={editTime}
-          selectedRestaurant={selectedRestaurant}
-          setEditTableId={setEditTableId}
-          setEditSeats={setEditSeats}
-          setEditEmail={setEditEmail}
-          setEditSpecialRequests={setEditSpecialRequests}
-          setEditDate={setEditDate}
-          setEditTime={setEditTime}
-          handleRestaurantChange={handleRestaurantChange}
-          handleSectionChange={handleSectionChange}
-        />
-      )}
-
-      {/* Extend duration - hide for cancelled bookings */}
-      {!booking.isCancelled && (
-        <ExtendBookingActions
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          extending={extending}
-          onExtend={handleExtend}
-        />
-      )}
-
-      {/* Email guest - hide for cancelled bookings */}
-      {!booking.isCancelled && (
-        <EmailGuestForm
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          isDark={isDark}
-          colors={colors}
-          customerEmail={booking.customerEmail}
-          emailSubject={emailSubject}
-          emailBody={emailBody}
-          emailSending={emailSending}
-          emailResult={emailResult}
-          setEmailSubject={setEmailSubject}
-          setEmailBody={setEmailBody}
-          onSendEmail={handleSendEmail}
-        />
-      )}
+        <View style={styles.colRight}>
+          {editing ? (
+            <EditBookingForm
+              borderColor={borderColor}
+              loadingRestaurants={loadingRestaurants}
+              restaurantOptions={restaurantOptions}
+              sectionOptions={sectionOptions}
+              tableOptions={tableOptions}
+              seatOptions={seatOptions}
+              editRestaurantId={editRestaurantId}
+              editSectionId={editSectionId}
+              editTableId={editTableId}
+              editSeats={editSeats}
+              editEmail={editEmail}
+              editSpecialRequests={editSpecialRequests}
+              editDate={editDate}
+              editTime={editTime}
+              selectedRestaurant={selectedRestaurant}
+              setEditTableId={setEditTableId}
+              setEditSeats={setEditSeats}
+              setEditEmail={setEditEmail}
+              setEditSpecialRequests={setEditSpecialRequests}
+              setEditDate={setEditDate}
+              setEditTime={setEditTime}
+              handleRestaurantChange={handleRestaurantChange}
+              handleSectionChange={handleSectionChange}
+            />
+          ) : !booking.isCancelled ? (
+            <View style={{ gap: 16 }}>
+              <ExtendBookingActions
+                borderColor={borderColor}
+                mutedColor={mutedColor}
+                extending={extending}
+                onExtend={handleExtend}
+              />
+              <EmailGuestForm
+                borderColor={borderColor}
+                mutedColor={mutedColor}
+                isDark={isDark}
+                colors={colors}
+                customerEmail={booking.customerEmail}
+                emailSubject={emailSubject}
+                emailBody={emailBody}
+                emailSending={emailSending}
+                emailResult={emailResult}
+                setEmailSubject={setEmailSubject}
+                setEmailBody={setEmailBody}
+                onSendEmail={handleSendEmail}
+              />
+            </View>
+          ) : null}
+        </View>
+      </View>
 
       <BookingActionButtons
         isCancelled={!!booking.isCancelled}

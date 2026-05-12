@@ -10,14 +10,14 @@ namespace OpenRestoApi.Tests.Extensions;
 public class ServiceCollectionExtensionsTests
 {
     [Fact]
-    public void AddCustomCors_HandlesWildcard()
+    public void AddCustomCors_ThrowsOnWildcard()
     {
         var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
         Environment.SetEnvironmentVariable("CORS_ORIGINS", "*");
         try
         {
-            services.AddCustomCors();
-            // We can't easily verify the policy without building the provider and checking internal options
+            Assert.Throws<InvalidOperationException>(() => services.AddCustomCors(config));
         }
         finally
         {
@@ -29,15 +29,14 @@ public class ServiceCollectionExtensionsTests
     public void AddCustomCors_HandlesSpecificOrigins()
     {
         var services = new ServiceCollection();
-        Environment.SetEnvironmentVariable("CORS_ORIGINS", "http://localhost:3000,http://example.com");
-        try
-        {
-            services.AddCustomCors();
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("CORS_ORIGINS", null);
-        }
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Cors:Origins"] = "http://localhost:3000,http://example.com"
+            })
+            .Build();
+
+        services.AddCustomCors(config);
     }
 
     [Fact]

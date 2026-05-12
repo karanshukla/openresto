@@ -14,30 +14,29 @@ namespace OpenRestoApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddCustomCors(this IServiceCollection services)
+    public static IServiceCollection AddCustomCors(this IServiceCollection services, IConfiguration configuration)
     {
+        string? corsOrigins = configuration["Cors:Origins"]
+            ?? Environment.GetEnvironmentVariable("CORS_ORIGINS");
+
+        if (string.IsNullOrWhiteSpace(corsOrigins) || corsOrigins.Trim() == "*")
+        {
+            throw new InvalidOperationException(
+                "Cors:Origins must be explicitly configured with allowed origins (comma-separated). " +
+                "Wildcards are not permitted. Set via Cors:Origins config or CORS_ORIGINS env var.");
+        }
+
+        string[] origins = corsOrigins.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
         services.AddCors(options =>
         {
-            string corsOrigins = Environment.GetEnvironmentVariable("CORS_ORIGINS") ?? "*";
-            string[] origins = corsOrigins.Split(",", StringSplitOptions.RemoveEmptyEntries);
-
             options.AddPolicy("AllowFrontend",
                 builder =>
                 {
-                    if (corsOrigins == "*")
-                    {
-                        builder.SetIsOriginAllowed(_ => true)
-                               .AllowAnyMethod()
-                               .AllowAnyHeader()
-                               .AllowCredentials();
-                    }
-                    else
-                    {
-                        builder.WithOrigins(origins)
-                               .AllowAnyMethod()
-                               .AllowAnyHeader()
-                               .AllowCredentials();
-                    }
+                    builder.WithOrigins(origins)
+                           .AllowAnyMethod()
+                           .AllowAnyHeader()
+                           .AllowCredentials();
                 });
         });
 
@@ -86,9 +85,15 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        string jwtKey = configuration["Jwt:Key"]
-            ?? Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? "openresto-jwt-signing-key-change-in-production-minimum-32-chars!!";
+        string? jwtKey = configuration["Jwt:Key"]
+            ?? Environment.GetEnvironmentVariable("JWT_KEY");
+
+        if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Key must be set (via config or JWT_KEY env var) and be at least 32 characters. " +
+                "Generate one with: openssl rand -base64 48");
+        }
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -130,6 +135,7 @@ public static class ServiceCollectionExtensions
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.ForwardLimit = 1; // only process the immediate upstream hop; prevents X-Forwarded-For spoofing
             options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
         });

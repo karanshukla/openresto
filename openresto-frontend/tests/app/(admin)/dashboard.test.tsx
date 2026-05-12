@@ -104,6 +104,104 @@ describe("AdminDashboardScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
   });
 
+  it("shows Seated badge for a currently in-progress booking (via StatusBadge)", async () => {
+    const now = Date.now();
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({
+      ...mockStats,
+      recentBookings: [
+        {
+          id: 1,
+          // started 30 min ago → diffMins = -30 → StatusBadge renders "Seated"
+          date: new Date(now - 30 * 60 * 1000).toISOString(),
+          endTime: new Date(now + 30 * 60 * 1000).toISOString(),
+          seats: 2,
+          customerEmail: "active@test.com",
+          restaurantName: "Resto A",
+          bookingRef: "X1",
+          isCancelled: false,
+        },
+      ],
+    });
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("Seated")).toBeTruthy();
+  });
+
+  it("shows Scheduled badge for a future booking (via StatusBadge)", async () => {
+    const now = Date.now();
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({
+      ...mockStats,
+      recentBookings: [
+        {
+          id: 2,
+          // starts in 2 hours → diffMins = 120 → StatusBadge renders "Scheduled"
+          date: new Date(now + 2 * 60 * 60 * 1000).toISOString(),
+          seats: 2,
+          customerEmail: "upcoming@test.com",
+          restaurantName: "Resto A",
+          bookingRef: "X2",
+          isCancelled: false,
+        },
+      ],
+    });
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("Scheduled")).toBeTruthy();
+  });
+
+  it("shows Cancelled badge for a cancelled booking", async () => {
+    const now = Date.now();
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({
+      ...mockStats,
+      recentBookings: [
+        {
+          id: 3,
+          date: new Date(now + 60 * 60 * 1000).toISOString(),
+          seats: 2,
+          customerEmail: "cancelled@test.com",
+          restaurantName: "Resto A",
+          bookingRef: "X3",
+          isCancelled: true,
+        },
+      ],
+    });
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("Cancelled")).toBeTruthy();
+  });
+
+  it("shows Completed badge for a past booking (via StatusBadge)", async () => {
+    const now = Date.now();
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({
+      ...mockStats,
+      recentBookings: [
+        {
+          id: 4,
+          // started 3 hours ago → diffMins = -180 → StatusBadge renders "Completed"
+          date: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+          seats: 2,
+          customerEmail: "past@test.com",
+          restaurantName: "Resto A",
+          bookingRef: "X4",
+          isCancelled: false,
+        },
+      ],
+    });
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(screen.queryByText("Cancelled")).toBeNull();
+  });
+
   it("navigates to quick action routes", async () => {
     const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
     await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());

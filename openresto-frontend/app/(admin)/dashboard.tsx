@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { getAdminDashboardStats, AdminDashboardStats, BookingSummaryDto } from "@/api/admin";
+import { StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ThemeColors } from "@/theme/theme";
 import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
@@ -229,7 +230,13 @@ export default function AdminDashboardScreen() {
                 </View>
               ) : (
                 stats?.recentBookings.map((b: BookingSummaryDto) => (
-                  <BookingItem key={b.bookingRef} booking={b} colors={colors} router={router} />
+                  <BookingItem
+                    key={b.bookingRef}
+                    booking={b}
+                    colors={colors}
+                    isDark={isDark}
+                    router={router}
+                  />
                 ))
               )}
             </View>
@@ -334,10 +341,12 @@ function OccupancyChart({
 function BookingItem({
   booking,
   colors,
+  isDark,
   router,
 }: {
   booking: BookingSummaryDto;
   colors: ThemeColors;
+  isDark: boolean;
   router: ReturnType<typeof useRouter>;
 }) {
   const now = new Date();
@@ -345,7 +354,17 @@ function BookingItem({
   const endTime = booking.endTime
     ? new Date(booking.endTime)
     : new Date(startTime.getTime() + 60 * 60 * 1000);
-  const isActive = now >= startTime && now <= endTime;
+
+  const isCancelled = !!booking.isCancelled;
+  const isActive = !isCancelled && now >= startTime && now <= endTime;
+
+  const bubbleBg = isCancelled
+    ? "rgba(220,38,38,0.1)"
+    : isActive
+      ? `${colors.success}18`
+      : `${colors.muted}14`;
+
+  const bubbleTextColor = isCancelled ? "#dc2626" : isActive ? colors.success : colors.muted;
 
   return (
     <Pressable
@@ -360,17 +379,9 @@ function BookingItem({
         ])
       }
     >
-      <View
-        style={StyleSheet.flatten([
-          styles.bookingTime,
-          { backgroundColor: isActive ? colors.success : `${colors.success}10` },
-        ])}
-      >
+      <View style={StyleSheet.flatten([styles.bookingTime, { backgroundColor: bubbleBg }])}>
         <ThemedText
-          style={StyleSheet.flatten([
-            styles.bookingTimeText,
-            { color: isActive ? "#fff" : colors.success },
-          ])}
+          style={StyleSheet.flatten([styles.bookingTimeText, { color: bubbleTextColor }])}
         >
           {startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </ThemedText>
@@ -380,19 +391,23 @@ function BookingItem({
           <ThemedText style={styles.bookingEmail} numberOfLines={1}>
             {booking.customerEmail}
           </ThemedText>
-          {isActive && (
+          {isCancelled ? (
             <View
               style={{
-                backgroundColor: colors.success,
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                borderRadius: 4,
+                backgroundColor: "rgba(220,38,38,0.1)",
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 9999,
               }}
             >
-              <ThemedText style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>
-                ACTIVE
+              <ThemedText
+                style={{ color: "#dc2626", fontSize: 11, fontWeight: "700", letterSpacing: 0.4 }}
+              >
+                Cancelled
               </ThemedText>
             </View>
+          ) : (
+            <StatusBadge date={booking.date} isDark={isDark} />
           )}
         </View>
         <ThemedText style={StyleSheet.flatten([styles.bookingMeta, { color: colors.muted }])}>

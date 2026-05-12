@@ -100,7 +100,7 @@ public class HoldsController(
         catch { tz = TimeZoneInfo.Utc; }
 
         DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(requestedUtc, tz);
-        
+
         // Check OpenDays
         if (!string.IsNullOrEmpty(restaurant.OpenDays))
         {

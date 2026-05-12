@@ -501,6 +501,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 ActiveBookingsCount = _db.Bookings.Count(b =>
                     b.RestaurantId == r.Id &&
                     !b.IsCancelled &&
+                    b.Date <= nowUtc &&
                     (b.EndTime == null || b.EndTime > nowUtc))
             })
             .ToListAsync();

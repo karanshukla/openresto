@@ -62,6 +62,7 @@ public static partial class DatabaseExtensions
             options.UseSqlite(connectionString, sqliteOptions =>
             {
                 sqliteOptions.CommandTimeout(30);
+                sqliteOptions.ExecutionStrategy(d => new SqliteRetryingExecutionStrategy(d));
             });
             options.AddInterceptors(pragmaInterceptor);
             options.ConfigureWarnings(w =>
@@ -224,8 +225,14 @@ public static partial class DatabaseExtensions
 
                     if (!db.AdminCredentials.Any())
                     {
-                        string email = configuration["Admin:Email"] ?? "example@example.com";
-                        string password = configuration["Admin:Password"] ?? "password";
+                        string email = configuration["Admin:Email"] ?? "admin@openresto.com";
+                        string? password = configuration["Admin:Password"];
+
+                        if (string.IsNullOrWhiteSpace(password))
+                        {
+                            throw new InvalidOperationException(
+                                "Admin:Password must be configured before first use. Set it via config or Admin__Password env var.");
+                        }
                         byte[] saltBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
                         string salt = Convert.ToBase64String(saltBytes);
                         byte[] hashBytes = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
