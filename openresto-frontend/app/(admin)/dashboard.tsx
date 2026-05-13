@@ -83,7 +83,7 @@ export default function AdminDashboardScreen() {
     {
       title: "New Booking",
       icon: "person-add-outline" as const,
-      route: "/(admin)/bookings/new" as const,
+      onPress: () => router.push({ pathname: "/(admin)/bookings", params: { create: "1" } }),
       primary: true,
     },
     {

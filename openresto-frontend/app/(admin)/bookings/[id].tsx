@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 
@@ -62,6 +63,8 @@ export default function BookingDetailScreen() {
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
   const mutedColor = colors.muted;
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || COLORS.primary;
 
   useEffect(() => {
     if (!id) return;
@@ -266,7 +269,7 @@ export default function BookingDetailScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={PRIMARY} />
       </ThemedView>
     );
   }
@@ -287,8 +290,8 @@ export default function BookingDetailScreen() {
       <View style={styles.pageHeader}>
         <View style={styles.headerLeft}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back-outline" size={16} color={COLORS.primary} />
-            <ThemedText style={[styles.backText, { color: COLORS.primary }]}>Bookings</ThemedText>
+            <Ionicons name="arrow-back-outline" size={16} color={PRIMARY} />
+            <ThemedText style={[styles.backText, { color: PRIMARY }]}>Bookings</ThemedText>
           </Pressable>
           <ThemedText style={styles.pageTitle}>Booking Details</ThemedText>
         </View>
@@ -306,7 +309,7 @@ export default function BookingDetailScreen() {
                 </ThemedText>
               </Pressable>
               <Pressable
-                style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+                style={[styles.actionBtn, { backgroundColor: PRIMARY }]}
                 onPress={handleSaveEdit}
                 disabled={editLoading}
               >
@@ -324,12 +327,12 @@ export default function BookingDetailScreen() {
               <Ionicons
                 name="create-outline"
                 size={16}
-                color={booking.isCancelled ? colors.muted : COLORS.primary}
+                color={booking.isCancelled ? colors.muted : PRIMARY}
               />
               <ThemedText
                 style={[
                   styles.actionBtnText,
-                  { color: booking.isCancelled ? colors.muted : COLORS.primary },
+                  { color: booking.isCancelled ? colors.muted : PRIMARY },
                 ]}
               >
                 Edit Booking

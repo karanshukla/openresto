@@ -71,7 +71,7 @@ export function EditableRow({
       </View>
       <View style={styles.rowActions}>
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 12 }]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor }]}
           disabled={saving}
           onPress={async () => {
             if (!draft.trim()) return;
@@ -85,7 +85,7 @@ export function EditableRow({
             {saving ? "…" : "Save"}
           </ThemedText>
         </Pressable>
-        <Pressable style={[styles.smallBtn, { padding: 8 }]} onPress={() => setEditing(false)}>
+        <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
           <Ionicons name="close-outline" size={20} color={mutedColor} />
         </Pressable>
       </View>

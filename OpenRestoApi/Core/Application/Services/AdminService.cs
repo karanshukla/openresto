@@ -32,13 +32,22 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
         int todayBookingsCount = 0;
         int pausedRestaurantsCount = 0;
+        List<BookingDetailDto> todayBookingsList = [];
         foreach (Restaurant? r in restaurants)
         {
             (DateTime start, DateTime end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
-            todayBookingsCount += await _db.Bookings.CountAsync(b =>
-                b.RestaurantId == r.Id &&
-                b.Date >= start && b.Date < end &&
-                !b.IsCancelled);
+            List<Booking> rTodayBookings = await _db.Bookings
+                .Include(b => b.Restaurant)
+                .Include(b => b.Section)
+                .Include(b => b.Table)
+                .Where(b =>
+                    b.RestaurantId == r.Id &&
+                    b.Date >= start && b.Date < end &&
+                    !b.IsCancelled)
+                .OrderBy(b => b.Date)
+                .ToListAsync();
+            todayBookingsCount += rTodayBookings.Count;
+            todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
 
             if (r.BookingsPausedUntil.HasValue && r.BookingsPausedUntil.Value > nowUtc)
             {
@@ -66,7 +75,8 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             TotalSeats = totalSeats,
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
             PausedRestaurantsCount = pausedRestaurantsCount,
-            OccupancyData = occupancyData
+            OccupancyData = occupancyData,
+            TodayBookingsList = [.. todayBookingsList.OrderBy(b => b.Date)],
         };
     }
 

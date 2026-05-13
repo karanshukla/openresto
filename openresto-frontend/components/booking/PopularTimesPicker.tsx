@@ -12,6 +12,7 @@ import { ThemedText } from "../themed-text";
 import { TimeSlotDto } from "@/api/availability";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 
 interface PopularTimesPickerProps {
@@ -29,6 +30,8 @@ export default function PopularTimesPicker({
 }: PopularTimesPickerProps) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || COLORS.primary;
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
 
   const scrollRef = useRef<ScrollView>(null);
@@ -139,7 +142,7 @@ export default function PopularTimesPicker({
               style={[
                 styles.tab,
                 { borderColor: colors.border },
-                isActive && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+                isActive && { backgroundColor: PRIMARY, borderColor: PRIMARY },
               ]}
             >
               <ThemedText style={[styles.tabText, isActive && { color: "#fff" }]}>{cat}</ThemedText>
@@ -176,8 +179,8 @@ export default function PopularTimesPicker({
                     styles.slotChip,
                     { borderColor: colors.border, backgroundColor: isDark ? "#1e1e1e" : "#fff" },
                     isSelected && {
-                      backgroundColor: COLORS.primary,
-                      borderColor: COLORS.primary,
+                      backgroundColor: PRIMARY,
+                      borderColor: PRIMARY,
                     },
                   ]}
                 >
@@ -203,11 +206,11 @@ export default function PopularTimesPicker({
               onPress={() => scrollBy(-180)}
               style={({ pressed }) => [
                 styles.arrowCircle,
-                { backgroundColor: colors.card, borderColor: COLORS.primary },
+                { backgroundColor: colors.card, borderColor: PRIMARY },
                 pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
               ]}
             >
-              <Ionicons name="chevron-back" size={16} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={16} color={PRIMARY} />
             </Pressable>
           </View>
         )}
@@ -225,11 +228,11 @@ export default function PopularTimesPicker({
               onPress={() => scrollBy(180)}
               style={({ pressed }) => [
                 styles.arrowCircle,
-                { backgroundColor: colors.card, borderColor: COLORS.primary },
+                { backgroundColor: colors.card, borderColor: PRIMARY },
                 pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
               ]}
             >
-              <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+              <Ionicons name="chevron-forward" size={16} color={PRIMARY} />
             </Pressable>
           </View>
         )}

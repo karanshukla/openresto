@@ -72,14 +72,14 @@ export function AddRow({
             setOpen(false);
           }}
           disabled={saving || !name.trim()}
-          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 16 }]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor }]}
         >
           <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
             {saving ? "Adding…" : "Add"}
           </ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.smallBtn, { padding: 8 }]}
+          style={styles.smallBtn}
           onPress={() => {
             setOpen(false);
             setName("");

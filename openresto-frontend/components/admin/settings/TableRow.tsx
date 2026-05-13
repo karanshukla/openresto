@@ -148,10 +148,7 @@ export function TableRow({
       </View>
       <View style={[styles.rowActions, { alignSelf: "flex-end", marginTop: 12 }]}>
         <Pressable
-          style={[
-            styles.actionBtn,
-            { backgroundColor: primaryColor, paddingHorizontal: 20, height: 40 },
-          ]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor }]}
           disabled={saving}
           onPress={async () => {
             const seats = parseInt(draftSeats, 10);
@@ -172,7 +169,7 @@ export function TableRow({
             {saving ? "…" : "SAVE TABLE"}
           </ThemedText>
         </Pressable>
-        <Pressable style={[styles.smallBtn, { padding: 10 }]} onPress={() => setEditing(false)}>
+        <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
           <ThemedText style={{ color: mutedColor, fontSize: 14, fontWeight: "600" }}>
             Cancel
           </ThemedText>

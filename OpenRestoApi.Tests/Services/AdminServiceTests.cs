@@ -59,6 +59,84 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_TodayBookingsList_ContainsTodayBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(30), BookingRef = "TODAY", IsCancelled = false });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.NotNull(overview.TodayBookingsList);
+        Assert.Single(overview.TodayBookingsList);
+        Assert.Equal("TODAY", overview.TodayBookingsList[0].BookingRef);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_TodayBookingsList_ExcludesCancelledBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(30), BookingRef = "ACTIVE", IsCancelled = false });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(60), BookingRef = "CANCELLED", IsCancelled = true });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Single(overview.TodayBookingsList);
+        Assert.Equal("ACTIVE", overview.TodayBookingsList[0].BookingRef);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_TodayBookingsList_ExcludesYesterdayBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddDays(-1), BookingRef = "YESTERDAY" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Empty(overview.TodayBookingsList);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_TodayBookingsList_CountMatchesTodayBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(30), BookingRef = "B1" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(90), BookingRef = "B2" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(overview.TodayBookings, overview.TodayBookingsList.Count);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_TodayBookingsList_OrderedByDate()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(3), BookingRef = "LATE" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(30), BookingRef = "EARLY" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(2, overview.TodayBookingsList.Count);
+        Assert.Equal("EARLY", overview.TodayBookingsList[0].BookingRef);
+        Assert.Equal("LATE", overview.TodayBookingsList[1].BookingRef);
+    }
+
+    [Fact]
     public async Task GetBookingsAsync_GlobalPastFilter_Works()
     {
         AdminService svc = CreateService();

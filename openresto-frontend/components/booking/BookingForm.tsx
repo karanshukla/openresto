@@ -13,6 +13,7 @@ import PopularTimesPicker from "./PopularTimesPicker";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
+import { useBrand } from "@/context/BrandContext";
 
 const isWeb = Platform.OS === "web";
 
@@ -73,6 +74,8 @@ export default function BookingForm({
 }) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
+  const brand = useBrand();
+  const PRIMARY = brand.primaryColor || COLORS.primary;
   const [customerEmail, setCustomerEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [seats, setSeats] = useState(2);
@@ -229,7 +232,7 @@ export default function BookingForm({
       <View style={styles.availabilityHeader}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <ThemedText style={styles.label}>Popular Times</ThemedText>
-          {loadingAvailability && <ActivityIndicator size="small" color={COLORS.primary} />}
+          {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
         </View>
         <PopularTimesPicker slots={availabilitySlots} selectedTime={time} onSelectTime={setTime} />
       </View>

@@ -148,4 +148,13 @@ export const styles = StyleSheet.create({
   },
   listCardInfo: { flex: 1, gap: 4 },
   listCardRight: { alignItems: "flex-end" },
+
+  newBookingBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+    ...BUTTON_SIZES.small,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  newBookingBtnText: { ...TYPOGRAPHY.label, color: "#fff", fontWeight: "700" as const },
 });

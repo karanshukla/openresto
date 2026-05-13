@@ -9,6 +9,7 @@ import {
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import { NewBookingModal } from "@/components/admin/bookings/NewBookingModal";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,7 +19,7 @@ import {
   View,
   Platform,
 } from "react-native";
-import { useRouter, Stack } from "expo-router";
+import { useRouter, Stack, useLocalSearchParams } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,7 +37,10 @@ function fmtDate(d: Date) {
 }
 
 function isoDate(d: Date) {
-  return d.toISOString().split("T")[0];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function AdminBookingsScreen() {
@@ -54,8 +58,16 @@ export default function AdminBookingsScreen() {
   const [gridLoading, setGridLoading] = useState(false);
 
   const [cancelTarget, setCancelTarget] = useState<BookingDetailDto | null>(null);
+  const [showNewModal, setShowNewModal] = useState(false);
 
   const router = useRouter();
+  const { create } = useLocalSearchParams<{ create?: string }>();
+
+  useEffect(() => {
+    if (create === "1") {
+      setShowNewModal(true);
+    }
+  }, [create]);
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const { width } = useWindowDimensions();
@@ -136,9 +148,9 @@ export default function AdminBookingsScreen() {
     const bookingDate = new Date(b.date);
     const today = new Date();
     return (
-      bookingDate.getUTCDate() === today.getUTCDate() &&
-      bookingDate.getUTCMonth() === today.getUTCMonth() &&
-      bookingDate.getUTCFullYear() === today.getUTCFullYear()
+      bookingDate.getDate() === today.getDate() &&
+      bookingDate.getMonth() === today.getMonth() &&
+      bookingDate.getFullYear() === today.getFullYear()
     );
   }).length;
 
@@ -178,6 +190,14 @@ export default function AdminBookingsScreen() {
         </View>
 
         <View style={styles.headerControls}>
+          <Pressable
+            style={[styles.newBookingBtn, { backgroundColor: PRIMARY }]}
+            onPress={() => setShowNewModal(true)}
+          >
+            <Ionicons name="add-outline" size={16} color="#fff" />
+            <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
+          </Pressable>
+
           {/* Restaurant selector chips */}
           {restaurants.length > 1 &&
             restaurants.map((r) => (
@@ -485,6 +505,15 @@ export default function AdminBookingsScreen() {
           ))}
         </View>
       )}
+      <NewBookingModal
+        visible={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        onCreated={(id) => {
+          setShowNewModal(false);
+          router.push(`/(admin)/bookings/${id}`);
+        }}
+      />
+
       <ConfirmModal
         visible={!!cancelTarget}
         title="Cancel Booking"

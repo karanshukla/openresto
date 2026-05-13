@@ -134,7 +134,7 @@ export default function AdminSidebar() {
       <View style={styles.ctaWrapper}>
         <Pressable
           style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
-          onPress={() => router.push("/(admin)/bookings/new")}
+          onPress={() => router.push({ pathname: "/(admin)/bookings", params: { create: "1" } })}
         >
           <Ionicons name="add-circle-outline" size={16} color="#fff" />
           <ThemedText style={styles.ctaBtnText}>New Booking</ThemedText>

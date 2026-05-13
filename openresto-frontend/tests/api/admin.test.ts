@@ -57,22 +57,22 @@ describe("getAdminOverview", () => {
 });
 
 describe("getAdminDashboardStats", () => {
-  it("combines overview and bookings for today", async () => {
-    const overview = { todayBookings: 5, totalSeats: 100 };
-    const bookings = [
-      {
-        id: 1,
-        date: "2026-06-15T19:00:00Z",
-        customerEmail: "a@b.com",
-        seats: 2,
-        restaurantName: "R1",
-      },
-    ];
+  it("combines overview and todayBookingsList into stats", async () => {
+    const overview = {
+      todayBookings: 5,
+      totalSeats: 100,
+      todayBookingsList: [
+        {
+          id: 1,
+          date: "2026-06-15T19:00:00Z",
+          customerEmail: "a@b.com",
+          seats: 2,
+          restaurantName: "R1",
+        },
+      ],
+    };
 
-    // mock getAdminOverview
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
-    // mock getAdminBookings
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
 
     const result = await getAdminDashboardStats();
 
@@ -91,6 +91,7 @@ describe("getAdminDashboardStats", () => {
           seats: 2,
           restaurantName: "R1",
           bookingRef: "",
+          isCancelled: undefined,
         },
       ],
     });
@@ -102,39 +103,39 @@ describe("getAdminDashboardStats", () => {
     expect(result).toBeNull();
   });
 
-  it("fetches today's bookings with all status to show every booking state", async () => {
-    const overview = { todayBookings: 1, totalSeats: 10 };
+  it("makes only one fetch call (no separate bookings request)", async () => {
+    const overview = { todayBookings: 1, totalSeats: 10, todayBookingsList: [] };
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
 
     await getAdminDashboardStats();
 
-    const bookingsUrl = mockFetch.mock.calls[1][0] as string;
-    expect(bookingsUrl).toContain("status=all");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("includes cancelled bookings in recentBookings with isCancelled flag", async () => {
-    const overview = { todayBookings: 1, totalSeats: 10 };
-    const bookings = [
-      {
-        id: 1,
-        date: "2026-05-12T12:00:00Z",
-        customerEmail: "active@test.com",
-        seats: 2,
-        restaurantName: "R1",
-        isCancelled: false,
-      },
-      {
-        id: 2,
-        date: "2026-05-12T14:00:00Z",
-        customerEmail: "cancelled@test.com",
-        seats: 3,
-        restaurantName: "R1",
-        isCancelled: true,
-      },
-    ];
+  it("includes cancelled bookings from todayBookingsList with isCancelled flag", async () => {
+    const overview = {
+      todayBookings: 2,
+      totalSeats: 10,
+      todayBookingsList: [
+        {
+          id: 1,
+          date: "2026-05-12T12:00:00Z",
+          customerEmail: "active@test.com",
+          seats: 2,
+          restaurantName: "R1",
+          isCancelled: false,
+        },
+        {
+          id: 2,
+          date: "2026-05-12T14:00:00Z",
+          customerEmail: "cancelled@test.com",
+          seats: 3,
+          restaurantName: "R1",
+          isCancelled: true,
+        },
+      ],
+    };
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => bookings });
 
     const result = await getAdminDashboardStats();
 

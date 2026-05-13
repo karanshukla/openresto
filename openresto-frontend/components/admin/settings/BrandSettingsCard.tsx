@@ -226,11 +226,6 @@ export function BrandSettingsCard({
           >
             {saving ? "Saving…" : "Save Brand Settings"}
           </Button>
-
-          <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 4 }}>
-            Changes take effect after a page reload. Logo is stored in the database — no CDN
-            required.
-          </ThemedText>
         </View>
       )}
     </View>

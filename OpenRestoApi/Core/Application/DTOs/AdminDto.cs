@@ -19,6 +19,7 @@ public class AdminOverviewDto
     public int ActiveHoldsCount { get; set; }
     public int PausedRestaurantsCount { get; set; }
     public List<int> OccupancyData { get; set; } = [];
+    public List<BookingDetailDto> TodayBookingsList { get; set; } = [];
 }
 
 // ── Booking detail (admin view — includes resolved names) ────────────────────

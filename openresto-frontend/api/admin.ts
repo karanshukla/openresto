@@ -10,6 +10,7 @@ export interface AdminOverviewDto {
   activeHoldsCount?: number;
   pausedRestaurantsCount?: number;
   occupancyData?: number[];
+  todayBookingsList?: BookingDetailDto[];
 }
 
 export interface BookingSummaryDto {
@@ -37,23 +38,13 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
     const overview = await getAdminOverview();
     if (!overview) return null;
 
-    const todayLocal = (() => {
-      const d = new Date();
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    })();
-
-    const bookings = await getAdminBookings(undefined, todayLocal, "all");
-
     return {
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
       pausedCount: overview.pausedRestaurantsCount ?? 0,
       totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
-      recentBookings: bookings.map((b) => ({
+      recentBookings: (overview.todayBookingsList ?? []).map((b) => ({
         id: b.id,
         date: b.date,
         endTime: b.endTime,

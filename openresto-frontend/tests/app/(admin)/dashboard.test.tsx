@@ -208,7 +208,10 @@ describe("AdminDashboardScreen", () => {
     await waitFor(() => screen.getByText("New Booking"));
 
     fireEvent.press(screen.getByText("New Booking"));
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings/new");
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/(admin)/bookings",
+      params: { create: "1" },
+    });
 
     fireEvent.press(screen.getByText("Manage Settings"));
     expect(mockPush).toHaveBeenCalledWith("/(admin)/settings");
