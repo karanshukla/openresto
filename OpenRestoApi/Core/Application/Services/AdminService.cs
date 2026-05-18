@@ -84,7 +84,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         };
     }
 
-    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status)
+    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null)
     {
         IQueryable<Booking> q = _db.Bookings
             .Include(b => b.Restaurant)
@@ -157,6 +157,18 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 DateTime nextDayStart = dayStart.AddDays(1);
                 q = q.Where(b => b.Date >= dayStart && b.Date < nextDayStart);
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            string normalizedEmail = email.Trim().ToLowerInvariant();
+            q = q.Where(b => b.CustomerEmail != null && b.CustomerEmail.ToLower().Contains(normalizedEmail));
+        }
+
+        if (!string.IsNullOrWhiteSpace(bookingRef))
+        {
+            string normalizedRef = bookingRef.Trim().ToLowerInvariant();
+            q = q.Where(b => b.BookingRef != null && b.BookingRef.ToLower().Contains(normalizedRef));
         }
 
         return await q

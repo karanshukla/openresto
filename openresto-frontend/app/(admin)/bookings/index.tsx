@@ -61,7 +61,12 @@ export default function AdminBookingsScreen() {
   const [showNewModal, setShowNewModal] = useState(false);
 
   const router = useRouter();
-  const { create } = useLocalSearchParams<{ create?: string }>();
+  const {
+    create,
+    email: emailParam,
+    bookingRef: bookingRefParam,
+  } = useLocalSearchParams<{ create?: string; email?: string; bookingRef?: string }>();
+  const searchQuery = emailParam || bookingRefParam || null;
 
   useEffect(() => {
     if (create === "1") {
@@ -95,8 +100,21 @@ export default function AdminBookingsScreen() {
     };
   }, []);
 
-  // Fetch bookings whenever restaurant or filter changes
+  // Fetch bookings whenever restaurant, filter, or search query changes
   useEffect(() => {
+    if (searchQuery) {
+      let cancelled = false;
+      setLoading(true);
+      getAdminBookings(undefined, undefined, "all", emailParam, bookingRefParam).then((b) => {
+        if (!cancelled) {
+          setBookings(b);
+          setLoading(false);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
     if (!selectedRestaurantId) return;
     let cancelled = false;
     setLoading(true);
@@ -109,7 +127,7 @@ export default function AdminBookingsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, selectedRestaurantId]);
+  }, [statusFilter, selectedRestaurantId, searchQuery, emailParam, bookingRefParam]);
 
   const handleSelectRestaurant = (id: number) => {
     if (id === selectedRestaurantId) return;
@@ -174,29 +192,43 @@ export default function AdminBookingsScreen() {
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.pageTitle}>
-            {viewMode === "grid"
-              ? "Availability"
-              : statusFilter === "past"
-                ? "Past Bookings"
-                : statusFilter === "cancelled"
-                  ? "Cancelled Bookings"
-                  : "Live Bookings"}
+            {searchQuery
+              ? "Search Results"
+              : viewMode === "grid"
+                ? "Availability"
+                : statusFilter === "past"
+                  ? "Past Bookings"
+                  : statusFilter === "cancelled"
+                    ? "Cancelled Bookings"
+                    : "Live Bookings"}
           </ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-            {viewMode === "list"
-              ? `${bookings.length} total · ${todayCount} today`
-              : fmtDate(gridDate)}
+            {searchQuery
+              ? `${bookings.length} result${bookings.length !== 1 ? "s" : ""} for "${searchQuery}"`
+              : viewMode === "list"
+                ? `${bookings.length} total · ${todayCount} today`
+                : fmtDate(gridDate)}
           </ThemedText>
         </View>
 
         <View style={styles.headerControls}>
-          <Pressable
-            style={[styles.newBookingBtn, { backgroundColor: PRIMARY }]}
-            onPress={() => setShowNewModal(true)}
-          >
-            <Ionicons name="add-outline" size={16} color="#fff" />
-            <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
-          </Pressable>
+          {searchQuery ? (
+            <Pressable
+              style={[styles.newBookingBtn, { backgroundColor: mutedColor }]}
+              onPress={() => router.replace("/(admin)/bookings")}
+            >
+              <Ionicons name="close-outline" size={16} color="#fff" />
+              <ThemedText style={styles.newBookingBtnText}>Clear Search</ThemedText>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[styles.newBookingBtn, { backgroundColor: PRIMARY }]}
+              onPress={() => setShowNewModal(true)}
+            >
+              <Ionicons name="add-outline" size={16} color="#fff" />
+              <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
+            </Pressable>
+          )}
 
           {/* Restaurant selector chips */}
           {restaurants.length > 1 &&
