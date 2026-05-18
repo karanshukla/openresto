@@ -282,8 +282,8 @@ const styles = StyleSheet.create({
   },
   copyBtnText: { fontSize: 12, fontWeight: "600" },
   refHint: { fontSize: 12, textAlign: "center" },
-  wideRow: { flexDirection: "row", gap: 20, alignItems: "flex-start", marginTop: 4 },
-  narrowGap: { gap: 16, marginTop: 4 },
+  wideRow: { flexDirection: "row", gap: 20, alignItems: "flex-start", marginTop: 16 },
+  narrowGap: { gap: 16, marginTop: 16 },
   wideCol: { flex: 1 },
   detailCard: {
     borderRadius: 14,
@@ -306,8 +306,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  actions: { gap: 10, marginTop: 8 },
-  actionsWide: { flexDirection: "row", gap: 12, marginTop: 8 },
+  actions: { gap: 10, marginTop: 16 },
+  actionsWide: { flexDirection: "row", gap: 12, marginTop: 16 },
   secondaryBtn: {
     flexDirection: "row",
     alignItems: "center",

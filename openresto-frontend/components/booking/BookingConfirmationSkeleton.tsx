@@ -71,10 +71,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.05)",
     padding: 24,
     alignItems: "center",
-    marginBottom: 20,
   },
-  wideRow: { flexDirection: "row", gap: 20, marginTop: 4 },
-  narrowGap: { gap: 16, marginTop: 4 },
+  wideRow: { flexDirection: "row", gap: 20, marginTop: 16 },
+  narrowGap: { gap: 16, marginTop: 16 },
   wideCol: { flex: 1 },
   detailCard: {
     borderRadius: 14,
@@ -82,6 +81,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.05)",
     overflow: "hidden",
   },
-  actions: { gap: 10, marginTop: 24 },
-  actionsWide: { flexDirection: "row", gap: 12, marginTop: 24, justifyContent: "center" },
+  actions: { gap: 10, marginTop: 16 },
+  actionsWide: { flexDirection: "row", gap: 12, marginTop: 16, justifyContent: "center" },
 });
