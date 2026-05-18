@@ -8,7 +8,7 @@ namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminController(AdminService adminService, IEmailService emailService) : ControllerBase
 {
     public enum bookingStatus { active, cancelled, all, past, upcoming }
