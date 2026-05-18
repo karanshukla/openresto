@@ -1,4 +1,4 @@
-import { View, StyleSheet, Pressable, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Platform, TextInput, ActivityIndicator } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
@@ -12,6 +12,7 @@ import { hexToRgba } from "@/utils/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
+import { adminLookupBookings } from "@/api/admin";
 
 const NAV_ITEMS = [
   {
@@ -45,12 +46,41 @@ export default function AdminSidebar() {
   const PRIMARY = brand.primaryColor || COLORS.primary;
   const insets = useSafeAreaInsets();
 
+  const [lookupQuery, setLookupQuery] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupStatus, setLookupStatus] = useState<"idle" | "not_found" | "multiple">("idle");
+
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
   const activeBg = isDark ? hexToRgba(PRIMARY, 0.18) : hexToRgba(PRIMARY, 0.09);
 
   useEffect(() => {
     fetchRestaurants().then((data) => setLocationCount(data.length));
   }, []);
+
+  const handleLookup = async () => {
+    const q = lookupQuery.trim();
+    if (!q) return;
+    setLookupLoading(true);
+    setLookupStatus("idle");
+    try {
+      const results = await adminLookupBookings(q);
+      if (results.length === 0) {
+        setLookupStatus("not_found");
+      } else if (results.length === 1) {
+        setLookupQuery("");
+        router.push(`/(admin)/bookings/${results[0].id}`);
+      } else {
+        setLookupStatus("multiple");
+        const isEmail = q.includes("@");
+        router.push({
+          pathname: "/(admin)/bookings",
+          params: isEmail ? { email: q } : { bookingRef: q },
+        });
+      }
+    } finally {
+      setLookupLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -132,13 +162,45 @@ export default function AdminSidebar() {
       <View style={styles.spacer} />
 
       <View style={styles.ctaWrapper}>
-        <Pressable
-          style={[styles.ctaBtn, { backgroundColor: PRIMARY }]}
-          onPress={() => router.push({ pathname: "/(admin)/bookings", params: { create: "1" } })}
-        >
-          <Ionicons name="add-circle-outline" size={16} color="#fff" />
-          <ThemedText style={styles.ctaBtnText}>New Booking</ThemedText>
-        </Pressable>
+        <ThemedText style={[styles.lookupLabel, { color: colors.muted }]}>
+          Lookup Booking
+        </ThemedText>
+        <View style={[styles.lookupRow, { borderColor: colors.border, backgroundColor: colors.input ?? (isDark ? "#1e1e1e" : "#f5f5f5") }]}>
+          <TextInput
+            style={[styles.lookupInput, { color: colors.text }]}
+            placeholder="Email or reference…"
+            placeholderTextColor={colors.muted}
+            value={lookupQuery}
+            onChangeText={(t) => {
+              setLookupQuery(t);
+              if (lookupStatus !== "idle") setLookupStatus("idle");
+            }}
+            autoCapitalize="none"
+            returnKeyType="search"
+            onSubmitEditing={handleLookup}
+          />
+          <Pressable
+            onPress={handleLookup}
+            disabled={lookupLoading || !lookupQuery.trim()}
+            style={[styles.lookupBtn, { backgroundColor: PRIMARY }, (!lookupQuery.trim() || lookupLoading) && { opacity: 0.5 }]}
+          >
+            {lookupLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="search-outline" size={14} color="#fff" />
+            )}
+          </Pressable>
+        </View>
+        {lookupStatus === "not_found" && (
+          <ThemedText style={[styles.lookupHint, { color: COLORS.error }]}>
+            No booking found.
+          </ThemedText>
+        )}
+        {lookupStatus === "multiple" && (
+          <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
+            Showing all matches…
+          </ThemedText>
+        )}
       </View>
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -259,19 +321,36 @@ const styles = StyleSheet.create({
   ctaWrapper: {
     paddingHorizontal: 12,
     paddingBottom: 12,
+    gap: 6,
   },
-  ctaBtn: {
+  lookupLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    paddingLeft: 2,
+  },
+  lookupRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
     borderRadius: 8,
+    borderWidth: 1,
+    overflow: "hidden",
   },
-  ctaBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
+  lookupInput: {
+    flex: 1,
+    height: 36,
+    paddingHorizontal: 10,
+    fontSize: 13,
+  },
+  lookupBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lookupHint: {
+    fontSize: 11,
+    paddingLeft: 2,
   },
   footer: {
     paddingTop: 4,

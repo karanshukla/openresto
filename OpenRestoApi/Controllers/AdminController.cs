@@ -24,11 +24,13 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         [FromQuery] int? restaurantId,
         [FromQuery] DateTime? date,
         [FromQuery] bookingStatus status = bookingStatus.active,
-        [FromQuery] bool cancelled = false)
+        [FromQuery] bool cancelled = false,
+        [FromQuery] string? email = null,
+        [FromQuery] string? bookingRef = null)
     {
         //this is business logic that should likely belong in the service but its OK for now
         string effectiveStatus = cancelled ? nameof(bookingStatus.cancelled) : status.ToString();
-        return Ok(await _adminService.GetBookingsAsync(restaurantId, date, effectiveStatus));
+        return Ok(await _adminService.GetBookingsAsync(restaurantId, date, effectiveStatus, email, bookingRef));
     }
 
     [HttpGet("bookings/{id}")]

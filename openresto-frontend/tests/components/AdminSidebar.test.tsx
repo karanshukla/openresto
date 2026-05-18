@@ -20,7 +20,7 @@ jest.mock("expo-router", () => {
   return {
     Link,
     usePathname: jest.fn().mockReturnValue("/dashboard"),
-    useRouter: () => ({ replace: jest.fn() }),
+    useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
   };
 });
 
@@ -30,6 +30,10 @@ jest.mock("@expo/vector-icons", () => ({
 
 jest.mock("@/api/auth", () => ({
   logout: jest.fn().mockResolvedValue(true),
+}));
+
+jest.mock("@/api/admin", () => ({
+  adminLookupBookings: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock("@/context/BrandContext", () => ({
@@ -69,6 +73,14 @@ describe("AdminSidebar", () => {
       expect(screen.getByText("Bookings")).toBeTruthy();
       expect(screen.getByText("Settings")).toBeTruthy();
       expect(screen.getByText("Back to site")).toBeTruthy();
+    });
+  });
+
+  it("renders the lookup booking widget", async () => {
+    renderWithProviders(<AdminSidebar />);
+    await waitFor(() => {
+      expect(screen.getByText("Lookup Booking")).toBeTruthy();
+      expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy();
     });
   });
 

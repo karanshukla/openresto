@@ -119,13 +119,17 @@ export type BookingStatusFilter = "active" | "past" | "cancelled" | "all";
 export async function getAdminBookings(
   restaurantId?: number,
   date?: string,
-  status: BookingStatusFilter = "active"
+  status: BookingStatusFilter = "active",
+  email?: string,
+  bookingRef?: string
 ): Promise<BookingDetailDto[]> {
   try {
     const params = new URLSearchParams();
     if (restaurantId != null) params.set("restaurantId", String(restaurantId));
     if (date) params.set("date", date);
     if (status !== "active") params.set("status", status);
+    if (email) params.set("email", email);
+    if (bookingRef) params.set("bookingRef", bookingRef);
     const query = params.toString() ? `?${params}` : "";
     const res = await get(`/admin/bookings${query}`);
     if (!res.ok) throw new Error("Failed to fetch admin bookings");
@@ -134,6 +138,17 @@ export async function getAdminBookings(
     console.error("getAdminBookings error:", err);
     return [];
   }
+}
+
+export async function adminLookupBookings(query: string): Promise<BookingDetailDto[]> {
+  const isEmail = query.includes("@");
+  return getAdminBookings(
+    undefined,
+    undefined,
+    "all",
+    isEmail ? query : undefined,
+    isEmail ? undefined : query
+  );
 }
 
 export async function getAdminBooking(id: number): Promise<BookingDetailDto | null> {
