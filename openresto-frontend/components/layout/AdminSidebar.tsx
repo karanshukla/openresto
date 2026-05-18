@@ -215,7 +215,7 @@ export default function AdminSidebar() {
         )}
         {lookupStatus === "idle" && (
           <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
-            Search by booking ref or email address
+            Partial matching search is supported
           </ThemedText>
         )}
       </View>

@@ -162,13 +162,13 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         if (!string.IsNullOrWhiteSpace(email))
         {
             string normalizedEmail = email.Trim().ToLowerInvariant();
-            q = q.Where(b => b.CustomerEmail != null && b.CustomerEmail.ToLower().Contains(normalizedEmail));
+            q = q.Where(b => b.CustomerEmail != null && b.CustomerEmail.ToLower().StartsWith(normalizedEmail));
         }
 
         if (!string.IsNullOrWhiteSpace(bookingRef))
         {
             string normalizedRef = bookingRef.Trim().ToLowerInvariant();
-            q = q.Where(b => b.BookingRef != null && b.BookingRef.ToLower().Contains(normalizedRef));
+            q = q.Where(b => b.BookingRef != null && b.BookingRef.ToLower().StartsWith(normalizedRef));
         }
 
         return await q
