@@ -139,6 +139,7 @@ export const BUTTON_SIZES = {
 };
 
 export const BORDER_RADIUS = {
+  xs: 4,
   sm: 6,
   md: 8,
   lg: 10,
