@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e \"require\\('expo-modules-core'\\)\")"
+      "Bash(node -e \"require\\('expo-modules-core'\\)\")",
+      "Bash(node -e \"const t = require\\('./node_modules/expo/config-types'\\); console.log\\(Object.keys\\(t\\)\\)\")"
     ]
   }
 }

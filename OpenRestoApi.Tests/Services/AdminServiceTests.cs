@@ -204,8 +204,8 @@ public class AdminServiceTests : IDisposable
         AdminService svc = CreateService();
         SeedBase(1);
         DateTime nowUtc = DateTime.UtcNow;
-        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(3), BookingRef = "LATE" });
-        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(30), BookingRef = "EARLY" });
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddHours(14), BookingRef = "LATE" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddHours(10), BookingRef = "EARLY" });
         await _db.SaveChangesAsync();
 
         AdminOverviewDto overview = await svc.GetOverviewAsync();
