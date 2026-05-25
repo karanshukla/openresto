@@ -346,10 +346,7 @@ export default function RestaurantCard({
             </ThemedText>
           </View>
           <Pressable
-            style={({ pressed }) => [
-              styles.viewBtn,
-              pressed && { backgroundColor: surface2 },
-            ]}
+            style={({ pressed }) => [styles.viewBtn, pressed && { backgroundColor: surface2 }]}
             onPress={() => router.push(`/(user)/book?restaurantId=${restaurant.id}`)}
           >
             <ThemedText style={[styles.viewBtnText, { color: primaryColor }]}>
