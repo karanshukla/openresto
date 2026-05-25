@@ -380,6 +380,24 @@ export async function adminGetSections(
   }
 }
 
+export interface EmailFailureDto {
+  id: number;
+  bookingRef: string | null;
+  recipientEmail: string;
+  errorMessage: string;
+  attemptedAt: string;
+}
+
+export async function getEmailFailures(): Promise<EmailFailureDto[]> {
+  try {
+    const res = await get("/admin/email-settings/failures");
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 export interface EmailSettingsDto {
   host: string;
   port: number;

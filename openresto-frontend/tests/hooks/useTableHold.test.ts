@@ -168,7 +168,7 @@ describe("useTableHold", () => {
     expect(result.current.hold).toBeNull();
   });
 
-  it("re-triggers hold when date changes", async () => {
+  it("re-triggers hold when date changes, passing currentHoldId for atomic replace", async () => {
     mockCreateHold.mockResolvedValueOnce({
       holdId: "hold-date-1",
       expiresAt: new Date(Date.now() + 120_000).toISOString(),
@@ -197,16 +197,51 @@ describe("useTableHold", () => {
 
     rerender(newProps);
 
-    // It should go to pending immediately
     expect(result.current.holdStatus).toBe("pending");
 
     await act(async () => {
       jest.advanceTimersByTime(2000);
     });
 
-    // Should have released the old one and created a new one
-    expect(mockReleaseHold).toHaveBeenCalledWith("hold-date-1");
+    // Backend handles the release atomically — no explicit releaseHold call on success
+    expect(mockReleaseHold).not.toHaveBeenCalled();
+    // currentHoldId forwarded so backend can replace atomically
     expect(mockCreateHold).toHaveBeenCalledTimes(2);
+    expect(mockCreateHold).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ currentHoldId: "hold-date-1" })
+    );
     expect(result.current.hold?.holdId).toBe("hold-date-2");
+  });
+
+  it("releases previous hold explicitly when createHold fails", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      holdId: "hold-fail-1",
+      expiresAt: new Date(Date.now() + 120_000).toISOString(),
+      secondsRemaining: 120,
+    });
+
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100 },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+
+    // Second attempt fails — table taken by someone else
+    mockCreateHold.mockResolvedValueOnce(null);
+    rerender({ ...defaultParams, tableId: 100, date: "2026-06-16" });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    // Previous hold must be explicitly released since backend didn't consume it
+    expect(mockReleaseHold).toHaveBeenCalledWith("hold-fail-1");
+    expect(result.current.holdStatus).toBe("unavailable");
+    expect(result.current.hold).toBeNull();
   });
 });

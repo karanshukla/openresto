@@ -144,6 +144,34 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task PlaceHold_WithCurrentHoldId_AtomicallyReplaces()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        string date1 = DateTime.UtcNow.AddDays(110).ToString("yyyy-MM-ddT12:00:00");
+        string date2 = DateTime.UtcNow.AddDays(111).ToString("yyyy-MM-ddT12:00:00");
+
+        // Place first hold
+        HttpResponseMessage first = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId, sectionId, tableId, date = date1
+        });
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        JsonElement firstBody = await first.Content.ReadFromJsonAsync<JsonElement>();
+        string? firstHoldId = firstBody.GetProperty("holdId").GetString();
+
+        // Replace it atomically with a new hold on a different date
+        HttpResponseMessage second = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId, sectionId, tableId, date = date2, currentHoldId = firstHoldId
+        });
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        JsonElement secondBody = await second.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(firstHoldId, secondBody.GetProperty("holdId").GetString());
+    }
+
+    [Fact]
     public async Task PlaceHold_InvalidModel_ReturnsBadRequest()
     {
         HttpClient client = _factory.CreateClient();

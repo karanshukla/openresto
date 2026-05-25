@@ -24,6 +24,7 @@ public class BrandController(BrandService brandService) : ControllerBase
             PrimaryColor = brand.PrimaryColor ?? "#0a7ea4",
             AccentColor = brand.AccentColor,
             HeaderImageUrl = brand.HeaderImageUrl,
+            WebsiteUrl = _brand.GetWebsiteUrl(),
         });
     }
 
@@ -57,4 +58,5 @@ public class BrandResponse
     public string PrimaryColor { get; set; } = "#0a7ea4";
     public string? AccentColor { get; set; }
     public string? HeaderImageUrl { get; set; }
+    public string? WebsiteUrl { get; set; }
 }

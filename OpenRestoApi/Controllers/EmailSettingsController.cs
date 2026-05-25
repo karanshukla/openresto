@@ -1,16 +1,19 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/admin/email-settings")]
 [Authorize]
-public class EmailSettingsController(EmailSettingsService emailSettings) : ControllerBase
+public class EmailSettingsController(EmailSettingsService emailSettings, AppDbContext db) : ControllerBase
 {
     private readonly EmailSettingsService _emailSettings = emailSettings;
+    private readonly AppDbContext _db = db;
 
     [HttpGet]
     public async Task<IActionResult> Get()
@@ -44,6 +47,24 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
         return Ok(new { message = "Email settings saved." });
     }
 
+    [HttpGet("failures")]
+    public async Task<IActionResult> GetFailures()
+    {
+        var failures = await _db.EmailFailures
+            .OrderByDescending(f => f.AttemptedAt)
+            .Take(50)
+            .Select(f => new EmailFailureResponse
+            {
+                Id = f.Id,
+                BookingRef = f.BookingRef,
+                RecipientEmail = f.RecipientEmail,
+                ErrorMessage = f.ErrorMessage,
+                AttemptedAt = f.AttemptedAt,
+            })
+            .ToListAsync();
+        return Ok(failures);
+    }
+
     [HttpPost("test")]
     public async Task<IActionResult> Test()
     {
@@ -71,6 +92,15 @@ public class EmailSettingsRequest
     public string? FromName { get; set; }
     public string? FromEmail { get; set; }
     public bool SendBookingConfirmations { get; set; }
+}
+
+public class EmailFailureResponse
+{
+    public int Id { get; set; }
+    public string? BookingRef { get; set; }
+    public string RecipientEmail { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+    public DateTime AttemptedAt { get; set; }
 }
 
 public class EmailSettingsResponse

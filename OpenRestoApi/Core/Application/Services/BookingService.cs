@@ -3,6 +3,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
@@ -13,8 +14,10 @@ public class BookingService(
     IRestaurantRepository restaurantRepository,
     IHoldService holdService,
     BookingMapper mapper,
+    BrandService brandService,
     EmailSettingsService? emailSettingsService = null,
-    IEmailService? emailService = null)
+    IEmailService? emailService = null,
+    AppDbContext? db = null)
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
@@ -22,8 +25,10 @@ public class BookingService(
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IHoldService _holdService = holdService;
     private readonly BookingMapper _mapper = mapper;
+    private readonly BrandService _brandService = brandService;
     private readonly EmailSettingsService? _emailSettingsService = emailSettingsService;
     private readonly IEmailService? _emailService = emailService;
+    private readonly AppDbContext? _db = db;
 
     /// <summary>
     /// Creates a booking after validating:
@@ -116,14 +121,27 @@ public class BookingService(
                 var settings = await _emailSettingsService.GetAsync();
                 if (settings?.SendBookingConfirmations == true)
                 {
+                    var brand = await _brandService.GetAsync();
+                    string websiteUrl = _brandService.GetWebsiteUrl();
                     string subject = $"Booking confirmed – {restaurant.Name}";
-                    string body = BuildConfirmationEmail(newBooking, restaurant);
+                    string body = BuildConfirmationEmail(newBooking, restaurant, brand, websiteUrl);
                     await _emailService.SendEmailAsync(newBooking.CustomerEmail, subject, body);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[BookingService] Confirmation email failed for ref {newBooking.BookingRef}: {ex.Message}");
+                if (_db != null)
+                {
+                    _db.EmailFailures.Add(new EmailFailure
+                    {
+                        BookingRef = newBooking.BookingRef,
+                        RecipientEmail = newBooking.CustomerEmail,
+                        ErrorMessage = ex.Message,
+                        AttemptedAt = DateTime.UtcNow,
+                    });
+                    await _db.SaveChangesAsync();
+                }
             }
         }
 
@@ -181,7 +199,7 @@ public class BookingService(
         await _bookingRepository.DeleteAsync(id);
     }
 
-    private static string BuildConfirmationEmail(Booking booking, Restaurant restaurant)
+    private static string BuildConfirmationEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl)
     {
         TimeZoneInfo tz;
         try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
@@ -191,47 +209,104 @@ public class BookingService(
         string dateStr = localDate.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture);
         string timeStr = localDate.ToString("h:mm tt", CultureInfo.InvariantCulture);
 
-        string specialReqs = string.IsNullOrWhiteSpace(booking.SpecialRequests)
+        string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
+        string appName = brand.AppName ?? "Open Resto";
+        string cleanWebsiteUrl = websiteUrl.TrimEnd('/');
+        string lookupUrl = $"{cleanWebsiteUrl}/lookup";
+
+        string headerImageHtml = string.IsNullOrEmpty(brand.HeaderImageUrl)
             ? ""
-            : $"<tr><td style='padding:8px 0;color:#6b7280;font-size:14px;'>Special requests</td><td style='padding:8px 0;font-size:14px;'>{System.Net.WebUtility.HtmlEncode(booking.SpecialRequests)}</td></tr>";
+            : $"<img src='{brand.HeaderImageUrl}' alt='{appName}' style='max-height:48px;margin-bottom:16px;'>";
+
+        string directionsHtml = string.IsNullOrWhiteSpace(restaurant.Address)
+            ? ""
+            : $"""
+               <div style='margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0;'>
+                 <p style='margin:0 0 8px;font-size:14px;color:#6b7280;'>Location</p>
+                 <p style='margin:0 0 12px;font-size:15px;color:#111827;'>{System.Net.WebUtility.HtmlEncode(restaurant.Address)}</p>
+                 <a href='https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString(restaurant.Address)}' 
+                    style='color:{primaryColor};text-decoration:none;font-size:14px;font-weight:600;'>Get directions &rarr;</a>
+               </div>
+               """;
+
+        string specialReqsHtml = string.IsNullOrWhiteSpace(booking.SpecialRequests)
+            ? ""
+            : $"""
+               <tr>
+                 <td style='padding:12px 0;color:#6b7280;font-size:14px;vertical-align:top;'>Special requests</td>
+                 <td style='padding:12px 0;font-size:14px;color:#111827;'>{System.Net.WebUtility.HtmlEncode(booking.SpecialRequests)}</td>
+               </tr>
+               """;
 
         return $"""
             <!DOCTYPE html>
             <html>
-            <body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 0;">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin:0;padding:0;background-color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:32px 16px;">
                 <tr><td align="center">
-                  <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:40px;border:1px solid #e5e7eb;">
-                    <tr><td style="padding-bottom:24px;border-bottom:1px solid #e5e7eb;">
-                      <h1 style="margin:0;font-size:22px;color:#111827;">{System.Net.WebUtility.HtmlEncode(restaurant.Name)}</h1>
-                      <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">Booking confirmation</p>
+                  <table width="100%" max-width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
+                    <!-- Header -->
+                    <tr><td style="padding:40px 40px 32px;text-align:center;background-color:#ffffff;">
+                      {headerImageHtml}
+                      <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">{System.Net.WebUtility.HtmlEncode(restaurant.Name)}</h1>
+                      <p style="margin:8px 0 0;font-size:16px;color:#6b7280;">Booking Confirmed</p>
                     </td></tr>
-                    <tr><td style="padding:24px 0 16px;">
-                      <p style="margin:0;font-size:16px;color:#111827;">Your booking is confirmed!</p>
+
+                    <!-- Confirmation Hero -->
+                    <tr><td style="padding:0 40px;">
+                      <div style="background-color:{primaryColor}10;border-radius:12px;padding:24px;text-align:center;border:1px solid {primaryColor}20;">
+                        <p style="margin:0;font-size:18px;font-weight:600;color:{primaryColor};">You're all set!</p>
+                        <p style="margin:4px 0 0;font-size:14px;color:{primaryColor};opacity:0.8;">We're looking forward to seeing you.</p>
+                      </div>
                     </td></tr>
-                    <tr><td>
+
+                    <!-- Details -->
+                    <tr><td style="padding:32px 40px;">
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Reference</td>
-                          <td style="padding:8px 0;font-size:14px;font-weight:600;letter-spacing:0.05em;">{System.Net.WebUtility.HtmlEncode(booking.BookingRef ?? "")}</td>
+                          <td style="padding:12px 0;color:#6b7280;font-size:14px;width:100px;">Reference</td>
+                          <td style="padding:12px 0;font-size:14px;font-weight:700;color:#111827;letter-spacing:0.05em;">{System.Net.WebUtility.HtmlEncode(booking.BookingRef ?? "")}</td>
                         </tr>
                         <tr>
-                          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Date</td>
-                          <td style="padding:8px 0;font-size:14px;">{dateStr}</td>
+                          <td style="padding:12px 0;color:#6b7280;font-size:14px;">Date</td>
+                          <td style="padding:12px 0;font-size:14px;color:#111827;">{dateStr}</td>
                         </tr>
                         <tr>
-                          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Time</td>
-                          <td style="padding:8px 0;font-size:14px;">{timeStr}</td>
+                          <td style="padding:12px 0;color:#6b7280;font-size:14px;">Time</td>
+                          <td style="padding:12px 0;font-size:14px;color:#111827;">{timeStr}</td>
                         </tr>
                         <tr>
-                          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Guests</td>
-                          <td style="padding:8px 0;font-size:14px;">{booking.Seats}</td>
+                          <td style="padding:12px 0;color:#6b7280;font-size:14px;">Guests</td>
+                          <td style="padding:12px 0;font-size:14px;color:#111827;">{booking.Seats} {(booking.Seats == 1 ? "guest" : "guests")}</td>
                         </tr>
-                        {specialReqs}
+                        {specialReqsHtml}
                       </table>
+
+                      {directionsHtml}
                     </td></tr>
-                    <tr><td style="padding-top:24px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;">
-                      To cancel or manage your booking, visit the restaurant's booking page and use your reference number.
+
+                    <!-- CTA -->
+                    <tr><td style="padding:0 40px 32px;text-align:center;">
+                      <a href="{lookupUrl}" style="display:inline-block;background-color:{primaryColor};color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">Manage your booking</a>
+                      <p style="margin:16px 0 0;font-size:13px;color:#9ca3af;">
+                        Or visit: <a href="{cleanWebsiteUrl}" style="color:{primaryColor};text-decoration:none;">{cleanWebsiteUrl.Replace("http://", "").Replace("https://", "")}</a>
+                      </p>
+                    </td></tr>
+
+                    <!-- Footer Info -->
+                    <tr><td style="padding:0 40px 40px;">
+                      <div style="padding-top:24px;border-top:1px solid #f0f0f0;text-align:center;">
+                        <p style="margin:0 0 8px;font-size:14px;color:#6b7280;line-height:1.5;">
+                          Need to change or cancel your reservation?
+                        </p>
+                        <p style="margin:0;font-size:12px;color:#9ca3af;">
+                          &copy; {DateTime.UtcNow.Year} {appName}
+                        </p>
+                      </div>
                     </td></tr>
                   </table>
                 </td></tr>

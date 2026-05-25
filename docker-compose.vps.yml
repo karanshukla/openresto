@@ -17,6 +17,12 @@ services:
     volumes:
       - ./data:/data
       - media_data:/app/wwwroot/media
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: always
 
   frontend:
@@ -55,6 +61,8 @@ services:
       - ${HOST_SSL_KEY_PATH}:/etc/nginx/ssl/server.key:ro
       - media_data:/usr/share/nginx/html/media:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     restart: always

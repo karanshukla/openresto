@@ -86,6 +86,52 @@ public class HoldServiceTests
         Assert.NotNull(result);
     }
 
+    [Fact]
+    public void PlaceHold_WithCurrentHoldId_AtomicallyReplaces()
+    {
+        HoldResult first = _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate)!;
+
+        // Same table, overlapping time — passes currentHoldId so backend skips it
+        HoldResult? second = _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, currentHoldId: first.HoldId);
+
+        Assert.NotNull(second);
+        Assert.NotEqual(first.HoldId, second!.HoldId);
+        // Old hold must be gone
+        Assert.Null(_svc.GetHold(first.HoldId));
+    }
+
+    [Fact]
+    public void PlaceHold_WithCurrentHoldId_StillRejectsIfHeldByOther()
+    {
+        // Someone else holds the table
+        _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate);
+
+        // A different caller tries to replace with an unrelated currentHoldId
+        HoldResult? attempt = _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, currentHoldId: "unrelated-id");
+
+        Assert.Null(attempt);
+    }
+
+    [Fact]
+    public void PlaceHold_WithCurrentHoldId_DoesNotLeakOldHoldOnConflict()
+    {
+        HoldResult first = _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate)!;
+        // Second user grabs same slot
+        _svc.PlaceHold(_restaurantId + 1, _tableId + 1, _sectionId, _bookingDate.AddDays(1));
+
+        // First user tries to swap time (same table, nearby time held by someone else)
+        DateTime nearby = _bookingDate.AddMinutes(30);
+        int otherTable = _tableId + 10;
+        _svc.PlaceHold(_restaurantId, otherTable, _sectionId, nearby);
+
+        // First user tries to move to that nearby slot — should be rejected, original hold untouched
+        HoldResult? swap = _svc.PlaceHold(_restaurantId, otherTable, _sectionId, nearby, currentHoldId: first.HoldId);
+
+        Assert.Null(swap);
+        // first.HoldId must NOT have been removed (atomic: only remove on success)
+        Assert.NotNull(_svc.GetHold(first.HoldId));
+    }
+
     // ── ReleaseHold ──────────────────────────────────────────────────────────
 
     [Fact]

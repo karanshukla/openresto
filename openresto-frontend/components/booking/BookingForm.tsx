@@ -14,6 +14,7 @@ import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import { getNowInTimezone, formatCurrentTimeInTimezone } from "@/utils/date";
 
 const isWeb = Platform.OS === "web";
 
@@ -29,26 +30,26 @@ export interface BookingFormData {
 
 // ── Auto-suggestion helpers ──────────────────────────────────────────────────
 
-function suggestDate(closeHour: number): string {
-  const now = new Date();
-  const latestStart = new Date(now);
-  latestStart.setHours(closeHour - 1, 45, 0, 0);
-  if (now < latestStart) {
-    return now.toISOString().split("T")[0];
-  }
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  return tomorrow.toISOString().split("T")[0];
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().split("T")[0];
 }
 
-function suggestTime(openTime: string, closeTime: string): string {
-  const now = new Date();
-  let h = now.getHours();
-  const min = now.getMinutes();
-  const m = min < 15 ? 15 : min < 30 ? 30 : min < 45 ? 45 : 0;
-  if (m === 0) {
-    h += 1;
+function suggestDate(closeTime: string, timezone: string): string {
+  const { dateStr, hours, minutes } = getNowInTimezone(timezone);
+  const [closeH] = closeTime.split(":").map(Number);
+  const latestStartMinutes = (closeH - 1) * 60 + 45;
+  if (hours * 60 + minutes < latestStartMinutes) {
+    return dateStr;
   }
+  return addDays(dateStr, 1);
+}
+
+function suggestTime(openTime: string, closeTime: string, timezone: string): string {
+  const { hours, minutes } = getNowInTimezone(timezone);
+  let h = hours;
+  const m = minutes < 15 ? 15 : minutes < 30 ? 30 : minutes < 45 ? 45 : 0;
+  if (m === 0) h += 1;
 
   const [openH] = openTime.split(":").map(Number);
   const [closeH, closeM] = closeTime.split(":").map(Number);
@@ -89,14 +90,27 @@ export default function BookingForm({
 
   const openTime = restaurant.openTime ?? "09:00";
   const closeTime = restaurant.closeTime ?? "22:00";
-  const [closeH] = closeTime.split(":").map(Number);
+  const timezone = restaurant.timezone || "UTC";
 
   const [tableId, setTableId] = useState<number | undefined>();
-  const [date, setDate] = useState<string>(() => suggestDate(closeH));
-  const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(openTime, closeTime));
+  const [date, setDate] = useState<string>(() => suggestDate(closeTime, timezone));
+  const [time, setTime] = useState<string>(
+    () => initialTime ?? suggestTime(openTime, closeTime, timezone)
+  );
 
   const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  const [restaurantCurrentTime, setRestaurantCurrentTime] = useState(() =>
+    formatCurrentTimeInTimezone(timezone)
+  );
+  useEffect(() => {
+    const id = setInterval(
+      () => setRestaurantCurrentTime(formatCurrentTimeInTimezone(timezone)),
+      60_000
+    );
+    return () => clearInterval(id);
+  }, [timezone]);
 
   const currentSlot = availabilitySlots.find((s) => s.time === time);
   const availableTableIds = currentSlot?.availableTableIds ?? [];
@@ -294,14 +308,9 @@ export default function BookingForm({
         </View>
       </View>
 
-      {restaurant.timezone && restaurant.timezone !== "UTC" && (
+      {restaurant.timezone && (
         <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
-          All times are in {restaurant.timezone.replace(/_/g, " ")} timezone
-        </ThemedText>
-      )}
-      {restaurant.timezone === "UTC" && (
-        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
-          All times are in UTC
+          All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
         </ThemedText>
       )}
 

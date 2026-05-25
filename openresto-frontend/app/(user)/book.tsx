@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Image, Platform, ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
@@ -29,6 +29,7 @@ export default function BookScreen() {
   const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = getThemeColors(isDark).muted;
@@ -104,16 +105,12 @@ export default function BookScreen() {
     <ThemedView style={styles.root}>
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
-          {restaurant.imageUrl && Platform.OS === "web" && (
-            <View
-              style={[
-                styles.imageBanner,
-                {
-                  backgroundImage: `url(${restaurant.imageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                } as object,
-              ]}
+          {restaurant.imageUrl && !imageError && (
+            <Image
+              source={{ uri: restaurant.imageUrl }}
+              style={styles.imageBanner}
+              resizeMode="cover"
+              onError={() => setImageError(true)}
             />
           )}
           <ThemedText type="title" style={styles.title}>

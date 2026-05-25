@@ -204,19 +204,6 @@ export function RestaurantInfoForm({
             Name, address, hours and timezone for this location.
           </ThemedText>
         </View>
-        <View
-          style={{
-            backgroundColor: surface2,
-            borderWidth: 1,
-            borderColor,
-            borderRadius: 999,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            flexShrink: 0,
-          }}
-        >
-          <ThemedText style={{ fontSize: 12, color: mutedColor }}>Auto-saves drafts</ThemedText>
-        </View>
       </View>
 
       {/* Form */}

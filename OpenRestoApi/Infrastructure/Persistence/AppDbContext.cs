@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EmailSettings> EmailSettings { get; set; } = null!;
     public DbSet<BrandSettings> BrandSettings { get; set; } = null!;
     public DbSet<RestaurantHighlight> Highlights { get; set; } = null!;
+    public DbSet<EmailFailure> EmailFailures { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

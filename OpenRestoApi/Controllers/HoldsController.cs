@@ -74,12 +74,13 @@ public class HoldsController(
             return Conflict(new MessageResponse { Message = "This table is already booked for that time." });
         }
 
-        // 6. Place hold
+        // 6. Place hold (atomically replacing CurrentHoldId if provided)
         HoldResult? result = _holdService.PlaceHold(
             request.RestaurantId,
             request.TableId,
             request.SectionId,
-            bookingDate);
+            bookingDate,
+            request.CurrentHoldId);
 
         if (result == null)
         {

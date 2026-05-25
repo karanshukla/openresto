@@ -19,16 +19,22 @@ public class HoldService(ISystemClock clock) : IHoldService
 
     private readonly object _placeLock = new();
 
-    public HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate)
+    public HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate, string? currentHoldId = null)
     {
         lock (_placeLock)
         {
             Cleanup();
 
-            // Reject if an active hold already exists for this table that overlaps with the requested time
-            if (IsTableHeld(tableId, bookingDate))
+            // Pessimistic: assume held; only proceed if the sole blocker is the caller's own current hold
+            if (IsTableHeld(tableId, bookingDate, excludeHoldId: currentHoldId))
             {
                 return null;
+            }
+
+            // Atomically release the caller's previous hold before placing the new one
+            if (currentHoldId != null)
+            {
+                _holds.TryRemove(currentHoldId, out _);
             }
 
             string holdId = Guid.NewGuid().ToString("N");

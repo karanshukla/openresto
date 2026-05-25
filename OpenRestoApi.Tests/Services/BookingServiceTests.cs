@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -30,6 +31,7 @@ public class BookingServiceTests
         IEmailService? emailService = null)
     {
         holdService ??= new Mock<IHoldService>().Object;
+        var config = new Mock<IConfiguration>();
         return new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
@@ -37,6 +39,7 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdService,
             new BookingMapper(),
+            new BrandService(db, config.Object),
             emailSettingsService,
             emailService);
     }

@@ -237,6 +237,15 @@ public static partial class DatabaseExtensions
                             ""SortOrder"" INTEGER NOT NULL DEFAULT 0
                         )");
 
+                    db.Database.ExecuteSqlRaw(@"
+                        CREATE TABLE IF NOT EXISTS ""EmailFailures"" (
+                            ""Id""             INTEGER NOT NULL CONSTRAINT ""PK_EmailFailures"" PRIMARY KEY AUTOINCREMENT,
+                            ""BookingRef""     TEXT,
+                            ""RecipientEmail"" TEXT    NOT NULL DEFAULT '',
+                            ""ErrorMessage""   TEXT    NOT NULL DEFAULT '',
+                            ""AttemptedAt""    TEXT    NOT NULL DEFAULT ''
+                        )");
+
                     DbSeeder.Seed(db);
 
                     if (!db.AdminCredentials.Any())

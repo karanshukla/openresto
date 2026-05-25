@@ -5,6 +5,7 @@ export interface HoldRequest {
   tableId: number;
   sectionId: number;
   date: string; // ISO 8601
+  currentHoldId?: string;
 }
 
 export interface HoldResponse {

@@ -7,6 +7,8 @@ public class PlaceHoldRequest
     public int SectionId { get; set; }
     /// <summary>Full ISO 8601 datetime of the intended booking.</summary>
     public DateTime Date { get; set; }
+    /// <summary>If the caller already holds this ID, the backend atomically replaces it.</summary>
+    public string? CurrentHoldId { get; set; }
 }
 
 public class HoldResponse

@@ -19,6 +19,7 @@ public sealed class SqlitePragmaInterceptor : DbConnectionInterceptor
         PRAGMA temp_store=MEMORY;
         PRAGMA cache_size=-65536;
         PRAGMA mmap_size=134217728;
+        PRAGMA wal_autocheckpoint=100;
         """;
 
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)

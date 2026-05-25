@@ -5,7 +5,13 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
-import { getEmailSettings, saveEmailSettings, testEmailConnection } from "@/api/admin";
+import {
+  getEmailSettings,
+  saveEmailSettings,
+  testEmailConnection,
+  getEmailFailures,
+  type EmailFailureDto,
+} from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
 import { styles } from "./settings.styles";
 
@@ -151,6 +157,7 @@ export function EmailSettingsCard({
   const [expanded, setExpanded] = useState(false);
   const [sendConfirmations, setSendConfirmations] = useState(false);
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
+  const [failures, setFailures] = useState<EmailFailureDto[]>([]);
 
   const brand = useBrand();
   const primaryColor = brand.primaryColor || COLORS.primary;
@@ -171,10 +178,10 @@ export function EmailSettingsCard({
       setIsConfigured(s.isConfigured);
       setSendConfirmations(s.sendBookingConfirmations ?? false);
       if (s.isConfigured) setTestState("ok");
-      // Detect provider from host
       const matched = PROVIDERS.find((p) => p.host && p.host === s.host);
       if (matched) setActiveProviderId(matched.id);
     });
+    getEmailFailures().then(setFailures);
   }, []);
 
   const handleSelectProvider = (p: (typeof PROVIDERS)[0]) => {
@@ -333,7 +340,10 @@ export function EmailSettingsCard({
                   }}
                 >
                   <ThemedText
-                    style={{ fontSize: 12, color: port === String(p) ? undefined : mutedColor }}
+                    style={{
+                      fontSize: 12,
+                      color: port === String(p) ? (isDark ? "#fff" : "#000") : mutedColor,
+                    }}
                   >
                     {p}
                   </ThemedText>
@@ -394,7 +404,7 @@ export function EmailSettingsCard({
               style={{
                 fontSize: 13,
                 fontWeight: !enableSsl ? "500" : "400",
-                color: !enableSsl ? undefined : mutedColor,
+                color: !enableSsl ? (isDark ? "#fff" : "#000") : mutedColor,
               }}
             >
               None
@@ -418,6 +428,7 @@ export function EmailSettingsCard({
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <View style={{ flex: 1 }}>
             <Input
+              key={showPassword ? "pw-visible" : "pw-hidden"}
               value={password}
               onChangeText={setPassword}
               placeholder="SMTP password or app token"
@@ -456,7 +467,7 @@ export function EmailSettingsCard({
     </View>
   );
 
-  // ── Right column: Status → Confirmations → Preview ─────────
+  // ── Right column: Status → Confirmations ──────────────────
   const rightColumn = (
     <View style={{ gap: 14 }}>
       <SubLabel mutedColor={mutedColor}>Status</SubLabel>
@@ -513,7 +524,6 @@ export function EmailSettingsCard({
             style={{
               fontSize: 13.5,
               fontWeight: "600",
-              color: testState === "ok" ? okColor : testState === "fail" ? dangerColor : undefined,
             }}
           >
             {testState === "idle" && "Not yet tested"}
@@ -663,119 +673,65 @@ export function EmailSettingsCard({
         </View>
       </View>
 
-      {/* Email preview */}
-      <View
-        style={{
-          borderWidth: 1,
-          borderRadius: 12,
-          borderColor,
-          overflow: "hidden",
-          backgroundColor: surface2,
-        }}
-      >
-        {/* Preview header */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderBottomWidth: 1,
-            borderBottomColor: borderColor,
-          }}
-        >
-          <ThemedText
-            style={{
-              fontSize: 11,
-              fontWeight: "600",
-              color: mutedColor,
-              letterSpacing: 0.7,
-              textTransform: "uppercase" as const,
-            }}
-          >
-            Preview
-          </ThemedText>
+      {/* Send failures */}
+      {failures.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <SubLabel mutedColor={mutedColor}>Send failures</SubLabel>
           <View
             style={{
-              backgroundColor: cardBg,
               borderWidth: 1,
-              borderColor,
-              borderRadius: 999,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
+              borderColor: dangerBorder,
+              borderRadius: 12,
+              overflow: "hidden",
+              backgroundColor: dangerSoft,
             }}
           >
-            <ThemedText style={{ fontSize: 11.5, color: mutedColor }}>
-              Booking confirmation
-            </ThemedText>
+            {failures.map((f, i) => {
+              const date = new Date(f.attemptedAt);
+              const dateStr = date.toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              return (
+                <View
+                  key={f.id}
+                  style={{
+                    padding: 12,
+                    paddingHorizontal: 14,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: dangerBorder,
+                    gap: 3,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Ionicons name="warning-outline" size={13} color={dangerColor} />
+                    <ThemedText
+                      style={{ fontSize: 12.5, fontWeight: "500", flex: 1 }}
+                      numberOfLines={1}
+                    >
+                      {f.recipientEmail}
+                    </ThemedText>
+                    <ThemedText style={{ fontSize: 11, color: mutedColor }}>{dateStr}</ThemedText>
+                  </View>
+                  {f.bookingRef && (
+                    <ThemedText style={{ fontSize: 11.5, color: mutedColor, paddingLeft: 19 }}>
+                      Ref: {f.bookingRef}
+                    </ThemedText>
+                  )}
+                  <ThemedText
+                    style={{ fontSize: 11.5, color: dangerColor, paddingLeft: 19 }}
+                    numberOfLines={2}
+                  >
+                    {f.errorMessage}
+                  </ThemedText>
+                </View>
+              );
+            })}
           </View>
         </View>
-
-        {/* Preview window */}
-        <View style={{ backgroundColor: cardBg, padding: 12, paddingHorizontal: 14 }}>
-          {[
-            {
-              key: "From",
-              val: `${fromName || "OpenResto"} <${fromEmail || "noreply@yoursite.com"}>`,
-            },
-            { key: "To", val: "guest@example.com" },
-            { key: "Subj", val: "You're booked at Pasta Place · Fri 24 May, 7:00 PM" },
-          ].map(({ key, val }, i, arr) => (
-            <View
-              key={key}
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                paddingVertical: 3,
-                borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                borderBottomColor: borderColor,
-                borderStyle: "dashed",
-              }}
-            >
-              <ThemedText
-                style={{
-                  fontSize: 10.5,
-                  color: mutedColor,
-                  width: 40,
-                  fontWeight: "500",
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase" as const,
-                  paddingTop: 2,
-                }}
-              >
-                {key}
-              </ThemedText>
-              <ThemedText style={{ fontSize: 12.5, flex: 1, color: mutedColor }} numberOfLines={1}>
-                {val}
-              </ThemedText>
-            </View>
-          ))}
-
-          {/* Body */}
-          <View style={{ paddingTop: 14, paddingBottom: 4 }}>
-            <ThemedText style={{ fontSize: 13, marginBottom: 6 }}>Hi Priya,</ThemedText>
-            <ThemedText
-              style={{ fontSize: 13, color: mutedColor, lineHeight: 20, marginBottom: 12 }}
-            >
-              Your table for 4 is confirmed. We'll see you on Friday at 7:00 PM.
-            </ThemedText>
-            <View
-              style={{
-                alignSelf: "flex-start",
-                backgroundColor: primaryColor,
-                borderRadius: 6,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-              }}
-            >
-              <ThemedText style={{ fontSize: 12, color: "#fff", fontWeight: "500" }}>
-                View booking
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-      </View>
+      )}
     </View>
   );
 

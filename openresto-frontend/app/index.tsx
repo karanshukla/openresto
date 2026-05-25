@@ -109,7 +109,8 @@ export default function HomeScreen() {
             <ThemedText
               style={[styles.heroSub, { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor }]}
             >
-              Pick a location, choose a time, and you're booked!
+              Scroll down to pick a location below, choose a time, enter your email address, and
+              you're booked!
             </ThemedText>
           </View>
 
@@ -154,19 +155,21 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.highlightIconBox,
-                      { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)` },
-                    ]}
-                  >
-                    <Ionicons
-                      name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                      size={16}
-                      color={primaryColor}
-                    />
+                  <View style={styles.highlightHeader}>
+                    <View
+                      style={[
+                        styles.highlightIconBox,
+                        { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)` },
+                      ]}
+                    >
+                      <Ionicons
+                        name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
+                        size={16}
+                        color={primaryColor}
+                      />
+                    </View>
+                    <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
                   </View>
-                  <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
                   <ThemedText style={[styles.highlightBody, { color: mutedColor }]}>
                     {h.body}
                   </ThemedText>
@@ -305,13 +308,17 @@ const styles = StyleSheet.create({
     gap: 8,
     width: "100%",
   },
+  highlightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   highlightIconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 2,
   },
   highlightTitle: {
     fontSize: 14.5,

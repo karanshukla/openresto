@@ -44,7 +44,7 @@ function useConfirmLocal() {
   return { state, confirm, handleConfirm, handleCancel };
 }
 
-function LocationTabs({
+function LocationPills({
   restaurants,
   selectedId,
   onSelect,
@@ -52,7 +52,6 @@ function LocationTabs({
   primaryColor,
   borderColor,
   mutedColor,
-  cardBg,
   isDark,
 }: {
   restaurants: RestaurantDto[];
@@ -62,23 +61,15 @@ function LocationTabs({
   primaryColor: string;
   borderColor: string;
   mutedColor: string;
-  cardBg: string;
   isDark: boolean;
 }) {
   const surface2 = isDark ? "#252729" : "#f9fafb";
-  const accentSoft = `${primaryColor}18`;
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ borderBottomWidth: 1, borderBottomColor: borderColor }}
-      contentContainerStyle={{
-        flexDirection: "row",
-        gap: 4,
-        paddingHorizontal: 2,
-        paddingBottom: 0,
-      }}
+      contentContainerStyle={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}
     >
       {restaurants.map((r) => {
         const active = selectedId === r.id;
@@ -90,35 +81,30 @@ function LocationTabs({
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 8,
+              gap: 7,
               paddingHorizontal: 14,
-              paddingVertical: 12,
+              paddingVertical: 8,
+              borderRadius: 9999,
               borderWidth: 1,
-              borderBottomWidth: 0,
-              borderColor: active ? borderColor : "transparent",
-              borderTopLeftRadius: 10,
-              borderTopRightRadius: 10,
-              backgroundColor: active ? cardBg : "transparent",
-              position: "relative",
-              top: 1,
+              borderColor: active ? primaryColor : borderColor,
+              backgroundColor: active ? primaryColor : surface2,
             }}
           >
-            {/* Pin initial */}
             <View
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                backgroundColor: active ? accentSoft : surface2,
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: active ? "rgba(255,255,255,0.2)" : `${primaryColor}18`,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <ThemedText
                 style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: active ? primaryColor : mutedColor,
+                  fontSize: 10,
+                  fontWeight: "700",
+                  color: active ? "rgba(255,255,255,0.9)" : primaryColor,
                 }}
               >
                 {initial}
@@ -126,21 +112,24 @@ function LocationTabs({
             </View>
             <ThemedText
               style={{
-                fontSize: 14,
-                fontWeight: active ? "500" : "400",
-                ...(active ? {} : { color: mutedColor }),
+                fontSize: 13,
+                fontWeight: "600",
+                color: active ? "#fff" : mutedColor,
               }}
             >
               {r.name}
             </ThemedText>
-            {/* Status dot */}
             <View
-              style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.success }}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: active ? "rgba(255,255,255,0.65)" : COLORS.success,
+              }}
             />
           </Pressable>
         );
       })}
-      {/* Add location tab */}
       <Pressable
         onPress={onAdd}
         style={{
@@ -148,19 +137,16 @@ function LocationTabs({
           alignItems: "center",
           gap: 6,
           paddingHorizontal: 14,
-          paddingVertical: 12,
+          paddingVertical: 8,
+          borderRadius: 9999,
           borderWidth: 1,
           borderStyle: "dashed" as const,
-          borderBottomWidth: 0,
           borderColor,
-          borderTopLeftRadius: 10,
-          borderTopRightRadius: 10,
           backgroundColor: "transparent",
-          top: 1,
         }}
       >
         <Ionicons name="add" size={14} color={mutedColor} />
-        <ThemedText style={{ fontSize: 14, color: mutedColor }}>Add location</ThemedText>
+        <ThemedText style={{ fontSize: 13, color: mutedColor }}>Add location</ThemedText>
       </Pressable>
     </ScrollView>
   );
@@ -241,18 +227,10 @@ export default function AdminSettingsScreen() {
         </View>
       </View>
 
-      {/* Location tabs + content — wrapped together as one bordered block */}
+      {/* Location pills + content */}
       {restaurants.length > 0 ? (
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor,
-            borderRadius: 14,
-            backgroundColor: cardBg,
-            overflow: "hidden",
-          }}
-        >
-          <LocationTabs
+        <View style={{ gap: 12 }}>
+          <LocationPills
             restaurants={restaurants}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -260,7 +238,6 @@ export default function AdminSettingsScreen() {
             primaryColor={primaryColor}
             borderColor={borderColor}
             mutedColor={mutedColor}
-            cardBg={cardBg}
             isDark={isDark}
           />
           {addingLocation && (
@@ -270,8 +247,10 @@ export default function AdminSettingsScreen() {
                 alignItems: "center",
                 gap: 10,
                 padding: 14,
-                borderBottomWidth: 1,
-                borderBottomColor: borderColor,
+                borderWidth: 1,
+                borderColor,
+                borderRadius: 14,
+                backgroundColor: cardBg,
               }}
             >
               <TextInput
@@ -328,15 +307,26 @@ export default function AdminSettingsScreen() {
             </View>
           )}
           {selectedRestaurant && (
-            <LocationCard
-              restaurant={selectedRestaurant}
-              onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
-              isDark={isDark}
-              borderColor={borderColor}
-              mutedColor={mutedColor}
-              cardBg={cardBg}
-              confirmAction={confirmAction}
-            />
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor,
+                borderRadius: 14,
+                backgroundColor: cardBg,
+                overflow: "hidden",
+              }}
+            >
+              <LocationCard
+                key={selectedRestaurant.id}
+                restaurant={selectedRestaurant}
+                onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
+                isDark={isDark}
+                borderColor={borderColor}
+                mutedColor={mutedColor}
+                cardBg={cardBg}
+                confirmAction={confirmAction}
+              />
+            </View>
           )}
         </View>
       ) : (

@@ -101,7 +101,7 @@ export function useTableHold({
     setHoldStatus("pending");
 
     debounceTimer.current = setTimeout(async () => {
-      releaseCurrentHold();
+      const previousHoldId = currentHoldId.current;
       lastAppliedParams.current = paramsKey;
 
       const sectionId = sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0;
@@ -113,14 +113,21 @@ export function useTableHold({
         tableId,
         sectionId,
         date: naiveIsoDate,
+        currentHoldId: previousHoldId ?? undefined,
       });
 
       if (result) {
+        // Backend atomically released previousHoldId and placed the new hold
         currentHoldId.current = result.holdId;
         setHold(result);
         setHoldStatus("held");
         startCountdown(result.expiresAt);
       } else {
+        // Table is held by someone else — release our previous hold and surface unavailable
+        if (previousHoldId) releaseHold(previousHoldId);
+        currentHoldId.current = null;
+        setHold(null);
+        clearCountdown();
         setHoldStatus("unavailable");
       }
     }, HOLD_DEBOUNCE_MS);
