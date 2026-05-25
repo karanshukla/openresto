@@ -1,22 +1,30 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
-using Xunit;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Controllers;
 
-public class EmailSettingsControllerUnitTests
+public class EmailSettingsControllerUnitTests : IDisposable
 {
     private readonly Mock<EmailSettingsService> _mockService;
     private readonly EmailSettingsController _controller;
+    private readonly AppDbContext _db;
 
     public EmailSettingsControllerUnitTests()
     {
         _mockService = new Mock<EmailSettingsService>(null!, null!, null!);
-        _controller = new EmailSettingsController(_mockService.Object);
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        _db = new AppDbContext(options);
+        _controller = new EmailSettingsController(_mockService.Object, _db);
     }
+
+    public void Dispose() => _db.Dispose();
 
     [Fact]
     public async Task Get_ReturnsEmptyResponse_WhenSettingsNull()
