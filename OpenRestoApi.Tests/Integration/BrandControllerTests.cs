@@ -60,46 +60,28 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task SaveBrand_OversizedLogo_Returns400()
+    public async Task SaveBrand_OversizedAppName_Returns400()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
 
-        // Generate a base64 string larger than 256KB
-        string largePayload = new string('A', 400 * 1024);
-
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
         {
-            logoBase64 = largePayload
+            appName = new string('A', 33)
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task SaveBrand_EmptyLogo_RemovesLogo()
+    public async Task GetBrand_ResponseIncludesHeaderImageUrl()
     {
-        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpClient client = _factory.CreateClient();
 
-        // First set a logo
-        await client.PostAsJsonAsync("/api/brand", new
-        {
-            logoBase64 = "data:image/png;base64,iVBOR"
-        });
-
-        // Then remove it with empty string
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
-        {
-            logoBase64 = ""
-        });
+        HttpResponseMessage response = await client.GetAsync("/api/brand");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        // Verify logo is null
-        HttpResponseMessage getResp = await client.GetAsync("/api/brand");
-        JsonElement body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(
-            body.GetProperty("logoUrl").ValueKind == JsonValueKind.Null,
-            "Logo should be null after removal");
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.TryGetProperty("headerImageUrl", out _));
     }
 
     [Fact]
