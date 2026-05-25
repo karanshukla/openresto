@@ -47,7 +47,7 @@ public class MediaController(AppDbContext db, IWebHostEnvironment env) : Control
             await file.CopyToAsync(stream);
         }
 
-        string url = $"/media/{filename}";
+        string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 
         BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
         if (brand == null)
@@ -107,7 +107,7 @@ public class MediaController(AppDbContext db, IWebHostEnvironment env) : Control
             await file.CopyToAsync(stream);
         }
 
-        string url = $"/media/{filename}";
+        string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.ImageUrl = url;
         await _db.SaveChangesAsync();
 
@@ -136,7 +136,8 @@ public class MediaController(AppDbContext db, IWebHostEnvironment env) : Control
 
     private void DeleteFile(string url)
     {
-        string path = Path.Combine(_mediaDir, Path.GetFileName(url));
+        string pathOnly = url.Contains('?') ? url[..url.IndexOf('?')] : url;
+        string path = Path.Combine(_mediaDir, Path.GetFileName(pathOnly));
         if (System.IO.File.Exists(path))
         {
             System.IO.File.Delete(path);
