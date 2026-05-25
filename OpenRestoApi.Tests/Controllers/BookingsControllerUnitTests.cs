@@ -18,7 +18,7 @@ public class BookingsControllerUnitTests
 
     public BookingsControllerUnitTests()
     {
-        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!);
+        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
         
         var mockProvider = new Mock<IDataProtectionProvider>();
         mockProvider.Setup(p => p.CreateProtector(It.IsAny<string>())).Returns(new Mock<IDataProtector>().Object);
