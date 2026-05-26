@@ -59,7 +59,7 @@ export default function AdminBookingsScreen() {
   const [bookings, setBookings] = useState<BookingDetailDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("timetable");
-  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("active");
+  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("all");
 
   const [gridDate, setGridDate] = useState(new Date());
   const [gridSections, setGridSections] = useState<SectionWithTables[]>([]);
@@ -179,9 +179,11 @@ export default function AdminBookingsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRestaurantId]);
 
-  const sorted = [...bookings].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Past tab: most-recent first. All other views: soonest first.
+  const sorted = [...bookings].sort((a, b) => {
+    const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+    return statusFilter === "past" ? -diff : diff;
+  });
 
   const handleLookup = async () => {
     const q = lookupQuery.trim();
@@ -370,6 +372,7 @@ export default function AdminBookingsScreen() {
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             {(
               [
+                { key: "all", label: "All", color: colors.text },
                 { key: "active", label: "Active", color: PRIMARY },
                 { key: "past", label: "Past", color: "#7c3aed" },
                 { key: "cancelled", label: "Cancelled", color: "#dc2626" },
@@ -614,18 +617,10 @@ export default function AdminBookingsScreen() {
               </ThemedText>
 
               <View style={styles.colStatus}>
-                {statusFilter === "cancelled" ? (
+                {b.isCancelled ? (
                   <View style={[styles.badge, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
                     <ThemedText style={[styles.badgeText, { color: "#dc2626" }]}>
                       Cancelled
-                    </ThemedText>
-                  </View>
-                ) : statusFilter === "past" ? (
-                  <View style={[styles.badge, { backgroundColor: isDark ? "#1a1c1e" : "#f1f5f9" }]}>
-                    <ThemedText
-                      style={[styles.badgeText, { color: isDark ? "#64748b" : "#94a3b8" }]}
-                    >
-                      Past
                     </ThemedText>
                   </View>
                 ) : (
@@ -634,7 +629,7 @@ export default function AdminBookingsScreen() {
               </View>
 
               <View style={styles.colAction}>
-                {statusFilter === "active" && (
+                {!b.isCancelled && (
                   <Pressable
                     style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
                     onPress={(e) => {
@@ -694,7 +689,15 @@ export default function AdminBookingsScreen() {
                   </View>
                 </View>
                 <View style={styles.listCardRight}>
-                  <StatusBadge date={b.date} isDark={isDark} />
+                  {b.isCancelled ? (
+                    <View style={[styles.badge, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
+                      <ThemedText style={[styles.badgeText, { color: "#dc2626" }]}>
+                        Cancelled
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    <StatusBadge date={b.date} isDark={isDark} />
+                  )}
                 </View>
               </View>
             </Pressable>
