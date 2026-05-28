@@ -9,15 +9,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 
-// Predefined gradient pairs for the card image area (brand-agnostic)
-const CARD_GRADIENTS = [
-  ["#7a2e0e", "#c97542"],
-  ["#1e3a3a", "#7c9982"],
-  ["#3d2818", "#b87840"],
-  ["#1a1e3a", "#5b6fbe"],
-  ["#1a3a2a", "#3faa70"],
-];
-
 function getRestaurantDate(timezone: string): string {
   try {
     const now = new Date();
@@ -86,11 +77,10 @@ function isOpenNow(
 
 export default function RestaurantCard({
   restaurant,
-  index = 0,
   party = 2,
 }: {
   restaurant: RestaurantDto;
-  index?: number;
+  index?: number; // kept for API compatibility
   party?: number;
 }) {
   const isDark = useColorScheme() === "dark";
@@ -123,7 +113,6 @@ export default function RestaurantCard({
     });
   }, [restaurant.id, restaurant.timezone, party]);
 
-  const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
   const open = isOpenNow(
     restaurant.openTime,
     restaurant.closeTime,
@@ -174,29 +163,41 @@ export default function RestaurantCard({
       <View
         style={[
           styles.imageArea,
-          Platform.OS === "web" &&
-            (restaurant.imageUrl
+          restaurant.imageUrl
+            ? Platform.OS === "web"
               ? ({
                   backgroundImage: `url(${restaurant.imageUrl})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 } as object)
-              : ({
-                  background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})`,
-                } as object)),
-          Platform.OS !== "web" && { backgroundColor: gradient[0] },
+              : { backgroundColor: "#111" }
+            : Platform.OS === "web"
+              ? ({
+                  background: `linear-gradient(145deg,
+                    rgb(${Math.floor(accentR * 0.1)},${Math.floor(accentG * 0.1)},${Math.floor(accentB * 0.13)}) 0%,
+                    rgb(${Math.floor(accentR * 0.38)},${Math.floor(accentG * 0.38)},${Math.floor(accentB * 0.42)}) 55%,
+                    rgb(${Math.floor(accentR * 0.6)},${Math.floor(accentG * 0.6)},${Math.floor(accentB * 0.65)}) 100%)`,
+                } as object)
+              : {
+                  backgroundColor: `rgb(${Math.floor(accentR * 0.15)},${Math.floor(accentG * 0.15)},${Math.floor(accentB * 0.18)})`,
+                },
         ]}
       >
-        {/* Dot pattern overlay - only when no custom image */}
-        {Platform.OS === "web" && !restaurant.imageUrl && (
-          <View
-            style={[
-              StyleSheet.absoluteFillObject,
-              {
-                opacity: 0.5,
-              } as object,
-            ]}
-          />
+        {/* Branded placeholder content – visible only when no image */}
+        {!restaurant.imageUrl && (
+          <>
+            {/* Decorative ring – top right */}
+            <View style={styles.phRingTopRight} />
+            {/* Decorative ring – bottom left */}
+            <View style={styles.phRingBottomLeft} />
+            {/* Centre: icon + initial */}
+            <View style={styles.phCenter}>
+              <Ionicons name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
+              <ThemedText style={styles.phInitial}>
+                {restaurant.name.charAt(0).toUpperCase()}
+              </ThemedText>
+            </View>
+          </>
         )}
 
         {/* Top row: status badge */}
@@ -388,6 +389,45 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
+
+  // Branded placeholder (no image)
+  phRingTopRight: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 36,
+    borderColor: "rgba(255,255,255,0.07)",
+    top: -80,
+    right: -60,
+  },
+  phRingBottomLeft: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 28,
+    borderColor: "rgba(255,255,255,0.05)",
+    bottom: -70,
+    left: -50,
+  },
+  phCenter: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  phInitial: {
+    fontSize: 44,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.28)",
+    letterSpacing: -1.5,
+  },
+
   imageTopRow: {
     position: "absolute",
     top: 12,

@@ -96,6 +96,7 @@ export default function AdminBookingsScreen() {
   const selectedRestaurant = restaurants.find((r) => r.id === selectedRestaurantId);
   const openTime = selectedRestaurant?.openTime ?? "09:00";
   const closeTime = selectedRestaurant?.closeTime ?? "22:00";
+  const timezone = selectedRestaurant?.timezone ?? "UTC";
 
   const borderColor = colors.border;
   const cardBg = colors.card;
@@ -179,9 +180,11 @@ export default function AdminBookingsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRestaurantId]);
 
-  const sorted = [...bookings].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Past tab: most-recent first. All other views: soonest first.
+  const sorted = [...bookings].sort((a, b) => {
+    const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+    return statusFilter === "past" ? -diff : diff;
+  });
 
   const handleLookup = async () => {
     const q = lookupQuery.trim();
@@ -508,6 +511,7 @@ export default function AdminBookingsScreen() {
               onBookingPress={(b) => setSelectedBookingId(b.id)}
               openTime={openTime}
               closeTime={closeTime}
+              timezone={timezone}
             />
           )}
         </View>
@@ -614,18 +618,10 @@ export default function AdminBookingsScreen() {
               </ThemedText>
 
               <View style={styles.colStatus}>
-                {statusFilter === "cancelled" ? (
+                {b.isCancelled ? (
                   <View style={[styles.badge, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
                     <ThemedText style={[styles.badgeText, { color: "#dc2626" }]}>
                       Cancelled
-                    </ThemedText>
-                  </View>
-                ) : statusFilter === "past" ? (
-                  <View style={[styles.badge, { backgroundColor: isDark ? "#1a1c1e" : "#f1f5f9" }]}>
-                    <ThemedText
-                      style={[styles.badgeText, { color: isDark ? "#64748b" : "#94a3b8" }]}
-                    >
-                      Past
                     </ThemedText>
                   </View>
                 ) : (
@@ -634,7 +630,7 @@ export default function AdminBookingsScreen() {
               </View>
 
               <View style={styles.colAction}>
-                {statusFilter === "active" && (
+                {!b.isCancelled && (
                   <Pressable
                     style={[styles.rowActionBtn, { backgroundColor: "rgba(220,38,38,0.1)" }]}
                     onPress={(e) => {
@@ -694,7 +690,15 @@ export default function AdminBookingsScreen() {
                   </View>
                 </View>
                 <View style={styles.listCardRight}>
-                  <StatusBadge date={b.date} isDark={isDark} />
+                  {b.isCancelled ? (
+                    <View style={[styles.badge, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
+                      <ThemedText style={[styles.badgeText, { color: "#dc2626" }]}>
+                        Cancelled
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    <StatusBadge date={b.date} isDark={isDark} />
+                  )}
                 </View>
               </View>
             </Pressable>

@@ -21,6 +21,19 @@ export const LABEL_W = 110;
 export const HEADER_H = 36;
 export const SECTION_H = 26;
 
+function getRestaurantHour(dateStr: string, timezone: string): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(dateStr));
+    return parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+  } catch {
+    return new Date(dateStr).getHours();
+  }
+}
+
 export function AvailabilityGrid({
   sections,
   bookings,
@@ -28,6 +41,7 @@ export function AvailabilityGrid({
   onBookingPress,
   openTime = "11:00",
   closeTime = "23:00",
+  timezone = "UTC",
 }: {
   sections: SectionWithTables[];
   bookings: BookingDetailDto[];
@@ -35,6 +49,7 @@ export function AvailabilityGrid({
   onBookingPress: (b: BookingDetailDto) => void;
   openTime?: string;
   closeTime?: string;
+  timezone?: string;
 }) {
   const timeSlots = buildTimeSlots(openTime, closeTime);
   const colors = getThemeColors(isDark);
@@ -46,7 +61,9 @@ export function AvailabilityGrid({
   const mutedColor = colors.muted;
 
   function bookingForCell(tableId: number, hour: number): BookingDetailDto | undefined {
-    return bookings.find((b) => b.tableId === tableId && new Date(b.date).getHours() === hour);
+    return bookings.find(
+      (b) => b.tableId === tableId && getRestaurantHour(b.date, timezone) === hour
+    );
   }
 
   const totalW = LABEL_W + timeSlots.length * COL_W;
