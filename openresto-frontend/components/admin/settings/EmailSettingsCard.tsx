@@ -4,7 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
+import { COLORS, getThemeColors } from "@/theme/theme";
 import {
   getEmailSettings,
   saveEmailSettings,
@@ -131,6 +131,7 @@ export function EmailSettingsCard({
   cardBg: string;
   isDark: boolean;
 }) {
+  const { text: textColor } = getThemeColors(isDark);
   // surface-2: the slightly recessed inner surface (used inside cards)
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const borderStrong = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)";
@@ -342,7 +343,7 @@ export function EmailSettingsCard({
                   <ThemedText
                     style={{
                       fontSize: 12,
-                      color: port === String(p) ? (isDark ? "#fff" : "#000") : mutedColor,
+                      color: port === String(p) ? textColor : mutedColor,
                     }}
                   >
                     {p}
@@ -404,7 +405,7 @@ export function EmailSettingsCard({
               style={{
                 fontSize: 13,
                 fontWeight: !enableSsl ? "500" : "400",
-                color: !enableSsl ? (isDark ? "#fff" : "#000") : mutedColor,
+                color: !enableSsl ? textColor : mutedColor,
               }}
             >
               None
