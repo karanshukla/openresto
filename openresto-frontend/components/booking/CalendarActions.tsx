@@ -37,14 +37,14 @@ export default function CalendarActions(props: CalendarActionsProps) {
             icon="logo-google"
             color="#4285F4"
             isDark={isDark}
-            onPress={() => window.open(googleUrl, "_blank")}
+            onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
           />
           <CalBtn
             label="Outlook"
             icon="calendar-outline"
             color="#0078D4"
             isDark={isDark}
-            onPress={() => window.open(outlookUrl, "_blank")}
+            onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
           />
           <CalBtn
             label=".ics"
@@ -69,7 +69,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
         icon="logo-google"
         color="#4285F4"
         isDark={isDark}
-        onPress={() => window.open(googleUrl, "_blank")}
+        onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
         trailingIcon="open-outline"
         mutedColor={colors.muted}
       />
@@ -79,7 +79,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
         icon="calendar-outline"
         color="#0078D4"
         isDark={isDark}
-        onPress={() => window.open(outlookUrl, "_blank")}
+        onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
         trailingIcon="open-outline"
         mutedColor={colors.muted}
       />

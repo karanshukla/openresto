@@ -156,4 +156,65 @@ describe("SectionBlock", () => {
     render(<SectionBlock {...baseProps} isDark />);
     expect(screen.getByText("Indoor")).toBeTruthy();
   });
+
+  it("shows 'No tables yet.' when section has no tables", () => {
+    render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
+    expect(screen.getByText("No tables yet.")).toBeTruthy();
+  });
+
+  it("does not call onSectionRenamed when updateSection returns null", async () => {
+    (restaurantsApi.updateSection as jest.Mock).mockResolvedValue(null);
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByText("Edit"));
+    fireEvent.changeText(screen.getByDisplayValue("Indoor"), "Updated");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(restaurantsApi.updateSection).toHaveBeenCalled();
+    expect(baseProps.onSectionRenamed).not.toHaveBeenCalled();
+  });
+
+  it("calls addTable and onTableAdded when AddRow form is submitted", async () => {
+    const newTable = { id: 20, name: "T3", seats: 4 };
+    (restaurantsApi.addTable as jest.Mock).mockResolvedValue(newTable);
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByText("Add Table"));
+    fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T3");
+    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "4");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Add"));
+    });
+    expect(restaurantsApi.addTable).toHaveBeenCalledWith(
+      42,
+      1,
+      expect.objectContaining({ name: "T3", seats: 4 })
+    );
+    expect(baseProps.onTableAdded).toHaveBeenCalledWith(newTable);
+  });
+
+  it("does not call onTableAdded when addTable returns null", async () => {
+    (restaurantsApi.addTable as jest.Mock).mockResolvedValue(null);
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByText("Add Table"));
+    fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T4");
+    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "2");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Add"));
+    });
+    expect(restaurantsApi.addTable).toHaveBeenCalled();
+    expect(baseProps.onTableAdded).not.toHaveBeenCalled();
+  });
+
+  it("uses default seats of 2 when extra is NaN", async () => {
+    const newTable = { id: 21, name: "T5", seats: 2 };
+    (restaurantsApi.addTable as jest.Mock).mockResolvedValue(newTable);
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByText("Add Table"));
+    fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T5");
+    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "abc");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Add"));
+    });
+    expect(restaurantsApi.addTable).toHaveBeenCalledWith(42, 1, { name: "T5", seats: 2 });
+  });
 });

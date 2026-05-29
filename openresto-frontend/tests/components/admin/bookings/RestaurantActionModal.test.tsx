@@ -161,4 +161,116 @@ describe("RestaurantActionModal", () => {
     fireEvent.press(getByTestId("close-modal-button"));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("shows empty state when no restaurants are found", async () => {
+    (adminApi.adminGetRestaurants as jest.Mock).mockResolvedValue([]);
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    expect(getByText("No restaurants found.")).toBeTruthy();
+  });
+
+  it("calls onSuccess and onClose when extend finds no active bookings", async () => {
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
+    (adminApi.extendRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      extendedBookings: [],
+    });
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal
+        visible={true}
+        actionType="extend"
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    fireEvent.press(getByText("Test Restaurant 1"));
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(
+        "No active bookings found to extend for Test Restaurant 1."
+      );
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("shows extended bookings with null endTime as 'Extended'", async () => {
+    const extendedBookings = [
+      {
+        id: 200,
+        customerEmail: "noend@test.com",
+        date: new Date().toISOString(),
+        seats: 3,
+        endTime: null,
+      },
+    ];
+    (adminApi.extendRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      extendedBookings,
+    });
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="extend" onClose={() => {}} />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    fireEvent.press(getByText("Test Restaurant 1"));
+
+    await waitFor(() => {
+      expect(getByText("noend@test.com")).toBeTruthy();
+      expect(getByText("Bookings Extended")).toBeTruthy();
+    });
+  });
+
+  it("handles error in handleAction gracefully", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockRejectedValue(new Error("Network error"));
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    await act(async () => {
+      fireEvent.press(getByText("Test Restaurant 1"));
+    });
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("does not load restaurants when visible is false", () => {
+    render(<RestaurantActionModal visible={false} actionType="pause" onClose={() => {}} />);
+    expect(adminApi.adminGetRestaurants).not.toHaveBeenCalled();
+  });
+
+  it("shows PAUSED badge for paused restaurant", async () => {
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    expect(getByText("PAUSED")).toBeTruthy();
+  });
 });
