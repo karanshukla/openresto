@@ -161,4 +161,35 @@ describe("EditBookingForm", () => {
     render(<EditBookingForm {...baseProps} selectedRestaurant={null} />);
     expect(screen.getByText("Restaurant A")).toBeTruthy();
   });
+
+  it("calls setEditTableId when a table option is selected", () => {
+    render(<EditBookingForm {...baseProps} />);
+    fireEvent.press(screen.getByText("Table 1"));
+    expect(baseProps.setEditTableId).toHaveBeenCalledWith(100);
+  });
+
+  it("calls handleSectionChange when a section option is selected", () => {
+    render(<EditBookingForm {...baseProps} />);
+    fireEvent.press(screen.getByText("Main"));
+    expect(baseProps.handleSectionChange).toHaveBeenCalledWith(10);
+  });
+
+  it("calls setEditSeats when a guest count option is selected", () => {
+    render(<EditBookingForm {...baseProps} />);
+    const guestOptions = screen.getAllByText("1");
+    fireEvent.press(guestOptions[0]);
+    expect(baseProps.setEditSeats).toHaveBeenCalledWith("1");
+  });
+
+  it("renders date picker with current date value", () => {
+    render(<EditBookingForm {...baseProps} />);
+    expect(screen.getByTestId("date-picker")).toBeTruthy();
+    expect(screen.getByText("2026-10-01")).toBeTruthy();
+  });
+
+  it("renders time picker with current time value", () => {
+    render(<EditBookingForm {...baseProps} />);
+    expect(screen.getByTestId("time-picker")).toBeTruthy();
+    expect(screen.getByText("18:00")).toBeTruthy();
+  });
 });

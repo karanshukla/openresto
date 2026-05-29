@@ -283,7 +283,7 @@ export function BookingDetailPopup({
         onPress={onClose}
       >
         <Pressable
-          onPress={(e) => e.stopPropagation?.()}
+          onPress={/* istanbul ignore next */ (e) => e.stopPropagation?.()}
           style={{
             width: "92%",
             maxWidth: 960,

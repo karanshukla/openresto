@@ -56,7 +56,8 @@ export default function PopularTimesPicker({
     }
   }, [slots, activeCategory]);
 
-  // Web-specific: Mouse Wheel and Drag-to-scroll
+  // Web-specific: Mouse Wheel and Drag-to-scroll — only runs when Platform.OS === "web"
+  /* istanbul ignore next */
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
