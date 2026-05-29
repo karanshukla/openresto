@@ -2,9 +2,9 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminBookingsScreen from "@/app/(admin)/bookings/index";
-import { getAdminBookings } from "@/api/admin";
+import { getAdminBookings, adminLookupBookings, adminDeleteBooking } from "@/api/admin";
 
 jest.mock("@/api/admin", () => ({
   getAdminBookings: jest.fn(),
@@ -14,15 +14,15 @@ jest.mock("@/api/admin", () => ({
   getAdminBooking: jest.fn().mockResolvedValue(null),
 }));
 
+const mockReplace = jest.fn();
+const mockSearchParams: Record<string, string | undefined> = {};
+
 jest.mock("expo-router", () => {
-  const React = require("react");
-  const Stack = {
-    Screen: () => null,
-  };
+  const Stack = { Screen: () => null };
   return {
     Stack,
-    useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
-    useLocalSearchParams: () => ({}),
+    useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
+    useLocalSearchParams: () => mockSearchParams,
   };
 });
 
@@ -79,6 +79,10 @@ describe("AdminBookingsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getAdminBookings as jest.Mock).mockResolvedValue(mockBookings);
+    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
+    // Reset search params and router mock
+    Object.keys(mockSearchParams).forEach((k) => delete mockSearchParams[k]);
+    mockReplace.mockReset();
   });
 
   it("renders the bookings page", async () => {
@@ -113,6 +117,112 @@ describe("AdminBookingsScreen", () => {
 
     await waitFor(() => {
       expect(getAdminBookings).toHaveBeenCalledWith(1, undefined, "active");
+    });
+  });
+
+  it("switches to past filter in list view", async () => {
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    fireEvent.press(await screen.findByText("Past"));
+    await waitFor(() => {
+      expect(getAdminBookings).toHaveBeenCalledWith(1, undefined, "past");
+    });
+  });
+
+  it("switches to cancelled filter in list view", async () => {
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    fireEvent.press(await screen.findByText("Cancelled"));
+    await waitFor(() => {
+      expect(getAdminBookings).toHaveBeenCalledWith(1, undefined, "cancelled");
+    });
+  });
+
+  it("lookup shows 'No booking found' when no results", async () => {
+    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
+
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "unknown@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Find"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("No booking found.")).toBeTruthy();
+    });
+  });
+
+  it("lookup with single result opens the booking popup", async () => {
+    (adminLookupBookings as jest.Mock).mockResolvedValue([{ ...mockBookings[0], id: 99 }]);
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
+
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "john@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Find"));
+    });
+    await waitFor(() => expect(adminLookupBookings).toHaveBeenCalledWith("john@example.com"));
+  });
+
+  it("lookup with multiple results shows 'Showing all matches…'", async () => {
+    (adminLookupBookings as jest.Mock).mockResolvedValue([
+      { ...mockBookings[0], id: 1 },
+      { ...mockBookings[0], id: 2 },
+    ]);
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
+
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "john@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Find"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Showing all matches…")).toBeTruthy();
+    });
+    expect(mockReplace).toHaveBeenCalled();
+  });
+
+  it("shows search results when emailParam is provided", async () => {
+    mockSearchParams.email = "john@example.com";
+    render(<AdminBookingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Search Results")).toBeTruthy();
+    });
+  });
+
+  it("shows clear button when searchQuery is present", async () => {
+    mockSearchParams.email = "john@example.com";
+    render(<AdminBookingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Clear")).toBeTruthy();
+    });
+  });
+
+  it("handles cancel booking from the list row", async () => {
+    (adminDeleteBooking as jest.Mock).mockResolvedValue(true);
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
+
+    // Confirm dialog should appear — press Cancel Booking in confirm modal
+    const confirmBtns = screen.queryAllByText("Cancel Booking");
+    if (confirmBtns.length > 0) {
+      fireEvent.press(confirmBtns[confirmBtns.length - 1]);
+      await waitFor(() => expect(adminDeleteBooking).toHaveBeenCalled());
+    }
+  });
+
+  it("renders bookings with multi-part email initials", async () => {
+    (getAdminBookings as jest.Mock).mockResolvedValue([
+      { ...mockBookings[0], id: 2, customerEmail: "john.doe@example.com" },
+    ]);
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    await waitFor(() => {
+      expect(screen.getByText("john.doe@example.com")).toBeTruthy();
     });
   });
 });

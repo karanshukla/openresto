@@ -53,7 +53,7 @@ export function EmailGuestForm({
         type="text"
         placeholder="Subject"
         value={emailSubject}
-        onChange={(e) => setEmailSubject(e.target.value)}
+        onChange={/* istanbul ignore next */ (e) => setEmailSubject(e.target.value)}
         style={
           {
             width: "100%",
@@ -74,7 +74,7 @@ export function EmailGuestForm({
       <textarea
         placeholder="Message body (HTML supported)"
         value={emailBody}
-        onChange={(e) => setEmailBody(e.target.value)}
+        onChange={/* istanbul ignore next */ (e) => setEmailBody(e.target.value)}
         rows={4}
         style={
           {

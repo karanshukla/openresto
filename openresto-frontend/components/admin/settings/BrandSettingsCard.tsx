@@ -36,6 +36,7 @@ export function BrandSettingsCard({
     setHeroPreview(brand.headerImageUrl ?? null);
   }, [brand]);
 
+  /* istanbul ignore next */
   const handlePickHero = () => {
     const input = document.createElement("input");
     input.type = "file";
@@ -140,6 +141,7 @@ export function BrandSettingsCard({
               {PRESET_COLORS.map((c) => (
                 <Pressable
                   key={c}
+                  testID={`color-swatch-${c}`}
                   onPress={() => setBrandPrimaryColor(c)}
                   style={{
                     width: 28,

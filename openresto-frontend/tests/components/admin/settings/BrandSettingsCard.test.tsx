@@ -13,11 +13,16 @@ jest.mock("@/api/admin", () => ({
   deleteHeroImage: jest.fn(),
 }));
 
-// Return a stable object reference so useEffect([brand]) doesn't reset state on each render
-jest.mock("@/context/BrandContext", () => {
-  const brand = { primaryColor: "#0a7ea4", appName: "Open Resto", headerImageUrl: null };
-  return { useBrand: () => brand };
-});
+// Mutable so individual tests can supply a headerImageUrl
+let mockBrandData: { primaryColor: string; appName: string; headerImageUrl: string | null } = {
+  primaryColor: "#0a7ea4",
+  appName: "Open Resto",
+  headerImageUrl: null,
+};
+
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: () => mockBrandData,
+}));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -32,6 +37,7 @@ const baseProps = {
 describe("BrandSettingsCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockBrandData = { primaryColor: "#0a7ea4", appName: "Open Resto", headerImageUrl: null };
   });
 
   it("renders in collapsed state with Brand Identity title", () => {
@@ -142,5 +148,56 @@ describe("BrandSettingsCard", () => {
     const saveBtn = screen.getByText("Save");
     // The button component should be disabled
     expect(saveBtn).toBeTruthy();
+  });
+
+  it("presses a preset color swatch and updates the color input", () => {
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.press(screen.getByText("Brand Identity"));
+    fireEvent.press(screen.getByTestId("color-swatch-#2563eb"));
+    expect(screen.getByDisplayValue("#2563eb")).toBeTruthy();
+  });
+
+  it("shows Change and Remove buttons when a hero image exists", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: "https://example.com/hero.jpg",
+    };
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.press(screen.getByText("Brand Identity"));
+    expect(screen.getByText("Change")).toBeTruthy();
+    expect(screen.getByText("Remove")).toBeTruthy();
+  });
+
+  it("calls deleteHeroImage and shows success message when Remove is pressed", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: "https://example.com/hero.jpg",
+    };
+    (adminApi.deleteHeroImage as jest.Mock).mockResolvedValue(undefined);
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.press(screen.getByText("Brand Identity"));
+    await act(async () => {
+      fireEvent.press(screen.getByText("Remove"));
+    });
+    expect(adminApi.deleteHeroImage).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText("Header image removed.")).toBeTruthy();
+    });
+  });
+
+  it("shows error style when save result message contains 'fail'", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({
+      message: "Failed to update brand.",
+    });
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.press(screen.getByText("Brand Identity"));
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Failed to update brand.")).toBeTruthy();
+    });
   });
 });
