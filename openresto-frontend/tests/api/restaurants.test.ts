@@ -1,6 +1,8 @@
 import {
+  createRestaurant,
   fetchRestaurants,
   fetchRestaurantById,
+  fetchHighlights,
   updateRestaurant,
   addSection,
   updateSection,
@@ -8,6 +10,8 @@ import {
   addTable,
   updateTable,
   deleteTable,
+  uploadLocationImage,
+  deleteLocationImage,
 } from "@/api/restaurants";
 
 // Restaurants API now uses credentials: "include" for cookie-based auth
@@ -224,5 +228,111 @@ describe("deleteTable", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await deleteTable(1, 10, 20)).toBe(false);
+  });
+});
+
+// ---------- createRestaurant ----------
+
+describe("createRestaurant", () => {
+  it("posts to /api/restaurants and returns created restaurant", async () => {
+    const created = { id: 10, name: "New Place", sections: [] };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => created });
+
+    const result = await createRestaurant("New Place");
+
+    expect(result).toEqual(created);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/restaurants");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toMatchObject({ name: "New Place" });
+  });
+
+  it("returns null on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await createRestaurant("Fail")).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await createRestaurant("Fail")).toBeNull();
+  });
+});
+
+// ---------- fetchHighlights ----------
+
+describe("fetchHighlights", () => {
+  it("fetches GET /api/highlights and returns array", async () => {
+    const highlights = [
+      { id: 1, title: "Great Food", body: "Fresh", iconKey: "star-outline", sortOrder: 0 },
+    ];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => highlights });
+
+    const result = await fetchHighlights();
+
+    expect(result).toEqual(highlights);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/highlights");
+  });
+
+  it("returns empty array on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await fetchHighlights()).toEqual([]);
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await fetchHighlights()).toEqual([]);
+  });
+});
+
+// ---------- uploadLocationImage ----------
+
+describe("uploadLocationImage", () => {
+  it("posts form data and returns url on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ url: "/uploads/img.png" }) });
+
+    const file = new File(["content"], "img.png", { type: "image/png" });
+    const result = await uploadLocationImage(1, file);
+
+    expect(result).toBe("/uploads/img.png");
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/media/location/1");
+    expect(opts.method).toBe("POST");
+  });
+
+  it("returns null when response is not ok", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const file = new File(["x"], "x.png");
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+
+  it("returns null when url missing from response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    const file = new File(["x"], "x.png");
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const file = new File(["x"], "x.png");
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+});
+
+// ---------- deleteLocationImage ----------
+
+describe("deleteLocationImage", () => {
+  it("sends DELETE to media endpoint", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    await deleteLocationImage(1);
+
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/media/location/1");
+    expect(opts.method).toBe("DELETE");
+  });
+
+  it("silently ignores network errors", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    await expect(deleteLocationImage(1)).resolves.toBeUndefined();
   });
 });
