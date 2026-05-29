@@ -15,7 +15,6 @@ describe("+html Root", () => {
 
   it("renders a valid React element without crashing", () => {
     const { default: Root } = require("@/app/+html");
-    const React = require("react");
     const element = React.createElement(Root, {}, React.createElement("span", {}, "child"));
     expect(element).not.toBeNull();
     expect(element.type).toBe(Root);

@@ -90,7 +90,6 @@ const mockBooking = {
 
 describe("BookingDetailPopup", () => {
   const onClose = jest.fn();
-  const onDeleted = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
