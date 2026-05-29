@@ -1,6 +1,8 @@
 import {
+  createRestaurant,
   fetchRestaurants,
   fetchRestaurantById,
+  fetchHighlights,
   updateRestaurant,
   addSection,
   updateSection,
@@ -8,8 +10,6 @@ import {
   addTable,
   updateTable,
   deleteTable,
-  createRestaurant,
-  fetchHighlights,
   uploadLocationImage,
   deleteLocationImage,
 } from "@/api/restaurants";
@@ -234,30 +234,43 @@ describe("deleteTable", () => {
 // ---------- createRestaurant ----------
 
 describe("createRestaurant", () => {
-  it("returns restaurant on success", async () => {
-    const restaurant = { id: 1, name: "New Bistro", sections: [] };
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => restaurant });
-    expect(await createRestaurant("New Bistro")).toEqual(restaurant);
+  it("posts to /api/restaurants and returns created restaurant", async () => {
+    const created = { id: 10, name: "New Place", sections: [] };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => created });
+
+    const result = await createRestaurant("New Place");
+
+    expect(result).toEqual(created);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/restaurants");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toMatchObject({ name: "New Place" });
   });
 
-  it("returns null when response is not ok", async () => {
+  it("returns null on failure", async () => {
     mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await createRestaurant("Bad Resto")).toBeNull();
+    expect(await createRestaurant("Fail")).toBeNull();
   });
 
   it("returns null on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await createRestaurant("Offline Resto")).toBeNull();
+    expect(await createRestaurant("Fail")).toBeNull();
   });
 });
 
 // ---------- fetchHighlights ----------
 
 describe("fetchHighlights", () => {
-  it("returns highlights on success", async () => {
-    const highlights = [{ id: 1, title: "Great Food", body: "...", iconKey: "star", sortOrder: 1 }];
+  it("fetches GET /api/highlights and returns array", async () => {
+    const highlights = [
+      { id: 1, title: "Great Food", body: "Fresh", iconKey: "star-outline", sortOrder: 0 },
+    ];
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => highlights });
-    expect(await fetchHighlights()).toEqual(highlights);
+
+    const result = await fetchHighlights();
+
+    expect(result).toEqual(highlights);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/highlights");
   });
 
   it("returns empty array on failure", async () => {
@@ -274,24 +287,33 @@ describe("fetchHighlights", () => {
 // ---------- uploadLocationImage ----------
 
 describe("uploadLocationImage", () => {
-  it("returns url on success", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ url: "https://example.com/img.jpg" }),
-    });
-    const file = new File(["data"], "img.jpg", { type: "image/jpeg" });
-    expect(await uploadLocationImage(1, file)).toBe("https://example.com/img.jpg");
+  it("posts form data and returns url on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ url: "/uploads/img.png" }) });
+
+    const file = new File(["content"], "img.png", { type: "image/png" });
+    const result = await uploadLocationImage(1, file);
+
+    expect(result).toBe("/uploads/img.png");
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/media/location/1");
+    expect(opts.method).toBe("POST");
   });
 
-  it("returns null when not ok", async () => {
+  it("returns null when response is not ok", async () => {
     mockFetch.mockResolvedValueOnce({ ok: false });
-    const file = new File(["data"], "img.jpg", { type: "image/jpeg" });
+    const file = new File(["x"], "x.png");
     expect(await uploadLocationImage(1, file)).toBeNull();
   });
 
-  it("returns null on error", async () => {
+  it("returns null when url missing from response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    const file = new File(["x"], "x.png");
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
-    const file = new File(["data"], "img.jpg", { type: "image/jpeg" });
+    const file = new File(["x"], "x.png");
     expect(await uploadLocationImage(1, file)).toBeNull();
   });
 });
@@ -299,13 +321,17 @@ describe("uploadLocationImage", () => {
 // ---------- deleteLocationImage ----------
 
 describe("deleteLocationImage", () => {
-  it("calls DELETE and resolves", async () => {
+  it("sends DELETE to media endpoint", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
-    await expect(deleteLocationImage(1)).resolves.toBeUndefined();
-    expect(mockFetch).toHaveBeenCalled();
+
+    await deleteLocationImage(1);
+
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/media/location/1");
+    expect(opts.method).toBe("DELETE");
   });
 
-  it("resolves silently on error", async () => {
+  it("silently ignores network errors", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     await expect(deleteLocationImage(1)).resolves.toBeUndefined();
   });

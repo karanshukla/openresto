@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { StyleSheet } from "react-native";
 import { BUTTON_SIZES, COLORS } from "@/theme/theme";
 

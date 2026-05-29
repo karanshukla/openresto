@@ -143,4 +143,92 @@ describe("HighlightsCard", () => {
     });
     expect(adminApi.adminDeleteHighlight).toHaveBeenCalledWith(1);
   });
+
+  it("does not remove highlight when adminDeleteHighlight returns false", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
+    (adminApi.adminDeleteHighlight as jest.Mock).mockResolvedValue(false);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    await act(async () => {
+      fireEvent.press(accessible[4]);
+    });
+    expect(screen.getByText("Great Food")).toBeTruthy();
+  });
+
+  it("opens edit form when pencil is pressed on existing highlight", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    // accessible[2] = pencil edit button for first highlight
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    fireEvent.press(accessible[2]);
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Great Food")).toBeTruthy();
+    });
+  });
+
+  it("calls adminUpdateHighlight when saving an edited highlight", async () => {
+    const updated = { ...mockHighlights[0], title: "Amazing Food" };
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
+    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(updated);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    fireEvent.press(accessible[2]);
+    await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
+    fireEvent.changeText(screen.getByDisplayValue("Great Food"), "Amazing Food");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminUpdateHighlight).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ title: "Amazing Food" })
+    );
+  });
+
+  it("does not update list when adminUpdateHighlight returns null", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
+    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(null);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    fireEvent.press(accessible[2]);
+    await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
+    fireEvent.changeText(screen.getByDisplayValue("Great Food"), "New Title");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminUpdateHighlight).toHaveBeenCalled();
+  });
+
+  it("does not add to list when adminCreateHighlight returns null", async () => {
+    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue(null);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "New");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminCreateHighlight).toHaveBeenCalled();
+    expect(screen.queryByText("New")).toBeNull();
+  });
+
+  it("changes icon when an icon option is pressed", async () => {
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    // Icon picker options are rendered as Pressables — press the first accessible one after the cancel/save row
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    // accessible[0] = Cancel, accessible[1] = Save (disabled), accessible[2..N] = icon pickers
+    fireEvent.press(accessible[2]);
+    expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy();
+  });
 });

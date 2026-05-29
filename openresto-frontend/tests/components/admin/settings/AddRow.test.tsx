@@ -87,26 +87,17 @@ describe("AddRow", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
-  it("resets and closes form when cancel is pressed", async () => {
+  it("resets and closes form when close button is pressed", async () => {
     render(<AddRow label="Add Item" placeholder="Item name" onAdd={onAdd} />);
     fireEvent.press(screen.getByText("Add Item"));
     fireEvent.changeText(screen.getByPlaceholderText("Item name"), "Something");
-    await act(async () => {
-      // press the close button (last Pressable in rowActions area)
-      const addBtn = screen.getByText("Add");
-      // Close is the Ionicons button — find via testID won't work, use the cancel press
-      // We trigger by pressing an element after the Add button
-    });
-    // After successful add, form resets
-    onAdd.mockResolvedValue(undefined);
-    fireEvent.changeText(screen.getByPlaceholderText("Item name"), "Valid");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Add"));
-    });
-    // Form should close and show label button again
+    // The close button is the last accessible Pressable in the form (Ionicons close-outline)
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    fireEvent.press(accessible[accessible.length - 1]);
     await waitFor(() => {
       expect(screen.getByText("Add Item")).toBeTruthy();
     });
+    expect(screen.queryByPlaceholderText("Item name")).toBeNull();
   });
 
   it("shows 'Adding…' text while saving", async () => {
