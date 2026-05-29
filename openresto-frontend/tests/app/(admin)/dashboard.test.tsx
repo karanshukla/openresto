@@ -17,6 +17,17 @@ global.fetch = jest.fn(() =>
 ) as jest.Mock;
 
 jest.mock("@/api/admin");
+jest.mock("@/components/admin/bookings/RestaurantActionModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+jest.mock("@/components/admin/bookings/BookingDetailPopup", () => ({
+  BookingDetailPopup: () => null,
+}));
+jest.mock("@/components/common/AlertModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -215,5 +226,51 @@ describe("AdminDashboardScreen", () => {
 
     fireEvent.press(screen.getByText("Manage Settings"));
     expect(mockPush).toHaveBeenCalledWith("/(admin)/settings");
+  });
+
+  it("navigates to bookings list on View All Bookings press", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("View All Bookings"));
+
+    fireEvent.press(screen.getByText("View All Bookings"));
+
+    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
+  });
+
+  it("does not crash or navigate on Pause Bookings press", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("Pause Bookings"));
+
+    fireEvent.press(screen.getByText("Pause Bookings"));
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("does not crash or navigate on Extend Bookings press", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("Extend Bookings"));
+
+    fireEvent.press(screen.getByText("Extend Bookings"));
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("does not crash when pressing a booking item", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("today@test.com"));
+
+    expect(() => fireEvent.press(screen.getByText("today@test.com"))).not.toThrow();
+  });
+
+  it("does not crash when stats resolves to null", async () => {
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue(null);
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
   });
 });

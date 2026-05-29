@@ -23,6 +23,14 @@ import {
   adminCreateHighlight,
   adminUpdateHighlight,
   adminDeleteHighlight,
+  adminLookupBookings,
+  sendBookingEmail,
+  pauseRestaurantBookings,
+  unpauseRestaurantBookings,
+  extendRestaurantBookings,
+  getEmailFailures,
+  uploadHeroImage,
+  deleteHeroImage,
 } from "@/api/admin";
 
 // Admin API now uses credentials: "include" for cookie-based auth — no mock needed
@@ -720,5 +728,232 @@ describe("adminDeleteHighlight", () => {
     mockFetch.mockRejectedValueOnce(new Error("network"));
     const result = await adminDeleteHighlight(1);
     expect(result).toBe(false);
+  });
+});
+
+// ---------- Lookup / new booking helpers ----------
+
+describe("adminLookupBookings", () => {
+  it("passes email param when query contains @", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    await adminLookupBookings("user@example.com");
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("email=user%40example.com");
+    expect(url).not.toContain("bookingRef=");
+    expect(url).toContain("status=all");
+  });
+
+  it("passes bookingRef param when query does not contain @", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+    await adminLookupBookings("REF123");
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("bookingRef=REF123");
+    expect(url).not.toContain("email=");
+    expect(url).toContain("status=all");
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminLookupBookings("REF999")).toEqual([]);
+  });
+});
+
+describe("sendBookingEmail", () => {
+  it("posts to /admin/bookings/{id}/email and returns ok + message", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "Email sent" }),
+    });
+
+    const result = await sendBookingEmail(7, "Subject", "Body text");
+
+    expect(result).toEqual({ ok: true, message: "Email sent" });
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/bookings/7/email");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ subject: "Subject", body: "Body text" });
+  });
+
+  it("returns ok false with server message on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Delivery failed" }),
+    });
+
+    const result = await sendBookingEmail(7, "Subject", "Body");
+    expect(result).toEqual({ ok: false, message: "Delivery failed" });
+  });
+
+  it("returns ok false with network error message on exception", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+
+    const result = await sendBookingEmail(7, "Subject", "Body");
+    expect(result).toEqual({ ok: false, message: "Network error." });
+  });
+});
+
+describe("pauseRestaurantBookings", () => {
+  it("posts to /admin/restaurants/{id}/pause and returns true on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    const result = await pauseRestaurantBookings(3, 30);
+
+    expect(result).toBe(true);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/restaurants/3/pause");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ minutes: 30 });
+  });
+
+  it("returns false on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await pauseRestaurantBookings(3, 30)).toBe(false);
+  });
+
+  it("returns false on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await pauseRestaurantBookings(3, 30)).toBe(false);
+  });
+});
+
+describe("unpauseRestaurantBookings", () => {
+  it("posts to /admin/restaurants/{id}/unpause and returns true on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    const result = await unpauseRestaurantBookings(3);
+
+    expect(result).toBe(true);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/restaurants/3/unpause");
+    expect(opts.method).toBe("POST");
+  });
+
+  it("returns false on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await unpauseRestaurantBookings(3)).toBe(false);
+  });
+
+  it("returns false on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await unpauseRestaurantBookings(3)).toBe(false);
+  });
+});
+
+describe("extendRestaurantBookings", () => {
+  it("posts to /admin/restaurants/{id}/extend and returns ok with extendedBookings", async () => {
+    const bookings = [{ id: 1 }, { id: 2 }];
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ extendedBookings: bookings }),
+    });
+
+    const result = await extendRestaurantBookings(4, 15);
+
+    expect(result).toEqual({ ok: true, extendedBookings: bookings });
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/restaurants/4/extend");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ minutes: 15 });
+  });
+
+  it("returns ok false with empty array on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+
+    const result = await extendRestaurantBookings(4, 15);
+    expect(result).toEqual({ ok: false, extendedBookings: [] });
+  });
+
+  it("returns ok false with empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+
+    const result = await extendRestaurantBookings(4, 15);
+    expect(result).toEqual({ ok: false, extendedBookings: [] });
+  });
+});
+
+describe("getEmailFailures", () => {
+  it("fetches GET /admin/email-settings/failures and returns array", async () => {
+    const failures = [
+      {
+        id: 1,
+        bookingRef: "REF001",
+        recipientEmail: "a@b.com",
+        errorMessage: "SMTP timeout",
+        attemptedAt: "2026-05-01T10:00:00Z",
+      },
+    ];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => failures });
+
+    const result = await getEmailFailures();
+
+    expect(result).toEqual(failures);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/email-settings/failures");
+  });
+
+  it("returns empty array on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await getEmailFailures()).toEqual([]);
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await getEmailFailures()).toEqual([]);
+  });
+});
+
+describe("uploadHeroImage", () => {
+  it("posts multipart to /api/media/hero and returns url on success", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ url: "https://cdn.example.com/hero.jpg" }),
+    });
+
+    const file = new File(["img"], "hero.jpg", { type: "image/jpeg" });
+    const result = await uploadHeroImage(file);
+
+    expect(result).toBe("https://cdn.example.com/hero.jpg");
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/media/hero");
+    expect(opts.method).toBe("POST");
+    expect(opts.credentials).toBe("include");
+  });
+
+  it("returns null on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const file = new File(["img"], "hero.jpg", { type: "image/jpeg" });
+    expect(await uploadHeroImage(file)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const file = new File(["img"], "hero.jpg", { type: "image/jpeg" });
+    expect(await uploadHeroImage(file)).toBeNull();
+  });
+});
+
+describe("deleteHeroImage", () => {
+  it("sends DELETE to /api/media/hero", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    await deleteHeroImage();
+
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/media/hero");
+    expect(opts.method).toBe("DELETE");
+    expect(opts.credentials).toBe("include");
+  });
+
+  it("resolves without throwing on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    await expect(deleteHeroImage()).resolves.toBeUndefined();
+  });
+
+  it("resolves without throwing on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    await expect(deleteHeroImage()).resolves.toBeUndefined();
   });
 });
