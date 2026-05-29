@@ -61,4 +61,22 @@ describe("CalendarActions", () => {
     expect(screen.getByText("Outlook Calendar")).toBeTruthy();
     expect(screen.getByText("Download .ics")).toBeTruthy();
   });
+
+  it("opens Google Calendar in full variant", () => {
+    render(<CalendarActions {...props} variant="full" />);
+    fireEvent.press(screen.getByText("Google Calendar"));
+    expect(window.open).toHaveBeenCalledWith("google-url", "_blank");
+  });
+
+  it("opens Outlook Calendar in full variant", () => {
+    render(<CalendarActions {...props} variant="full" />);
+    fireEvent.press(screen.getByText("Outlook Calendar"));
+    expect(window.open).toHaveBeenCalledWith("outlook-url", "_blank");
+  });
+
+  it("downloads .ics in full variant", () => {
+    render(<CalendarActions {...props} variant="full" />);
+    fireEvent.press(screen.getByText("Download .ics"));
+    expect(buildCalendarUrls).toHaveBeenCalled();
+  });
 });

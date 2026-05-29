@@ -135,6 +135,11 @@ describe("auth api", () => {
       mockFetch.mockResolvedValueOnce({ ok: false });
       expect(await getPvqStatus()).toBeNull();
     });
+
+    it("returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("offline"));
+      expect(await getPvqStatus()).toBeNull();
+    });
   });
 
   describe("setupPvq", () => {
@@ -169,6 +174,11 @@ describe("auth api", () => {
       mockFetch.mockResolvedValueOnce({ ok: false });
       expect(await verifyPvq("e", "a")).toBeNull();
     });
+
+    it("returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("offline"));
+      expect(await verifyPvq("test@email.com", "answer")).toBeNull();
+    });
   });
 
   describe("resetPassword", () => {
@@ -188,3 +198,4 @@ describe("auth api", () => {
     });
   });
 });
+

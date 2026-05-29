@@ -8,6 +8,10 @@ import {
   addTable,
   updateTable,
   deleteTable,
+  createRestaurant,
+  fetchHighlights,
+  uploadLocationImage,
+  deleteLocationImage,
 } from "@/api/restaurants";
 
 // Restaurants API now uses credentials: "include" for cookie-based auth
@@ -224,5 +228,100 @@ describe("deleteTable", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await deleteTable(1, 10, 20)).toBe(false);
+  });
+});
+
+describe("createRestaurant", () => {
+  it("creates and returns a new restaurant", async () => {
+    const restaurant = { id: 10, name: "New Place", sections: [] };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => restaurant });
+
+    const result = await createRestaurant("New Place");
+
+    expect(result).toMatchObject({ id: 10, name: "New Place" });
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/restaurants");
+    expect(opts.method).toBe("POST");
+  });
+
+  it("returns null on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await createRestaurant("Bad")).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await createRestaurant("Bad")).toBeNull();
+  });
+});
+
+describe("fetchHighlights", () => {
+  it("fetches and returns highlights", async () => {
+    const highlights = [{ id: 1, title: "Great food", body: "Desc", iconKey: "star-outline", sortOrder: 0 }];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => highlights });
+
+    const result = await fetchHighlights();
+
+    expect(result).toEqual(highlights);
+    expect(mockFetch.mock.calls[0][0]).toContain("/highlights");
+  });
+
+  it("returns empty array on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await fetchHighlights()).toEqual([]);
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await fetchHighlights()).toEqual([]);
+  });
+});
+
+describe("uploadLocationImage", () => {
+  it("uploads file and returns URL on success", async () => {
+    const url = "https://example.com/img.jpg";
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ url }) });
+
+    const file = new File(["content"], "test.jpg", { type: "image/jpeg" });
+    const result = await uploadLocationImage(1, file);
+
+    expect(result).toBe(url);
+    const [fetchUrl, opts] = mockFetch.mock.calls[0];
+    expect(fetchUrl).toContain("/media/location/1");
+    expect(opts.method).toBe("POST");
+  });
+
+  it("returns null on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const file = new File(["content"], "test.jpg", { type: "image/jpeg" });
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const file = new File(["content"], "test.jpg", { type: "image/jpeg" });
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+
+  it("returns null when response has no URL", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    const file = new File(["content"], "test.jpg", { type: "image/jpeg" });
+    expect(await uploadLocationImage(1, file)).toBeNull();
+  });
+});
+
+describe("deleteLocationImage", () => {
+  it("sends DELETE request", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    await deleteLocationImage(1);
+
+    const [fetchUrl, opts] = mockFetch.mock.calls[0];
+    expect(fetchUrl).toContain("/media/location/1");
+    expect(opts.method).toBe("DELETE");
+  });
+
+  it("ignores network errors gracefully", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    await expect(deleteLocationImage(1)).resolves.toBeUndefined();
   });
 });

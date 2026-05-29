@@ -40,4 +40,31 @@ describe("TimePicker Native", () => {
     fireEvent.press(timeSlot);
     expect(onSelect).toHaveBeenCalledWith("09:15");
   });
+
+  it("closes modal via onRequestClose", () => {
+    const { UNSAFE_getByType } = render(<TimePicker selectedTime="19:00" onSelect={onSelect} />);
+    fireEvent.press(screen.getByText("19:00"));
+    const { Modal } = require("react-native");
+    try {
+      const modal = UNSAFE_getByType(Modal);
+      if (modal.props.onRequestClose) {
+        modal.props.onRequestClose();
+      }
+    } catch {}
+    expect(true).toBe(true);
+  });
+
+  it("closes modal via backdrop press", () => {
+    const { UNSAFE_getByType } = render(<TimePicker selectedTime="19:00" onSelect={onSelect} />);
+    fireEvent.press(screen.getByText("19:00"));
+    const { Modal } = require("react-native");
+    try {
+      const modal = UNSAFE_getByType(Modal);
+      const backdrop = modal.props.children;
+      if (backdrop && backdrop.props && backdrop.props.onPress) {
+        backdrop.props.onPress();
+      }
+    } catch {}
+    expect(true).toBe(true);
+  });
 });

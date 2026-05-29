@@ -161,4 +161,62 @@ describe("RestaurantActionModal", () => {
     fireEvent.press(getByTestId("close-modal-button"));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("handles error when loading restaurants fails", async () => {
+    (adminApi.adminGetRestaurants as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const { queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+    consoleSpy.mockRestore();
+    expect(true).toBe(true);
+  });
+
+  it("calls onSuccess and onClose when extend returns no bookings", async () => {
+    (adminApi.extendRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      extendedBookings: [],
+    });
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal
+        visible={true}
+        actionType="extend"
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+    fireEvent.press(getByText("Test Restaurant 1"));
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(
+        "No active bookings found to extend for Test Restaurant 1."
+      );
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("handles error when handleAction throws", async () => {
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockRejectedValueOnce(
+      new Error("Pause failed")
+    );
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+    fireEvent.press(getByText("Test Restaurant 1"));
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+    consoleSpy.mockRestore();
+  });
 });

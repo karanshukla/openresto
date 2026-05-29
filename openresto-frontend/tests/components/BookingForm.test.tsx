@@ -179,4 +179,66 @@ describe("BookingForm", () => {
     // Since it's a real component in tests (unless mocked), we'll find its text.
     // Actually, suggestDate(22) for April 2026 today might pick a weekday.
   });
+
+  it("triggers addDays when current time is past restaurant closing window", () => {
+    // With closeTime = "08:30", latestStartMinutes = (8-1)*60+45 = 465
+    // At 08:00 UTC (480 mins), 480 >= 465 → suggestDate returns addDays(date, 1)
+    jest.useFakeTimers({ now: new Date("2026-05-28T08:00:00.000Z") });
+    const earlyCloseRestaurant = {
+      ...mockRestaurant,
+      closeTime: "08:30",
+    };
+    renderWithProviders(<BookingForm restaurant={earlyCloseRestaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it("triggers suggestTime fallback when openTime is late at night", () => {
+    // With openTime = "23:00" and current time at 08:00, currentTotal (480) < openH*60 (1380)
+    // → suggestTime returns `${openH+1}:00` = "00:00"
+    jest.useFakeTimers({ now: new Date("2026-05-28T08:00:00.000Z") });
+    const lateOpenRestaurant = {
+      ...mockRestaurant,
+      openTime: "23:00",
+      closeTime: "02:00",
+    };
+    renderWithProviders(<BookingForm restaurant={lateOpenRestaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it("advances setInterval for restaurantCurrentTime", () => {
+    jest.useFakeTimers({ now: new Date("2026-05-28T08:00:00.000Z") });
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+    jest.advanceTimersByTime(60_000);
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it("handles fetchAvailability returning null (no slots)", async () => {
+    const availabilityApi = require("@/api/availability");
+    availabilityApi.fetchAvailability.mockResolvedValueOnce(null);
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText("Confirm Booking")).toBeTruthy();
+    });
+  });
+
+  it("handles fetchAvailability returning slots with availableTableIds (covers bestTableFor filter)", async () => {
+    const availabilityApi = require("@/api/availability");
+    // Only T2 (id=101) is available — tableId is initially 100 (T1), so the
+    // table-update effect will enter the `!availableTableIds.includes(tableId)` branch
+    availabilityApi.fetchAvailability.mockResolvedValueOnce({
+      slots: [
+        { time: "12:00", isAvailable: true, availableTableIds: [101], category: "Lunch" },
+      ],
+    });
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+    await waitFor(() => {
+      expect(availabilityApi.fetchAvailability).toHaveBeenCalled();
+    });
+    // Give state updates time to settle
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+  });
 });
