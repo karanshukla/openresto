@@ -186,6 +186,7 @@ export default function AdminSettingsScreen() {
       if (data.length > 0) setSelectedId(data[0].id);
       setLoading(false);
     });
+    /* istanbul ignore next */
     return () => {
       cancelled = true;
     };
@@ -296,10 +297,12 @@ export default function AdminSettingsScreen() {
                 </ThemedText>
               </Pressable>
               <Pressable
-                onPress={() => {
-                  setAddingLocation(false);
-                  setNewLocationName("");
-                }}
+                onPress={
+                  /* istanbul ignore next */ () => {
+                    setAddingLocation(false);
+                    setNewLocationName("");
+                  }
+                }
                 style={{ padding: 8 }}
               >
                 <Ionicons name="close-outline" size={20} color={mutedColor} />

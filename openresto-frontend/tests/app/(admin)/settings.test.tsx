@@ -4,7 +4,7 @@
 import React from "react";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminSettingsScreen from "@/app/(admin)/settings";
-import { fetchRestaurants } from "@/api/restaurants";
+import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider } from "@/context/BrandContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -31,15 +31,15 @@ jest.mock("@expo/vector-icons", () => ({
 
 // Mock sub-components to focus on AdminSettingsScreen container
 jest.mock("@/components/admin/settings/LocationCard", () => ({
-  LocationCard: ({ onSelect, confirmAction }: any) => {
+  LocationCard: ({ confirmAction, onSaved }: any) => {
     const { View, Pressable, Text } = require("react-native");
     return (
       <View>
-        <Pressable testID="select-location" onPress={onSelect}>
-          <Text>Select</Text>
-        </Pressable>
         <Pressable testID="trigger-confirm" onPress={() => confirmAction("Test Message")}>
           <Text>Confirm</Text>
+        </Pressable>
+        <Pressable testID="trigger-save" onPress={() => onSaved?.({ name: "Patched Name" })}>
+          <Text>Save</Text>
         </Pressable>
       </View>
     );
@@ -89,6 +89,64 @@ describe("AdminSettingsScreen", () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue([]);
     renderWithProviders(<AdminSettingsScreen />);
     await waitFor(() => expect(screen.getByText("No locations found")).toBeTruthy());
+  });
+
+  it("patches restaurant when LocationCard onSaved is triggered", async () => {
+    renderWithProviders(<AdminSettingsScreen />);
+    await waitFor(() => screen.getByTestId("trigger-save"));
+    fireEvent.press(screen.getByTestId("trigger-save"));
+    await waitFor(() => expect(screen.queryByText("Patched Name")).toBeTruthy());
+  });
+
+  it("shows add location form when Add location is pressed", async () => {
+    renderWithProviders(<AdminSettingsScreen />);
+    await waitFor(() => screen.getByText("Add location"));
+    fireEvent.press(screen.getByText("Add location"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeTruthy()
+    );
+  });
+
+  it("adds a new location when Add is pressed with a name", async () => {
+    (createRestaurant as jest.Mock).mockResolvedValue({
+      id: 2,
+      name: "New Location",
+      sections: [],
+    });
+    renderWithProviders(<AdminSettingsScreen />);
+    await waitFor(() => screen.getByText("Add location"));
+    fireEvent.press(screen.getByText("Add location"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeTruthy()
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)"),
+      "New Location"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Add"));
+    });
+    expect(createRestaurant).toHaveBeenCalledWith("New Location");
+  });
+
+  it("closes add location form when createRestaurant fails", async () => {
+    (createRestaurant as jest.Mock).mockResolvedValue(null);
+    renderWithProviders(<AdminSettingsScreen />);
+    await waitFor(() => screen.getByText("Add location"));
+    fireEvent.press(screen.getByText("Add location"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeTruthy()
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)"),
+      "Bad Location"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Add"));
+    });
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeNull()
+    );
   });
 
   it("handles confirm flow through useConfirmLocal", async () => {

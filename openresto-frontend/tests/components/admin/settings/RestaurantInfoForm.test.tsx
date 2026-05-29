@@ -127,4 +127,85 @@ describe("RestaurantInfoForm", () => {
     // Component should still render correctly after toggle
     expect(screen.getByText("Sat")).toBeTruthy();
   });
+
+  it("deselects an active day when pressed again", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    // Mon (day 1) is active in "1,2,3,4,5" — pressing it deselects it
+    fireEvent.press(screen.getByText("Mon"));
+    expect(screen.getByText("4 of 7 days open")).toBeTruthy();
+  });
+
+  it("adds a tag via onSubmitEditing", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const tagInput = screen.getByPlaceholderText("Add tag (press Enter)");
+    fireEvent.changeText(tagInput, "sushi");
+    fireEvent(tagInput, "submitEditing");
+    expect(screen.getByText("sushi")).toBeTruthy();
+    // Input should be cleared
+    expect(screen.getByPlaceholderText("Add tag (press Enter)")).toBeTruthy();
+  });
+
+  it("does not add a duplicate tag", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const tagInput = screen.getByPlaceholderText("Add tag (press Enter)");
+    fireEvent.changeText(tagInput, "pizza");
+    fireEvent(tagInput, "submitEditing");
+    // Only one "pizza" text should exist (not two)
+    expect(screen.getAllByText("pizza")).toHaveLength(1);
+  });
+
+  it("adds a tag via onBlur when input has value", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const tagInput = screen.getByPlaceholderText("Add tag (press Enter)");
+    fireEvent.changeText(tagInput, "ramen");
+    fireEvent(tagInput, "blur");
+    expect(screen.getByText("ramen")).toBeTruthy();
+  });
+
+  it("removes a tag when its remove button is pressed", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(screen.getByText("pizza")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("remove-tag-pizza"));
+    expect(screen.queryByText("pizza")).toBeNull();
+    expect(screen.getByText("italian")).toBeTruthy();
+  });
+
+  it("discards changes when Discard is pressed", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Changed Name");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    fireEvent.press(screen.getByText("Discard"));
+    expect(screen.getByDisplayValue("Test Resto")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+
+  it("flushes pending tag input when saving", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      name: "Updated Resto",
+      tags: ["pizza", "italian", "tapas"],
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
+    const tagInput = screen.getByPlaceholderText("Add tag (press Enter)");
+    fireEvent.changeText(tagInput, "tapas");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ tags: expect.stringContaining("tapas") })
+    );
+    expect(onSaved).toHaveBeenCalled();
+  });
+
+  it("does not call onSaved when updateRestaurant returns null", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(null);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(onSaved).not.toHaveBeenCalled();
+  });
 });

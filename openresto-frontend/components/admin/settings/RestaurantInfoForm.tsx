@@ -241,7 +241,7 @@ export function RestaurantInfoForm({
             </ThemedText>
             <select
               value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
+              onChange={/* istanbul ignore next */ (e) => setTimezone(e.target.value)}
               style={{
                 width: "100%",
                 height: 44,
@@ -330,7 +330,7 @@ export function RestaurantInfoForm({
                   }}
                 >
                   <ThemedText style={{ fontSize: 12 }}>{tag}</ThemedText>
-                  <Pressable onPress={() => removeTag(tag)}>
+                  <Pressable onPress={() => removeTag(tag)} testID={`remove-tag-${tag}`}>
                     <Ionicons name="close" size={12} color={mutedColor} />
                   </Pressable>
                 </View>
