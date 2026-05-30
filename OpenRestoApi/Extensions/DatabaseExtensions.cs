@@ -92,6 +92,8 @@ public static partial class DatabaseExtensions
                 if (initialCreateRecorded)
                 {
                     LogMigrationRemapSkipped(logger);
+                    // Still patch any columns that may be missing from older deployments.
+                    AddColumnIfMissing(connection, "Bookings", "CustomerName", "TEXT NULL");
                     return;
                 }
 

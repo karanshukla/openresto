@@ -37,7 +37,7 @@ public class TimezoneLogicTests
         // UTC Range for April 19 Sydney: April 18 14:00 UTC to April 19 14:00 UTC.
         // Input is Unspecified (as ASP.NET parses a date-only query param).
         DateTime refDate = new DateTime(2026, 4, 19, 0, 0, 0, DateTimeKind.Unspecified);
-        string tz = "AUS Eastern Standard Time"; // Windows ID for Sydney
+        string tz = "Australia/Sydney";
 
         (DateTime start, DateTime end) = InvokeGetUtcRange(refDate, tz);
 
@@ -63,7 +63,7 @@ public class TimezoneLogicTests
         // UTC Range for April 18 Tokyo: April 17 15:00 UTC to April 18 15:00 UTC.
         // Input is Unspecified (as ASP.NET parses a date-only query param).
         DateTime refDate = new DateTime(2026, 4, 18, 0, 0, 0, DateTimeKind.Unspecified);
-        string tz = "Tokyo Standard Time";
+        string tz = "Asia/Tokyo";
 
         (DateTime start, DateTime end) = InvokeGetUtcRange(refDate, tz);
 
