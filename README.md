@@ -5,6 +5,8 @@
 
 A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.
 
+<img width="1008" height="872" alt="image" src="https://github.com/user-attachments/assets/5e6d1099-8c4b-4163-b037-d71816726136" />
+
 ## Tech Stack
 
 | Layer    | Technology                                                      |
