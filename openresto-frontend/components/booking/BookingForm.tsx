@@ -94,7 +94,6 @@ export default function BookingForm({
   const [sectionId, setSectionId] = useState<number>(() => restaurant.sections[0]?.id ?? 0);
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
-  const hasMultipleSections = restaurant.sections.length > 1;
   const sectionOptions = restaurant.sections.map((s) => ({ label: s.name, value: s.id }));
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
 
@@ -181,6 +180,7 @@ export default function BookingForm({
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     if (availableTableIds.length > 0) {
       if (!tableId || !availableTableIds.includes(tableId)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTableId(bestTableFor(seats, availableTableIds, candidates));
       }
     } else {
@@ -193,6 +193,7 @@ export default function BookingForm({
   useEffect(() => {
     releaseCurrentHold();
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTableId(
       bestTableFor(seats, availableTableIds.length > 0 ? availableTableIds : undefined, candidates)
     );

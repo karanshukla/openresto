@@ -88,6 +88,7 @@ export function useTableHold({
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       releaseCurrentHold();
       lastAppliedParams.current = "";
       return;

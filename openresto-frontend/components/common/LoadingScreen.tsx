@@ -45,6 +45,7 @@ export default function LoadingScreen({
         })
       ),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (process.env.NODE_ENV === "test") {

@@ -52,6 +52,7 @@ export default function PopularTimesPicker({
   useEffect(() => {
     const currentExists = slots?.some((s) => s.category === activeCategory);
     if (!currentExists && activeCategory !== "All" && slots?.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveCategory("All");
     }
   }, [slots, activeCategory]);

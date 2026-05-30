@@ -31,6 +31,7 @@ export function BrandSettingsCard({
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAppName(brand.appName);
     setBrandPrimaryColor(brand.primaryColor);
     setHeroPreview(brand.headerImageUrl ?? null);

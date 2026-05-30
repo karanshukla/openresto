@@ -34,6 +34,7 @@ export default function Skeleton({
         }),
       ])
     ).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const opacity = animatedValue.interpolate({

@@ -86,6 +86,7 @@ export default function AdminBookingsScreen() {
   const searchQuery = emailParam || bookingRefParam || null;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (create === "1") setShowNewModal(true);
   }, [create]);
 
@@ -120,6 +121,7 @@ export default function AdminBookingsScreen() {
   useEffect(() => {
     if (searchQuery) {
       let cancelled = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       getAdminBookings(undefined, undefined, "all", emailParam, bookingRefParam).then((b) => {
         if (!cancelled) {
@@ -133,6 +135,7 @@ export default function AdminBookingsScreen() {
     }
     if (!selectedRestaurantId) return;
     let cancelled = false;
+
     setLoading(true);
     getAdminBookings(selectedRestaurantId, undefined, statusFilter).then((b) => {
       if (!cancelled) {

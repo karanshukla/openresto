@@ -102,6 +102,7 @@ export default function BookingDetailScreen() {
     }
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingRestaurants(true);
     fetchRestaurants()
       .then((data) => {

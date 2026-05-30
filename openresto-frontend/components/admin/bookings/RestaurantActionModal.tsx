@@ -62,6 +62,7 @@ export default function RestaurantActionModal({
 
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadRestaurants();
     }
   }, [visible]);

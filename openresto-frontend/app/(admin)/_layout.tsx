@@ -71,6 +71,7 @@ function AdminLayoutInner() {
   useEffect(() => {
     const onLoginScreen = segments.includes("login" as never);
     if (onLoginScreen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthState("authenticated");
       return;
     }

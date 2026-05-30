@@ -101,7 +101,8 @@ describe("BookingForm", () => {
     const onSubmit = jest.fn();
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
 
-    // Fill email
+    // Fill name and email (both required by isValid)
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
 
     // Click submit
@@ -109,6 +110,7 @@ describe("BookingForm", () => {
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
+        customerName: "Test User",
         customerEmail: "test@test.com",
         holdId: "h-123",
       })
@@ -135,6 +137,7 @@ describe("BookingForm", () => {
     fireEvent.press(screen.getByText("2 seats"));
     fireEvent.press(screen.getByText("5 seats"));
 
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
     fireEvent.press(screen.getByText("Confirm Booking"));
 

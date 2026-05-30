@@ -36,6 +36,7 @@ export default function RestaurantScreen() {
         cancelled = true;
       };
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [id]);

@@ -69,6 +69,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
   useEffect(() => {
     if (!visible) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchRestaurants().then((data) => {
       setRestaurants(data);
@@ -88,6 +89,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
   useEffect(() => {
     if (!visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       setCapacityWarning(null);
       setEmail("");

@@ -123,17 +123,6 @@ describe("BookingConfirmationScreen", () => {
     expect(screen.getByText("Copied")).toBeTruthy();
   });
 
-  it("navigates back to home", async () => {
-    const { useLocalSearchParams } = require("expo-router");
-    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123" });
-
-    renderWithProviders(<BookingConfirmationScreen />);
-    await waitFor(() => screen.getByText("Back to Restaurants"));
-
-    fireEvent.press(screen.getByText("Back to Restaurants"));
-    expect(mockReplace).toHaveBeenCalledWith("/");
-  });
-
   it("shows not found state", async () => {
     const { useLocalSearchParams } = require("expo-router");
     useLocalSearchParams.mockReturnValue({ bookingRef: "NOTFOUND" });

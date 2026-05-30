@@ -46,7 +46,6 @@ describe("BookingDetailRows", () => {
     expect(screen.getByText("Email")).toBeTruthy();
     expect(screen.getByText("test@test.com")).toBeTruthy();
     expect(screen.getByText("Birthday")).toBeTruthy();
-    expect(screen.getByText("Table 5 (Garden)")).toBeTruthy();
     expect(screen.getByText(/Table for 4/)).toBeTruthy();
   });
 

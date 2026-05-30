@@ -53,6 +53,7 @@ export default function BookScreen() {
         cancelled = true;
       };
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [restaurantId]);

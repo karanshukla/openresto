@@ -72,6 +72,7 @@ export function BookingDetailPopup({
 
   useEffect(() => {
     if (bookingId === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBooking(null);
       setEditing(false);
       setEmailSubject("");
@@ -111,6 +112,7 @@ export function BookingDetailPopup({
   useEffect(() => {
     if (!editing || restaurants.length > 0) return;
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingRestaurants(true);
     fetchRestaurants()
       .then((data) => {
