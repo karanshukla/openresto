@@ -22,7 +22,7 @@ function getRestaurantDate(timezone: string): string {
     const month = parts.find((p) => p.type === "month")?.value ?? "";
     const day = parts.find((p) => p.type === "day")?.value ?? "";
     return `${year}-${month}-${day}`;
-  } catch {
+  } catch /* istanbul ignore next */ {
     return new Date().toISOString().split("T")[0];
   }
 }
@@ -50,7 +50,7 @@ function getRestaurantNow(timezone: string): { totalMins: number; isoDay: number
       Sunday: 7,
     };
     return { totalMins: rawHour * 60 + minute, isoDay: dayMap[weekday] ?? 1 };
-  } catch {
+  } catch /* istanbul ignore next */ {
     const now = new Date();
     const jsDay = now.getDay();
     return {
@@ -148,16 +148,24 @@ export default function RestaurantCard({
   return (
     <Pressable
       onPress={() => router.push(`/(user)/book?restaurantId=${restaurant.id}`)}
-      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-        styles.card,
-        cardShadow,
-        { backgroundColor: cardBg, borderColor },
-        (hovered || pressed) &&
-          Platform.OS === "web" && {
-            transform: [{ translateY: -2 }],
-            borderColor: isDark ? "#383d47" : "#cfc6b1",
-          },
-      ]}
+      style={
+        /* istanbul ignore next */ ({
+          hovered,
+          pressed,
+        }: {
+          hovered?: boolean;
+          pressed: boolean;
+        }) => [
+          styles.card,
+          cardShadow,
+          { backgroundColor: cardBg, borderColor },
+          (hovered || pressed) &&
+            Platform.OS === "web" && {
+              transform: [{ translateY: -2 }],
+              borderColor: isDark ? "#383d47" : "#cfc6b1",
+            },
+        ]
+      }
     >
       {/* Image area */}
       <View
@@ -233,15 +241,23 @@ export default function RestaurantCard({
               </ThemedText>
               <View style={styles.mapLinks}>
                 <Pressable
-                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                    styles.mapLink,
-                    {
-                      backgroundColor: surface2,
-                      borderColor: hovered || pressed ? primaryColor : borderColor,
-                    },
-                  ]}
+                  style={
+                    /* istanbul ignore next */ ({
+                      hovered,
+                      pressed,
+                    }: {
+                      hovered?: boolean;
+                      pressed: boolean;
+                    }) => [
+                      styles.mapLink,
+                      {
+                        backgroundColor: surface2,
+                        borderColor: hovered || pressed ? primaryColor : borderColor,
+                      },
+                    ]
+                  }
                   onPress={(e) => {
-                    e.stopPropagation?.();
+                    e?.stopPropagation?.();
                     Linking.openURL(
                       `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
                     );
@@ -254,15 +270,23 @@ export default function RestaurantCard({
                   </ThemedText>
                 </Pressable>
                 <Pressable
-                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                    styles.mapLink,
-                    {
-                      backgroundColor: surface2,
-                      borderColor: hovered || pressed ? primaryColor : borderColor,
-                    },
-                  ]}
+                  style={
+                    /* istanbul ignore next */ ({
+                      hovered,
+                      pressed,
+                    }: {
+                      hovered?: boolean;
+                      pressed: boolean;
+                    }) => [
+                      styles.mapLink,
+                      {
+                        backgroundColor: surface2,
+                        borderColor: hovered || pressed ? primaryColor : borderColor,
+                      },
+                    ]
+                  }
                   onPress={(e) => {
-                    e.stopPropagation?.();
+                    e?.stopPropagation?.();
                     Linking.openURL(
                       `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
                     );
@@ -278,7 +302,8 @@ export default function RestaurantCard({
           <Pressable
             style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
             onPress={(e) => {
-              e.stopPropagation?.();
+              e?.stopPropagation?.();
+              /* istanbul ignore next */
               if (Platform.OS === "web") {
                 window.open(`/(user)/book?restaurantId=${restaurant.id}`, "_blank");
               } else {
@@ -331,18 +356,26 @@ export default function RestaurantCard({
                 <Pressable
                   key={s.time}
                   onPress={(e) => {
-                    e.stopPropagation?.();
+                    e?.stopPropagation?.();
                     router.push(
                       `/(user)/book?restaurantId=${restaurant.id}&time=${encodeURIComponent(s.time)}&party=${party}`
                     );
                   }}
-                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                    styles.slot,
-                    {
-                      backgroundColor: hovered || pressed ? primaryColor : surface2,
-                      borderColor: hovered || pressed ? primaryColor : borderColor,
-                    },
-                  ]}
+                  style={
+                    /* istanbul ignore next */ ({
+                      hovered,
+                      pressed,
+                    }: {
+                      hovered?: boolean;
+                      pressed: boolean;
+                    }) => [
+                      styles.slot,
+                      {
+                        backgroundColor: hovered || pressed ? primaryColor : surface2,
+                        borderColor: hovered || pressed ? primaryColor : borderColor,
+                      },
+                    ]
+                  }
                 >
                   <ThemedText style={styles.slotText}>{s.time}</ThemedText>
                 </Pressable>

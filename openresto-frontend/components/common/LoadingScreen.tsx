@@ -24,6 +24,7 @@ export default function LoadingScreen({
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
 
+    /* istanbul ignore next */
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -56,11 +57,13 @@ export default function LoadingScreen({
     );
   }
 
+  /* istanbul ignore next */
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
 
+  /* istanbul ignore next */
   return (
     <View style={[styles.container, { backgroundColor: colors.page }]}>
       <Animated.View

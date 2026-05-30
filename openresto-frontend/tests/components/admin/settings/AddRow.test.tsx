@@ -128,4 +128,19 @@ describe("AddRow", () => {
       resolveAdd!();
     });
   });
+
+  it("closes form and resets when cancel button is pressed", async () => {
+    render(<AddRow label="Add Item" placeholder="Item name" onAdd={onAdd} />);
+    fireEvent.press(screen.getByText("Add Item"));
+    fireEvent.changeText(screen.getByPlaceholderText("Item name"), "Something");
+
+    // Cancel is the last accessible element in the form
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[accessible.length - 1]);
+    });
+
+    expect(screen.getByText("Add Item")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Item name")).toBeNull();
+  });
 });

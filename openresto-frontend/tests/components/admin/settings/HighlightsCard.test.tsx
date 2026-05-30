@@ -143,4 +143,65 @@ describe("HighlightsCard", () => {
     });
     expect(adminApi.adminDeleteHighlight).toHaveBeenCalledWith(1);
   });
+
+  it("opens edit form for existing highlight when edit button pressed", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue(mockHighlights);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    // accessible[2] is GreatFood edit button
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[2]);
+    });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Great Food")).toBeTruthy();
+    });
+  });
+
+  it("calls adminUpdateHighlight when saving edited highlight", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue(mockHighlights);
+    const updated = { ...mockHighlights[0], title: "Updated Food" };
+    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(updated);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    // Press edit on first highlight
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[2]);
+    });
+    await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
+    fireEvent.changeText(screen.getByDisplayValue("Great Food"), "Updated Food");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminUpdateHighlight).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ title: "Updated Food" })
+    );
+  });
+
+  it("updates description text in edit form", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue(mockHighlights);
+    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(mockHighlights[0]);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[2]);
+    });
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Short sentence about this highlight")).toBeTruthy()
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Short sentence about this highlight"),
+      "New description"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminUpdateHighlight).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ body: "New description" })
+    );
+  });
 });
