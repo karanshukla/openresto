@@ -48,7 +48,7 @@ export default function DatePicker({
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper} testID="date-picker-web">
       <input
         type="date"
         value={selectedDate || ""}

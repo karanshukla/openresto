@@ -204,6 +204,7 @@ export default function PopularTimesPicker({
             ]}
           >
             <Pressable
+              testID="scroll-left-arrow"
               onPress={() => scrollBy(-180)}
               style={({ pressed }) => [
                 styles.arrowCircle,
@@ -226,6 +227,7 @@ export default function PopularTimesPicker({
             ]}
           >
             <Pressable
+              testID="scroll-right-arrow"
               onPress={() => scrollBy(180)}
               style={({ pressed }) => [
                 styles.arrowCircle,

@@ -161,4 +161,76 @@ describe("RestaurantActionModal", () => {
     fireEvent.press(getByTestId("close-modal-button"));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("handles error when loading restaurants fails", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    (adminApi.adminGetRestaurants as jest.Mock).mockRejectedValue(new Error("Network error"));
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("loading-indicator")).toBeNull();
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Failed to load restaurants",
+      expect.any(Error)
+    );
+    expect(getByText("No restaurants found.")).toBeTruthy();
+    consoleSpy.mockRestore();
+  });
+
+  it("calls onSuccess and onClose when extend returns no bookings", async () => {
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
+    (adminApi.extendRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      extendedBookings: [],
+    });
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal
+        visible={true}
+        actionType="extend"
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+
+    await waitFor(() => expect(queryByTestId("loading-indicator")).toBeNull());
+
+    await act(async () => {
+      fireEvent.press(getByText("Test Restaurant 1"));
+    });
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(
+        "No active bookings found to extend for Test Restaurant 1."
+      );
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("handles error when action fails", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockRejectedValue(new Error("Server error"));
+
+    const { getByText, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+
+    await waitFor(() => expect(queryByTestId("loading-indicator")).toBeNull());
+
+    await act(async () => {
+      fireEvent.press(getByText("Test Restaurant 1"));
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Failed to pause bookings for restaurant",
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
+  });
 });

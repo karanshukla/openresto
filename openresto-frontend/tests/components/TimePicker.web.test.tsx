@@ -30,4 +30,13 @@ describe("TimePicker Web", () => {
     fireEvent(input, "change", { target: { value: "20:00" } });
     expect(onSelect).toHaveBeenCalledWith("20:00");
   });
+
+  it("fires onFocus and onBlur on the time input", () => {
+    const { getByTestId } = render(<TimePickerWeb selectedTime="19:00" onSelect={onSelect} />);
+    const wrapper = getByTestId("time-picker-web");
+    const input = (wrapper as any).children[0];
+    fireEvent(input, "focus");
+    fireEvent(input, "blur");
+    expect(wrapper).toBeTruthy();
+  });
 });

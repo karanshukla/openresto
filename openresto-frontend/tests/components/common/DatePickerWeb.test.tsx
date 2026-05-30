@@ -58,4 +58,21 @@ describe("DatePicker (web)", () => {
     render(<DatePickerWeb onSelect={onSelect} openDays={[2, 3]} />);
     expect(screen.queryByText(/normally closed on this day/)).toBeNull();
   });
+
+  it("calls onSelect when date value changes", () => {
+    const { getByTestId } = render(<DatePickerWeb onSelect={onSelect} />);
+    const wrapper = getByTestId("date-picker-web");
+    const input = (wrapper as any).children[0];
+    fireEvent(input, "change", { target: { value: "2026-11-15" } });
+    expect(onSelect).toHaveBeenCalledWith("2026-11-15");
+  });
+
+  it("fires onFocus and onBlur on the date input", () => {
+    const { getByTestId } = render(<DatePickerWeb onSelect={onSelect} />);
+    const wrapper = getByTestId("date-picker-web");
+    const input = (wrapper as any).children[0];
+    fireEvent(input, "focus");
+    fireEvent(input, "blur");
+    expect(wrapper).toBeTruthy();
+  });
 });

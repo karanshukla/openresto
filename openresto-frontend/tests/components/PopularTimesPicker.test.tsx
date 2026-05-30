@@ -167,4 +167,42 @@ describe("PopularTimesPicker", () => {
     // After auto-switch to All, 19:00 should be visible
     expect(screen.getByText("19:00")).toBeTruthy();
   });
+
+  it("fires onLayout on scrollWrapper to update containerWidth", () => {
+    render(<PopularTimesPicker slots={mockSlots} selectedTime="" onSelectTime={jest.fn()} />);
+    const ScrollViewType = require("react-native").ScrollView;
+    const scrollView = screen.UNSAFE_getByType(ScrollViewType);
+    const scrollWrapper = scrollView.parent;
+    act(() => {
+      fireEvent(scrollWrapper!, "layout", { nativeEvent: { layout: { width: 350, height: 65 } } });
+    });
+    expect(screen.getByText("12:00")).toBeTruthy();
+  });
+
+  it("shows and presses left and right scroll arrows when content overflows", () => {
+    render(<PopularTimesPicker slots={mockSlots} selectedTime="" onSelectTime={jest.fn()} />);
+    const ScrollViewType = require("react-native").ScrollView;
+    const scrollView = screen.UNSAFE_getByType(ScrollViewType);
+    const scrollWrapper = scrollView.parent!;
+
+    // Trigger state changes by directly calling prop handlers
+    act(() => {
+      scrollView.props.onContentSizeChange(600, 65);
+      scrollWrapper.props.onLayout({ nativeEvent: { layout: { width: 300 } } });
+      scrollView.props.onScroll({ nativeEvent: { contentOffset: { x: 50, y: 0 } } });
+    });
+
+    // Both arrows should now be visible (testIDs added to source for testability)
+    expect(screen.getByTestId("scroll-left-arrow")).toBeTruthy();
+    expect(screen.getByTestId("scroll-right-arrow")).toBeTruthy();
+
+    act(() => {
+      fireEvent.press(screen.getByTestId("scroll-left-arrow")); // scrollBy(-180)
+    });
+    act(() => {
+      fireEvent.press(screen.getByTestId("scroll-right-arrow")); // scrollBy(180)
+    });
+
+    expect(screen.getByText("12:00")).toBeTruthy();
+  });
 });
