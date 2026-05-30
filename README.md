@@ -1,6 +1,7 @@
 # OpenResto
 
-[![Coverage Status](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main)](https://coveralls.io/github/karanshukla/openresto?branch=main)
+[![Frontend Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main&flag=frontend)](https://coveralls.io/github/karanshukla/openresto?branch=main&flag=frontend)
+[![Backend Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main&flag=backend)](https://coveralls.io/github/karanshukla/openresto?branch=main&flag=backend)
 
 A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.
 
@@ -13,6 +14,47 @@ A self-hosted restaurant booking management system. Customers browse restaurants
 | Auth     | JWT Bearer Tokens (HS256)                                       |
 | Email    | MailKit (SMTP)                                                  |
 | Infra    | Docker Compose, Nginx reverse proxy                             |
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Client(["Browser / Mobile"])
+
+    subgraph compose["Docker Compose — localhost:5062"]
+        Nginx["Nginx Reverse Proxy"]
+
+        subgraph fe_container["Frontend Container"]
+            FE["Expo / React Native\n:8081"]
+        end
+
+        subgraph be_container["Backend Container"]
+            API["ASP.NET Core 10\n:8080"]
+            DB[("SQLite")]
+        end
+
+        Vol[("media_data\nShared Volume")]
+    end
+
+    SMTP(["SMTP Server"])
+
+    Client -- "HTTP :5062" --> Nginx
+    Nginx -- "/*" --> FE
+    Nginx -- "/api/*" --> API
+    Nginx -- "/media/*" --> Vol
+    API --- DB
+    API -- "MailKit" --> SMTP
+
+    classDef container fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    classDef storage fill:#fef9c3,stroke:#ca8a04,color:#3d2b00
+    classDef external fill:#dcfce7,stroke:#16a34a,color:#052e16
+    classDef proxy fill:#fce7f3,stroke:#db2777,color:#500724
+
+    class FE,API container
+    class DB,Vol storage
+    class SMTP,Client external
+    class Nginx proxy
+```
 
 ## Quick Start
 
