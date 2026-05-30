@@ -1,5 +1,7 @@
 # OpenResto
 
+[![Coverage Status](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main)](https://coveralls.io/github/karanshukla/openresto?branch=main)
+
 A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.
 
 ## Tech Stack

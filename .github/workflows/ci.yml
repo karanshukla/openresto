@@ -12,6 +12,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  checks: write
 
 jobs:
   frontend:
@@ -45,6 +46,14 @@ jobs:
 
       - name: Run Tests
         run: npm test -- --ci --coverage --forceExit
+
+      - name: Upload Frontend Coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: openresto-frontend/coverage/lcov.info
+          flag-name: frontend
+          parallel: true
 
       - name: Upload Frontend Coverage
         if: always()
@@ -84,7 +93,15 @@ jobs:
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate Coverage Report
-        run: reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"Html;Cobertura"
+        run: reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"Html;Cobertura;lcov"
+
+      - name: Upload Backend Coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: CoverageReport/lcov.info
+          flag-name: backend
+          parallel: true
 
       - name: Upload Test Results
         if: always()
@@ -114,6 +131,17 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           path: code-coverage-results.md
+
+  coveralls:
+    name: Coveralls Finish
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - name: Finish Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
 
   docker:
     name: Docker Compose
