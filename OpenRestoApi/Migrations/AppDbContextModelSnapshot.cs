@@ -15,7 +15,7 @@ namespace OpenRestoApi.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminCredential", b =>
                 {
@@ -69,6 +69,9 @@ namespace OpenRestoApi.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CustomerEmail")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CustomerName")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Date")

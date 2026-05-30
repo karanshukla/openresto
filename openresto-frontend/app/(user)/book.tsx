@@ -64,12 +64,15 @@ export default function BookScreen() {
     const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
     const bookingData = {
       customerEmail: data.customerEmail,
+      customerName: data.customerName,
       seats: data.seats,
       tableId: data.tableId,
       holdId: data.holdId,
       restaurantId: restaurant.id,
       sectionId:
-        restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ?? 0,
+        data.sectionId ||
+        restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ||
+        0,
       date: dateTime,
       specialRequests: data.specialRequests || null,
     };

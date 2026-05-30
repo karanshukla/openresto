@@ -21,6 +21,7 @@ describe("createBooking", () => {
     tableId: 2,
     sectionId: 1,
     customerEmail: "test@example.com",
+    customerName: "Test User",
     seats: 4,
     date: "2026-06-15T19:00:00Z",
   };
@@ -202,6 +203,7 @@ describe("normalizeBooking (PascalCase fields)", () => {
       RestaurantId: 5,
       Date: "2026-06-15T19:00:00Z",
       CustomerEmail: "pascal@test.com",
+      CustomerName: "Pascal User",
       Seats: 3,
       IsHeld: true,
       SpecialRequests: "window seat",
@@ -224,6 +226,7 @@ describe("normalizeBooking (PascalCase fields)", () => {
       sectionId: 4,
       restaurantId: 5,
       customerEmail: "pascal@test.com",
+      customerName: "Pascal User",
       seats: 3,
       isHeld: true,
       bookingRef: "sunny-tarragon",

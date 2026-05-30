@@ -259,7 +259,7 @@ public class BookingService(
                     <!-- Confirmation Hero -->
                     <tr><td style="padding:0 40px;">
                       <div style="background-color:{primaryColor}10;border-radius:12px;padding:24px;text-align:center;border:1px solid {primaryColor}20;">
-                        <p style="margin:0;font-size:18px;font-weight:600;color:{primaryColor};">You're all set!</p>
+                        <p style="margin:0;font-size:18px;font-weight:600;color:{primaryColor};">{(string.IsNullOrWhiteSpace(booking.CustomerName) ? "You're all set!" : $"You're all set, {System.Net.WebUtility.HtmlEncode(booking.CustomerName)}!")}</p>
                         <p style="margin:4px 0 0;font-size:14px;color:{primaryColor};opacity:0.8;">We're looking forward to seeing you.</p>
                       </div>
                     </td></tr>

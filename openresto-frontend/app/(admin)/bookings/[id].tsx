@@ -50,6 +50,7 @@ export default function BookingDetailScreen() {
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
   const [editSeats, setEditSeats] = useState("1");
   const [editEmail, setEditEmail] = useState("");
+  const [editCustomerName, setEditCustomerName] = useState("");
   const [editSpecialRequests, setEditSpecialRequests] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -75,6 +76,7 @@ export default function BookingDetailScreen() {
       if (b) {
         setEditSeats(String(b.seats));
         setEditEmail(b.customerEmail ?? "");
+        setEditCustomerName(b.customerName ?? "");
         setEditSpecialRequests(b.specialRequests ?? "");
         setEditTableId(b.tableId);
         setEditSectionId(b.sectionId);
@@ -212,6 +214,7 @@ export default function BookingDetailScreen() {
         date: dateTime.toISOString(),
         seats,
         customerEmail: editEmail.trim() || undefined,
+        customerName: editCustomerName.trim() || undefined,
         specialRequests: editSpecialRequests.trim() || undefined,
       };
 
@@ -230,6 +233,7 @@ export default function BookingDetailScreen() {
     if (booking) {
       setEditSeats(String(booking.seats));
       setEditEmail(booking.customerEmail ?? "");
+      setEditCustomerName(booking.customerName ?? "");
       setEditSpecialRequests(booking.specialRequests ?? "");
       setEditTableId(booking.tableId);
       setEditSectionId(booking.sectionId);
@@ -367,6 +371,7 @@ export default function BookingDetailScreen() {
               editTableId={editTableId}
               editSeats={editSeats}
               editEmail={editEmail}
+              editCustomerName={editCustomerName}
               editSpecialRequests={editSpecialRequests}
               editDate={editDate}
               editTime={editTime}
@@ -374,6 +379,7 @@ export default function BookingDetailScreen() {
               setEditTableId={setEditTableId}
               setEditSeats={setEditSeats}
               setEditEmail={setEditEmail}
+              setEditCustomerName={setEditCustomerName}
               setEditSpecialRequests={setEditSpecialRequests}
               setEditDate={setEditDate}
               setEditTime={setEditTime}

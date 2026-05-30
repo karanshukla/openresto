@@ -11,6 +11,7 @@ public class Booking
     public int RestaurantId { get; set; }
     public DateTime Date { get; set; }
     public string? CustomerEmail { get; set; }
+    public string? CustomerName { get; set; }
     public int Seats { get; set; }
     public string? SpecialRequests { get; set; }
     public string BookingRef { get; set; } = string.Empty;

@@ -1,8 +1,10 @@
 import { ThemedText } from "@/components/themed-text";
-import { getBookingByRef, getBookingById, BookingDto } from "@/api/bookings";
+import { getBookingByRef, getBookingById, cancelBookingByRef, BookingDto } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
 import {
+  Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -11,22 +13,14 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  COLORS,
-  BORDER_RADIUS,
-  BUTTON_SIZES,
-  SHADOWS,
-  SPACING,
-  TYPOGRAPHY,
-  getThemeColors,
-} from "@/theme/theme";
+import { BORDER_RADIUS, BUTTON_SIZES, SHADOWS, SPACING, TYPOGRAPHY, COLORS } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
-import { useBrand } from "@/context/BrandContext";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -34,11 +28,10 @@ export default function BookingConfirmationScreen() {
   const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const router = useRouter();
-  const brand = useBrand();
-  const accent = brand.primaryColor || COLORS.primary;
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
 
@@ -86,7 +79,9 @@ export default function BookingConfirmationScreen() {
           style={[styles.retryBtn, { borderColor: colors.border }]}
           onPress={() => router.replace("/")}
         >
-          <ThemedText style={[styles.retryBtnText, { color: accent }]}>Back to Home</ThemedText>
+          <ThemedText style={[styles.retryBtnText, { color: primaryColor }]}>
+            Back to Home
+          </ThemedText>
         </Pressable>
       </View>
     );
@@ -95,6 +90,24 @@ export default function BookingConfirmationScreen() {
   const ref = booking.bookingRef ?? bookingRef;
   const restaurantName = restaurant?.name ?? "Restaurant";
 
+  const handleCancelBooking = async () => {
+    if (!booking?.bookingRef) return;
+    setCancelling(true);
+    try {
+      const ok = await cancelBookingByRef(booking.bookingRef, booking.customerEmail ?? "");
+      if (ok) {
+        setBooking((prev) => (prev ? { ...prev, isCancelled: true } : prev));
+        setShowCancelConfirm(false);
+      } else if (Platform.OS === "web") {
+        window.alert("Failed to cancel booking.");
+      } else {
+        Alert.alert("Error", "Failed to cancel booking.");
+      }
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.page }}
@@ -102,31 +115,21 @@ export default function BookingConfirmationScreen() {
     >
       {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Confirmed" }} />}
       <PageContainer>
-        <View style={[styles.successHeader, { paddingTop: isWide ? 48 : 20 }]}>
-          <View style={styles.checkCircle}>
+        {/* Header — same spacing pattern as lookup page */}
+        <View style={styles.header}>
+          <View style={[styles.checkCircle, { backgroundColor: primaryColor }]}>
             <Ionicons name="checkmark" size={32} color={COLORS.white} />
           </View>
           <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
           <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}. Save
-            your reference below.
+            {booking.customerName ? `${booking.customerName}, ` : ""}
+            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}
           </ThemedText>
         </View>
 
-        <RefCard
-          ref={ref}
-          accent={accent}
-          isDark={isDark}
-          colors={colors}
-          copied={copied}
-          onCopy={() => {
-            navigator.clipboard.writeText(ref);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
-        />
-
+        {/* Two-column on wide: [details] | [ref card + calendar] */}
         <View style={isWide ? styles.wideRow : styles.narrowGap}>
+          {/* Left / top on narrow: detail rows */}
           <View
             style={[
               styles.detailCard,
@@ -142,8 +145,54 @@ export default function BookingConfirmationScreen() {
             />
           </View>
 
-          {Platform.OS === "web" && ref && (
-            <View style={isWide && styles.wideCol}>
+          {/* Right / bottom on narrow: ref card + calendar + directions stacked */}
+          <View style={[isWide && styles.wideCol, styles.rightCol]}>
+            <View
+              style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                Booking Reference
+              </ThemedText>
+              <View style={styles.refRow}>
+                <View
+                  style={[
+                    styles.refBadge,
+                    { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
+                  ]}
+                >
+                  <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
+                </View>
+                {Platform.OS === "web" && (
+                  <Pressable
+                    style={[styles.copyBtn, { borderColor: colors.border }]}
+                    onPress={() => {
+                      navigator.clipboard.writeText(ref);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    <Ionicons
+                      name={copied ? "checkmark" : "copy-outline"}
+                      size={14}
+                      color={copied ? COLORS.success : primaryColor}
+                    />
+                    <ThemedText
+                      style={[
+                        styles.copyBtnText,
+                        { color: copied ? COLORS.success : primaryColor },
+                      ]}
+                    >
+                      {copied ? "Copied" : "Copy"}
+                    </ThemedText>
+                  </Pressable>
+                )}
+              </View>
+              <ThemedText style={[styles.refHint, { color: colors.muted }]}>
+                Use this reference and your email to look up your booking
+              </ThemedText>
+            </View>
+
+            {Platform.OS === "web" && ref && (
               <View
                 style={[
                   styles.actionCard,
@@ -160,76 +209,108 @@ export default function BookingConfirmationScreen() {
                   variant="full"
                 />
               </View>
-            </View>
-          )}
-        </View>
+            )}
 
-        <View style={isWide ? styles.actionsWide : styles.actions}>
-          <Pressable
-            style={[styles.secondaryBtn, { borderColor: colors.border }]}
-            onPress={() => router.replace("/")}
-          >
-            <Ionicons name="home-outline" size={16} color={accent} />
-            <ThemedText style={[styles.secondaryBtnText, { color: accent }]}>
-              Back to Restaurants
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            style={[styles.secondaryBtn, { borderColor: colors.border }]}
-            onPress={() => router.push("/(user)/lookup")}
-          >
-            <Ionicons name="search-outline" size={16} color={accent} />
-            <ThemedText style={[styles.secondaryBtnText, { color: accent }]}>
-              Find My Booking
-            </ThemedText>
-          </Pressable>
+            <View
+              style={[
+                styles.actionCard,
+                styles.directionsCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              {restaurant?.address && (
+                <>
+                  <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                    Get Directions
+                  </ThemedText>
+                  <View style={styles.mapMeta}>
+                    <Ionicons name="location-outline" size={13} color={colors.muted} />
+                    <ThemedText
+                      style={[styles.mapAddress, { color: colors.muted }]}
+                      numberOfLines={2}
+                    >
+                      {restaurant.address}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.mapLinks}>
+                    <Pressable
+                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                        styles.mapLink,
+                        {
+                          backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
+                          borderColor: hovered || pressed ? primaryColor : colors.border,
+                        },
+                      ]}
+                      onPress={() =>
+                        Linking.openURL(
+                          `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
+                        )
+                      }
+                      accessibilityLabel="Open in Google Maps"
+                    >
+                      <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                      <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
+                        Google
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable
+                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                        styles.mapLink,
+                        {
+                          backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
+                          borderColor: hovered || pressed ? primaryColor : colors.border,
+                        },
+                      ]}
+                      onPress={() =>
+                        Linking.openURL(
+                          `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
+                        )
+                      }
+                      accessibilityLabel="Open in Apple Maps"
+                    >
+                      <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                      <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
+                        Apple
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                  <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
+                </>
+              )}
+
+              {!booking.isCancelled ? (
+                <Pressable
+                  style={styles.cancelBtn}
+                  onPress={() => setShowCancelConfirm(true)}
+                  disabled={cancelling}
+                >
+                  <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                  <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
+                </Pressable>
+              ) : (
+                <View style={styles.cancelledNote}>
+                  <Ionicons name="close-circle" size={15} color={COLORS.error} />
+                  <ThemedText style={[styles.cancelBtnText, { opacity: 0.7 }]}>
+                    This booking has been cancelled
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
         </View>
       </PageContainer>
-    </ScrollView>
-  );
-}
 
-function RefCard({
-  ref,
-  accent,
-  isDark,
-  colors,
-  copied,
-  onCopy,
-}: {
-  ref: string;
-  accent: string;
-  isDark: boolean;
-  colors: ReturnType<typeof getThemeColors>;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <View style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <ThemedText style={[styles.refLabel, { color: colors.muted }]}>Booking Reference</ThemedText>
-      <View style={styles.refRow}>
-        <View
-          style={[styles.refBadge, { backgroundColor: isDark ? `${accent}22` : `${accent}14` }]}
-        >
-          <ThemedText style={[styles.refValue, { color: accent }]}>{ref}</ThemedText>
-        </View>
-        {Platform.OS === "web" && (
-          <Pressable style={[styles.copyBtn, { borderColor: colors.border }]} onPress={onCopy}>
-            <Ionicons
-              name={copied ? "checkmark" : "copy-outline"}
-              size={14}
-              color={copied ? COLORS.success : accent}
-            />
-            <ThemedText style={[styles.copyBtnText, { color: copied ? COLORS.success : accent }]}>
-              {copied ? "Copied" : "Copy"}
-            </ThemedText>
-          </Pressable>
-        )}
-      </View>
-      <ThemedText style={[styles.refHint, { color: colors.muted }]}>
-        Use this reference and your email to look up your booking
-      </ThemedText>
-    </View>
+      <ConfirmModal
+        visible={showCancelConfirm}
+        title="Cancel Reservation"
+        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
+        cancelLabel="Keep Booking"
+        destructive
+        onConfirm={handleCancelBooking}
+        onCancel={() => !cancelling && setShowCancelConfirm(false)}
+      />
+    </ScrollView>
   );
 }
 
@@ -245,18 +326,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   retryBtnText: { fontSize: 14, fontWeight: "600" },
-  successHeader: { alignItems: "center", paddingBottom: SPACING.lg, gap: SPACING.xsm },
+
+  // Header — mirrors lookup page
+  header: { alignItems: "center", gap: 8, marginTop: 8, marginBottom: 20 },
   checkCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.success,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
-  title: { ...TYPOGRAPHY.h1, textAlign: "center" },
-  subtitle: { ...TYPOGRAPHY.body, textAlign: "center", maxWidth: 400 },
+  title: { fontSize: 28, fontWeight: "800", letterSpacing: -0.6, marginTop: 8 },
+  subtitle: { fontSize: 15, textAlign: "center", lineHeight: 22 },
+
+  // Two-column layout
+  wideRow: { flexDirection: "row", gap: SPACING.xl, alignItems: "stretch" },
+  narrowGap: { gap: SPACING.lg },
+  wideCol: { flex: 1 },
+  rightCol: { gap: SPACING.lg, flexDirection: "column" },
+
+  // Detail rows card
+  detailCard: {
+    borderRadius: BORDER_RADIUS.card,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...SHADOWS.md,
+  },
+
+  // Reference card
   refCard: {
     borderRadius: BORDER_RADIUS.card,
     borderWidth: 1,
@@ -291,20 +389,17 @@ const styles = StyleSheet.create({
   },
   copyBtnText: { ...TYPOGRAPHY.caption, fontWeight: "600" },
   refHint: { ...TYPOGRAPHY.caption, textAlign: "center" },
-  wideRow: {
+  savedNote: {
     flexDirection: "row",
-    gap: SPACING.xl,
-    alignItems: "flex-start",
-    marginTop: SPACING.lg,
+    alignItems: "center",
+    gap: 5,
+    paddingTop: SPACING.sm,
+    marginTop: SPACING.xsm,
+    borderTopWidth: 1,
   },
-  narrowGap: { gap: SPACING.lg, marginTop: SPACING.lg },
-  wideCol: { flex: 1 },
-  detailCard: {
-    borderRadius: BORDER_RADIUS.card,
-    borderWidth: 1,
-    overflow: "hidden",
-    ...SHADOWS.md,
-  },
+  savedNoteText: { ...TYPOGRAPHY.caption, opacity: 0.75 },
+
+  // Calendar card
   actionCard: {
     borderRadius: BORDER_RADIUS.card,
     borderWidth: 1,
@@ -312,17 +407,34 @@ const styles = StyleSheet.create({
     gap: SPACING.xsm,
     ...SHADOWS.md,
   },
-  actions: { gap: SPACING.xsm, marginTop: SPACING.lg },
-  actionsWide: { flexDirection: "row", gap: SPACING.md, marginTop: SPACING.lg },
-  secondaryBtn: {
+
+  directionsCard: { gap: SPACING.sm, flex: 1 },
+  cardDivider: { height: 1, marginVertical: SPACING.xsm },
+  cancelBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    paddingVertical: 13,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    flex: 1,
+    gap: 8,
+    paddingVertical: SPACING.sm,
   },
-  secondaryBtnText: { ...TYPOGRAPHY.bodyBold },
+  cancelBtnText: { color: COLORS.error, ...TYPOGRAPHY.bodyBold },
+  cancelledNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: SPACING.sm,
+  },
+  // Directions card — same pill style as restaurant card homepage
+  mapMeta: { flexDirection: "row", alignItems: "flex-start", gap: 5, marginBottom: 4 },
+  mapAddress: { fontSize: 13, flex: 1, lineHeight: 18 },
+  mapLinks: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  mapLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  mapLinkText: { fontSize: 12.5, fontWeight: "600" },
 });

@@ -18,6 +18,7 @@ export interface BookingSummaryDto {
   date: string;
   endTime?: string;
   customerEmail: string;
+  customerName?: string;
   seats: number;
   restaurantName: string;
   bookingRef: string;
@@ -49,6 +50,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
         date: b.date,
         endTime: b.endTime,
         customerEmail: b.customerEmail,
+        customerName: b.customerName,
         seats: b.seats,
         restaurantName: b.restaurantName,
         bookingRef: b.bookingRef ?? "",
@@ -72,6 +74,7 @@ export interface BookingDetailDto {
   date: string;
   endTime?: string;
   customerEmail: string;
+  customerName?: string;
   seats: number;
   specialRequests?: string;
   bookingRef?: string;
@@ -85,6 +88,7 @@ export interface AdminCreateBookingRequest {
   tableId: number;
   date: string;
   customerEmail: string;
+  customerName?: string;
   seats: number;
 }
 
@@ -92,6 +96,7 @@ export interface UpdateBookingRequest {
   date?: string;
   seats?: number;
   customerEmail?: string;
+  customerName?: string;
   tableId?: number;
   sectionId?: number;
 }
@@ -259,6 +264,7 @@ export interface AdminUpdateBookingRequest {
   date?: string;
   seats?: number;
   customerEmail?: string;
+  customerName?: string;
   specialRequests?: string;
 }
 

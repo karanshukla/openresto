@@ -368,7 +368,7 @@ function BookingItem({
       <View style={styles.bookingInfo}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <ThemedText style={styles.bookingEmail} numberOfLines={1}>
-            {booking.customerEmail}
+            {booking.customerName ?? booking.customerEmail}
           </ThemedText>
           {isCancelled ? (
             <View style={styles.cancelledBadge}>
@@ -378,6 +378,11 @@ function BookingItem({
             <StatusBadge date={booking.date} isDark={isDark} />
           )}
         </View>
+        {booking.customerName && (
+          <ThemedText style={[styles.bookingMeta, { color: colors.muted }]} numberOfLines={1}>
+            {booking.customerEmail}
+          </ThemedText>
+        )}
         <ThemedText style={[styles.bookingMeta, { color: colors.muted }]}>
           {booking.seats} guests · {booking.restaurantName}
         </ThemedText>

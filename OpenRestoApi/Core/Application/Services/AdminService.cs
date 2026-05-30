@@ -241,6 +241,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             Date = newStart,
             EndTime = newStart.AddHours(1),
             CustomerEmail = req.CustomerEmail,
+            CustomerName = req.CustomerName,
             Seats = req.Seats,
             BookingRef = BookingRefGenerator.Generate(),
         };
@@ -295,6 +296,11 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         if (!string.IsNullOrEmpty(req.CustomerEmail))
         {
             booking.CustomerEmail = req.CustomerEmail;
+        }
+
+        if (req.CustomerName != null)
+        {
+            booking.CustomerName = string.IsNullOrWhiteSpace(req.CustomerName) ? null : req.CustomerName.Trim();
         }
 
         if (req.TableId.HasValue)
@@ -497,6 +503,10 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         if (req.CustomerEmail != null)
         {
             booking.CustomerEmail = req.CustomerEmail;
+        }
+        if (req.CustomerName != null)
+        {
+            booking.CustomerName = string.IsNullOrWhiteSpace(req.CustomerName) ? null : req.CustomerName.Trim();
         }
         if (req.SpecialRequests != null)
         {
@@ -722,6 +732,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             Date = dateUtc,
             EndTime = endTimeUtc,
             CustomerEmail = b.CustomerEmail,
+            CustomerName = b.CustomerName,
             Seats = b.Seats,
             SpecialRequests = b.SpecialRequests,
             BookingRef = b.BookingRef,

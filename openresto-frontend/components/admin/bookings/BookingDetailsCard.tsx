@@ -8,6 +8,7 @@ interface BookingDetailsCardProps {
     id: number;
     bookingRef?: string;
     customerEmail: string;
+    customerName?: string;
     date: string;
     endTime?: string;
     seats: number;
@@ -60,7 +61,8 @@ export function BookingDetailsCard({
 
   const rows: { label: string; value: string }[] = [
     { label: "Ref", value: booking.bookingRef ?? `#${booking.id}` },
-    { label: "Guest", value: booking.customerEmail },
+    ...(booking.customerName ? [{ label: "Name", value: booking.customerName }] : []),
+    { label: "Email", value: booking.customerEmail },
     {
       label: "Date",
       value: startTime.toLocaleDateString(undefined, {

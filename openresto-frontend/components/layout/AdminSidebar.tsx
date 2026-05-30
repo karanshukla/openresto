@@ -206,7 +206,7 @@ export default function AdminSidebar() {
                   style={[styles.upcomingEmail, { color: colors.text }]}
                   numberOfLines={1}
                 >
-                  {b.customerEmail.split("@")[0]}
+                  {b.customerName ?? b.customerEmail.split("@")[0]}
                 </ThemedText>
                 <View style={styles.upcomingMeta}>
                   <Ionicons name="people-outline" size={11} color={colors.muted} />

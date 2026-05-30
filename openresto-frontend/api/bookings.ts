@@ -7,6 +7,7 @@ export interface BookingDto {
   restaurantId: number;
   date: string;
   customerEmail: string;
+  customerName?: string;
   seats: number;
   isHeld: boolean;
   specialRequests?: string;
@@ -22,6 +23,7 @@ export interface BookingCreationDto {
   tableId: number;
   sectionId: number;
   customerEmail: string;
+  customerName: string;
   seats: number;
   date: string;
   holdId?: string | null;
@@ -37,6 +39,7 @@ function normalizeBooking(raw: Record<string, unknown>): BookingDto {
     restaurantId: (raw.restaurantId ?? raw.RestaurantId) as number,
     date: (raw.date ?? raw.Date) as string,
     customerEmail: (raw.customerEmail ?? raw.CustomerEmail) as string,
+    customerName: (raw.customerName ?? raw.CustomerName) as string | undefined,
     seats: (raw.seats ?? raw.Seats) as number,
     isHeld: (raw.isHeld ?? raw.IsHeld ?? false) as boolean,
     specialRequests: (raw.specialRequests ?? raw.SpecialRequests) as string | undefined,

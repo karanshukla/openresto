@@ -36,6 +36,7 @@ public class BookingDetailDto
     public DateTime Date { get; set; }
     public DateTime? EndTime { get; set; }
     public string? CustomerEmail { get; set; }
+    public string? CustomerName { get; set; }
     public int Seats { get; set; }
     public string? SpecialRequests { get; set; }
     public string? BookingRef { get; set; }
@@ -66,6 +67,7 @@ public class AdminCreateBookingRequest
     public int TableId { get; set; }
     public DateTime Date { get; set; }
     public string CustomerEmail { get; set; } = null!;
+    public string? CustomerName { get; set; }
     public int Seats { get; set; }
 }
 
@@ -78,6 +80,7 @@ public class UpdateBookingRequest
     public int? TableId { get; set; }
     public int? SectionId { get; set; }
     public string? CustomerEmail { get; set; }
+    public string? CustomerName { get; set; }
 }
 
 // ── Admin booking update (PUT — can modify all fields) ───────────────────────
@@ -90,6 +93,7 @@ public class AdminUpdateBookingRequest
     public DateTime? Date { get; set; }
     public int? Seats { get; set; }
     public string? CustomerEmail { get; set; }
+    public string? CustomerName { get; set; }
     public string? SpecialRequests { get; set; }
 }
 

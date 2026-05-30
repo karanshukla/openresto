@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -76,7 +75,6 @@ public static partial class DatabaseExtensions
 
     public static void InitializeDatabase(this WebApplication app, string connectionString, IConfiguration configuration)
     {
-        // Ensure DB is created for first run - with retry loop for volume availability
         using IServiceScope scope = app.Services.CreateScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -87,15 +85,15 @@ public static partial class DatabaseExtensions
             LogConnectionString(logger, connectionString);
             LogCurrentUser(logger, Environment.UserName);
 
-            // Parse Data Source path correctly
+            // Ensure the DB directory exists (needed for Docker volume mounts)
             string dbFile = connectionString;
             if (connectionString.Contains(';'))
             {
                 var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                var dataSourcePart = parts.FirstOrDefault(p => p.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase));
-                if (dataSourcePart != null)
+                var ds = parts.FirstOrDefault(p => p.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase));
+                if (ds != null)
                 {
-                    dbFile = dataSourcePart.Substring("Data Source=".Length);
+                    dbFile = ds.Substring("Data Source=".Length);
                 }
             }
             else if (connectionString.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
@@ -112,7 +110,12 @@ public static partial class DatabaseExtensions
                 {
                     bool dirExists = Directory.Exists(dir);
                     LogDbDirectoryInfo(logger, dir, dirExists);
-                    if (dirExists)
+                    if (!dirExists)
+                    {
+                        try { Directory.CreateDirectory(dir); LogCreatedDbDirectory(logger, dir); }
+                        catch (Exception ex) { LogFailedToCreateDbDirectory(logger, ex.Message); }
+                    }
+                    else
                     {
                         try
                         {
@@ -121,26 +124,12 @@ public static partial class DatabaseExtensions
                             File.Delete(testFile);
                             LogDbDirectoryWritable(logger);
                         }
-                        catch (Exception ex)
-                        {
-                            LogDbDirectoryNotWritable(logger, ex.Message);
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            Directory.CreateDirectory(dir);
-                            LogCreatedDbDirectory(logger, dir);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogFailedToCreateDbDirectory(logger, ex.Message);
-                        }
+                        catch (Exception ex) { LogDbDirectoryNotWritable(logger, ex.Message); }
                     }
                 }
             }
 
+            // Apply any pending EF migrations (creates DB on first run, adds columns on upgrade)
             int maxRetries = 10;
             int retryDelayMs = 2000;
             bool success = false;
@@ -149,102 +138,7 @@ public static partial class DatabaseExtensions
             {
                 try
                 {
-                    db.Database.EnsureCreated();
-
-                    // journal_mode/busy_timeout/synchronous/foreign_keys are now applied
-                    // on every opened connection by SqlitePragmaInterceptor, so we don't
-                    // need to set them here.
-
-                    db.Database.ExecuteSqlRaw("""
-                        CREATE TABLE IF NOT EXISTS "AdminCredentials" (
-                            "Id"               INTEGER NOT NULL CONSTRAINT "PK_AdminCredentials" PRIMARY KEY AUTOINCREMENT,
-                            "Email"            TEXT    NOT NULL,
-                            "PasswordHash"     TEXT    NOT NULL,
-                            "PasswordSalt"     TEXT    NOT NULL,
-                            "PvqQuestion"      TEXT,
-                            "PvqAnswerHash"    TEXT,
-                            "PvqAnswerSalt"    TEXT,
-                            "ResetToken"       TEXT,
-                            "ResetTokenExpiry" TEXT
-                        )
-                        """);
-
-                    bool ColumnExists(string table, string column)
-                    {
-                        using DbCommand cmd = db.Database.GetDbConnection().CreateCommand();
-                        cmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'";
-                        db.Database.OpenConnection();
-                        int result = Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
-                        return result > 0;
-                    }
-
-                    void AddColumnIfMissing(string table, string column, string definition)
-                    {
-                        if (!ColumnExists(table, column))
-                        {
-#pragma warning disable EF1002
-                            db.Database.ExecuteSqlRaw($"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {definition}");
-#pragma warning restore EF1002
-                        }
-                    }
-
-                    AddColumnIfMissing("Bookings", "BookingRef", "TEXT NOT NULL DEFAULT ''");
-                    AddColumnIfMissing("Bookings", "SpecialRequests", "TEXT");
-                    AddColumnIfMissing("Bookings", "EndTime", "TEXT");
-                    AddColumnIfMissing("Bookings", "IsCancelled", "INTEGER NOT NULL DEFAULT 0");
-                    AddColumnIfMissing("Bookings", "CancelledAt", "TEXT");
-
-                    AddColumnIfMissing("Restaurants", "OpenTime", "TEXT NOT NULL DEFAULT '09:00'");
-                    AddColumnIfMissing("Restaurants", "CloseTime", "TEXT NOT NULL DEFAULT '22:00'");
-                    AddColumnIfMissing("Restaurants", "OpenDays", "TEXT NOT NULL DEFAULT '1,2,3,4,5,6,7'");
-                    AddColumnIfMissing("Restaurants", "Timezone", "TEXT NOT NULL DEFAULT 'UTC'");
-                    AddColumnIfMissing("Restaurants", "BookingsPausedUntil", "TEXT");
-                    AddColumnIfMissing("Restaurants", "Tags", "TEXT");
-                    AddColumnIfMissing("Restaurants", "ImageUrl", "TEXT");
-
-                    db.Database.ExecuteSqlRaw(@"
-                        CREATE TABLE IF NOT EXISTS ""EmailSettings"" (
-                            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-                            ""Host"" TEXT NOT NULL DEFAULT '',
-                            ""Port"" INTEGER NOT NULL DEFAULT 587,
-                            ""Username"" TEXT NOT NULL DEFAULT '',
-                            ""EncryptedPassword"" TEXT NOT NULL DEFAULT '',
-                            ""EnableSsl"" INTEGER NOT NULL DEFAULT 1,
-                            ""FromName"" TEXT,
-                            ""FromEmail"" TEXT,
-                            ""SendBookingConfirmations"" INTEGER NOT NULL DEFAULT 0
-                        )");
-
-                    AddColumnIfMissing("EmailSettings", "SendBookingConfirmations", "INTEGER NOT NULL DEFAULT 0");
-
-                    db.Database.ExecuteSqlRaw(@"
-                        CREATE TABLE IF NOT EXISTS ""BrandSettings"" (
-                            ""Id"" INTEGER PRIMARY KEY AUTOINCREMENT,
-                            ""AppName"" TEXT NOT NULL DEFAULT 'Open Resto',
-                            ""PrimaryColor"" TEXT NOT NULL DEFAULT '#0a7ea4',
-                            ""AccentColor"" TEXT,
-                            ""HeaderImageUrl"" TEXT
-                        )");
-
-                    AddColumnIfMissing("BrandSettings", "HeaderImageUrl", "TEXT");
-
-                    db.Database.ExecuteSqlRaw(@"
-                        CREATE TABLE IF NOT EXISTS ""Highlights"" (
-                            ""Id""        INTEGER NOT NULL CONSTRAINT ""PK_Highlights"" PRIMARY KEY AUTOINCREMENT,
-                            ""Title""     TEXT    NOT NULL DEFAULT '',
-                            ""Body""      TEXT    NOT NULL DEFAULT '',
-                            ""IconKey""   TEXT    NOT NULL DEFAULT 'star-outline',
-                            ""SortOrder"" INTEGER NOT NULL DEFAULT 0
-                        )");
-
-                    db.Database.ExecuteSqlRaw(@"
-                        CREATE TABLE IF NOT EXISTS ""EmailFailures"" (
-                            ""Id""             INTEGER NOT NULL CONSTRAINT ""PK_EmailFailures"" PRIMARY KEY AUTOINCREMENT,
-                            ""BookingRef""     TEXT,
-                            ""RecipientEmail"" TEXT    NOT NULL DEFAULT '',
-                            ""ErrorMessage""   TEXT    NOT NULL DEFAULT '',
-                            ""AttemptedAt""    TEXT    NOT NULL DEFAULT ''
-                        )");
+                    db.Database.Migrate();
 
                     DbSeeder.Seed(db);
 
@@ -303,8 +197,6 @@ public static partial class DatabaseExtensions
         catch (Exception ex)
         {
             LogFatalError(logger, ex);
-            // Do not rethrow here if you want the app to stay alive but "broken", 
-            // but usually it's better to let it fail so Docker restarts it.
             throw;
         }
     }

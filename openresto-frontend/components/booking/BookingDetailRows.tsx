@@ -27,6 +27,9 @@ function buildRows(booking: BookingDto, restaurant: RestaurantDto | null): RowDa
     }
   }
 
+  if (booking.customerName) {
+    rows.push({ icon: "person-outline", label: "Name", value: booking.customerName });
+  }
   rows.push({ icon: "mail-outline", label: "Email", value: booking.customerEmail });
 
   rows.push({
@@ -55,14 +58,12 @@ function buildRows(booking: BookingDto, restaurant: RestaurantDto | null): RowDa
     value: `${booking.seats}${booking.tableSeats ? ` (Table for ${booking.tableSeats})` : ""}`,
   });
 
+  if (booking.sectionName) {
+    rows.push({ icon: "layers-outline", label: "Section", value: booking.sectionName });
+  }
+
   if (booking.tableName) {
-    rows.push({
-      icon: "grid-outline",
-      label: "Table",
-      value: booking.sectionName
-        ? `${booking.tableName} (${booking.sectionName})`
-        : booking.tableName,
-    });
+    rows.push({ icon: "grid-outline", label: "Table", value: booking.tableName });
   }
 
   if (booking.specialRequests) {

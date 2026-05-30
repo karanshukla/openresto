@@ -20,8 +20,10 @@ const isWeb = Platform.OS === "web";
 
 export interface BookingFormData {
   customerEmail: string;
+  customerName: string;
   seats: number;
   tableId: number;
+  sectionId: number;
   date: string;
   time: string;
   holdId: string | null;
@@ -85,11 +87,16 @@ export default function BookingForm({
   const brand = useBrand();
   const PRIMARY = brand.primaryColor || COLORS.primary;
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [seats, setSeats] = useState(initialSeats ?? 2);
   const [submitting, setSubmitting] = useState(false);
+  const [sectionId, setSectionId] = useState<number>(() => restaurant.sections[0]?.id ?? 0);
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
+  const hasMultipleSections = restaurant.sections.length > 1;
+  const sectionOptions = restaurant.sections.map((s) => ({ label: s.name, value: s.id }));
+  const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
 
   const openTime = restaurant.openTime ?? "09:00";
   const closeTime = restaurant.closeTime ?? "22:00";
@@ -119,13 +126,18 @@ export default function BookingForm({
   const currentSlot = availabilitySlots.find((s) => s.time === time);
   const availableTableIds = currentSlot?.availableTableIds ?? [];
 
-  function bestTableFor(seatCount: number, availableIds?: number[]) {
-    let eligible = allTables.filter((t) => t.seats >= seatCount);
+  function bestTableFor(
+    seatCount: number,
+    availableIds?: number[],
+    candidateTables?: typeof allTables
+  ) {
+    const pool = candidateTables ?? allTables;
+    let eligible = pool.filter((t) => t.seats >= seatCount);
     if (availableIds && availableIds.length > 0) {
       eligible = eligible.filter((t) => availableIds.includes(t.id));
     }
     eligible.sort((a, b) => a.seats - b.seats);
-    return eligible[0]?.id ?? allTables[0]?.id;
+    return eligible[0]?.id ?? pool[0]?.id;
   }
 
   const { holdStatus, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } = useTableHold({
@@ -166,15 +178,26 @@ export default function BookingForm({
 
   // When availability or time changes, ensure we have a valid table selected
   useEffect(() => {
+    const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     if (availableTableIds.length > 0) {
       if (!tableId || !availableTableIds.includes(tableId)) {
-        setTableId(bestTableFor(seats, availableTableIds));
+        setTableId(bestTableFor(seats, availableTableIds, candidates));
       }
     } else {
-      setTableId(bestTableFor(seats));
+      setTableId(bestTableFor(seats, undefined, candidates));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableTableIds, seats]);
+
+  // When section changes, release hold and pick best table in new section
+  useEffect(() => {
+    releaseCurrentHold();
+    const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+    setTableId(
+      bestTableFor(seats, availableTableIds.length > 0 ? availableTableIds : undefined, candidates)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionId]);
 
   // When seats change, release current hold
   useEffect(() => {
@@ -189,7 +212,7 @@ export default function BookingForm({
     value: i + 1,
   }));
 
-  const eligibleTables = allTables
+  const eligibleTables = tablesInSection
     .filter((t) => t.seats >= seats)
     .filter((t) => {
       // Strictly filter only if we have availability data for the selected time
@@ -216,6 +239,7 @@ export default function BookingForm({
     !!tableId &&
     !!date &&
     !!time &&
+    customerName.trim().length > 0 &&
     customerEmail.includes("@") &&
     holdStatus === "held" &&
     !isClosedDay;
@@ -235,8 +259,10 @@ export default function BookingForm({
     try {
       await onSubmit({
         customerEmail,
+        customerName,
         seats,
         tableId,
+        sectionId,
         date,
         time,
         holdId,
@@ -279,7 +305,7 @@ export default function BookingForm({
         </View>
       </View>
 
-      {/* Row 2: Time + Table */}
+      {/* Row 2: Time + Section */}
       <View style={isWeb ? styles.fieldRow : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Time</ThemedText>
@@ -290,6 +316,30 @@ export default function BookingForm({
             maxTime={closeTime}
           />
         </View>
+        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+          <ThemedText style={styles.label}>Section</ThemedText>
+          <Select
+            selectedValue={sectionId}
+            onSelect={(val) => {
+              if (holdStatus === "held" || holdStatus === "expired") {
+                setHoldStatus("idle");
+              }
+              setSectionId(val as number);
+            }}
+            options={sectionOptions}
+            placeholder="Select a section"
+          />
+        </View>
+      </View>
+
+      {restaurant.timezone && (
+        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
+          All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
+        </ThemedText>
+      )}
+
+      {/* Row 3: Table + Full Name */}
+      <View style={isWeb ? styles.fieldRow : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Table</ThemedText>
           {eligibleTables.length === 0 ? (
@@ -310,15 +360,20 @@ export default function BookingForm({
             />
           )}
         </View>
+        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+          <ThemedText style={styles.label}>Full Name</ThemedText>
+          <Input
+            placeholder="Your full name"
+            value={customerName}
+            onChangeText={setCustomerName}
+            autoCapitalize="words"
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
       </View>
 
-      {restaurant.timezone && (
-        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
-          All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
-        </ThemedText>
-      )}
-
-      {/* Row 3: Email + Special Requests */}
+      {/* Row 4: Email + Special Requests */}
       <View style={isWeb ? [styles.fieldRow, styles.fieldRowStretch] : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Email</ThemedText>

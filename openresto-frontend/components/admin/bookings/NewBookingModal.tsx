@@ -65,6 +65,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
   const [time, setTime] = useState(() => nextSlotTime());
   const [seats, setSeats] = useState(2);
   const [email, setEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
 
   useEffect(() => {
     if (!visible) return;
@@ -90,6 +91,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
       setError(null);
       setCapacityWarning(null);
       setEmail("");
+      setGuestName("");
       setSeats(2);
       setDate(todayDate());
     }
@@ -128,6 +130,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
         tableId: tableId!,
         date: isoDate,
         customerEmail: email,
+        customerName: guestName.trim() || undefined,
         seats,
       });
       if (result) {
@@ -256,6 +259,16 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                         autoCapitalize="none"
                       />
                     </View>
+                  </View>
+
+                  <View style={styles.field}>
+                    <ThemedText style={styles.label}>Guest name (optional)</ThemedText>
+                    <Input
+                      placeholder="Full name"
+                      value={guestName}
+                      onChangeText={setGuestName}
+                      autoCapitalize="words"
+                    />
                   </View>
 
                   <Button

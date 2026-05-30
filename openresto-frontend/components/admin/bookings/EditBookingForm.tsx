@@ -24,6 +24,7 @@ interface EditBookingFormProps {
   editTableId: number | null;
   editSeats: string;
   editEmail: string;
+  editCustomerName: string;
   editSpecialRequests: string;
   editDate: string;
   editTime: string;
@@ -31,6 +32,7 @@ interface EditBookingFormProps {
   setEditTableId: (id: number) => void;
   setEditSeats: (s: string) => void;
   setEditEmail: (e: string) => void;
+  setEditCustomerName: (n: string) => void;
   setEditSpecialRequests: (s: string) => void;
   setEditDate: (d: string) => void;
   setEditTime: (t: string) => void;
@@ -50,6 +52,7 @@ export function EditBookingForm({
   editTableId,
   editSeats,
   editEmail,
+  editCustomerName,
   editSpecialRequests,
   editDate,
   editTime,
@@ -57,6 +60,7 @@ export function EditBookingForm({
   setEditTableId,
   setEditSeats,
   setEditEmail,
+  setEditCustomerName,
   setEditSpecialRequests,
   setEditDate,
   setEditTime,
@@ -128,6 +132,18 @@ export function EditBookingForm({
                 onChangeText={setEditEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldHalf}>
+              <ThemedText style={styles.label}>Guest name</ThemedText>
+              <Input
+                placeholder="Full name"
+                value={editCustomerName}
+                onChangeText={setEditCustomerName}
+                autoCapitalize="words"
               />
             </View>
           </View>
