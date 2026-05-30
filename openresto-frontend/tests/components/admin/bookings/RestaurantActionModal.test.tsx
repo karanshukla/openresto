@@ -174,10 +174,7 @@ describe("RestaurantActionModal", () => {
       expect(queryByTestId("loading-indicator")).toBeNull();
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "Failed to load restaurants",
-      expect.any(Error)
-    );
+    expect(consoleSpy).toHaveBeenCalledWith("Failed to load restaurants", expect.any(Error));
     expect(getByText("No restaurants found.")).toBeTruthy();
     consoleSpy.mockRestore();
   });
