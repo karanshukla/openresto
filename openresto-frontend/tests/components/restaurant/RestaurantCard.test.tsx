@@ -1,7 +1,8 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import { fetchAvailability } from "@/api/availability";
+import { Linking } from "react-native";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -40,6 +41,7 @@ describe("RestaurantCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchAvailability as jest.Mock).mockResolvedValue({ slots: [] });
+    jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
   });
 
   it("renders restaurant name", async () => {
@@ -117,5 +119,36 @@ describe("RestaurantCard", () => {
     (fetchAvailability as jest.Mock).mockResolvedValue(null);
     render(<RestaurantCard restaurant={mockRestaurant} />);
     await waitFor(() => expect(screen.getByText("No available slots today")).toBeTruthy());
+  });
+
+  it("calls Linking.openURL for Google Maps when button pressed", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.getByText("Google")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Open in Google Maps"));
+    expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining("maps.google.com"));
+  });
+
+  it("calls Linking.openURL for Apple Maps when button pressed", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.getByText("Apple")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Open in Apple Maps"));
+    expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining("maps.apple.com"));
+  });
+
+  it("navigates to booking with time and party when slot is pressed", async () => {
+    (fetchAvailability as jest.Mock).mockResolvedValue({
+      slots: [{ time: "19:00", isAvailable: true }],
+    });
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.getByText("19:00")).toBeTruthy());
+    fireEvent.press(screen.getByText("19:00"));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("time=19%3A00"));
+  });
+
+  it("navigates to booking when 'open in new tab' button is pressed", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.getByLabelText("Open booking page in new tab")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Open booking page in new tab"));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("restaurantId=1"));
   });
 });

@@ -24,6 +24,7 @@ export default function LoadingScreen({
   useEffect(() => {
     if (process.env.NODE_ENV === "test") return;
 
+    /* istanbul ignore next */
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
