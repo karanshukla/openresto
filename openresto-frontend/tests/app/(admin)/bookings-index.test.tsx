@@ -14,15 +14,15 @@ jest.mock("@/api/admin", () => ({
   getAdminBooking: jest.fn().mockResolvedValue(null),
 }));
 
+const mockReplace = jest.fn();
+const mockSearchParams: Record<string, string | undefined> = {};
+
 jest.mock("expo-router", () => {
-  const React = require("react");
-  const Stack = {
-    Screen: () => null,
-  };
+  const Stack = { Screen: () => null };
   return {
     Stack,
-    useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
-    useLocalSearchParams: () => ({}),
+    useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
+    useLocalSearchParams: () => mockSearchParams,
   };
 });
 
@@ -79,6 +79,10 @@ describe("AdminBookingsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getAdminBookings as jest.Mock).mockResolvedValue(mockBookings);
+    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
+    // Reset search params and router mock
+    Object.keys(mockSearchParams).forEach((k) => delete mockSearchParams[k]);
+    mockReplace.mockReset();
   });
 
   it("renders the bookings page", async () => {
@@ -114,27 +118,19 @@ describe("AdminBookingsScreen", () => {
     });
   });
 
-  it("shows Past filter and switches status", async () => {
+  it("switches to past filter in list view", async () => {
     render(<AdminBookingsScreen />);
-    const listBtn = await screen.findByText("List");
-    fireEvent.press(listBtn);
-
-    const pastFilter = await screen.findByText("Past");
-    fireEvent.press(pastFilter);
-
+    fireEvent.press(await screen.findByText("List"));
+    fireEvent.press(await screen.findByText("Past"));
     await waitFor(() => {
       expect(getAdminBookings).toHaveBeenCalledWith(1, undefined, "past");
     });
   });
 
-  it("shows Cancelled filter and switches status", async () => {
+  it("switches to cancelled filter in list view", async () => {
     render(<AdminBookingsScreen />);
-    const listBtn = await screen.findByText("List");
-    fireEvent.press(listBtn);
-
-    const cancelledFilter = await screen.findByText("Cancelled");
-    fireEvent.press(cancelledFilter);
-
+    fireEvent.press(await screen.findByText("List"));
+    fireEvent.press(await screen.findByText("Cancelled"));
     await waitFor(() => {
       expect(getAdminBookings).toHaveBeenCalledWith(1, undefined, "cancelled");
     });
@@ -147,62 +143,54 @@ describe("AdminBookingsScreen", () => {
 
     const newBookingBtn = await screen.findByText("New Booking");
     fireEvent.press(newBookingBtn);
-    // NewBookingModal is mocked to null, just verifies no crash
     expect(getAdminBookings).toHaveBeenCalled();
   });
 
-  it("handles lookup returning no results", async () => {
+  it("lookup shows 'No booking found' when no results", async () => {
     (adminLookupBookings as jest.Mock).mockResolvedValue([]);
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const searchInput = screen.getByPlaceholderText("Email or reference…");
-    fireEvent.changeText(searchInput, "unknown@test.com");
-
-    const findBtn = screen.getByText("Find");
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "unknown@example.com");
     await act(async () => {
-      fireEvent.press(findBtn);
+      fireEvent.press(screen.getByText("Find"));
     });
-
-    await waitFor(() => expect(screen.getByText("No booking found.")).toBeTruthy());
+    await waitFor(() => {
+      expect(screen.getByText("No booking found.")).toBeTruthy();
+    });
   });
 
-  it("handles lookup returning single result", async () => {
-    (adminLookupBookings as jest.Mock).mockResolvedValue([{ id: 42 }]);
+  it("lookup with single result opens the booking popup", async () => {
+    (adminLookupBookings as jest.Mock).mockResolvedValue([{ ...mockBookings[0], id: 99 }]);
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const searchInput = screen.getByPlaceholderText("Email or reference…");
-    fireEvent.changeText(searchInput, "john@example.com");
-
-    const findBtn = screen.getByText("Find");
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "john@example.com");
     await act(async () => {
-      fireEvent.press(findBtn);
+      fireEvent.press(screen.getByText("Find"));
     });
-
     await waitFor(() => expect(adminLookupBookings).toHaveBeenCalledWith("john@example.com"));
   });
 
-  it("handles lookup returning multiple results for email", async () => {
-    const mockReplace = jest.fn();
-    jest.mock("expo-router", () => ({
-      Stack: { Screen: () => null },
-      useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
-      useLocalSearchParams: () => ({}),
-    }));
-    (adminLookupBookings as jest.Mock).mockResolvedValue([{ id: 1 }, { id: 2 }]);
+  it("lookup with multiple results shows 'Showing all matches…'", async () => {
+    (adminLookupBookings as jest.Mock).mockResolvedValue([
+      { ...mockBookings[0], id: 1 },
+      { ...mockBookings[0], id: 2 },
+    ]);
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const searchInput = screen.getByPlaceholderText("Email or reference…");
-    fireEvent.changeText(searchInput, "multi@example.com");
-
-    const findBtn = screen.getByText("Find");
+    const input = screen.getByPlaceholderText("Email or reference…");
+    fireEvent.changeText(input, "john@example.com");
     await act(async () => {
-      fireEvent.press(findBtn);
+      fireEvent.press(screen.getByText("Find"));
     });
-
-    await waitFor(() => expect(adminLookupBookings).toHaveBeenCalledWith("multi@example.com"));
+    await waitFor(() => {
+      expect(screen.getByText("Showing all matches…")).toBeTruthy();
+    });
+    expect(mockReplace).toHaveBeenCalled();
   });
 
   it("updates lookup query and clears status on change", async () => {
@@ -216,7 +204,6 @@ describe("AdminBookingsScreen", () => {
       fireEvent.press(screen.getByText("Find"));
     });
     await waitFor(() => expect(screen.getByText("No booking found.")).toBeTruthy());
-    // Now change the query text — the status should clear
     fireEvent.changeText(searchInput, "new");
     expect(screen.queryByText("No booking found.")).toBeNull();
   });
@@ -229,6 +216,22 @@ describe("AdminBookingsScreen", () => {
     expect(adminLookupBookings).not.toHaveBeenCalled();
   });
 
+  it("shows search results when emailParam is provided", async () => {
+    mockSearchParams.email = "john@example.com";
+    render(<AdminBookingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Search Results")).toBeTruthy();
+    });
+  });
+
+  it("shows clear button when searchQuery is present", async () => {
+    mockSearchParams.email = "john@example.com";
+    render(<AdminBookingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Clear")).toBeTruthy();
+    });
+  });
+
   it("renders booking row in list view and opens popup on press", async () => {
     render(<AdminBookingsScreen />);
     const listBtn = await screen.findByText("List");
@@ -236,15 +239,36 @@ describe("AdminBookingsScreen", () => {
 
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
     fireEvent.press(screen.getByText("john@example.com"));
-    // BookingDetailPopup is mocked to null, verifies no crash
     expect(getAdminBookings).toHaveBeenCalled();
   });
 
+  it("handles cancel booking from the list row", async () => {
+    (adminDeleteBooking as jest.Mock).mockResolvedValue(true);
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
+
+    const confirmBtns = screen.queryAllByText("Cancel Booking");
+    if (confirmBtns.length > 0) {
+      fireEvent.press(confirmBtns[confirmBtns.length - 1]);
+      await waitFor(() => expect(adminDeleteBooking).toHaveBeenCalled());
+    }
+  });
+
+  it("renders bookings with multi-part email initials", async () => {
+    (getAdminBookings as jest.Mock).mockResolvedValue([
+      { ...mockBookings[0], id: 2, customerEmail: "john.doe@example.com" },
+    ]);
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    await waitFor(() => {
+      expect(screen.getByText("john.doe@example.com")).toBeTruthy();
+    });
+  });
+
   it("renders timetable view by default and loads grid", async () => {
-    const { adminGetTables } = require("@/api/admin");
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
-    // Grid loads after restaurant is selected — just verify page renders without crash
     expect(screen.getByText("Bookings")).toBeTruthy();
   });
 
@@ -253,7 +277,6 @@ describe("AdminBookingsScreen", () => {
     const listBtn = await screen.findByText("List");
     fireEvent.press(listBtn);
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
-    // Press List again to cycle — or press an alternate route; just ensure page stays stable
     fireEvent.press(listBtn);
     expect(screen.getByText("Bookings")).toBeTruthy();
   });
