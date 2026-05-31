@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { saveBrandSettings, uploadHeroImage, deleteHeroImage } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
+import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
 import { styles } from "./settings.styles";
 
 const MAX_HERO_MB = 5;
@@ -24,6 +25,7 @@ export function BrandSettingsCard({
   const primaryColor = brand.primaryColor || COLORS.primary;
   const [appName, setAppName] = useState(brand.appName);
   const [brandPrimaryColor, setBrandPrimaryColor] = useState(brand.primaryColor);
+  const [faviconIcon, setFaviconIcon] = useState<string | undefined>(brand.faviconIcon);
   const [heroPreview, setHeroPreview] = useState<string | null>(brand.headerImageUrl ?? null);
   const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,6 +36,7 @@ export function BrandSettingsCard({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAppName(brand.appName);
     setBrandPrimaryColor(brand.primaryColor);
+    setFaviconIcon(brand.faviconIcon);
     setHeroPreview(brand.headerImageUrl ?? null);
   }, [brand]);
 
@@ -77,6 +80,7 @@ export function BrandSettingsCard({
     const result = await saveBrandSettings({
       appName,
       primaryColor: brandPrimaryColor,
+      faviconIcon,
     });
     setSaving(false);
     if (result) {
@@ -106,6 +110,9 @@ export function BrandSettingsCard({
           <ThemedText style={styles.secTitle}>Brand Identity</ThemedText>
           <ThemedText style={[styles.secSub, { color: mutedColor }]} numberOfLines={1}>
             {appName} · {brandPrimaryColor}
+            {faviconIcon
+              ? ` · ${FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label ?? faviconIcon}`
+              : ""}
           </ThemedText>
         </View>
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
@@ -165,6 +172,41 @@ export function BrandSettingsCard({
                 style={{ width: 100 }}
               />
             </View>
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Favicon Icon</ThemedText>
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+              {FAVICON_ICONS.map((icon) => {
+                const isSelected = faviconIcon === icon.id;
+                const dataUri = buildFaviconDataUri(icon.id, brandPrimaryColor);
+                return (
+                  <Pressable
+                    key={icon.id}
+                    testID={`favicon-icon-${icon.id}`}
+                    onPress={() => setFaviconIcon(isSelected ? undefined : icon.id)}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected ? brandPrimaryColor : `${brandPrimaryColor}40`,
+                      backgroundColor: isSelected ? `${brandPrimaryColor}18` : "transparent",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    accessibilityLabel={icon.label}
+                  >
+                    <img src={dataUri} alt={icon.label} style={{ width: 22, height: 22 }} />
+                  </Pressable>
+                );
+              })}
+            </View>
+            {faviconIcon && (
+              <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+                {FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label} · tap to deselect
+              </ThemedText>
+            )}
           </View>
 
           <View style={styles.field}>

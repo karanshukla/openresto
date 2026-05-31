@@ -1,6 +1,5 @@
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Core;
 

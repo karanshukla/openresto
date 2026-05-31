@@ -3,7 +3,6 @@ using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Controllers;
 
@@ -27,9 +26,9 @@ public class HoldsControllerUnitTests
     {
         var testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12); // Always 12:00 PM tomorrow UTC
         _mockRestaurantRepo.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(new OpenRestoApi.Core.Domain.Restaurant 
-            { 
-                Id = 1, 
+            .ReturnsAsync(new OpenRestoApi.Core.Domain.Restaurant
+            {
+                Id = 1,
                 Timezone = "UTC",
                 OpenTime = "00:00",
                 CloseTime = "23:59"

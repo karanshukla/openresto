@@ -6,7 +6,6 @@ using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Infrastructure.Cookies;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Controllers;
 

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using OpenRestoApi.Extensions;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Extensions;
 

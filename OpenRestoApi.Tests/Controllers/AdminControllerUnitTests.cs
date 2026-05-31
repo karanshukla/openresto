@@ -4,7 +4,6 @@ using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Controllers;
 

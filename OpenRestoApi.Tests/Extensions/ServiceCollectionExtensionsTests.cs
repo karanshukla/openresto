@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OpenRestoApi.Extensions;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Extensions;
 

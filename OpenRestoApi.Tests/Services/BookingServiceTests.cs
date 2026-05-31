@@ -6,7 +6,6 @@ using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 

@@ -1,7 +1,5 @@
-using System.Data;
 using Microsoft.Data.Sqlite;
 using OpenRestoApi.Infrastructure.Persistence;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Infrastructure;
 

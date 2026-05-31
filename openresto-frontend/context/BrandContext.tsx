@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import { Brand } from "@/types";
+import { injectBrandFavicon } from "@/utils/injectBrandFavicon";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -31,6 +32,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             primaryColor: data.primaryColor || DEFAULT_BRAND.primaryColor,
             accentColor: data.accentColor || undefined,
             headerImageUrl: data.headerImageUrl || undefined,
+            faviconIcon: data.faviconIcon || undefined,
           };
           setBrand(newBrand);
 
@@ -38,6 +40,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             if (!document.title || document.title === DEFAULT_BRAND.appName) {
               document.title = newBrand.appName;
             }
+            injectBrandFavicon(newBrand);
           }
         }
       })

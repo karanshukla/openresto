@@ -50,7 +50,9 @@ public static partial class DatabaseExtensions
     {
         // Only attempt this if the DB already exists (i.e. we can connect).
         if (!db.Database.CanConnect())
+        {
             return;
+        }
 
         try
         {
@@ -59,7 +61,9 @@ public static partial class DatabaseExtensions
             var connection = db.Database.GetDbConnection();
             bool weOpenedConnection = connection.State != System.Data.ConnectionState.Open;
             if (weOpenedConnection)
+            {
                 connection.Open();
+            }
 
             try
             {
@@ -74,7 +78,9 @@ public static partial class DatabaseExtensions
                 var schemaExists = (long)(schemaExistsCmd.ExecuteScalar() ?? 0L) > 0;
 
                 if (!schemaExists)
+                {
                     return; // fresh install — Migrate() will build the schema from scratch
+                }
 
                 // Schema already exists. Check if InitialCreate is already recorded.
                 bool initialCreateRecorded = false;
@@ -165,7 +171,9 @@ public static partial class DatabaseExtensions
             {
                 // Restore connection to its original state so EF's Migrate() isn't surprised.
                 if (weOpenedConnection)
+                {
                     connection.Close();
+                }
             }
         }
         catch (Exception ex)

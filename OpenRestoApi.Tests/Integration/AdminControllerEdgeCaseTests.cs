@@ -1,12 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using OpenRestoApi.Controllers;
-using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Infrastructure.Persistence;
-using Xunit;
 
 namespace OpenRestoApi.Tests.Integration;
 

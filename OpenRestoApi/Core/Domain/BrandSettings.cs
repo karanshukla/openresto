@@ -12,4 +12,7 @@ public class BrandSettings
     public string? AccentColor { get; set; }
 
     public string? HeaderImageUrl { get; set; }
+
+    [StringLength(32)]
+    public string? FaviconIcon { get; set; }
 }

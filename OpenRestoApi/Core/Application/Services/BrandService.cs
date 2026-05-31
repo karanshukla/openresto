@@ -32,7 +32,13 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
             };
     }
 
-    public async Task SaveAsync(string? appName, string? primaryColor, string? accentColor)
+    private static readonly HashSet<string> _validFaviconIcons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "utensils", "wine", "coffee", "pizza", "flame",
+        "leaf", "star", "heart", "chef-hat", "fish"
+    };
+
+    public async Task SaveAsync(string? appName, string? primaryColor, string? accentColor, string? faviconIcon = null)
     {
         if (appName != null && appName.Length > 32)
         {
@@ -49,6 +55,11 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
             throw new ArgumentException("Invalid accent color hex code.");
         }
 
+        if (faviconIcon != null && !_validFaviconIcons.Contains(faviconIcon))
+        {
+            throw new ArgumentException("Invalid favicon icon.");
+        }
+
         BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
         if (brand == null)
         {
@@ -59,6 +70,10 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
         brand.AppName = appName ?? brand.AppName;
         brand.PrimaryColor = primaryColor ?? brand.PrimaryColor;
         brand.AccentColor = accentColor;
+        if (faviconIcon != null)
+        {
+            brand.FaviconIcon = faviconIcon;
+        }
 
         await _db.SaveChangesAsync();
     }

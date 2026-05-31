@@ -9,4 +9,5 @@ export interface Brand {
   primaryColor: string;
   accentColor?: string;
   headerImageUrl?: string;
+  faviconIcon?: string;
 }
