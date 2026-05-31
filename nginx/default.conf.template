@@ -58,6 +58,13 @@ server {
         return 200 "OK";
     }
 
+    # OpenAPI spec — only reachable when backend runs with ASPNETCORE_ENVIRONMENT=Development
+    # Used by ZAP in CI to discover all API endpoints; not present in prod nginx config.
+    location /openapi/ {
+        set $backend_host ${BACKEND_HOST};
+        proxy_pass http://$backend_host:${BACKEND_PORT};
+    }
+
     # API — Proxy to Backend
     location /api/ {
         include /etc/nginx/conf.d/security-headers.conf;
