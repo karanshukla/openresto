@@ -31,6 +31,26 @@ public class AvailabilityService(
         // 2. Define the local operating hours for the requested date
         DateTime localDate = TimeZoneInfo.ConvertTimeFromUtc(bookingDate.ToUniversalTime(), tz).Date;
 
+        // Check if this day of week is an open day
+        if (!string.IsNullOrEmpty(restaurant.OpenDays))
+        {
+            int jsDay = (int)localDate.DayOfWeek; // 0=Sun…6=Sat
+            int isoDay = jsDay == 0 ? 7 : jsDay;  // 1=Mon…7=Sun
+            var openDaysList = restaurant.OpenDays
+                .Split(',')
+                .Select(d => int.TryParse(d.Trim(), out int x) ? x : 0)
+                .ToHashSet();
+            if (!openDaysList.Contains(isoDay))
+            {
+                return new AvailabilityResponseDto
+                {
+                    RestaurantId = restaurantId,
+                    Date = bookingDate,
+                    Slots = new List<TimeSlotDto>()
+                };
+            }
+        }
+
         if (!TryParseTime(restaurant.OpenTime, out int openHour, out int openMin))
         {
             openHour = 9; openMin = 0;

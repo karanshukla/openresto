@@ -150,6 +150,14 @@ export default function BookingForm({
 
   // Fetch availability when date/seats change
   useEffect(() => {
+    const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
+    const jsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
+    const isoDay = jsDay === 0 ? 7 : jsDay;
+    if (date && !openDaysList.includes(isoDay)) {
+      setAvailabilitySlots([]);
+      setLoadingAvailability(false);
+      return;
+    }
     async function loadAvailability() {
       setLoadingAvailability(true);
       try {
@@ -283,13 +291,19 @@ export default function BookingForm({
           <ThemedText style={styles.label}>Popular Times</ThemedText>
           {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
         </View>
-        <PopularTimesPicker
-          slots={availabilitySlots}
-          selectedTime={time}
-          onSelectTime={setTime}
-          selectedDate={date}
-          timezone={timezone}
-        />
+        {isClosedDay ? (
+          <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
+            The restaurant is closed on this day. Please select a different date.
+          </ThemedText>
+        ) : (
+          <PopularTimesPicker
+            slots={availabilitySlots}
+            selectedTime={time}
+            onSelectTime={setTime}
+            selectedDate={date}
+            timezone={timezone}
+          />
+        )}
       </View>
 
       {/* Row 1: Guests + Date */}
@@ -475,6 +489,10 @@ const styles = StyleSheet.create({
     color: "#e53e3e",
     fontSize: 13,
     marginBottom: 12,
+  },
+  closedDayNotice: {
+    fontSize: 13,
+    marginBottom: 8,
   },
   timezoneHint: {
     fontSize: 12,

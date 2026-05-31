@@ -95,7 +95,13 @@ export default function RestaurantCard({
 
   useEffect(() => {
     const tz = restaurant.timezone ?? "UTC";
-    const { totalMins } = getRestaurantNow(tz);
+    const { totalMins, isoDay } = getRestaurantNow(tz);
+    const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
+    if (!openDaysList.includes(isoDay)) {
+      setSlots([]);
+      setSlotsLoading(false);
+      return;
+    }
     const date = getRestaurantDate(tz);
     fetchAvailability(restaurant.id, date, party).then((data) => {
       if (data && Array.isArray(data.slots)) {
@@ -110,7 +116,7 @@ export default function RestaurantCard({
       }
       setSlotsLoading(false);
     });
-  }, [restaurant.id, restaurant.timezone, party]);
+  }, [restaurant.id, restaurant.timezone, restaurant.openDays, party]);
 
   const open = isOpenNow(
     restaurant.openTime,
