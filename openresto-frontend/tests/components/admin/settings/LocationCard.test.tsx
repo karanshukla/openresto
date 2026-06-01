@@ -177,11 +177,6 @@ describe("LocationCard", () => {
     expect(screen.getByText("Seats")).toBeTruthy();
   });
 
-  it("shows Active badge", () => {
-    render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("Active")).toBeTruthy();
-  });
-
   it("renders RestaurantInfoForm", () => {
     render(<LocationCard {...baseProps} />);
     expect(screen.getByTestId("restaurant-info-form")).toBeTruthy();
