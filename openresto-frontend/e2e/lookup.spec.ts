@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoAdminDashboard, futureDateStr } from "./helpers";
+import { gotoAdminDashboard, futureDateStr, getWithRetry, postWithRetry, delay } from "./helpers";
 
 /**
  * Booking lookup:
@@ -18,12 +18,21 @@ test.describe("Booking lookup", () => {
 
   // ── Create the test booking via API ──────────────────────────────────────
   test("setup: create a booking via API to obtain a booking reference", async ({ request }) => {
+    // Small delay to avoid rate limits from previous tests
+    await delay(500);
+
     // Get the first restaurant and a table — fall back to seeded IDs on rate-limit
-    const restRes = await request.get("/api/restaurants");
-    const restaurants = restRes.ok() ? await restRes.json() : [];
-    const restaurant = restaurants[0] ?? { id: 1, sections: [{ id: 1, tables: [{ id: 1 }] }] };
-    const section = restaurant.sections[0];
-    const table = section.tables[0];
+    const restRes = await getWithRetry(request, "/api/restaurants");
+    if (!restRes.ok()) {
+      console.error(`Restaurant fetch failed: HTTP ${restRes.status()}`);
+    }
+    const restaurants = restRes.ok() ? ((await restRes.json()) as unknown[]) : [];
+    const restaurant = (restaurants[0] as { id: number; sections: unknown[] }) ?? {
+      id: 1,
+      sections: [{ id: 1, tables: [{ id: 1 }] }],
+    };
+    const section = restaurant.sections[0] as { id: number; tables: unknown[] };
+    const table = section.tables[0] as { id: number };
 
     // Use noon UTC on lookupDate — 3 weeks out on a fresh DB this slot is always free.
     // Skipping a live availability check avoids the public rate-limit (30 req/min) that
@@ -32,8 +41,8 @@ test.describe("Booking lookup", () => {
     const availableTableId = table.id;
     const tableSection = section;
 
-    // Acquire a hold
-    const holdRes = await request.post("/api/holds", {
+    // Acquire a hold with rate limit retry
+    const holdRes = await postWithRetry(request, "/api/holds", {
       data: {
         restaurantId: restaurant.id,
         tableId: availableTableId,
@@ -41,11 +50,15 @@ test.describe("Booking lookup", () => {
         date: slotUtc.toISOString(),
       },
     });
+    if (!holdRes.ok()) {
+      const body = await holdRes.text();
+      console.error(`Hold creation failed: HTTP ${holdRes.status()}`, body);
+    }
     expect(holdRes.ok()).toBeTruthy();
-    const { holdId } = await holdRes.json();
+    const { holdId } = (await holdRes.json()) as { holdId: string };
 
-    // Create the booking
-    const bookingRes = await request.post("/api/bookings", {
+    // Create the booking with rate limit retry
+    const bookingRes = await postWithRetry(request, "/api/bookings", {
       data: {
         restaurantId: restaurant.id,
         tableId: availableTableId,
@@ -58,8 +71,8 @@ test.describe("Booking lookup", () => {
       },
     });
     expect(bookingRes.ok()).toBeTruthy();
-    const booking = await bookingRes.json();
-    bookingRef = booking.bookingRef ?? booking.BookingRef;
+    const booking = (await bookingRes.json()) as { bookingRef?: string; BookingRef?: string };
+    bookingRef = booking.bookingRef ?? booking.BookingRef ?? "";
     expect(bookingRef.length).toBeGreaterThan(0);
   });
 

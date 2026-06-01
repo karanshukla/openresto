@@ -1,7 +1,102 @@
-import type { Page } from "@playwright/test";
+import type { Page, APIRequestContext } from "@playwright/test";
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@openresto.com";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me-before-use";
+
+/** Delay helper */
+export const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Make a POST request with rate limit retry logic.
+ * Retries up to 3 times with exponential backoff when hitting 429 (Too Many Requests).
+ */
+export async function postWithRetry(
+  request: APIRequestContext,
+  url: string,
+  options: { data?: unknown; headers?: Record<string, string> },
+  maxRetries = 3
+): Promise<{
+  ok: () => boolean;
+  status: () => number;
+  text: () => Promise<string>;
+  json: () => Promise<unknown>;
+}> {
+  let lastResponse: {
+    ok: () => boolean;
+    status: () => number;
+    text: () => Promise<string>;
+    json: () => Promise<unknown>;
+  } | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await request.post(url, options);
+    lastResponse = response;
+
+    if (response.ok()) {
+      return response;
+    }
+
+    const status = response.status();
+    if (status === 429 && attempt < maxRetries) {
+      const waitMs = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+      console.log(
+        `Rate limited (429) on ${url}, retrying in ${waitMs}ms... (attempt ${attempt + 1}/${maxRetries})`
+      );
+      await delay(waitMs);
+      continue;
+    }
+
+    // Not a rate limit or no more retries
+    return response;
+  }
+
+  return lastResponse!;
+}
+
+/**
+ * Make a GET request with rate limit retry logic.
+ * Retries up to 3 times with exponential backoff when hitting 429 (Too Many Requests).
+ */
+export async function getWithRetry(
+  request: APIRequestContext,
+  url: string,
+  maxRetries = 3
+): Promise<{
+  ok: () => boolean;
+  status: () => number;
+  text: () => Promise<string>;
+  json: () => Promise<unknown>;
+}> {
+  let lastResponse: {
+    ok: () => boolean;
+    status: () => number;
+    text: () => Promise<string>;
+    json: () => Promise<unknown>;
+  } | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await request.get(url);
+    lastResponse = response;
+
+    if (response.ok()) {
+      return response;
+    }
+
+    const status = response.status();
+    if (status === 429 && attempt < maxRetries) {
+      const waitMs = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+      console.log(
+        `Rate limited (429) on ${url}, retrying in ${waitMs}ms... (attempt ${attempt + 1}/${maxRetries})`
+      );
+      await delay(waitMs);
+      continue;
+    }
+
+    return response;
+  }
+
+  return lastResponse!;
+}
 
 /** Returns a YYYY-MM-DD string N days in the future (UTC). */
 export function futureDateStr(daysAhead = 7): string {

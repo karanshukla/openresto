@@ -33,9 +33,17 @@ test.describe("Brand colour", () => {
     await gotoAdminDashboard(page);
 
     const res = await page.request.get("/api/brand");
+    if (!res.ok()) {
+      const body = await res.text();
+      console.error(`Brand fetch failed: HTTP ${res.status()}`, body);
+    }
+    expect(res.ok()).toBeTruthy();
     originalBrand = await res.json();
 
     await ctx.close();
+
+    // Small delay to avoid hitting rate limits between test groups
+    await new Promise((r) => setTimeout(r, 1000));
   });
 
   test.afterAll(async ({ browser }) => {
@@ -55,6 +63,10 @@ test.describe("Brand colour", () => {
     const saveRes = await page.request.post("/api/brand", {
       data: { ...originalBrand, primaryColor: TEST_COLOR },
     });
+    if (!saveRes.ok()) {
+      const body = await saveRes.text();
+      console.error(`Brand save failed: HTTP ${saveRes.status()}`, body);
+    }
     expect(saveRes.ok()).toBeTruthy();
 
     // ── Verify the API now returns the new colour ─────────────────────────────
