@@ -25,34 +25,12 @@ test.describe("Booking lookup", () => {
     const section = restaurant.sections[0];
     const table = section.tables[0];
 
-    // Get an available slot for the test date (retry once if rate-limited)
-    let availRes = await request.get(
-      `/api/availability/${restaurant.id}?date=${lookupDate}&seats=2`
-    );
-    if (!availRes.ok()) {
-      availRes = await request.get(`/api/availability/${restaurant.id}?date=${lookupDate}&seats=2`);
-    }
-    expect(availRes.ok()).toBeTruthy();
-    const { slots } = await availRes.json();
-    const slot = (
-      slots as Array<{ time: string; isAvailable: boolean; availableTableIds: number[] }>
-    ).find((s) => s.isAvailable);
-    expect(slot).toBeTruthy();
-
-    // Build UTC ISO datetime for the slot
-    const [h, m] = slot!.time.split(":").map(Number);
-    const slotUtc = new Date(
-      `${lookupDate}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00.000Z`
-    );
-
-    // Use the first available table from the availability response
-    const availableTableId = slot!.availableTableIds[0] ?? table.id;
-    // Find which section this table belongs to
-    const allSections: Array<{ id: number; tables: Array<{ id: number }> }> =
-      restaurant.sections ?? [];
-    const tableSection =
-      allSections.find((s) => s.tables.some((t: { id: number }) => t.id === availableTableId)) ??
-      section;
+    // Use noon UTC on lookupDate — 3 weeks out on a fresh DB this slot is always free.
+    // Skipping a live availability check avoids the public rate-limit (30 req/min) that
+    // causes flakiness on CI after several other tests have run.
+    const slotUtc = new Date(`${lookupDate}T12:00:00.000Z`);
+    const availableTableId = table.id;
+    const tableSection = section;
 
     // Acquire a hold
     const holdRes = await request.post("/api/holds", {
