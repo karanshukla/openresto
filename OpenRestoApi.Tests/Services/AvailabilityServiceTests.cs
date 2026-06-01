@@ -268,4 +268,34 @@ public class AvailabilityServiceTests
         // Lunch: 11:30 - 14:30
         // Dinner: 17:30 - 21:30
     }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsSlots_ForMondayInNegativeUtcOffsetTimezone()
+    {
+        // Regression test: midnight UTC on a Monday is Sunday evening in UTC-negative timezones.
+        // The service must treat the incoming date as the local date (not convert from UTC).
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsSlots_ForMondayInNegativeUtcOffsetTimezone));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "T",
+            OpenTime = "09:00",
+            CloseTime = "22:00",
+            Timezone = "America/New_York",  // UTC-4 in summer
+            OpenDays = "1,2,3,4,5"         // Mon–Fri only
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // Frontend sends the local date string "2026-06-01" (Monday), which ASP.NET Core
+        // model-binds as DateTimeKind.Unspecified. Simulate that here.
+        var monday = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        var result = await svc.GetAvailabilityAsync(1, monday, 2);
+
+        // Should return slots — the restaurant is open on Mondays
+        Assert.NotEmpty(result.Slots);
+    }
 }

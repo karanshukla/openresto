@@ -28,8 +28,11 @@ public class AvailabilityService(
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, bookingDate);
 
-        // 2. Define the local operating hours for the requested date
-        DateTime localDate = TimeZoneInfo.ConvertTimeFromUtc(bookingDate.ToUniversalTime(), tz).Date;
+        // 2. Define the local operating hours for the requested date.
+        // bookingDate is sent as YYYY-MM-DD from the frontend (already the local date in the
+        // restaurant's timezone), so use it directly rather than converting from UTC — converting
+        // from UTC would shift midnight into the previous day for any UTC-negative timezone.
+        DateTime localDate = bookingDate.Date;
 
         // Check if this day of week is an open day
         if (!string.IsNullOrEmpty(restaurant.OpenDays))
