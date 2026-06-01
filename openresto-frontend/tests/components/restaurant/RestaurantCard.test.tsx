@@ -135,4 +135,40 @@ describe("RestaurantCard", () => {
     render(<RestaurantCard restaurant={mockRestaurant} />);
     await waitFor(() => expect(screen.getByText("No available slots today")).toBeTruthy());
   });
+
+  it("fetches availability when openDays uses day names", async () => {
+    // Regression test for: openDays="Mon,Tue,Wed" should still call API
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T12:00:00Z")); // Monday
+    try {
+      (fetchAvailability as jest.Mock).mockResolvedValue({
+        slots: [{ time: "23:30", isAvailable: true }],
+      });
+      const restaurantWithDayNames = {
+        ...mockRestaurant,
+        openDays: "Mon,Tue,Wed,Thu,Fri,Sat,Sun", // Day names instead of numbers
+      };
+      render(<RestaurantCard restaurant={restaurantWithDayNames} />);
+      await waitFor(() => expect(screen.getByText("23:30")).toBeTruthy());
+      expect(fetchAvailability).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows closed when openDays day names exclude today", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T12:00:00Z")); // Monday
+    try {
+      const weekendOnlyRestaurant = {
+        ...mockRestaurant,
+        openDays: "Sat,Sun", // Weekend only
+      };
+      render(<RestaurantCard restaurant={weekendOnlyRestaurant} />);
+      await waitFor(() => expect(screen.getByText("Closed")).toBeTruthy());
+      expect(fetchAvailability).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

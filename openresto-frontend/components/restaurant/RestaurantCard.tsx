@@ -60,6 +60,21 @@ function getRestaurantNow(timezone: string): { totalMins: number; isoDay: number
   }
 }
 
+function parseDayOfWeek(day: string): number {
+  const num = parseInt(day, 10);
+  if (!isNaN(num) && num >= 1 && num <= 7) return num;
+
+  const lower = day.toLowerCase();
+  if (lower.startsWith("mon")) return 1;
+  if (lower.startsWith("tue")) return 2;
+  if (lower.startsWith("wed")) return 3;
+  if (lower.startsWith("thu")) return 4;
+  if (lower.startsWith("fri")) return 5;
+  if (lower.startsWith("sat")) return 6;
+  if (lower.startsWith("sun")) return 7;
+  return 0;
+}
+
 function isOpenNow(
   openTime: string,
   closeTime: string,
@@ -70,8 +85,11 @@ function isOpenNow(
   const [ch, cm] = closeTime.split(":").map(Number);
   if (isNaN(oh) || isNaN(ch)) return true;
   const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
-  const openDaysList = openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
-  if (!openDaysList.includes(isoDay)) return false;
+  const openDaysList = openDays
+    ?.split(",")
+    .map((d) => parseDayOfWeek(d.trim()))
+    .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
+  if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) return false;
   return totalMins >= oh * 60 + om && totalMins < ch * 60 + cm;
 }
 
@@ -96,13 +114,19 @@ export default function RestaurantCard({
   useEffect(() => {
     const tz = restaurant.timezone ?? "UTC";
     const { totalMins, isoDay } = getRestaurantNow(tz);
-    const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
-    if (!openDaysList.includes(isoDay)) {
+    const openDaysList = restaurant.openDays
+      ?.split(",")
+      .map((d) => parseDayOfWeek(d.trim()))
+      .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
+    console.log(`[RestaurantCard] ${restaurant.name} (id=${restaurant.id}): openDays="${restaurant.openDays}", parsed=[${openDaysList.join(",")}], today=${isoDay}`);
+    if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) {
+      console.log(`[RestaurantCard] ${restaurant.name} is closed today`);
       setSlots([]);
       setSlotsLoading(false);
       return;
     }
     const date = getRestaurantDate(tz);
+    console.log(`[RestaurantCard] Fetching availability for ${restaurant.name}, date=${date}, party=${party}`);
     fetchAvailability(restaurant.id, date, party).then((data) => {
       if (data && Array.isArray(data.slots)) {
         const future = data.slots.filter((s) => {
