@@ -156,7 +156,6 @@ export default function BookingForm({
     if (date && !openDaysList.includes(isoDay)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailabilitySlots([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingAvailability(false);
       return;
     }

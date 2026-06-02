@@ -119,7 +119,6 @@ export default function RestaurantCard({
       .map((d) => parseDayOfWeek(d.trim()))
       .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
     if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlots([]);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlotsLoading(false);
