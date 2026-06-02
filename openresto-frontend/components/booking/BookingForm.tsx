@@ -154,7 +154,9 @@ export default function BookingForm({
     const jsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
     const isoDay = jsDay === 0 ? 7 : jsDay;
     if (date && !openDaysList.includes(isoDay)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailabilitySlots([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingAvailability(false);
       return;
     }

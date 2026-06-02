@@ -118,19 +118,14 @@ export default function RestaurantCard({
       ?.split(",")
       .map((d) => parseDayOfWeek(d.trim()))
       .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
-    console.log(
-      `[RestaurantCard] ${restaurant.name} (id=${restaurant.id}): openDays="${restaurant.openDays}", parsed=[${openDaysList.join(",")}], today=${isoDay}`
-    );
     if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) {
-      console.log(`[RestaurantCard] ${restaurant.name} is closed today`);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlots([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlotsLoading(false);
       return;
     }
     const date = getRestaurantDate(tz);
-    console.log(
-      `[RestaurantCard] Fetching availability for ${restaurant.name}, date=${date}, party=${party}`
-    );
     fetchAvailability(restaurant.id, date, party).then((data) => {
       if (data && Array.isArray(data.slots)) {
         const future = data.slots.filter((s) => {
