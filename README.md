@@ -2,6 +2,8 @@
 
 [![Frontend Coverage](https://img.shields.io/coveralls/github/karanshukla/openresto/main?flag=frontend&label=frontend%20coverage)](https://coveralls.io/github/karanshukla/openresto)
 [![Backend Coverage](https://img.shields.io/coveralls/github/karanshukla/openresto/main?flag=backend&label=backend%20coverage)](https://coveralls.io/github/karanshukla/openresto)
+[![CI](https://github.com/karanshukla/openresto/actions/workflows/ci.yml/badge.svg)](https://github.com/karanshukla/openresto/actions/workflows/ci.yml)
+
 
 A self-hosted, zero-dependency restaurant booking system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, floor sections, branding, and booking pauses from a dedicated dashboard — all from a single Docker Compose command with no external services required beyond optional SMTP.
 
