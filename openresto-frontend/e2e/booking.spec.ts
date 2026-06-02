@@ -73,7 +73,7 @@ test.describe("Booking Flow", () => {
     await page
       .getByText(/^1[1-4]:\d{2}$/)
       .first()
-      .click();
+      .click({ force: true });
 
     // 5. Fill out the form
     const nameInput = page.getByPlaceholder("Your full name");
