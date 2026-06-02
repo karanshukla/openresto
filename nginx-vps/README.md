@@ -1,71 +1,73 @@
-# Nginx VPS Configuration with PositiveSSL
+# Nginx VPS Configuration
 
-This directory contains a specialized Nginx configuration designed for Namecheap VPS hosting using PositiveSSL (including automatic setups on Ubuntu).
+This directory contains the Nginx configuration for production VPS deployment. It handles SSL termination, HTTP→HTTPS redirect, security headers, and reverse proxying to the backend and frontend.
 
-## Features
-- HTTP (Port 80) to HTTPS (Port 443) redirect.
-- SSL/TLS configuration optimized for PositiveSSL.
-- Security headers included (OWASP best practices).
-- Reverse proxy for Backend (API) and Frontend.
-- Dynamic configuration via environment variables.
+## Prerequisites
 
-## SSL Certificate Preparation
+- A domain pointed at your VPS (A record → server IP)
+- An SSL certificate and private key for that domain
+- Docker and Docker Compose installed on the VPS
 
-### Option A: Manual PositiveSSL (Standard)
-If you purchased a PositiveSSL certificate and have the `.crt` and `.ca-bundle` files:
+## SSL Certificate
 
-1. Concatenate them into a single file:
-   ```bash
-   cat your_domain.crt your_domain.ca-bundle > server.crt
-   ```
-2. Use your private key as `server.key`.
+You need a certificate file and a private key. How you obtain them depends on your setup:
 
-### Option B: Automatic Setup (Ubuntu/Debian)
-If your Namecheap VPS has Ubuntu and the SSL was set up automatically (e.g., via a plugin or standard system tools), certificates are typically found at:
+**Let's Encrypt (free, recommended)**
 
-- **Certificate Path:** `/etc/ssl/certs/yourdomain_com.crt` (or similar combined file)
-- **Private Key Path:** `/etc/ssl/private/yourdomain_com.key`
+```bash
+# Using certbot on the host before starting Docker
+certbot certonly --standalone -d yourdomain.com
+# Certificate: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+# Key:         /etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
 
-You can mount these directly into the Docker container or copy them to your project's `ssl/` directory.
+**Commercial certificate (any CA)**
+
+If your CA gives you separate certificate and chain files, concatenate them first:
+
+```bash
+cat your_domain.crt your_domain.ca-bundle > server.crt
+```
+
+Then use `server.crt` and your `server.key`.
+
+**Existing system certificate**
+
+If a cert is already present on the host (e.g. `/etc/ssl/certs/`), mount it directly — no copying needed.
 
 ## Deployment
 
-### 1. Place SSL Files
-Ensure your SSL files are available on your VPS. By default, the configuration looks for:
-- `/etc/nginx/ssl/server.crt`
-- `/etc/nginx/ssl/server.key`
+### 1. Configure environment
 
-### 2. Run with Docker Compose
-You can customize the SSL paths using environment variables `SSL_CERT_PATH` and `SSL_KEY_PATH`.
+Create a `.env` file in the project root:
 
-```yaml
-services:
-  reverse-proxy:
-    build: ./nginx-vps
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      - DOMAIN_NAME=yourdomain.com
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=8080
-      - FRONTEND_HOST=frontend
-      - FRONTEND_PORT=8081
-      # Optional: Override SSL paths inside the container
-      # - SSL_CERT_PATH=/etc/nginx/ssl/custom.crt
-      # - SSL_KEY_PATH=/etc/nginx/ssl/custom.key
-    volumes:
-      # Mount from VPS host to container
-      - /etc/ssl/certs/your_combined_cert.crt:/etc/nginx/ssl/server.crt:ro
-      - /etc/ssl/private/your_key.key:/etc/nginx/ssl/server.key:ro
-    restart: always
+```env
+DOMAIN_NAME=yourdomain.com
+JWT_KEY=your-secret-key
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-admin-password
+
+# Paths to the cert and key ON THE HOST
+HOST_SSL_CERT_PATH=/etc/letsencrypt/live/yourdomain.com/fullchain.pem
+HOST_SSL_KEY_PATH=/etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
+
+### 2. Start the stack
+
+```bash
+docker compose -f docker-compose.vps.yml up -d
 ```
 
 ## Environment Variables
-- `DOMAIN_NAME`: Your domain name (e.g., `openresto.com`).
-- `BACKEND_HOST`: The hostname of your backend service.
-- `BACKEND_PORT`: The port your backend is listening on.
-- `FRONTEND_HOST`: The hostname of your frontend service.
-- `FRONTEND_PORT`: The port your frontend is listening on.
-- `SSL_CERT_PATH`: (Optional) Path to the certificate inside the container. Defaults to `/etc/nginx/ssl/server.crt`.
-- `SSL_KEY_PATH`: (Optional) Path to the private key inside the container. Defaults to `/etc/nginx/ssl/server.key`.
+
+| Variable             | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `DOMAIN_NAME`        | Your domain (e.g. `myrestaurant.com`)                                           |
+| `HOST_SSL_CERT_PATH` | Path to the certificate on the host                                             |
+| `HOST_SSL_KEY_PATH`  | Path to the private key on the host                                             |
+| `JWT_KEY`            | Secret key for JWT signing (use a long random string)                           |
+| `ADMIN_EMAIL`        | Initial admin login email                                                       |
+| `ADMIN_PASSWORD`     | Initial admin login password                                                    |
+| `SSL_CERT_PATH`      | _(Optional)_ Path inside the container. Defaults to `/etc/nginx/ssl/server.crt` |
+| `SSL_KEY_PATH`       | _(Optional)_ Path inside the container. Defaults to `/etc/nginx/ssl/server.key` |
+| `CONNECTION_STRING`  | _(Optional)_ SQLite path. Defaults to `Data Source=/data/openresto.db`          |
