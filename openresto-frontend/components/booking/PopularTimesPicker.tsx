@@ -181,7 +181,15 @@ export default function PopularTimesPicker({
                 disabled && styles.tabDisabled,
               ]}
             >
-              <ThemedText style={[styles.tabText, isActive && { color: "#fff" }, disabled && styles.tabTextDisabled]}>{cat}</ThemedText>
+              <ThemedText
+                style={[
+                  styles.tabText,
+                  isActive && { color: "#fff" },
+                  disabled && styles.tabTextDisabled,
+                ]}
+              >
+                {cat}
+              </ThemedText>
             </Pressable>
           );
         })}
