@@ -130,7 +130,14 @@ export default function BookingConfirmationScreen() {
         {/* Booking reference — above detail rows on mobile, inside right col on wide */}
         {!isWide && (
           <View
-            style={[styles.refCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.refCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                marginBottom: SPACING.lg,
+              },
+            ]}
           >
             <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
               Booking Reference
@@ -146,7 +153,7 @@ export default function BookingConfirmationScreen() {
               </View>
               {Platform.OS === "web" && (
                 <Pressable
-                  style={[styles.copyBtn, { borderColor: colors.border }]}
+                  style={[styles.copyBtn, { borderColor: copied ? primaryColor : colors.border }]}
                   onPress={() => {
                     navigator.clipboard.writeText(ref);
                     setCopied(true);
@@ -156,10 +163,10 @@ export default function BookingConfirmationScreen() {
                   <Ionicons
                     name={copied ? "checkmark" : "copy-outline"}
                     size={14}
-                    color={copied ? COLORS.success : primaryColor}
+                    color={copied ? primaryColor : colors.muted}
                   />
                   <ThemedText
-                    style={[styles.copyBtnText, { color: copied ? COLORS.success : primaryColor }]}
+                    style={[styles.copyBtnText, { color: copied ? primaryColor : colors.muted }]}
                   >
                     {copied ? "Copied" : "Copy"}
                   </ThemedText>
@@ -215,7 +222,10 @@ export default function BookingConfirmationScreen() {
                   </View>
                   {Platform.OS === "web" && (
                     <Pressable
-                      style={[styles.copyBtn, { borderColor: colors.border }]}
+                      style={[
+                        styles.copyBtn,
+                        { borderColor: copied ? primaryColor : colors.border },
+                      ]}
                       onPress={() => {
                         navigator.clipboard.writeText(ref);
                         setCopied(true);
@@ -225,12 +235,12 @@ export default function BookingConfirmationScreen() {
                       <Ionicons
                         name={copied ? "checkmark" : "copy-outline"}
                         size={14}
-                        color={copied ? COLORS.success : primaryColor}
+                        color={copied ? primaryColor : colors.muted}
                       />
                       <ThemedText
                         style={[
                           styles.copyBtnText,
-                          { color: copied ? COLORS.success : primaryColor },
+                          { color: copied ? primaryColor : colors.muted },
                         ]}
                       >
                         {copied ? "Copied" : "Copy"}
@@ -263,18 +273,18 @@ export default function BookingConfirmationScreen() {
               </View>
             )}
 
-            <View
-              style={[
-                styles.actionCard,
-                styles.directionsCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              {restaurant?.address && (
-                <>
-                  <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
-                    Get Directions
-                  </ThemedText>
+            {restaurant?.address && (
+              <View
+                style={[
+                  styles.actionCard,
+                  styles.directionsCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                  Get Directions
+                </ThemedText>
+                <View style={styles.mapAddressRow}>
                   <View style={styles.mapMeta}>
                     <Ionicons name="location-outline" size={13} color={colors.muted} />
                     <ThemedText
@@ -326,10 +336,16 @@ export default function BookingConfirmationScreen() {
                       </ThemedText>
                     </Pressable>
                   </View>
-                  <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
-                </>
-              )}
+                </View>
+              </View>
+            )}
 
+            <View
+              style={[
+                styles.actionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
               {!booking.isCancelled ? (
                 <Pressable
                   style={styles.cancelBtn}
@@ -348,6 +364,10 @@ export default function BookingConfirmationScreen() {
                 </View>
               )}
             </View>
+
+            <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
+              This booking cannot be modified. However, feel free to cancel and rebook if need be.
+            </ThemedText>
           </View>
         </View>
       </PageContainer>
@@ -410,7 +430,7 @@ const styles = StyleSheet.create({
   refCard: {
     borderRadius: BORDER_RADIUS.card,
     borderWidth: 1,
-    padding: SPACING.xxl,
+    padding: SPACING.lg,
     alignItems: "center",
     gap: SPACING.md,
     ...SHADOWS.md,
@@ -460,8 +480,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.md,
   },
 
-  directionsCard: { gap: SPACING.sm, flex: 1 },
-  cardDivider: { height: 1, marginVertical: SPACING.xsm },
+  directionsCard: { gap: SPACING.sm },
   cancelBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -469,6 +488,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   cancelBtnText: { color: COLORS.error, ...TYPOGRAPHY.bodyBold },
+  cancelHint: {
+    ...TYPOGRAPHY.caption,
+    lineHeight: 18,
+    textAlign: "center",
+    paddingHorizontal: SPACING.sm,
+  },
   cancelledNote: {
     flexDirection: "row",
     alignItems: "center",
@@ -476,7 +501,8 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   // Directions card — same pill style as restaurant card homepage
-  mapMeta: { flexDirection: "row", alignItems: "flex-start", gap: 5, marginBottom: 4 },
+  mapAddressRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  mapMeta: { flexDirection: "row", alignItems: "flex-start", gap: 5, flex: 1 },
   mapAddress: { fontSize: 13, flex: 1, lineHeight: 18 },
   mapLinks: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   mapLink: {

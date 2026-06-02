@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { buildCalendarUrls } from "@/utils/calendar";
 
 interface CalendarActionsProps {
@@ -16,8 +15,7 @@ interface CalendarActionsProps {
 }
 
 export default function CalendarActions(props: CalendarActionsProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { isDark, colors, primaryColor } = useAppTheme();
   const { googleUrl, outlookUrl, downloadIcs } = buildCalendarUrls(props);
 
   if (props.variant === "compact") {
@@ -35,14 +33,14 @@ export default function CalendarActions(props: CalendarActionsProps) {
           <CalBtn
             label="Google"
             icon="logo-google"
-            color="#4285F4"
+            color={primaryColor}
             isDark={isDark}
             onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
           />
           <CalBtn
             label="Outlook"
             icon="calendar-outline"
-            color="#0078D4"
+            color={primaryColor}
             isDark={isDark}
             onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
           />
@@ -67,7 +65,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
         label="Google Calendar"
         sub="Opens in a new tab"
         icon="logo-google"
-        color="#4285F4"
+        color={primaryColor}
         isDark={isDark}
         onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
         trailingIcon="open-outline"
@@ -77,7 +75,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
         label="Outlook Calendar"
         sub="Opens in a new tab"
         icon="calendar-outline"
-        color="#0078D4"
+        color={primaryColor}
         isDark={isDark}
         onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
         trailingIcon="open-outline"

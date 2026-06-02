@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -32,6 +33,7 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { buildCalendarUrls } from "@/utils/calendar";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -185,15 +187,51 @@ export default function LookupScreen() {
               )}
 
               {!loading && booking && (
-                <BookingResultCard
-                  booking={booking}
-                  restaurant={restaurant}
-                  primaryColor={primaryColor}
-                  colors={colors}
-                  isDark={isDark}
-                  isWide={isWide}
-                  onCancel={() => setShowCancelConfirm(true)}
-                />
+                <>
+                  <BookingResultCard
+                    booking={booking}
+                    restaurant={restaurant}
+                    primaryColor={primaryColor}
+                    colors={colors}
+                    isDark={isDark}
+                    isWide={isWide}
+                  />
+
+                  <BookingActions
+                    booking={booking}
+                    restaurant={restaurant}
+                    colors={colors}
+                    isDark={isDark}
+                    isWide={isWide}
+                    primaryColor={primaryColor}
+                  />
+
+                  {!booking.isCancelled && (
+                    <Pressable
+                      style={[
+                        styles.cancelSection,
+                        { borderColor: colors.border, backgroundColor: colors.card },
+                      ]}
+                      onPress={() => setShowCancelConfirm(true)}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                      <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
+                    </Pressable>
+                  )}
+                  {booking.isCancelled && (
+                    <View
+                      style={[
+                        styles.cancelSection,
+                        { borderColor: colors.border, backgroundColor: colors.card },
+                      ]}
+                    >
+                      <Ionicons name="close-circle" size={15} color={COLORS.error} />
+                      <ThemedText style={[styles.cancelledText, { color: COLORS.error }]}>
+                        This booking has been cancelled.
+                      </ThemedText>
+                    </View>
+                  )}
+                </>
               )}
             </View>
           </View>
@@ -268,6 +306,150 @@ function RecentBookingsList({
   );
 }
 
+function BookingActions({
+  booking,
+  restaurant,
+  colors,
+  isDark,
+  isWide,
+  primaryColor,
+}: {
+  booking: BookingDto;
+  restaurant: RestaurantDto | null;
+  colors: ThemeColors;
+  isDark: boolean;
+  isWide: boolean;
+  primaryColor: string;
+}) {
+  if (!booking.bookingRef || Platform.OS !== "web") return null;
+
+  const { googleUrl, outlookUrl, downloadIcs } = buildCalendarUrls({
+    bookingRef: booking.bookingRef,
+    date: booking.date,
+    seats: booking.seats,
+    specialRequests: booking.specialRequests,
+    restaurantName: restaurant?.name ?? "Restaurant",
+    restaurantAddress: restaurant?.address ?? "",
+  });
+
+  if (!isWide) {
+    return (
+      <View
+        style={[styles.iconStrip, { backgroundColor: colors.card, borderColor: colors.border }]}
+      >
+        <View style={styles.iconGroup}>
+          <ThemedText style={[styles.iconGroupLabel, { color: colors.muted }]}>CAL</ThemedText>
+          <View style={styles.iconGroupRow}>
+            <Pressable style={styles.iconBtn} onPress={() => window.open(googleUrl, "_blank")}>
+              <Ionicons name="logo-google" size={18} color={primaryColor} />
+            </Pressable>
+            <Pressable style={styles.iconBtn} onPress={() => window.open(outlookUrl, "_blank")}>
+              <Ionicons name="calendar-outline" size={18} color={primaryColor} />
+            </Pressable>
+            <Pressable style={styles.iconBtn} onPress={downloadIcs}>
+              <Ionicons name="download-outline" size={18} color={colors.muted} />
+            </Pressable>
+          </View>
+        </View>
+        {restaurant?.address && (
+          <>
+            <View style={[styles.iconSep, { backgroundColor: colors.border }]} />
+            <View style={styles.iconGroup}>
+              <ThemedText style={[styles.iconGroupLabel, { color: colors.muted }]}>MAPS</ThemedText>
+              <View style={styles.iconGroupRow}>
+                <Pressable
+                  style={styles.iconBtn}
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
+                    )
+                  }
+                >
+                  <Ionicons name="navigate-outline" size={18} color={colors.muted} />
+                </Pressable>
+                <Pressable
+                  style={styles.iconBtn}
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
+                    )
+                  }
+                >
+                  <Ionicons name="map-outline" size={18} color={colors.muted} />
+                </Pressable>
+              </View>
+            </View>
+          </>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.actionsRow}>
+      <View
+        style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      >
+        <CalendarActions
+          bookingRef={booking.bookingRef}
+          date={booking.date}
+          seats={booking.seats}
+          specialRequests={booking.specialRequests}
+          restaurantName={restaurant?.name ?? "Restaurant"}
+          restaurantAddress={restaurant?.address ?? ""}
+          variant="compact"
+        />
+      </View>
+      {restaurant?.address && (
+        <View
+          style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <View
+            style={[
+              styles.mapsWrap,
+              { backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" },
+            ]}
+          >
+            <ThemedText style={[styles.mapsTitle, { color: colors.muted }]}>
+              GET DIRECTIONS
+            </ThemedText>
+            <View style={styles.mapBtnsRow}>
+              <Pressable
+                style={[
+                  styles.mapBtn,
+                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" },
+                ]}
+                onPress={() =>
+                  Linking.openURL(
+                    `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
+                  )
+                }
+              >
+                <Ionicons name="navigate-outline" size={16} color={colors.muted} />
+                <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Google</ThemedText>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.mapBtn,
+                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" },
+                ]}
+                onPress={() =>
+                  Linking.openURL(
+                    `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
+                  )
+                }
+              >
+                <Ionicons name="navigate-outline" size={16} color={colors.muted} />
+                <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Apple</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function BookingResultCard({
   booking,
   restaurant,
@@ -275,7 +457,6 @@ function BookingResultCard({
   colors,
   isDark,
   isWide,
-  onCancel,
 }: {
   booking: BookingDto;
   restaurant: RestaurantDto | null;
@@ -283,8 +464,17 @@ function BookingResultCard({
   colors: ThemeColors;
   isDark: boolean;
   isWide: boolean;
-  onCancel: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (Platform.OS === "web" && navigator.clipboard && booking.bookingRef) {
+      navigator.clipboard.writeText(booking.bookingRef);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <View
       style={[
@@ -298,40 +488,44 @@ function BookingResultCard({
           <Ionicons
             name={booking.isCancelled ? "close-circle" : "checkmark-circle"}
             size={20}
-            color={booking.isCancelled ? COLORS.error : COLORS.success}
+            color={booking.isCancelled ? COLORS.error : primaryColor}
           />
           <ThemedText style={styles.resultTitle}>
             {booking.isCancelled ? "Booking Cancelled" : "Booking Found"}
           </ThemedText>
         </View>
-        <View
-          style={[
-            styles.refBadge,
-            { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
-          ]}
-        >
-          <ThemedText style={[styles.refText, { color: primaryColor }]}>
-            {booking.bookingRef}
-          </ThemedText>
+        <View style={styles.refBadgeRow}>
+          <View
+            style={[
+              styles.refBadge,
+              { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
+            ]}
+          >
+            <ThemedText style={[styles.refText, { color: primaryColor }]}>
+              {booking.bookingRef}
+            </ThemedText>
+          </View>
+          {Platform.OS === "web" && (
+            <Pressable
+              style={[styles.copyBtn, { borderColor: copied ? primaryColor : colors.border }]}
+              onPress={handleCopy}
+            >
+              <Ionicons
+                name={copied ? "checkmark" : "copy-outline"}
+                size={14}
+                color={copied ? primaryColor : colors.muted}
+              />
+              <ThemedText
+                style={[styles.copyBtnText, { color: copied ? primaryColor : colors.muted }]}
+              >
+                {copied ? "Copied" : "Copy"}
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
       </View>
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-      {Platform.OS === "web" && booking.bookingRef && (
-        <>
-          <CalendarActions
-            bookingRef={booking.bookingRef}
-            date={booking.date}
-            seats={booking.seats}
-            specialRequests={booking.specialRequests}
-            restaurantName={restaurant?.name ?? "Restaurant"}
-            restaurantAddress={restaurant?.address ?? ""}
-            variant="compact"
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        </>
-      )}
 
       <BookingDetailRows
         booking={booking}
@@ -339,28 +533,6 @@ function BookingResultCard({
         mutedColor={colors.muted}
         borderColor={colors.border}
       />
-
-      {!booking.isCancelled && (
-        <>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <Pressable style={styles.cancelBtn} onPress={onCancel}>
-            <Ionicons name="trash-outline" size={15} color={COLORS.error} />
-            <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
-          </Pressable>
-        </>
-      )}
-
-      {booking.isCancelled && (
-        <>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <View style={styles.cancelledContent}>
-            <Ionicons name="close-circle" size={15} color={COLORS.error} />
-            <ThemedText style={[styles.cancelledText, { color: COLORS.error }]}>
-              This booking has been cancelled.
-            </ThemedText>
-          </View>
-        </>
-      )}
     </View>
   );
 }
@@ -426,21 +598,71 @@ const styles = StyleSheet.create({
   },
   refText: { ...TYPOGRAPHY.bodyBold, fontWeight: "700", letterSpacing: 0.3 },
   divider: { height: 1 },
-  cancelBtn: {
+  refBadgeRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  copyBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 4,
+    paddingHorizontal: SPACING.xsm,
+    paddingVertical: SPACING.xxs,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+  },
+  copyBtnText: { ...TYPOGRAPHY.caption, fontWeight: "600" },
+  iconStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BORDER_RADIUS.card,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingVertical: SPACING.xsm,
+    ...SHADOWS.md,
+  },
+  iconGroup: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.md,
+  },
+  iconGroupLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 0.6, marginRight: 2 },
+  iconGroupRow: { flexDirection: "row" },
+  iconBtn: { padding: SPACING.xsm, borderRadius: BORDER_RADIUS.md },
+  iconSep: { width: 1, alignSelf: "stretch" },
+  actionsRow: { flexDirection: "row", gap: 10, marginTop: 10 },
+  actionCard: {
+    flex: 1,
+    borderRadius: BORDER_RADIUS.card,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...SHADOWS.md,
+  },
+  mapsWrap: { padding: 16, gap: 10, flex: 1 },
+  mapsTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
+  mapBtnsRow: { flexDirection: "row", gap: 8 },
+  mapBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    justifyContent: "center",
+  },
+  mapBtnText: { fontSize: 12, fontWeight: "600" },
+  cancelSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+    borderRadius: BORDER_RADIUS.card,
+    borderWidth: 1,
     paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
+    ...SHADOWS.md,
   },
   cancelBtnText: { color: COLORS.error, ...TYPOGRAPHY.bodyBold },
-  cancelledContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 14,
-  },
   cancelledText: { ...TYPOGRAPHY.bodyBold },
   recentSection: { marginTop: SPACING.xl, gap: SPACING.xsm, width: "100%" },
   recentTitle: { ...TYPOGRAPHY.labelSmall, fontWeight: "700", letterSpacing: 0.8, marginBottom: 2 },
