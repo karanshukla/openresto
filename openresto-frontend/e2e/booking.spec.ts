@@ -1,13 +1,11 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Browser } from "@playwright/test";
 import { futureDateStr } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 const PASTA_PLACE_ID = 1;
 const TEST_EMAIL = "test-e2e@example.com";
 
-async function purgeTestBookings(
-  browser: Parameters<Parameters<typeof test.beforeAll>[0]>[0]["browser"]
-) {
+async function purgeTestBookings(browser: Browser) {
   const ctx = await browser.newContext({ storageState: ADMIN_STATE_FILE });
   const page = await ctx.newPage();
   const res = await page.request.get(
