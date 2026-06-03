@@ -5,17 +5,12 @@
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { fetchAvailability } from "@/api/availability";
 
-jest.mock("react-native", () => {
-  const rn = jest.requireActual("react-native");
-  return {
-    ...rn,
-    Platform: {
-      ...rn.Platform,
-      OS: "ios",
-      select: (spec: any) => spec.ios ?? spec.default,
-    },
-  };
-});
+jest.mock("react-native/Libraries/Utilities/Platform", () => ({
+  OS: "ios",
+  select: (spec: any) => spec.ios ?? spec.default,
+  isTesting: true,
+  constants: {},
+}));
 
 jest.mock("expo-image", () => ({
   Image: ({ testID, source }: any) =>
