@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { RestaurantDto } from "@/api/restaurants";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
@@ -209,6 +210,14 @@ export default function RestaurantCard({
                 },
         ]}
       >
+        {/* Native background image via expo-image (web uses CSS backgroundImage above) */}
+        {restaurant.imageUrl && Platform.OS !== "web" && (
+          <Image
+            source={{ uri: restaurant.imageUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
+        )}
         {/* Branded placeholder content – visible only when no image */}
         {!restaurant.imageUrl && (
           <>

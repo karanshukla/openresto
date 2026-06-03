@@ -2,7 +2,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
-import { Image, Platform, ScrollView, StyleSheet } from "react-native";
+import { Image } from "expo-image";
+import { Platform, ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
@@ -113,7 +114,7 @@ export default function BookScreen() {
             <Image
               source={{ uri: restaurant.imageUrl }}
               style={styles.imageBanner}
-              resizeMode="cover"
+              contentFit="cover"
               onError={() => setImageError(true)}
             />
           )}
