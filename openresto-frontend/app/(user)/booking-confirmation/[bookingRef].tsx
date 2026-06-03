@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, getBookingById, cancelBookingByRef, BookingDto } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -30,6 +30,7 @@ export default function BookingConfirmationScreen() {
   const [copied, setCopied] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
   const router = useRouter();
   const { colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
@@ -57,6 +58,19 @@ export default function BookingConfirmationScreen() {
       cancelled = true;
     };
   }, [bookingRef, email]);
+
+  useEffect(() => {
+    if (!restaurant?.address) return;
+    fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(restaurant.address)}&format=json&limit=1`,
+      { headers: { "Accept-Language": "en" } }
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (data[0]) setMapCoords({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      })
+      .catch(() => {});
+  }, [restaurant?.address]);
 
   if (loading) {
     return (
@@ -113,14 +127,29 @@ export default function BookingConfirmationScreen() {
       style={{ flex: 1, backgroundColor: colors.page }}
       contentContainerStyle={styles.scrollContent}
     >
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Booking Confirmed" }} />}
+      {Platform.OS !== "web" && (
+        <Stack.Screen
+          options={{ title: booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed" }}
+        />
+      )}
       <PageContainer>
         {/* Header — same spacing pattern as lookup page */}
         <View style={styles.header}>
-          <View style={[styles.checkCircle, { backgroundColor: primaryColor }]}>
-            <Ionicons name="checkmark" size={32} color={COLORS.white} />
+          <View
+            style={[
+              styles.checkCircle,
+              { backgroundColor: booking.isCancelled ? COLORS.error : primaryColor },
+            ]}
+          >
+            <Ionicons
+              name={booking.isCancelled ? "close" : "checkmark"}
+              size={32}
+              color={COLORS.white}
+            />
           </View>
-          <ThemedText style={styles.title}>Booking Confirmed</ThemedText>
+          <ThemedText style={styles.title}>
+            {booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed"}
+          </ThemedText>
           <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
             {booking.customerName ? `${booking.customerName}, ` : ""}
             {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}
@@ -284,6 +313,18 @@ export default function BookingConfirmationScreen() {
                 <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
                   Get Directions
                 </ThemedText>
+                {Platform.OS === "web" &&
+                  mapCoords &&
+                  React.createElement("iframe", {
+                    src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
+                    style: {
+                      width: "100%",
+                      height: 160,
+                      border: 0,
+                      borderRadius: BORDER_RADIUS.md,
+                    },
+                    loading: "lazy",
+                  })}
                 <View style={styles.mapAddressRow}>
                   <View style={styles.mapMeta}>
                     <Ionicons name="location-outline" size={13} color={colors.muted} />
@@ -346,23 +387,16 @@ export default function BookingConfirmationScreen() {
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
             >
-              {!booking.isCancelled ? (
-                <Pressable
-                  style={styles.cancelBtn}
-                  onPress={() => setShowCancelConfirm(true)}
-                  disabled={cancelling}
-                >
-                  <Ionicons name="trash-outline" size={15} color={COLORS.error} />
-                  <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
-                </Pressable>
-              ) : (
-                <View style={styles.cancelledNote}>
-                  <Ionicons name="close-circle" size={15} color={COLORS.error} />
-                  <ThemedText style={[styles.cancelBtnText, { opacity: 0.7 }]}>
-                    This booking has been cancelled
-                  </ThemedText>
-                </View>
-              )}
+              <Pressable
+                style={[styles.cancelBtn, booking.isCancelled && { opacity: 0.4 }]}
+                onPress={() => !booking.isCancelled && setShowCancelConfirm(true)}
+                disabled={cancelling || booking.isCancelled}
+              >
+                <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                <ThemedText style={styles.cancelBtnText}>
+                  {booking.isCancelled ? "Already Cancelled" : "Cancel This Booking"}
+                </ThemedText>
+              </Pressable>
             </View>
 
             <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
@@ -493,12 +527,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: "center",
     paddingHorizontal: SPACING.sm,
-  },
-  cancelledNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: SPACING.sm,
   },
   // Directions card — same pill style as restaurant card homepage
   mapAddressRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },

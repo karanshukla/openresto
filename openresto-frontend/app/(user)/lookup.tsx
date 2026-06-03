@@ -206,31 +206,20 @@ export default function LookupScreen() {
                     primaryColor={primaryColor}
                   />
 
-                  {!booking.isCancelled && (
-                    <Pressable
-                      style={[
-                        styles.cancelSection,
-                        { borderColor: colors.border, backgroundColor: colors.card },
-                      ]}
-                      onPress={() => setShowCancelConfirm(true)}
-                    >
-                      <Ionicons name="trash-outline" size={15} color={COLORS.error} />
-                      <ThemedText style={styles.cancelBtnText}>Cancel This Booking</ThemedText>
-                    </Pressable>
-                  )}
-                  {booking.isCancelled && (
-                    <View
-                      style={[
-                        styles.cancelSection,
-                        { borderColor: colors.border, backgroundColor: colors.card },
-                      ]}
-                    >
-                      <Ionicons name="close-circle" size={15} color={COLORS.error} />
-                      <ThemedText style={[styles.cancelledText, { color: COLORS.error }]}>
-                        This booking has been cancelled.
-                      </ThemedText>
-                    </View>
-                  )}
+                  <Pressable
+                    style={[
+                      styles.cancelSection,
+                      { borderColor: colors.border, backgroundColor: colors.card },
+                      booking.isCancelled && { opacity: 0.4 },
+                    ]}
+                    onPress={() => !booking.isCancelled && setShowCancelConfirm(true)}
+                    disabled={cancelling || booking.isCancelled}
+                  >
+                    <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                    <ThemedText style={styles.cancelBtnText}>
+                      {booking.isCancelled ? "Already Cancelled" : "Cancel This Booking"}
+                    </ThemedText>
+                  </Pressable>
                 </>
               )}
             </View>
@@ -663,7 +652,6 @@ const styles = StyleSheet.create({
     ...SHADOWS.md,
   },
   cancelBtnText: { color: COLORS.error, ...TYPOGRAPHY.bodyBold },
-  cancelledText: { ...TYPOGRAPHY.bodyBold },
   recentSection: { marginTop: SPACING.xl, gap: SPACING.xsm, width: "100%" },
   recentTitle: { ...TYPOGRAPHY.labelSmall, fontWeight: "700", letterSpacing: 0.8, marginBottom: 2 },
   recentCard: {

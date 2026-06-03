@@ -66,9 +66,11 @@ function buildRows(booking: BookingDto, restaurant: RestaurantDto | null): RowDa
     rows.push({ icon: "grid-outline", label: "Table", value: booking.tableName });
   }
 
-  if (booking.specialRequests) {
-    rows.push({ icon: "chatbubble-outline", label: "Requests", value: booking.specialRequests });
-  }
+  rows.push({
+    icon: "chatbubble-outline",
+    label: "Requests",
+    value: booking.specialRequests || "None",
+  });
 
   return rows;
 }

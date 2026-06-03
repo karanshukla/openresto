@@ -66,7 +66,8 @@ describe("BookingDetailRows", () => {
 
     expect(screen.queryByText("Restaurant")).toBeNull();
     expect(screen.queryByText("Address")).toBeNull();
-    expect(screen.queryByText("Requests")).toBeNull();
+    expect(screen.getByText("Requests")).toBeTruthy();
+    expect(screen.getByText("None")).toBeTruthy();
     expect(screen.queryByText("Table")).toBeNull();
   });
 

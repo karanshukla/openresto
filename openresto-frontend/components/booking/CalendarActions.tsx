@@ -63,7 +63,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
       </ThemedText>
       <FullCalBtn
         label="Google Calendar"
-        sub="Opens in a new tab"
+        sub=""
         icon="logo-google"
         color={primaryColor}
         isDark={isDark}
@@ -73,7 +73,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
       />
       <FullCalBtn
         label="Outlook Calendar"
-        sub="Opens in a new tab"
+        sub=""
         icon="calendar-outline"
         color={primaryColor}
         isDark={isDark}
@@ -146,7 +146,9 @@ function FullCalBtn({
       <Ionicons name={icon} size={18} color={textColor} />
       <View style={styles.fullBtnContent}>
         <ThemedText style={[styles.fullBtnText, color ? { color } : undefined]}>{label}</ThemedText>
-        <ThemedText style={[styles.fullBtnSub, { color: mutedColor }]}>{sub}</ThemedText>
+        {sub ? (
+          <ThemedText style={[styles.fullBtnSub, { color: mutedColor }]}>{sub}</ThemedText>
+        ) : null}
       </View>
       <Ionicons name={trailingIcon} size={14} color={mutedColor} />
     </Pressable>
@@ -170,13 +172,13 @@ const styles = StyleSheet.create({
   },
   compactBtnText: { fontSize: 12, fontWeight: "600" },
   sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
-  fullWrap: { gap: 10 },
+  fullWrap: { gap: 6 },
   fullBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderRadius: 10,
   },
   fullBtnContent: { flex: 1, gap: 1 },

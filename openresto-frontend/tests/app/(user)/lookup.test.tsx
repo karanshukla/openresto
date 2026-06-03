@@ -50,13 +50,23 @@ jest.spyOn(Alert, "alert").mockImplementation(() => {});
 
 jest.mock("@/components/common/ConfirmModal", () => {
   const { View, Pressable, Text } = require("react-native");
-  return function MockConfirmModal({ visible, onConfirm, message, confirmLabel }: any) {
+  return function MockConfirmModal({
+    visible,
+    onConfirm,
+    onCancel,
+    message,
+    confirmLabel,
+    cancelLabel,
+  }: any) {
     if (!visible) return null;
     return (
       <View testID="confirm-modal">
         <Text>{message}</Text>
         <Pressable onPress={onConfirm}>
           <Text>{confirmLabel || "Confirm"}</Text>
+        </Pressable>
+        <Pressable onPress={onCancel}>
+          <Text>{cancelLabel || "Cancel"}</Text>
         </Pressable>
       </View>
     );
@@ -193,6 +203,71 @@ describe("LookupScreen", () => {
     await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith("Error", expect.any(String)));
 
     Object.defineProperty(Platform, "OS", { get: () => originalOS, configurable: true });
+  });
+
+  it("shows already cancelled disabled button when booking is pre-cancelled", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, isCancelled: true });
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => expect(screen.getByText("Already Cancelled")).toBeTruthy());
+    expect(screen.queryByText("Cancel This Booking")).toBeNull();
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
+  });
+
+  it("shows web alert on cancellation failure", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    (cancelBookingByRef as jest.Mock).mockResolvedValue(false);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => screen.getByText("Cancel This Booking"));
+    fireEvent.press(screen.getByText("Cancel This Booking"));
+    fireEvent.press(await screen.findByText("Cancel Booking"));
+
+    await waitFor(() =>
+      expect((window as any).alert).toHaveBeenCalledWith("Failed to cancel booking.")
+    );
+    expect(cancelBookingByRef).toHaveBeenCalledTimes(1);
+    expect(getBookingByRef).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+  });
+
+  it("dismissing the confirm modal does not cancel the booking", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => screen.getByText("Cancel This Booking"));
+    fireEvent.press(screen.getByText("Cancel This Booking"));
+    expect(await screen.findByTestId("confirm-modal")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Keep Booking"));
+
+    await waitFor(() => expect(screen.queryByTestId("confirm-modal")).toBeNull());
+    expect(cancelBookingByRef).not.toHaveBeenCalled();
+    expect(screen.getByText("Cancel This Booking")).toBeTruthy();
   });
 
   it("renders recent bookings from cache and triggers lookup on press", async () => {
