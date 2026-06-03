@@ -20,7 +20,7 @@ jest.mock("@expo/vector-icons", () => ({
 
 jest.mock("expo-image", () => ({
   Image: ({ testID, onError }: any) =>
-    React.createElement("Image", { testID: testID ?? "expo-image-banner", onError }),
+    require("react").createElement("Image", { testID: testID ?? "expo-image-banner", onError }),
 }));
 
 // Polyfill fetch

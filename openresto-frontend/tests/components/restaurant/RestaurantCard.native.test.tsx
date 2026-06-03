@@ -2,7 +2,6 @@
  * Tests for RestaurantCard image rendering on native (non-web) platforms.
  * Kept separate so Platform.OS can be overridden without affecting web tests.
  */
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { fetchAvailability } from "@/api/availability";
 
@@ -20,7 +19,7 @@ jest.mock("react-native", () => {
 
 jest.mock("expo-image", () => ({
   Image: ({ testID, source }: any) =>
-    React.createElement("Image", { testID: testID ?? "expo-image", source }),
+    require("react").createElement("Image", { testID: testID ?? "expo-image", source }),
 }));
 
 jest.mock("@expo/vector-icons", () => ({
