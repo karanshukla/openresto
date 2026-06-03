@@ -51,9 +51,9 @@ describe("CalendarActions", () => {
     expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy();
   });
 
-  it("shows sub-labels in full variant", () => {
+  it("shows sub-label only for ics in full variant", () => {
     render(<CalendarActions {...baseProps} />);
-    expect(screen.getAllByText("Opens in a new tab").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Opens in a new tab")).toBeNull();
     expect(screen.getByText("Apple Calendar, Thunderbird, etc.")).toBeTruthy();
   });
 
