@@ -86,7 +86,7 @@ export default function HomeScreen() {
               style={[
                 { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
                 {
-                  background: `linear-gradient(160deg, rgba(${accentR},${accentG},${accentB},0.55) 0%, rgba(0,0,0,0.62) 100%)`,
+                  background: `linear-gradient(160deg, rgba(${accentR},${accentG},${accentB},0.30) 0%, rgba(0,0,0,0.40) 100%)`,
                 } as object,
               ]}
               pointerEvents="none"
