@@ -18,7 +18,7 @@ namespace OpenRestoApi.Controllers
         private readonly RecentBookingsCookie _recentCookie = recentCookie;
         private readonly AppDbContext _db = db;
 
-        [HttpGet("restaurant/{restaurantId}")]
+        [HttpGet("/api/restaurants/{restaurantId}/bookings")]
         [Authorize]
         public async Task<IActionResult> GetBookings(int restaurantId)
         {
@@ -123,16 +123,15 @@ namespace OpenRestoApi.Controllers
             return NoContent();
         }
 
-        [HttpDelete("ref/{bookingRef}")]
-        public async Task<IActionResult> CancelBookingByRef(string bookingRef, [FromQuery] string email)
+        [HttpPost("ref/{bookingRef}/cancel")]
+        public async Task<IActionResult> CancelBookingByRef(string bookingRef, [FromBody] CancelBookingByRefRequest req)
         {
-            Console.WriteLine($"[CancelBookingByRef] Received request for ref: {bookingRef}, email: {email}");
-            if (string.IsNullOrWhiteSpace(email))
+            if (string.IsNullOrWhiteSpace(req.Email))
             {
                 return BadRequest(new { message = "Email is required to cancel a booking." });
             }
 
-            bool ok = await _bookingService.CancelBookingAsync(bookingRef, email);
+            bool ok = await _bookingService.CancelBookingAsync(bookingRef, req.Email);
             if (!ok)
             {
                 return NotFound(new { message = "No booking found matching that reference and email." });

@@ -271,7 +271,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         string? bookingRef = created.GetProperty("bookingRef").GetString();
 
-        HttpResponseMessage response = await client.DeleteAsync($"/api/bookings/ref/{bookingRef}?email=cancel@test.com");
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/bookings/ref/{bookingRef}/cancel", new { email = "cancel@test.com" });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
@@ -306,7 +306,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     public async Task CancelBookingByRef_MissingEmail_ReturnsBadRequest()
     {
         HttpClient client = _factory.CreateClient();
-        HttpResponseMessage response = await client.DeleteAsync("/api/bookings/ref/SOME-REF"); // No email
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/bookings/ref/SOME-REF/cancel", new { email = "" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -315,7 +315,7 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int r, _, _) = GetSeededIds();
-        HttpResponseMessage response = await client.GetAsync($"/api/bookings/restaurant/{r}");
+        HttpResponseMessage response = await client.GetAsync($"/api/restaurants/{r}/bookings");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 

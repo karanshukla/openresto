@@ -24,7 +24,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
     public virtual async Task<AdminOverviewDto> GetOverviewAsync()
     {
         DateTime nowUtc = DateTime.UtcNow;
-        List<Restaurant> restaurants = await _db.Restaurants.ToListAsync();
+        List<Restaurant> restaurants = await _db.Restaurants.Where(r => !r.IsArchived).ToListAsync();
 
         int totalRestaurants = restaurants.Count;
         int totalBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled);
@@ -263,77 +263,6 @@ public class AdminService(AppDbContext db, IHoldService holdService)
         return ToDetailDto(booking);
     }
 
-    public virtual async Task<BookingDetailDto?> UpdateBookingAsync(int id, UpdateBookingRequest req)
-    {
-        Booking? booking = await _db.Bookings
-            .Include(b => b.Restaurant)
-            .Include(b => b.Section)
-            .Include(b => b.Table)
-            .FirstOrDefaultAsync(b => b.Id == id);
-
-        if (booking == null)
-        {
-            return null;
-        }
-
-        if (req.Date.HasValue && req.Date.Value != booking.Date)
-        {
-            if (booking.EndTime.HasValue)
-            {
-                TimeSpan duration = booking.EndTime.Value - booking.Date;
-                booking.EndTime = req.Date.Value + duration;
-            }
-            else
-            {
-                booking.EndTime = req.Date.Value.AddHours(1);
-            }
-            booking.Date = req.Date.Value;
-        }
-
-        if (req.Seats.HasValue)
-        {
-            if (req.Seats.Value > booking.Table.Seats)
-            {
-                throw new InvalidOperationException($"This table only has {booking.Table.Seats} seats, but {req.Seats.Value} guests were requested.");
-            }
-            booking.Seats = req.Seats.Value;
-        }
-
-        if (!string.IsNullOrEmpty(req.CustomerEmail))
-        {
-            booking.CustomerEmail = req.CustomerEmail;
-        }
-
-        if (req.CustomerName != null)
-        {
-            booking.CustomerName = string.IsNullOrWhiteSpace(req.CustomerName) ? null : req.CustomerName.Trim();
-        }
-
-        if (req.TableId.HasValue)
-        {
-            int sectionId = req.SectionId ?? booking.SectionId;
-            Table table = await _db.Tables
-                .Include(t => t.Section)
-                .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.SectionId == sectionId)
-                ?? throw new ArgumentException("Table not found in the specified section.");
-            booking.TableId = table.Id;
-            booking.SectionId = table.SectionId;
-        }
-        else if (req.SectionId.HasValue)
-        {
-            throw new ArgumentException("Provide tableId when reassigning to a different section.");
-        }
-
-        // Final safety check: EndTime should never be before Date
-        if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
-        {
-            booking.EndTime = booking.Date.AddHours(1);
-        }
-
-        await _db.SaveChangesAsync();
-        return ToDetailDto(booking);
-    }
-
     public virtual async Task<DateTime?> ExtendBookingAsync(int id, int minutes)
     {
         Booking? booking = await _db.Bookings.FindAsync(id);
@@ -437,15 +366,9 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             booking.TableId = req.TableId.Value;
             booking.SectionId = table.SectionId;
         }
-        else if (req.SectionId.HasValue && req.SectionId.Value != booking.SectionId)
+        else if (req.SectionId.HasValue)
         {
-            // If only section changed but not table (might happen if user just selects section)
-            var sectionExists = await _db.Sections.AnyAsync(s => s.Id == req.SectionId.Value && s.RestaurantId == booking.RestaurantId);
-            if (!sectionExists)
-            {
-                throw new ArgumentException("Invalid section for this restaurant.");
-            }
-            booking.SectionId = req.SectionId.Value;
+            throw new ArgumentException("Provide tableId when reassigning to a different section.");
         }
 
         // Update other fields
@@ -493,16 +416,14 @@ public class AdminService(AppDbContext db, IHoldService holdService)
 
         if (req.Seats.HasValue)
         {
-            // If table is also changing, we must check against the new table's capacity.
-            // Since booking.TableId was already updated above if req.TableId was provided,
-            // we can just use the current booking.TableId.
-            // We use FindAsync to ensure we have the correct table metadata.
-            Table currentTable = await _db.Tables.FindAsync(req.TableId ?? booking.TableId)
-                ?? throw new ArgumentException("Table not found.");
-
-            if (req.Seats.Value > currentTable.Seats)
+            int? resolvedTableId = req.TableId ?? booking.TableId;
+            if (resolvedTableId.HasValue)
             {
-                throw new InvalidOperationException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.");
+                Table? currentTable = await _db.Tables.FindAsync(resolvedTableId.Value);
+                if (currentTable != null && req.Seats.Value > currentTable.Seats)
+                {
+                    throw new InvalidOperationException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.");
+                }
             }
             booking.Seats = req.Seats.Value;
         }
@@ -540,6 +461,7 @@ public class AdminService(AppDbContext db, IHoldService holdService)
                 Id = r.Id,
                 Name = r.Name,
                 BookingsPausedUntil = r.BookingsPausedUntil,
+                IsArchived = r.IsArchived,
                 ActiveBookingsCount = _db.Bookings.Count(b =>
                     b.RestaurantId == r.Id &&
                     !b.IsCancelled &&
@@ -630,6 +552,19 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             Address = restaurant.Address,
             Sections = [],
         };
+    }
+
+    public virtual async Task<bool> SetArchivedAsync(int id, bool archived)
+    {
+        Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
+        if (restaurant == null)
+        {
+            return false;
+        }
+
+        restaurant.IsArchived = archived;
+        await _db.SaveChangesAsync();
+        return true;
     }
 
     public virtual async Task<bool> DeleteRestaurantAsync(int id)
@@ -736,9 +671,9 @@ public class AdminService(AppDbContext db, IHoldService holdService)
             RestaurantId = b.RestaurantId,
             RestaurantName = b.Restaurant?.Name,
             SectionId = b.SectionId,
-            SectionName = b.Section?.Name,
+            SectionName = b.Section?.Name ?? (b.SectionId.HasValue ? $"Section {b.SectionId}" : "Section"),
             TableId = b.TableId,
-            TableName = b.Table?.Name ?? $"Table {b.TableId}",
+            TableName = b.Table?.Name ?? (b.TableId.HasValue ? $"Table {b.TableId}" : "Table"),
             Date = dateUtc,
             EndTime = endTimeUtc,
             CustomerEmail = b.CustomerEmail,

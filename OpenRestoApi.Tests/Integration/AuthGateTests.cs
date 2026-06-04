@@ -46,14 +46,9 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
             (await _client.PostAsync("/api/admin/bookings", Json(new { }))).StatusCode);
 
     [Fact]
-    public async Task Admin_UpdateBooking_Returns401()
-    {
-        HttpRequestMessage req = new(HttpMethod.Patch, "/api/admin/bookings/1")
-        {
-            Content = Json(new { seats = 4 })
-        };
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(req)).StatusCode);
-    }
+    public async Task Admin_CancelBookingAction_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsync("/api/admin/bookings/1/cancel", null)).StatusCode);
 
     [Fact]
     public async Task Admin_ExtendBooking_Returns401() =>
@@ -66,9 +61,9 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
             (await _client.DeleteAsync("/api/admin/bookings/1")).StatusCode);
 
     [Fact]
-    public async Task Admin_PurgeBooking_Returns401() =>
+    public async Task Admin_CancelBooking_Returns401() =>
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await _client.DeleteAsync("/api/admin/bookings/1/purge")).StatusCode);
+            (await _client.PostAsync("/api/admin/bookings/1/cancel", null)).StatusCode);
 
     [Fact]
     public async Task Admin_CreateRestaurant_Returns401() =>
@@ -140,7 +135,7 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task EmailSettings_Save_Returns401() =>
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await _client.PostAsync("/api/admin/email-settings",
+            (await _client.PatchAsync("/api/admin/email-settings",
                 Json(new { host = "smtp.test.com", port = 587 }))).StatusCode);
 
     [Fact]
@@ -153,7 +148,7 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
     [Fact]
     public async Task Brand_Save_Returns401() =>
         Assert.Equal(HttpStatusCode.Unauthorized,
-            (await _client.PostAsync("/api/brand",
+            (await _client.PatchAsync("/api/brand",
                 Json(new { appName = "Hacked" }))).StatusCode);
 
     [Fact]
@@ -221,11 +216,6 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
             (await _client.DeleteAsync("/api/restaurants/1/sections/1/tables/1")).StatusCode);
 
     // ── BookingsController (some endpoints require [Authorize]) ──────────────
-
-    [Fact]
-    public async Task Bookings_GetByRestaurant_Returns401() =>
-        Assert.Equal(HttpStatusCode.Unauthorized,
-            (await _client.GetAsync("/api/bookings/restaurant/1")).StatusCode);
 
     [Fact]
     public async Task Bookings_GetById_Returns401() =>

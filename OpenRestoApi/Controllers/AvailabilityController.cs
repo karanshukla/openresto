@@ -12,7 +12,7 @@ public class AvailabilityController(AvailabilityService availabilityService) : C
 {
     private readonly AvailabilityService _availabilityService = availabilityService;
 
-    [HttpGet("{restaurantId}")]
+    [HttpGet("/api/restaurants/{restaurantId}/availability")]
     public async Task<IActionResult> Get(int restaurantId, [FromQuery] DateTime date, [FromQuery] int seats)
     {
         try

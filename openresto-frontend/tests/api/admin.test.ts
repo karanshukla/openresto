@@ -4,7 +4,6 @@ import {
   getAdminBookings,
   getAdminBooking,
   adminCreateBooking,
-  adminUpdateBooking,
   adminExtendBooking,
   adminDeleteBooking,
   adminPurgeBooking,
@@ -278,25 +277,6 @@ describe("adminCreateBooking", () => {
   });
 });
 
-describe("adminUpdateBooking", () => {
-  it("patches booking and returns updated data", async () => {
-    const updated = { id: 5, seats: 6 };
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
-
-    const result = await adminUpdateBooking(5, { seats: 6 });
-
-    expect(result).toEqual(updated);
-    const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/admin/bookings/5");
-    expect(opts.method).toBe("PATCH");
-  });
-
-  it("returns null on failure", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await adminUpdateBooking(5, { seats: 6 })).toBeNull();
-  });
-});
-
 describe("adminExtendBooking", () => {
   it("posts extend request and returns endTime", async () => {
     const data = { endTime: "2026-06-15T21:00:00Z" };
@@ -318,15 +298,15 @@ describe("adminExtendBooking", () => {
 });
 
 describe("adminDeleteBooking", () => {
-  it("sends DELETE and returns true on success", async () => {
+  it("posts to cancel endpoint and returns true on success", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
 
     const result = await adminDeleteBooking(10);
 
     expect(result).toBe(true);
     const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/admin/bookings/10");
-    expect(opts.method).toBe("DELETE");
+    expect(url).toContain("/api/admin/bookings/10/cancel");
+    expect(opts.method).toBe("POST");
   });
 
   it("returns false on failure", async () => {
@@ -341,13 +321,14 @@ describe("adminDeleteBooking", () => {
 });
 
 describe("adminPurgeBooking", () => {
-  it("sends DELETE to purge endpoint and returns true", async () => {
+  it("sends DELETE to booking endpoint and returns true", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
 
     const result = await adminPurgeBooking(10);
 
     expect(result).toBe(true);
-    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/bookings/10/purge");
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/bookings/10");
+    expect(mockFetch.mock.calls[0][0]).not.toContain("/purge");
     expect(mockFetch.mock.calls[0][1].method).toBe("DELETE");
   });
 
@@ -469,7 +450,7 @@ describe("saveEmailSettings", () => {
     sendBookingConfirmations: false,
   };
 
-  it("posts email settings and returns response", async () => {
+  it("patches email settings and returns response", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: "Saved" }) });
 
     const result = await saveEmailSettings(data);
@@ -477,7 +458,7 @@ describe("saveEmailSettings", () => {
     expect(result).toEqual({ message: "Saved" });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/admin/email-settings");
-    expect(opts.method).toBe("POST");
+    expect(opts.method).toBe("PATCH");
   });
 
   it("returns null on network error", async () => {
@@ -606,7 +587,7 @@ describe("adminGetSections", () => {
 describe("brand settings", () => {
   const brandData = { appName: "My Resto", primaryColor: "#ff0000" };
 
-  it("posts brand settings and returns response", async () => {
+  it("patches brand settings and returns response", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: "Saved" }) });
 
     const result = await saveBrandSettings(brandData);
@@ -614,7 +595,7 @@ describe("brand settings", () => {
     expect(result).toEqual({ message: "Saved" });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/brand");
-    expect(opts.method).toBe("POST");
+    expect(opts.method).toBe("PATCH");
     expect(JSON.parse(opts.body)).toEqual(brandData);
   });
 

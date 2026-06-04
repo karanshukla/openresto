@@ -86,7 +86,7 @@ public class BookingsControllerUnitTests
     [Fact]
     public async Task CancelBookingByRef_ReturnsBadRequest_WhenEmailEmpty()
     {
-        var result = await _controller.CancelBookingByRef("R", " ");
+        var result = await _controller.CancelBookingByRef("R", new CancelBookingByRefRequest { Email = " " });
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
@@ -94,7 +94,7 @@ public class BookingsControllerUnitTests
     public async Task CancelBookingByRef_ReturnsNotFound_WhenFail()
     {
         _mockBookingService.Setup(s => s.CancelBookingAsync("R", "a@a.com")).ReturnsAsync(false);
-        var result = await _controller.CancelBookingByRef("R", "a@a.com");
+        var result = await _controller.CancelBookingByRef("R", new CancelBookingByRefRequest { Email = "a@a.com" });
         Assert.IsType<NotFoundObjectResult>(result);
     }
 }

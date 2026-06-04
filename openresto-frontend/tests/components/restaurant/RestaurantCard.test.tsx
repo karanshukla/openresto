@@ -98,7 +98,7 @@ describe("RestaurantCard", () => {
 
     fireEvent.press(screen.getByText("See details"));
 
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/(user)/book?restaurantId=1"));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/(user)/book/1"));
   });
 
   it("shows Google Maps and Apple Maps links", async () => {

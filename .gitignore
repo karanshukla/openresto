@@ -55,3 +55,4 @@ OpenRestoApi/wwwroot/media/
 .playwright-mcp/
 # Session handoff notes
 .remember/
+docs/*

@@ -58,7 +58,7 @@ export default function RestaurantScreen() {
       <ScrollView style={styles.scroll}>
         <PageContainer style={styles.page}>
           <RestaurantDetails restaurant={restaurant} />
-          <Link href={`/(user)/book?restaurantId=${id}`} asChild>
+          <Link href={`/(user)/book/${id}`} asChild>
             <Button style={styles.bookButton}>Book a Table</Button>
           </Link>
         </PageContainer>

@@ -72,5 +72,6 @@ public class RestaurantDto
     public string Timezone { get; set; } = "UTC";
     public string[] Tags { get; set; } = [];
     public string? ImageUrl { get; set; }
+    public bool IsArchived { get; set; }
     public List<SectionDto> Sections { get; set; } = new();
 }

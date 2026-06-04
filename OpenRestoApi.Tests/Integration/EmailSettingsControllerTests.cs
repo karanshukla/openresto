@@ -50,7 +50,7 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
 
-        HttpResponseMessage saveResponse = await client.PostAsJsonAsync("/api/admin/email-settings", new
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/admin/email-settings", new
         {
             host = "smtp.example.com",
             port = 465,
@@ -83,7 +83,7 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         HttpClient client = _factory.CreateAuthenticatedClient();
 
         // First save with a real password
-        await client.PostAsJsonAsync("/api/admin/email-settings", new
+        await client.PatchAsJsonAsync("/api/admin/email-settings", new
         {
             host = "smtp.preserve.com",
             port = 587,
@@ -102,7 +102,7 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         string encryptedBefore = settingsBefore.EncryptedPassword;
 
         // Now save again with the masked password (simulating the UI sending back "••••••••")
-        await client.PostAsJsonAsync("/api/admin/email-settings", new
+        await client.PatchAsJsonAsync("/api/admin/email-settings", new
         {
             host = "smtp.updated.com",
             port = 587,
@@ -140,7 +140,7 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         HttpClient client = _factory.CreateAuthenticatedClient();
 
         // Save valid-looking settings first
-        await client.PostAsJsonAsync("/api/admin/email-settings", new
+        await client.PatchAsJsonAsync("/api/admin/email-settings", new
         {
             host = "smtp.test.com",
             port = 587,

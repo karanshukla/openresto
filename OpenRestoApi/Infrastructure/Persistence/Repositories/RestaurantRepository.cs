@@ -13,6 +13,6 @@ public class RestaurantRepository(AppDbContext db) : IRestaurantRepository
         return await _db.Restaurants
             .Include(r => r.Sections)
             .ThenInclude(s => s.Tables)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsArchived);
     }
 }

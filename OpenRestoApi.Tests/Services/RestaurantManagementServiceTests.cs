@@ -114,7 +114,7 @@ public class RestaurantManagementServiceTests
     {
         using AppDbContext db = CreateDb(nameof(UpdateTableAsync_ReturnsNull_WhenNotFound));
         var svc = new RestaurantManagementService(db);
-        Assert.Null(await svc.UpdateTableAsync(1, 1, "New", 2));
+        Assert.Null(await svc.UpdateTableAsync(1, 1, 1, "New", 2));
     }
 
     [Fact]
@@ -122,6 +122,6 @@ public class RestaurantManagementServiceTests
     {
         using AppDbContext db = CreateDb(nameof(DeleteTableAsync_ReturnsFalse_WhenNotFound));
         var svc = new RestaurantManagementService(db);
-        Assert.False(await svc.DeleteTableAsync(1, 1));
+        Assert.False(await svc.DeleteTableAsync(1, 1, 1));
     }
 }

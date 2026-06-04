@@ -83,7 +83,8 @@ public class AvailabilityService(
 
         // Optimize: Group bookings by table ID for faster lookup in the loop
         var bookingsByTable = activeBookings
-            .GroupBy(b => b.TableId)
+            .Where(b => b.TableId.HasValue)
+            .GroupBy(b => b.TableId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         while (current < localEnd)

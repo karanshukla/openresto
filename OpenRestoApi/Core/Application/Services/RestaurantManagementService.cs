@@ -14,6 +14,7 @@ public class RestaurantManagementService(AppDbContext db)
     public async Task<List<RestaurantDto>> GetAllAsync()
     {
         List<Restaurant> restaurants = await _db.Restaurants
+            .Where(r => !r.IsArchived)
             .Include(r => r.Sections)
                 .ThenInclude(s => s.Tables)
             .ToListAsync();
@@ -26,7 +27,7 @@ public class RestaurantManagementService(AppDbContext db)
         Restaurant? r = await _db.Restaurants
             .Include(x => x.Sections)
                 .ThenInclude(s => s.Tables)
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsArchived);
 
         return r == null ? null : ToDto(r);
     }
@@ -138,11 +139,22 @@ public class RestaurantManagementService(AppDbContext db)
     public async Task<bool> DeleteSectionAsync(int restaurantId, int sectionId)
     {
         Section? section = await _db.Sections
+            .Include(s => s.Tables)
             .FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == restaurantId);
 
         if (section == null)
         {
             return false;
+        }
+
+        var tableIds = section.Tables.Select(t => t.Id).ToList();
+        var affected = await _db.Bookings
+            .Where(b => b.SectionId == sectionId || (b.TableId != null && tableIds.Contains(b.TableId.Value)))
+            .ToListAsync();
+        foreach (Booking b in affected)
+        {
+            b.TableId = null;
+            b.SectionId = null;
         }
 
         _db.Sections.Remove(section);
@@ -169,10 +181,11 @@ public class RestaurantManagementService(AppDbContext db)
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
-    public async Task<TableDto?> UpdateTableAsync(int sectionId, int tableId, string? name, int seats)
+    public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats)
     {
         Table? table = await _db.Tables
-            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId);
+            .Include(t => t.Section)
+            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId && t.Section!.RestaurantId == restaurantId);
 
         if (table == null)
         {
@@ -186,15 +199,20 @@ public class RestaurantManagementService(AppDbContext db)
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
-    public async Task<bool> DeleteTableAsync(int sectionId, int tableId)
+    public async Task<bool> DeleteTableAsync(int restaurantId, int sectionId, int tableId)
     {
         Table? table = await _db.Tables
-            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId);
+            .Include(t => t.Section)
+            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId && t.Section!.RestaurantId == restaurantId);
 
         if (table == null)
         {
             return false;
         }
+
+        List<Booking> affected = await _db.Bookings.Where(b => b.TableId == tableId).ToListAsync();
+        foreach (Booking b in affected)
+            b.TableId = null;
 
         _db.Tables.Remove(table);
         await _db.SaveChangesAsync();
@@ -216,6 +234,7 @@ public class RestaurantManagementService(AppDbContext db)
             ? []
             : r.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
         ImageUrl = r.ImageUrl,
+        IsArchived = r.IsArchived,
         Sections = r.Sections.Select(s => new SectionDto
         {
             Id = s.Id,

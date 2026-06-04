@@ -49,28 +49,6 @@ public class AdminControllerUnitTests
     }
 
     [Fact]
-    public async Task UpdateBooking_ArgumentException_ReturnsBadRequest()
-    {
-        _mockAdminService.Setup(s => s.UpdateBookingAsync(It.IsAny<int>(), It.IsAny<UpdateBookingRequest>()))
-            .ThrowsAsync(new ArgumentException("Err"));
-
-        var result = await _controller.UpdateBooking(1, new UpdateBookingRequest());
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task UpdateBooking_InvalidOperationException_ReturnsBadRequest()
-    {
-        _mockAdminService.Setup(s => s.UpdateBookingAsync(It.IsAny<int>(), It.IsAny<UpdateBookingRequest>()))
-            .ThrowsAsync(new InvalidOperationException("Err"));
-
-        var result = await _controller.UpdateBooking(1, new UpdateBookingRequest());
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
     public async Task SendEmail_EmailServiceException_ReturnsBadRequest()
     {
         _mockAdminService.Setup(s => s.GetBookingAsync(It.IsAny<int>()))

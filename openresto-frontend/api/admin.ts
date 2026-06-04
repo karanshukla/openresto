@@ -67,9 +67,9 @@ export interface BookingDetailDto {
   id: number;
   restaurantId: number;
   restaurantName: string;
-  sectionId: number;
+  sectionId: number | null;
   sectionName: string;
-  tableId: number;
+  tableId: number | null;
   tableName: string;
   date: string;
   endTime?: string;
@@ -90,15 +90,6 @@ export interface AdminCreateBookingRequest {
   customerEmail: string;
   customerName?: string;
   seats: number;
-}
-
-export interface UpdateBookingRequest {
-  date?: string;
-  seats?: number;
-  customerEmail?: string;
-  customerName?: string;
-  tableId?: number;
-  sectionId?: number;
 }
 
 export interface CreateRestaurantRequest {
@@ -181,20 +172,6 @@ export async function adminCreateBooking(
   return await res.json();
 }
 
-export async function adminUpdateBooking(
-  id: number,
-  req: UpdateBookingRequest
-): Promise<BookingDetailDto | null> {
-  try {
-    const res = await patch(`/admin/bookings/${id}`, req);
-    if (!res.ok) throw new Error("Failed to update booking");
-    return await res.json();
-  } catch (err) {
-    console.error("adminUpdateBooking error:", err);
-    return null;
-  }
-}
-
 export async function adminExtendBooking(
   id: number,
   minutes: number
@@ -211,7 +188,7 @@ export async function adminExtendBooking(
 
 export async function adminDeleteBooking(id: number): Promise<boolean> {
   try {
-    const res = await del(`/admin/bookings/${id}`);
+    const res = await post(`/admin/bookings/${id}/cancel`);
     return res.ok;
   } catch (err) {
     console.error("adminDeleteBooking error:", err);
@@ -221,7 +198,7 @@ export async function adminDeleteBooking(id: number): Promise<boolean> {
 
 export async function adminPurgeBooking(id: number): Promise<boolean> {
   try {
-    const res = await del(`/admin/bookings/${id}/purge`);
+    const res = await del(`/admin/bookings/${id}`);
     return res.ok;
   } catch (err) {
     console.error("adminPurgeBooking error:", err);
@@ -361,7 +338,13 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
 }
 
 export async function adminGetRestaurants(): Promise<
-  { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
+  {
+    id: number;
+    name: string;
+    bookingsPausedUntil?: string;
+    activeBookingsCount?: number;
+    isArchived?: boolean;
+  }[]
 > {
   try {
     const res = await get("/admin/restaurants");
@@ -370,6 +353,16 @@ export async function adminGetRestaurants(): Promise<
   } catch (err) {
     console.error("adminGetRestaurants error:", err);
     return [];
+  }
+}
+
+export async function adminSetRestaurantArchived(id: number, archived: boolean): Promise<boolean> {
+  try {
+    const res = await patch(`/admin/restaurants/${id}`, { isArchived: archived });
+    return res.ok;
+  } catch (err) {
+    console.error("adminSetRestaurantArchived error:", err);
+    return false;
   }
 }
 
@@ -438,7 +431,7 @@ export async function saveEmailSettings(
   data: Omit<EmailSettingsDto, "isConfigured">
 ): Promise<{ message: string } | null> {
   try {
-    const res = await post("/admin/email-settings", data);
+    const res = await patch("/admin/email-settings", data);
     return await res.json();
   } catch {
     return null;
@@ -466,7 +459,7 @@ export async function saveBrandSettings(
   data: BrandSettingsDto
 ): Promise<{ message: string } | null> {
   try {
-    const res = await post("/brand", data);
+    const res = await patch("/brand", data);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
       return { message: err?.message ?? "Failed to save." };

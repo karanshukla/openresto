@@ -175,7 +175,7 @@ export default function RestaurantCard({
 
   return (
     <Pressable
-      onPress={() => router.push(`/(user)/book?restaurantId=${restaurant.id}`)}
+      onPress={() => router.push(`/(user)/book/${restaurant.id}`)}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,
         cardShadow,
@@ -318,9 +318,9 @@ export default function RestaurantCard({
             onPress={(e) => {
               e.stopPropagation?.();
               if (Platform.OS === "web") {
-                window.open(`/(user)/book?restaurantId=${restaurant.id}`, "_blank");
+                window.open(`/(user)/book/${restaurant.id}`, "_blank");
               } else {
-                router.push(`/(user)/book?restaurantId=${restaurant.id}`);
+                router.push(`/(user)/book/${restaurant.id}`);
               }
             }}
             accessibilityLabel="Open booking page in new tab"
@@ -371,7 +371,7 @@ export default function RestaurantCard({
                   onPress={(e) => {
                     e.stopPropagation?.();
                     router.push(
-                      `/(user)/book?restaurantId=${restaurant.id}&time=${encodeURIComponent(s.time)}&party=${party}`
+                      `/(user)/book/${restaurant.id}&time=${encodeURIComponent(s.time)}&party=${party}`
                     );
                   }}
                   style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -400,7 +400,7 @@ export default function RestaurantCard({
           </View>
           <Pressable
             style={({ pressed }) => [styles.viewBtn, pressed && { backgroundColor: surface2 }]}
-            onPress={() => router.push(`/(user)/book?restaurantId=${restaurant.id}`)}
+            onPress={() => router.push(`/(user)/book/${restaurant.id}`)}
           >
             <ThemedText style={[styles.viewBtnText, { color: primaryColor }]}>
               See details

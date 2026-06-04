@@ -1,10 +1,15 @@
 namespace OpenRestoApi.Core.Application.DTOs;
 
+public class CancelBookingByRefRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
 public class BookingDto
 {
     public int Id { get; set; }
-    public int TableId { get; set; }
-    public int SectionId { get; set; }
+    public int? TableId { get; set; }
+    public int? SectionId { get; set; }
     public int RestaurantId { get; set; }
     public DateTime Date { get; set; }
     public string? CustomerEmail { get; set; }
@@ -17,7 +22,7 @@ public class BookingDto
 
     public string? TableName { get; set; }
     public string? SectionName { get; set; }
-    public int TableSeats { get; set; }
+    public int? TableSeats { get; set; }
     public bool IsCancelled { get; set; }
     public DateTime? CancelledAt { get; set; }
 

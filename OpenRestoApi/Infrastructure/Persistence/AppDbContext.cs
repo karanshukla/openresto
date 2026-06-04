@@ -74,9 +74,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Booking>(bb =>
         {
             bb.HasKey(b => b.Id);
-            bb.HasOne(b => b.Table).WithMany().HasForeignKey("TableId");
-            bb.HasOne(b => b.Section).WithMany().HasForeignKey("SectionId");
-            bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey("RestaurantId");
+            bb.HasOne(b => b.Table).WithMany().HasForeignKey(b => b.TableId).OnDelete(DeleteBehavior.SetNull);
+            bb.HasOne(b => b.Section).WithMany().HasForeignKey(b => b.SectionId).OnDelete(DeleteBehavior.SetNull);
+            bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey(b => b.RestaurantId);
         });
 
         modelBuilder.Entity<AdminCredential>(a =>

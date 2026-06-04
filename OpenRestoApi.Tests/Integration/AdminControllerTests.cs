@@ -174,7 +174,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         int bookingId = created.GetProperty("id").GetInt32();
 
-        HttpResponseMessage response = await client.DeleteAsync($"/api/admin/bookings/{bookingId}");
+        HttpResponseMessage response = await client.PostAsync($"/api/admin/bookings/{bookingId}/cancel", null);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
@@ -212,7 +212,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         int bookingId = created.GetProperty("id").GetInt32();
 
-        HttpResponseMessage response = await client.DeleteAsync($"/api/admin/bookings/{bookingId}/purge");
+        HttpResponseMessage response = await client.DeleteAsync($"/api/admin/bookings/{bookingId}");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
@@ -242,7 +242,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task UpdateBooking_Patch_Succeeds()
+    public async Task UpdateBooking_Put_Succeeds()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int restaurantId, int sectionId, int tableId) = GetSeededIds();
@@ -254,22 +254,17 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
             sectionId,
             tableId,
             date = DateTime.UtcNow.AddDays(205).ToString("yyyy-MM-ddT12:00:00"),
-            customerEmail = "patch@test.com",
+            customerEmail = "put@test.com",
             seats = 2
         });
         JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         int bookingId = created.GetProperty("id").GetInt32();
 
-        // PATCH to update seats
-        var patchContent = new StringContent(
-            JsonSerializer.Serialize(new { seats = 4 }),
-            Encoding.UTF8,
-            "application/json");
-        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/admin/bookings/{bookingId}")
+        // PUT to update seats
+        HttpResponseMessage response = await client.PutAsJsonAsync($"/api/admin/bookings/{bookingId}", new
         {
-            Content = patchContent
-        };
-        HttpResponseMessage response = await client.SendAsync(request);
+            seats = 4
+        });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -368,7 +363,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         });
         JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         int bookingId = created.GetProperty("id").GetInt32();
-        await client.DeleteAsync($"/api/admin/bookings/{bookingId}");
+        await client.PostAsync($"/api/admin/bookings/{bookingId}/cancel", null);
 
         // Restore
         HttpResponseMessage response = await client.PostAsync($"/api/admin/bookings/{bookingId}/restore", null);
@@ -661,7 +656,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
 
         // 2. Check availability (Note: Correct path is api/availability/{r})
         string date = DateTime.UtcNow.AddHours(2).ToString("yyyy-MM-dd");
-        HttpResponseMessage response = await client.GetAsync($"/api/availability/{r}?date={date}&seats=2");
+        HttpResponseMessage response = await client.GetAsync($"/api/restaurants/{r}/availability?date={date}&seats=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();

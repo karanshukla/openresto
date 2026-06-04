@@ -5,6 +5,7 @@ import React from "react";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminSettingsScreen from "@/app/(admin)/settings";
 import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
+import { adminGetRestaurants } from "@/api/admin";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider } from "@/context/BrandContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -62,6 +63,7 @@ describe("AdminSettingsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {

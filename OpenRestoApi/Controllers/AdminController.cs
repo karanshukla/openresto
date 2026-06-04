@@ -58,24 +58,6 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
     }
 
-    [HttpPatch("bookings/{id}")]
-    public async Task<IActionResult> UpdateBooking(int id, [FromBody] UpdateBookingRequest req)
-    {
-        try
-        {
-            BookingDetailDto? result = await _adminService.UpdateBookingAsync(id, req);
-            return result == null ? NotFound() : Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new MessageResponse { Message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new MessageResponse { Message = ex.Message });
-        }
-    }
-
     [HttpPost("bookings/{id}/extend")]
     public async Task<IActionResult> ExtendBooking(int id, [FromBody] ExtendBookingRequest req)
     {
@@ -83,11 +65,11 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         return endTime == null ? NotFound() : Ok(new { endTime });
     }
 
-    [HttpDelete("bookings/{id}")]
+    [HttpPost("bookings/{id}/cancel")]
     public async Task<IActionResult> CancelBooking(int id)
         => await _adminService.CancelBookingAsync(id) ? NoContent() : NotFound();
 
-    [HttpDelete("bookings/{id}/purge")]
+    [HttpDelete("bookings/{id}")]
     public async Task<IActionResult> PurgeBooking(int id)
         => await _adminService.PurgeBookingAsync(id) ? NoContent() : NotFound();
 
@@ -101,6 +83,17 @@ public class AdminController(AdminService adminService, IEmailService emailServi
 
         RestaurantDto result = await _adminService.CreateRestaurantAsync(req.Name, req.Address);
         return CreatedAtAction(nameof(Overview), new { }, result);
+    }
+
+    [HttpPatch("restaurants/{id}")]
+    public async Task<IActionResult> PatchRestaurant(int id, [FromBody] AdminRestaurantPatchRequest req)
+    {
+        if (req.IsArchived.HasValue)
+        {
+            bool success = await _adminService.SetArchivedAsync(id, req.IsArchived.Value);
+            if (!success) return NotFound();
+        }
+        return NoContent();
     }
 
     [HttpDelete("restaurants/{id}")]

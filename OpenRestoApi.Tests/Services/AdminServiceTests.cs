@@ -327,51 +327,43 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_ReturnsNull_WhenNotFound()
-    {
-        AdminService svc = CreateService();
-        BookingDetailDto? result = await svc.UpdateBookingAsync(999, new UpdateBookingRequest());
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task UpdateBookingAsync_Throws_WhenSeatsExceedCapacity()
+    public async Task AdminUpdateBookingAsync_Throws_WhenSeatsExceedCapacity()
     {
         AdminService svc = CreateService();
         SeedBase(1);
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1", Seats = 2 });
         await _db.SaveChangesAsync();
 
-        var req = new UpdateBookingRequest { Seats = 10 };
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.UpdateBookingAsync(1, req));
+        var req = new AdminUpdateBookingRequest { Seats = 10 };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.AdminUpdateBookingAsync(1, req));
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_Throws_WhenTableNotFound()
+    public async Task AdminUpdateBookingAsync_Throws_WhenTableNotFound()
     {
         AdminService svc = CreateService();
         SeedBase(1);
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        var req = new UpdateBookingRequest { TableId = 999 };
-        await Assert.ThrowsAsync<ArgumentException>(() => svc.UpdateBookingAsync(1, req));
+        var req = new AdminUpdateBookingRequest { TableId = 999 };
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.AdminUpdateBookingAsync(1, req));
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_Throws_WhenSectionIdProvidedWithoutTableId()
+    public async Task AdminUpdateBookingAsync_Throws_WhenSectionIdProvidedWithoutTableId()
     {
         AdminService svc = CreateService();
         SeedBase(1);
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        var req = new UpdateBookingRequest { SectionId = 1 };
-        await Assert.ThrowsAsync<ArgumentException>(() => svc.UpdateBookingAsync(1, req));
+        var req = new AdminUpdateBookingRequest { SectionId = 1 };
+        await Assert.ThrowsAsync<ArgumentException>(() => svc.AdminUpdateBookingAsync(1, req));
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_AdjustsEndTime_WhenDateChanges()
+    public async Task AdminUpdateBookingAsync_AdjustsEndTime_WhenDateChanges()
     {
         AdminService svc = CreateService();
         SeedBase(1);
@@ -380,12 +372,12 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         DateTime newDate = original.AddDays(1);
-        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = newDate });
         Assert.Equal(newDate.AddHours(2), result!.EndTime);
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_SetsDefaultEndTime_WhenOriginalEndTimeNull()
+    public async Task AdminUpdateBookingAsync_SetsDefaultEndTime_WhenOriginalEndTimeNull()
     {
         AdminService svc = CreateService();
         SeedBase(1);
@@ -394,12 +386,12 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         DateTime newDate = original.AddDays(1);
-        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { Date = newDate });
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = newDate });
         Assert.Equal(newDate.AddHours(1), result!.EndTime);
     }
 
     [Fact]
-    public async Task UpdateBookingAsync_FixesInvalidEndTime()
+    public async Task AdminUpdateBookingAsync_FixesInvalidEndTime()
     {
         AdminService svc = CreateService();
         SeedBase(1);
@@ -407,7 +399,7 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddHours(-1), BookingRef = "B1" });
         await _db.SaveChangesAsync();
 
-        BookingDetailDto? result = await svc.UpdateBookingAsync(1, new UpdateBookingRequest { CustomerEmail = "new@test.com" });
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { CustomerEmail = "new@test.com" });
         Assert.True(result!.EndTime > result.Date);
     }
 

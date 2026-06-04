@@ -5,11 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Run everything (recommended for local dev)
+
 ```bash
 npm run dev          # starts backend (dotnet watch) + frontend (expo) concurrently
 ```
 
 ### Backend only
+
 ```bash
 cd OpenRestoApi
 dotnet watch run     # hot reload on :8080
@@ -18,6 +20,7 @@ dotnet test --filter "FullyQualifiedName~BookingServiceTests"  # single test cla
 ```
 
 ### Frontend only
+
 ```bash
 cd openresto-frontend
 npm run web          # Expo web dev server on :8081
@@ -30,6 +33,7 @@ npm run lint:fix     # auto-fix lint issues
 ```
 
 ### Docker (full stack through nginx)
+
 ```bash
 docker compose up    # full stack on localhost:5062
 ```
@@ -59,6 +63,7 @@ OpenRestoApi/
 ```
 
 **Key conventions:**
+
 - All `DateTime` values are stored and passed as **UTC**. EF Core value converters enforce this globally in `AppDbContext`. Restaurant-local times are converted using the restaurant's IANA `Timezone` field only at display/availability-calculation time.
 - `OpenDays` is a comma-separated string of ISO 8601 day numbers (`1`=Monday … `7`=Sunday).
 - `HoldService` is a **singleton** in-memory store — appropriate for single-instance deployment. Holds expire after 5 minutes. If you need multi-instance, swap for Redis.
@@ -85,8 +90,9 @@ openresto-frontend/
 ```
 
 **Key conventions:**
+
 - `EXPO_PUBLIC_API_URL` drives all API calls. In Docker it is `/api` (relative, goes through nginx). In standalone dev it is `http://localhost:5062`. The `buildEndpoint` helper in `BrandContext` normalises both forms.
-- Availability is fetched per `(restaurantId, date, seats)`. The API returns 15-minute slots with `{ time, isAvailable, availableTableIds, category }`. `PopularTimesPicker` shows only `isAvailable: true` slots; closed days return an empty slots array from the backend.
+- Availability is fetched per `(restaurantId, date, seats)`. The API returns 30-minute slots with `{ time, isAvailable, availableTableIds, category }`. `PopularTimesPicker` shows only `isAvailable: true` slots; closed days return an empty slots array from the backend.
 - Table holds flow: frontend calls `POST /api/holds` → backend validates open hours + pause state + conflict-checks → returns a `holdId` + expiry. The `holdId` must be included in the subsequent `POST /api/bookings` request.
 - **Chrome favicon caching**: never update `<link rel="icon">` href in-place — Chrome ignores it. Remove all existing favicon links then append a fresh `<link>` element to force re-read.
 - **PWA manifest URL**: must remain a same-origin HTTP(S) URL. Replacing `<link rel="manifest">` href with a `blob:` URL silently breaks Chrome's PWA installability check.
@@ -97,6 +103,7 @@ openresto-frontend/
 ### Auth model
 
 Two roles via JWT:
+
 - **Admin** — obtained by `POST /api/auth/login`. Stored in `AdminCredential` (one row per restaurant, bcrypt password hash). Required for all `/admin/*` endpoints.
 - **Customer bookings** — no auth. Customers identify via `BookingRef` (short random string) or the encrypted recent-bookings cookie.
 
@@ -106,6 +113,17 @@ Two roles via JWT:
 - `GET /api/brand/pwa-icon.svg` — SVG with brand-colored rounded-rect background + white Lucide icon; used for the browser tab favicon.
 - `GET /api/brand/pwa-icon-{192|512}.png` — PNG generated via `Magick.NET-Q8-AnyCPU`; used as PWA manifest icons. Both return 404 when no icon is configured; Chrome falls back to static PNGs.
 - Frontend: `utils/injectBrandFavicon.ts` called from `BrandContext` after brand loads; posts `BRAND_UPDATE` to SW to patch manifest `name`/`theme_color`. Icon picker in `components/admin/settings/BrandSettingsCard.tsx`; SVG path data + `buildFaviconDataUri()` in `constants/faviconIcons.ts`.
+
+### Deletion & cascade behaviour
+
+**Table / Section deletion** — `Booking.TableId` and `Booking.SectionId` are **nullable** (`int?`). Deleting a table or section does **not** cascade-delete its bookings; instead, `DeleteTableAsync` and `DeleteSectionAsync` in `RestaurantManagementService` explicitly null those FK columns on affected bookings before removing the parent row. The DB FK is `ON DELETE SET NULL`. `ToDetailDto` in `AdminService` returns `"Table"` / `"Section"` as display fallbacks when the FK is null.
+
+**Restaurant deletion** — a hard-delete endpoint (`DELETE /admin/restaurants/{id}` via `AdminService.DeleteRestaurantAsync`) already exists and cascades to all sections, tables, and bookings. There is currently **no UI** wired to it. The recommended UX pattern (see `docs/delete-restaurant-investigation.md`) is:
+
+1. **Archive first** — add `IsArchived` flag to `Restaurant`, filter it from public/admin lists, expose `PATCH /admin/restaurants/{id}/archive`. Reversible, zero data loss.
+2. **Permanent purge second** — only offer the hard-delete UI after a location is already archived, making an accidental wipe essentially impossible.
+
+Booking history is intentionally **GDPR-purgeable** via the existing `PurgeBookingAsync`, so "losing history on restaurant deletion" is not a concern by design.
 
 ### Testing
 

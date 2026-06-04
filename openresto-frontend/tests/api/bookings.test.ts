@@ -134,7 +134,7 @@ describe("getBookingsByRestaurant", () => {
     const result = await getBookingsByRestaurant(5);
     expect(result[0]).toMatchObject({ id: 1 });
     expect(result[1]).toMatchObject({ id: 2 });
-    expect(mockFetch.mock.calls[0][0]).toContain("/api/bookings/restaurant/5");
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/restaurants/5/bookings");
   });
 
   it("returns empty array on failure", async () => {
@@ -171,16 +171,16 @@ describe("deleteBooking", () => {
 });
 
 describe("cancelBookingByRef", () => {
-  it("sends DELETE to ref endpoint and returns true on success", async () => {
+  it("posts to cancel endpoint and returns true on success", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
 
     const result = await cancelBookingByRef("ref-abc", "user@test.com");
 
     expect(result).toBe(true);
     const [url, opts] = mockFetch.mock.calls[0];
-    expect(url).toContain("/api/bookings/ref/ref-abc");
-    expect(url).toContain("email=user%40test.com");
-    expect(opts.method).toBe("DELETE");
+    expect(url).toContain("/api/bookings/ref/ref-abc/cancel");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ email: "user@test.com" });
   });
 
   it("returns false on failure", async () => {

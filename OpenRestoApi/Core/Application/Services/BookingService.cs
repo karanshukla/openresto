@@ -71,9 +71,12 @@ public class BookingService(
             throw new InvalidOperationException("Cannot create a booking in the past.");
         }
 
+        if (bookingDto.TableId is null || bookingDto.SectionId is null)
+            throw new ArgumentException("TableId and SectionId are required.");
+
         // 1. Check DB for an existing confirmed booking on the same table+date
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            bookingDto.TableId, bookingDate);
+            bookingDto.TableId.Value, bookingDate);
 
         if (alreadyBooked)
         {
@@ -82,7 +85,7 @@ public class BookingService(
 
         // 2. Check for an active hold by someone else
         bool heldByOther = _holdService.IsTableHeld(
-            bookingDto.TableId, bookingDate, excludeHoldId: bookingDto.HoldId);
+            bookingDto.TableId.Value, bookingDate, excludeHoldId: bookingDto.HoldId);
 
         if (heldByOther)
         {
@@ -90,7 +93,7 @@ public class BookingService(
         }
 
         // 3. Check for seat capacity
-        Table? table = await _tableRepository.GetByIdAsync(bookingDto.TableId);
+        Table? table = await _tableRepository.GetByIdAsync(bookingDto.TableId.Value);
         if (table != null && bookingDto.Seats > table.Seats)
         {
             throw new InvalidOperationException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
@@ -102,7 +105,7 @@ public class BookingService(
         booking.BookingRef = BookingRefGenerator.Generate();
         booking.EndTime = bookingDate.AddHours(1);
         booking.Table = table!;
-        booking.Section = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId))!;
+        booking.Section = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId.Value))!;
         booking.Restaurant = restaurant;
 
         Booking newBooking = await _bookingRepository.AddAsync(booking);
@@ -174,7 +177,7 @@ public class BookingService(
         // Check for seat capacity if seats are being updated
         if (bookingDto.Seats > 0)
         {
-            Table? table = await _tableRepository.GetByIdAsync(booking.TableId);
+            Table? table = booking.TableId.HasValue ? await _tableRepository.GetByIdAsync(booking.TableId.Value) : null;
             if (table != null && bookingDto.Seats > table.Seats)
             {
                 throw new InvalidOperationException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");

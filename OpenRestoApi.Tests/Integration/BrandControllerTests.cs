@@ -29,7 +29,7 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
         {
             appName = "My Resto"
         });
@@ -42,7 +42,7 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
 
-        HttpResponseMessage saveResponse = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
         {
             appName = "Custom Resto",
             primaryColor = "#ff5500",
@@ -64,7 +64,7 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
         {
             appName = new string('A', 33)
         });
@@ -102,7 +102,7 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/brand", new
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
         {
             primaryColor = "not-a-color"
         });

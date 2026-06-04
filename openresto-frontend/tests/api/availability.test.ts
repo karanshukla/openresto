@@ -16,7 +16,7 @@ describe("fetchAvailability", () => {
     (get as jest.Mock).mockResolvedValue({ ok: true, json: async () => mockData });
     const result = await fetchAvailability(1, "2024-06-01", 2);
     expect(result).toEqual(mockData);
-    expect(get).toHaveBeenCalledWith("/availability/1?date=2024-06-01&seats=2");
+    expect(get).toHaveBeenCalledWith("/restaurants/1/availability?date=2024-06-01&seats=2");
   });
 
   it("returns null when response is not ok", async () => {

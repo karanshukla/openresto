@@ -22,7 +22,7 @@ public class AvailabilityControllerTests(TestWebAppFactory factory) : IClassFixt
         }
 
         var date = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
-        HttpResponseMessage response = await client.GetAsync($"/api/availability/{restaurantId}?date={date}&seats=2");
+        HttpResponseMessage response = await client.GetAsync($"/api/restaurants/{restaurantId}/availability?date={date}&seats=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         AvailabilityResponseDto? result = await response.Content.ReadFromJsonAsync<AvailabilityResponseDto>();

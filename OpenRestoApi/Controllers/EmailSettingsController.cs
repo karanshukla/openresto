@@ -38,7 +38,7 @@ public class EmailSettingsController(EmailSettingsService emailSettings, AppDbCo
         });
     }
 
-    [HttpPost]
+    [HttpPatch]
     public async Task<IActionResult> Save([FromBody] EmailSettingsRequest req)
     {
         await _emailSettings.SaveAsync(

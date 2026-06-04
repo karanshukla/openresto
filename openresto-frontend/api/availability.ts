@@ -19,7 +19,7 @@ export async function fetchAvailability(
   seats: number
 ): Promise<AvailabilityResponseDto | null> {
   try {
-    const res = await get(`/availability/${restaurantId}?date=${date}&seats=${seats}`);
+    const res = await get(`/restaurants/${restaurantId}/availability?date=${date}&seats=${seats}`);
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {

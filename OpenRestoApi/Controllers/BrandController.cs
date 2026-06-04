@@ -84,7 +84,7 @@ public class BrandController(BrandService brandService) : ControllerBase
         return File(png, "image/png");
     }
 
-    [HttpPost]
+    [HttpPatch]
     [Authorize]
     public async Task<IActionResult> Save([FromBody] BrandRequest req)
     {

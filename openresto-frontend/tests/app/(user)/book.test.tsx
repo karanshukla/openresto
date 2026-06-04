@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
-import BookScreen from "@/app/(user)/book";
+import BookScreen from "@/app/(user)/book/[restaurantId]";
 import { createBooking } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
 import { AppThemeProvider } from "@/context/ThemeContext";
@@ -158,7 +158,7 @@ describe("BookScreen", () => {
     renderWithProviders(<BookScreen />);
     await waitFor(() => screen.getByTestId("refresh-trigger"));
     fireEvent.press(screen.getByTestId("refresh-trigger"));
-    expect(mockReplace).toHaveBeenCalledWith("/book?restaurantId=1");
+    expect(mockReplace).toHaveBeenCalledWith("/(user)/book/1");
   });
 
   it("shows not found when restaurant is null", async () => {

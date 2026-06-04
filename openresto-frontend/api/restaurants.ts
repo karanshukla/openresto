@@ -22,6 +22,7 @@ export interface RestaurantDto {
   timezone: string;
   tags?: string[];
   imageUrl?: string | null;
+  isArchived?: boolean;
   sections: SectionDto[];
 }
 

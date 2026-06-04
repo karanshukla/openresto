@@ -31,4 +31,6 @@ public class Restaurant
     public string? Tags { get; set; }
 
     public string? ImageUrl { get; set; }
+
+    public bool IsArchived { get; set; }
 }

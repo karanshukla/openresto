@@ -29,9 +29,9 @@ public class BookingDetailDto
     public int Id { get; set; }
     public int RestaurantId { get; set; }
     public string? RestaurantName { get; set; }
-    public int SectionId { get; set; }
+    public int? SectionId { get; set; }
     public string? SectionName { get; set; }
-    public int TableId { get; set; }
+    public int? TableId { get; set; }
     public string? TableName { get; set; }
     public DateTime Date { get; set; }
     public DateTime? EndTime { get; set; }
@@ -69,18 +69,6 @@ public class AdminCreateBookingRequest
     public string CustomerEmail { get; set; } = null!;
     public string? CustomerName { get; set; }
     public int Seats { get; set; }
-}
-
-// ── Admin booking update (PATCH — all fields optional) ───────────────────────
-
-public class UpdateBookingRequest
-{
-    public DateTime? Date { get; set; }
-    public int? Seats { get; set; }
-    public int? TableId { get; set; }
-    public int? SectionId { get; set; }
-    public string? CustomerEmail { get; set; }
-    public string? CustomerName { get; set; }
 }
 
 // ── Admin booking update (PUT — can modify all fields) ───────────────────────
@@ -137,6 +125,12 @@ public class LookupDto
     public string Name { get; set; } = null!;
     public DateTime? BookingsPausedUntil { get; set; }
     public int ActiveBookingsCount { get; set; }
+    public bool IsArchived { get; set; }
+}
+
+public class AdminRestaurantPatchRequest
+{
+    public bool? IsArchived { get; set; }
 }
 
 public class MessageResponse

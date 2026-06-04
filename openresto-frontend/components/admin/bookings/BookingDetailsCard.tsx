@@ -13,8 +13,8 @@ interface BookingDetailsCardProps {
     endTime?: string;
     seats: number;
     restaurantName: string;
-    sectionName: string;
-    tableName: string;
+    sectionName: string | null;
+    tableName: string | null;
     specialRequests?: string;
     isCancelled?: boolean;
   };
@@ -78,8 +78,8 @@ export function BookingDetailsCard({
     },
     { label: "Party", value: `${booking.seats} guest${booking.seats !== 1 ? "s" : ""}` },
     { label: "Restaurant", value: booking.restaurantName },
-    { label: "Section", value: booking.sectionName },
-    { label: "Table", value: booking.tableName },
+    ...(booking.sectionName ? [{ label: "Section", value: booking.sectionName }] : []),
+    { label: "Table", value: booking.tableName ?? "Table" },
     { label: "Requests", value: booking.specialRequests || "None" },
   ];
 

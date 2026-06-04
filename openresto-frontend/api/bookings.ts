@@ -2,8 +2,8 @@ import { get, post, del } from "./client";
 
 export interface BookingDto {
   id: number;
-  tableId: number;
-  sectionId: number;
+  tableId: number | null;
+  sectionId: number | null;
   restaurantId: number;
   date: string;
   customerEmail: string;
@@ -34,8 +34,8 @@ export interface BookingCreationDto {
 function normalizeBooking(raw: Record<string, unknown>): BookingDto {
   return {
     id: (raw.id ?? raw.Id) as number,
-    tableId: (raw.tableId ?? raw.TableId) as number,
-    sectionId: (raw.sectionId ?? raw.SectionId) as number,
+    tableId: (raw.tableId ?? raw.TableId ?? null) as number | null,
+    sectionId: (raw.sectionId ?? raw.SectionId ?? null) as number | null,
     restaurantId: (raw.restaurantId ?? raw.RestaurantId) as number,
     date: (raw.date ?? raw.Date) as string,
     customerEmail: (raw.customerEmail ?? raw.CustomerEmail) as string,
@@ -90,7 +90,7 @@ export async function getBookingByRef(
 
 export async function getBookingsByRestaurant(restaurantId: number): Promise<BookingDto[]> {
   try {
-    const res = await get(`/bookings/restaurant/${restaurantId}`);
+    const res = await get(`/restaurants/${restaurantId}/bookings`);
     if (!res.ok) throw new Error("Failed to fetch bookings");
     const data: Record<string, unknown>[] = await res.json();
     return data.map(normalizeBooking);
@@ -112,7 +112,7 @@ export async function deleteBooking(id: number): Promise<boolean> {
 
 export async function cancelBookingByRef(bookingRef: string, email: string): Promise<boolean> {
   try {
-    const res = await del(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
+    const res = await post(`/bookings/ref/${bookingRef}/cancel`, { email });
     return res.ok;
   } catch (err) {
     console.error("cancelBookingByRef error:", err);
