@@ -121,7 +121,8 @@ export default function HomeScreen() {
               <ThemedText
                 style={[
                   styles.highlightsLabel,
-                  { color: hasHero ? "rgba(255,255,255,0.75)" : mutedColor },
+                  { color: hasHero ? "rgba(255,255,255,0.92)" : mutedColor },
+                  hasHero && ({ textShadow: heroTextShadow } as object),
                 ]}
               >
                 Restaurant highlights
@@ -129,7 +130,8 @@ export default function HomeScreen() {
               <ThemedText
                 style={[
                   styles.highlightsBy,
-                  { color: hasHero ? "rgba(255,255,255,0.65)" : mutedColor },
+                  { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
+                  hasHero && ({ textShadow: heroTextShadow } as object),
                 ]}
               >
                 Curated by the owner
