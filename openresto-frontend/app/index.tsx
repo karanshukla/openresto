@@ -83,14 +83,20 @@ export default function HomeScreen() {
         >
           {hasHero && (
             <View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.45)",
-              }}
+              style={[
+                {
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                },
+                Platform.OS === "web"
+                  ? ({
+                      background: `linear-gradient(160deg, rgba(${accentR},${accentG},${accentB},0.55) 0%, rgba(0,0,0,0.62) 100%)`,
+                    } as object)
+                  : { backgroundColor: "rgba(0,0,0,0.55)" },
+              ]}
               pointerEvents="none"
             />
           )}
