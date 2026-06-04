@@ -249,7 +249,9 @@ export function HighlightsCard({
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>{h.title}</ThemedText>
+                        <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>
+                          {h.title}
+                        </ThemedText>
                         <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }}>
                           {h.body}
                         </ThemedText>

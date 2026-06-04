@@ -146,7 +146,9 @@ export function SecurityCard({
                   {saving ? "Saving…" : "Save Question"}
                 </Button>
                 <Pressable style={styles.smallBtn} onPress={() => setShowPvqForm(false)}>
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
+                    Cancel
+                  </ThemedText>
                 </Pressable>
               </View>
             </View>
@@ -215,7 +217,9 @@ export function SecurityCard({
                   {saving ? "Saving…" : "Update Password"}
                 </Button>
                 <Pressable style={styles.smallBtn} onPress={() => setShowPwForm(false)}>
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
+                    Cancel
+                  </ThemedText>
                 </Pressable>
               </View>
             </View>
