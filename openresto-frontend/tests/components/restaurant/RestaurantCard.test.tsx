@@ -7,6 +7,11 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+jest.mock("expo-image", () => ({
+  Image: ({ testID, source }: any) =>
+    require("react").createElement("Image", { testID: testID ?? "expo-image", source }),
+}));
+
 jest.mock("@/api/availability", () => ({
   fetchAvailability: jest.fn(),
 }));
@@ -154,6 +159,16 @@ describe("RestaurantCard", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it("renders expo-image when imageUrl is present", async () => {
+    render(<RestaurantCard restaurant={{ ...mockRestaurant, imageUrl: "/media/photo.jpg" }} />);
+    await waitFor(() => expect(screen.getByTestId("expo-image")).toBeTruthy());
+  });
+
+  it("does not render expo-image when imageUrl is absent", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.queryByTestId("expo-image")).toBeNull());
   });
 
   it("shows closed when openDays day names exclude today", async () => {
