@@ -139,6 +139,6 @@ describe("HomeScreen", () => {
 
     renderWithProviders(<HomeScreen />);
     // Wait until the brand with headerImageUrl has been applied — this exercises the scrim overlay code path
-    await waitFor(() => expect(screen.getByText("Hero Brand")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
   });
 });
