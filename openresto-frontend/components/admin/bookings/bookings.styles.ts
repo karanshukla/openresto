@@ -109,7 +109,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
   },
-  colTime: { width: 88 },
+  colTime: { width: 140 },
   colGuest: { flex: 1, paddingHorizontal: SPACING.sm },
   colParty: { width: 64, alignItems: "flex-start" },
   colTable: { width: 64 },
