@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const border = isDark ? "#25282f" : "#e2dbcb";
   const mutedColor = colors.muted;
   const hasHero = !!brand.headerImageUrl && Platform.OS === "web";
+  const heroTextShadow = "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)";
 
   const accentHex = primaryColor.replace("#", "");
   const accentR = parseInt(accentHex.slice(0, 2), 16);
@@ -97,7 +98,7 @@ export default function HomeScreen() {
               style={[
                 styles.heroTitle,
                 isMobile && { fontSize: 40, lineHeight: 44 },
-                hasHero && ({ color: "#ffffff", textShadow: "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)" } as object),
+                hasHero && ({ color: "#ffffff", textShadow: heroTextShadow } as object),
               ]}
             >
               {brand.appName}
@@ -106,7 +107,7 @@ export default function HomeScreen() {
               style={[
                 styles.heroSub,
                 { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
-                hasHero && ({ textShadow: "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)" } as object),
+                hasHero && ({ textShadow: heroTextShadow } as object),
               ]}
             >
               Scroll down to pick a location below, choose a time, enter your email address, and
