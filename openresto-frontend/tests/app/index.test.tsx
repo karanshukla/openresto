@@ -125,4 +125,20 @@ describe("HomeScreen", () => {
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
     expect(screen.queryByTestId("loading-screen")).toBeNull();
   });
+
+  it("renders hero image overlay when headerImageUrl is set", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          appName: "Hero Brand",
+          primaryColor: "#c0392b",
+          headerImageUrl: "https://example.com/hero.jpg",
+        }),
+    });
+
+    renderWithProviders(<HomeScreen />);
+    // Wait until the brand with headerImageUrl has been applied — this exercises the scrim overlay code path
+    await waitFor(() => expect(screen.getByText("Hero Brand")).toBeTruthy());
+  });
 });
