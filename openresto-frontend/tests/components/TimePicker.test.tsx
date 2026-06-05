@@ -7,7 +7,7 @@ import TimePicker from "@/components/common/TimePicker";
 
 const mockUseBrand = jest.fn(() => ({ appName: "Test App", primaryColor: "#000" }));
 jest.mock("@/context/BrandContext", () => ({
-  useBrand: (...args: any[]) => mockUseBrand(...args),
+  useBrand: () => mockUseBrand(),
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
