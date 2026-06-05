@@ -1,8 +1,7 @@
 # OpenResto
 
 [![CI](https://github.com/karanshukla/openresto/actions/workflows/ci.yml/badge.svg)](https://github.com/karanshukla/openresto/actions/workflows/ci.yml)
-[![Frontend Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main&flag=frontend)](https://coveralls.io/github/karanshukla/openresto?flag=frontend)
-[![Backend Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main&flag=backend)](https://coveralls.io/github/karanshukla/openresto?flag=backend)
+[![Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main)](https://coveralls.io/github/karanshukla/openresto)
 [![OWASP ZAP](https://img.shields.io/badge/OWASP%20ZAP-scanned-5C2D91?logo=owasp&logoColor=white)](https://www.zaproxy.org/)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PWA](https://img.shields.io/badge/Expo%20Router-PWA%20ready-000020?logo=expo&logoColor=white)](https://expo.dev/router)
