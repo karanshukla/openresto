@@ -120,6 +120,7 @@ export default function RestaurantCard({
       .map((d) => parseDayOfWeek(d.trim()))
       .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
     if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlots([]);
 
       setSlotsLoading(false);
@@ -371,7 +372,7 @@ export default function RestaurantCard({
                   onPress={(e) => {
                     e.stopPropagation?.();
                     router.push(
-                      `/(user)/book/${restaurant.id}&time=${encodeURIComponent(s.time)}&party=${party}`
+                      `/(user)/book/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}`
                     );
                   }}
                   style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
