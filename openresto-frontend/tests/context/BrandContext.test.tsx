@@ -1,7 +1,14 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
+
+jest.mock("@/utils/injectBrandFavicon", () => ({
+  injectBrandFavicon: jest.fn(),
+}));
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -124,5 +131,77 @@ describe("BrandContext", () => {
     expect(screen.getByTestId("name").props.children).toBe("Open Resto");
     expect(screen.getByTestId("color").props.children).toBe("#0a7ea4");
     expect(screen.getByTestId("accent").props.children).toBe("none");
+  });
+
+  it("sets document title when it matches the default app name", async () => {
+    document.title = "Open Resto";
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ appName: "My Resto", primaryColor: "#ff5500" }),
+    });
+
+    render(
+      <BrandProvider>
+        <TestConsumer />
+      </BrandProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("name").props.children).toBe("My Resto");
+    });
+    expect(document.title).toBe("My Resto");
+    document.title = "";
+  });
+
+  it("does not override a custom document title", async () => {
+    document.title = "My Custom App";
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ appName: "My Resto", primaryColor: "#ff5500" }),
+    });
+
+    render(
+      <BrandProvider>
+        <TestConsumer />
+      </BrandProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("name").props.children).toBe("My Resto");
+    });
+    expect(document.title).toBe("My Custom App");
+    document.title = "";
+  });
+
+  it("buildEndpoint uses base URL when EXPO_PUBLIC_API_URL contains /api", async () => {
+    const orig = process.env.EXPO_PUBLIC_API_URL;
+    process.env.EXPO_PUBLIC_API_URL = "http://localhost:5062/api";
+    mockFetch.mockResolvedValueOnce({ ok: false });
+
+    render(
+      <BrandProvider>
+        <TestConsumer />
+      </BrandProvider>
+    );
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    expect(mockFetch.mock.calls[0][0]).toBe("http://localhost:5062/api/brand");
+    process.env.EXPO_PUBLIC_API_URL = orig;
+  });
+
+  it("buildEndpoint appends /api when EXPO_PUBLIC_API_URL has no /api", async () => {
+    const orig = process.env.EXPO_PUBLIC_API_URL;
+    process.env.EXPO_PUBLIC_API_URL = "http://localhost:5062";
+    mockFetch.mockResolvedValueOnce({ ok: false });
+
+    render(
+      <BrandProvider>
+        <TestConsumer />
+      </BrandProvider>
+    );
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    expect(mockFetch.mock.calls[0][0]).toBe("http://localhost:5062/api/brand");
+    process.env.EXPO_PUBLIC_API_URL = orig;
   });
 });

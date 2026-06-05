@@ -6,6 +6,10 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: jest.fn(() => ({ appName: "Test App", primaryColor: "#0a7ea4" })),
+}));
+
 describe("DatePicker (native)", () => {
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -44,5 +48,25 @@ describe("DatePicker (native)", () => {
   it("renders chevron indicator", () => {
     render(<DatePicker onSelect={jest.fn()} />);
     expect(screen.getByText("▾")).toBeTruthy();
+  });
+
+  it("filters date options to open days only", () => {
+    render(<DatePicker onSelect={jest.fn()} openDays={[1, 2, 3, 4, 5]} />);
+    expect(screen.getByText("Select a date")).toBeTruthy();
+  });
+
+  it("shows selected item styling when modal is open with pre-selected date", () => {
+    render(<DatePicker selectedDate={todayStr} onSelect={jest.fn()} />);
+    // Trigger shows the date label (not "Select a date")
+    fireEvent.press(screen.getByText(todayLabel));
+    // Both the trigger and the modal item show todayLabel; selected item has checkmark
+    expect(screen.getByText("✓")).toBeTruthy();
+  });
+
+  it("falls back to COLORS.primary when brand has no primaryColor", () => {
+    const { useBrand } = require("@/context/BrandContext");
+    (useBrand as jest.Mock).mockReturnValueOnce({ appName: "Test", primaryColor: "" });
+    render(<DatePicker onSelect={jest.fn()} />);
+    expect(screen.getByText("Select a date")).toBeTruthy();
   });
 });

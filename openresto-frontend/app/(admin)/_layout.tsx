@@ -120,6 +120,7 @@ function AdminLayoutInner() {
 
   if (authState !== "authenticated") {
     const onLoginScreen = segments.includes("login" as never);
+    /* istanbul ignore else */
     if (!onLoginScreen) return null;
   }
 

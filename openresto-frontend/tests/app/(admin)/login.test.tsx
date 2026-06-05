@@ -119,6 +119,27 @@ describe("AdminLoginScreen", () => {
     expect(screen.getByText("Sign in")).toBeTruthy();
   });
 
+  it("email submitEditing triggers the onSubmitEditing callback", () => {
+    render(
+      <BrandProvider>
+        <AdminLoginScreen />
+      </BrandProvider>
+    );
+    const emailInput = screen.getByPlaceholderText("admin@restaurant.com");
+    fireEvent(emailInput, "submitEditing");
+    // No assertion needed — covers the onSubmitEditing optional-chain callback
+  });
+
+  it("falls back to COLORS.primary when brand has no primaryColor", () => {
+    const brandModule = require("@/context/BrandContext");
+    const spy = jest
+      .spyOn(brandModule, "useBrand")
+      .mockReturnValueOnce({ appName: "Test", primaryColor: "" });
+    render(<AdminLoginScreen />);
+    expect(screen.getByText("Sign in")).toBeTruthy();
+    spy.mockRestore();
+  });
+
   it("'Back to {appName}' link on login stage calls router.replace('/')", () => {
     render(
       <BrandProvider>

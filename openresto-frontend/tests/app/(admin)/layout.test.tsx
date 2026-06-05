@@ -96,4 +96,22 @@ describe("AdminLayout", () => {
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalled());
     expect(toJSON()).toBeNull();
   });
+
+  it("skips re-check when authState is already authenticated on segments change", async () => {
+    (useSegments as jest.Mock).mockReturnValue(["(admin)", "login"]);
+    (checkSession as jest.Mock).mockResolvedValue(null);
+
+    const { rerender } = render(<AdminLayout />);
+
+    // On login screen: effect sets authState to "authenticated" without calling checkSession
+    await waitFor(() => expect(checkSession).not.toHaveBeenCalled());
+
+    // Simulate navigation away from login (segments change)
+    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+    rerender(<AdminLayout />);
+
+    // authState is still "authenticated" so line 79 returns early; checkSession not called
+    await new Promise((r) => setTimeout(r, 50));
+    expect(checkSession).not.toHaveBeenCalled();
+  });
 });

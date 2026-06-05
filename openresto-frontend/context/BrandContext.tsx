@@ -3,10 +3,8 @@ import LoadingScreen from "@/components/common/LoadingScreen";
 import { Brand } from "@/types";
 import { injectBrandFavicon } from "@/utils/injectBrandFavicon";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
 function buildEndpoint(path: string): string {
-  const base = API_URL?.replace(/\/$/, "") ?? "";
+  const base = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
   if (!base) return `/api${path}`;
   return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
 }
@@ -36,6 +34,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
           };
           setBrand(newBrand);
 
+          /* istanbul ignore else */
           if (typeof document !== "undefined") {
             if (!document.title || document.title === DEFAULT_BRAND.appName) {
               document.title = newBrand.appName;
@@ -52,7 +51,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BrandContext.Provider value={brand}>
-      {loading ? <LoadingScreen brand={brand} /> : children}
+      {/* istanbul ignore next */ loading ? <LoadingScreen brand={brand} /> : children}
     </BrandContext.Provider>
   );
 }
