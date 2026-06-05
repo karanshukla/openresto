@@ -67,4 +67,27 @@ describe("RestaurantDetails", () => {
     expect(screen.getByText(/2 seats/)).toBeTruthy();
     expect(screen.getByText(/4 seats/)).toBeTruthy();
   });
+
+  it("renders without address when address is not provided", () => {
+    const noAddress = { ...restaurant, address: undefined as unknown as string };
+    render(<RestaurantDetails restaurant={noAddress} />);
+    expect(screen.getByText("Sushi Spot")).toBeTruthy();
+    expect(screen.queryByText(/456 Ocean Ave/)).toBeNull();
+  });
+
+  it("renders table fallback name when table.name is null", () => {
+    const withNullTable = {
+      ...restaurant,
+      sections: [
+        {
+          id: 1,
+          name: "Indoor",
+          restaurantId: 1,
+          tables: [{ id: 42, name: null as unknown as string, seats: 2, sectionId: 1 }],
+        },
+      ],
+    };
+    render(<RestaurantDetails restaurant={withNullTable} />);
+    expect(screen.getByText("Table 42")).toBeTruthy();
+  });
 });

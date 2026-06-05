@@ -42,4 +42,32 @@ describe("BookingConfirmationSkeleton", () => {
     );
     expect(toJSON()).toBeTruthy();
   });
+
+  it("renders wide layout when Platform.OS is web and width >= 768", () => {
+    const RN = require("react-native");
+    const original = RN.Platform.OS;
+    RN.Platform.OS = "web";
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1024, height: 768 });
+    const { toJSON } = render(
+      <AppThemeProvider>
+        <BookingConfirmationSkeleton />
+      </AppThemeProvider>
+    );
+    expect(toJSON()).toBeTruthy();
+    RN.Platform.OS = original;
+  });
+
+  it("renders narrow layout when Platform.OS is web but width < 768", () => {
+    const RN = require("react-native");
+    const original = RN.Platform.OS;
+    RN.Platform.OS = "web";
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 375, height: 812 });
+    const { toJSON } = render(
+      <AppThemeProvider>
+        <BookingConfirmationSkeleton />
+      </AppThemeProvider>
+    );
+    expect(toJSON()).toBeTruthy();
+    RN.Platform.OS = original;
+  });
 });

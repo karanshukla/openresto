@@ -141,4 +141,40 @@ describe("HomeScreen", () => {
     // Wait until the brand with headerImageUrl has been applied — this exercises the scrim overlay code path
     await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
   });
+
+  it("renders highlights section when highlights are provided", async () => {
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
+    expect(screen.getByText("Fresh daily.")).toBeTruthy();
+  });
+
+  it("renders mobile layout with narrower window width", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 375, height: 812 });
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("Resto 1")).toBeTruthy();
+  });
+
+  it("renders Our locations heading", async () => {
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("Our locations")).toBeTruthy();
+  });
+
+  it("renders highlights label and curated-by text", async () => {
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("Restaurant highlights")).toBeTruthy();
+    expect(screen.getByText("Curated by the owner")).toBeTruthy();
+  });
+
+  it("renders empty highlights gracefully", async () => {
+    (fetchHighlights as jest.Mock).mockResolvedValue([]);
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.queryByText("Wood-fired kitchen")).toBeNull();
+  });
 });
