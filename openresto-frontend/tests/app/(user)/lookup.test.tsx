@@ -10,7 +10,10 @@ import { fetchCachedBookings } from "@/utils/bookingCache";
 import { BrandProvider } from "@/context/BrandContext";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Alert, Platform, Modal } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
+
+// Force Platform.OS to "web" for the entire file (jsdom env)
+Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
 
 // Polyfill fetch
 global.fetch = jest.fn(() =>
@@ -45,8 +48,17 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 
+jest.mock("@/utils/calendar", () => ({
+  buildCalendarUrls: jest.fn(() => ({
+    googleUrl: "https://calendar.google.com/mock",
+    outlookUrl: "https://outlook.com/mock",
+    downloadIcs: jest.fn(),
+  })),
+}));
+
 // Mock Alert.alert
 jest.spyOn(Alert, "alert").mockImplementation(() => {});
+jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 
 jest.mock("@/components/common/ConfirmModal", () => {
   const { View, Pressable, Text } = require("react-native");
@@ -98,6 +110,8 @@ describe("LookupScreen", () => {
     (getBookingByRef as jest.Mock).mockResolvedValue(null);
     delete (window as any).alert;
     (window as any).alert = jest.fn();
+    (window as any).open = jest.fn();
+    (navigator as any).clipboard = { writeText: jest.fn() };
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {
@@ -159,7 +173,6 @@ describe("LookupScreen", () => {
     (cancelBookingByRef as jest.Mock).mockResolvedValue(true);
     renderWithProviders(<LookupScreen />);
 
-    // Perform lookup first
     fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
     fireEvent.changeText(
       screen.getByPlaceholderText("The email used when booking"),
@@ -169,20 +182,16 @@ describe("LookupScreen", () => {
 
     await waitFor(() => expect(screen.getByText("Cancel This Booking")).toBeTruthy());
 
-    // Click cancel
     fireEvent.press(screen.getByText("Cancel This Booking"));
     expect(await screen.findByTestId("confirm-modal")).toBeTruthy();
 
-    // Confirm cancel
     fireEvent.press(screen.getByText("Cancel Booking"));
 
     await waitFor(() => expect(cancelBookingByRef).toHaveBeenCalledWith("REF123", "test@test.com"));
-    expect(getBookingByRef).toHaveBeenCalledTimes(2); // Initial lookup + refresh after cancel
+    expect(getBookingByRef).toHaveBeenCalledTimes(2);
   });
 
   it("shows error alert on cancellation failure (native)", async () => {
-    // Mock Platform to native
-    const originalOS = Platform.OS;
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
 
     (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
@@ -202,7 +211,7 @@ describe("LookupScreen", () => {
 
     await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith("Error", expect.any(String)));
 
-    Object.defineProperty(Platform, "OS", { get: () => originalOS, configurable: true });
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
   });
 
   it("shows already cancelled disabled button when booking is pre-cancelled", async () => {
@@ -223,7 +232,6 @@ describe("LookupScreen", () => {
   });
 
   it("shows web alert on cancellation failure", async () => {
-    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
     (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
     (cancelBookingByRef as jest.Mock).mockResolvedValue(false);
     renderWithProviders(<LookupScreen />);
@@ -244,8 +252,6 @@ describe("LookupScreen", () => {
     );
     expect(cancelBookingByRef).toHaveBeenCalledTimes(1);
     expect(getBookingByRef).toHaveBeenCalledTimes(1);
-
-    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
   });
 
   it("dismissing the confirm modal does not cancel the booking", async () => {
@@ -290,5 +296,63 @@ describe("LookupScreen", () => {
 
     fireEvent.press(screen.getByText("CACHED1"));
     expect(getBookingByRef).toHaveBeenCalledWith("CACHED1", "cached@test.com");
+  });
+
+  it("shows CAL section in icon strip when booking with address found (Platform.OS=web)", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+    expect(screen.getByText("CAL")).toBeTruthy();
+    expect(screen.getByText("MAPS")).toBeTruthy();
+  });
+
+  it("shows copy button and copies booking ref when pressed", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => expect(screen.getByText("Copy")).toBeTruthy());
+    fireEvent.press(screen.getByText("Copy"));
+
+    expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith("REF123");
+    expect(screen.getByText("Copied")).toBeTruthy();
+  });
+
+  it("handles lookup triggered via submitEditing on email field", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue(null);
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent(screen.getByPlaceholderText("The email used when booking"), "submitEditing");
+
+    await waitFor(() =>
+      expect(screen.getByText("No booking found matching that reference and email.")).toBeTruthy()
+    );
+  });
+
+  it("does not search when canSearch is false (empty fields)", () => {
+    renderWithProviders(<LookupScreen />);
+    fireEvent.press(screen.getByText("Look Up"));
+    expect(getBookingByRef).not.toHaveBeenCalled();
   });
 });

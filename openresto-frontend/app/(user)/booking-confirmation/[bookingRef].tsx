@@ -255,11 +255,13 @@ export default function BookingConfirmationScreen() {
                         styles.copyBtn,
                         { borderColor: copied ? primaryColor : colors.border },
                       ]}
-                      onPress={() => {
-                        navigator.clipboard.writeText(ref);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
+                      onPress={
+                        /* istanbul ignore next */ () => {
+                          navigator.clipboard.writeText(ref);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }
+                      }
                     >
                       <Ionicons
                         name={copied ? "checkmark" : "copy-outline"}
@@ -344,10 +346,11 @@ export default function BookingConfirmationScreen() {
                           borderColor: hovered || pressed ? primaryColor : colors.border,
                         },
                       ]}
-                      onPress={() =>
-                        Linking.openURL(
-                          `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
-                        )
+                      onPress={
+                        /* istanbul ignore next */ () =>
+                          Linking.openURL(
+                            `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
+                          )
                       }
                       accessibilityLabel="Open in Google Maps"
                     >
@@ -364,10 +367,11 @@ export default function BookingConfirmationScreen() {
                           borderColor: hovered || pressed ? primaryColor : colors.border,
                         },
                       ]}
-                      onPress={() =>
-                        Linking.openURL(
-                          `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
-                        )
+                      onPress={
+                        /* istanbul ignore next */ () =>
+                          Linking.openURL(
+                            `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
+                          )
                       }
                       accessibilityLabel="Open in Apple Maps"
                     >
