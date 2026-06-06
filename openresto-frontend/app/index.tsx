@@ -94,25 +94,36 @@ export default function HomeScreen() {
             />
           )}
           <View style={[styles.heroInner, isMobile && { paddingHorizontal: 20 }]}>
-            <ThemedText
+            <View
               style={[
-                styles.heroTitle,
-                isMobile && { fontSize: 40, lineHeight: 44 },
-                hasHero && ({ color: "#ffffff", textShadow: heroTextShadow } as object),
+                styles.heroTextPill,
+                hasHero &&
+                  ({
+                    borderRadius: 16,
+                    paddingHorizontal: 24,
+                    paddingVertical: 20,
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    background: "rgba(0,0,0,0.22)",
+                  } as object),
               ]}
             >
-              {brand.appName}
-            </ThemedText>
-            <ThemedText
-              style={[
-                styles.heroSub,
-                { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
-                hasHero && ({ textShadow: heroTextShadow } as object),
-              ]}
-            >
-              Scroll down to pick a location below, choose a time, enter your email address, and
-              you're booked!
-            </ThemedText>
+              <ThemedText
+                style={[
+                  styles.heroTitle,
+                  isMobile && { fontSize: 40, lineHeight: 44 },
+                  hasHero && { color: "#ffffff" },
+                ]}
+              >
+                {brand.appName}
+              </ThemedText>
+              <ThemedText
+                style={[styles.heroSub, { color: hasHero ? "rgba(255,255,255,0.90)" : mutedColor }]}
+              >
+                Scroll down to pick a location below, choose a time, enter your email address, and
+                you're booked!
+              </ThemedText>
+            </View>
           </View>
 
           {/* ── Highlights ── */}
@@ -243,6 +254,9 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 28,
     position: "relative",
+  },
+  heroTextPill: {
+    alignSelf: "flex-start",
   },
   heroTitle: {
     fontSize: 64,
