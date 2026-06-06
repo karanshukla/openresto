@@ -20,6 +20,10 @@ A self-hosted, zero-dependency restaurant booking system. Customers browse resta
 
 <img width="1313" height="820" alt="image" src="https://github.com/user-attachments/assets/ce52d6ed-6989-490c-b950-81777eefa14a" />
 
+<img width="997" height="960" alt="image" src="https://github.com/user-attachments/assets/3b5b5892-869f-413d-89ef-ee96d78aaa99" />
+
+<img width="982" height="946" alt="image" src="https://github.com/user-attachments/assets/b05051e5-abf7-45b6-b093-4d8329730a36" />
+
 <img width="304" height="682" alt="image" src="https://github.com/user-attachments/assets/e24084f2-ca02-4740-9900-101bbfbe1203" />
 
 <img width="303" height="676" alt="image" src="https://github.com/user-attachments/assets/f6462b92-d45c-467d-9ed3-8852ff7c0d45" />
