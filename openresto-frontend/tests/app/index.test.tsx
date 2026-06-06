@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import HomeScreen from "@/app/index";
 import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
 import { BrandProvider } from "@/context/BrandContext";
@@ -127,6 +128,9 @@ describe("HomeScreen", () => {
   });
 
   it("renders hero image overlay when headerImageUrl is set", async () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = "web";
+
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -138,7 +142,9 @@ describe("HomeScreen", () => {
     });
 
     renderWithProviders(<HomeScreen />);
-    // Wait until the brand with headerImageUrl has been applied — this exercises the scrim overlay code path
+    // Wait for the brand with headerImageUrl to apply — exercises hasHero=true code paths
     await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
+
+    (Platform as unknown as { OS: string }).OS = originalOS;
   });
 });
