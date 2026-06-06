@@ -97,29 +97,19 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.heroTextPill,
-                hasHero &&
-                  ({
-                    borderRadius: 16,
-                    paddingHorizontal: 24,
-                    paddingVertical: 20,
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                    background: "rgba(0,0,0,0.22)",
-                  } as object),
+                hasHero && {
+                  backgroundColor: surface,
+                  borderColor: border,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  padding: 16,
+                },
               ]}
             >
-              <ThemedText
-                style={[
-                  styles.heroTitle,
-                  isMobile && { fontSize: 40, lineHeight: 44 },
-                  hasHero && { color: "#ffffff" },
-                ]}
-              >
+              <ThemedText style={[styles.heroTitle, isMobile && { fontSize: 40, lineHeight: 44 }]}>
                 {brand.appName}
               </ThemedText>
-              <ThemedText
-                style={[styles.heroSub, { color: hasHero ? "rgba(255,255,255,0.90)" : mutedColor }]}
-              >
+              <ThemedText style={[styles.heroSub, { color: mutedColor }]}>
                 Scroll down to pick a location below, choose a time, enter your email address, and
                 you're booked!
               </ThemedText>
