@@ -25,6 +25,8 @@ jobs:
             set -e
             cd ${{ secrets.VPS_DEPLOY_PATH }}
 
+            trap 'echo "==> Error — dumping container logs:"; docker compose -f docker-compose.vps.yml logs --tail=80' ERR
+
             echo "==> Pulling latest code..."
             git pull origin main
 

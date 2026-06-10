@@ -176,6 +176,7 @@ export default function RestaurantCard({
 
   return (
     <Pressable
+      accessibilityRole="link"
       onPress={() => router.push(`/(user)/book/${restaurant.id}`)}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,

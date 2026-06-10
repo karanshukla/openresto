@@ -135,6 +135,7 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
               return (
                 <Pressable
                   key={href}
+                  accessibilityRole="link"
                   style={StyleSheet.flatten([
                     styles.linkBtn,
                     isMobile && { paddingHorizontal: 10 },

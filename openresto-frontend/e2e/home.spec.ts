@@ -5,7 +5,7 @@ test.describe("Home Page", () => {
     await page.goto("/");
 
     // Check if the app name is visible in the hero section
-    await expect(page.locator("text=Open Resto")).toBeVisible();
+    await expect(page.locator("text=Open Resto").first()).toBeVisible();
 
     // Check if Navbar is visible
     await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
