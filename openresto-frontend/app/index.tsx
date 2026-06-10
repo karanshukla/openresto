@@ -1,15 +1,17 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, useState, useRef, useCallback, type ComponentProps } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import Navbar from "@/components/layout/Navbar";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
@@ -20,10 +22,19 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [highlights, setHighlights] = useState<HighlightDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const { width } = useWindowDimensions();
+  const [scrollY, setScrollY] = useState(0);
+  const { width, height } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
 
   const isMobile = width < 700;
+  const isPortrait = height > width;
+  const showFab = isMobile && isPortrait && scrollY > 300;
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
   const party = 2;
 
   useEffect(() => {
@@ -53,12 +64,15 @@ export default function HomeScreen() {
   return (
     <ThemedView style={[styles.root, { backgroundColor: bg }]}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: brand.appName }} />}
-      <Navbar />
+      <Navbar onScrollToTop={scrollToTop} />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={100}
       >
         {/* ── Hero ── */}
         <View
@@ -221,6 +235,17 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      {showFab && (
+        <Pressable
+          style={[styles.fab, { backgroundColor: primaryColor, bottom: insets.bottom + 20 }]}
+          onPress={scrollToTop}
+          accessibilityLabel="Scroll to top"
+          accessibilityRole="button"
+        >
+          <Ionicons name="chevron-up" size={22} color="#fff" />
+        </Pressable>
+      )}
     </ThemedView>
   );
 }
@@ -348,6 +373,20 @@ const styles = StyleSheet.create({
   },
   spinner: {
     marginTop: 60,
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
   },
 
   // Footer

@@ -34,7 +34,11 @@ const NAV_LINKS = [
 
 const NAV_HEIGHT = 64;
 
-export default function Navbar() {
+interface NavbarProps {
+  onScrollToTop?: () => void;
+}
+
+export default function Navbar({ onScrollToTop }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toggle } = useTheme();
@@ -76,8 +80,8 @@ export default function Navbar() {
             </Pressable>
           )}
 
-          <Link href="/" asChild>
-            <Pressable style={styles.brand}>
+          {pathname === "/" && onScrollToTop ? (
+            <Pressable style={styles.brand} onPress={onScrollToTop}>
               <ThemedText
                 style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}
                 numberOfLines={1}
@@ -85,12 +89,63 @@ export default function Navbar() {
                 {brand.appName}
               </ThemedText>
             </Pressable>
-          </Link>
+          ) : (
+            <Link href="/" asChild>
+              <Pressable style={styles.brand}>
+                <ThemedText
+                  style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}
+                  numberOfLines={1}
+                >
+                  {brand.appName}
+                </ThemedText>
+              </Pressable>
+            </Link>
+          )}
         </View>
 
         <View style={[styles.links, isMobile && { gap: 0 }]}>
           {visibleLinks.map(({ label, href, match }) => {
             const active = match(pathname);
+            const isHomeActive = href === "/" && active && !!onScrollToTop;
+
+            const linkContent = (
+              <>
+                <ThemedText
+                  style={[
+                    styles.linkText,
+                    { color: active ? primaryColor : colors.muted },
+                    isMobile && { fontSize: 14 },
+                  ]}
+                >
+                  {label}
+                </ThemedText>
+                {active && (
+                  <View
+                    style={[
+                      styles.linkUnderline,
+                      { backgroundColor: primaryColor },
+                      isMobile && { left: 8, right: 8 },
+                    ]}
+                  />
+                )}
+              </>
+            );
+
+            if (isHomeActive) {
+              return (
+                <Pressable
+                  key={href}
+                  style={StyleSheet.flatten([
+                    styles.linkBtn,
+                    isMobile && { paddingHorizontal: 10 },
+                  ])}
+                  onPress={onScrollToTop}
+                >
+                  {linkContent}
+                </Pressable>
+              );
+            }
+
             return (
               <Link key={href} href={href} asChild>
                 <Pressable
@@ -99,24 +154,7 @@ export default function Navbar() {
                     isMobile && { paddingHorizontal: 10 },
                   ])}
                 >
-                  <ThemedText
-                    style={[
-                      styles.linkText,
-                      { color: active ? primaryColor : colors.muted },
-                      isMobile && { fontSize: 14 },
-                    ]}
-                  >
-                    {label}
-                  </ThemedText>
-                  {active && (
-                    <View
-                      style={[
-                        styles.linkUnderline,
-                        { backgroundColor: primaryColor },
-                        isMobile && { left: 8, right: 8 },
-                      ]}
-                    />
-                  )}
+                  {linkContent}
                 </Pressable>
               </Link>
             );
