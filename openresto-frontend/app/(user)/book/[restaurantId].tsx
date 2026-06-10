@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Image } from "expo-image";
 import { Platform, ScrollView, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,6 +12,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BORDER_RADIUS, getThemeColors } from "@/theme/theme";
 import { convertLocalToUtc } from "@/utils/date";
 import BookingSkeleton from "@/components/booking/BookingSkeleton";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 
 export default function BookScreen() {
   const {
@@ -31,6 +32,11 @@ export default function BookScreen() {
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
   const router = useRouter();
   const isDark = useColorScheme() === "dark";
   const mutedColor = getThemeColors(isDark).muted;
@@ -108,7 +114,12 @@ export default function BookScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView style={styles.scroll}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={100}
+      >
         <PageContainer style={styles.page}>
           {restaurant.imageUrl && !imageError && (
             <Image
@@ -140,6 +151,7 @@ export default function BookScreen() {
           />
         </PageContainer>
       </ScrollView>
+      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
     </ThemedView>
   );
 }

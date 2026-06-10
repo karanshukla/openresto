@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { getBookingByRef, BookingDto, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +34,7 @@ import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { buildCalendarUrls } from "@/utils/calendar";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -45,6 +46,11 @@ export default function LookupScreen() {
   const [cached, setCached] = useState<CachedBooking[]>([]);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
 
   const { width } = useWindowDimensions();
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -99,7 +105,13 @@ export default function LookupScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={100}
+      >
         <PageContainer>
           <View style={[styles.header, !isWide && { marginBottom: 12 }]}>
             <Ionicons name="search-outline" size={32} color={primaryColor} />
@@ -239,6 +251,8 @@ export default function LookupScreen() {
           )}
         </PageContainer>
       </ScrollView>
+
+      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
 
       <ConfirmModal
         visible={showCancelConfirm}

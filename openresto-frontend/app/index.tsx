@@ -5,18 +5,17 @@ import { useEffect, useState, useRef, useCallback, type ComponentProps } from "r
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import Navbar from "@/components/layout/Navbar";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
@@ -32,14 +31,11 @@ export default function HomeScreen() {
   const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
   const [loading, setLoading] = useState(_cachedRestaurants === null);
   const [scrollY, setScrollY] = useState(0);
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
-  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
   const isMobile = width < 700;
-  const isPortrait = height > width;
-  const showFab = isMobile && isPortrait && scrollY > 300;
 
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -247,16 +243,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {showFab && (
-        <Pressable
-          style={[styles.fab, { backgroundColor: primaryColor, bottom: insets.bottom + 20 }]}
-          onPress={scrollToTop}
-          accessibilityLabel="Scroll to top"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-up" size={22} color="#fff" />
-        </Pressable>
-      )}
+      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
     </ThemedView>
   );
 }
@@ -385,21 +372,6 @@ const styles = StyleSheet.create({
   spinner: {
     marginTop: 60,
   },
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-  },
-
   // Footer
   footer: {
     borderTopWidth: 1,

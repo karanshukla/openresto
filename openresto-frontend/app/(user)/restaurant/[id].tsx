@@ -1,18 +1,24 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
 import { Link, useLocalSearchParams } from "expo-router";
 import PageContainer from "@/components/layout/PageContainer";
 import Button from "@/components/common/Button";
 import RestaurantSkeleton from "@/components/restaurant/RestaurantSkeleton";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [restaurant, setRestaurant] = useState<RestaurantDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -55,7 +61,12 @@ export default function RestaurantScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView style={styles.scroll}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={100}
+      >
         <PageContainer style={styles.page}>
           <RestaurantDetails restaurant={restaurant} />
           <Link href={`/(user)/book/${id}`} asChild>
@@ -63,6 +74,7 @@ export default function RestaurantScreen() {
           </Link>
         </PageContainer>
       </ScrollView>
+      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
     </ThemedView>
   );
 }

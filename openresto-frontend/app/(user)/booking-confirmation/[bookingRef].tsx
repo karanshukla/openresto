@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { getBookingByRef, getBookingById, cancelBookingByRef, BookingDto } from "@/api/bookings";
 import { fetchRestaurantById, RestaurantDto } from "@/api/restaurants";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Alert,
   Linking,
@@ -21,6 +21,7 @@ import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -35,6 +36,11 @@ export default function BookingConfirmationScreen() {
   const { colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
+  const [scrollY, setScrollY] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
 
   useEffect(() => {
     if (!bookingRef) return;
@@ -123,9 +129,13 @@ export default function BookingConfirmationScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.page }}
       contentContainerStyle={styles.scrollContent}
+      onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+      scrollEventThrottle={100}
     >
       {Platform.OS !== "web" && (
         <Stack.Screen
@@ -417,6 +427,8 @@ export default function BookingConfirmationScreen() {
         onCancel={() => !cancelling && setShowCancelConfirm(false)}
       />
     </ScrollView>
+    <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+    </View>
   );
 }
 
