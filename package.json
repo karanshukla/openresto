@@ -27,5 +27,8 @@
     "eslint-config-prettier": "^10.0.2",
     "husky": "^9.1.7",
     "prettier": "^3.5.1"
+  },
+  "overrides": {
+    "shell-quote": ">=1.8.4"
   }
 }
