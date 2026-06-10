@@ -347,3 +347,10 @@ jobs:
       - name: Show container logs on failure
         if: failure()
         run: docker compose logs --tail=100
+
+  deploy:
+    name: Deploy to VPS
+    needs: [frontend, backend, docker, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

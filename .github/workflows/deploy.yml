@@ -1,17 +1,13 @@
 name: Deploy to VPS
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    environment: production
 
     steps:
       - name: Deploy via SSH
