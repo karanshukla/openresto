@@ -130,304 +130,304 @@ export default function BookingConfirmationScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-    <ScrollView
-      ref={scrollRef}
-      style={{ flex: 1, backgroundColor: colors.page }}
-      contentContainerStyle={styles.scrollContent}
-      onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
-      scrollEventThrottle={100}
-    >
-      {Platform.OS !== "web" && (
-        <Stack.Screen
-          options={{ title: booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed" }}
-        />
-      )}
-      <PageContainer>
-        {/* Header — same spacing pattern as lookup page */}
-        <View style={styles.header}>
-          <View
-            style={[
-              styles.checkCircle,
-              { backgroundColor: booking.isCancelled ? COLORS.error : primaryColor },
-            ]}
-          >
-            <Ionicons
-              name={booking.isCancelled ? "close" : "checkmark"}
-              size={32}
-              color={COLORS.white}
-            />
-          </View>
-          <ThemedText style={styles.title}>
-            {booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed"}
-          </ThemedText>
-          <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-            {booking.customerName ? `${booking.customerName}, ` : ""}
-            {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}
-          </ThemedText>
-        </View>
-
-        {/* Booking reference — above detail rows on mobile, inside right col on wide */}
-        {!isWide && (
-          <View
-            style={[
-              styles.refCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                marginBottom: SPACING.lg,
-              },
-            ]}
-          >
-            <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
-              Booking Reference
-            </ThemedText>
-            <View style={styles.refRow}>
-              <View
-                style={[
-                  styles.refBadge,
-                  { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
-                ]}
-              >
-                <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
-              </View>
-              {Platform.OS === "web" && (
-                <Pressable
-                  style={[styles.copyBtn, { borderColor: copied ? primaryColor : colors.border }]}
-                  onPress={() => {
-                    navigator.clipboard.writeText(ref);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }}
-                >
-                  <Ionicons
-                    name={copied ? "checkmark" : "copy-outline"}
-                    size={14}
-                    color={copied ? primaryColor : colors.muted}
-                  />
-                  <ThemedText
-                    style={[styles.copyBtnText, { color: copied ? primaryColor : colors.muted }]}
-                  >
-                    {copied ? "Copied" : "Copy"}
-                  </ThemedText>
-                </Pressable>
-              )}
-            </View>
-            <ThemedText style={[styles.refHint, { color: colors.muted }]}>
-              Use this reference and your email to look up your booking
-            </ThemedText>
-          </View>
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1, backgroundColor: colors.page }}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={100}
+      >
+        {Platform.OS !== "web" && (
+          <Stack.Screen
+            options={{ title: booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed" }}
+          />
         )}
-
-        {/* Two-column on wide: [details] | [ref card + calendar] */}
-        <View style={isWide ? styles.wideRow : styles.narrowGap}>
-          {/* Left / top on narrow: detail rows */}
-          <View
-            style={[
-              styles.detailCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              isWide && styles.wideCol,
-            ]}
-          >
-            <BookingDetailRows
-              booking={booking}
-              restaurant={restaurant}
-              mutedColor={colors.muted}
-              borderColor={colors.border}
-            />
-          </View>
-
-          {/* Right col on wide: ref card + calendar + directions stacked */}
-          <View style={[isWide && styles.wideCol, styles.rightCol]}>
-            {isWide && (
-              <View
-                style={[
-                  styles.refCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
-                  Booking Reference
-                </ThemedText>
-                <View style={styles.refRow}>
-                  <View
-                    style={[
-                      styles.refBadge,
-                      { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
-                    ]}
-                  >
-                    <ThemedText style={[styles.refValue, { color: primaryColor }]}>
-                      {ref}
-                    </ThemedText>
-                  </View>
-                  {Platform.OS === "web" && (
-                    <Pressable
-                      style={[
-                        styles.copyBtn,
-                        { borderColor: copied ? primaryColor : colors.border },
-                      ]}
-                      onPress={() => {
-                        navigator.clipboard.writeText(ref);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    >
-                      <Ionicons
-                        name={copied ? "checkmark" : "copy-outline"}
-                        size={14}
-                        color={copied ? primaryColor : colors.muted}
-                      />
-                      <ThemedText
-                        style={[
-                          styles.copyBtnText,
-                          { color: copied ? primaryColor : colors.muted },
-                        ]}
-                      >
-                        {copied ? "Copied" : "Copy"}
-                      </ThemedText>
-                    </Pressable>
-                  )}
-                </View>
-                <ThemedText style={[styles.refHint, { color: colors.muted }]}>
-                  Use this reference and your email to look up your booking
-                </ThemedText>
-              </View>
-            )}
-
-            {Platform.OS === "web" && ref && (
-              <View
-                style={[
-                  styles.actionCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <CalendarActions
-                  bookingRef={ref}
-                  date={booking.date}
-                  seats={booking.seats}
-                  specialRequests={booking.specialRequests}
-                  restaurantName={restaurantName}
-                  restaurantAddress={restaurant?.address ?? ""}
-                  variant="full"
-                />
-              </View>
-            )}
-
-            {restaurant?.address && (
-              <View
-                style={[
-                  styles.actionCard,
-                  styles.directionsCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
-                  Get Directions
-                </ThemedText>
-                {Platform.OS === "web" &&
-                  mapCoords &&
-                  React.createElement("iframe", {
-                    src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
-                    style: {
-                      width: "100%",
-                      height: 160,
-                      border: 0,
-                      borderRadius: BORDER_RADIUS.md,
-                    },
-                    loading: "lazy",
-                  })}
-                <View style={styles.mapAddressRow}>
-                  <View style={styles.mapMeta}>
-                    <Ionicons name="location-outline" size={13} color={colors.muted} />
-                    <ThemedText
-                      style={[styles.mapAddress, { color: colors.muted }]}
-                      numberOfLines={2}
-                    >
-                      {restaurant.address}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.mapLinks}>
-                    <Pressable
-                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                        styles.mapLink,
-                        {
-                          backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
-                          borderColor: hovered || pressed ? primaryColor : colors.border,
-                        },
-                      ]}
-                      onPress={() =>
-                        Linking.openURL(
-                          `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
-                        )
-                      }
-                      accessibilityLabel="Open in Google Maps"
-                    >
-                      <Ionicons name="navigate-outline" size={13} color={colors.muted} />
-                      <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
-                        Google
-                      </ThemedText>
-                    </Pressable>
-                    <Pressable
-                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                        styles.mapLink,
-                        {
-                          backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
-                          borderColor: hovered || pressed ? primaryColor : colors.border,
-                        },
-                      ]}
-                      onPress={() =>
-                        Linking.openURL(
-                          `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
-                        )
-                      }
-                      accessibilityLabel="Open in Apple Maps"
-                    >
-                      <Ionicons name="navigate-outline" size={13} color={colors.muted} />
-                      <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
-                        Apple
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            )}
-
+        <PageContainer>
+          {/* Header — same spacing pattern as lookup page */}
+          <View style={styles.header}>
             <View
               style={[
-                styles.actionCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                styles.checkCircle,
+                { backgroundColor: booking.isCancelled ? COLORS.error : primaryColor },
               ]}
             >
-              <Pressable
-                style={[styles.cancelBtn, booking.isCancelled && { opacity: 0.4 }]}
-                onPress={() => !booking.isCancelled && setShowCancelConfirm(true)}
-                disabled={cancelling || booking.isCancelled}
-              >
-                <Ionicons name="trash-outline" size={15} color={COLORS.error} />
-                <ThemedText style={styles.cancelBtnText}>
-                  {booking.isCancelled ? "Already Cancelled" : "Cancel This Booking"}
-                </ThemedText>
-              </Pressable>
+              <Ionicons
+                name={booking.isCancelled ? "close" : "checkmark"}
+                size={32}
+                color={COLORS.white}
+              />
             </View>
-
-            <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-              This booking cannot be modified. However, feel free to cancel and rebook if need be.
+            <ThemedText style={styles.title}>
+              {booking.isCancelled ? "Booking Cancelled" : "Booking Confirmed"}
+            </ThemedText>
+            <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
+              {booking.customerName ? `${booking.customerName}, ` : ""}
+              {booking.seats} {booking.seats === 1 ? "guest" : "guests"} at {restaurantName}
             </ThemedText>
           </View>
-        </View>
-      </PageContainer>
 
-      <ConfirmModal
-        visible={showCancelConfirm}
-        title="Cancel Reservation"
-        message="Are you sure you want to cancel this booking? This action cannot be undone."
-        confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
-        cancelLabel="Keep Booking"
-        destructive
-        onConfirm={handleCancelBooking}
-        onCancel={() => !cancelling && setShowCancelConfirm(false)}
-      />
-    </ScrollView>
-    <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+          {/* Booking reference — above detail rows on mobile, inside right col on wide */}
+          {!isWide && (
+            <View
+              style={[
+                styles.refCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  marginBottom: SPACING.lg,
+                },
+              ]}
+            >
+              <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                Booking Reference
+              </ThemedText>
+              <View style={styles.refRow}>
+                <View
+                  style={[
+                    styles.refBadge,
+                    { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
+                  ]}
+                >
+                  <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
+                </View>
+                {Platform.OS === "web" && (
+                  <Pressable
+                    style={[styles.copyBtn, { borderColor: copied ? primaryColor : colors.border }]}
+                    onPress={() => {
+                      navigator.clipboard.writeText(ref);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    <Ionicons
+                      name={copied ? "checkmark" : "copy-outline"}
+                      size={14}
+                      color={copied ? primaryColor : colors.muted}
+                    />
+                    <ThemedText
+                      style={[styles.copyBtnText, { color: copied ? primaryColor : colors.muted }]}
+                    >
+                      {copied ? "Copied" : "Copy"}
+                    </ThemedText>
+                  </Pressable>
+                )}
+              </View>
+              <ThemedText style={[styles.refHint, { color: colors.muted }]}>
+                Use this reference and your email to look up your booking
+              </ThemedText>
+            </View>
+          )}
+
+          {/* Two-column on wide: [details] | [ref card + calendar] */}
+          <View style={isWide ? styles.wideRow : styles.narrowGap}>
+            {/* Left / top on narrow: detail rows */}
+            <View
+              style={[
+                styles.detailCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isWide && styles.wideCol,
+              ]}
+            >
+              <BookingDetailRows
+                booking={booking}
+                restaurant={restaurant}
+                mutedColor={colors.muted}
+                borderColor={colors.border}
+              />
+            </View>
+
+            {/* Right col on wide: ref card + calendar + directions stacked */}
+            <View style={[isWide && styles.wideCol, styles.rightCol]}>
+              {isWide && (
+                <View
+                  style={[
+                    styles.refCard,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                >
+                  <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                    Booking Reference
+                  </ThemedText>
+                  <View style={styles.refRow}>
+                    <View
+                      style={[
+                        styles.refBadge,
+                        { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
+                      ]}
+                    >
+                      <ThemedText style={[styles.refValue, { color: primaryColor }]}>
+                        {ref}
+                      </ThemedText>
+                    </View>
+                    {Platform.OS === "web" && (
+                      <Pressable
+                        style={[
+                          styles.copyBtn,
+                          { borderColor: copied ? primaryColor : colors.border },
+                        ]}
+                        onPress={() => {
+                          navigator.clipboard.writeText(ref);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                      >
+                        <Ionicons
+                          name={copied ? "checkmark" : "copy-outline"}
+                          size={14}
+                          color={copied ? primaryColor : colors.muted}
+                        />
+                        <ThemedText
+                          style={[
+                            styles.copyBtnText,
+                            { color: copied ? primaryColor : colors.muted },
+                          ]}
+                        >
+                          {copied ? "Copied" : "Copy"}
+                        </ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                  <ThemedText style={[styles.refHint, { color: colors.muted }]}>
+                    Use this reference and your email to look up your booking
+                  </ThemedText>
+                </View>
+              )}
+
+              {Platform.OS === "web" && ref && (
+                <View
+                  style={[
+                    styles.actionCard,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                >
+                  <CalendarActions
+                    bookingRef={ref}
+                    date={booking.date}
+                    seats={booking.seats}
+                    specialRequests={booking.specialRequests}
+                    restaurantName={restaurantName}
+                    restaurantAddress={restaurant?.address ?? ""}
+                    variant="full"
+                  />
+                </View>
+              )}
+
+              {restaurant?.address && (
+                <View
+                  style={[
+                    styles.actionCard,
+                    styles.directionsCard,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                >
+                  <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                    Get Directions
+                  </ThemedText>
+                  {Platform.OS === "web" &&
+                    mapCoords &&
+                    React.createElement("iframe", {
+                      src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
+                      style: {
+                        width: "100%",
+                        height: 160,
+                        border: 0,
+                        borderRadius: BORDER_RADIUS.md,
+                      },
+                      loading: "lazy",
+                    })}
+                  <View style={styles.mapAddressRow}>
+                    <View style={styles.mapMeta}>
+                      <Ionicons name="location-outline" size={13} color={colors.muted} />
+                      <ThemedText
+                        style={[styles.mapAddress, { color: colors.muted }]}
+                        numberOfLines={2}
+                      >
+                        {restaurant.address}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.mapLinks}>
+                      <Pressable
+                        style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                          styles.mapLink,
+                          {
+                            backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
+                            borderColor: hovered || pressed ? primaryColor : colors.border,
+                          },
+                        ]}
+                        onPress={() =>
+                          Linking.openURL(
+                            `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
+                          )
+                        }
+                        accessibilityLabel="Open in Google Maps"
+                      >
+                        <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                        <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
+                          Google
+                        </ThemedText>
+                      </Pressable>
+                      <Pressable
+                        style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                          styles.mapLink,
+                          {
+                            backgroundColor: isDark ? colors.border : `${primaryColor}0f`,
+                            borderColor: hovered || pressed ? primaryColor : colors.border,
+                          },
+                        ]}
+                        onPress={() =>
+                          Linking.openURL(
+                            `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
+                          )
+                        }
+                        accessibilityLabel="Open in Apple Maps"
+                      >
+                        <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                        <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
+                          Apple
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              <View
+                style={[
+                  styles.actionCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Pressable
+                  style={[styles.cancelBtn, booking.isCancelled && { opacity: 0.4 }]}
+                  onPress={() => !booking.isCancelled && setShowCancelConfirm(true)}
+                  disabled={cancelling || booking.isCancelled}
+                >
+                  <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+                  <ThemedText style={styles.cancelBtnText}>
+                    {booking.isCancelled ? "Already Cancelled" : "Cancel This Booking"}
+                  </ThemedText>
+                </Pressable>
+              </View>
+
+              <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
+                This booking cannot be modified. However, feel free to cancel and rebook if need be.
+              </ThemedText>
+            </View>
+          </View>
+        </PageContainer>
+
+        <ConfirmModal
+          visible={showCancelConfirm}
+          title="Cancel Reservation"
+          message="Are you sure you want to cancel this booking? This action cannot be undone."
+          confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
+          cancelLabel="Keep Booking"
+          destructive
+          onConfirm={handleCancelBooking}
+          onCancel={() => !cancelling && setShowCancelConfirm(false)}
+        />
+      </ScrollView>
+      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
     </View>
   );
 }

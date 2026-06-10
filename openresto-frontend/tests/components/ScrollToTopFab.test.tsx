@@ -56,9 +56,8 @@ describe("ScrollToTopFab", () => {
   });
 
   it("does not render on wide screens (landscape/desktop)", () => {
-    const { default: useWindowDimensions } = require(
-      "react-native/Libraries/Utilities/useWindowDimensions"
-    );
+    const { default: useWindowDimensions } =
+      require("react-native/Libraries/Utilities/useWindowDimensions");
     jest.spyOn({ useWindowDimensions }, "useWindowDimensions").mockReturnValueOnce({
       width: 1024,
       height: 768,
