@@ -6,6 +6,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
+  findNodeHandle,
   Linking,
   Platform,
   Pressable,
@@ -48,9 +49,29 @@ export default function LookupScreen() {
   const [cancelling, setCancelling] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const bookingCardRef = useRef<View>(null);
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
+
+  useEffect(() => {
+    if (loading || !booking) return;
+    const timer = setTimeout(() => {
+      if (!bookingCardRef.current) return;
+      if (Platform.OS === "web") {
+        (bookingCardRef.current as any).scrollIntoView?.({ behavior: "smooth", block: "start" });
+      } else {
+        const node = findNodeHandle(scrollRef.current);
+        if (!node) return;
+        bookingCardRef.current.measureLayout(
+          node,
+          (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true }),
+          () => {},
+        );
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [loading, booking]);
 
   const { width } = useWindowDimensions();
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -199,7 +220,7 @@ export default function LookupScreen() {
               )}
 
               {!loading && booking && (
-                <>
+                <View ref={bookingCardRef}>
                   <BookingResultCard
                     booking={booking}
                     restaurant={restaurant}
@@ -232,7 +253,7 @@ export default function LookupScreen() {
                       {booking.isCancelled ? "Already Cancelled" : "Cancel This Booking"}
                     </ThemedText>
                   </Pressable>
-                </>
+                </View>
               )}
             </View>
           </View>
