@@ -86,7 +86,7 @@ public class ServiceCollectionExtensionsTests
             // Calling Protect triggers key ring initialisation, which writes the key XML to disk
             provider.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>()
                 .CreateProtector("test")
-                .Protect("data");
+                .Protect(System.Text.Encoding.UTF8.GetBytes("data"));
             Assert.NotEmpty(Directory.GetFiles(tmpDir, "*.xml"));
         }
         finally
