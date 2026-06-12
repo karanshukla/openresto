@@ -367,10 +367,18 @@ function BookingActions({
         <View style={styles.iconGroup}>
           <ThemedText style={[styles.iconGroupLabel, { color: colors.muted }]}>CAL</ThemedText>
           <View style={styles.iconGroupRow}>
-            <Pressable testID="cal-google-btn" style={styles.iconBtn} onPress={() => window.open(googleUrl, "_blank")}>
+            <Pressable
+              testID="cal-google-btn"
+              style={styles.iconBtn}
+              onPress={() => window.open(googleUrl, "_blank")}
+            >
               <Ionicons name="logo-google" size={18} color={primaryColor} />
             </Pressable>
-            <Pressable testID="cal-outlook-btn" style={styles.iconBtn} onPress={() => window.open(outlookUrl, "_blank")}>
+            <Pressable
+              testID="cal-outlook-btn"
+              style={styles.iconBtn}
+              onPress={() => window.open(outlookUrl, "_blank")}
+            >
               <Ionicons name="calendar-outline" size={18} color={primaryColor} />
             </Pressable>
             <Pressable testID="cal-ics-btn" style={styles.iconBtn} onPress={downloadIcs}>

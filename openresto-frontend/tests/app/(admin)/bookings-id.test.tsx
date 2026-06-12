@@ -567,7 +567,9 @@ describe("BookingDetailScreen", () => {
 
     fireEvent.press(await screen.findByText("Restore Booking"));
     await waitFor(() =>
-      expect(screen.getByText("Are you sure you want to restore this cancelled booking?")).toBeTruthy()
+      expect(
+        screen.getByText("Are you sure you want to restore this cancelled booking?")
+      ).toBeTruthy()
     );
 
     fireEvent.press(screen.getByText("Go Back"));
@@ -584,14 +586,10 @@ describe("BookingDetailScreen", () => {
     await waitFor(() => expect(screen.queryByTestId("loading-indicator")).toBeNull());
 
     fireEvent.press(await screen.findByText("Permanently Delete (GDPR)"));
-    await waitFor(() =>
-      expect(screen.queryByText(/permanently erase all data/)).toBeTruthy()
-    );
+    await waitFor(() => expect(screen.queryByText(/permanently erase all data/)).toBeTruthy());
 
     fireEvent.press(screen.getByText("Go Back"));
-    await waitFor(() =>
-      expect(screen.queryByText(/permanently erase all data/)).toBeNull()
-    );
+    await waitFor(() => expect(screen.queryByText(/permanently erase all data/)).toBeNull());
     expect(adminPurgeBooking).not.toHaveBeenCalled();
   });
 

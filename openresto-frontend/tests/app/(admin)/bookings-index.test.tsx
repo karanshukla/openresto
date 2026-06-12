@@ -492,9 +492,7 @@ describe("AdminBookingsScreen", () => {
     await waitFor(() => expect(adminGetTables).toHaveBeenCalled(), { timeout: 3000 });
     // Navigate forward to make gridDate != today
     fireEvent.press(screen.getByTestId("grid-nav-next"));
-    await waitFor(() =>
-      expect((adminGetTables as jest.Mock).mock.calls.length).toBeGreaterThan(1)
-    );
+    await waitFor(() => expect((adminGetTables as jest.Mock).mock.calls.length).toBeGreaterThan(1));
     // Now "tap for today" hint should appear; press the date label to reset
     const todayHint = screen.queryByText("tap for today");
     if (todayHint) {
@@ -579,16 +577,10 @@ describe("AdminBookingsScreen", () => {
     if (cancelBtns.length > 0) {
       // Provide a synthetic event with stopPropagation to avoid TypeError
       fireEvent.press(cancelBtns[0], { stopPropagation: jest.fn() });
-      await waitFor(() =>
-        expect(
-          screen.queryByText(/Cancel booking for/)
-        ).toBeTruthy()
-      );
+      await waitFor(() => expect(screen.queryByText(/Cancel booking for/)).toBeTruthy());
       // Press Keep to dismiss the modal
       fireEvent.press(screen.getByText("Keep"));
-      await waitFor(() =>
-        expect(screen.queryByText(/Cancel booking for/)).toBeNull()
-      );
+      await waitFor(() => expect(screen.queryByText(/Cancel booking for/)).toBeNull());
     }
   });
 

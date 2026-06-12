@@ -356,9 +356,7 @@ describe("BookingConfirmationScreen", () => {
       const googleBtns = screen.queryAllByText("Google");
       if (googleBtns.length > 0) {
         fireEvent.press(googleBtns[0]);
-        expect(openURLSpy).toHaveBeenCalledWith(
-          expect.stringContaining("maps.google.com")
-        );
+        expect(openURLSpy).toHaveBeenCalledWith(expect.stringContaining("maps.google.com"));
       }
     } finally {
       openURLSpy.mockRestore();
@@ -379,9 +377,7 @@ describe("BookingConfirmationScreen", () => {
       const appleBtns = screen.queryAllByText("Apple");
       if (appleBtns.length > 0) {
         fireEvent.press(appleBtns[0]);
-        expect(openURLSpy).toHaveBeenCalledWith(
-          expect.stringContaining("maps.apple.com")
-        );
+        expect(openURLSpy).toHaveBeenCalledWith(expect.stringContaining("maps.apple.com"));
       }
     } finally {
       openURLSpy.mockRestore();

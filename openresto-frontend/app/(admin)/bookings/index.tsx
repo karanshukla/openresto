@@ -452,7 +452,11 @@ export default function AdminBookingsScreen() {
         /* ── Timetable view ── */
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
-            <Pressable testID="grid-nav-prev" style={styles.gridNavBtn} onPress={() => handleGridDateChange(-1)}>
+            <Pressable
+              testID="grid-nav-prev"
+              style={styles.gridNavBtn}
+              onPress={() => handleGridDateChange(-1)}
+            >
               <Ionicons name="chevron-back" size={18} color={PRIMARY} />
             </Pressable>
             <Pressable
@@ -469,7 +473,11 @@ export default function AdminBookingsScreen() {
                 </ThemedText>
               )}
             </Pressable>
-            <Pressable testID="grid-nav-next" style={styles.gridNavBtn} onPress={() => handleGridDateChange(1)}>
+            <Pressable
+              testID="grid-nav-next"
+              style={styles.gridNavBtn}
+              onPress={() => handleGridDateChange(1)}
+            >
               <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
             </Pressable>
           </View>
