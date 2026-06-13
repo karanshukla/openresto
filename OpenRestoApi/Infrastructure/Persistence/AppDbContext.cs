@@ -99,7 +99,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             s.HasKey(x => x.Id);
             s.HasOne(x => x.Restaurant).WithMany().HasForeignKey(x => x.RestaurantId).OnDelete(DeleteBehavior.Cascade);
-            s.HasIndex(x => x.Endpoint).IsUnique();
+            s.HasIndex(x => new { x.Endpoint, x.RestaurantId }).IsUnique();
             s.HasIndex(x => x.RestaurantId);
         });
     }

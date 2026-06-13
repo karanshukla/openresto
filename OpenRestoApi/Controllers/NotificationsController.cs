@@ -32,19 +32,17 @@ public class NotificationsController(INotificationService notificationService) :
         (List<AdminNotificationDto> items, int total) = await _notifications.GetNotificationsAsync(
             restaurantId, type, unreadOnly, page, pageSize);
 
-        return Ok(new { items, total, page, pageSize });
+        return Ok(new { items, totalCount = total, page, pageSize });
     }
 
     /// <summary>
-    /// Unread count badge for a specific restaurant.
+    /// Unread count badge. Omit restaurantId to get total across all restaurants.
+    /// GET /api/admin/notifications/unread-count
     /// GET /api/admin/notifications/unread-count?restaurantId=1
     /// </summary>
     [HttpGet("notifications/unread-count")]
-    public async Task<IActionResult> GetUnreadCount([FromQuery] int restaurantId)
+    public async Task<IActionResult> GetUnreadCount([FromQuery] int? restaurantId)
     {
-        if (restaurantId <= 0)
-            return BadRequest(new { error = "restaurantId is required." });
-
         int count = await _notifications.GetUnreadCountAsync(restaurantId);
         return Ok(new { count });
     }
@@ -113,6 +111,33 @@ public class NotificationsController(INotificationService notificationService) :
     public async Task<IActionResult> Unsubscribe([FromBody] string endpoint)
     {
         await _notifications.UnsubscribeAsync(endpoint);
+        return NoContent();
+    }
+
+    [HttpDelete("notifications/all")]
+    public async Task<IActionResult> DeleteAll(
+        [FromQuery] int? restaurantId,
+        [FromQuery] string? type,
+        [FromQuery] bool? unreadOnly)
+    {
+        await _notifications.DeleteAllAsync(restaurantId, type, unreadOnly);
+        return NoContent();
+    }
+
+    [HttpDelete("notifications/{id:int}")]
+    public async Task<IActionResult> DeleteNotification(int id)
+    {
+        await _notifications.DeleteByIdAsync(id);
+        return NoContent();
+    }
+
+    [HttpDelete("notifications")]
+    public async Task<IActionResult> DeleteNotifications([FromBody] List<int> ids)
+    {
+        if (ids == null || ids.Count == 0)
+            return BadRequest(new { error = "List of notification IDs is required." });
+
+        await _notifications.DeleteByIdsAsync(ids);
         return NoContent();
     }
 }

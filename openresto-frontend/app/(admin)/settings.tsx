@@ -394,12 +394,7 @@ export default function AdminSettingsScreen() {
           cardBg={cardBg}
           isDark={isDark}
         />
-        <PushNotificationsCard
-          restaurantId={selectedId}
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          cardBg={cardBg}
-        />
+        <PushNotificationsCard />
       </View>
 
       {/* Account Security */}

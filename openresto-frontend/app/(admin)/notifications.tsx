@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, Platform } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
@@ -11,12 +12,15 @@ import {
   getNotifications,
   markRead,
   markAllRead,
+  deleteNotification,
+  deleteNotifications,
   subscribePush,
   getVapidPublicKey,
   AdminNotificationDto,
   NotificationType,
 } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -241,6 +245,19 @@ export default function NotificationsScreen() {
   const [error, setError] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const [popupBookingId, setPopupBookingId] = useState<number | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(msg);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
 
   // Pin state persisted in localStorage
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
@@ -393,6 +410,67 @@ export default function NotificationsScreen() {
     setMarkingAll(false);
     setLocalUnreadIds(new Set());
     setItems((prev) => prev.map((x) => ({ ...x, isRead: true })));
+    showToast("Marked all as read");
+  };
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  const handleDelete = async (id: number) => {
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    setTotalCount((prev) => Math.max(0, prev - 1));
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    showToast("Notification deleted");
+    await deleteNotification(id);
+  };
+
+  // For button/tap deletes — pinned items need confirmation first
+  const requestDelete = (id: number) => {
+    if (pinnedIds.has(id)) {
+      setConfirmDeleteId(id);
+    } else {
+      handleDelete(id);
+    }
+  };
+
+  const handleConfirmedDelete = async () => {
+    if (confirmDeleteId == null) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
+    await handleDelete(id);
+  };
+
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const handleDeleteAll = async () => {
+    // Pinned items are immune — only delete unpinned visible items
+    const idsToDelete = items.filter((x) => !pinnedIds.has(x.id)).map((x) => x.id);
+    if (idsToDelete.length === 0) {
+      showToast("All visible notifications are pinned");
+      return;
+    }
+    setDeletingAll(true);
+    await deleteNotifications(idsToDelete);
+    setItems((prev) => prev.filter((x) => pinnedIds.has(x.id)));
+    setTotalCount((prev) => Math.max(0, prev - idsToDelete.length));
+    setDeletingAll(false);
+    showToast(`Deleted ${idsToDelete.length} notification${idsToDelete.length !== 1 ? "s" : ""}`);
+  };
+
+  const [clearingRead, setClearingRead] = useState(false);
+  const handleClearRead = async () => {
+    // Pinned items are immune to bulk clear
+    const readIds = items.filter((x) => x.isRead && !pinnedIds.has(x.id)).map((x) => x.id);
+    if (readIds.length === 0) return;
+    setClearingRead(true);
+    await deleteNotifications(readIds);
+    setItems((prev) => prev.filter((x) => !readIds.includes(x.id)));
+    setTotalCount((prev) => Math.max(0, prev - readIds.length));
+    setClearingRead(false);
+    showToast("Read notifications cleared");
   };
 
   const hasMore = items.length < totalCount;
@@ -426,318 +504,439 @@ export default function NotificationsScreen() {
       .join(" · ");
 
     return (
-      <Pressable
+      <ReanimatedSwipeable
         key={n.id}
-        onPress={() => handleRowTap(n)}
-        style={(state) => [
-          styles.notifRow,
-          !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
-          (state as { hovered?: boolean }).hovered && {
-            backgroundColor: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.018)",
-          },
-        ]}
+        friction={2}
+        leftThreshold={64}
+        rightThreshold={64}
+        enabled={!isPinned}
+        renderLeftActions={() => (
+          <View style={styles.swipeDeleteBg}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+          </View>
+        )}
+        renderRightActions={() => (
+          <View style={styles.swipeDeleteBg}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+          </View>
+        )}
+        onSwipeableOpen={() => handleDelete(n.id)}
       >
-        {/* Unread accent bar */}
-        <View
-          style={[styles.accentBar, { backgroundColor: !n.isRead ? primaryColor : "transparent" }]}
-        />
+        <Pressable
+          onPress={() => handleRowTap(n)}
+          style={(state) => [
+            styles.notifRow,
+            !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
+            (state as { hovered?: boolean }).hovered && {
+              backgroundColor: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.018)",
+            },
+          ]}
+        >
+          {/* Unread accent bar */}
+          <View
+            style={[
+              styles.accentBar,
+              { backgroundColor: !n.isRead ? primaryColor : "transparent" },
+            ]}
+          />
 
-        {/* Type icon */}
-        <View style={[styles.notifIcon, { backgroundColor: hexToRgba(typeIcon.color, 0.1) }]}>
-          <Ionicons name={typeIcon.name} size={18} color={typeIcon.color} />
-        </View>
-
-        {/* Text content */}
-        <View style={styles.notifBody}>
-          <View style={styles.notifTitleRow}>
-            <ThemedText style={styles.notifType}>{TYPE_LABELS[n.type]}</ThemedText>
-            {n.bookingRef ? (
-              <ThemedText style={[styles.notifRef, { color: mutedColor }]}>
-                #{n.bookingRef}
-              </ThemedText>
-            ) : null}
-            {!n.isRead && <View style={[styles.unreadPip, { backgroundColor: primaryColor }]} />}
+          {/* Type icon */}
+          <View style={[styles.notifIcon, { backgroundColor: hexToRgba(typeIcon.color, 0.1) }]}>
+            <Ionicons name={typeIcon.name} size={18} color={typeIcon.color} />
           </View>
 
-          {n.type !== "RestaurantNearlyFull" && n.customerName ? (
-            <ThemedText style={styles.notifName}>{n.customerName}</ThemedText>
-          ) : null}
+          {/* Text content */}
+          <View style={styles.notifBody}>
+            <View style={styles.notifTitleRow}>
+              <ThemedText style={styles.notifType}>{TYPE_LABELS[n.type]}</ThemedText>
+              {n.bookingRef ? (
+                <ThemedText style={[styles.notifRef, { color: mutedColor }]}>
+                  #{n.bookingRef}
+                </ThemedText>
+              ) : null}
+              {!n.isRead && <View style={[styles.unreadPip, { backgroundColor: primaryColor }]} />}
+            </View>
 
-          <ThemedText style={[styles.notifMeta, { color: mutedColor }]}>{meta}</ThemedText>
-        </View>
+            {n.type !== "RestaurantNearlyFull" && n.customerName ? (
+              <ThemedText style={styles.notifName}>{n.customerName}</ThemedText>
+            ) : null}
 
-        {/* Action buttons — nested Pressables so they don't trigger row navigation */}
-        <View style={styles.rowActions}>
-          <Pressable
-            onPress={() => togglePin(n.id)}
-            hitSlop={6}
-            style={[
-              styles.actionPinBtn,
-              {
-                borderColor: isPinned ? primaryColor : borderColor,
-                backgroundColor: isPinned ? hexToRgba(primaryColor, 0.1) : "transparent",
-              },
-            ]}
-          >
-            <ThemedText
-              style={[styles.actionText, { color: isPinned ? primaryColor : mutedColor }]}
-            >
-              {isPinned ? "Unpin" : "Pin"}
-            </ThemedText>
-          </Pressable>
-          {n.isRead ? (
+            <ThemedText style={[styles.notifMeta, { color: mutedColor }]}>{meta}</ThemedText>
+          </View>
+
+          {/* Action buttons — nested Pressables so they don't trigger row navigation */}
+          <View style={styles.rowActions}>
             <Pressable
-              onPress={() => handleMarkUnread(n.id)}
+              onPress={() => togglePin(n.id)}
               hitSlop={6}
-              style={[styles.actionToggleBtn, { borderColor }]}
+              style={[
+                styles.actionPinBtn,
+                {
+                  borderColor: isPinned ? primaryColor : borderColor,
+                  backgroundColor: isPinned ? hexToRgba(primaryColor, 0.1) : "transparent",
+                },
+              ]}
             >
-              <ThemedText style={[styles.actionText, { color: mutedColor }]}>
-                Mark Unread
+              <ThemedText
+                style={[styles.actionText, { color: isPinned ? primaryColor : mutedColor }]}
+              >
+                {isPinned ? "Unpin" : "Pin"}
               </ThemedText>
             </Pressable>
-          ) : (
+            {n.isRead ? (
+              <Pressable
+                onPress={() => handleMarkUnread(n.id)}
+                hitSlop={6}
+                style={[styles.actionToggleBtn, { borderColor }]}
+              >
+                <ThemedText style={[styles.actionText, { color: mutedColor }]}>
+                  Mark Unread
+                </ThemedText>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => handleMarkRead(n.id)}
+                hitSlop={6}
+                style={[styles.actionToggleBtn, { borderColor }]}
+              >
+                <ThemedText style={[styles.actionText, { color: mutedColor }]}>
+                  Mark Read
+                </ThemedText>
+              </Pressable>
+            )}
             <Pressable
-              onPress={() => handleMarkRead(n.id)}
+              onPress={() => requestDelete(n.id)}
               hitSlop={6}
-              style={[styles.actionToggleBtn, { borderColor }]}
+              style={[
+                styles.actionDeleteBtn,
+                {
+                  borderColor: isDark
+                    ? hexToRgba(COLORS.error, 0.35)
+                    : hexToRgba(COLORS.error, 0.25),
+                },
+              ]}
             >
-              <ThemedText style={[styles.actionText, { color: mutedColor }]}>Mark Read</ThemedText>
+              <Ionicons name="trash-outline" size={13} color={COLORS.error} />
             </Pressable>
-          )}
-        </View>
+          </View>
 
-        {/* Navigate arrow */}
-        {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (
-          <Ionicons name="chevron-forward" size={15} color={mutedColor} />
-        )}
-      </Pressable>
+          {/* Navigate arrow */}
+          {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (
+            <Ionicons name="chevron-forward" size={15} color={mutedColor} />
+          )}
+        </Pressable>
+      </ReanimatedSwipeable>
     );
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Notifications" }} />}
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {Platform.OS !== "web" && <Stack.Screen options={{ title: "Notifications" }} />}
 
-      {/* ── Page header ─────────────────────────────────────────────── */}
-      <View style={styles.pageHeader}>
-        <View style={styles.headerRow}>
-          <View style={styles.pageTitleRow}>
-            <ThemedText type="h1">Notifications</ThemedText>
-            {unreadCount > 0 && (
-              <View style={[styles.unreadBadge, { backgroundColor: primaryColor }]}>
-                <ThemedText style={styles.unreadBadgeText}>
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </ThemedText>
-              </View>
-            )}
-          </View>
+        {/* ── Page header ─────────────────────────────────────────────── */}
+        <View style={styles.pageHeader}>
+          <View style={styles.headerRow}>
+            <View style={styles.pageTitleRow}>
+              <ThemedText type="h1">Notifications</ThemedText>
+              {unreadCount > 0 && (
+                <View style={[styles.unreadBadge, { backgroundColor: primaryColor }]}>
+                  <ThemedText style={styles.unreadBadgeText}>
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
 
-          {/* Mark all read — always visible, dimmed when nothing to mark */}
-          <Pressable
-            onPress={handleMarkAllRead}
-            disabled={markingAll || unreadCount === 0}
-            style={[styles.markAllBtn, { opacity: unreadCount === 0 ? 0.35 : 1 }]}
-          >
-            {markingAll ? (
-              <ActivityIndicator size="small" color={primaryColor} />
-            ) : (
-              <Ionicons name="checkmark-done-outline" size={14} color={primaryColor} />
-            )}
-            <ThemedText style={[styles.markAllText, { color: primaryColor }]}>
-              {markingAll ? "Marking…" : "Mark all read"}
-            </ThemedText>
-          </Pressable>
-        </View>
-
-        <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-          {loading ? "Loading…" : `${totalCount} total notification${totalCount !== 1 ? "s" : ""}`}
-        </ThemedText>
-      </View>
-
-      {/* ── Push banner ─────────────────────────────────────────────── */}
-      <PushBanner
-        restaurantId={selectedRestaurantId ?? restaurants[0]?.id ?? null}
-        primaryColor={primaryColor}
-        isDark={isDark}
-      />
-
-      {/* ── Filters — bare pills, no card wrapper ───────────────────── */}
-      <View style={styles.filtersSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillRow}
-        >
-          {[{ id: null, name: "All locations" }, ...restaurants].map((r) => {
-            const active =
-              r.id === null ? selectedRestaurantId === null : selectedRestaurantId === r.id;
-            return (
+            <View style={styles.headerActions}>
+              {/* Delete all — deletes unpinned visible items */}
               <Pressable
-                key={r.id ?? "all"}
-                onPress={() => setSelectedRestaurantId(r.id)}
+                onPress={() => setConfirmDeleteAll(true)}
+                disabled={deletingAll || items.length === 0}
                 style={[
-                  styles.pill,
-                  active
-                    ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                    : { backgroundColor: "transparent", borderColor },
+                  styles.markAllBtn,
+                  {
+                    borderColor: hexToRgba(COLORS.error, 0.45),
+                    opacity: items.length === 0 ? 0.35 : 1,
+                  },
                 ]}
               >
-                <ThemedText style={[styles.pillText, { color: active ? "#fff" : mutedColor }]}>
-                  {r.name}
+                {deletingAll ? (
+                  <ActivityIndicator size="small" color={COLORS.error} />
+                ) : (
+                  <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+                )}
+                <ThemedText style={[styles.markAllText, { color: COLORS.error }]}>
+                  {deletingAll ? "Deleting…" : "Delete all"}
                 </ThemedText>
               </Pressable>
-            );
-          })}
-        </ScrollView>
 
-        <View style={styles.pillRow2}>
+              {/* Clear read — only shown when there are unpinned read items */}
+              {items.some((x) => x.isRead && !pinnedIds.has(x.id)) && (
+                <Pressable
+                  onPress={handleClearRead}
+                  disabled={clearingRead}
+                  style={[
+                    styles.markAllBtn,
+                    { borderColor: hexToRgba(COLORS.error, 0.45), opacity: clearingRead ? 0.5 : 1 },
+                  ]}
+                >
+                  {clearingRead ? (
+                    <ActivityIndicator size="small" color={COLORS.error} />
+                  ) : (
+                    <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.error} />
+                  )}
+                  <ThemedText style={[styles.markAllText, { color: COLORS.error }]}>
+                    {clearingRead ? "Clearing…" : "Clear read"}
+                  </ThemedText>
+                </Pressable>
+              )}
+
+              {/* Mark all read — dimmed when nothing to mark */}
+              <Pressable
+                onPress={handleMarkAllRead}
+                disabled={markingAll || unreadCount === 0}
+                style={[
+                  styles.markAllBtn,
+                  {
+                    borderColor: hexToRgba(primaryColor, 0.4),
+                    opacity: unreadCount === 0 ? 0.35 : 1,
+                  },
+                ]}
+              >
+                {markingAll ? (
+                  <ActivityIndicator size="small" color={primaryColor} />
+                ) : (
+                  <Ionicons name="checkmark-done-outline" size={16} color={primaryColor} />
+                )}
+                <ThemedText style={[styles.markAllText, { color: primaryColor }]}>
+                  {markingAll ? "Marking…" : "Mark all read"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+
+          <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
+            {loading
+              ? "Loading…"
+              : `${totalCount} total notification${totalCount !== 1 ? "s" : ""}`}
+          </ThemedText>
+        </View>
+
+        {/* ── Push banner ─────────────────────────────────────────────── */}
+        <PushBanner
+          restaurantId={selectedRestaurantId ?? restaurants[0]?.id ?? null}
+          primaryColor={primaryColor}
+          isDark={isDark}
+        />
+
+        {/* ── Filters — bare pills, no card wrapper ───────────────────── */}
+        <View style={styles.filtersSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flex: 1 }}
             contentContainerStyle={styles.pillRow}
           >
-            {TYPE_FILTERS.map((f) => {
-              const active = selectedType === f.value;
+            {[{ id: null, name: "All locations" }, ...restaurants].map((r) => {
+              const active =
+                r.id === null ? selectedRestaurantId === null : selectedRestaurantId === r.id;
               return (
                 <Pressable
-                  key={f.value}
-                  onPress={() => setSelectedType(f.value)}
+                  key={r.id ?? "all"}
+                  onPress={() => setSelectedRestaurantId(r.id)}
                   style={[
                     styles.pill,
                     active
-                      ? {
-                          backgroundColor: hexToRgba(primaryColor, 0.12),
-                          borderColor: primaryColor,
-                        }
+                      ? { backgroundColor: primaryColor, borderColor: primaryColor }
                       : { backgroundColor: "transparent", borderColor },
                   ]}
                 >
-                  <ThemedText
-                    style={[styles.pillText, { color: active ? primaryColor : mutedColor }]}
-                  >
-                    {f.label}
+                  <ThemedText style={[styles.pillText, { color: active ? "#fff" : mutedColor }]}>
+                    {r.name}
                   </ThemedText>
                 </Pressable>
               );
             })}
           </ScrollView>
 
-          <Pressable
-            onPress={() => setUnreadOnly((v) => !v)}
-            style={[
-              styles.pill,
-              styles.pillRow,
-              { gap: 5 },
-              unreadOnly
-                ? { backgroundColor: hexToRgba(primaryColor, 0.12), borderColor: primaryColor }
-                : { backgroundColor: "transparent", borderColor },
-            ]}
-          >
-            <View
-              style={[
-                styles.unreadDot,
-                { backgroundColor: unreadOnly ? primaryColor : mutedColor },
-              ]}
-            />
-            <ThemedText
-              style={[styles.pillText, { color: unreadOnly ? primaryColor : mutedColor }]}
+          <View style={styles.pillRow2}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.pillRow}
             >
-              Filter Unread
-            </ThemedText>
-          </Pressable>
-        </View>
-      </View>
+              {TYPE_FILTERS.map((f) => {
+                const active = selectedType === f.value;
+                return (
+                  <Pressable
+                    key={f.value}
+                    onPress={() => setSelectedType(f.value)}
+                    style={[
+                      styles.pill,
+                      active
+                        ? {
+                            backgroundColor: hexToRgba(primaryColor, 0.12),
+                            borderColor: primaryColor,
+                          }
+                        : { backgroundColor: "transparent", borderColor },
+                    ]}
+                  >
+                    <ThemedText
+                      style={[styles.pillText, { color: active ? primaryColor : mutedColor }]}
+                    >
+                      {f.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
-      {/* ── Content ─────────────────────────────────────────────────── */}
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={primaryColor} />
-        </View>
-      ) : error ? (
-        <View style={styles.center}>
-          <View style={[styles.emptyIconRing, { borderColor }]}>
-            <Ionicons name="warning-outline" size={28} color={mutedColor} />
-          </View>
-          <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-            Something went wrong
-          </ThemedText>
-          <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
-            Could not load notifications. Check your connection and try again.
-          </ThemedText>
-        </View>
-      ) : items.length === 0 ? (
-        <View style={styles.center}>
-          <View style={[styles.emptyIconRing, { borderColor }]}>
-            <Ionicons
-              name={unreadOnly ? "checkmark-circle-outline" : "notifications-off-outline"}
-              size={28}
-              color={mutedColor}
-            />
-          </View>
-          <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-            {unreadOnly ? "All caught up" : "No notifications yet"}
-          </ThemedText>
-          <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
-            {unreadOnly
-              ? "You've read everything. New alerts will appear here."
-              : "Booking events and capacity alerts will appear here."}
-          </ThemedText>
-        </View>
-      ) : (
-        <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
-          {/* Pinned section */}
-          {pinnedItems.length > 0 && (
-            <>
-              <View style={[styles.sectionDivider, { borderBottomColor: borderColor }]}>
-                <Ionicons name="bookmark" size={11} color={primaryColor} />
-                <ThemedText style={[styles.sectionLabel, { color: primaryColor }]}>
-                  Pinned
-                </ThemedText>
-              </View>
-              {pinnedItems.map((n, i) => renderRow(n, i, pinnedItems, unpinnedItems.length > 0))}
-              {unpinnedItems.length > 0 && (
-                <View
-                  style={[
-                    styles.sectionDivider,
-                    {
-                      borderBottomColor: borderColor,
-                      borderTopColor: borderColor,
-                      borderTopWidth: 1,
-                    },
-                  ]}
-                >
-                  <ThemedText style={[styles.sectionLabel, { color: mutedColor }]}>
-                    All notifications
-                  </ThemedText>
-                </View>
-              )}
-            </>
-          )}
-
-          {/* Main list */}
-          {unpinnedItems.map((n, i) => renderRow(n, i, unpinnedItems, false))}
-
-          {hasMore && (
             <Pressable
-              onPress={handleLoadMore}
-              disabled={loadingMore}
+              onPress={() => setUnreadOnly((v) => !v)}
               style={[
-                styles.loadMoreBtn,
-                { borderTopColor: borderColor, opacity: loadingMore ? 0.6 : 1 },
+                styles.pill,
+                styles.pillRow,
+                { gap: 5 },
+                unreadOnly
+                  ? { backgroundColor: hexToRgba(primaryColor, 0.12), borderColor: primaryColor }
+                  : { backgroundColor: "transparent", borderColor },
               ]}
             >
-              {loadingMore && <ActivityIndicator size="small" color={primaryColor} />}
-              <ThemedText style={[styles.loadMoreText, { color: mutedColor }]}>
-                {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
+              <View
+                style={[
+                  styles.unreadDot,
+                  { backgroundColor: unreadOnly ? primaryColor : mutedColor },
+                ]}
+              />
+              <ThemedText
+                style={[styles.pillText, { color: unreadOnly ? primaryColor : mutedColor }]}
+              >
+                Filter Unread
               </ThemedText>
             </Pressable>
-          )}
+          </View>
+        </View>
+
+        {/* ── Content ─────────────────────────────────────────────────── */}
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={primaryColor} />
+          </View>
+        ) : error ? (
+          <View style={styles.center}>
+            <View style={[styles.emptyIconRing, { borderColor }]}>
+              <Ionicons name="warning-outline" size={28} color={mutedColor} />
+            </View>
+            <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
+              Something went wrong
+            </ThemedText>
+            <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
+              Could not load notifications. Check your connection and try again.
+            </ThemedText>
+          </View>
+        ) : items.length === 0 ? (
+          <View style={styles.center}>
+            <View style={[styles.emptyIconRing, { borderColor }]}>
+              <Ionicons
+                name={unreadOnly ? "checkmark-circle-outline" : "notifications-off-outline"}
+                size={28}
+                color={mutedColor}
+              />
+            </View>
+            <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
+              {unreadOnly ? "All caught up" : "No notifications yet"}
+            </ThemedText>
+            <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
+              {unreadOnly
+                ? "You've read everything. New alerts will appear here."
+                : "Booking events and capacity alerts will appear here."}
+            </ThemedText>
+          </View>
+        ) : (
+          <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
+            {/* Pinned section */}
+            {pinnedItems.length > 0 && (
+              <>
+                <View style={[styles.sectionDivider, { borderBottomColor: borderColor }]}>
+                  <Ionicons name="bookmark" size={11} color={primaryColor} />
+                  <ThemedText style={[styles.sectionLabel, { color: primaryColor }]}>
+                    Pinned
+                  </ThemedText>
+                </View>
+                {pinnedItems.map((n, i) => renderRow(n, i, pinnedItems, unpinnedItems.length > 0))}
+                {unpinnedItems.length > 0 && (
+                  <View
+                    style={[
+                      styles.sectionDivider,
+                      {
+                        borderBottomColor: borderColor,
+                        borderTopColor: borderColor,
+                        borderTopWidth: 1,
+                      },
+                    ]}
+                  >
+                    <ThemedText style={[styles.sectionLabel, { color: mutedColor }]}>
+                      All notifications
+                    </ThemedText>
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* Main list */}
+            {unpinnedItems.map((n, i) => renderRow(n, i, unpinnedItems, false))}
+
+            {hasMore && (
+              <Pressable
+                onPress={handleLoadMore}
+                disabled={loadingMore}
+                style={[
+                  styles.loadMoreBtn,
+                  { borderTopColor: borderColor, opacity: loadingMore ? 0.6 : 1 },
+                ]}
+              >
+                {loadingMore && <ActivityIndicator size="small" color={primaryColor} />}
+                <ThemedText style={[styles.loadMoreText, { color: mutedColor }]}>
+                  {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        <BookingDetailPopup bookingId={popupBookingId} onClose={() => setPopupBookingId(null)} />
+      </ScrollView>
+
+      {toast && (
+        <View style={styles.toast} pointerEvents="none">
+          <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
+          <ThemedText style={styles.toastText}>{toast}</ThemedText>
         </View>
       )}
 
-      <BookingDetailPopup bookingId={popupBookingId} onClose={() => setPopupBookingId(null)} />
-    </ScrollView>
+      <ConfirmModal
+        visible={confirmDeleteAll}
+        title="Delete all notifications?"
+        message="This will permanently delete all visible unpinned notifications. Pinned notifications will be kept."
+        confirmLabel="Delete all"
+        destructive
+        onConfirm={() => {
+          setConfirmDeleteAll(false);
+          handleDeleteAll();
+        }}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
+      <ConfirmModal
+        visible={confirmDeleteId != null}
+        title="Delete pinned notification?"
+        message="This notification is pinned. Are you sure you want to delete it?"
+        confirmLabel="Delete"
+        destructive
+        onConfirm={handleConfirmedDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
+    </View>
   );
 }
 
@@ -781,13 +980,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     lineHeight: 14,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
   markAllBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    minHeight: 44,
   },
   markAllText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
   },
 
@@ -915,6 +1124,37 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 30,
     width: 106,
+  },
+  actionDeleteBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  swipeDeleteBg: {
+    backgroundColor: COLORS.error,
+    width: 72,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toast: {
+    position: "absolute",
+    bottom: 28,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.82)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  toastText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
   actionText: {
     fontSize: 12,

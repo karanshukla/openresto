@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { View, Pressable, Platform, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { COLORS, BORDER_RADIUS } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
+import { fetchRestaurants } from "@/api/restaurants";
 import { styles } from "./settings.styles";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -20,21 +22,13 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)));
 }
 
-type PushState = "loading" | "unavailable" | "denied" | "active" | "inactive";
+type PushState = "loading" | "unconfigured" | "unavailable" | "denied" | "active" | "inactive";
 
-export function PushNotificationsCard({
-  restaurantId,
-  borderColor,
-  mutedColor,
-  cardBg,
-}: {
-  restaurantId: number | null;
-  borderColor: string;
-  mutedColor: string;
-  cardBg: string;
-}) {
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+export function PushNotificationsCard() {
+  const { colors, primaryColor, isDark } = useAppTheme();
+  const borderColor = colors.border;
+  const mutedColor = colors.muted;
+  const cardBg = colors.card;
 
   const [expanded, setExpanded] = useState(false);
   const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
@@ -50,9 +44,9 @@ export function PushNotificationsCard({
       return;
     }
     getVapidPublicKey().then((key) => {
-      setVapidKey(key);
+      setVapidKey(key ?? null);
       if (key == null) {
-        setPushState("unavailable");
+        setPushState("unconfigured");
         return;
       }
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -70,10 +64,8 @@ export function PushNotificationsCard({
     });
   }, []);
 
-  // Don't render card if VAPID not configured or non-web
   if (vapidKey === undefined) return null;
-  if (vapidKey === null && pushState === "unavailable" && Platform.OS !== "web") return null;
-  if (vapidKey === null) return null;
+  if (Platform.OS !== "web" && pushState === "unavailable") return null;
 
   const handleEnable = async () => {
     if (!vapidKey) return;
@@ -91,6 +83,7 @@ export function PushNotificationsCard({
         setWorking(false);
         return;
       }
+
       const sw = await navigator.serviceWorker.ready;
       const sub = await sw.pushManager.subscribe({
         userVisibleOnly: true,
@@ -99,11 +92,17 @@ export function PushNotificationsCard({
       const p256dhBuffer = sub.getKey("p256dh");
       const authBuffer = sub.getKey("auth");
       if (!p256dhBuffer || !authBuffer) throw new Error("Missing push keys");
-      await subscribePush(restaurantId ?? 0, {
+
+      const payload = {
         endpoint: sub.endpoint,
         p256dh: arrayBufferToBase64(p256dhBuffer),
         auth: arrayBufferToBase64(authBuffer),
-      });
+      };
+
+      // Register this browser for every location so all push alerts arrive.
+      const restaurants = await fetchRestaurants();
+      await Promise.all(restaurants.map((r) => subscribePush(r.id, payload)));
+
       setPushState("active");
     } catch (err) {
       console.error("Push subscribe error:", err);
@@ -130,44 +129,46 @@ export function PushNotificationsCard({
     setWorking(false);
   };
 
-  const stateIcon =
-    pushState === "active"
-      ? "notifications-outline"
-      : pushState === "denied"
-        ? "notifications-off-outline"
-        : "notifications-outline";
+  const isActive = pushState === "active";
+  const isDenied = pushState === "denied";
+  const isUnconfigured = pushState === "unconfigured";
+
+  const iconColor = isDenied || isUnconfigured ? COLORS.warning : primaryColor;
+  const iconBg =
+    isDenied || isUnconfigured ? hexToRgba(COLORS.warning, 0.1) : hexToRgba(primaryColor, 0.1);
+  const stateIcon: "notifications-outline" | "notifications-off-outline" = isDenied
+    ? "notifications-off-outline"
+    : "notifications-outline";
 
   const stateSub =
     pushState === "loading"
       ? "Checking status…"
-      : pushState === "active"
-        ? "Push notifications active for this location"
-        : pushState === "denied"
+      : isActive
+        ? "Push notifications active for all locations"
+        : isDenied
           ? "Notifications blocked — enable in browser settings"
-          : pushState === "unavailable"
-            ? "Not supported in this browser"
-            : "Click to enable push notifications";
+          : isUnconfigured
+            ? "VAPID keys not configured"
+            : pushState === "unavailable"
+              ? "Not supported in this browser"
+              : "Enable to receive real-time booking alerts";
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
-        <View
-          style={[
-            styles.secIcon,
-            {
-              backgroundColor: pushState === "active" ? `${COLORS.success}18` : `${primaryColor}18`,
-            },
-          ]}
-        >
-          <Ionicons
-            name={stateIcon}
-            size={20}
-            color={pushState === "active" ? COLORS.success : primaryColor}
-          />
+        <View style={[styles.secIcon, { backgroundColor: iconBg }]}>
+          <Ionicons name={stateIcon} size={20} color={iconColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Push Notifications</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]}>{stateSub}</ThemedText>
+          <ThemedText
+            style={[
+              styles.secSub,
+              { color: isUnconfigured || isDenied ? COLORS.warning : mutedColor },
+            ]}
+          >
+            {stateSub}
+          </ThemedText>
         </View>
         {pushState === "loading" ? (
           <ActivityIndicator size="small" color={primaryColor} />
@@ -176,14 +177,28 @@ export function PushNotificationsCard({
         )}
       </Pressable>
 
-      {expanded && pushState !== "loading" && pushState !== "unavailable" && (
+      {expanded && pushState !== "loading" && (
         <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-          {pushState === "denied" ? (
+          {isUnconfigured ? (
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <Ionicons
+                name="warning-outline"
+                size={16}
+                color={COLORS.warning}
+                style={{ marginTop: 1 }}
+              />
+              <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
+                Push notifications require VAPID keys to be configured in the server environment
+                (VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY). Contact your administrator to set these
+                up.
+              </ThemedText>
+            </View>
+          ) : isDenied ? (
             <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
               <Ionicons
                 name="information-circle-outline"
                 size={16}
-                color={mutedColor}
+                color={COLORS.warning}
                 style={{ marginTop: 1 }}
               />
               <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
@@ -191,11 +206,15 @@ export function PushNotificationsCard({
                 settings to allow notifications, then reload this page.
               </ThemedText>
             </View>
+          ) : pushState === "unavailable" ? (
+            <ThemedText style={{ fontSize: 13, color: mutedColor, lineHeight: 19 }}>
+              Push notifications are not supported in this browser.
+            </ThemedText>
           ) : (
             <View style={{ gap: 12 }}>
               <ThemedText style={{ fontSize: 13, color: mutedColor, lineHeight: 19 }}>
-                {pushState === "active"
-                  ? "You will receive push notifications for new bookings, cancellations, and capacity alerts for this location."
+                {isActive
+                  ? "You will receive push notifications for new bookings, cancellations, and capacity alerts across all locations."
                   : "Enable push notifications to receive real-time alerts for new bookings, cancellations, and when a location is nearly full."}
               </ThemedText>
 
@@ -204,7 +223,7 @@ export function PushNotificationsCard({
               )}
 
               <Pressable
-                onPress={pushState === "active" ? handleDisable : handleEnable}
+                onPress={isActive ? handleDisable : handleEnable}
                 disabled={working}
                 style={{
                   flexDirection: "row",
@@ -213,33 +232,31 @@ export function PushNotificationsCard({
                   gap: 8,
                   paddingVertical: 10,
                   paddingHorizontal: 16,
-                  borderRadius: 8,
+                  borderRadius: BORDER_RADIUS.md,
                   borderWidth: 1,
-                  borderColor: pushState === "active" ? COLORS.error : primaryColor,
-                  backgroundColor:
-                    pushState === "active" ? "rgba(220,38,38,0.06)" : `${primaryColor}10`,
+                  borderColor: isActive ? COLORS.error : primaryColor,
+                  backgroundColor: isActive
+                    ? hexToRgba(COLORS.error, isDark ? 0.1 : 0.06)
+                    : hexToRgba(primaryColor, isDark ? 0.12 : 0.08),
                   opacity: working ? 0.6 : 1,
                   alignSelf: "flex-start",
                 }}
               >
                 {working && (
-                  <ActivityIndicator
-                    size="small"
-                    color={pushState === "active" ? COLORS.error : primaryColor}
-                  />
+                  <ActivityIndicator size="small" color={isActive ? COLORS.error : primaryColor} />
                 )}
                 <ThemedText
                   style={{
                     fontSize: 14,
                     fontWeight: "600",
-                    color: pushState === "active" ? COLORS.error : primaryColor,
+                    color: isActive ? COLORS.error : primaryColor,
                   }}
                 >
                   {working
-                    ? pushState === "active"
+                    ? isActive
                       ? "Disabling…"
                       : "Enabling…"
-                    : pushState === "active"
+                    : isActive
                       ? "Disable push notifications"
                       : "Enable push notifications"}
                 </ThemedText>

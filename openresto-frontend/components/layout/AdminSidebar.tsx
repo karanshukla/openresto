@@ -159,7 +159,7 @@ export default function AdminSidebar() {
                       minWidth: 14,
                       height: 14,
                       borderRadius: 7,
-                      backgroundColor: COLORS.error,
+                      backgroundColor: PRIMARY,
                       alignItems: "center",
                       justifyContent: "center",
                       paddingHorizontal: 2,

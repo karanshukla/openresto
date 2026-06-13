@@ -111,8 +111,41 @@ export async function subscribePush(
 
 export async function unsubscribePush(endpoint: string): Promise<void> {
   try {
-    await del("/admin/push/subscribe", { body: { endpoint } });
+    await del("/admin/push/subscribe", { body: endpoint });
   } catch (err) {
     console.error("unsubscribePush error:", err);
+  }
+}
+
+export async function deleteNotification(id: number): Promise<void> {
+  try {
+    await del(`/admin/notifications/${id}`);
+  } catch (err) {
+    console.error("deleteNotification error:", err);
+  }
+}
+
+export async function deleteNotifications(ids: number[]): Promise<void> {
+  try {
+    await del("/admin/notifications", { body: ids });
+  } catch (err) {
+    console.error("deleteNotifications error:", err);
+  }
+}
+
+export async function deleteAllNotifications(params: {
+  restaurantId?: number;
+  type?: string;
+  unreadOnly?: boolean;
+}): Promise<void> {
+  try {
+    const p = new URLSearchParams();
+    if (params.restaurantId != null) p.set("restaurantId", String(params.restaurantId));
+    if (params.type) p.set("type", params.type);
+    if (params.unreadOnly) p.set("unreadOnly", "true");
+    const query = p.toString() ? `?${p}` : "";
+    await del(`/admin/notifications/all${query}`);
+  } catch (err) {
+    console.error("deleteAllNotifications error:", err);
   }
 }
