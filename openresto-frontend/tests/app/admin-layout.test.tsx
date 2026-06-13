@@ -13,7 +13,7 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 import { useWindowDimensions } from "react-native";
 import AdminLayout from "@/app/(admin)/_layout";
 import { checkSession } from "@/api/auth";
-import { useRouter, useSegments } from "expo-router";
+import { useRouter, usePathname } from "expo-router";
 
 jest.mock("@/api/auth", () => ({
   checkSession: jest.fn(),
@@ -29,7 +29,6 @@ jest.mock("expo-router", () => {
     Slot,
     Stack,
     useRouter: jest.fn(),
-    useSegments: jest.fn(),
     usePathname: jest.fn().mockReturnValue("/dashboard"),
   };
 });
@@ -56,7 +55,7 @@ describe("AdminLayout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (useSegments as jest.Mock).mockReturnValue(["dashboard"]);
+    (usePathname as jest.Mock).mockReturnValue("/dashboard");
     (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1024, height: 768 });
     const { Platform } = require("react-native");
     Platform.OS = "web";
@@ -90,7 +89,7 @@ describe("AdminLayout", () => {
   });
 
   it("renders login screen without gate", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["login"]);
+    (usePathname as jest.Mock).mockReturnValue("/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
     render(<AdminLayout />);
     await waitFor(() => expect(screen.getByTestId("slot")).toBeTruthy());

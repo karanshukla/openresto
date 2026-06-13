@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
-import { Slot, Stack, useRouter, useSegments, usePathname } from "expo-router";
+import { Slot, Stack, useRouter, usePathname } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { checkSession } from "@/api/auth";
@@ -44,7 +44,6 @@ export default function AdminLayout() {
 
 function AdminLayoutInner() {
   const router = useRouter();
-  const segments = useSegments();
   const pathname = usePathname();
   const brand = useBrand();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">(
@@ -56,28 +55,22 @@ function AdminLayoutInner() {
     if (Platform.OS !== "web") return;
 
     /* istanbul ignore next */
-    const setTabTitle = (page: string) => {
-      document.title = `${page} | ${brand.appName}`;
+    const PAGE_TITLES: Record<string, string> = {
+      "/dashboard": "Dashboard",
+      "/settings": "Settings",
+      "/bookings": "Bookings",
+      "/bookings/new": "New Walk-in",
+      "/login": "Admin Login",
     };
-
     /* istanbul ignore next */
-    const last = segments[segments.length - 1] as string | undefined;
+    const title =
+      PAGE_TITLES[pathname] ?? (/^\/bookings\/\d+$/.test(pathname) ? "Booking Detail" : undefined);
     /* istanbul ignore next */
-    if (last === "dashboard") {
-      setTabTitle("Dashboard");
-    } else if (last === "settings") {
-      setTabTitle("Settings");
-    } else if ((segments as string[]).includes("bookings")) {
-      if (last === "new") setTabTitle("New Walk-in");
-      else if (last && last.match(/^\d+$/)) setTabTitle("Booking Detail");
-      else setTabTitle("Bookings");
-    } else if (last === "login") {
-      setTabTitle("Admin Login");
-    }
-  }, [segments, brand.appName, pathname]);
+    if (title) document.title = `${title} | ${brand.appName}`;
+  }, [pathname, brand.appName]);
 
   useEffect(() => {
-    const onLoginScreen = segments.includes("login" as never);
+    const onLoginScreen = pathname === "/login";
     if (onLoginScreen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthState("authenticated");
@@ -99,13 +92,13 @@ function AdminLayoutInner() {
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+  }, [pathname]);
 
   if (authState === "loading") return <PageLoader />;
 
   /* istanbul ignore next */
   if (Platform.OS === "web") {
-    const onLoginScreen = segments.includes("login" as never);
+    const onLoginScreen = pathname === "/login";
     if (onLoginScreen) {
       return (
         <ThemedView style={{ flex: 1 }}>
@@ -127,7 +120,7 @@ function AdminLayoutInner() {
   }
 
   if (authState !== "authenticated") {
-    const onLoginScreen = segments.includes("login" as never);
+    const onLoginScreen = pathname === "/login";
     /* istanbul ignore else */
     if (!onLoginScreen) return null;
   }

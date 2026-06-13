@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import AdminLayout from "@/app/(admin)/_layout";
 import { checkSession } from "@/api/auth";
-import { useRouter, useSegments, usePathname } from "expo-router";
+import { useRouter, usePathname } from "expo-router";
 
 jest.mock("@/api/auth", () => ({
   checkSession: jest.fn(),
@@ -10,7 +10,6 @@ jest.mock("@/api/auth", () => ({
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(),
-  useSegments: jest.fn(),
   usePathname: jest.fn(),
   Slot: () => null,
   Stack: Object.assign(() => null, {
@@ -43,7 +42,6 @@ describe("AdminLayout", () => {
   });
 
   it("shows loading state then authenticated stack when session is valid", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
     (checkSession as jest.Mock).mockResolvedValue({ email: "admin@test.com" });
 
     render(<AdminLayout />);
@@ -54,7 +52,6 @@ describe("AdminLayout", () => {
   });
 
   it("redirects to login when checkSession returns null", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     render(<AdminLayout />);
@@ -65,7 +62,6 @@ describe("AdminLayout", () => {
   });
 
   it("treats rate-limited response as authenticated", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
     (checkSession as jest.Mock).mockResolvedValue("rate-limited");
 
     render(<AdminLayout />);
@@ -77,7 +73,7 @@ describe("AdminLayout", () => {
   });
 
   it("skips auth check when on login screen", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "login"]);
+    (usePathname as jest.Mock).mockReturnValue("/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     render(<AdminLayout />);
@@ -88,7 +84,6 @@ describe("AdminLayout", () => {
   });
 
   it("redirects and renders nothing meaningful when unauthenticated", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     render(<AdminLayout />);
@@ -96,8 +91,8 @@ describe("AdminLayout", () => {
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalled());
   });
 
-  it("skips re-check when authState is already authenticated on segments change", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "login"]);
+  it("skips re-check when authState is already authenticated on pathname change", async () => {
+    (usePathname as jest.Mock).mockReturnValue("/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     const { rerender } = render(<AdminLayout />);
@@ -105,11 +100,11 @@ describe("AdminLayout", () => {
     // On login screen: effect sets authState to "authenticated" without calling checkSession
     await waitFor(() => expect(checkSession).not.toHaveBeenCalled());
 
-    // Simulate navigation away from login (segments change)
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+    // Simulate navigation away from login (pathname changes)
+    (usePathname as jest.Mock).mockReturnValue("/dashboard");
     rerender(<AdminLayout />);
 
-    // authState is still "authenticated" so line 79 returns early; checkSession not called
+    // authState is still "authenticated" so the effect returns early; checkSession not called
     await new Promise((r) => setTimeout(r, 50));
     expect(checkSession).not.toHaveBeenCalled();
   });
