@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
@@ -62,6 +63,13 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
                 services.Remove(emailServiceDescriptor);
             }
             services.AddScoped<IEmailService, MockEmailService>();
+
+            // Replace INotificationQueue with a no-op so the BackgroundService never opens
+            // concurrent SQLite connections against the shared in-memory test connection.
+            ServiceDescriptor? queueDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(INotificationQueue));
+            if (queueDescriptor != null)
+                services.Remove(queueDescriptor);
+            services.AddSingleton<INotificationQueue, NoOpNotificationQueue>();
 
         });
 
@@ -121,5 +129,12 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
         private readonly AppDbContext _db = db;
         public async Task<bool> TestConnectionAsync() => await _db.Set<OpenRestoApi.Core.Domain.EmailSettings>().AnyAsync();
         public Task SendEmailAsync(string recipient, string subject, string htmlBody) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpNotificationQueue : INotificationQueue
+    {
+        public void EnqueueBookingCreated(Booking booking, string restaurantName) { }
+        public void EnqueueBookingCancelled(Booking booking, string restaurantName) { }
+        public void EnqueueCapacityCheck(int restaurantId, string restaurantName, DateTime bookingDate) { }
     }
 }
