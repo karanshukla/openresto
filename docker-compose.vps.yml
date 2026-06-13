@@ -15,9 +15,9 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - CONNECTION_STRING=${CONNECTION_STRING:-Data Source=/data/openresto.db}
       - DATA_PROTECTION_KEYS_PATH=/data/dp-keys
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
-      - VAPID_SUBJECT=${VAPID_SUBJECT}
+      - Vapid__PublicKey=${VAPID_PUBLIC_KEY}
+      - Vapid__PrivateKey=${VAPID_PRIVATE_KEY}
+      - Vapid__Subject=${VAPID_SUBJECT}
     volumes:
       - ./data:/data
       - media_data:/app/wwwroot/media
