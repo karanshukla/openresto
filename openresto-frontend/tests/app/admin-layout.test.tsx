@@ -97,10 +97,18 @@ describe("AdminLayout", () => {
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 
-  it("renders desktop wall on narrow web screens", async () => {
+  it("renders screen-too-small wall on narrow web screens", async () => {
     (checkSession as jest.Mock).mockResolvedValue({ user: "admin" });
-    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 800, height: 600 });
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 400, height: 700 });
     render(<AdminLayout />);
-    await waitFor(() => expect(screen.getByText("Desktop only")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Screen too small")).toBeTruthy());
+  });
+
+  it("does not show wall for tablet-portrait-width screens", async () => {
+    (checkSession as jest.Mock).mockResolvedValue({ user: "admin" });
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 768, height: 1024 });
+    render(<AdminLayout />);
+    await waitFor(() => expect(screen.getByTestId("sidebar")).toBeTruthy());
+    expect(screen.queryByText("Screen too small")).toBeNull();
   });
 });

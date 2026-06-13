@@ -10,16 +10,16 @@ import { COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import PageLoader from "@/components/common/PageLoader";
 
-const MIN_WIDTH = 900;
+const MIN_WIDTH = 600;
 
 function DesktopOnlyWall() {
   return (
     <ThemedView style={styles.wall}>
       <Ionicons name="desktop-outline" size={48} color={COLORS.primary} />
-      <ThemedText style={styles.wallTitle}>Desktop only</ThemedText>
+      <ThemedText style={styles.wallTitle}>Screen too small</ThemedText>
       <ThemedText style={styles.wallBody}>
-        The admin dashboard is designed for desktop browsers.{"\n"}
-        Please open it on a larger screen.
+        The admin dashboard requires a wider screen.{"\n"}
+        Try rotating your device or using a larger screen.
       </ThemedText>
     </ThemedView>
   );
@@ -27,11 +27,19 @@ function DesktopOnlyWall() {
 
 export default function AdminLayout() {
   const { width } = useWindowDimensions();
+  const showWall = Platform.OS === "web" && width < MIN_WIDTH;
 
-  /* istanbul ignore next */
-  if (Platform.OS === "web" && width < MIN_WIDTH) return <DesktopOnlyWall />;
-
-  return <AdminLayoutInner />;
+  // AdminLayoutInner stays mounted even when the wall is shown so that auth
+  // state is preserved — unmounting it would reset authState to "loading" and
+  // trigger an unnecessary session re-check (which can bounce the user to login).
+  return (
+    <View style={{ flex: 1 }}>
+      {showWall && <DesktopOnlyWall />}
+      <View style={[{ flex: 1 }, showWall && { display: "none" as const }]}>
+        <AdminLayoutInner />
+      </View>
+    </View>
+  );
 }
 
 function AdminLayoutInner() {
