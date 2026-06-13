@@ -18,6 +18,15 @@ import {
 } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
+  return output;
+}
+
 const PAGE_SIZE = 20;
 const PIN_STORAGE_KEY = "openresto_pinned_notifs";
 
@@ -44,13 +53,6 @@ const TYPE_FILTERS = [
   { label: "Cancelled", value: "BookingCancelled" },
   { label: "Nearly Full", value: "RestaurantNearlyFull" },
 ];
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))) as Uint8Array<ArrayBuffer>;
-}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)));
