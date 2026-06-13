@@ -22,3 +22,13 @@ public record PushSubscribeRequest(
     string Auth,
     string? UserAgent = null
 );
+
+// Internal push payload serialised as the Web Push body
+public record PushPayload(
+    string Title,
+    string Body,
+    string Type,
+    int? BookingId,
+    string? BookingRef,
+    int RestaurantId
+);

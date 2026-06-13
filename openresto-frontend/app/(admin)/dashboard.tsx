@@ -122,7 +122,7 @@ export default function AdminDashboardScreen() {
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View>
-            <ThemedText type="pageTitle">Dashboard</ThemedText>
+            <ThemedText type="h1">Dashboard</ThemedText>
             <ThemedText style={[styles.pageSub, { color: colors.muted }]}>
               Welcome back. Here is what&apos;s happening today.
             </ThemedText>
@@ -396,6 +396,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   outer: {
     padding: SPACING.xxl,
+    paddingTop: SPACING.xxxl,
     paddingBottom: 60,
     maxWidth: 1200,
     width: "100%",

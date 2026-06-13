@@ -121,7 +121,11 @@ public class BookingService(
         // 6. Admin push notification (best-effort)
         if (_notificationService != null)
         {
-            try { await _notificationService.NotifyBookingCreatedAsync(newBooking, restaurant.Name); }
+            try
+            {
+                await _notificationService.NotifyBookingCreatedAsync(newBooking, restaurant.Name);
+                await _notificationService.CheckAndNotifyCapacityAsync(restaurant.Id, restaurant.Name, newBooking.Date);
+            }
             catch (Exception ex) { Console.WriteLine($"[BookingService] Notification failed for ref {newBooking.BookingRef}: {ex.Message}"); }
         }
 

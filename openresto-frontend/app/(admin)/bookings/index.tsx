@@ -82,7 +82,13 @@ export default function AdminBookingsScreen() {
     create,
     email: emailParam,
     bookingRef: bookingRefParam,
-  } = useLocalSearchParams<{ create?: string; email?: string; bookingRef?: string }>();
+    restaurantId: restaurantIdParam,
+  } = useLocalSearchParams<{
+    create?: string;
+    email?: string;
+    bookingRef?: string;
+    restaurantId?: string;
+  }>();
   const searchQuery = emailParam || bookingRefParam || null;
 
   useEffect(() => {
@@ -111,12 +117,14 @@ export default function AdminBookingsScreen() {
     fetchRestaurants().then((data) => {
       if (cancelled) return;
       setRestaurants(data);
-      if (data.length > 0) setSelectedRestaurantId(data[0].id);
+      const paramId = restaurantIdParam ? parseInt(restaurantIdParam, 10) : NaN;
+      const match = !isNaN(paramId) && data.find((r) => r.id === paramId);
+      setSelectedRestaurantId(match ? match.id : (data[0]?.id ?? null));
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [restaurantIdParam]);
 
   useEffect(() => {
     if (searchQuery) {

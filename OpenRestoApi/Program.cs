@@ -2,7 +2,8 @@ using OpenRestoApi.Extensions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
+if (!builder.Environment.IsEnvironment("Testing"))
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
 
 // Ensure the app listens on the PORT environment variable for Railway, defaulting to 8080
 builder.WebHost.UseUrls($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");

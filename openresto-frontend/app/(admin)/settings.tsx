@@ -21,6 +21,7 @@ import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard
 import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard";
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
 import { HighlightsCard } from "@/components/admin/settings/HighlightsCard";
+import { PushNotificationsCard } from "@/components/admin/settings/PushNotificationsCard";
 import { styles } from "@/components/admin/settings/settings.styles";
 
 function useConfirmLocal() {
@@ -229,6 +230,16 @@ export default function AdminSettingsScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: "Settings" }} />}
 
+      {/* Page header */}
+      <View style={styles.pageHeader}>
+        <View>
+          <ThemedText type="h1">Settings</ThemedText>
+          <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
+            Manage locations, brand, email, and security.
+          </ThemedText>
+        </View>
+      </View>
+
       {/* Locations Section */}
       <View style={styles.section}>
         <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>LOCATIONS</ThemedText>
@@ -382,6 +393,12 @@ export default function AdminSettingsScreen() {
           mutedColor={mutedColor}
           cardBg={cardBg}
           isDark={isDark}
+        />
+        <PushNotificationsCard
+          restaurantId={selectedId}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          cardBg={cardBg}
         />
       </View>
 

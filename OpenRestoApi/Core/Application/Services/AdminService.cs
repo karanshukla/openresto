@@ -263,7 +263,11 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
         if (_notificationService != null)
         {
-            try { await _notificationService.NotifyBookingCreatedAsync(booking, booking.Restaurant!.Name); }
+            try
+            {
+                await _notificationService.NotifyBookingCreatedAsync(booking, booking.Restaurant!.Name);
+                await _notificationService.CheckAndNotifyCapacityAsync(booking.RestaurantId, booking.Restaurant!.Name, booking.Date);
+            }
             catch (Exception ex) { Console.WriteLine($"[AdminService] Notification failed for ref {booking.BookingRef}: {ex.Message}"); }
         }
 

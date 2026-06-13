@@ -13,24 +13,30 @@ public class NotificationsController(INotificationService notificationService) :
     private readonly INotificationService _notifications = notificationService;
 
     /// <summary>
-    /// List notification history for a restaurant, newest first.
-    /// GET /api/admin/notifications?restaurantId=1&amp;page=1&amp;pageSize=20
+    /// List notification history with optional filters, newest first.
+    /// GET /api/admin/notifications?restaurantId=1&amp;type=BookingCreated&amp;unreadOnly=true&amp;page=1&amp;pageSize=20
+    /// restaurantId is optional — omit to see all restaurants.
+    /// type values: BookingCreated | BookingCancelled | RestaurantNearlyFull
     /// </summary>
     [HttpGet("notifications")]
     public async Task<IActionResult> GetNotifications(
-        [FromQuery] int restaurantId,
+        [FromQuery] int? restaurantId,
+        [FromQuery] string? type,
+        [FromQuery] bool? unreadOnly,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        if (restaurantId <= 0)
-            return BadRequest(new { error = "restaurantId is required." });
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        page = Math.Max(1, page);
 
-        var (items, total) = await _notifications.GetNotificationsAsync(restaurantId, page, pageSize);
+        (List<AdminNotificationDto> items, int total) = await _notifications.GetNotificationsAsync(
+            restaurantId, type, unreadOnly, page, pageSize);
+
         return Ok(new { items, total, page, pageSize });
     }
 
     /// <summary>
-    /// Unread notification count badge.
+    /// Unread count badge for a specific restaurant.
     /// GET /api/admin/notifications/unread-count?restaurantId=1
     /// </summary>
     [HttpGet("notifications/unread-count")]
@@ -69,7 +75,20 @@ public class NotificationsController(INotificationService notificationService) :
     }
 
     /// <summary>
-    /// Register a browser push subscription for this restaurant's admin.
+    /// Returns the VAPID public key for the frontend to use when subscribing.
+    /// GET /api/admin/push/vapid-public-key
+    /// Returns 204 if VAPID is not configured (push disabled).
+    /// </summary>
+    [HttpGet("push/vapid-public-key")]
+    public IActionResult GetVapidPublicKey()
+    {
+        string? key = _notifications.GetVapidPublicKey();
+        if (key is null) return NoContent();
+        return Ok(new { publicKey = key });
+    }
+
+    /// <summary>
+    /// Register a browser push subscription.
     /// POST /api/admin/push/subscribe?restaurantId=1
     /// Body: { endpoint, p256dh, auth, userAgent? }
     /// </summary>
@@ -86,7 +105,7 @@ public class NotificationsController(INotificationService notificationService) :
     }
 
     /// <summary>
-    /// Remove a push subscription (e.g. on logout or permission revoke).
+    /// Remove a push subscription (logout / permission revoked).
     /// DELETE /api/admin/push/subscribe
     /// Body: "https://fcm.googleapis.com/..."
     /// </summary>

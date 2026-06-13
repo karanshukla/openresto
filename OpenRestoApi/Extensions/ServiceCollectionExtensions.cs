@@ -181,6 +181,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Func<ISmtpClient>>(_ => () => new SmtpClient());
         services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
         services.AddScoped<INotificationService, OpenRestoApi.Core.Application.Services.NotificationService>();
+        services.AddOptions<OpenRestoApi.Core.Application.Settings.VapidSettings>()
+                .BindConfiguration("Vapid");
 
         services.AddSession(options =>
         {

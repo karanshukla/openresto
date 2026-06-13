@@ -14,8 +14,8 @@ export const styles = StyleSheet.create({
   container: {
     padding: SPACING.xxl,
     paddingTop: SPACING.xxxl,
-    gap: SPACING.md,
-    maxWidth: 1100,
+    gap: SPACING.lg,
+    maxWidth: 1200,
     width: "100%",
     alignSelf: "center",
   },

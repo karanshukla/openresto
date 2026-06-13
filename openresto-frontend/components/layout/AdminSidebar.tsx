@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
 import { adminLookupBookings } from "@/api/admin";
+import { getUnreadCount } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 
 const NAV_ITEMS = [
@@ -28,20 +29,12 @@ const NAV_ITEMS = [
     href: "/(admin)/bookings" as const,
     match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
   },
-  /*
   {
     label: "Notifications",
     icon: "notifications-outline" as const,
     href: "/(admin)/notifications" as const,
     match: (p: string) => p === "/notifications",
-
-    notifications page should have the following
-    - list of notifications with pagination
-    - Filter by restaurant
-    - Filter by type of notification (booking created, ooking cancelled, restaurant full, etc)
-    etc etc
   },
-  */
   {
     label: "Settings",
     icon: "settings-outline" as const,
@@ -57,6 +50,7 @@ export default function AdminSidebar() {
   const colors = getThemeColors(isDark);
   const { toggle } = useTheme();
   const [locationCount, setLocationCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const brand = useBrand();
   const PRIMARY = brand.primaryColor || COLORS.primary;
   const insets = useSafeAreaInsets();
@@ -72,6 +66,10 @@ export default function AdminSidebar() {
   useEffect(() => {
     fetchRestaurants().then((data) => setLocationCount(data.length));
   }, []);
+
+  useEffect(() => {
+    getUnreadCount().then(setUnreadNotifCount);
+  }, [pathname]);
 
   const handleLookup = async () => {
     const q = lookupQuery.trim();
@@ -150,12 +148,29 @@ export default function AdminSidebar() {
                 { cursor: "pointer" } as const,
               ]}
             >
-              <Ionicons
-                name={icon}
-                size={18}
-                color={active ? PRIMARY : colors.muted}
-                style={styles.navIcon}
-              />
+              <View style={{ position: "relative", width: 20 }}>
+                <Ionicons name={icon} size={18} color={active ? PRIMARY : colors.muted} />
+                {label === "Notifications" && unreadNotifCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -4,
+                      minWidth: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      backgroundColor: COLORS.error,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingHorizontal: 2,
+                    }}
+                  >
+                    <ThemedText style={{ fontSize: 9, fontWeight: "700", color: COLORS.white }}>
+                      {unreadNotifCount > 99 ? "99+" : String(unreadNotifCount)}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
               <ThemedText
                 style={[
                   styles.navLabel,
