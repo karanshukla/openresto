@@ -30,6 +30,12 @@ const NAV_ITEMS = [
     match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
   },
   {
+    label: "Locations",
+    icon: "storefront-outline" as const,
+    href: "/(admin)/locations" as const,
+    match: (p: string) => p === "/locations",
+  },
+  {
     label: "Notifications",
     icon: "notifications-outline" as const,
     href: "/(admin)/notifications" as const,
