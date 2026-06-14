@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
 import { Platform } from "react-native";
 
-export function usePersistedState<T>(key: string, defaultValue: T): [T, (v: T) => void] {
+export function usePersistedState<T>(
+  key: string,
+  defaultValue: T
+): [T, Dispatch<SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     if (Platform.OS !== "web") return defaultValue;
     try {
