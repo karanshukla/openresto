@@ -23,6 +23,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 const defaultSettings = {
   host: "",
   port: 587,
@@ -73,30 +80,30 @@ describe("EmailSettingsCard", () => {
     });
   });
 
-  it("expands when header is pressed", async () => {
+  it("collapses when header is pressed", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => {
       expect(screen.getByText("Email (SMTP)")).toBeTruthy();
     });
-    fireEvent.press(screen.getByText("Email (SMTP)"));
-    expect(screen.getByText("Provider")).toBeTruthy();
-  });
-
-  it("collapses when header is pressed again", async () => {
-    render(<EmailSettingsCard {...baseProps} />);
-    await waitFor(() => {
-      expect(screen.getByText("Email (SMTP)")).toBeTruthy();
-    });
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Provider")).toBeTruthy();
     fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.queryByText("Provider")).toBeNull();
   });
 
+  it("expands when header is pressed after collapse", async () => {
+    render(<EmailSettingsCard {...baseProps} />);
+    await waitFor(() => {
+      expect(screen.getByText("Email (SMTP)")).toBeTruthy();
+    });
+    fireEvent.press(screen.getByText("Email (SMTP)"));
+    expect(screen.queryByText("Provider")).toBeNull();
+    fireEvent.press(screen.getByText("Email (SMTP)"));
+    expect(screen.getByText("Provider")).toBeTruthy();
+  });
+
   it("renders provider options when expanded", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Gmail")).toBeTruthy();
     expect(screen.getByText("Outlook 365")).toBeTruthy();
     expect(screen.getByText("Custom SMTP")).toBeTruthy();
@@ -105,7 +112,6 @@ describe("EmailSettingsCard", () => {
   it("selects Gmail provider and sets host", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("Gmail"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("smtp.gmail.com")).toBeTruthy();
@@ -115,7 +121,6 @@ describe("EmailSettingsCard", () => {
   it("selects Outlook provider and sets host", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("Outlook 365"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("smtp.office365.com")).toBeTruthy();
@@ -125,7 +130,6 @@ describe("EmailSettingsCard", () => {
   it("selects Custom SMTP provider", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("Custom SMTP"));
     expect(screen.getByText("Custom SMTP")).toBeTruthy();
   });
@@ -133,21 +137,18 @@ describe("EmailSettingsCard", () => {
   it("renders SMTP host input when expanded", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByPlaceholderText("smtp.gmail.com")).toBeTruthy();
   });
 
   it("renders port input with default 587", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByDisplayValue("587")).toBeTruthy();
   });
 
   it("changes port using port preset button", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("465"));
     expect(screen.getByDisplayValue("465")).toBeTruthy();
   });
@@ -155,7 +156,6 @@ describe("EmailSettingsCard", () => {
   it("changes port using port preset 25", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("25"));
     expect(screen.getByDisplayValue("25")).toBeTruthy();
   });
@@ -163,7 +163,6 @@ describe("EmailSettingsCard", () => {
   it("changes port using port preset 2525", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("2525"));
     expect(screen.getByDisplayValue("2525")).toBeTruthy();
   });
@@ -171,7 +170,6 @@ describe("EmailSettingsCard", () => {
   it("toggles SSL to None when None is pressed", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("None"));
     expect(screen.getByText("None")).toBeTruthy();
   });
@@ -179,7 +177,6 @@ describe("EmailSettingsCard", () => {
   it("toggles SSL back to SSL/TLS", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.press(screen.getByText("None"));
     fireEvent.press(screen.getByText("SSL/TLS"));
     expect(screen.getByText("SSL/TLS")).toBeTruthy();
@@ -188,7 +185,6 @@ describe("EmailSettingsCard", () => {
   it("renders username and password inputs", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByPlaceholderText("you@example.com")).toBeTruthy();
     expect(screen.getByPlaceholderText("SMTP password or app token")).toBeTruthy();
   });
@@ -196,7 +192,6 @@ describe("EmailSettingsCard", () => {
   it("toggles password visibility", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("SMTP password or app token"), "secret123");
     // find the eye toggle button (Ionicons is mocked, so we look for the wrapper Pressable near the password)
     const passwordInput = screen.getByDisplayValue("secret123");
@@ -206,7 +201,6 @@ describe("EmailSettingsCard", () => {
   it("renders from name and from email inputs", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByPlaceholderText("OpenResto")).toBeTruthy();
     expect(screen.getByPlaceholderText("noreply@site.com")).toBeTruthy();
   });
@@ -214,7 +208,6 @@ describe("EmailSettingsCard", () => {
   it("renders Status section when expanded", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Status")).toBeTruthy();
     expect(screen.getByText("Not yet tested")).toBeTruthy();
   });
@@ -222,7 +215,6 @@ describe("EmailSettingsCard", () => {
   it("shows Send test button when expanded", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Send test")).toBeTruthy();
   });
 
@@ -230,7 +222,6 @@ describe("EmailSettingsCard", () => {
     (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Settings saved." });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -243,7 +234,6 @@ describe("EmailSettingsCard", () => {
     (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Settings saved." });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -258,7 +248,6 @@ describe("EmailSettingsCard", () => {
     (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue(null);
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -278,7 +267,6 @@ describe("EmailSettingsCard", () => {
     );
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     act(() => {
@@ -298,7 +286,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -317,7 +304,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -336,7 +322,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -355,7 +340,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -369,7 +353,6 @@ describe("EmailSettingsCard", () => {
   it("does not run test when host or username is empty", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     // host and username are empty - pressing Send test does nothing
     fireEvent.press(screen.getByText("Send test"));
     expect(adminApi.testEmailConnection).not.toHaveBeenCalled();
@@ -378,7 +361,6 @@ describe("EmailSettingsCard", () => {
   it("shows Booking confirmations section when expanded", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Booking confirmations")).toBeTruthy();
     expect(screen.getByText("Booking confirmation")).toBeTruthy();
   });
@@ -386,7 +368,6 @@ describe("EmailSettingsCard", () => {
   it("shows configure SMTP notice when not yet tested", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("Configure and test SMTP above to enable.")).toBeTruthy();
   });
 
@@ -404,7 +385,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("smtp.example.com")).toBeTruthy();
       expect(screen.getByDisplayValue("admin@example.com")).toBeTruthy();
@@ -419,7 +399,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("smtp.gmail.com")).toBeTruthy();
     });
@@ -437,7 +416,6 @@ describe("EmailSettingsCard", () => {
     ]);
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     await waitFor(() => {
       expect(screen.getByText("Send failures")).toBeTruthy();
       expect(screen.getByText("guest@example.com")).toBeTruthy();
@@ -458,7 +436,6 @@ describe("EmailSettingsCard", () => {
     ]);
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     await waitFor(() => {
       expect(screen.getByText("other@example.com")).toBeTruthy();
       expect(screen.getByText("SMTP timeout")).toBeTruthy();
@@ -480,7 +457,6 @@ describe("EmailSettingsCard", () => {
     });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     await waitFor(() => {
       expect(screen.getByText("Connection successful")).toBeTruthy();
     });
@@ -491,7 +467,6 @@ describe("EmailSettingsCard", () => {
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({ ok: true, message: "OK." });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -510,7 +485,6 @@ describe("EmailSettingsCard", () => {
   it("shows from name in sender identity section", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     expect(screen.getByText("From name")).toBeTruthy();
     expect(screen.getByText("From email")).toBeTruthy();
   });
@@ -518,7 +492,6 @@ describe("EmailSettingsCard", () => {
   it("changes host input value", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "my.smtp.host");
     expect(screen.getByDisplayValue("my.smtp.host")).toBeTruthy();
   });
@@ -526,7 +499,6 @@ describe("EmailSettingsCard", () => {
   it("changes username input value", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "admin@test.com");
     expect(screen.getByDisplayValue("admin@test.com")).toBeTruthy();
   });
@@ -534,7 +506,6 @@ describe("EmailSettingsCard", () => {
   it("updates password input value", async () => {
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("SMTP password or app token"), "mypassword");
     expect(screen.getByDisplayValue("mypassword")).toBeTruthy();
   });
@@ -544,7 +515,6 @@ describe("EmailSettingsCard", () => {
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({ ok: true, message: "OK." });
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     await act(async () => {
@@ -571,7 +541,6 @@ describe("EmailSettingsCard", () => {
     );
     render(<EmailSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    fireEvent.press(screen.getByText("Email (SMTP)"));
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
     fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
     act(() => {

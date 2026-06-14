@@ -22,6 +22,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 const baseProps = {
   borderColor: "#ddd",
   mutedColor: "#888",
@@ -41,36 +48,39 @@ describe("SecurityCard", () => {
     });
   });
 
-  it("renders collapsed by default (no rows visible)", async () => {
+  it("renders expanded by default (rows visible)", async () => {
     render(<SecurityCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Account Security")).toBeTruthy());
-    expect(screen.queryByText("Security Question")).toBeNull();
-    expect(screen.queryByText("Password")).toBeNull();
-  });
-
-  it("expands when header is pressed", async () => {
-    render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.getByText("Security Question")).toBeTruthy();
       expect(screen.getByText("Password")).toBeTruthy();
     });
   });
 
-  it("collapses when header is pressed again", async () => {
+  it("collapses when header is pressed", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Security Question")).toBeTruthy());
     fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.queryByText("Security Question")).toBeNull();
+      expect(screen.queryByText("Password")).toBeNull();
+    });
+  });
+
+  it("expands when header is pressed after collapse", async () => {
+    render(<SecurityCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Security Question")).toBeTruthy());
+    fireEvent.press(screen.getByText("Account Security"));
+    await waitFor(() => expect(screen.queryByText("Security Question")).toBeNull());
+    fireEvent.press(screen.getByText("Account Security"));
+    await waitFor(() => {
+      expect(screen.getByText("Security Question")).toBeTruthy();
     });
   });
 
   it("shows 'Not configured' when PVQ status is null", async () => {
     (authApi.getPvqStatus as jest.Mock).mockResolvedValue(null);
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.getByText(/Not configured — set one up to enable password reset/)).toBeTruthy();
     });
@@ -82,7 +92,6 @@ describe("SecurityCard", () => {
       question: "What is your pet's name?",
     });
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.getByText("What is your pet's name?")).toBeTruthy();
     });
@@ -90,7 +99,6 @@ describe("SecurityCard", () => {
 
   it("shows 'Set up' button when PVQ not configured", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.getByText("Set up")).toBeTruthy();
     });
@@ -102,7 +110,6 @@ describe("SecurityCard", () => {
       question: "My question",
     });
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => {
       expect(screen.getAllByText("Change").length).toBeGreaterThanOrEqual(1);
     });
@@ -110,7 +117,6 @@ describe("SecurityCard", () => {
 
   it("opens PVQ form when Set up is pressed", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Set up")).toBeTruthy());
     fireEvent.press(screen.getByText("Set up"));
     expect(screen.getByText("Security question")).toBeTruthy();
@@ -119,7 +125,6 @@ describe("SecurityCard", () => {
 
   it("closes PVQ form when Cancel is pressed", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Set up")).toBeTruthy());
     fireEvent.press(screen.getByText("Set up"));
     expect(screen.getByText("Security question")).toBeTruthy();
@@ -130,7 +135,6 @@ describe("SecurityCard", () => {
   it("calls setupPvq with question and answer on save", async () => {
     (authApi.setupPvq as jest.Mock).mockResolvedValue({ ok: true, message: "Saved." });
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Set up")).toBeTruthy());
     fireEvent.press(screen.getByText("Set up"));
     fireEvent.changeText(
@@ -146,7 +150,6 @@ describe("SecurityCard", () => {
 
   it("does not call setupPvq when question is empty", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Set up")).toBeTruthy());
     fireEvent.press(screen.getByText("Set up"));
     fireEvent.changeText(screen.getByPlaceholderText("Your answer"), "some answer");
@@ -159,7 +162,6 @@ describe("SecurityCard", () => {
 
   it("opens password form when Change password is pressed", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Change your admin password")).toBeTruthy());
     // Find the Change button for password (second Change button or the one in the password row)
     const changeBtns = screen.queryAllByText("Change");
@@ -175,7 +177,6 @@ describe("SecurityCard", () => {
 
   it("shows password mismatch error", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Change your admin password")).toBeTruthy());
     const changeBtns = screen.queryAllByText("Change");
     fireEvent.press(changeBtns[changeBtns.length - 1]);
@@ -193,7 +194,6 @@ describe("SecurityCard", () => {
     // The button is disabled when newPw.length < 6 — the inline length check in handleChangePw
     // is defensive but unreachable via UI since the button never enables below 6 chars.
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Change your admin password")).toBeTruthy());
     const changeBtns = screen.queryAllByText("Change");
     fireEvent.press(changeBtns[changeBtns.length - 1]);
@@ -206,7 +206,6 @@ describe("SecurityCard", () => {
 
   it("closes password form when Cancel is pressed", async () => {
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Change your admin password")).toBeTruthy());
     const changeBtns = screen.queryAllByText("Change");
     fireEvent.press(changeBtns[changeBtns.length - 1]);
@@ -223,7 +222,6 @@ describe("SecurityCard", () => {
       message: "Failed to save question.",
     });
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Set up")).toBeTruthy());
     fireEvent.press(screen.getByText("Set up"));
     fireEvent.changeText(
@@ -244,7 +242,6 @@ describe("SecurityCard", () => {
       message: "Password updated.",
     });
     render(<SecurityCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Account Security"));
     await waitFor(() => expect(screen.getByText("Change your admin password")).toBeTruthy());
     const changeBtns = screen.queryAllByText("Change");
     fireEvent.press(changeBtns[changeBtns.length - 1]);

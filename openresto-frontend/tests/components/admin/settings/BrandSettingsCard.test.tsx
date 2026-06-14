@@ -31,6 +31,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 const baseProps = {
   borderColor: "#ddd",
   mutedColor: "#888",
@@ -43,7 +50,7 @@ describe("BrandSettingsCard", () => {
     mockBrandData = { primaryColor: "#0a7ea4", appName: "Open Resto", headerImageUrl: null };
   });
 
-  it("renders in collapsed state with Brand Identity title", () => {
+  it("renders with Brand Identity title", () => {
     render(<BrandSettingsCard {...baseProps} />);
     expect(screen.getByText("Brand Identity")).toBeTruthy();
   });
@@ -54,16 +61,14 @@ describe("BrandSettingsCard", () => {
     expect(screen.getByText(/#0a7ea4/)).toBeTruthy();
   });
 
-  it("expands when header is pressed", () => {
+  it("shows expanded content on render", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.getByText("App Name")).toBeTruthy();
     expect(screen.getByText("Primary Color")).toBeTruthy();
   });
 
-  it("collapses when header is pressed again", () => {
+  it("collapses when header is pressed", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.getByText("App Name")).toBeTruthy();
     fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.queryByText("App Name")).toBeNull();
@@ -71,7 +76,6 @@ describe("BrandSettingsCard", () => {
 
   it("allows changing app name", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     const input = screen.getByDisplayValue("Open Resto");
     fireEvent.changeText(input, "My Resto");
     expect(screen.getByDisplayValue("My Resto")).toBeTruthy();
@@ -79,13 +83,11 @@ describe("BrandSettingsCard", () => {
 
   it("shows character count for app name", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.getByText("10/32")).toBeTruthy(); // "Open Resto" = 10 chars
   });
 
   it("selects a preset color when pressed", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     // Find the preset color input to verify it changes
     const colorInput = screen.getByDisplayValue("#0a7ea4");
     fireEvent.changeText(colorInput, "#2563eb");
@@ -94,14 +96,12 @@ describe("BrandSettingsCard", () => {
 
   it("shows Upload button when no hero image", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.getByText("Upload")).toBeTruthy();
   });
 
   it("calls saveBrandSettings when Save is pressed", async () => {
     (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved successfully." });
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });
@@ -122,7 +122,6 @@ describe("BrandSettingsCard", () => {
       })
     );
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     act(() => {
       fireEvent.press(screen.getByText("Save"));
     });
@@ -135,7 +134,6 @@ describe("BrandSettingsCard", () => {
   it("shows error message when saveBrandSettings returns null", async () => {
     (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue(null);
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });
@@ -146,7 +144,6 @@ describe("BrandSettingsCard", () => {
 
   it("disables Save when appName is empty", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     fireEvent.changeText(screen.getByDisplayValue("Open Resto"), "");
     const saveBtn = screen.getByText("Save");
     expect(saveBtn).toBeTruthy();
@@ -154,7 +151,6 @@ describe("BrandSettingsCard", () => {
 
   it("presses a preset color swatch and updates the color input", () => {
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     fireEvent.press(screen.getByTestId("color-swatch-#2563eb"));
     expect(screen.getByDisplayValue("#2563eb")).toBeTruthy();
   });
@@ -171,7 +167,6 @@ describe("BrandSettingsCard", () => {
     jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
     (adminApi.uploadHeroImage as jest.Mock).mockResolvedValue("https://example.com/hero.jpg");
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     act(() => {
       fireEvent.press(screen.getByText("Upload"));
     });
@@ -196,7 +191,6 @@ describe("BrandSettingsCard", () => {
     jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
     (adminApi.uploadHeroImage as jest.Mock).mockResolvedValue(null);
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     act(() => {
       fireEvent.press(screen.getByText("Upload"));
     });
@@ -219,7 +213,6 @@ describe("BrandSettingsCard", () => {
     };
     jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     act(() => {
       fireEvent.press(screen.getByText("Upload"));
     });
@@ -242,7 +235,6 @@ describe("BrandSettingsCard", () => {
     };
     jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     act(() => {
       fireEvent.press(screen.getByText("Upload"));
     });
@@ -259,7 +251,6 @@ describe("BrandSettingsCard", () => {
       headerImageUrl: "https://example.com/hero.jpg",
     };
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     expect(screen.getByText("Change")).toBeTruthy();
     expect(screen.getByText("Remove")).toBeTruthy();
   });
@@ -272,7 +263,6 @@ describe("BrandSettingsCard", () => {
     };
     (adminApi.deleteHeroImage as jest.Mock).mockResolvedValue(undefined);
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     await act(async () => {
       fireEvent.press(screen.getByText("Remove"));
     });
@@ -287,7 +277,6 @@ describe("BrandSettingsCard", () => {
       message: "Failed to update brand.",
     });
     render(<BrandSettingsCard {...baseProps} />);
-    fireEvent.press(screen.getByText("Brand Identity"));
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });

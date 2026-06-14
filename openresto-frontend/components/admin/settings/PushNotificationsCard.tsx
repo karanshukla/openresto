@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, Platform, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,7 +31,7 @@ export function PushNotificationsCard() {
   const mutedColor = colors.muted;
   const cardBg = colors.card;
 
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = usePersistedState("settings:push:expanded", true);
   const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
   const [pushState, setPushState] = useState<PushState>("loading");
   const [working, setWorking] = useState(false);

@@ -60,6 +60,7 @@ function AdminLayoutInner() {
       "/settings": "Settings",
       "/bookings": "Bookings",
       "/bookings/new": "New Walk-in",
+      "/locations": "Locations",
       "/login": "Admin Login",
     };
     /* istanbul ignore next */
@@ -131,6 +132,7 @@ function AdminLayoutInner() {
       <Stack.Screen name="dashboard" options={{ title: "Dashboard", headerBackVisible: false }} />
       <Stack.Screen name="bookings/index" options={{ title: "Bookings" }} />
       <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
+      <Stack.Screen name="locations" options={{ title: "Locations" }} />
       <Stack.Screen name="settings" options={{ title: "Settings" }} />
     </Stack>
   );

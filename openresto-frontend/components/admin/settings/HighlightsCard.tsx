@@ -1,4 +1,5 @@
 import { useState, useEffect, type ComponentProps } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -81,7 +82,7 @@ export function HighlightsCard({
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
   const [editState, setEditState] = useState<EditState>(emptyEdit());
   const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = usePersistedState("settings:highlights:expanded", true);
 
   useEffect(() => {
     adminGetHighlights().then((data) => {

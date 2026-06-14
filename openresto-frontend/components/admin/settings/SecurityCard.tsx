@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -28,7 +29,7 @@ export function SecurityCard({
   const [confirmPw, setConfirmPw] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = usePersistedState("settings:security:expanded", true);
 
   const brand = useBrand();
   const primaryColor = brand.primaryColor || COLORS.primary;

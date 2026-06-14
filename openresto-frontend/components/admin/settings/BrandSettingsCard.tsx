@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -30,7 +31,7 @@ export function BrandSettingsCard({
   const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = usePersistedState("settings:brand:expanded", true);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
