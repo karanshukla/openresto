@@ -1,4 +1,4 @@
-import { useRef, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Animated } from "react-native";
 
 export function AnimatedAccordion({
@@ -8,7 +8,7 @@ export function AnimatedAccordion({
   expanded: boolean;
   children: ReactNode;
 }) {
-  const anim = useRef(new Animated.Value(expanded ? 1 : 0)).current;
+  const [anim] = useState(() => new Animated.Value(expanded ? 1 : 0));
 
   useEffect(() => {
     Animated.timing(anim, {
