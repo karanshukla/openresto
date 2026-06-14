@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { getPvqStatus, setupPvq, changePassword, PvqStatus } from "@/api/auth";
 import { useBrand } from "@/context/BrandContext";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 
 export function SecurityCard({
@@ -88,7 +89,7 @@ export function SecurityCard({
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
       </Pressable>
 
-      {expanded && (
+      <AnimatedAccordion expanded={expanded}>
         <>
           {/* PVQ status row */}
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
@@ -233,7 +234,7 @@ export function SecurityCard({
             </View>
           )}
         </>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

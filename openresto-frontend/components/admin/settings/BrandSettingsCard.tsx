@@ -9,6 +9,7 @@ import { COLORS } from "@/theme/theme";
 import { saveBrandSettings, uploadHeroImage, deleteHeroImage } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
 import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 
 const MAX_HERO_MB = 5;
@@ -119,7 +120,7 @@ export function BrandSettingsCard({
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
       </Pressable>
 
-      {expanded && (
+      <AnimatedAccordion expanded={expanded}>
         <View style={[styles.secForm, { borderTopColor: borderColor }]}>
           <View style={styles.field}>
             <View
@@ -291,7 +292,7 @@ export function BrandSettingsCard({
             {saving ? "Saving…" : "Save"}
           </Button>
         </View>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

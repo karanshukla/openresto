@@ -14,6 +14,8 @@ import {
   adminSetRestaurantArchived,
 } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 
 import { LocationCard } from "@/components/admin/settings/LocationCard";
 import { styles } from "@/components/admin/settings/settings.styles";
@@ -153,8 +155,14 @@ export default function AdminLocationsScreen() {
   const [addingLocation, setAddingLocation] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [savingLocation, setSavingLocation] = useState(false);
-  const [locationExpanded, setLocationExpanded] = useState(true);
-  const [dangerZoneExpanded, setDangerZoneExpanded] = useState(false);
+  const [locationExpanded, setLocationExpanded] = usePersistedState(
+    "locations:location:expanded",
+    true
+  );
+  const [dangerZoneExpanded, setDangerZoneExpanded] = usePersistedState(
+    "locations:danger:expanded",
+    false
+  );
   const [dangerSelectedId, setDangerSelectedId] = useState<number | null>(null);
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
   const [deleting, setDeleting] = useState(false);
@@ -256,7 +264,7 @@ export default function AdminLocationsScreen() {
             />
           </Pressable>
 
-          {locationExpanded && (
+          <AnimatedAccordion expanded={locationExpanded}>
             <View style={[styles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
               {restaurants.length > 0 ? (
                 <View style={{ gap: 12 }}>
@@ -370,7 +378,7 @@ export default function AdminLocationsScreen() {
                 </View>
               )}
             </View>
-          )}
+          </AnimatedAccordion>
         </View>
       </View>
 
@@ -409,7 +417,7 @@ export default function AdminLocationsScreen() {
             />
           </Pressable>
 
-          {dangerZoneExpanded && (
+          <AnimatedAccordion expanded={dangerZoneExpanded}>
             <View style={[styles.secForm, { borderTopColor: borderColor, gap: 16 }]}>
               {allRestaurants.length > 0 && (
                 <ScrollView
@@ -684,7 +692,7 @@ export default function AdminLocationsScreen() {
                 </View>
               )}
             </View>
-          )}
+          </AnimatedAccordion>
         </View>
       </View>
 

@@ -14,6 +14,7 @@ import {
   type EmailFailureDto,
 } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 
 // Design CSS var mappings:
@@ -753,7 +754,7 @@ export function EmailSettingsCard({
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
       </Pressable>
 
-      {expanded && (
+      <AnimatedAccordion expanded={expanded}>
         <View style={[styles.secForm, { borderTopColor: borderColor, gap: 20 }]}>
           {/* Provider grid */}
           {providerGrid}
@@ -820,7 +821,7 @@ export function EmailSettingsCard({
             </Button>
           </View>
         </View>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

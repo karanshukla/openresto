@@ -14,6 +14,7 @@ import {
   adminDeleteHighlight,
   AdminHighlightDto,
 } from "@/api/admin";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 
 const ICON_OPTIONS = [
@@ -161,7 +162,7 @@ export function HighlightsCard({
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
       </Pressable>
 
-      {expanded && (
+      <AnimatedAccordion expanded={expanded}>
         <View style={[styles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
           <Pressable
             onPress={startNew}
@@ -287,7 +288,7 @@ export function HighlightsCard({
             </View>
           )}
         </View>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

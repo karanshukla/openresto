@@ -65,6 +65,7 @@
     ],
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/jest-mocks/styleMock.js",
+      "^@/components/common/AnimatedAccordion$": "<rootDir>/jest-mocks/AnimatedAccordion.js",
       "^@/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [
