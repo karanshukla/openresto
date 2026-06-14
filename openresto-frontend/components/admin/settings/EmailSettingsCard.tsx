@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, useWindowDimensions } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -155,7 +156,7 @@ export function EmailSettingsCard({
   const [testMsg, setTestMsg] = useState("");
   const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = usePersistedState("settings:email:expanded", true);
   const [sendConfirmations, setSendConfirmations] = useState(false);
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
   const [failures, setFailures] = useState<EmailFailureDto[]>([]);
