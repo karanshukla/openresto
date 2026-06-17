@@ -1,0 +1,197 @@
+name: Migration Safety Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'OpenRestoApi/Migrations/**.cs'
+      - 'OpenRestoApi/Infrastructure/Persistence/AppDbContext.cs'
+  push:
+    branches: [main]
+    paths:
+      - 'OpenRestoApi/Migrations/**.cs'
+      - 'OpenRestoApi/Infrastructure/Persistence/AppDbContext.cs'
+
+permissions:
+  contents: read
+
+jobs:
+  migration-check:
+    name: EF Core Migration Safety
+    runs-on: ubuntu-latest
+    env:
+      # Needed if EF design-time tooling invokes the app host
+      ADMIN_PASSWORD: ci-migration-check-password
+      JWT_KEY: ci-migration-check-jwt-key-must-be-32-chars-long
+      CONNECTION_STRING: "Data Source=/tmp/ef-tools.db"
+      ASPNETCORE_ENVIRONMENT: Development
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install EF Core CLI tools
+        run: dotnet tool install --global dotnet-ef --version '10.0.*'
+
+      - name: Restore and build
+        working-directory: OpenRestoApi
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Detect new migration files
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+          else
+            # For a push to main, compare against the commit before this push
+            BASE="${{ github.event.before }}"
+          fi
+
+          NEW_FILES=$(git diff "$BASE"...HEAD --name-status -- 'OpenRestoApi/Migrations/*.cs' \
+            | grep "^A" \
+            | grep -v "Designer\.cs\|Snapshot\." \
+            | awk '{print $2}' \
+            | sort)
+
+          if [ -z "$NEW_FILES" ]; then
+            echo "No new migration files — skipping upgrade-path test."
+            echo "has_new_migrations=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "New migration files:"
+          echo "$NEW_FILES"
+          echo "has_new_migrations=true" >> $GITHUB_OUTPUT
+
+          # Sort by filename (migration IDs are datetime-prefixed, so sort == chronological order)
+          FIRST_NEW=$(echo "$NEW_FILES" | head -1 | xargs basename | sed 's/\.cs$//')
+          echo "first_new_migration=$FIRST_NEW" >> $GITHUB_OUTPUT
+
+          # Find the migration that immediately precedes the first new one
+          ALL_MIGRATIONS=$(ls OpenRestoApi/Migrations/*.cs 2>/dev/null \
+            | grep -v "Designer\.cs\|Snapshot\." \
+            | sort \
+            | xargs -I{} basename {} .cs \
+            | sort)
+
+          BASELINE=$(echo "$ALL_MIGRATIONS" | grep -B1 "^${FIRST_NEW}$" | head -1)
+
+          # If the first new migration IS the oldest migration, there is no baseline
+          if [ "$BASELINE" = "$FIRST_NEW" ]; then
+            BASELINE=""
+          fi
+
+          echo "baseline_migration=$BASELINE" >> $GITHUB_OUTPUT
+          echo "Baseline migration: ${BASELINE:-(empty — first migration ever)}"
+
+      - name: Generate full migration SQL
+        if: steps.detect.outputs.has_new_migrations == 'true'
+        working-directory: OpenRestoApi
+        run: |
+          dotnet ef migrations script \
+            --configuration Release --no-build \
+            --output /tmp/all-migrations.sql
+          echo "=== Full migration SQL preview (first 40 lines) ==="
+          head -40 /tmp/all-migrations.sql
+
+      - name: Generate baseline SQL (schema before new migrations)
+        if: >
+          steps.detect.outputs.has_new_migrations == 'true' &&
+          steps.detect.outputs.baseline_migration != ''
+        working-directory: OpenRestoApi
+        run: |
+          BASELINE="${{ steps.detect.outputs.baseline_migration }}"
+          dotnet ef migrations script "0" "$BASELINE" \
+            --configuration Release --no-build \
+            --output /tmp/baseline-migrations.sql
+          echo "=== Baseline SQL preview (first 40 lines) ==="
+          head -40 /tmp/baseline-migrations.sql
+
+      - name: Generate upgrade-only SQL (new migrations only)
+        if: >
+          steps.detect.outputs.has_new_migrations == 'true' &&
+          steps.detect.outputs.baseline_migration != ''
+        working-directory: OpenRestoApi
+        run: |
+          BASELINE="${{ steps.detect.outputs.baseline_migration }}"
+          dotnet ef migrations script "$BASELINE" \
+            --configuration Release --no-build \
+            --output /tmp/upgrade-only.sql
+          echo "=== Upgrade SQL preview (first 40 lines) ==="
+          head -40 /tmp/upgrade-only.sql
+
+      - name: Install SQLite
+        if: steps.detect.outputs.has_new_migrations == 'true'
+        run: sudo apt-get install -y --no-install-recommends sqlite3
+
+      - name: Test fresh install (all migrations on empty DB)
+        if: steps.detect.outputs.has_new_migrations == 'true'
+        run: |
+          sqlite3 /tmp/fresh.db < /tmp/all-migrations.sql
+          echo "=== Fresh install: tables ==="
+          sqlite3 /tmp/fresh.db ".tables"
+          echo "=== Fresh install: migration history ==="
+          sqlite3 /tmp/fresh.db \
+            "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId;"
+
+      - name: Test upgrade path (baseline → new migrations)
+        if: >
+          steps.detect.outputs.has_new_migrations == 'true' &&
+          steps.detect.outputs.baseline_migration != ''
+        run: |
+          # Create a database representing an existing install at the baseline version
+          sqlite3 /tmp/upgrade.db < /tmp/baseline-migrations.sql
+          echo "=== Pre-upgrade: tables ==="
+          sqlite3 /tmp/upgrade.db ".tables"
+          echo "=== Pre-upgrade: migration history ==="
+          sqlite3 /tmp/upgrade.db \
+            "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId;"
+
+          # Apply only the new migrations (simulates an in-place upgrade)
+          sqlite3 /tmp/upgrade.db < /tmp/upgrade-only.sql
+          echo "=== Post-upgrade: tables ==="
+          sqlite3 /tmp/upgrade.db ".tables"
+          echo "=== Post-upgrade: migration history ==="
+          sqlite3 /tmp/upgrade.db \
+            "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId;"
+
+      - name: Compare schemas — fresh install vs upgrade path
+        if: >
+          steps.detect.outputs.has_new_migrations == 'true' &&
+          steps.detect.outputs.baseline_migration != ''
+        run: |
+          # Exclude the migrations history table itself — its rows differ by design
+          sqlite3 /tmp/fresh.db ".schema" \
+            | grep -v "__EFMigrationsHistory" | sort > /tmp/fresh-schema.txt
+          sqlite3 /tmp/upgrade.db ".schema" \
+            | grep -v "__EFMigrationsHistory" | sort > /tmp/upgraded-schema.txt
+
+          if diff -u /tmp/fresh-schema.txt /tmp/upgraded-schema.txt; then
+            echo ""
+            echo "Schema check passed: fresh install and upgrade produce identical schemas."
+          else
+            echo ""
+            echo "SCHEMA MISMATCH DETECTED"
+            echo "The schema after a fresh install differs from the schema after upgrading."
+            echo "This usually means a migration's Up() doesn't exactly replicate the model"
+            echo "snapshot (e.g. a column/index/constraint is missing or extra on one path)."
+            echo "Fix the migration before merging — existing self-hosters will be affected."
+            exit 1
+          fi
+
+      - name: Generate idempotent script (sanity check)
+        if: steps.detect.outputs.has_new_migrations == 'true'
+        working-directory: OpenRestoApi
+        run: |
+          dotnet ef migrations script \
+            --idempotent \
+            --configuration Release --no-build \
+            --output /tmp/idempotent.sql
+          echo "Idempotent script generated successfully ($(wc -l < /tmp/idempotent.sql) lines)."

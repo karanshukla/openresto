@@ -65,3 +65,5 @@ update.log
 # Session handoff notes
 .remember/
 docs/*
+# Track user-facing docs explicitly
+!docs/backup-restore.md

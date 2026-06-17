@@ -6,6 +6,7 @@
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PWA](https://img.shields.io/badge/Expo%20Router-PWA%20ready-000020?logo=expo&logoColor=white)](https://expo.dev/router)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![GHCR](https://img.shields.io/badge/GHCR-multi--arch-0d1117?logo=github&logoColor=white)](https://github.com/karanshukla/openresto/pkgs/container/openresto-backend)
 [![Zero external services](https://img.shields.io/badge/external%20services-zero-22c55e)](https://github.com/karanshukla/openresto)
 [![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b.svg)](https://opensource.org/licenses/MIT)
 [![Made in Canada](https://img.shields.io/badge/Made%20in-Canada%20🍁-d52b1e)](https://github.com/karanshukla/openresto)
@@ -84,12 +85,24 @@ flowchart TD
 
 ## Quick Start
 
-### Docker (recommended)
+### Self-hosted install (pre-built images — recommended for production)
+
+Download the `docker-compose.yml` from the [latest release](https://github.com/karanshukla/openresto/releases/latest), create a `.env` file based on [`.env.example`](.env.example), then:
+
+```bash
+docker compose up -d
+```
+
+Pre-built `linux/amd64` and `linux/arm64` images are pulled from GHCR — no build step, works on Pi/NAS boxes out of the box. The backend applies any pending database migrations automatically before accepting traffic.
+
+For backup and restore procedures, see [`docs/backup-restore.md`](docs/backup-restore.md).
+
+### Docker (build from source)
 
 For local development:
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 - App: http://localhost:5062
@@ -124,7 +137,8 @@ openresto/
 │   ├── Core/
 │   │   ├── Domain/              # Entities (Booking, Restaurant, Table, etc.)
 │   │   └── Application/         # DTOs, interfaces, services, mappings
-│   └── Infrastructure/          # EF Core, email, auth, holds, cookies
+│   ├── Infrastructure/          # EF Core, email, auth, holds, cookies
+│   └── Migrations/              # EF Core migration history
 ├── OpenRestoApi.Tests/          # xUnit + Moq tests
 ├── openresto-frontend/          # Expo/React Native app
 │   ├── app/                     # File-based routing
@@ -134,8 +148,16 @@ openresto/
 │   ├── components/              # React components
 │   ├── context/                 # State management (Theme, Brand)
 │   └── hooks/                   # Custom hooks
-├── docker-compose.yml           # Multi-container orchestration
-└── nginx.conf                   # Reverse proxy config
+├── docs/
+│   └── backup-restore.md        # SQLite backup, restore, and upgrade guide
+├── .github/workflows/
+│   ├── ci.yml                   # PR/push CI (lint, test, Docker, ZAP, E2E)
+│   ├── release.yml              # Tag-triggered multi-arch GHCR build + GitHub Release
+│   └── migration-check.yml      # Schema safety check for EF Core migration PRs
+├── docker-compose.yml           # Build-from-source dev/CI stack
+├── docker-compose.release.yml   # Pull-from-GHCR self-hosted install
+├── docker-compose.vps.yml       # VPS deployment with SSL
+└── CHANGELOG.md                 # Release history (Keep a Changelog format)
 ```
 
 ## Configuration
@@ -206,7 +228,29 @@ cd openresto-frontend && npm test -- --coverage
 - **Single command dev** — `npm run dev` starts the .NET backend (hot reload) and Expo frontend concurrently.
 - **100% frontend coverage target** — Jest + React Native Testing Library; Playwright E2E tests against the live Docker stack.
 - **Mapperly source-gen mappers** — zero runtime reflection, compile-time DTO mappings.
-- **Self-hosted** — runs on any VPS with Docker, SQLite included, no managed database or CDN required.
+- **Self-hosted** — runs on any VPS, Pi, or NAS with Docker; SQLite included, no managed database or CDN required.
+- **Auto-migrations on startup** — the backend runs `Database.Migrate()` before accepting traffic; upgrading is `docker compose pull && docker compose up -d`.
+- **Migration safety CI** — every PR that adds an EF Core migration generates SQL for both a fresh install and an upgrade from the previous state, applies both to SQLite, and asserts the schemas are identical. Catches migration bugs before they reach self-hosters.
+- **Multi-arch releases** — `linux/amd64` and `linux/arm64` images published to GHCR on every semver tag; Pi/NAS users get native binaries.
+
+## Cutting a release
+
+1. **Update `CHANGELOG.md`** — add a `## [x.y.z] - YYYY-MM-DD` section above `## [Unreleased]` and update the comparison links at the bottom of the file.
+
+2. **Merge to main** — all CI must be green before tagging.
+
+3. **Tag and push:**
+
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+4. **That's it.** The [`release.yml`](.github/workflows/release.yml) workflow triggers automatically and:
+   - Builds `linux/amd64` + `linux/arm64` Docker images for the backend, frontend, and nginx proxy
+   - Pushes them to GHCR as `ghcr.io/karanshukla/openresto-{backend,frontend,nginx}:v1.0.0` (and `:latest`)
+   - Creates a GitHub Release with the `[x.y.z]` section from `CHANGELOG.md` as the release notes
+   - Attaches a pinned `docker-compose.yml` (with the exact image tag baked in) as a downloadable release asset — this is what self-hosters download
 
 ## License
 

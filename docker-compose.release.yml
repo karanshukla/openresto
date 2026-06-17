@@ -1,0 +1,86 @@
+# OpenResto — self-hosted install
+#
+# Quick start:
+#   1. Copy this file and .env.example to a directory on your server
+#   2. Create a .env file based on .env.example (JWT_KEY, ADMIN_PASSWORD are required)
+#   3. docker compose -f docker-compose.release.yml up -d
+#
+# To pin a specific release version instead of latest:
+#   OPENRESTO_VERSION=v1.0.0 docker compose -f docker-compose.release.yml up -d
+#
+# Backup: see docs/backup-restore.md
+# This file uses pre-built images from GHCR — no local build required.
+
+volumes:
+  db_data:
+  media_data:
+
+services:
+  backend:
+    image: ghcr.io/karanshukla/openresto-backend:${OPENRESTO_VERSION:-latest}
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      # Set CORS_ORIGINS to your public domain, e.g. https://bookings.example.com
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      # Required: minimum 32 random characters — generate with: openssl rand -base64 48
+      - JWT_KEY=${JWT_KEY}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@openresto.com}
+      # Required on first boot to seed the admin account
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CONNECTION_STRING=Data Source=/data/openresto.db
+      - DATA_PROTECTION_KEYS_PATH=/data/dp-keys
+      # Optional VAPID push notifications — leave empty to disable
+      - Vapid__PublicKey=${VAPID_PUBLIC_KEY:-}
+      - Vapid__PrivateKey=${VAPID_PRIVATE_KEY:-}
+      - Vapid__Subject=${VAPID_SUBJECT:-}
+      # Optional SMTP — leave empty to disable email
+      - EmailSettings__Host=${SMTP_HOST:-}
+      - EmailSettings__Port=${SMTP_PORT:-587}
+      - EmailSettings__Username=${SMTP_USERNAME:-}
+      - EmailSettings__Password=${SMTP_PASSWORD:-}
+      - EmailSettings__FromEmail=${SMTP_FROM_EMAIL:-}
+      - EmailSettings__FromName=${SMTP_FROM_NAME:-OpenResto}
+      - EmailSettings__EnableSsl=${SMTP_ENABLE_SSL:-true}
+    volumes:
+      - db_data:/data
+      - media_data:/app/wwwroot/media
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/karanshukla/openresto-frontend:${OPENRESTO_VERSION:-latest}
+    environment:
+      - EXPO_PUBLIC_API_URL=/api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  reverse-proxy:
+    image: ghcr.io/karanshukla/openresto-nginx:${OPENRESTO_VERSION:-latest}
+    ports:
+      # Expose on port 80 by default. Put a TLS-terminating reverse proxy (Nginx
+      # Proxy Manager, Traefik, Caddy, Cloudflare Tunnel) in front for HTTPS.
+      - "${HOST_PORT:-80}:80"
+    environment:
+      - PORT=80
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=8080
+      - FRONTEND_HOST=frontend
+      - FRONTEND_PORT=8081
+    volumes:
+      - media_data:/usr/share/nginx/html/media:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped

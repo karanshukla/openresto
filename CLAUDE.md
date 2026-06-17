@@ -35,7 +35,23 @@ npm run lint:fix     # auto-fix lint issues
 ### Docker (full stack through nginx)
 
 ```bash
-docker compose up    # full stack on localhost:5062
+docker compose up    # full stack on localhost:5062 (builds from source)
+```
+
+### Release (tag-triggered)
+
+```bash
+# Update CHANGELOG.md with a ## [x.y.z] - YYYY-MM-DD section first, then:
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This triggers `.github/workflows/release.yml`, which builds `linux/amd64` + `linux/arm64` images for backend, frontend, and nginx; pushes them to GHCR (`ghcr.io/karanshukla/openresto-{backend,frontend,nginx}:<tag>`); and creates a GitHub Release with the per-version CHANGELOG section as notes and a pinned `docker-compose.yml` as a downloadable asset.
+
+`docker-compose.release.yml` in the repo is the self-hoster install template. It references `${OPENRESTO_VERSION:-latest}` — the release workflow substitutes the actual tag before attaching it to the release. Self-hosters can also run any version directly:
+
+```bash
+OPENRESTO_VERSION=v1.0.0 docker compose -f docker-compose.release.yml up -d
 ```
 
 ## Architecture
@@ -69,6 +85,8 @@ OpenRestoApi/
 - `HoldService` is a **singleton** in-memory store — appropriate for single-instance deployment. Holds expire after 5 minutes. If you need multi-instance, swap for Redis.
 - The OpenAPI spec (`/openapi/v1.json`) is only exposed when `ASPNETCORE_ENVIRONMENT=Development`. The dev nginx template (`nginx/default.conf.template`) proxies `/openapi/` to the backend for ZAP CI scanning; the prod nginx (`nginx-vps/`) does not.
 - **EF migrations with running dev server**: exe is locked, so use `dotnet ef migrations add <Name> --no-build`. If obj/ DLLs are stale the generated `Up()` will be empty — write it manually.
+- **Migration safety invariant**: a new migration's `Up()` must produce an identical schema whether applied to a fresh database or an upgrade from the previous migration. The `migration-check.yml` CI workflow enforces this by generating SQL for both paths, applying them to SQLite, and diffing the schemas. If they diverge (e.g. `EnsureCreated` and `Migrate()` produce different column order or constraints), the check fails. Always verify that `dotnet ef migrations script "0" PREV_MIGRATION` + `dotnet ef migrations script PREV_MIGRATION` together match `dotnet ef migrations script`.
+- **Auto-migration on startup**: `DatabaseExtensions.InitializeDatabase` calls `db.Database.Migrate()` with a retry loop before `app.Run()`. Fresh installs and upgrades are both handled automatically — no manual SQL steps needed.
 - **Cross-platform image generation**: use `Magick.NET-Q8-AnyCPU` (ships Linux x64 native libs, no apt-get needed). Never add `Svg` (SVG.NET) — it uses `System.Drawing.Common` which is Windows-only in .NET 7+.
 
 ### Frontend — Expo Router file-based routing
@@ -134,3 +152,5 @@ Booking history is intentionally **GDPR-purgeable** via the existing `PurgeBooki
 - **Testing async effects with delays**: for `useEffect` code that fires inside a `setTimeout`, use `waitFor` with a custom `timeout` (e.g. `{ timeout: 1000 }`) rather than fake timers — the real timer fires within the `waitFor` polling window. Example: `await waitFor(() => expect(mockFn).toHaveBeenCalled(), { timeout: 1000 })`.
 - **Testing cross-platform scroll**: In the jsdom + RN test renderer environment, `View` refs are RN component instances (NOT DOM elements), so `HTMLElement.prototype.scrollIntoView` is never reachable. Test the web scroll path by waiting past the timeout delay and asserting no crash (the `scrollIntoView?.()` optional chain is a no-op but the line is still covered). For the native path, spy on `findNodeHandle` via `jest.spyOn(require("react-native"), "findNodeHandle")`.
 - **CI ZAP scan**: runs against the full Docker stack; the OpenAPI spec (`/openapi/v1.json`) is used as the scan target so ZAP discovers all endpoints. Ignored rules are listed in `.zap-rules.tsv`.
+- **Migration safety check** (`.github/workflows/migration-check.yml`): triggers on any PR/push that adds or modifies files in `OpenRestoApi/Migrations/` or `AppDbContext.cs`. Detects which migration files are new, generates baseline SQL (0 → last old migration), generates upgrade-only SQL (last old migration → HEAD), applies both paths to separate SQLite databases, and asserts their schemas match. Also generates an idempotent script as a sanity check. Does not trigger if no migration files changed.
+- **Backup/restore**: see `docs/backup-restore.md` for procedures covering named volumes, bind mounts, WAL checkpointing, automated cron backups, online `.backup` snapshots, and the safe upgrade path.
