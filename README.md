@@ -1,5 +1,6 @@
 # OpenResto
 
+[![Release](https://img.shields.io/github/v/release/karanshukla/openresto)](https://github.com/karanshukla/openresto/releases/latest)
 [![CI](https://github.com/karanshukla/openresto/actions/workflows/ci.yml/badge.svg)](https://github.com/karanshukla/openresto/actions/workflows/ci.yml)
 [![Coverage](https://coveralls.io/repos/github/karanshukla/openresto/badge.svg?branch=main)](https://coveralls.io/github/karanshukla/openresto)
 [![OWASP ZAP](https://img.shields.io/badge/OWASP%20ZAP-scanned-5C2D91?logo=owasp&logoColor=white)](https://www.zaproxy.org/)
