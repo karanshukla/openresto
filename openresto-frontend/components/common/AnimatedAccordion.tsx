@@ -11,9 +11,12 @@ export function AnimatedAccordion({
   const [anim] = useState(() => new Animated.Value(expanded ? 1 : 0));
   const [mounted, setMounted] = useState(expanded);
 
+  if (expanded && !mounted) {
+    setMounted(true);
+  }
+
   useEffect(() => {
     if (expanded) {
-      setMounted(true);
       Animated.timing(anim, {
         toValue: 1,
         duration: 180,

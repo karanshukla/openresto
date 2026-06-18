@@ -12,6 +12,10 @@ import {
   adminDeleteRestaurant,
   adminGetRestaurants,
   adminSetRestaurantArchived,
+  pauseRestaurantBookings,
+  unpauseRestaurantBookings,
+  extendRestaurantBookings,
+  BookingDetailDto,
 } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -64,8 +68,18 @@ export default function AdminLocationsScreen() {
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState(false);
   const [allRestaurants, setAllRestaurants] = useState<
-    { id: number; name: string; isArchived?: boolean }[]
+    {
+      id: number;
+      name: string;
+      isArchived?: boolean;
+      bookingsPausedUntil?: string;
+      activeBookingsCount?: number;
+    }[]
   >([]);
+  const [pausing, setPausing] = useState(false);
+  const [extending, setExtending] = useState(false);
+  const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
+  const [extendNoActive, setExtendNoActive] = useState(false);
   const isDark = useColorScheme() === "dark";
   const {
     state: confirmState,
@@ -102,9 +116,21 @@ export default function AdminLocationsScreen() {
 
   const selectedRestaurant = restaurants.find((r) => r.id === selectedId) ?? null;
   const dangerSelectedRestaurant = allRestaurants.find((r) => r.id === dangerSelectedId) ?? null;
-
+  const selectedAdminData = allRestaurants.find((r) => r.id === selectedId) ?? null;
+  const isPaused = selectedAdminData?.bookingsPausedUntil
+    ? new Date(selectedAdminData.bookingsPausedUntil) > new Date()
+    : false;
+  const pausedUntilText =
+    isPaused && selectedAdminData?.bookingsPausedUntil
+      ? new Date(selectedAdminData.bookingsPausedUntil).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
   function handleSelectLocation(id: number) {
     setSelectedId(id);
+    setExtendedBookings(null);
+    setExtendNoActive(false);
   }
 
   function handleDangerSelect(id: number) {
@@ -284,6 +310,120 @@ export default function AdminLocationsScreen() {
             );
           })}
         </ScrollView>
+      )}
+
+      {/* ── Booking action buttons ──────────────────────────────────── */}
+      {selectedRestaurant && (
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Pressable
+            disabled={pausing}
+            onPress={async () => {
+              setPausing(true);
+              if (isPaused) {
+                await unpauseRestaurantBookings(selectedRestaurant.id);
+                setAllRestaurants((prev) =>
+                  prev.map((r) =>
+                    r.id === selectedRestaurant.id ? { ...r, bookingsPausedUntil: undefined } : r
+                  )
+                );
+              } else {
+                await pauseRestaurantBookings(selectedRestaurant.id, 60);
+                setAllRestaurants((prev) =>
+                  prev.map((r) =>
+                    r.id === selectedRestaurant.id
+                      ? {
+                          ...r,
+                          bookingsPausedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                        }
+                      : r
+                  )
+                );
+              }
+              setPausing(false);
+            }}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              paddingVertical: 10,
+              borderRadius: BORDER_RADIUS.md,
+              borderWidth: 1,
+              borderColor: isPaused ? "#16a34a" : "#ca8a04",
+              backgroundColor: isPaused ? "rgba(22,163,74,0.08)" : "rgba(234,179,8,0.08)",
+              opacity: pausing ? 0.5 : 1,
+              minHeight: 44,
+            }}
+          >
+            <Ionicons
+              name={isPaused ? "play-circle-outline" : "pause-circle-outline"}
+              size={15}
+              color={isPaused ? "#16a34a" : "#ca8a04"}
+            />
+            <ThemedText
+              style={{ fontSize: 13, fontWeight: "600", color: isPaused ? "#16a34a" : "#ca8a04" }}
+            >
+              {pausing ? "Saving…" : isPaused ? `Resume (until ${pausedUntilText})` : "Pause 1h"}
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            disabled={extending || extendNoActive}
+            onPress={async () => {
+              if (extendedBookings !== null) {
+                setExtendedBookings(null);
+                setExtendNoActive(false);
+                return;
+              }
+              setExtending(true);
+              setExtendNoActive(false);
+              const result = await extendRestaurantBookings(selectedRestaurant.id, 60);
+              setExtending(false);
+              if (result.ok) {
+                if (result.extendedBookings.length > 0) {
+                  setExtendedBookings(result.extendedBookings);
+                } else {
+                  setExtendNoActive(true);
+                }
+              }
+            }}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              paddingVertical: 10,
+              borderRadius: BORDER_RADIUS.md,
+              borderWidth: 1,
+              borderColor: borderColor,
+              opacity: extending || extendNoActive ? 0.5 : 1,
+              minHeight: 44,
+            }}
+          >
+            <Ionicons
+              name="timer-outline"
+              size={15}
+              color={extendedBookings !== null ? mutedColor : primaryColor}
+            />
+            <ThemedText
+              style={{
+                fontSize: 13,
+                fontWeight: "600",
+                color: extendedBookings !== null ? mutedColor : primaryColor,
+              }}
+            >
+              {extending
+                ? "Extending…"
+                : extendedBookings !== null
+                  ? `Extended ${extendedBookings.length} · Clear`
+                  : extendNoActive
+                    ? "No active bookings"
+                    : "Extend 60m"}
+            </ThemedText>
+          </Pressable>
+        </View>
       )}
 
       {/* ── Location detail or empty state ───────────────────────────── */}
