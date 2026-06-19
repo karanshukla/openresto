@@ -686,7 +686,8 @@ describe("LookupScreen", () => {
       .mockReturnValue(1);
     const measureLayoutSpy = jest
       .spyOn(View.prototype, "measureLayout")
-      .mockImplementation((_node: unknown, success: (x: number, y: number) => void) => {
+      .mockImplementation((...args: unknown[]) => {
+        const success = args[1] as (x: number, y: number) => void;
         success(0, 100);
       });
 
