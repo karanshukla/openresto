@@ -122,4 +122,13 @@ describe("RootLayout", () => {
     render(<RootLayout />);
     await waitFor(() => expect(screen.getByTestId("stack")).toBeTruthy());
   });
+
+  it("falls back to matchMedia when localStorage has no saved theme preference", () => {
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+    jest.resetModules();
+    require("@/app/_layout");
+    // matchMedia returns { matches: false }, so scheme = "light"
+    // document.documentElement.className is set by the module-level code
+    expect(document.documentElement.className).toBe("light");
+  });
 });

@@ -44,11 +44,15 @@ jest.mock("@/components/admin/bookings/EditBookingForm", () => ({
     handleSectionChange,
     setEditTableId,
     setEditSeats,
+    setEditDate,
+    setEditTime,
   }: {
     handleRestaurantChange: (v: string | number) => void;
     handleSectionChange: (v: string | number) => void;
     setEditTableId: (id: number) => void;
     setEditSeats: (s: string) => void;
+    setEditDate: (d: string) => void;
+    setEditTime: (t: string) => void;
   }) => {
     const { View, Text, Pressable } = require("react-native");
     return (
@@ -68,6 +72,12 @@ jest.mock("@/components/admin/bookings/EditBookingForm", () => ({
         </Pressable>
         <Pressable testID="set-invalid-seats-btn" onPress={() => setEditSeats("abc")}>
           <Text>Set Invalid Seats</Text>
+        </Pressable>
+        <Pressable testID="clear-date-btn" onPress={() => setEditDate("")}>
+          <Text>Clear Date</Text>
+        </Pressable>
+        <Pressable testID="clear-time-btn" onPress={() => setEditTime("")}>
+          <Text>Clear Time</Text>
         </Pressable>
       </View>
     );
@@ -739,5 +749,23 @@ describe("BookingDetailPopup", () => {
       expect(adminApi.adminUpdateBookingFull).toHaveBeenCalled();
     });
     (global as Record<string, unknown>).confirm = originalConfirm;
+  });
+
+  it("shows 'Date and time are required' when editDate is cleared before saving", async () => {
+    render(<BookingDetailPopup {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+    fireEvent.press(screen.getByText("Edit"));
+    await waitFor(() => expect(screen.getByTestId("clear-date-btn")).toBeTruthy());
+    act(() => {
+      fireEvent.press(screen.getByTestId("clear-date-btn"));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save Changes"));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("alert-message")).toBeTruthy();
+      expect(screen.getByText("Date and time are required")).toBeTruthy();
+    });
+    expect(adminApi.adminUpdateBookingFull).not.toHaveBeenCalled();
   });
 });

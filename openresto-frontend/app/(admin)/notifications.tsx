@@ -627,6 +627,7 @@ export default function NotificationsScreen() {
               </Pressable>
             )}
             <Pressable
+              testID={`delete-notif-${n.id}`}
               onPress={() => requestDelete(n.id)}
               hitSlop={6}
               style={[styles.actionDeleteBtn, { backgroundColor: hexToRgba(COLORS.error, 0.12) }]}

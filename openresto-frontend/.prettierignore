@@ -4,5 +4,6 @@ dist/
 android/
 ios/
 coverage/
+.coverage-tmp*/
 *.lock
 .claude/

@@ -50,3 +50,4 @@ playwright/.cache/
 
 # Coverage
 coverage/
+.coverage-tmp*/

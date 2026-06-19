@@ -2,17 +2,25 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import { Platform } from "react-native";
 import NotificationsScreen from "@/app/(admin)/notifications";
 import * as notificationsApi from "@/api/notifications";
 import * as restaurantsApi from "@/api/restaurants";
 
-// Mock ReanimatedSwipeable so gesture handler doesn't crash in jsdom
+// Mock ReanimatedSwipeable — exposes onSwipeableOpen via a testID button so tests can
+// simulate swipe-to-delete without needing real gesture-handler infrastructure.
 jest.mock("react-native-gesture-handler/ReanimatedSwipeable", () => {
-  const { View } = require("react-native");
-  return function MockSwipeable({ children }: any) {
-    return <View>{children}</View>;
+  const { View, Pressable, Text } = require("react-native");
+  return function MockSwipeable({ children, onSwipeableOpen }: any) {
+    return (
+      <View>
+        <Pressable testID="mock-swipe-delete" onPress={onSwipeableOpen}>
+          <Text>SwipeDelete</Text>
+        </Pressable>
+        {children}
+      </View>
+    );
   };
 });
 
@@ -486,5 +494,138 @@ describe("NotificationsScreen", () => {
     fireEvent.press(screen.getByText("Mark all read"));
     await waitFor(() => expect(mockMarkAllRead).toHaveBeenCalledWith(2));
     expect(mockMarkAllRead).not.toHaveBeenCalledWith(1);
+  });
+
+  it("relativeTime shows 'just now' for notifications created seconds ago", async () => {
+    const justNow = new Date(Date.now() - 30000).toISOString();
+    mockGetNotifications.mockResolvedValue({
+      items: [{ ...mockNotification, createdAt: justNow }],
+      totalCount: 1,
+    });
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText(/just now/)).toBeTruthy());
+  });
+
+  it("swipe to delete removes notification and shows toast", async () => {
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText("New Booking")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("mock-swipe-delete"));
+    });
+    await waitFor(() => expect(screen.getByText("Notification deleted")).toBeTruthy());
+    expect(mockDeleteNotification).toHaveBeenCalledWith(1);
+  });
+
+  it("trash button on unpinned row calls requestDelete which calls handleDelete", async () => {
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("delete-notif-1")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("delete-notif-1"));
+    });
+    await waitFor(() => expect(mockDeleteNotification).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(screen.getByText("Notification deleted")).toBeTruthy());
+  });
+
+  it("trash button on pinned row opens confirm modal", async () => {
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText("Pin")).toBeTruthy());
+    fireEvent.press(screen.getByText("Pin"));
+    await waitFor(() => expect(screen.getByText("Unpin")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("delete-notif-1"));
+    await waitFor(() => expect(screen.getByTestId("confirm-modal")).toBeTruthy());
+  });
+
+  it("confirming pinned delete calls handleConfirmedDelete", async () => {
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText("Pin")).toBeTruthy());
+    fireEvent.press(screen.getByText("Pin"));
+    await waitFor(() => expect(screen.getByText("Unpin")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("delete-notif-1"));
+    await waitFor(() => expect(screen.getByTestId("confirm-modal")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+    });
+    await waitFor(() => expect(mockDeleteNotification).toHaveBeenCalledWith(1));
+  });
+
+  it("cancelling pinned delete confirm closes modal without deleting", async () => {
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText("Pin")).toBeTruthy());
+    fireEvent.press(screen.getByText("Pin"));
+    await waitFor(() => expect(screen.getByText("Unpin")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("delete-notif-1"));
+    await waitFor(() => expect(screen.getByTestId("confirm-modal")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("cancel-btn"));
+    await waitFor(() => expect(screen.queryByTestId("confirm-modal")).toBeNull());
+    expect(mockDeleteNotification).not.toHaveBeenCalled();
+  });
+
+  it("shows 'push blocked' banner when Notification permission is denied and vapid key is set", async () => {
+    mockGetVapidPublicKey.mockResolvedValue("test-vapid-key");
+    (g.navigator as Record<string, unknown>).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: jest.fn().mockResolvedValue(null) },
+      }),
+    };
+    (g as Record<string, unknown>).PushManager = {};
+    Object.defineProperty(global, "Notification", {
+      value: { permission: "denied", requestPermission: jest.fn() },
+      configurable: true,
+      writable: true,
+    });
+    render(<NotificationsScreen />);
+    await waitFor(() =>
+      expect(
+        screen.getByText("Push notifications blocked — enable in browser site settings.")
+      ).toBeTruthy()
+    );
+  });
+
+  it("shows Enable button when push is inactive (not subscribed)", async () => {
+    mockGetVapidPublicKey.mockResolvedValue("test-vapid-key");
+    (g.navigator as Record<string, unknown>).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: jest.fn().mockResolvedValue(null) },
+      }),
+    };
+    (g as Record<string, unknown>).PushManager = {};
+    Object.defineProperty(global, "Notification", {
+      value: { permission: "default", requestPermission: jest.fn() },
+      configurable: true,
+      writable: true,
+    });
+    render(<NotificationsScreen />);
+    await waitFor(() =>
+      expect(
+        screen.getByText("Enable push notifications to get real-time booking alerts.")
+      ).toBeTruthy()
+    );
+    expect(screen.getByText("Enable")).toBeTruthy();
+  });
+
+  it("silentRefresh fetches new items when interval fires", async () => {
+    let capturedCallback: (() => Promise<void>) | null = null;
+    const setIntervalSpy = jest
+      .spyOn(global, "setInterval")
+      .mockImplementation((cb: any, delay: any) => {
+        if (delay === 30000) capturedCallback = cb;
+        return 0 as unknown as NodeJS.Timeout;
+      });
+
+    const newNotif = { ...mockNotification, id: 99, bookingRef: "NEW99" };
+    mockGetNotifications
+      .mockResolvedValueOnce(mockNotificationsPage)
+      .mockResolvedValueOnce({ items: [newNotif], totalCount: 1 });
+
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(mockGetNotifications).toHaveBeenCalledTimes(1));
+
+    expect(capturedCallback).not.toBeNull();
+    await act(async () => {
+      await capturedCallback!();
+    });
+    expect(mockGetNotifications).toHaveBeenCalledTimes(2);
+
+    setIntervalSpy.mockRestore();
   });
 });
