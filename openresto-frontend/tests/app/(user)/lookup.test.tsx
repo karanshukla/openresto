@@ -571,6 +571,146 @@ describe("LookupScreen", () => {
     expect(screen.getByText("Find My Booking")).toBeTruthy();
   });
 
+  it("presses Outlook calendar button in narrow strip (window.open)", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 400, height: 800 });
+    const mockWindowOpen = jest.fn();
+    (window as any).open = mockWindowOpen;
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      bookingRef: "REF123",
+      date: "2026-10-10T12:00:00Z",
+      seats: 2,
+    });
+    (fetchRestaurantById as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      address: "123 Main St",
+    });
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByTestId("cal-outlook-btn")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("cal-outlook-btn"));
+      expect(mockWindowOpen).toHaveBeenCalled();
+    } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("presses Apple Maps in narrow strip (Linking.openURL)", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 400, height: 800 });
+
+    const { Linking } = require("react-native");
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      bookingRef: "REF123",
+    });
+    (fetchRestaurantById as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      address: "123 Main St",
+    });
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByTestId("maps-apple-btn-narrow")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("maps-apple-btn-narrow"));
+      expect(openURLSpy).toHaveBeenCalledWith(expect.stringContaining("maps.apple.com"));
+    } finally {
+      openURLSpy.mockRestore();
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("presses Google Maps in wide layout (Linking.openURL)", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 1024, height: 768 });
+
+    const { Linking } = require("react-native");
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      bookingRef: "REF123",
+    });
+    (fetchRestaurantById as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      address: "123 Main St",
+    });
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getAllByText("Google").length).toBeGreaterThan(0));
+      // Maps "Google" button appears after the Calendar section — press the last one
+      const googleBtns = screen.getAllByText("Google");
+      fireEvent.press(googleBtns[googleBtns.length - 1]);
+      expect(openURLSpy).toHaveBeenCalledWith(expect.stringContaining("maps.google.com"));
+    } finally {
+      openURLSpy.mockRestore();
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("fires measureLayout success callback scrolling native booking card into view", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+    const { View } = require("react-native");
+    const findNodeHandleSpy = jest
+      .spyOn(require("react-native"), "findNodeHandle")
+      .mockReturnValue(1);
+    const measureLayoutSpy = jest
+      .spyOn(View.prototype, "measureLayout")
+      .mockImplementation((_node: unknown, success: (x: number, y: number) => void) => {
+        success(0, 100);
+      });
+
+    try {
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+      renderWithProviders(<LookupScreen />);
+
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      await waitFor(() => expect(measureLayoutSpy).toHaveBeenCalled(), { timeout: 1000 });
+    } finally {
+      findNodeHandleSpy.mockRestore();
+      measureLayoutSpy.mockRestore();
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
+  });
+
   it("pressing ScrollToTopFab in lookup screen calls scrollToTop", async () => {
     Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
     const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
