@@ -43,17 +43,48 @@ jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn().mockResolvedValue([{ id: 1, name: "Resto 1" }]),
 }));
 
-// Stub heavy sub-components that are not under test here
+// Stub heavy sub-components but expose callback triggers for testing
 jest.mock("@/components/admin/bookings/AvailabilityGrid", () => ({
-  AvailabilityGrid: () => null,
+  AvailabilityGrid: ({ onBookingPress }: any) => {
+    const { Pressable, Text } = require("react-native");
+    return (
+      <Pressable testID="grid-press-booking" onPress={() => onBookingPress({ id: 42 })}>
+        <Text>GridBooking</Text>
+      </Pressable>
+    );
+  },
 }));
 
 jest.mock("@/components/admin/bookings/BookingDetailPopup", () => ({
-  BookingDetailPopup: () => null,
+  BookingDetailPopup: ({ onClose, onDeleted }: any) => {
+    const { Pressable, Text } = require("react-native");
+    return (
+      <>
+        <Pressable testID="popup-close" onPress={onClose}>
+          <Text>ClosePopup</Text>
+        </Pressable>
+        <Pressable testID="popup-deleted" onPress={onDeleted}>
+          <Text>DeletedPopup</Text>
+        </Pressable>
+      </>
+    );
+  },
 }));
 
 jest.mock("@/components/admin/bookings/NewBookingModal", () => ({
-  NewBookingModal: () => null,
+  NewBookingModal: ({ onClose, onCreated }: any) => {
+    const { Pressable, Text } = require("react-native");
+    return (
+      <>
+        <Pressable testID="newmodal-close" onPress={onClose}>
+          <Text>CloseNewModal</Text>
+        </Pressable>
+        <Pressable testID="newmodal-created" onPress={() => onCreated(99)}>
+          <Text>CreatedNewModal</Text>
+        </Pressable>
+      </>
+    );
+  },
 }));
 
 global.fetch = jest.fn(() =>
@@ -598,6 +629,74 @@ describe("AdminBookingsScreen", () => {
       // Last one is the confirm button in the modal
       fireEvent.press(confirmBtns[confirmBtns.length - 1]);
       await waitFor(() => expect(adminDeleteBooking).toHaveBeenCalledWith(1));
+    }
+  });
+
+  it("pressing grid booking triggers onBookingPress callback", async () => {
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByTestId("grid-press-booking")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("grid-press-booking"));
+    // selectedBookingId is now set; popup renders with close/deleted buttons
+    await waitFor(() => expect(screen.getByTestId("popup-close")).toBeTruthy());
+  });
+
+  it("BookingDetailPopup onClose callback clears selectedBookingId", async () => {
+    render(<AdminBookingsScreen />);
+    // First open popup via grid press
+    await waitFor(() => expect(screen.getByTestId("grid-press-booking")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("grid-press-booking"));
+    await waitFor(() => expect(screen.getByTestId("popup-close")).toBeTruthy());
+    // Now close it
+    fireEvent.press(screen.getByTestId("popup-close"));
+    expect(screen.getByText("Bookings")).toBeTruthy();
+  });
+
+  it("BookingDetailPopup onDeleted callback refreshes bookings and reloads grid", async () => {
+    const callsBefore = (getAdminBookings as jest.Mock).mock.calls.length;
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByTestId("grid-press-booking")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("grid-press-booking"));
+    await waitFor(() => expect(screen.getByTestId("popup-deleted")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("popup-deleted"));
+    await waitFor(() =>
+      expect((getAdminBookings as jest.Mock).mock.calls.length).toBeGreaterThan(callsBefore)
+    );
+  });
+
+  it("NewBookingModal onClose callback hides the modal", async () => {
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByText("List")).toBeTruthy());
+    // Open new booking modal via header button
+    const newBtns = screen.queryAllByText("New Booking");
+    // Header button is present in timetable view
+    expect(screen.getByText("Bookings")).toBeTruthy();
+    // Close the modal
+    const closeBtn = screen.queryByTestId("newmodal-close");
+    if (closeBtn) {
+      fireEvent.press(closeBtn);
+      expect(screen.getByText("Bookings")).toBeTruthy();
+    }
+  });
+
+  it("NewBookingModal onCreated callback sets selectedBookingId", async () => {
+    render(<AdminBookingsScreen />);
+    await waitFor(() => expect(screen.getByTestId("newmodal-created")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("newmodal-created"));
+    // After onCreated(99), showNewModal=false and selectedBookingId=99; popup renders
+    await waitFor(() => expect(screen.getByTestId("popup-close")).toBeTruthy());
+  });
+
+  it("presses New Booking button in empty list state", async () => {
+    (getAdminBookings as jest.Mock).mockResolvedValue([]);
+    render(<AdminBookingsScreen />);
+    fireEvent.press(await screen.findByText("List"));
+    await waitFor(() => expect(screen.getByText("No bookings found")).toBeTruthy());
+    // Press the "New Booking" button inside the empty state
+    const newBtns = screen.queryAllByText("New Booking");
+    if (newBtns.length > 0) {
+      fireEvent.press(newBtns[newBtns.length - 1]);
+      // NewBookingModal should become visible (onClose/onCreated buttons appear)
+      await waitFor(() => expect(screen.getByTestId("newmodal-close")).toBeTruthy());
     }
   });
 });

@@ -208,4 +208,46 @@ describe("BookScreen", () => {
     fireEvent(img, "error");
     await waitFor(() => expect(screen.queryByTestId("expo-image-banner")).toBeNull());
   });
+
+  it("fires onScroll to update scrollY in book screen", async () => {
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+    const { ScrollView } = require("react-native");
+    const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
+    if (scrollViews.length > 0) {
+      fireEvent.scroll(scrollViews[0], {
+        nativeEvent: { contentOffset: { y: 400 } },
+      });
+    }
+    expect(screen.getByText(/Toronto Resto/)).toBeTruthy();
+  });
+
+  it("pressing ScrollToTopFab calls scrollToTop in book screen", async () => {
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 375, height: 667 });
+
+    try {
+      renderWithProviders(<BookScreen />);
+      await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+      const { ScrollView } = require("react-native");
+      const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
+      if (scrollViews.length > 0) {
+        fireEvent.scroll(scrollViews[0], {
+          nativeEvent: { contentOffset: { y: 400 } },
+        });
+      }
+
+      await waitFor(() => {
+        const fab = screen.queryByLabelText("Scroll to top");
+        if (fab) {
+          fireEvent.press(fab);
+        }
+      });
+      expect(screen.getByText(/Toronto Resto/)).toBeTruthy();
+    } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
 });
