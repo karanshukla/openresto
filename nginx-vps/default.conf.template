@@ -7,44 +7,7 @@ server {
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    # Trust the proxy's SSL termination (APISIX)
-    # We pass through the X-Forwarded-Proto so the app knows it's secure
-    
-    location /api/ {
-        limit_req zone=api burst=20 nodelay;
-        include /etc/nginx/conf.d/security-headers.conf;
-        proxy_pass http://backend:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-    }
-
-    location / {
-        limit_req zone=general burst=50 nodelay;
-        include /etc/nginx/conf.d/security-headers.conf;
-        proxy_pass http://frontend:8081;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-    }
-
-    # Media — static file serving from shared volume
-    location /media/ {
-        alias /usr/share/nginx/html/media/;
-        sendfile on;
-        tcp_nopush on;
-        expires 30d;
-        add_header Cache-Control "public, no-transform" always;
-        add_header X-Content-Type-Options "nosniff" always;
-    }
-
-    location /health {
-        access_log off;
-        default_type text/plain;
-        return 200 "OK";
-    }
+    return 301 https://$host$request_uri;
 }
 
 server {
