@@ -224,11 +224,16 @@ public class BookingService(
         string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
         string appName = brand.AppName ?? "Open Resto";
         string cleanWebsiteUrl = websiteUrl.TrimEnd('/');
-        string lookupUrl = $"{cleanWebsiteUrl}/lookup";
+        string lookupUrl = $"{cleanWebsiteUrl}/booking-confirmation/{Uri.EscapeDataString(booking.BookingRef ?? "")}?email={Uri.EscapeDataString(booking.CustomerEmail ?? "")}";
 
-        string headerImageHtml = string.IsNullOrEmpty(brand.HeaderImageUrl)
+        string headerImageSrc = string.IsNullOrEmpty(brand.HeaderImageUrl)
             ? ""
-            : $"<img src='{brand.HeaderImageUrl}' alt='{appName}' style='max-height:48px;margin-bottom:16px;'>";
+            : brand.HeaderImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                ? brand.HeaderImageUrl
+                : $"{cleanWebsiteUrl}/{brand.HeaderImageUrl.TrimStart('/')}";
+        string headerImageHtml = string.IsNullOrEmpty(headerImageSrc)
+            ? ""
+            : $"<img src='{headerImageSrc}' alt='{System.Net.WebUtility.HtmlEncode(appName)}' style='max-height:48px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;'>";
 
         string directionsHtml = string.IsNullOrWhiteSpace(restaurant.Address)
             ? ""
