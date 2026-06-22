@@ -76,6 +76,24 @@ function parseDayOfWeek(day: string): number {
   return 0;
 }
 
+function opensLaterToday(openTime: string, timezone: string, openDays: string): string | null {
+  const [oh, om] = openTime.split(":").map(Number);
+  const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
+  const openDaysList = openDays
+    ?.split(",")
+    .map((d) => parseDayOfWeek(d.trim()))
+    .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
+  if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) return null;
+  const openMins = oh * 60 + (om || 0);
+  if (totalMins >= openMins) return null;
+  const diffMins = openMins - totalMins;
+  const diffHours = Math.floor(diffMins / 60);
+  const diffRemMins = diffMins % 60;
+  if (diffHours >= 1 && diffRemMins === 0) return `Opens in ${diffHours}h`;
+  if (diffHours >= 1) return `Opens in ${diffHours}h ${diffRemMins}m`;
+  return `Opens in ${diffMins}m`;
+}
+
 function isOpenNow(
   openTime: string,
   closeTime: string,
@@ -252,7 +270,13 @@ export default function RestaurantCard({
           >
             {open && <View style={styles.badgeDot} />}
             <ThemedText style={styles.badgeText}>
-              {open ? `Open till ${restaurant.closeTime}` : "Closed"}
+              {open
+                ? `Open till ${restaurant.closeTime}`
+                : (opensLaterToday(
+                    restaurant.openTime,
+                    restaurant.timezone ?? "UTC",
+                    restaurant.openDays
+                  ) ?? "Closed")}
             </ThemedText>
           </View>
         </View>
