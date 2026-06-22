@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Infrastructure.Email;
 
 namespace OpenRestoApi.Controllers;
 
@@ -176,7 +177,10 @@ public class AdminController(AdminService adminService, IEmailService emailServi
                 string appName = brand.AppName ?? "Open Resto";
                 string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
                 string websiteUrl = _brand.GetWebsiteUrl(brand).TrimEnd('/');
-                htmlBody = WrapInBrandedEmail(req.Body, appName, primaryColor, websiteUrl);
+                string iconUrl = !string.IsNullOrEmpty(brand.FaviconIcon)
+                    ? $"{websiteUrl}/api/brand/pwa-icon.svg"
+                    : "";
+                htmlBody = WrapInBrandedEmail(req.Body, appName, primaryColor, websiteUrl, iconUrl);
             }
             await _email.SendEmailAsync(booking.CustomerEmail, req.Subject, htmlBody);
             return Ok(new MessageResponse { Message = $"Email sent to {booking.CustomerEmail}." });
@@ -191,44 +195,24 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         }
     }
 
-    private static string WrapInBrandedEmail(string content, string appName, string primaryColor, string websiteUrl)
+    private static string WrapInBrandedEmail(string content, string appName, string primaryColor, string websiteUrl, string iconUrl = "")
     {
         bool isHtmlFragment = content.TrimStart().StartsWith('<');
         string innerHtml = isHtmlFragment
             ? content
             : System.Net.WebUtility.HtmlEncode(content).Replace("\n", "<br>").Replace("\r", "");
 
-        return $"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="margin:0;padding:0;background-color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:32px 16px;">
-                <tr><td align="center">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);border:1px solid #e5e7eb;">
-                    <tr><td style="padding:32px 40px 24px;text-align:center;border-bottom:3px solid {primaryColor};">
-                      <h1 style="margin:0;font-size:20px;font-weight:700;color:{primaryColor};">{System.Net.WebUtility.HtmlEncode(appName)}</h1>
-                    </td></tr>
-                    <tr><td style="padding:32px 40px;font-size:15px;line-height:1.7;color:#111827;">
-                      {innerHtml}
-                    </td></tr>
-                    <tr><td style="padding:0 40px 32px;border-top:1px solid #f0f0f0;text-align:center;">
-                      <p style="margin:24px 0 4px;font-size:13px;color:#6b7280;">
-                        <a href="{websiteUrl}" style="color:{primaryColor};text-decoration:none;">{websiteUrl.Replace("http://","").Replace("https://","")}</a>
-                      </p>
-                      <p style="margin:0;font-size:12px;color:#9ca3af;">
-                        &copy; {DateTime.UtcNow.Year} {System.Net.WebUtility.HtmlEncode(appName)}
-                      </p>
-                    </td></tr>
-                  </table>
-                </td></tr>
-              </table>
-            </body>
-            </html>
+        string headerHtml = !string.IsNullOrEmpty(iconUrl)
+            ? EmailTemplateBuilder.IconHeader(iconUrl, appName, appName, "")
+            : EmailTemplateBuilder.TextHeader(appName, primaryColor);
+
+        string contentHtml = $"""
+            <tr><td style="padding:32px 40px;font-size:15px;line-height:1.7;color:#111827;">
+              {innerHtml}
+            </td></tr>
             """;
+
+        return EmailTemplateBuilder.Wrap(primaryColor, appName, websiteUrl, headerHtml, contentHtml);
     }
 
     [HttpPost("bookings/{id}/restore")]
