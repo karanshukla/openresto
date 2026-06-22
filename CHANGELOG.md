@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+N/A
+
+## [1.1.0] - 2026-06-22
+
+Hello! Thanks for reading the changelog, and for the 50 stars on Github! This project has taught me a ton and I've gathered a ton of feedback to try and polish it since the 1.0.0 release. This adds to 1.0.0 and cleans up some of the code for maintanability. If you're using the app in a real environment, please read through the changes below and let me know if you have any questions or run into any issues. Thanks again!
+
 ### Added
 
 - **Booking Controls in Location Manager** — new "Booking Controls" section in the admin Location Manager panel for the selected location. Includes Pause/Resume new bookings for 60 minutes (with live "Paused until HH:MM" status) and Extend all active bookings by 60 minutes (with inline result count).
@@ -52,3 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/karanshukla/openresto/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/karanshukla/openresto/releases/tag/v1.0.0
+[1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0
