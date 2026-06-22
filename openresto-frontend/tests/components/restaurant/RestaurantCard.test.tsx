@@ -115,14 +115,70 @@ describe("RestaurantCard", () => {
     await waitFor(() => expect(screen.getByText("dog friendly")).toBeTruthy());
   });
 
-  it("shows Closed badge when restaurant is closed", async () => {
+  it("shows Closed badge when restaurant is closed for the day (past close time)", async () => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-01-01T14:00:00Z")); // fixed noon UTC — outside 23:00-23:59 window
+    // 23:59 UTC — past the 23:00-23:59 window so the day's service is over
+    jest.setSystemTime(new Date("2026-01-01T23:59:30Z"));
     try {
       render(
         <RestaurantCard restaurant={{ ...mockRestaurant, openTime: "23:00", closeTime: "23:59" }} />
       );
       await waitFor(() => expect(screen.queryByText("Closed")).toBeTruthy());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows 'Opens in Xh' badge when opening is an exact number of hours away", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T10:00:00Z")); // Monday 10:00 UTC
+    try {
+      render(
+        <RestaurantCard restaurant={{ ...mockRestaurant, openTime: "14:00", closeTime: "22:00" }} />
+      );
+      await waitFor(() => expect(screen.getByText("Opens in 4h")).toBeTruthy());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows 'Opens in Xh Ym' badge when opening is hours and minutes away", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T10:00:00Z")); // Monday 10:00 UTC
+    try {
+      render(
+        <RestaurantCard restaurant={{ ...mockRestaurant, openTime: "14:30", closeTime: "22:00" }} />
+      );
+      await waitFor(() => expect(screen.getByText("Opens in 4h 30m")).toBeTruthy());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows 'Opens in Xm' badge when opening is less than an hour away", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T10:00:00Z")); // Monday 10:00 UTC
+    try {
+      render(
+        <RestaurantCard restaurant={{ ...mockRestaurant, openTime: "10:30", closeTime: "22:00" }} />
+      );
+      await waitFor(() => expect(screen.getByText("Opens in 30m")).toBeTruthy());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows 'Opens in' when openDays has all-unknown day names and time is before opening", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T10:00:00Z")); // Monday 10:00 UTC
+    try {
+      render(
+        <RestaurantCard
+          restaurant={{ ...mockRestaurant, openDays: "xyz", openTime: "14:00", closeTime: "22:00" }}
+        />
+      );
+      // openDaysList is empty → day check skipped → shows "Opens in 4h"
+      await waitFor(() => expect(screen.getByText("Opens in 4h")).toBeTruthy());
     } finally {
       jest.useRealTimers();
     }

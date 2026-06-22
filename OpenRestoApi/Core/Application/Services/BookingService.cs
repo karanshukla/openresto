@@ -226,14 +226,16 @@ public class BookingService(
         string cleanWebsiteUrl = websiteUrl.TrimEnd('/');
         string lookupUrl = $"{cleanWebsiteUrl}/booking-confirmation/{Uri.EscapeDataString(booking.BookingRef ?? "")}?email={Uri.EscapeDataString(booking.CustomerEmail ?? "")}";
 
-        string headerImageSrc = string.IsNullOrEmpty(brand.HeaderImageUrl)
-            ? ""
-            : brand.HeaderImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                ? brand.HeaderImageUrl
-                : $"{cleanWebsiteUrl}/{brand.HeaderImageUrl.TrimStart('/')}";
+        string headerImageSrc = !string.IsNullOrEmpty(restaurant.ImageUrl)
+            ? (restaurant.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                ? restaurant.ImageUrl
+                : $"{cleanWebsiteUrl}/{restaurant.ImageUrl.TrimStart('/')}")
+            : !string.IsNullOrEmpty(brand.FaviconIcon)
+                ? $"{cleanWebsiteUrl}/api/brand/pwa-icon.svg"
+                : "";
         string headerImageHtml = string.IsNullOrEmpty(headerImageSrc)
             ? ""
-            : $"<img src='{headerImageSrc}' alt='{System.Net.WebUtility.HtmlEncode(appName)}' style='max-height:48px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;'>";
+            : $"<img src='{headerImageSrc}' alt='{System.Net.WebUtility.HtmlEncode(appName)}' style='max-height:120px;margin-bottom:16px;display:block;margin-left:auto;margin-right:auto;border-radius:8px;'>";
 
         string directionsHtml = string.IsNullOrWhiteSpace(restaurant.Address)
             ? ""

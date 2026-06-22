@@ -519,6 +519,128 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_EmailHtml_ContainsRestaurantImage_WhenImageUrlSet()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_EmailHtml_ContainsRestaurantImage_WhenImageUrlSet));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Pic Restaurant", ImageUrl = "https://cdn.example.com/photo.jpg" });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com", Port = 587, Username = "u", EncryptedPassword = "enc",
+            SendBookingConfirmations = true,
+        });
+        db.SaveChanges();
+
+        string? capturedBody = null;
+        var emailServiceMock = new Mock<IEmailService>();
+        emailServiceMock
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string, string>((_, _, body) => capturedBody = body)
+            .Returns(Task.CompletedTask);
+
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
+            await db.Set<EmailSettings>().FirstAsync());
+
+        BookingService svc = CreateService(db, emailService: emailServiceMock.Object,
+            emailSettingsService: emailSettingsService.Object);
+
+        await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 2,
+            Date = new DateTime(2026, 8, 1, 19, 0, 0, DateTimeKind.Utc),
+        });
+
+        Assert.NotNull(capturedBody);
+        Assert.Contains("https://cdn.example.com/photo.jpg", capturedBody);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_EmailHtml_ContainsFaviconSvg_WhenNoRestaurantImageButFaviconSet()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_EmailHtml_ContainsFaviconSvg_WhenNoRestaurantImageButFaviconSet));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Icon Restaurant" });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.Set<BrandSettings>().Add(new BrandSettings { FaviconIcon = "utensils" });
+        db.SaveChanges();
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com", Port = 587, Username = "u", EncryptedPassword = "enc",
+            SendBookingConfirmations = true,
+        });
+        db.SaveChanges();
+
+        string? capturedBody = null;
+        var emailServiceMock = new Mock<IEmailService>();
+        emailServiceMock
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string, string>((_, _, body) => capturedBody = body)
+            .Returns(Task.CompletedTask);
+
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
+            await db.Set<EmailSettings>().FirstAsync());
+
+        BookingService svc = CreateService(db, emailService: emailServiceMock.Object,
+            emailSettingsService: emailSettingsService.Object);
+
+        await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 2,
+            Date = new DateTime(2026, 8, 1, 19, 0, 0, DateTimeKind.Utc),
+        });
+
+        Assert.NotNull(capturedBody);
+        Assert.Contains("/api/brand/pwa-icon.svg", capturedBody);
+        Assert.DoesNotContain("cdn.example.com", capturedBody);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_EmailHtml_HasNoImage_WhenNeitherRestaurantImageNorFaviconSet()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_EmailHtml_HasNoImage_WhenNeitherRestaurantImageNorFaviconSet));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Plain Restaurant" });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+        db.Set<EmailSettings>().Add(new EmailSettings
+        {
+            Host = "smtp.test.com", Port = 587, Username = "u", EncryptedPassword = "enc",
+            SendBookingConfirmations = true,
+        });
+        db.SaveChanges();
+
+        string? capturedBody = null;
+        var emailServiceMock = new Mock<IEmailService>();
+        emailServiceMock
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string, string>((_, _, body) => capturedBody = body)
+            .Returns(Task.CompletedTask);
+
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
+            await db.Set<EmailSettings>().FirstAsync());
+
+        BookingService svc = CreateService(db, emailService: emailServiceMock.Object,
+            emailSettingsService: emailSettingsService.Object);
+
+        await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1,
+            CustomerEmail = "guest@example.com", Seats = 2,
+            Date = new DateTime(2026, 8, 1, 19, 0, 0, DateTimeKind.Utc),
+        });
+
+        Assert.NotNull(capturedBody);
+        Assert.DoesNotContain("<img", capturedBody);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_DoesNotSendEmail_WhenConfirmationsDisabled()
     {
         using AppDbContext db = CreateDb(nameof(CreateBookingAsync_DoesNotSendEmail_WhenConfirmationsDisabled));
