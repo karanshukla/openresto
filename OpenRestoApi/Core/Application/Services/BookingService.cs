@@ -263,12 +263,31 @@ public class BookingService(
                </div>
                """;
 
+        string sectionHtml = booking.Section != null
+            ? $"""
+               <tr>
+                 <td style='padding:12px 0;color:#6b7280;font-size:14px;'>Section</td>
+                 <td style='padding:12px 0;font-size:14px;color:#111827;'>{WebUtility.HtmlEncode(booking.Section.Name)}</td>
+               </tr>
+               """
+            : "";
+
+        string tableLabel = booking.Table?.Name ?? (booking.TableId.HasValue ? $"Table #{booking.TableId}" : null);
+        string tableHtml = tableLabel != null
+            ? $"""
+               <tr>
+                 <td style='padding:12px 0;color:#6b7280;font-size:14px;'>Table</td>
+                 <td style='padding:12px 0;font-size:14px;color:#111827;'>{WebUtility.HtmlEncode(tableLabel)}</td>
+               </tr>
+               """
+            : "";
+
         string specialReqsHtml = string.IsNullOrWhiteSpace(booking.SpecialRequests)
             ? ""
             : $"""
                <tr>
-                 <td style='padding:12px 0;color:#6b7280;font-size:14px;vertical-align:top;'>Special requests</td>
-                 <td style='padding:12px 0;font-size:14px;color:#111827;'>{WebUtility.HtmlEncode(booking.SpecialRequests)}</td>
+                 <td style='padding:12px 0;color:#6b7280;font-size:14px;vertical-align:top;white-space:nowrap;'>Special requests</td>
+                 <td style='padding:12px 0 12px 16px;font-size:14px;color:#111827;'>{WebUtility.HtmlEncode(booking.SpecialRequests)}</td>
                </tr>
                """;
 
@@ -289,7 +308,7 @@ public class BookingService(
             <tr><td style="padding:32px 40px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding:12px 0;color:#6b7280;font-size:14px;width:100px;">Reference</td>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;width:140px;">Reference</td>
                   <td style="padding:12px 0;font-size:14px;font-weight:700;color:#111827;letter-spacing:0.05em;">{WebUtility.HtmlEncode(booking.BookingRef ?? "")}</td>
                 </tr>
                 <tr>
@@ -304,6 +323,8 @@ public class BookingService(
                   <td style="padding:12px 0;color:#6b7280;font-size:14px;">Guests</td>
                   <td style="padding:12px 0;font-size:14px;color:#111827;">{booking.Seats} {(booking.Seats == 1 ? "guest" : "guests")}</td>
                 </tr>
+                {sectionHtml}
+                {tableHtml}
                 {specialReqsHtml}
               </table>
               {directionsHtml}
