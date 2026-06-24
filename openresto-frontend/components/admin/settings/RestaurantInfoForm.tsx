@@ -175,18 +175,6 @@ export function RestaurantInfoForm({
       >
         <View style={{ flex: 1 }}>
           <ThemedText
-            style={{
-              fontFamily: "monospace" as const,
-              fontSize: 10,
-              textTransform: "uppercase" as const,
-              letterSpacing: 1.5,
-              color: mutedColor,
-              marginBottom: 6,
-            }}
-          >
-            STEP 1
-          </ThemedText>
-          <ThemedText
             style={{ fontSize: 16, fontWeight: "600", letterSpacing: -0.2, marginBottom: 4 }}
           >
             Restaurant info

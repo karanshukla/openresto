@@ -322,18 +322,6 @@ export function LocationCard({
       {/* Sections & Tables — full width below */}
       <View style={{ padding: 22 }}>
         <ThemedText
-          style={{
-            fontFamily: "monospace" as const,
-            fontSize: 10,
-            textTransform: "uppercase" as const,
-            letterSpacing: 1.5,
-            color: mutedColor,
-            marginBottom: 6,
-          }}
-        >
-          STEP 2
-        </ThemedText>
-        <ThemedText
           style={{ fontSize: 15, fontWeight: "600", letterSpacing: -0.2, marginBottom: 3 }}
         >
           Sections & tables
