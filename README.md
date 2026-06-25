@@ -22,6 +22,8 @@ A self-hosted, zero-dependency restaurant booking system. Customers browse resta
 
 The Restaurant business has changed. Indie restaurants run on razor thin margins, and the cost of SaaS booking platforms only adds to the burden. Users don't want to install another app, give up their phone number to the cloud, or create another account to remember. OpenResto was designed to be as simple as possible for both customers and restaurant owners, while still being fully self-hosted, secure and customisable. Owners can manage bookings easily without friction. Customers book instantly without giving up any personal information, and can easily save their reservations to their calendar. Nothing in between.
 
+## Screenshots
+
 <img width="1008" height="872" alt="image" src="https://github.com/user-attachments/assets/5e6d1099-8c4b-4163-b037-d71816726136" />
 
 <img width="1313" height="820" alt="image" src="https://github.com/user-attachments/assets/ce52d6ed-6989-490c-b950-81777eefa14a" />
