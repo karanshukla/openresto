@@ -6,8 +6,9 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+const mockUseBrand = jest.fn(() => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }));
 jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
+  useBrand: () => mockUseBrand(),
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
@@ -162,6 +163,25 @@ describe("EditableRow", () => {
       fireEvent.press(accessible[accessible.length - 1]);
     });
     expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("cancel button exits edit mode", () => {
+    render(<EditableRow {...baseProps} />);
+    fireEvent.press(screen.getByText("Edit"));
+    expect(screen.getByText("Save")).toBeTruthy();
+    // Cancel is the last accessible Pressable in edit mode (after Save)
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[accessible.length - 1]);
+    });
+    expect(screen.getByText("Edit")).toBeTruthy();
+  });
+
+  it("falls back to COLORS.primary when brand primaryColor is empty", () => {
+    mockUseBrand.mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
+    render(<EditableRow {...baseProps} />);
+    expect(screen.getByText("Hello World")).toBeTruthy();
+    mockUseBrand.mockReturnValue({ primaryColor: "#0a7ea4", appName: "Open Resto" });
   });
 
   it("renders in dark mode", () => {

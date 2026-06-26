@@ -190,6 +190,47 @@ describe("getAdminDashboardStats", () => {
     const result = await getAdminDashboardStats();
     expect(result).toBeNull();
   });
+
+  it("uses empty array when todayBookingsList is absent from overview", async () => {
+    const overview = { todayBookings: 0, totalSeats: 0 };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    const result = await getAdminDashboardStats();
+    expect(result?.recentBookings).toEqual([]);
+  });
+
+  it("uses endTime for filtering when booking has endTime set", async () => {
+    const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const futureEndTime = new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString();
+    const overview = {
+      todayBookings: 1,
+      totalSeats: 10,
+      todayBookingsList: [
+        {
+          id: 1,
+          date: pastDate,
+          endTime: futureEndTime,
+          customerEmail: "a@b.com",
+          seats: 2,
+          restaurantName: "R1",
+        },
+      ],
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    const result = await getAdminDashboardStats();
+    expect(result?.recentBookings).toHaveLength(1);
+    expect(result?.recentBookings[0].endTime).toBe(futureEndTime);
+  });
+
+  it("returns null when todayBookingsList is malformed and throws", async () => {
+    const overview = {
+      todayBookings: 1,
+      totalSeats: 10,
+      todayBookingsList: "not-an-array",
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+    const result = await getAdminDashboardStats();
+    expect(result).toBeNull();
+  });
 });
 
 // ---------- Bookings ----------
@@ -735,6 +776,12 @@ describe("adminCreateHighlight", () => {
     expect(result).toEqual(created);
   });
 
+  it("returns null on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const result = await adminCreateHighlight(req);
+    expect(result).toBeNull();
+  });
+
   it("returns null on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("network"));
     const result = await adminCreateHighlight(req);
@@ -750,6 +797,12 @@ describe("adminUpdateHighlight", () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
     const result = await adminUpdateHighlight(3, req);
     expect(result).toEqual(updated);
+  });
+
+  it("returns null on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const result = await adminUpdateHighlight(3, req);
+    expect(result).toBeNull();
   });
 
   it("returns null on network error", async () => {
@@ -921,6 +974,13 @@ describe("extendRestaurantBookings", () => {
     const result = await extendRestaurantBookings(4, 15);
     expect(result).toEqual({ ok: false, extendedBookings: [] });
   });
+
+  it("falls back to empty array when extendedBookings is absent from response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+    const result = await extendRestaurantBookings(4, 15);
+    expect(result).toEqual({ ok: true, extendedBookings: [] });
+  });
 });
 
 describe("getEmailFailures", () => {
@@ -978,6 +1038,12 @@ describe("uploadHeroImage", () => {
 
   it("returns null on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const file = new File(["img"], "hero.jpg", { type: "image/jpeg" });
+    expect(await uploadHeroImage(file)).toBeNull();
+  });
+
+  it("returns null when url is absent from response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     const file = new File(["img"], "hero.jpg", { type: "image/jpeg" });
     expect(await uploadHeroImage(file)).toBeNull();
   });

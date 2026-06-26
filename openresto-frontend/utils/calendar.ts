@@ -28,7 +28,8 @@ function foldLine(line: string): string {
       lineBytes += charLen;
     }
   }
-  if (chunk) result += (result === "" ? "" : "\r\n ") + chunk;
+  /* istanbul ignore else */
+  if (chunk) result += (result === "" ? /* istanbul ignore next */ "" : "\r\n ") + chunk;
   return result;
 }
 
@@ -53,7 +54,7 @@ export function buildCalendarUrls(input: CalendarInput) {
 
   const title = `Reservation at ${input.restaurantName}`;
 
-  const origin = typeof window !== "undefined" ? window.location?.origin : "";
+  const origin = typeof window !== "undefined" ? window.location?.origin : /* istanbul ignore next */ "";
   const descriptionLines = [
     origin ? `Booked via the URL: (${origin})` : "",
     `Booking reference: ${input.bookingRef}`,

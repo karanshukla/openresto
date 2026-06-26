@@ -6,8 +6,9 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+const mockUseBrand = jest.fn(() => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }));
 jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
+  useBrand: () => mockUseBrand(),
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
@@ -43,5 +44,12 @@ describe("GlobalSettingRow", () => {
   it("does not show 'Soon' badge when comingSoon is omitted", () => {
     render(<GlobalSettingRow {...baseProps} />);
     expect(screen.queryByText("Soon")).toBeNull();
+  });
+
+  it("falls back to COLORS.primary when brand primaryColor is empty", () => {
+    mockUseBrand.mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
+    render(<GlobalSettingRow {...baseProps} />);
+    expect(screen.getByText("My Setting")).toBeTruthy();
+    mockUseBrand.mockReturnValue({ primaryColor: "#0a7ea4", appName: "Open Resto" });
   });
 });

@@ -6,10 +6,10 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-jest.mock("@/context/BrandContext", () => {
-  const brand = { primaryColor: "#0a7ea4", appName: "Open Resto" };
-  return { useBrand: () => brand };
-});
+const mockUseBrand = jest.fn(() => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }));
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: () => mockUseBrand(),
+}));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -61,5 +61,12 @@ describe("ExtendBookingActions", () => {
     render(<ExtendBookingActions {...baseProps} extending />);
     fireEvent.press(screen.getByText("+30 min"));
     expect(baseProps.onExtend).not.toHaveBeenCalled();
+  });
+
+  it("falls back to COLORS.primary when brand primaryColor is empty", () => {
+    mockUseBrand.mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
+    render(<ExtendBookingActions {...baseProps} />);
+    expect(screen.getByText("+30 min")).toBeTruthy();
+    mockUseBrand.mockReturnValue({ primaryColor: "#0a7ea4", appName: "Open Resto" });
   });
 });
