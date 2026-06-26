@@ -1,8 +1,9 @@
 import { ThemedText } from "@/components/themed-text";
-import { Pressable, PressableProps, StyleSheet, ViewStyle } from "react-native";
+import { Pressable, PressableProps, StyleSheet, ViewStyle, Platform } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { COLORS, BUTTON_SIZES, BORDER_RADIUS, TYPOGRAPHY, getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import * as Haptics from "expo-haptics";
 
 interface ButtonProps extends Omit<PressableProps, "style"> {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function Button({
   disabled,
   size = "primary",
   style,
+  onPress,
   ...props
 }: ButtonProps) {
   const isDark = useColorScheme() === "dark";
@@ -23,6 +25,13 @@ export default function Button({
   const brand = useBrand();
   const primaryColor = brand.primaryColor || COLORS.primary;
   const sizeStyles = BUTTON_SIZES[size];
+
+  const handlePress: PressableProps["onPress"] = (e) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onPress?.(e);
+  };
 
   return (
     <Pressable
@@ -36,6 +45,7 @@ export default function Button({
         style,
       ]}
       disabled={disabled}
+      onPress={handlePress}
       {...props}
     >
       <ThemedText style={[styles.buttonText, disabled && { color: colors.muted }]}>

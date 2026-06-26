@@ -1,10 +1,11 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Modal, Platform, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS, FORM_SIZES } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import * as Haptics from "expo-haptics";
 
 export interface SelectOption {
   label: string;
@@ -64,6 +65,9 @@ export default function Select({
                     item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
                   ]}
                   onPress={() => {
+                    if (Platform.OS !== "web") {
+                      Haptics.selectionAsync();
+                    }
                     onSelect(item.value);
                     setModalVisible(false);
                   }}

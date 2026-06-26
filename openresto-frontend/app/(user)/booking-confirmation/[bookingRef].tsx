@@ -22,6 +22,7 @@ import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmatio
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import * as Haptics from "expo-haptics";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -58,6 +59,13 @@ export default function BookingConfirmationScreen() {
         setRestaurant(r);
       }
       setLoading(false);
+      if (data && Platform.OS !== "web") {
+        Haptics.notificationAsync(
+          data.isCancelled
+            ? Haptics.NotificationFeedbackType.Error
+            : Haptics.NotificationFeedbackType.Success
+        );
+      }
     }
     load();
     return () => {
