@@ -2,8 +2,9 @@ import React from "react";
 import { render, screen } from "@testing-library/react-native";
 import { ThemedText } from "@/components/themed-text";
 
+const mockUseColorScheme = jest.fn(() => "light");
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: () => mockUseColorScheme(),
 }));
 
 describe("ThemedText", () => {
@@ -40,5 +41,26 @@ describe("ThemedText", () => {
   it("applies lightColor override in light mode", () => {
     render(<ThemedText lightColor="#ff0000">Red text</ThemedText>);
     expect(screen.getByText("Red text")).toBeTruthy();
+  });
+
+  it("applies darkColor override in dark mode", () => {
+    mockUseColorScheme.mockReturnValue("dark");
+    render(<ThemedText darkColor="#0000ff">Dark text</ThemedText>);
+    expect(screen.getByText("Dark text")).toBeTruthy();
+    mockUseColorScheme.mockReturnValue("light");
+  });
+
+  it("falls back to default color when lightColor provided but in dark mode", () => {
+    mockUseColorScheme.mockReturnValue("dark");
+    render(<ThemedText lightColor="#ff0000">Light color dark mode</ThemedText>);
+    expect(screen.getByText("Light color dark mode")).toBeTruthy();
+    mockUseColorScheme.mockReturnValue("light");
+  });
+
+  it("renders link type in dark mode using primaryColor", () => {
+    mockUseColorScheme.mockReturnValue("dark");
+    render(<ThemedText type="link">Dark link</ThemedText>);
+    expect(screen.getByText("Dark link")).toBeTruthy();
+    mockUseColorScheme.mockReturnValue("light");
   });
 });

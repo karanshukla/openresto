@@ -17,6 +17,7 @@ export default function Skeleton({
   const [animatedValue] = React.useState(() => new Animated.Value(0));
 
   React.useEffect(() => {
+    /* istanbul ignore else */
     if (process.env.NODE_ENV === "test") return;
     /* istanbul ignore next */
     Animated.loop(

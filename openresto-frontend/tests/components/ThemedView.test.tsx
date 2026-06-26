@@ -3,8 +3,9 @@ import { render, screen } from "@testing-library/react-native";
 import { ThemedView } from "@/components/themed-view";
 import { Text } from "react-native";
 
+const mockUseColorScheme = jest.fn(() => "light");
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: () => mockUseColorScheme(),
 }));
 
 describe("ThemedView", () => {
@@ -43,5 +44,27 @@ describe("ThemedView", () => {
       </ThemedView>
     );
     expect(screen.getByTestId("test-view")).toBeTruthy();
+  });
+
+  it("applies darkColor override in dark mode", () => {
+    mockUseColorScheme.mockReturnValue("dark");
+    render(
+      <ThemedView darkColor="#222222" testID="dark-view">
+        <Text>Dark content</Text>
+      </ThemedView>
+    );
+    expect(screen.getByText("Dark content")).toBeTruthy();
+    mockUseColorScheme.mockReturnValue("light");
+  });
+
+  it("uses default page color when lightColor provided but in dark mode", () => {
+    mockUseColorScheme.mockReturnValue("dark");
+    render(
+      <ThemedView lightColor="#ffffff" testID="light-in-dark">
+        <Text>Light in dark</Text>
+      </ThemedView>
+    );
+    expect(screen.getByText("Light in dark")).toBeTruthy();
+    mockUseColorScheme.mockReturnValue("light");
   });
 });

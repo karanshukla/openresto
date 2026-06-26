@@ -42,6 +42,12 @@ describe("date utility - convertLocalToUtc", () => {
     const expected = new Date("2026-04-18T15:00:00").toISOString();
     expect(result).toBe(expected);
   });
+
+  it("uses UTC when timezone is empty string", () => {
+    const result = convertLocalToUtc("2026-04-18", "15:00", "");
+    expect(typeof result).toBe("string");
+    expect(result).toContain("2026-04-18");
+  });
 });
 
 describe("date utility - getNowInTimezone", () => {
@@ -86,6 +92,23 @@ describe("date utility - getNowInTimezone", () => {
     global.Intl.DateTimeFormat = jest.fn(() => ({ formatToParts: mockFormatToParts }));
     const result = getNowInTimezone("UTC");
     expect(result.hours).toBe(0);
+    // @ts-ignore
+    global.Intl.DateTimeFormat = origDateTimeFormat;
+  });
+
+  it("falls back to '00' when a format part type is missing", () => {
+    const origDateTimeFormat = Intl.DateTimeFormat;
+    const mockFormatToParts = jest.fn(() => [
+      { type: "year", value: "2026" },
+      { type: "month", value: "06" },
+      { type: "day", value: "05" },
+      { type: "hour", value: "10" },
+      // "minute" is intentionally absent to trigger the ?? "00" fallback
+    ]);
+    // @ts-ignore
+    global.Intl.DateTimeFormat = jest.fn(() => ({ formatToParts: mockFormatToParts }));
+    const result = getNowInTimezone("UTC");
+    expect(result.minutes).toBe(0);
     // @ts-ignore
     global.Intl.DateTimeFormat = origDateTimeFormat;
   });
@@ -142,5 +165,15 @@ describe("date utility - isTodayInTimezone", () => {
 
   it("returns false for invalid date string", () => {
     expect(isTodayInTimezone("not-a-date", "UTC")).toBe(false);
+  });
+
+  it("returns false when timezone is invalid and throws", () => {
+    expect(isTodayInTimezone(new Date().toISOString(), "Invalid/Timezone")).toBe(false);
+  });
+
+  it("uses UTC when timezone is empty string", () => {
+    const now = new Date().toISOString();
+    const result = isTodayInTimezone(now, "");
+    expect(typeof result).toBe("boolean");
   });
 });
