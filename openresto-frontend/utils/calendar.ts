@@ -54,7 +54,8 @@ export function buildCalendarUrls(input: CalendarInput) {
 
   const title = `Reservation at ${input.restaurantName}`;
 
-  const origin = typeof window !== "undefined" ? window.location?.origin : /* istanbul ignore next */ "";
+  const origin =
+    typeof window !== "undefined" ? window.location?.origin : /* istanbul ignore next */ "";
   const descriptionLines = [
     origin ? `Booked via the URL: (${origin})` : "",
     `Booking reference: ${input.bookingRef}`,

@@ -33,7 +33,9 @@ export function ExtendBookingActions({
             style={(state) => [
               styles.extendBtn,
               { backgroundColor: PRIMARY },
-              (state as { hovered?: boolean }).hovered && /* istanbul ignore next */ { opacity: 0.9 },
+              (state as { hovered?: boolean }).hovered && /* istanbul ignore next */ {
+                opacity: 0.9,
+              },
               extending && { opacity: 0.7 },
             ]}
             onPress={() => onExtend(mins)}

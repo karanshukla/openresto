@@ -30,7 +30,8 @@ export function GlobalSettingRow({
       style={(state) => [
         styles.globalRow,
         { borderColor, backgroundColor: cardBg },
-        !comingSoon && (state as { hovered?: boolean }).hovered && /* istanbul ignore next */ { opacity: 0.85 },
+        !comingSoon &&
+          (state as { hovered?: boolean }).hovered && /* istanbul ignore next */ { opacity: 0.85 },
       ]}
     >
       <View style={[styles.globalRowIcon, { backgroundColor: `${primaryColor}14` }]}>
