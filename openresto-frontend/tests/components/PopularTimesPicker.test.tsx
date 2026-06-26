@@ -20,6 +20,10 @@ jest.mock("@/context/BrandContext", () => {
   return { useBrand: () => brand };
 });
 
+jest.mock("expo-haptics", () => ({
+  selectionAsync: jest.fn(),
+}));
+
 describe("PopularTimesPicker", () => {
   const mockSlots: TimeSlotDto[] = [
     { time: "12:00", isAvailable: true, availableTableIds: [1], category: "Lunch" },

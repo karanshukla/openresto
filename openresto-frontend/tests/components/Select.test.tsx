@@ -9,6 +9,10 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ appName: "Test App", primaryColor: "#000" }),
 }));
 
+jest.mock("expo-haptics", () => ({
+  selectionAsync: jest.fn(),
+}));
+
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));

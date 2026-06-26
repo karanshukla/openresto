@@ -2,9 +2,15 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import ConfirmModal from "@/components/common/ConfirmModal";
 
-// Mock the useColorScheme hook
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
+}));
+
+jest.mock("expo-haptics", () => ({
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+  ImpactFeedbackStyle: { Light: "light" },
+  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
 }));
 
 describe("ConfirmModal", () => {

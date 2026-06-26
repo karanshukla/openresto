@@ -41,6 +41,11 @@ jest.mock("expo-router", () => ({
 jest.mock("@/api/bookings");
 jest.mock("@/api/restaurants");
 
+jest.mock("expo-haptics", () => ({
+  notificationAsync: jest.fn(),
+  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+}));
+
 jest.mock("@/components/common/ConfirmModal", () => {
   const { View, Pressable, Text } = require("react-native");
   return function MockConfirmModal({

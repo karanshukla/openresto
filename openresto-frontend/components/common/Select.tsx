@@ -65,6 +65,7 @@ export default function Select({
                     item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
                   ]}
                   onPress={() => {
+                    /* istanbul ignore next */
                     if (Platform.OS !== "web") {
                       Haptics.selectionAsync();
                     }
