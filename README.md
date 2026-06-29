@@ -40,7 +40,6 @@ The Restaurant business has changed. Indie restaurants run on razor thin margins
 
 <img src="https://github.com/user-attachments/assets/f6462b92-d45c-467d-9ed3-8852ff7c0d45" width="320" alt="Mobile booking">
 
-
 ## Tech Stack
 
 | Layer        | Technology                                                                   |
@@ -247,7 +246,7 @@ cd openresto-frontend && npm test -- --coverage
 
 ## Cutting a release
 
-1. **Update `CHANGELOG.md`** — add a `## [x.y.z] - YYYY-MM-DD` section above `## [Unreleased]` and update the comparison links at the bottom of the file.
+1. **Update `CHANGELOG.md`** — add a `## [x.y.z] - YYYY-MM-DD` section at the top of the file.
 
 2. **Merge to main** — all CI must be green before tagging.
 

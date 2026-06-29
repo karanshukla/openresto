@@ -5,9 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.1] - 2026-06-29
 
-N/A
+Fixed an issue with the Admin Email not correctly being set by the ENV vars in the Docker Environment
+
+Fixed the release job not correctly accounting for the v prefix
 
 ## [1.1.0] - 2026-06-22
 
@@ -56,6 +58,6 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 - **SQLite backup and restore documentation** — see [`docs/backup-restore.md`](docs/backup-restore.md) for automated backup scripts and upgrade procedures.
 - **Migration safety CI** — a dedicated GitHub Actions workflow validates that new EF Core migrations produce identical schemas whether applied to a fresh database or an existing one.
 
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/karanshukla/openresto/releases/tag/v1.0.0
 [1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0
+[1.1.1]: https://github.com/karanshukla/openresto/releases/tag/v1.1.1
