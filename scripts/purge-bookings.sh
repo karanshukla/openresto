@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 # Deletes all bookings and customer PII, then resets admin credentials from .env.
-# Safe to run against a live container — preserves all restaurant config.
+# Wipes all uploaded media and restores from data/media-snapshot/ if it exists.
+# Preserves all restaurant config (via config-snapshot.sql).
+#
+# BEFORE RUNNING: snapshot your current uploaded media so it gets restored afterwards.
+# The snapshot lives in ./data/media-snapshot/ (the bind-mounted data directory —
+# persists across code updates and redeploys, no git commit needed):
+#
+#   mkdir -p data/media-snapshot
+#   CONTAINER=$(docker compose -f docker-compose.vps.yml ps -q backend | head -1)
+#   docker cp "$CONTAINER:/app/wwwroot/media/." data/media-snapshot/
+#
+# Run this once from your docker-compose.vps.yml directory before the first purge.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -38,6 +49,11 @@ PRAGMA wal_checkpoint(TRUNCATE);
 log "Purging bookings and PII..."
 docker exec "$CONTAINER" sqlite3 "$DB" "$SQL"
 log "Purge done. Bookings remaining: $(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM Bookings;')"
+
+# --- Purge uploaded media ---
+log "Purging uploaded media..."
+docker exec "$CONTAINER" sh -c 'find /app/wwwroot/media -maxdepth 1 -type f -delete'
+log "Media purged. Files remaining: $(docker exec "$CONTAINER" sh -c 'find /app/wwwroot/media -maxdepth 1 -type f | wc -l')"
 
 # --- Reset admin credentials from .env ---
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -202,4 +218,19 @@ if [[ -f "$SNAPSHOT" ]]; then
   log "Config restored. Restaurants: $(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM Restaurants;')"
 else
   log "WARNING: config-snapshot.sql not found — skipping config restore."
+fi
+
+# --- Restore media snapshot ---
+MEDIA_SNAPSHOT="$SCRIPT_DIR/../data/media-snapshot"
+if [[ -d "$MEDIA_SNAPSHOT" ]]; then
+  log "Restoring media snapshot..."
+  FILE_COUNT=0
+  for f in "$MEDIA_SNAPSHOT"/*; do
+    [[ -f "$f" ]] || continue
+    docker cp "$f" "$CONTAINER:/app/wwwroot/media/"
+    FILE_COUNT=$((FILE_COUNT + 1))
+  done
+  log "Media restored. Files copied: $FILE_COUNT"
+else
+  log "WARNING: media-snapshot/ not found at $MEDIA_SNAPSHOT — skipping media restore."
 fi
