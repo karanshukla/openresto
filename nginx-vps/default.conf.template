@@ -28,7 +28,13 @@ server {
     error_log /dev/stderr warn;
 
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1000;
+    gzip_proxied any;
+    gzip_types text/plain text/css application/json application/javascript text/xml
+               application/xml image/svg+xml font/woff font/woff2
+               application/font-woff application/font-woff2;
 
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -43,9 +49,17 @@ server {
 
     client_max_body_size 10M;
 
+    # Block dotfiles
+    location ~ /\.(?!well-known).* {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
     location /api/ {
         limit_req zone=api burst=20 nodelay;
         include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
         add_header Cache-Control "no-store, max-age=0" always;
         proxy_pass http://backend:8080;
         error_page 404 500 502 503 504 = @api_error;
@@ -56,9 +70,20 @@ server {
         return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
     }
 
+    # Expo static assets — content-hashed filenames, safe to cache indefinitely
+    location /_expo/static/ {
+        limit_req zone=general burst=50 nodelay;
+        include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        proxy_pass http://frontend:8081;
+    }
+
     location / {
         limit_req zone=general burst=50 nodelay;
         include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "no-cache" always;
         proxy_pass http://frontend:8081;
     }
 

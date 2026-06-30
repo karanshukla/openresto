@@ -9,7 +9,13 @@ server {
     error_log /dev/stderr warn;
 
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1000;
+    gzip_proxied any;
+    gzip_types text/plain text/css application/json application/javascript text/xml
+               application/xml image/svg+xml font/woff font/woff2
+               application/font-woff application/font-woff2;
 
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -65,9 +71,20 @@ server {
         proxy_pass http://$backend_host:${BACKEND_PORT};
     }
 
+    # Expo static assets — content-hashed filenames, safe to cache indefinitely
+    location /_expo/static/ {
+        include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+
+        set $frontend_host ${FRONTEND_HOST};
+        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+    }
+
     # API — Proxy to Backend
     location /api/ {
         include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
         add_header Cache-Control "no-store, max-age=0" always;
 
         # Variable must be just the host for runtime DNS resolution to work
@@ -85,6 +102,8 @@ server {
     # Frontend — Proxy to Static Server
     location / {
         include /etc/nginx/conf.d/security-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "no-cache" always;
 
         set $frontend_host ${FRONTEND_HOST};
         proxy_pass http://$frontend_host:${FRONTEND_PORT};
