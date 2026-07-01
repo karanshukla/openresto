@@ -12,12 +12,21 @@ export interface SectionDto {
   tables: TableDto[];
 }
 
+export interface DayHoursDto {
+  /** ISO 8601 day number: 1=Monday … 7=Sunday. */
+  day: number;
+  open: string;
+  close: string;
+}
+
 export interface RestaurantDto {
   id: number;
   name: string;
   address?: string | null;
   openTime: string;
   closeTime: string;
+  /** Resolved hours for every day of the week (7 entries) when provided by the API. */
+  openHours?: DayHoursDto[];
   openDays: string;
   timezone: string;
   tags?: string[];
@@ -92,6 +101,7 @@ export async function updateRestaurant(
     address?: string | null;
     openTime?: string;
     closeTime?: string;
+    openHours?: DayHoursDto[];
     openDays?: string;
     timezone?: string;
     tags?: string | null;

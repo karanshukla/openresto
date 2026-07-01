@@ -79,6 +79,11 @@ public class RestaurantManagementService(AppDbContext db)
             r.OpenDays = req.OpenDays;
         }
 
+        if (req.OpenHours != null)
+        {
+            OpeningHoursHelper.ApplyOpenHours(r, req.OpenHours);
+        }
+
         if (req.Timezone != null)
         {
             r.Timezone = req.Timezone;
@@ -109,6 +114,7 @@ public class RestaurantManagementService(AppDbContext db)
             Address = r.Address,
             OpenTime = r.OpenTime,
             CloseTime = r.CloseTime,
+            OpenHours = OpeningHoursHelper.ResolveWeek(r),
             OpenDays = r.OpenDays,
             Timezone = r.Timezone,
             Tags = string.IsNullOrEmpty(r.Tags)
@@ -244,6 +250,7 @@ public class RestaurantManagementService(AppDbContext db)
         Address = r.Address,
         OpenTime = r.OpenTime,
         CloseTime = r.CloseTime,
+        OpenHours = OpeningHoursHelper.ResolveWeek(r),
         OpenDays = r.OpenDays,
         Timezone = r.Timezone,
         Tags = string.IsNullOrEmpty(r.Tags)

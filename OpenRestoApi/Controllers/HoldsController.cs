@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
 
@@ -104,15 +105,15 @@ public class HoldsController(
 
         DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(requestedUtc, tz);
 
+        int isoDay = (int)localTime.DayOfWeek;
+        if (isoDay == 0)
+        {
+            isoDay = 7; // Sunday: 0 -> 7
+        }
+
         // Check OpenDays
         if (!string.IsNullOrEmpty(restaurant.OpenDays))
         {
-            int isoDay = (int)localTime.DayOfWeek;
-            if (isoDay == 0)
-            {
-                isoDay = 7; // Sunday: 0 -> 7
-            }
-
             var openDaysList = restaurant.OpenDays.Split(',').Select(s => s.Trim());
             if (!openDaysList.Contains(isoDay.ToString(System.Globalization.CultureInfo.InvariantCulture)))
             {
@@ -120,11 +121,12 @@ public class HoldsController(
             }
         }
 
-        if (!TryParseTime(restaurant.OpenTime, out int openHour, out int openMin))
+        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
+        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
         {
             openHour = 9; openMin = 0;
         }
-        if (!TryParseTime(restaurant.CloseTime, out int closeHour, out int closeMin))
+        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
         {
             closeHour = 22; closeMin = 0;
         }
@@ -147,21 +149,6 @@ public class HoldsController(
             // close == open usually means 24h
             return true;
         }
-    }
-
-    private static bool TryParseTime(string time, out int h, out int m)
-    {
-        h = 0; m = 0;
-        if (string.IsNullOrEmpty(time))
-        {
-            return false;
-        }
-        string[] parts = time.Split(':');
-        if (parts.Length < 2)
-        {
-            return false;
-        }
-        return int.TryParse(parts[0], out h) && int.TryParse(parts[1], out m);
     }
 
     /// <summary>

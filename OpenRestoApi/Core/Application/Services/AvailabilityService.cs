@@ -34,11 +34,12 @@ public class AvailabilityService(
         // from UTC would shift midnight into the previous day for any UTC-negative timezone.
         DateTime localDate = bookingDate.Date;
 
+        int jsDay = (int)localDate.DayOfWeek; // 0=Sun…6=Sat
+        int isoDay = jsDay == 0 ? 7 : jsDay;  // 1=Mon…7=Sun
+
         // Check if this day of week is an open day
         if (!string.IsNullOrEmpty(restaurant.OpenDays))
         {
-            int jsDay = (int)localDate.DayOfWeek; // 0=Sun…6=Sat
-            int isoDay = jsDay == 0 ? 7 : jsDay;  // 1=Mon…7=Sun
             var openDaysList = restaurant.OpenDays
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(d => ParseDayOfWeek(d.Trim()))
@@ -55,11 +56,12 @@ public class AvailabilityService(
             }
         }
 
-        if (!TryParseTime(restaurant.OpenTime, out int openHour, out int openMin))
+        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
+        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
         {
             openHour = 9; openMin = 0;
         }
-        if (!TryParseTime(restaurant.CloseTime, out int closeHour, out int closeMin))
+        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
         {
             closeHour = 22; closeMin = 0;
         }
@@ -157,21 +159,6 @@ public class AvailabilityService(
             return "Dinner";
         }
         return "Off-Peak";
-    }
-
-    private static bool TryParseTime(string time, out int h, out int m)
-    {
-        h = 0; m = 0;
-        if (string.IsNullOrEmpty(time))
-        {
-            return false;
-        }
-        string[] parts = time.Split(':');
-        if (parts.Length < 2)
-        {
-            return false;
-        }
-        return int.TryParse(parts[0], out h) && int.TryParse(parts[1], out m);
     }
 
     private static int ParseDayOfWeek(string day)

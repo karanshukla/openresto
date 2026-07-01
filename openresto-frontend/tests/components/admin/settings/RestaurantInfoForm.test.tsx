@@ -288,4 +288,133 @@ describe("RestaurantInfoForm", () => {
     fireEvent.press(screen.getByText("Discard"));
     expect(getDurationSelect().props.value).toBe(90);
   });
+
+  // ── Per-day opening hours (#175) ─────────────────────────────────────────
+
+  const uniformWeek = [1, 2, 3, 4, 5, 6, 7].map((day) => ({
+    day,
+    open: "09:00",
+    close: "22:00",
+  }));
+
+  const customWeek = uniformWeek.map((h) =>
+    h.day === 6 ? { ...h, open: "11:00", close: "23:00" } : h
+  );
+
+  const customRestaurant = { ...mockRestaurant, openHours: customWeek };
+
+  it("starts in uniform mode when hours are the same every day", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    // Uniform mode shows the full-name day chips
+    expect(screen.getByText("Monday")).toBeTruthy();
+    expect(screen.queryByTestId("day-toggle-1")).toBeNull();
+  });
+
+  it("starts in custom mode when the restaurant has per-day hours", () => {
+    render(<RestaurantInfoForm restaurant={customRestaurant} onSaved={onSaved} />);
+    expect(screen.getByTestId("day-toggle-1")).toBeTruthy();
+    expect(screen.getByTestId("day-toggle-7")).toBeTruthy();
+  });
+
+  it("switches to custom mode and shows 7 day rows", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    for (let day = 1; day <= 7; day++) {
+      expect(screen.getByTestId(`day-toggle-${day}`)).toBeTruthy();
+    }
+  });
+
+  it("shows Closed for days not in openDays in custom mode", () => {
+    // mockRestaurant is open Mon–Fri only
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    expect(screen.getAllByText("Closed")).toHaveLength(2); // Sat + Sun
+  });
+
+  it("toggling a closed day open in custom mode reveals its time pickers", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    fireEvent.press(screen.getByTestId("day-toggle-6"));
+    expect(screen.getAllByText("Closed")).toHaveLength(1); // only Sunday left
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+  });
+
+  it("does not mark the form dirty when only the mode is toggled", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+
+  it("saves per-day hours after editing a single day", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      openHours: customWeek,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    // Mock TimePicker's "Pick Time" sets 10:00; first picker is Monday's opening time
+    fireEvent.press(screen.getAllByText("Pick Time")[0]);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(payload.openHours).toHaveLength(7);
+    expect(payload.openHours[0]).toEqual({ day: 1, open: "10:00", close: "22:00" });
+    expect(payload.openHours[1]).toEqual({ day: 2, open: "09:00", close: "22:00" });
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ openHours: customWeek }));
+  });
+
+  it("saves uniform hours for all 7 days in uniform mode", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    // First picker in uniform mode is "Opens"; the mock sets it to 10:00
+    fireEvent.press(screen.getAllByText("Pick Time")[0]);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(payload.openTime).toBe("10:00");
+    expect(payload.openHours).toHaveLength(7);
+    expect(payload.openHours.every((h: { open: string }) => h.open === "10:00")).toBe(true);
+  });
+
+  it("copies one day's hours to the whole week", async () => {
+    // Open Saturday so its row shows time pickers and the copy button
+    const withSaturday = { ...customRestaurant, openDays: "1,2,3,4,5,6" };
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(withSaturday);
+    render(<RestaurantInfoForm restaurant={withSaturday} onSaved={onSaved} />);
+    // Saturday (day 6) has 11:00–23:00; copy it everywhere
+    fireEvent.press(screen.getByTestId("copy-hours-6"));
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(
+      payload.openHours.every(
+        (h: { open: string; close: string }) => h.open === "11:00" && h.close === "23:00"
+      )
+    ).toBe(true);
+  });
+
+  it("discard restores the original per-day hours and mode", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("hours-mode-custom"));
+    fireEvent.press(screen.getByTestId("day-toggle-6"));
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    fireEvent.press(screen.getByText("Discard"));
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+    // Back to uniform mode chips
+    expect(screen.getByText("Monday")).toBeTruthy();
+    expect(screen.queryByTestId("day-toggle-1")).toBeNull();
+  });
+
+  it("shows the after-midnight hint when closing time is before opening", () => {
+    const overnight = {
+      ...mockRestaurant,
+      openTime: "18:00",
+      closeTime: "02:00",
+    };
+    render(<RestaurantInfoForm restaurant={overnight} onSaved={onSaved} />);
+    expect(screen.getByText(/closes after midnight/)).toBeTruthy();
+  });
 });

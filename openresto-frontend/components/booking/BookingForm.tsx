@@ -15,6 +15,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { getNowInTimezone, formatCurrentTimeInTimezone } from "@/utils/date";
+import { getHoursForDate, HoursSource } from "@/utils/openingHours";
 
 const isWeb = Platform.OS === "web";
 
@@ -38,9 +39,10 @@ function addDays(dateStr: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().split("T")[0];
 }
 
-function suggestDate(closeTime: string, timezone: string): string {
+function suggestDate(restaurant: HoursSource, timezone: string): string {
   const { dateStr, hours, minutes } = getNowInTimezone(timezone);
-  const [closeH] = closeTime.split(":").map(Number);
+  const { close } = getHoursForDate(restaurant, dateStr);
+  const [closeH] = close.split(":").map(Number);
   const latestStartMinutes = (closeH - 1) * 60 + 45;
   if (hours * 60 + minutes < latestStartMinutes) {
     return dateStr;
@@ -49,8 +51,9 @@ function suggestDate(closeTime: string, timezone: string): string {
   return addDays(dateStr, 1);
 }
 
-function suggestTime(openTime: string, closeTime: string, timezone: string): string {
-  const { hours, minutes } = getNowInTimezone(timezone);
+function suggestTime(restaurant: HoursSource, timezone: string): string {
+  const { dateStr, hours, minutes } = getNowInTimezone(timezone);
+  const { open: openTime, close: closeTime } = getHoursForDate(restaurant, dateStr);
   let h = hours;
   const m = minutes < 15 ? 15 : minutes < 30 ? 30 : minutes < 45 ? 45 : 0;
   if (m === 0) h += 1;
@@ -97,15 +100,11 @@ export default function BookingForm({
   const sectionOptions = restaurant.sections.map((s) => ({ label: s.name, value: s.id }));
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
 
-  const openTime = restaurant.openTime ?? "09:00";
-  const closeTime = restaurant.closeTime ?? "22:00";
   const timezone = restaurant.timezone || "UTC";
 
   const [tableId, setTableId] = useState<number | undefined>();
-  const [date, setDate] = useState<string>(() => suggestDate(closeTime, timezone));
-  const [time, setTime] = useState<string>(
-    () => initialTime ?? suggestTime(openTime, closeTime, timezone)
-  );
+  const [date, setDate] = useState<string>(() => suggestDate(restaurant, timezone));
+  const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
   const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -245,6 +244,13 @@ export default function BookingForm({
   const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
   const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
 
+  // Hours for the selected date's day of week (falls back to uniform hours).
+  // For after-midnight closing (close <= open) let the picker run to end of day.
+  const selectedDayHours = getHoursForDate(restaurant, date || getNowInTimezone(timezone).dateStr);
+  const minPickerTime = selectedDayHours.open;
+  const maxPickerTime =
+    selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
+
   const isValid =
     !!tableId &&
     !!date &&
@@ -334,8 +340,8 @@ export default function BookingForm({
           <TimePicker
             selectedTime={time}
             onSelect={setTime}
-            minTime={openTime}
-            maxTime={closeTime}
+            minTime={minPickerTime}
+            maxTime={maxPickerTime}
           />
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>

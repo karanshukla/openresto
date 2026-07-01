@@ -15,6 +15,13 @@ public class Restaurant
     public string OpenDays { get; set; } = "1,2,3,4,5,6,7";
 
     /// <summary>
+    /// Optional per-day opening hour overrides as JSON keyed by ISO day number,
+    /// e.g. {"1":{"open":"12:00","close":"22:00"}}. Null means every day uses
+    /// OpenTime/CloseTime. Days missing from the JSON also fall back to them.
+    /// </summary>
+    public string? OpenHoursJson { get; set; }
+
+    /// <summary>
     /// IANA timezone identifier (e.g. "Europe/London", "America/New_York").
     /// All booking times are interpreted in this timezone.
     /// </summary>

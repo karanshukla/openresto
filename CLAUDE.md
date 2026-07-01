@@ -82,6 +82,7 @@ OpenRestoApi/
 
 - All `DateTime` values are stored and passed as **UTC**. EF Core value converters enforce this globally in `AppDbContext`. Restaurant-local times are converted using the restaurant's IANA `Timezone` field only at display/availability-calculation time.
 - `OpenDays` is a comma-separated string of ISO 8601 day numbers (`1`=Monday … `7`=Sunday).
+- **Per-day opening hours**: `Restaurant.OpenHoursJson` (nullable JSON keyed by ISO day, e.g. `{"6":{"open":"11:00","close":"23:00"}}`) overrides `OpenTime`/`CloseTime` per day; resolve with `OpeningHoursHelper.GetHoursForDay`. `OpenDays` stays the canonical open/closed toggle. When an update sends identical hours for all 7 days they collapse back to `OpenTime`/`CloseTime` and `OpenHoursJson` is cleared. The API exposes a resolved 7-entry `openHours` list on `RestaurantDto`; the frontend mirrors the fallback logic in `utils/openingHours.ts`.
 - `HoldService` is a **singleton** in-memory store — appropriate for single-instance deployment. Holds expire after 5 minutes. If you need multi-instance, swap for Redis.
 - The OpenAPI spec (`/openapi/v1.json`) is only exposed when `ASPNETCORE_ENVIRONMENT=Development`. The dev nginx template (`nginx/default.conf.template`) proxies `/openapi/` to the backend for ZAP CI scanning; the prod nginx (`nginx-vps/`) does not.
 - **EF migrations with running dev server**: exe is locked, so use `dotnet ef migrations add <Name> --no-build`. If obj/ DLLs are stale the generated `Up()` will be empty — write it manually.

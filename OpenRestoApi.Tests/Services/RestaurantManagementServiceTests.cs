@@ -94,6 +94,101 @@ public class RestaurantManagementServiceTests
         Assert.Equal("GMT", result.Timezone);
     }
 
+    // ── Per-day opening hours (#175) ─────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_StoresPerDayHours_AndReturnsResolvedWeek()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateAsync_StoresPerDayHours_AndReturnsResolvedWeek));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = new RestaurantManagementService(db);
+
+        var hours = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "20:00" })
+            .ToList();
+        hours[6] = new DayHoursDto { Day = 7, Open = "12:00", Close = "16:00" }; // Sunday differs
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", OpenHours = hours });
+
+        Assert.NotNull(result);
+        Assert.Equal(7, result!.OpenHours.Count);
+        Assert.Equal("12:00", result.OpenHours.Single(h => h.Day == 7).Open);
+        Assert.Equal("10:00", result.OpenHours.Single(h => h.Day == 1).Open);
+        Assert.NotNull(db.Restaurants.Single(r => r.Id == 1).OpenHoursJson);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_CollapsesUniformPerDayHours_IntoOpenCloseTime()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateAsync_CollapsesUniformPerDayHours_IntoOpenCloseTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            OpenTime = "09:00",
+            CloseTime = "22:00",
+            Timezone = "UTC",
+            OpenHoursJson = """{"6":{"open":"11:00","close":"23:00"}}"""
+        });
+        await db.SaveChangesAsync();
+        var svc = new RestaurantManagementService(db);
+
+        var uniform = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "08:00", Close = "18:00" })
+            .ToList();
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", OpenHours = uniform });
+
+        Restaurant saved = db.Restaurants.Single(r => r.Id == 1);
+        Assert.Null(saved.OpenHoursJson);
+        Assert.Equal("08:00", saved.OpenTime);
+        Assert.Equal("18:00", saved.CloseTime);
+        Assert.All(result!.OpenHours, h =>
+        {
+            Assert.Equal("08:00", h.Open);
+            Assert.Equal("18:00", h.Close);
+        });
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Throws_WhenOpenHoursInvalid()
+    {
+        using AppDbContext db = CreateDb(nameof(UpdateAsync_Throws_WhenOpenHoursInvalid));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = new RestaurantManagementService(db);
+
+        var invalid = new List<DayHoursDto> { new() { Day = 9, Open = "10:00", Close = "20:00" } };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", OpenHours = invalid }));
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsResolvedOpenHours()
+    {
+        using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsResolvedOpenHours));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            OpenTime = "09:00",
+            CloseTime = "22:00",
+            Timezone = "UTC",
+            OpenHoursJson = """{"6":{"open":"11:00","close":"23:00"}}"""
+        });
+        await db.SaveChangesAsync();
+        var svc = new RestaurantManagementService(db);
+
+        RestaurantDto? dto = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(dto);
+        Assert.Equal(7, dto!.OpenHours.Count);
+        Assert.Equal("11:00", dto.OpenHours.Single(h => h.Day == 6).Open);
+        Assert.Equal("09:00", dto.OpenHours.Single(h => h.Day == 1).Open);
+    }
+
     // ── DefaultBookingDurationMinutes (#135) ─────────────────────────────────
 
     [Fact]

@@ -14,6 +14,7 @@ import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import TimePicker from "@/components/common/TimePicker";
+import { getHoursForDate } from "@/utils/openingHours";
 import Button from "@/components/common/Button";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
@@ -76,7 +77,8 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
       if (data.length > 0) {
         const r = data[0];
         setRestaurantId(r.id);
-        setTime(nextSlotTime(r.openTime, r.closeTime));
+        const todayHours = getHoursForDate(r, todayDate());
+        setTime(nextSlotTime(todayHours.open, todayHours.close));
         const firstSection = r.sections[0];
         if (firstSection) {
           setSectionId(firstSection.id);
@@ -236,8 +238,8 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                       <TimePicker
                         selectedTime={time}
                         onSelect={setTime}
-                        minTime={selectedRestaurant?.openTime ?? "09:00"}
-                        maxTime={selectedRestaurant?.closeTime ?? "22:00"}
+                        minTime={getHoursForDate(selectedRestaurant ?? {}, date).open}
+                        maxTime={getHoursForDate(selectedRestaurant ?? {}, date).close}
                       />
                     </View>
                   </View>

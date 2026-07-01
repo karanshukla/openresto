@@ -9,6 +9,7 @@ import {
   BookingStatusFilter,
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
+import { getHoursForDay } from "@/utils/openingHours";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { NewBookingModal } from "@/components/admin/bookings/NewBookingModal";
 import { useEffect, useState } from "react";
@@ -112,8 +113,10 @@ export default function AdminBookingsScreen() {
   const PRIMARY = brand.primaryColor || COLORS.primary;
 
   const selectedRestaurant = restaurants.find((r) => r.id === selectedRestaurantId);
-  const openTime = selectedRestaurant?.openTime ?? "09:00";
-  const closeTime = selectedRestaurant?.closeTime ?? "22:00";
+  const gridIsoDay = gridDate.getDay() === 0 ? 7 : gridDate.getDay();
+  const gridDayHours = getHoursForDay(selectedRestaurant ?? {}, gridIsoDay);
+  const openTime = gridDayHours.open;
+  const closeTime = gridDayHours.close;
   const timezone = selectedRestaurant?.timezone ?? "UTC";
 
   const borderColor = colors.border;

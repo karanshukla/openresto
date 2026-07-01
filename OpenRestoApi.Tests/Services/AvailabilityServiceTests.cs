@@ -333,4 +333,64 @@ public class AvailabilityServiceTests
         // Should return slots — the restaurant is open on Mondays
         Assert.NotEmpty(result.Slots);
     }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesPerDayHours_ForOverriddenDay()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesPerDayHours_ForOverriddenDay));
+        SeedRestaurant(db);
+        Restaurant r = db.Restaurants.First();
+        // Saturday opens later and shorter than the uniform 11:00–13:00
+        r.OpenHoursJson = """{"6":{"open":"12:00","close":"13:00"}}""";
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // 2026-10-10 is a Saturday (ISO day 6)
+        var saturday = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, saturday, 2);
+
+        // 12:00 to 13:00 with 30-min slots = 2 slots instead of the uniform 4
+        Assert.Equal(2, result.Slots.Count);
+        Assert.Equal("12:00", result.Slots[0].Time);
+        Assert.Equal("12:30", result.Slots[1].Time);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesUniformHours_ForDayWithoutOverride()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesUniformHours_ForDayWithoutOverride));
+        SeedRestaurant(db);
+        Restaurant r = db.Restaurants.First();
+        r.OpenHoursJson = """{"6":{"open":"12:00","close":"13:00"}}""";
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // 2026-10-09 is a Friday (ISO day 5) — no override, uniform 11:00–13:00
+        var friday = new DateTime(2026, 10, 9, 0, 0, 0, DateTimeKind.Utc);
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, friday, 2);
+
+        Assert.Equal(4, result.Slots.Count);
+        Assert.Equal("11:00", result.Slots[0].Time);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ClosedDay_ReturnsNoSlots_EvenWithPerDayHours()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ClosedDay_ReturnsNoSlots_EvenWithPerDayHours));
+        SeedRestaurant(db);
+        Restaurant r = db.Restaurants.First();
+        // Saturday has hours configured but is excluded from OpenDays
+        r.OpenDays = "1,2,3,4,5";
+        r.OpenHoursJson = """{"6":{"open":"12:00","close":"13:00"}}""";
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var saturday = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, saturday, 2);
+
+        Assert.Empty(result.Slots);
+    }
 }

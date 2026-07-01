@@ -6,10 +6,12 @@ import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import TimePicker from "@/components/common/TimePicker";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
+import { getHoursForDate } from "@/utils/openingHours";
 
 interface RestaurantDto {
   openTime?: string;
   closeTime?: string;
+  openHours?: { day: number; open: string; close: string }[];
 }
 
 interface EditBookingFormProps {
@@ -109,8 +111,8 @@ export function EditBookingForm({
               <TimePicker
                 selectedTime={editTime}
                 onSelect={setEditTime}
-                minTime={selectedRestaurant?.openTime ?? "09:00"}
-                maxTime={selectedRestaurant?.closeTime ?? "22:00"}
+                minTime={getHoursForDate(selectedRestaurant ?? {}, editDate).open}
+                maxTime={getHoursForDate(selectedRestaurant ?? {}, editDate).close}
               />
             </View>
           </View>

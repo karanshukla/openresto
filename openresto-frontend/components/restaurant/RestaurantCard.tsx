@@ -9,6 +9,7 @@ import { useBrand } from "@/context/BrandContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
+import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 
 function getRestaurantDate(timezone: string): string {
   try {
@@ -76,10 +77,12 @@ function parseDayOfWeek(day: string): number {
   return 0;
 }
 
-function opensLaterToday(openTime: string, timezone: string, openDays: string): string | null {
-  const [oh, om] = openTime.split(":").map(Number);
+function opensLaterToday(restaurant: RestaurantDto): string | null {
+  const timezone = restaurant.timezone ?? "UTC";
   const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
-  const openDaysList = openDays
+  const { open: openTime } = getHoursForDay(restaurant, isoDay);
+  const [oh, om] = openTime.split(":").map(Number);
+  const openDaysList = restaurant.openDays
     ?.split(",")
     .map((d) => parseDayOfWeek(d.trim()))
     .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
@@ -94,17 +97,14 @@ function opensLaterToday(openTime: string, timezone: string, openDays: string): 
   return `Opens in ${diffMins}m`;
 }
 
-function isOpenNow(
-  openTime: string,
-  closeTime: string,
-  timezone: string,
-  openDays: string
-): boolean {
+function isOpenNow(restaurant: RestaurantDto): boolean {
+  const timezone = restaurant.timezone ?? "UTC";
+  const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
+  const { open: openTime, close: closeTime } = getHoursForDay(restaurant, isoDay);
   const [oh, om] = openTime.split(":").map(Number);
   const [ch, cm] = closeTime.split(":").map(Number);
   if (isNaN(oh) || isNaN(ch)) return true;
-  const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
-  const openDaysList = openDays
+  const openDaysList = restaurant.openDays
     ?.split(",")
     .map((d) => parseDayOfWeek(d.trim()))
     .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7];
@@ -160,15 +160,13 @@ export default function RestaurantCard({
     });
   }, [restaurant.id, restaurant.timezone, restaurant.openDays, party]);
 
-  const open = isOpenNow(
-    restaurant.openTime,
-    restaurant.closeTime,
-    restaurant.timezone ?? "UTC",
-    restaurant.openDays
+  const open = isOpenNow(restaurant);
+  const opensLabel = !open ? opensLaterToday(restaurant) : null;
+  const todayHours = getHoursForDay(
+    restaurant,
+    getRestaurantNow(restaurant.timezone ?? "UTC").isoDay
   );
-  const opensLabel = !open
-    ? opensLaterToday(restaurant.openTime, restaurant.timezone ?? "UTC", restaurant.openDays)
-    : null;
+  const hoursVary = hasCustomHours(restaurant);
   const tags = restaurant.tags ?? [];
 
   const accentHex = primaryColor.replace("#", "");
@@ -275,7 +273,7 @@ export default function RestaurantCard({
           >
             {open && <View style={styles.badgeDot} />}
             <ThemedText style={styles.badgeText}>
-              {open ? `Open till ${restaurant.closeTime}` : (opensLabel ?? "Closed")}
+              {open ? `Open till ${todayHours.close}` : (opensLabel ?? "Closed")}
             </ThemedText>
           </View>
         </View>
@@ -418,9 +416,11 @@ export default function RestaurantCard({
         <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
           <View style={styles.hoursRow}>
             <Ionicons name="time-outline" size={12} color={mutedColor} style={{ marginRight: 5 }} />
-            <ThemedText style={[styles.hoursText, { color: mutedColor }]}>Open </ThemedText>
+            <ThemedText style={[styles.hoursText, { color: mutedColor }]}>
+              {hoursVary ? "Today " : "Open "}
+            </ThemedText>
             <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
-              {restaurant.openTime} – {restaurant.closeTime}
+              {todayHours.open} – {todayHours.close}
             </ThemedText>
           </View>
           <Pressable

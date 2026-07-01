@@ -14,6 +14,7 @@ import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
 import { useBrand } from "@/context/BrandContext";
+import { summarizeHours } from "@/utils/openingHours";
 import { styles } from "./settings.styles";
 
 function StatChip({
@@ -127,7 +128,7 @@ export function LocationCard({
     (acc, s) => acc + s.tables.reduce((a, t) => a + t.seats, 0),
     0
   );
-  const hoursText = `${restaurant.openTime ?? "09:00"}–${restaurant.closeTime ?? "22:00"}`;
+  const hoursText = summarizeHours(restaurant);
 
   return (
     <View>
