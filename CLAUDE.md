@@ -129,7 +129,7 @@ Two roles via JWT:
 
 ### Brand / Favicon
 
-- `BrandSettings.FaviconIcon` — nullable string (max 32 chars), validated server-side against `LucideIconPaths.cs` (10 icons: utensils, wine, coffee, pizza, flame, leaf, star, heart, chef-hat, fish).
+- `BrandSettings.FaviconIcon` — nullable string (max 32 chars), validated server-side against `LucideIconPaths.cs` (15 icons: utensils, wine, coffee, pizza, flame, leaf, star, heart, chef-hat, fish, hamburger, sandwich, soup, cake, ice-cream-cone).
 - `GET /api/brand/pwa-icon.svg` — SVG with brand-colored rounded-rect background + white Lucide icon; used for the browser tab favicon.
 - `GET /api/brand/pwa-icon-{192|512}.png` — PNG generated via `Magick.NET-Q8-AnyCPU`; used as PWA manifest icons. Both return 404 when no icon is configured; Chrome falls back to static PNGs.
 - Frontend: `utils/injectBrandFavicon.ts` called from `BrandContext` after brand loads; posts `BRAND_UPDATE` to SW to patch manifest `name`/`theme_color`. Icon picker in `components/admin/settings/BrandSettingsCard.tsx`; SVG path data + `buildFaviconDataUri()` in `constants/faviconIcons.ts`.

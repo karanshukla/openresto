@@ -15,6 +15,11 @@ public class LucideIconPathsTests
     [InlineData("heart")]
     [InlineData("chef-hat")]
     [InlineData("fish")]
+    [InlineData("hamburger")]
+    [InlineData("sandwich")]
+    [InlineData("soup")]
+    [InlineData("cake")]
+    [InlineData("ice-cream-cone")]
     public void Get_KnownIcon_ReturnsSvgPath(string icon)
     {
         string? result = LucideIconPaths.Get(icon);

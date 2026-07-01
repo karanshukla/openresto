@@ -222,7 +222,7 @@ cd openresto-frontend && npm test -- --coverage
 
 ### Branding & UI
 
-- **Full white-label branding** — app name, primary color, favicon icon, and PWA identity are all stored in the database and configurable from the admin settings panel. Choose from 10 Lucide icons (utensils, wine, coffee, pizza, flame, leaf, star, heart, chef-hat, fish); the favicon updates live in the browser tab without a page reload. The frontend fetches brand settings on boot and applies them globally via `BrandContext`.
+- **Full white-label branding** — app name, primary color, favicon icon, and PWA identity are all stored in the database and configurable from the admin settings panel. Choose from 15 Lucide icons (utensils, wine, coffee, pizza, flame, leaf, star, heart, chef-hat, fish, hamburger, sandwich, soup, cake, ice-cream-cone); the favicon updates live in the browser tab without a page reload. The frontend fetches brand settings on boot and applies them globally via `BrandContext`.
 - **Dynamic PWA icons** — `GET /api/brand/pwa-icon.svg` returns an SVG with the brand-colored background and white icon on the fly. `GET /api/brand/pwa-icon-{192|512}.png` rasterizes it with Magick.NET (cross-platform, no ImageMagick apt package needed) for PWA manifest compliance.
 - **Skeleton loaders & splash screens** — branded loading states throughout the app; no blank white flashes.
 
