@@ -13,6 +13,7 @@ permissions:
   pull-requests: write
   issues: write
   checks: write
+  deployments: write
 
 jobs:
   frontend:
