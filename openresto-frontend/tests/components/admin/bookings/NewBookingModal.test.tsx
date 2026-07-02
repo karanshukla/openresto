@@ -48,12 +48,34 @@ jest.mock("@/components/common/Select", () => {
 });
 
 jest.mock("@/components/common/DatePicker", () => {
-  const { View, Text } = require("react-native");
+  const { View, Text, Pressable } = require("react-native");
   return {
     __esModule: true,
-    default: ({ selectedDate }: { selectedDate?: string }) => (
+    default: ({
+      selectedDate,
+      onSelect,
+      allowPast,
+    }: {
+      selectedDate?: string;
+      onSelect: (v: string) => void;
+      allowPast?: boolean;
+    }) => (
       <View>
         <Text testID="date-picker">{selectedDate ?? "no date"}</Text>
+        <Text testID="date-picker-allowpast">{allowPast ? "true" : "false"}</Text>
+        <Pressable
+          testID="date-picker-past"
+          onPress={() => {
+            const d = new Date();
+            d.setDate(d.getDate() - 7);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            onSelect(`${y}-${m}-${day}`);
+          }}
+        >
+          <Text>Select Past Date</Text>
+        </Pressable>
       </View>
     ),
   };
@@ -283,5 +305,28 @@ describe("NewBookingModal", () => {
     rerender(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
     await waitFor(() => expect(screen.getByText("Test Restaurant")).toBeTruthy());
     expect(screen.getByPlaceholderText("guest@example.com").props.value).toBeFalsy();
+  });
+
+  it("opts in to past dates and creates a booking with a past date (#160)", async () => {
+    (adminApi.adminCreateBooking as jest.Mock).mockResolvedValue({ id: 77 });
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+
+    // The admin modal must opt in to past dates on the shared DatePicker.
+    expect(screen.getByTestId("date-picker-allowpast").props.children).toBe("true");
+
+    // Select a date 7 days ago via the mocked picker.
+    fireEvent.press(screen.getByTestId("date-picker-past"));
+    fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "test@example.com");
+
+    await act(async () => {
+      fireEvent.press(screen.getByText("Create Booking"));
+    });
+    await waitFor(() => expect(adminApi.adminCreateBooking).toHaveBeenCalled());
+
+    const payload = (adminApi.adminCreateBooking as jest.Mock).mock.calls[0][0];
+    // The submitted date is genuinely in the past.
+    expect(new Date(payload.date).getTime()).toBeLessThan(Date.now());
+    expect(onCreated).toHaveBeenCalledWith(77);
   });
 });

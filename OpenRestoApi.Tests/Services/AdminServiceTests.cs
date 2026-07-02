@@ -368,6 +368,38 @@ public class AdminServiceTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateBookingAsync(req));
     }
 
+    // ── Admin past-date creation (#160) ─────────────────────────────────────
+    // The admin path intentionally has NO past-date guard (unlike the customer
+    // path in BookingService). This test locks that behaviour in so a future
+    // change cannot accidentally copy the customer guard into the admin path.
+    [Fact]
+    public async Task CreateBookingAsync_Succeeds_WithPastDate_AndPersistsAsConfirmed()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", DefaultBookingDurationMinutes = 60 });
+        _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        await _db.SaveChangesAsync();
+
+        // One week in the past — the customer path rejects this, admin must allow it.
+        DateTime pastStart = DateTime.UtcNow.AddDays(-7);
+        var req = new AdminCreateBookingRequest
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            Date = pastStart,
+            Seats = 2,
+            CustomerEmail = "admin@example.com",
+        };
+
+        BookingDetailDto result = await svc.CreateBookingAsync(req);
+
+        Assert.False(result.IsCancelled);
+        Assert.Equal(pastStart, result.Date, TimeSpan.FromSeconds(1));
+        Assert.Equal(pastStart.AddMinutes(60), result.EndTime!.Value, TimeSpan.FromSeconds(1));
+    }
+
     [Fact]
     public async Task ExtendBookingAsync_FallsBackToRestaurantConfiguredDuration_WhenEndTimeInvalid()
     {

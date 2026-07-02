@@ -120,6 +120,18 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
     setTableId(sec?.tables[0]?.id);
   };
 
+  // Admins may back-date. A past date cannot reuse "next future slot" (that only
+  // makes sense for today), so fall back to the restaurant's opening hour for the
+  // chosen day. Today and future dates keep their existing time — no behaviour
+  // change for the default (today) flow.
+  const handleDateSelect = (newDate: string) => {
+    setDate(newDate);
+    if (newDate < todayDate()) {
+      const hours = getHoursForDate(selectedRestaurant ?? {}, newDate);
+      setTime(hours.open || "12:00");
+    }
+  };
+
   const isValid =
     !!restaurantId && !!sectionId && !!tableId && email.includes("@") && !!date && !!time;
 
@@ -231,7 +243,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   <View style={styles.fieldRow}>
                     <View style={[styles.fieldHalf, styles.field]}>
                       <ThemedText style={styles.label}>Date</ThemedText>
-                      <DatePicker selectedDate={date} onSelect={setDate} />
+                      <DatePicker selectedDate={date} onSelect={handleDateSelect} allowPast />
                     </View>
                     <View style={[styles.fieldHalf, styles.field]}>
                       <ThemedText style={styles.label}>Time</ThemedText>

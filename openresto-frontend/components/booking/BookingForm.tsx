@@ -325,6 +325,8 @@ export default function BookingForm({
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
+          {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
+              here — only the admin New Booking modal opts in to back-dating (#160). */}
           <DatePicker
             selectedDate={date}
             onSelect={setDate}

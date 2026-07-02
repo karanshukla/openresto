@@ -15,11 +15,18 @@ export default function DatePicker({
   selectedDate,
   onSelect,
   openDays,
+  allowPast,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
   /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
+  /**
+   * Opt-in: also allow past dates (back to today-365). Default false keeps the
+   * customer flow restricted to today and later (hard `min={today}`).
+   * Used by the admin New Booking modal.
+   */
+  allowPast?: boolean;
 }) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
@@ -30,17 +37,20 @@ export default function DatePicker({
   const textColor = colors.text;
   const placeholderColor = colors.muted;
 
-  const today = (() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  })();
   const maxDate = (() => {
     const d = new Date();
     d.setDate(d.getDate() + 29);
     return d.toISOString().split("T")[0];
+  })();
+  // Customers are hard-locked to today and later. Admins may back-date within a
+  // bounded one-year window so the picker stays reasonable (opt-in via allowPast).
+  const minDate = (() => {
+    const d = new Date();
+    if (allowPast) d.setDate(d.getDate() - 365);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   })();
 
   const isClosedDay = !!(selectedDate && openDays && !openDays.includes(getIsoDay(selectedDate)));
@@ -52,7 +62,7 @@ export default function DatePicker({
       <input
         type="date"
         value={selectedDate || ""}
-        min={today}
+        min={minDate}
         max={maxDate}
         onChange={(e) => onSelect(e.target.value)}
         style={

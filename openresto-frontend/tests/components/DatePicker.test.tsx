@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import DatePicker from "@/components/common/DatePicker";
+import DatePicker, { generateDateOptions } from "@/components/common/DatePicker";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -9,6 +9,14 @@ jest.mock("@/hooks/use-color-scheme", () => ({
 jest.mock("@/context/BrandContext", () => ({
   useBrand: jest.fn(() => ({ appName: "Test App", primaryColor: "#0a7ea4" })),
 }));
+
+// Local YYYY-MM-DD (matches how the component formats option values).
+function localDateValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 describe("DatePicker (native)", () => {
   const today = new Date();
@@ -68,5 +76,34 @@ describe("DatePicker (native)", () => {
     (useBrand as jest.Mock).mockReturnValueOnce({ appName: "Test", primaryColor: "" });
     render(<DatePicker onSelect={jest.fn()} />);
     expect(screen.getByText("Select a date")).toBeTruthy();
+  });
+
+  describe("allowPast prop (admin back-dating — #160)", () => {
+    it("excludes past dates by default (customer-flow regression guard)", () => {
+      const options = generateDateOptions();
+      const todayValue = localDateValue(new Date());
+      // Earliest option is exactly today; no option is before today.
+      expect(options[0].value).toBe(todayValue);
+      expect(options.every((o) => o.value >= todayValue)).toBe(true);
+      expect(options).toHaveLength(30);
+    });
+
+    it("includes past dates when allowPast is set", () => {
+      const options = generateDateOptions({ allowPast: true });
+      const todayValue = localDateValue(new Date());
+      const pastOption = options.find((o) => o.value < todayValue);
+      expect(pastOption).toBeTruthy();
+      // Bounded to today-365 .. today+29 inclusive.
+      const yearAgo = new Date();
+      yearAgo.setDate(yearAgo.getDate() - 365);
+      expect(options[0].value).toBe(localDateValue(yearAgo));
+      expect(options).toHaveLength(365 + 29 + 1);
+    });
+
+    it("renders without crashing when allowPast is passed", () => {
+      render(<DatePicker onSelect={jest.fn()} allowPast />);
+      fireEvent.press(screen.getByText("Select a date"));
+      expect(screen.getAllByText("Select a date").length).toBeGreaterThan(0);
+    });
   });
 });

@@ -6,10 +6,15 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS, FORM_SIZES, BORDER_RADIUS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 
-function generateDateOptions(): { label: string; value: string }[] {
-  const options = [];
+export function generateDateOptions(options?: {
+  allowPast?: boolean;
+}): { label: string; value: string }[] {
+  const opts = [];
   const today = new Date();
-  for (let i = 0; i < 30; i++) {
+  // Customers can only choose today and later. Admins may back-date within a
+  // bounded one-year window so the list stays navigable (opt-in via allowPast).
+  const startOffset = options?.allowPast ? -365 : 0;
+  for (let i = startOffset; i <= 29; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const label = d.toLocaleDateString(undefined, {
@@ -22,19 +27,26 @@ function generateDateOptions(): { label: string; value: string }[] {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const value = `${year}-${month}-${day}`;
-    options.push({ label, value });
+    opts.push({ label, value });
   }
-  return options;
+  return opts;
 }
 
 export default function DatePicker({
   selectedDate,
   onSelect,
   openDays,
+  allowPast,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
+  /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
+  /**
+   * Opt-in: also offer past dates (today-365 .. today). Default false keeps the
+   * customer flow restricted to today and later. Used by the admin New Booking modal.
+   */
+  allowPast?: boolean;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const isDark = useColorScheme() === "dark";
@@ -45,7 +57,7 @@ export default function DatePicker({
   const placeholderColor = colors.muted;
   const backgroundColor = colors.input;
 
-  const allOptions = generateDateOptions();
+  const allOptions = generateDateOptions({ allowPast });
   const options = openDays
     ? allOptions.filter((o) => {
         const jsDay = new Date(o.value + "T12:00:00").getDay();

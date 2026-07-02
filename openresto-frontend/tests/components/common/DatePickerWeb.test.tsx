@@ -75,4 +75,33 @@ describe("DatePicker (web)", () => {
     fireEvent(input, "blur");
     expect(wrapper).toBeTruthy();
   });
+
+  // Local YYYY-MM-DD (matches how the component computes the `min`/`max` bounds).
+  function localDateValue(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  it("sets min to today by default (customer-flow restriction)", () => {
+    const { getByTestId } = render(<DatePickerWeb onSelect={onSelect} />);
+    const wrapper = getByTestId("date-picker-web");
+    // The <input> is a react-test-renderer host instance, not a DOM node — read
+    // its props rather than a DOM attribute (no `as any`; cast via `unknown`).
+    const input = wrapper.children[0] as unknown as { props: { min?: string } };
+    expect(input.props.min).toBe(localDateValue(new Date()));
+  });
+
+  it("relaxes min to at most today-365 when allowPast is set", () => {
+    const { getByTestId } = render(<DatePickerWeb onSelect={onSelect} allowPast />);
+    const wrapper = getByTestId("date-picker-web");
+    const input = wrapper.children[0] as unknown as { props: { min?: string } };
+    const min = input.props.min;
+    expect(min).toBeTruthy();
+    const yearAgo = new Date();
+    yearAgo.setDate(yearAgo.getDate() - 365);
+    // Absent OR a date at/before today-365 — either is an acceptable relaxation.
+    expect(min! <= localDateValue(yearAgo)).toBe(true);
+  });
 });
