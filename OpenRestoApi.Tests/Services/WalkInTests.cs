@@ -1,16 +1,17 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Moq;
 using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
-using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
+/// <summary>
+/// Walk-in policy tests for <see cref="WalkInHelper"/> and the admin update
+/// path. Service-level rejection tests live in <see cref="BookingServiceTests"/>
+/// and <see cref="AvailabilityServiceTests"/>, which are the classes allowed to
+/// construct the restricted repository types.
+/// </summary>
 public class WalkInTests
 {
     private static AppDbContext CreateDb(string name)
@@ -19,18 +20,6 @@ public class WalkInTests
             .UseInMemoryDatabase(name)
             .Options;
         return new AppDbContext(opts);
-    }
-
-    /// <summary>Next future occurrence of the given weekday, at 12:00 UTC.</summary>
-    private static DateTime NextUtc(DayOfWeek dayOfWeek)
-    {
-        DateTime d = DateTime.UtcNow.Date.AddDays(1);
-        while (d.DayOfWeek != dayOfWeek)
-        {
-            d = d.AddDays(1);
-        }
-
-        return d.AddHours(12);
     }
 
     // ── WalkInHelper ──────────────────────────────────────────────────────────
@@ -112,143 +101,6 @@ public class WalkInTests
         var r = new Restaurant { Name = "T", WalkInDays = "6,7" };
         Assert.True(WalkInHelper.IsWalkInOnlyOn(r, 6));
         Assert.False(WalkInHelper.IsWalkInOnlyOn(r, 3));
-    }
-
-    // ── BookingService ────────────────────────────────────────────────────────
-
-    private static BookingService CreateBookingService(AppDbContext db)
-    {
-        var config = new Mock<IConfiguration>();
-        return new BookingService(
-            new BookingRepository(db),
-            new TableRepository(db),
-            new SectionRepository(db),
-            new RestaurantRepository(db),
-            new Mock<IHoldService>().Object,
-            new BookingMapper(),
-            new BrandService(db, config.Object));
-    }
-
-    private static void SeedBookable(AppDbContext db, Restaurant restaurant)
-    {
-        db.Restaurants.Add(restaurant);
-        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = restaurant.Id });
-        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
-        db.SaveChanges();
-    }
-
-    [Fact]
-    public async Task CreateBookingAsync_Throws_WhenLocationIsWalkInOnly()
-    {
-        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenLocationIsWalkInOnly));
-        SeedBookable(db, new Restaurant { Id = 1, Name = "T", WalkInOnly = true });
-
-        BookingService svc = CreateBookingService(db);
-        var dto = new BookingDto
-        {
-            RestaurantId = 1,
-            SectionId = 1,
-            TableId = 1,
-            CustomerEmail = "guest@example.com",
-            Seats = 2,
-            Date = DateTime.UtcNow.AddDays(7)
-        };
-
-        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => svc.CreateBookingAsync(dto));
-        Assert.Contains("walk-ins only", ex.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task CreateBookingAsync_Throws_WhenDateFallsOnWalkInDay()
-    {
-        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenDateFallsOnWalkInDay));
-        SeedBookable(db, new Restaurant { Id = 1, Name = "T", Timezone = "UTC", WalkInDays = "6" });
-
-        BookingService svc = CreateBookingService(db);
-        var dto = new BookingDto
-        {
-            RestaurantId = 1,
-            SectionId = 1,
-            TableId = 1,
-            CustomerEmail = "guest@example.com",
-            Seats = 2,
-            Date = NextUtc(DayOfWeek.Saturday)
-        };
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateBookingAsync(dto));
-    }
-
-    [Fact]
-    public async Task CreateBookingAsync_Succeeds_OnNonWalkInDay()
-    {
-        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Succeeds_OnNonWalkInDay));
-        SeedBookable(db, new Restaurant { Id = 1, Name = "T", Timezone = "UTC", WalkInDays = "6" });
-
-        BookingService svc = CreateBookingService(db);
-        var dto = new BookingDto
-        {
-            RestaurantId = 1,
-            SectionId = 1,
-            TableId = 1,
-            CustomerEmail = "guest@example.com",
-            Seats = 2,
-            Date = NextUtc(DayOfWeek.Wednesday)
-        };
-
-        BookingDto result = await svc.CreateBookingAsync(dto);
-        Assert.NotEmpty(result.BookingRef!);
-    }
-
-    // ── AvailabilityService ───────────────────────────────────────────────────
-
-    private static AvailabilityService CreateAvailabilityService(AppDbContext db)
-        => new(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
-
-    private static void SeedAvailability(AppDbContext db, Restaurant restaurant)
-    {
-        db.Restaurants.Add(restaurant);
-        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = restaurant.Id });
-        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
-        db.SaveChanges();
-    }
-
-    [Fact]
-    public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly()
-    {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly));
-        SeedAvailability(db, new Restaurant
-        {
-            Id = 1, Name = "T", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC", WalkInOnly = true
-        });
-
-        AvailabilityService svc = CreateAvailabilityService(db);
-        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
-            1, new DateTime(2026, 10, 9, 0, 0, 0, DateTimeKind.Utc), 2);
-
-        Assert.Empty(result.Slots);
-    }
-
-    [Fact]
-    public async Task GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay()
-    {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay));
-        SeedAvailability(db, new Restaurant
-        {
-            Id = 1, Name = "T", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC", WalkInDays = "6"
-        });
-
-        AvailabilityService svc = CreateAvailabilityService(db);
-
-        // 2026-10-10 is a Saturday (ISO day 6) — walk-in only, no slots.
-        AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(
-            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
-        Assert.Empty(saturday.Slots);
-
-        // 2026-10-11 is a Sunday — bookings still allowed, 4 half-hour slots.
-        AvailabilityResponseDto sunday = await svc.GetAvailabilityAsync(
-            1, new DateTime(2026, 10, 11, 0, 0, 0, DateTimeKind.Utc), 2);
-        Assert.Equal(4, sunday.Slots.Count);
     }
 
     // ── RestaurantManagementService ───────────────────────────────────────────

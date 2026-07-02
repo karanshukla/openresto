@@ -393,4 +393,45 @@ public class AvailabilityServiceTests
 
         Assert.Empty(result.Slots);
     }
+
+    // ── Walk-in-only policy ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly));
+        SeedRestaurant(db);
+        Restaurant walkInOnly = db.Restaurants.First();
+        walkInOnly.WalkInOnly = true;
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 9, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Empty(result.Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay()
+    {
+        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay));
+        SeedRestaurant(db);
+        Restaurant withWalkInDay = db.Restaurants.First();
+        withWalkInDay.WalkInDays = "6";
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // 2026-10-10 is a Saturday (ISO day 6) — walk-in only, no slots.
+        AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.Empty(saturday.Slots);
+
+        // 2026-10-11 is a Sunday — bookings still allowed, 4 half-hour slots.
+        AvailabilityResponseDto sunday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 11, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.Equal(4, sunday.Slots.Count);
+    }
 }

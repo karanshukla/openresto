@@ -938,4 +938,89 @@ public class BookingServiceTests
             e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
+
+    // ── Walk-in-only policy ───────────────────────────────────────────────────
+
+    /// <summary>Next future occurrence of the given weekday, at 12:00 UTC.</summary>
+    private static DateTime NextUtcOccurrence(DayOfWeek dayOfWeek)
+    {
+        DateTime d = DateTime.UtcNow.Date.AddDays(1);
+        while (d.DayOfWeek != dayOfWeek)
+        {
+            d = d.AddDays(1);
+        }
+
+        return d.AddHours(12);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_Throws_WhenLocationIsWalkInOnly()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenLocationIsWalkInOnly));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", WalkInOnly = true });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateBookingAsync(dto));
+        Assert.Contains("walk-ins only", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_Throws_WhenDateFallsOnWalkInDay()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Throws_WhenDateFallsOnWalkInDay));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", Timezone = "UTC", WalkInDays = "6" });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = NextUtcOccurrence(DayOfWeek.Saturday)
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateBookingAsync(dto));
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_Succeeds_OnNonWalkInDay()
+    {
+        using AppDbContext db = CreateDb(nameof(CreateBookingAsync_Succeeds_OnNonWalkInDay));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", Timezone = "UTC", WalkInDays = "6" });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = NextUtcOccurrence(DayOfWeek.Wednesday)
+        });
+
+        Assert.NotEmpty(result.BookingRef!);
+    }
 }
