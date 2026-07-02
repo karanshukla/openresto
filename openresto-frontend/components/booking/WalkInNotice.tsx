@@ -26,8 +26,8 @@ export default function WalkInNotice({ scope }: { scope: "location" | "day" }) {
   const title = scope === "location" ? "Walk-ins only" : "Walk-ins only on this day";
   const body =
     scope === "location"
-      ? "This location doesn't take online bookings — tables are first come, first served. Just drop by during opening hours."
-      : "Online booking isn't available for the selected date. Pick another day, or simply come in — walk-ins are always welcome.";
+      ? "This location doesn't take online bookings. Tables are first come, first served. Just drop by during opening hours."
+      : "Online booking isn't available for the selected date. Pick another day, or simply come in. Walk-ins are always welcome.";
 
   return (
     <View

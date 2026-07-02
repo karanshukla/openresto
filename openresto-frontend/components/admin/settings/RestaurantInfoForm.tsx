@@ -653,7 +653,7 @@ export function RestaurantInfoForm({
               <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>Reservations</ThemedText>
               <ThemedText style={{ fontSize: 11, color: mutedColor }}>
                 {walkInOnly
-                  ? "Walk-ins only — online booking is off"
+                  ? "Walk-ins only, online booking is off"
                   : walkInDays.length > 0
                     ? `Walk-ins only on ${walkInDays.length} ${walkInDays.length === 1 ? "day" : "days"}`
                     : "Online bookings on every open day"}
@@ -687,7 +687,7 @@ export function RestaurantInfoForm({
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Ionicons name="walk-outline" size={12} color={mutedColor} />
               <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                The location stays listed publicly, but guests can't book online — they'll see a
+                The location stays listed publicly, but guests can't book online. They'll see a
                 walk-in notice instead. Toggle back anytime; nothing is deleted or archived.
               </ThemedText>
             </View>
@@ -736,7 +736,7 @@ export function RestaurantInfoForm({
                 })}
               </View>
               <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                Highlighted days stay open but only take walk-ins — the booking form is disabled for
+                Highlighted days stay open but only take walk-ins. The booking form is disabled for
                 those dates. Dimmed days are currently marked closed.
               </ThemedText>
             </View>

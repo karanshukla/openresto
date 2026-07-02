@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
-import { isWalkInOnlyOnDay } from "@/utils/walkIn";
+import { isWalkInOnlyOnDay, walkInDaysLabel } from "@/utils/walkIn";
 
 function getRestaurantDate(timezone: string): string {
   try {
@@ -178,6 +178,7 @@ export default function RestaurantCard({
   const walkInToday =
     !walkInLocation &&
     isWalkInOnlyOnDay(restaurant, getRestaurantNow(restaurant.timezone ?? "UTC").isoDay);
+  const walkInDaysList = !walkInLocation ? walkInDaysLabel(restaurant) : null;
   const todayHours = getHoursForDay(
     restaurant,
     getRestaurantNow(restaurant.timezone ?? "UTC").isoDay
@@ -390,14 +391,24 @@ export default function RestaurantCard({
           </View>
         )}
 
+        {/* Walk-in days hint (always visible, independent of today) */}
+        {walkInDaysList && (
+          <View style={styles.walkInDaysRow} testID="walk-in-days-hint">
+            <Ionicons name="walk-outline" size={11} color={mutedColor} />
+            <ThemedText style={[styles.walkInDaysText, { color: mutedColor }]}>
+              Walk-ins only on {walkInDaysList}
+            </ThemedText>
+          </View>
+        )}
+
         {/* Time slots (or walk-in notice when bookings are disabled) */}
         {walkInLocation || walkInToday ? (
           <View style={styles.walkInRow} testID="walk-in-slot-notice">
             <Ionicons name="walk-outline" size={14} color={primaryColor} />
             <ThemedText style={[styles.walkInText, { color: mutedColor }]}>
               {walkInLocation
-                ? "Walk-ins only — tables are first come, first served"
-                : "Walk-ins only today — no online bookings for today"}
+                ? "Walk-ins only, tables are first come, first served"
+                : "Walk-ins only today, no online bookings for today"}
             </ThemedText>
           </View>
         ) : (
@@ -688,6 +699,15 @@ const styles = StyleSheet.create({
   },
   walkInText: {
     fontSize: 12.5,
+    flex: 1,
+  },
+  walkInDaysRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  walkInDaysText: {
+    fontSize: 11.5,
     flex: 1,
   },
 
