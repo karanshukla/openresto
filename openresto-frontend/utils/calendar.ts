@@ -46,6 +46,8 @@ interface CalendarInput {
   specialRequests?: string;
   restaurantName: string;
   restaurantAddress: string;
+  sectionName?: string;
+  tableName?: string;
 }
 
 export function buildCalendarUrls(input: CalendarInput) {
@@ -63,6 +65,8 @@ export function buildCalendarUrls(input: CalendarInput) {
     origin ? `Booked via the URL: (${origin})` : "",
     `Booking reference: ${input.bookingRef}`,
     `Guests: ${input.seats}`,
+    input.sectionName ? `Section: ${input.sectionName}` : "",
+    input.tableName ? `Table: ${input.tableName}` : "",
     input.restaurantAddress ? `Address: ${input.restaurantAddress}` : "",
     input.specialRequests ? `Requests: ${input.specialRequests}` : "",
   ].filter(Boolean);

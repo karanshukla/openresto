@@ -12,6 +12,8 @@ interface CalendarActionsProps {
   specialRequests?: string;
   restaurantName: string;
   restaurantAddress: string;
+  sectionName?: string;
+  tableName?: string;
   variant?: "compact" | "full";
 }
 

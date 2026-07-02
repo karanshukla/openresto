@@ -316,6 +316,8 @@ export default function BookingConfirmationScreen() {
                     specialRequests={booking.specialRequests}
                     restaurantName={restaurantName}
                     restaurantAddress={restaurant?.address ?? ""}
+                    sectionName={booking.sectionName}
+                    tableName={booking.tableName}
                     variant="full"
                   />
                 </View>

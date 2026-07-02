@@ -435,6 +435,8 @@ function BookingActions({
           specialRequests={booking.specialRequests}
           restaurantName={restaurant?.name ?? "Restaurant"}
           restaurantAddress={restaurant?.address ?? ""}
+          sectionName={booking.sectionName}
+          tableName={booking.tableName}
           variant="compact"
         />
       </View>

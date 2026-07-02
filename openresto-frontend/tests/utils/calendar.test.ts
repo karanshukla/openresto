@@ -35,6 +35,22 @@ describe("calendar utility - buildCalendarUrls", () => {
     expect(googleUrl).toContain(encodeURIComponent("Window seat"));
   });
 
+  it("includes section and table when provided", () => {
+    const { googleUrl } = buildCalendarUrls({
+      ...input,
+      sectionName: "Patio",
+      tableName: "T4",
+    });
+    expect(googleUrl).toContain(encodeURIComponent("Section: Patio"));
+    expect(googleUrl).toContain(encodeURIComponent("Table: T4"));
+  });
+
+  it("omits section and table lines when not provided", () => {
+    const { googleUrl } = buildCalendarUrls(input);
+    expect(googleUrl).not.toContain(encodeURIComponent("Section:"));
+    expect(googleUrl).not.toContain(encodeURIComponent("Table:"));
+  });
+
   it("uses the provided endTime for the event duration instead of a hardcoded hour", () => {
     const { googleUrl } = buildCalendarUrls({ ...input, endTime: "2026-10-10T13:30:00Z" });
     expect(googleUrl).toContain(`${fmtCal(new Date(input.date))}/20261010T133000Z`);
