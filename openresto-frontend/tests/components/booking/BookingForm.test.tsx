@@ -222,6 +222,21 @@ describe("BookingForm", () => {
       expect(screen.getByTestId("walk-in-notice")).toBeTruthy();
     });
     expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
+    expect(screen.getByText(/doesn't take online bookings on Saturdays/)).toBeTruthy();
     expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("shows a persistent banner naming the walk-in days regardless of the selected date", () => {
+    // Today ("2026-06-23", a Tuesday per the mocked clock) is bookable, but
+    // Saturdays are walk-in only — the banner should still be visible.
+    const restaurant = { ...mockRestaurantAllDays, walkInDays: "6" };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByTestId("walk-in-days-banner")).toBeTruthy();
+    expect(screen.getByText(/Walk-ins only on Saturdays/)).toBeTruthy();
+  });
+
+  it("does not show the walk-in days banner when no walk-in days are configured", () => {
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    expect(screen.queryByTestId("walk-in-days-banner")).toBeNull();
   });
 });

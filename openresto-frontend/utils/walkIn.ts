@@ -49,3 +49,15 @@ export function walkInDaysLabel(restaurant: WalkInSource): string | null {
   if (names.length === 1) return names[0];
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
+
+/**
+ * Single source of truth for the top-of-card status badge. Always reflects
+ * the walk-in policy regardless of whether today happens to be a walk-in
+ * day, so the badge never disappears and reappears as the date changes.
+ * Returns `null` when the location takes online bookings every day.
+ */
+export function walkInBadgeLabel(restaurant: WalkInSource): string | null {
+  if (restaurant.walkInOnly) return "Walk-ins only";
+  const daysLabel = walkInDaysLabel(restaurant);
+  return daysLabel ? `Walk-ins on ${daysLabel}` : null;
+}

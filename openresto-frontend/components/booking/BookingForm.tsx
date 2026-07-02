@@ -16,8 +16,9 @@ import { getThemeColors, COLORS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import { getNowInTimezone, formatCurrentTimeInTimezone } from "@/utils/date";
 import { getHoursForDate, HoursSource } from "@/utils/openingHours";
-import { isWalkInOnlyOnDate } from "@/utils/walkIn";
+import { isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
+import WalkInDaysBanner from "./WalkInDaysBanner";
 
 const isWeb = Platform.OS === "web";
 
@@ -297,6 +298,7 @@ export default function BookingForm({
 
   return (
     <View style={styles.form}>
+      <WalkInDaysBanner restaurant={restaurant} />
       <View style={styles.availabilityHeader}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <ThemedText style={styles.label}>Popular Times</ThemedText>
@@ -307,7 +309,7 @@ export default function BookingForm({
             The restaurant is closed on this day. Please select a different date.
           </ThemedText>
         ) : isWalkInDay ? (
-          <WalkInNotice scope="day" />
+          <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
         ) : (
           <PopularTimesPicker
             slots={availabilitySlots}

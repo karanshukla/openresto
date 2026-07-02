@@ -10,7 +10,14 @@ import { COLORS, getThemeColors } from "@/theme/theme";
  * location (scope="location") or the selected day (scope="day") is walk-in
  * only. Replaces the booking CTA rather than hiding the location.
  */
-export default function WalkInNotice({ scope }: { scope: "location" | "day" }) {
+export default function WalkInNotice({
+  scope,
+  daysLabel,
+}: {
+  scope: "location" | "day";
+  /** e.g. "Saturdays and Sundays" — names the walk-in days for a more specific message. */
+  daysLabel?: string;
+}) {
   const isDark = useColorScheme() === "dark";
   const colors = getThemeColors(isDark);
   const brand = useBrand();
@@ -27,7 +34,9 @@ export default function WalkInNotice({ scope }: { scope: "location" | "day" }) {
   const body =
     scope === "location"
       ? "This location doesn't take online bookings. Tables are first come, first served. Just drop by during opening hours."
-      : "Online booking isn't available for the selected date. Pick another day, or simply come in. Walk-ins are always welcome.";
+      : daysLabel
+        ? `This location doesn't take online bookings on ${daysLabel}. Pick another day, or simply come in — walk-ins are always welcome.`
+        : "Online booking isn't available for the selected date. Pick another day, or simply come in. Walk-ins are always welcome.";
 
   return (
     <View

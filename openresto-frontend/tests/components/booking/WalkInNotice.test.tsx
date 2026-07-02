@@ -27,4 +27,10 @@ describe("WalkInNotice", () => {
     expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
     expect(screen.getByText(/Pick another day/)).toBeTruthy();
   });
+
+  it("names the specific walk-in days when daysLabel is provided", () => {
+    render(<WalkInNotice scope="day" daysLabel="Saturdays and Sundays" />);
+    expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
+    expect(screen.getByText(/doesn't take online bookings on Saturdays and Sundays/)).toBeTruthy();
+  });
 });

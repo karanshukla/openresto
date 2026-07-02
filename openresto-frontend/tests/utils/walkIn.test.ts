@@ -3,6 +3,7 @@ import {
   isWalkInOnlyOnDay,
   isWalkInOnlyOnDate,
   walkInDaysLabel,
+  walkInBadgeLabel,
 } from "@/utils/walkIn";
 
 describe("parseWalkInDays", () => {
@@ -61,5 +62,24 @@ describe("walkInDaysLabel", () => {
 
   it("sorts and deduplicates", () => {
     expect(walkInDaysLabel({ walkInDays: "7,6,6" })).toBe("Saturdays and Sundays");
+  });
+});
+
+describe("walkInBadgeLabel", () => {
+  it("returns null when no walk-in policy is configured", () => {
+    expect(walkInBadgeLabel({})).toBeNull();
+  });
+
+  it("returns a plain label for a fully walk-in location", () => {
+    expect(walkInBadgeLabel({ walkInOnly: true })).toBe("Walk-ins only");
+  });
+
+  it("ignores walkInDays for a fully walk-in location", () => {
+    expect(walkInBadgeLabel({ walkInOnly: true, walkInDays: "6,7" })).toBe("Walk-ins only");
+  });
+
+  it("names the specific walk-in days for a conditional location", () => {
+    expect(walkInBadgeLabel({ walkInDays: "5" })).toBe("Walk-ins on Fridays");
+    expect(walkInBadgeLabel({ walkInDays: "6,7" })).toBe("Walk-ins on Saturdays and Sundays");
   });
 });

@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
-import { isWalkInOnlyOnDay, walkInDaysLabel } from "@/utils/walkIn";
+import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
 
 function getRestaurantDate(timezone: string): string {
   try {
@@ -178,12 +178,7 @@ export default function RestaurantCard({
   const walkInToday =
     !walkInLocation &&
     isWalkInOnlyOnDay(restaurant, getRestaurantNow(restaurant.timezone ?? "UTC").isoDay);
-  const walkInDaysList = walkInLocation ? null : walkInDaysLabel(restaurant);
-  const walkInDaysHintText = walkInLocation
-    ? "This location is walk-in only every day of the week"
-    : walkInDaysList
-      ? `Walk-ins only on ${walkInDaysList}`
-      : null;
+  const walkInBadgeText = walkInBadgeLabel(restaurant);
   const todayHours = getHoursForDay(
     restaurant,
     getRestaurantNow(restaurant.timezone ?? "UTC").isoDay
@@ -298,12 +293,10 @@ export default function RestaurantCard({
               {open ? `Open till ${todayHours.close}` : (opensLabel ?? "Closed")}
             </ThemedText>
           </View>
-          {(walkInLocation || walkInToday) && (
+          {walkInBadgeText && (
             <View style={[styles.badge, styles.badgeWalkIn]} testID="walk-in-badge">
               <Ionicons name="walk-outline" size={12} color="#fff" />
-              <ThemedText style={styles.badgeText}>
-                {walkInLocation ? "Walk-ins only" : "Walk-ins only today"}
-              </ThemedText>
+              <ThemedText style={styles.badgeText}>{walkInBadgeText}</ThemedText>
             </View>
           )}
         </View>
@@ -396,72 +389,63 @@ export default function RestaurantCard({
           </View>
         )}
 
-        {/* Walk-in days hint (always visible, independent of today) */}
-        {walkInDaysHintText && (
-          <View style={styles.walkInDaysRow} testID="walk-in-days-hint">
-            <Ionicons name="walk-outline" size={11} color={mutedColor} />
-            <ThemedText style={[styles.walkInDaysText, { color: mutedColor }]}>
-              {walkInDaysHintText}
-            </ThemedText>
-          </View>
-        )}
-
-        {/* Time slots (or walk-in notice when bookings are disabled) */}
-        {walkInLocation || walkInToday ? (
-          <View style={styles.walkInRow} testID="walk-in-slot-notice">
-            <Ionicons name="walk-outline" size={14} color={primaryColor} />
-            <ThemedText style={[styles.walkInText, { color: mutedColor }]}>
-              {walkInLocation
-                ? "Walk-ins only, tables are first come, first served"
-                : "Walk-ins only today, no online bookings for today"}
-            </ThemedText>
-          </View>
-        ) : (
-          <View>
-            <View style={styles.slotLabel}>
-              <ThemedText style={[styles.slotLabelText, { color: mutedColor }]}>
-                Available slots
-              </ThemedText>
-              <ThemedText style={[styles.slotLabelWhen, { color: colors.text }]}>
-                {party} {party === 1 ? "guest" : "guests"} · today
+        {/* Time slots (or a no-reservations-needed empty state when bookings are disabled).
+            Wrapped in a fixed-min-height area so cards line up whether or not they show slots. */}
+        <View style={styles.slotsArea}>
+          {walkInLocation || walkInToday ? (
+            <View style={styles.walkInEmptyState} testID="walk-in-slot-notice">
+              <Ionicons name="walk-outline" size={18} color={mutedColor} />
+              <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
+                No reservations required
               </ThemedText>
             </View>
-            {slotsLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={primaryColor}
-                style={{ alignSelf: "flex-start" }}
-              />
-            ) : slots.length === 0 ? (
-              <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
-                No available slots today
-              </ThemedText>
-            ) : (
-              <View style={styles.slotRow}>
-                {slots.map((s) => (
-                  <Pressable
-                    key={s.time}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      router.push(
-                        `/(user)/book/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}`
-                      );
-                    }}
-                    style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                      styles.slot,
-                      {
-                        backgroundColor: hovered || pressed ? primaryColor : surface2,
-                        borderColor: hovered || pressed ? primaryColor : borderColor,
-                      },
-                    ]}
-                  >
-                    <ThemedText style={styles.slotText}>{s.time}</ThemedText>
-                  </Pressable>
-                ))}
+          ) : (
+            <>
+              <View style={styles.slotLabel}>
+                <ThemedText style={[styles.slotLabelText, { color: mutedColor }]}>
+                  Available slots
+                </ThemedText>
+                <ThemedText style={[styles.slotLabelWhen, { color: colors.text }]}>
+                  {party} {party === 1 ? "guest" : "guests"} · today
+                </ThemedText>
               </View>
-            )}
-          </View>
-        )}
+              {slotsLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={primaryColor}
+                  style={{ alignSelf: "flex-start" }}
+                />
+              ) : slots.length === 0 ? (
+                <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
+                  No available slots today
+                </ThemedText>
+              ) : (
+                <View style={styles.slotRow}>
+                  {slots.map((s) => (
+                    <Pressable
+                      key={s.time}
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        router.push(
+                          `/(user)/book/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}`
+                        );
+                      }}
+                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                        styles.slot,
+                        {
+                          backgroundColor: hovered || pressed ? primaryColor : surface2,
+                          borderColor: hovered || pressed ? primaryColor : borderColor,
+                        },
+                      ]}
+                    >
+                      <ThemedText style={styles.slotText}>{s.time}</ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
 
         {/* Footer */}
         <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
@@ -696,24 +680,21 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontStyle: "italic",
   },
-  walkInRow: {
-    flexDirection: "row",
+  // Fixed-min-height wrapper so cards with slots and walk-in-only cards
+  // (which show an empty state instead) occupy the same vertical space.
+  slotsArea: {
+    minHeight: 64,
+  },
+  walkInEmptyState: {
+    flex: 1,
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
-  walkInText: {
+  walkInEmptyText: {
     fontSize: 12.5,
-    flex: 1,
-  },
-  walkInDaysRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  walkInDaysText: {
-    fontSize: 11.5,
-    flex: 1,
+    fontStyle: "italic",
   },
 
   // Footer
