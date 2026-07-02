@@ -39,12 +39,15 @@ jest.mock("@/components/admin/bookings/RestaurantActionModal", () => {
 jest.mock("@/components/admin/bookings/BookingDetailPopup", () => {
   const { View, Pressable, Text } = require("react-native");
   return {
-    BookingDetailPopup: ({ bookingId, onClose }: any) => {
+    BookingDetailPopup: ({ bookingId, onClose, onMutated }: any) => {
       if (!bookingId) return null;
       return (
         <View testID="booking-detail-popup">
           <Pressable testID="booking-popup-close" onPress={onClose}>
             <Text>Close Popup</Text>
+          </Pressable>
+          <Pressable testID="booking-popup-mutate" onPress={onMutated}>
+            <Text>Mutate Booking</Text>
           </Pressable>
         </View>
       );
@@ -354,5 +357,31 @@ describe("AdminDashboardScreen", () => {
     await waitFor(() => expect(screen.getByTestId("booking-detail-popup")).toBeTruthy());
     fireEvent.press(screen.getByTestId("booking-popup-close"));
     await waitFor(() => expect(screen.queryByTestId("booking-detail-popup")).toBeNull());
+  });
+
+  it("re-fetches dashboard stats when a booking is mutated in the detail popup", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("today@test.com"));
+    expect(getAdminDashboardStats).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByText("today@test.com"));
+    await waitFor(() => expect(screen.getByTestId("booking-detail-popup")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("booking-popup-mutate"));
+
+    await waitFor(() => expect(getAdminDashboardStats).toHaveBeenCalledTimes(2));
+  });
+
+  it("re-fetches dashboard stats when the restaurant action modal closes", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+    await waitFor(() => screen.getByText("Pause Bookings"));
+    expect(getAdminDashboardStats).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByText("Pause Bookings"));
+    await waitFor(() => expect(screen.getByTestId("action-modal")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("action-modal-close"));
+
+    await waitFor(() => expect(getAdminDashboardStats).toHaveBeenCalledTimes(2));
   });
 });

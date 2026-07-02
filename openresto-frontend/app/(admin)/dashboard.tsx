@@ -35,11 +35,15 @@ export default function AdminDashboardScreen() {
 
   const isWide = Platform.OS === "web" && width >= 1024;
 
-  useEffect(() => {
+  const loadStats = () => {
     getAdminDashboardStats().then((data: AdminDashboardStats | null) => {
       setStats(data);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadStats();
   }, []);
 
   const metricCards = stats
@@ -236,7 +240,10 @@ export default function AdminDashboardScreen() {
       <RestaurantActionModal
         visible={actionModalVisible}
         actionType={actionType}
-        onClose={() => setActionModalVisible(false)}
+        onClose={() => {
+          setActionModalVisible(false);
+          loadStats();
+        }}
         onSuccess={(msg) => {
           setAlertMessage(msg);
           setAlertVisible(true);
@@ -253,6 +260,7 @@ export default function AdminDashboardScreen() {
       <BookingDetailPopup
         bookingId={selectedBookingId}
         onClose={() => setSelectedBookingId(null)}
+        onMutated={loadStats}
       />
     </ThemedView>
   );
