@@ -431,7 +431,7 @@ describe("RestaurantInfoForm", () => {
       render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
       fireEvent.press(screen.getByTestId("walkin-mode-walkin"));
       expect(screen.getByText("Unsaved changes")).toBeTruthy();
-      expect(screen.getByText("Walk-ins only — online booking is off")).toBeTruthy();
+      expect(screen.getByText("Walk-ins only, online booking is off")).toBeTruthy();
       expect(screen.queryByTestId("walkin-day-1")).toBeNull();
     });
 
@@ -487,7 +487,7 @@ describe("RestaurantInfoForm", () => {
       expect(screen.getByText("Unsaved changes")).toBeTruthy();
       fireEvent.press(screen.getByText("Discard"));
       expect(screen.getByText("All changes saved")).toBeTruthy();
-      expect(screen.getByText("Walk-ins only — online booking is off")).toBeTruthy();
+      expect(screen.getByText("Walk-ins only, online booking is off")).toBeTruthy();
     });
   });
 });

@@ -121,5 +121,30 @@ describe("RestaurantCard", () => {
       expect(screen.getByText("Available slots")).toBeTruthy();
       expect(fetchAvailability).toHaveBeenCalled();
     });
+
+    it("always shows which days are walk-in only, even on a non-walk-in day", () => {
+      const otherDay = todayIso === 7 ? 1 : todayIso + 1;
+      render(<RestaurantCard restaurant={{ ...restaurant, walkInDays: String(otherDay) }} />);
+      expect(screen.getByTestId("walk-in-days-hint")).toBeTruthy();
+      // Slots still render normally for today alongside the hint.
+      expect(screen.getByText("Available slots")).toBeTruthy();
+    });
+
+    it("lists multiple walk-in days by name", () => {
+      render(<RestaurantCard restaurant={{ ...restaurant, walkInDays: "6,7" }} />);
+      expect(screen.getByText("Walk-ins only on Saturdays and Sundays")).toBeTruthy();
+    });
+
+    it("does not show the days hint for a fully walk-in-only location", () => {
+      render(
+        <RestaurantCard restaurant={{ ...restaurant, walkInOnly: true, walkInDays: "6,7" }} />
+      );
+      expect(screen.queryByTestId("walk-in-days-hint")).toBeNull();
+    });
+
+    it("does not show the days hint when no walk-in days are configured", () => {
+      render(<RestaurantCard restaurant={restaurant} />);
+      expect(screen.queryByTestId("walk-in-days-hint")).toBeNull();
+    });
   });
 });
