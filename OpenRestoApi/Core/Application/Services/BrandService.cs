@@ -58,7 +58,14 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
         "leaf", "star", "heart", "chef-hat", "fish"
     };
 
-    public async Task SaveAsync(string? appName, string? primaryColor, string? accentColor, string? faviconIcon = null, string? websiteUrl = null)
+    public async Task SaveAsync(
+        string? appName,
+        string? primaryColor,
+        string? accentColor,
+        string? faviconIcon = null,
+        string? websiteUrl = null,
+        string? copyrightText = null,
+        SocialLinksInput? socialLinks = null)
     {
         if (appName != null && appName.Length > 32)
         {
@@ -80,6 +87,11 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
             throw new ArgumentException("Invalid favicon icon.");
         }
 
+        if (copyrightText != null && copyrightText.Length > 200)
+        {
+            throw new ArgumentException("Copyright text cannot exceed 200 characters.");
+        }
+
         BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
         if (brand == null)
         {
@@ -98,7 +110,26 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
         {
             brand.WebsiteUrl = string.IsNullOrWhiteSpace(websiteUrl) ? null : websiteUrl.Trim();
         }
+        if (copyrightText != null)
+        {
+            brand.CopyrightText = string.IsNullOrWhiteSpace(copyrightText) ? null : copyrightText.Trim();
+        }
+        if (socialLinks != null)
+        {
+            if (socialLinks.Instagram != null)
+                brand.InstagramUrl = string.IsNullOrWhiteSpace(socialLinks.Instagram) ? null : socialLinks.Instagram.Trim();
+            if (socialLinks.Facebook != null)
+                brand.FacebookUrl = string.IsNullOrWhiteSpace(socialLinks.Facebook) ? null : socialLinks.Facebook.Trim();
+            if (socialLinks.Twitter != null)
+                brand.TwitterUrl = string.IsNullOrWhiteSpace(socialLinks.Twitter) ? null : socialLinks.Twitter.Trim();
+            if (socialLinks.Tiktok != null)
+                brand.TiktokUrl = string.IsNullOrWhiteSpace(socialLinks.Tiktok) ? null : socialLinks.Tiktok.Trim();
+            if (socialLinks.Youtube != null)
+                brand.YoutubeUrl = string.IsNullOrWhiteSpace(socialLinks.Youtube) ? null : socialLinks.Youtube.Trim();
+        }
 
         await _db.SaveChangesAsync();
     }
 }
+
+public record SocialLinksInput(string? Instagram, string? Facebook, string? Twitter, string? Tiktok, string? Youtube);

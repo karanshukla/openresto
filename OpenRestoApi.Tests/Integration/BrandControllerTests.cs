@@ -111,4 +111,48 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains("Invalid primary color hex code", body.GetProperty("message").GetString()!);
     }
+
+    [Fact]
+    public async Task SaveBrand_WithAuth_UpdatesCopyrightAndSocialLinks()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            copyrightText = "© 2026 Custom Resto",
+            socialLinks = new
+            {
+                instagram = "https://instagram.com/resto",
+                facebook = "https://facebook.com/resto",
+                twitter = "https://x.com/resto",
+                tiktok = "https://tiktok.com/@resto",
+                youtube = "https://youtube.com/@resto",
+            },
+        });
+
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        HttpResponseMessage getResponse = await client.GetAsync("/api/brand");
+        JsonElement body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("© 2026 Custom Resto", body.GetProperty("copyrightText").GetString());
+        JsonElement socialLinks = body.GetProperty("socialLinks");
+        Assert.Equal("https://instagram.com/resto", socialLinks.GetProperty("instagram").GetString());
+        Assert.Equal("https://facebook.com/resto", socialLinks.GetProperty("facebook").GetString());
+        Assert.Equal("https://x.com/resto", socialLinks.GetProperty("twitter").GetString());
+        Assert.Equal("https://tiktok.com/@resto", socialLinks.GetProperty("tiktok").GetString());
+        Assert.Equal("https://youtube.com/@resto", socialLinks.GetProperty("youtube").GetString());
+    }
+
+    [Fact]
+    public async Task SaveBrand_OversizedCopyrightText_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            copyrightText = new string('A', 201)
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

@@ -91,11 +91,17 @@ describe("Navbar", () => {
     expect(mockToggle).toHaveBeenCalled();
   });
 
-  it("filters admin links on mobile", () => {
-    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 500, height: 768 });
+  it("never renders an Admin link (moved to the footer)", () => {
     render(<Navbar />);
     expect(screen.queryByText("Admin")).toBeNull();
     expect(screen.getByText("Home")).toBeTruthy();
+  });
+
+  it("renders nav links on mobile widths", () => {
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 500, height: 768 });
+    render(<Navbar />);
+    expect(screen.getByText("Home")).toBeTruthy();
+    expect(screen.getByText("My Bookings")).toBeTruthy();
   });
 
   it("shows active state for current link", () => {

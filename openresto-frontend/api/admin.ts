@@ -457,12 +457,22 @@ export async function testEmailConnection(): Promise<{ ok: boolean; message: str
   }
 }
 
+export interface SocialLinksDto {
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  tiktok?: string;
+  youtube?: string;
+}
+
 export interface BrandSettingsDto {
-  appName: string;
-  primaryColor: string;
+  appName?: string;
+  primaryColor?: string;
   accentColor?: string;
   faviconIcon?: string;
   websiteUrl?: string;
+  copyrightText?: string;
+  socialLinks?: SocialLinksDto;
 }
 
 export async function saveBrandSettings(
