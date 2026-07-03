@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
     paddingHorizontal: 28,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   innerMobile: {
     justifyContent: "center",
@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   socialBtn: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    height: 20,
+    height: 18,
   },
   adminText: {
     fontSize: 12,
