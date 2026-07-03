@@ -169,6 +169,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<BrandService>();
         services.AddScoped<EmailSettingsService>();
         services.AddScoped<HighlightService>();
+        services.AddScoped<SocialLinkService>();
         services.AddScoped<AvailabilityService>();
         services.AddScoped<MediaService>();
 

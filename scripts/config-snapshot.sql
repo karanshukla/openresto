@@ -4,6 +4,8 @@ PRAGMA foreign_keys = OFF;
 
 DELETE FROM Highlights;
 
+DELETE FROM SocialLinks;
+
 DELETE FROM Tables;
 
 DELETE FROM Sections;
@@ -18,6 +20,7 @@ DELETE FROM sqlite_sequence
 WHERE
   name IN (
     'Highlights',
+    'SocialLinks',
     'Tables',
     'Sections',
     'Restaurants',
@@ -34,7 +37,8 @@ INSERT INTO
     AccentColor,
     HeaderImageUrl,
     FaviconIcon,
-    WebsiteUrl
+    WebsiteUrl,
+    CopyrightText
   )
 VALUES
   (
@@ -44,8 +48,20 @@ VALUES
     NULL,
     '/media/hero.jpg?v=1780749336371',
     'pizza',
-    'https://openres.to'
+    'https://openres.to',
+    NULL
   );
+
+-- Social Links (footer)
+INSERT INTO
+  SocialLinks (Id, Label, Url, IconKey, SortOrder)
+VALUES
+  (1, 'Instagram', 'https://instagram.com/paddyspub', 'logo-instagram', 0);
+
+INSERT INTO
+  SocialLinks (Id, Label, Url, IconKey, SortOrder)
+VALUES
+  (2, 'Yelp', 'https://yelp.com/biz/paddys-pub', 'star-outline', 1);
 
 -- Email settings intentionally left empty (no credentials in source control)
 -- Restaurants

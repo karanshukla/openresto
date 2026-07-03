@@ -98,6 +98,25 @@ export async function fetchHighlights(): Promise<HighlightDto[]> {
   }
 }
 
+export interface SocialLinkDto {
+  id: number;
+  label: string;
+  url: string;
+  iconKey: string;
+  sortOrder: number;
+}
+
+export async function fetchSocialLinks(): Promise<SocialLinkDto[]> {
+  try {
+    const res = await get("/social-links");
+    if (!res.ok) throw new Error("Failed to fetch social links");
+    return await res.json();
+  } catch (err) {
+    console.error("fetchSocialLinks error:", err);
+    return [];
+  }
+}
+
 export async function updateRestaurant(
   id: number,
   data: {

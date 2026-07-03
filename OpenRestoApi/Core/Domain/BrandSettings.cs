@@ -20,19 +20,4 @@ public class BrandSettings
 
     [StringLength(200)]
     public string? CopyrightText { get; set; }
-
-    [StringLength(255)]
-    public string? InstagramUrl { get; set; }
-
-    [StringLength(255)]
-    public string? FacebookUrl { get; set; }
-
-    [StringLength(255)]
-    public string? TwitterUrl { get; set; }
-
-    [StringLength(255)]
-    public string? TiktokUrl { get; set; }
-
-    [StringLength(255)]
-    public string? YoutubeUrl { get; set; }
 }

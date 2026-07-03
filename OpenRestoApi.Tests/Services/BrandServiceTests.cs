@@ -143,45 +143,4 @@ public class BrandServiceTests
         Assert.Null(result.CopyrightText);
     }
 
-    [Fact]
-    public async Task SaveAsync_Persists_SocialLinks()
-    {
-        using AppDbContext db = CreateDb(nameof(SaveAsync_Persists_SocialLinks));
-        var svc = CreateService(db);
-        var links = new SocialLinksInput(
-            "https://instagram.com/resto",
-            "https://facebook.com/resto",
-            "https://x.com/resto",
-            "https://tiktok.com/@resto",
-            "https://youtube.com/@resto");
-        await svc.SaveAsync(null, null, null, socialLinks: links);
-        BrandSettings result = await svc.GetAsync();
-        Assert.Equal("https://instagram.com/resto", result.InstagramUrl);
-        Assert.Equal("https://facebook.com/resto", result.FacebookUrl);
-        Assert.Equal("https://x.com/resto", result.TwitterUrl);
-        Assert.Equal("https://tiktok.com/@resto", result.TiktokUrl);
-        Assert.Equal("https://youtube.com/@resto", result.YoutubeUrl);
-    }
-
-    [Fact]
-    public async Task SaveAsync_Clears_SocialLink_WhenEmptyStringPassed()
-    {
-        using AppDbContext db = CreateDb(nameof(SaveAsync_Clears_SocialLink_WhenEmptyStringPassed));
-        var svc = CreateService(db);
-        await svc.SaveAsync(null, null, null, socialLinks: new SocialLinksInput("https://instagram.com/resto", null, null, null, null));
-        await svc.SaveAsync(null, null, null, socialLinks: new SocialLinksInput("", null, null, null, null));
-        BrandSettings result = await svc.GetAsync();
-        Assert.Null(result.InstagramUrl);
-    }
-
-    [Fact]
-    public async Task SaveAsync_Preserves_SocialLinks_WhenSocialLinksNull()
-    {
-        using AppDbContext db = CreateDb(nameof(SaveAsync_Preserves_SocialLinks_WhenSocialLinksNull));
-        var svc = CreateService(db);
-        await svc.SaveAsync(null, null, null, socialLinks: new SocialLinksInput("https://instagram.com/resto", null, null, null, null));
-        await svc.SaveAsync(null, null, null);
-        BrandSettings result = await svc.GetAsync();
-        Assert.Equal("https://instagram.com/resto", result.InstagramUrl);
-    }
 }

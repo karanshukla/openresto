@@ -34,6 +34,9 @@ jest.mock("@/components/admin/settings/EmailSettingsCard", () => ({
 }));
 jest.mock("@/components/admin/settings/SecurityCard", () => ({ SecurityCard: () => null }));
 jest.mock("@/components/admin/settings/HighlightsCard", () => ({ HighlightsCard: () => null }));
+jest.mock("@/components/admin/settings/FooterSettingsCard", () => ({
+  FooterSettingsCard: () => null,
+}));
 jest.mock("@/components/admin/settings/PushNotificationsCard", () => ({
   PushNotificationsCard: () => null,
 }));

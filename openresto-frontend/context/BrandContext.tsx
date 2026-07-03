@@ -33,7 +33,6 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             faviconIcon: data.faviconIcon || undefined,
             websiteUrl: data.websiteUrl || undefined,
             copyrightText: data.copyrightText || undefined,
-            socialLinks: data.socialLinks || undefined,
           };
           setBrand(newBrand);
 

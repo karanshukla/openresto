@@ -28,7 +28,6 @@ function TestConsumer() {
       <Text testID="logo">{brand.headerImageUrl ?? "none"}</Text>
       <Text testID="website">{brand.websiteUrl ?? "none"}</Text>
       <Text testID="copyright">{brand.copyrightText ?? "none"}</Text>
-      <Text testID="instagram">{brand.socialLinks?.instagram ?? "none"}</Text>
     </>
   );
 }
@@ -213,14 +212,13 @@ describe("BrandContext", () => {
     });
   });
 
-  it("exposes copyrightText and socialLinks from API response", async () => {
+  it("exposes copyrightText from API response", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         appName: "My Resto",
         primaryColor: "#ff5500",
         copyrightText: "© 2026 My Resto",
-        socialLinks: { instagram: "https://instagram.com/resto" },
       }),
     });
 
@@ -233,7 +231,6 @@ describe("BrandContext", () => {
     await waitFor(() => {
       expect(screen.getByTestId("copyright").props.children).toBe("© 2026 My Resto");
     });
-    expect(screen.getByTestId("instagram").props.children).toBe("https://instagram.com/resto");
   });
 
   it("buildEndpoint appends /api when EXPO_PUBLIC_API_URL has no /api", async () => {
