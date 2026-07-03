@@ -2,9 +2,10 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react-native";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import { Linking, useWindowDimensions } from "react-native";
 import Footer from "@/components/layout/Footer";
+import { fetchSocialLinks } from "@/api/restaurants";
 
 jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
   __esModule: true,
@@ -25,6 +26,10 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+jest.mock("@/api/restaurants", () => ({
+  fetchSocialLinks: jest.fn(),
+}));
+
 describe("Footer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -33,6 +38,7 @@ describe("Footer", () => {
       brand: { appName: "Test App", primaryColor: "#0a7ea4" },
       colors: { border: "#ccc", muted: "#666" },
     });
+    (fetchSocialLinks as jest.Mock).mockResolvedValue([]);
     jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
   });
 
@@ -56,23 +62,26 @@ describe("Footer", () => {
     expect(screen.getByText("Admin")).toBeTruthy();
   });
 
-  it("renders no social icons when none are configured", () => {
+  it("renders no social icons when none are configured", async () => {
     render(<Footer />);
+    await waitFor(() => expect(fetchSocialLinks).toHaveBeenCalled());
     expect(screen.queryByLabelText("Instagram")).toBeNull();
   });
 
-  it("renders only configured social icons and opens their URL on press", () => {
-    (useAppTheme as jest.Mock).mockReturnValue({
-      brand: {
-        appName: "Test App",
-        primaryColor: "#0a7ea4",
-        socialLinks: { instagram: "https://instagram.com/resto" },
+  it("renders configured social links and opens their URL on press", async () => {
+    (fetchSocialLinks as jest.Mock).mockResolvedValue([
+      {
+        id: 1,
+        label: "Instagram",
+        url: "https://instagram.com/resto",
+        iconKey: "logo-instagram",
+        sortOrder: 0,
       },
-      colors: { border: "#ccc", muted: "#666" },
-    });
+    ]);
     render(<Footer />);
+
+    const instagramBtn = await screen.findByLabelText("Instagram");
     expect(screen.queryByLabelText("Facebook")).toBeNull();
-    const instagramBtn = screen.getByLabelText("Instagram");
     fireEvent.press(instagramBtn);
     expect(Linking.openURL).toHaveBeenCalledWith("https://instagram.com/resto");
   });

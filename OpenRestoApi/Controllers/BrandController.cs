@@ -28,14 +28,6 @@ public class BrandController(BrandService brandService) : ControllerBase
             WebsiteUrl = _brand.GetWebsiteUrl(brand),
             FaviconIcon = brand.FaviconIcon,
             CopyrightText = brand.CopyrightText,
-            SocialLinks = new SocialLinksDto
-            {
-                Instagram = brand.InstagramUrl,
-                Facebook = brand.FacebookUrl,
-                Twitter = brand.TwitterUrl,
-                Tiktok = brand.TiktokUrl,
-                Youtube = brand.YoutubeUrl,
-            },
         });
     }
 
@@ -99,23 +91,13 @@ public class BrandController(BrandService brandService) : ControllerBase
     {
         try
         {
-            SocialLinksInput? socialLinks = req.SocialLinks == null
-                ? null
-                : new SocialLinksInput(
-                    req.SocialLinks.Instagram,
-                    req.SocialLinks.Facebook,
-                    req.SocialLinks.Twitter,
-                    req.SocialLinks.Tiktok,
-                    req.SocialLinks.Youtube);
-
             await _brand.SaveAsync(
                 req.AppName,
                 req.PrimaryColor,
                 req.AccentColor,
                 req.FaviconIcon,
                 req.WebsiteUrl,
-                req.CopyrightText,
-                socialLinks);
+                req.CopyrightText);
             return Ok(new { message = "Brand settings saved." });
         }
         catch (ArgumentException ex)
@@ -136,7 +118,6 @@ public class BrandRequest
 
     [StringLength(200, ErrorMessage = "Copyright text cannot exceed 200 characters.")]
     public string? CopyrightText { get; set; }
-    public SocialLinksDto? SocialLinks { get; set; }
 }
 
 public class BrandResponse
@@ -148,14 +129,4 @@ public class BrandResponse
     public string? WebsiteUrl { get; set; }
     public string? FaviconIcon { get; set; }
     public string? CopyrightText { get; set; }
-    public SocialLinksDto? SocialLinks { get; set; }
-}
-
-public class SocialLinksDto
-{
-    public string? Instagram { get; set; }
-    public string? Facebook { get; set; }
-    public string? Twitter { get; set; }
-    public string? Tiktok { get; set; }
-    public string? Youtube { get; set; }
 }

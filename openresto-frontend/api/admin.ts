@@ -457,14 +457,6 @@ export async function testEmailConnection(): Promise<{ ok: boolean; message: str
   }
 }
 
-export interface SocialLinksDto {
-  instagram?: string;
-  facebook?: string;
-  twitter?: string;
-  tiktok?: string;
-  youtube?: string;
-}
-
 export interface BrandSettingsDto {
   appName?: string;
   primaryColor?: string;
@@ -472,7 +464,6 @@ export interface BrandSettingsDto {
   faviconIcon?: string;
   websiteUrl?: string;
   copyrightText?: string;
-  socialLinks?: SocialLinksDto;
 }
 
 export async function saveBrandSettings(
@@ -587,6 +578,78 @@ export async function adminDeleteHighlight(id: number): Promise<boolean> {
     return res.ok;
   } catch (err) {
     console.error("adminDeleteHighlight error:", err);
+    return false;
+  }
+}
+
+// ---------- Social Links ----------
+
+export interface AdminSocialLinkDto {
+  id: number;
+  label: string;
+  url: string;
+  iconKey: string;
+  sortOrder: number;
+}
+
+export interface CreateSocialLinkRequest {
+  label: string;
+  url: string;
+  iconKey: string;
+  sortOrder: number;
+}
+
+export interface UpdateSocialLinkRequest {
+  label: string;
+  url: string;
+  iconKey: string;
+  sortOrder: number;
+}
+
+export async function adminGetSocialLinks(): Promise<AdminSocialLinkDto[]> {
+  try {
+    const res = await get("/social-links");
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error("adminGetSocialLinks error:", err);
+    return [];
+  }
+}
+
+export async function adminCreateSocialLink(
+  req: CreateSocialLinkRequest
+): Promise<AdminSocialLinkDto | null> {
+  try {
+    const res = await post("/social-links", req);
+    if (!res.ok) throw new Error("Failed to create social link");
+    return await res.json();
+  } catch (err) {
+    console.error("adminCreateSocialLink error:", err);
+    return null;
+  }
+}
+
+export async function adminUpdateSocialLink(
+  id: number,
+  req: UpdateSocialLinkRequest
+): Promise<AdminSocialLinkDto | null> {
+  try {
+    const res = await put(`/social-links/${id}`, req);
+    if (!res.ok) throw new Error("Failed to update social link");
+    return await res.json();
+  } catch (err) {
+    console.error("adminUpdateSocialLink error:", err);
+    return null;
+  }
+}
+
+export async function adminDeleteSocialLink(id: number): Promise<boolean> {
+  try {
+    const res = await del(`/social-links/${id}`);
+    return res.ok;
+  } catch (err) {
+    console.error("adminDeleteSocialLink error:", err);
     return false;
   }
 }

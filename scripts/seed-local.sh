@@ -156,16 +156,17 @@ exec 3>"$SQL_FILE"
   echo "DELETE FROM EmailFailures;"
   echo "DELETE FROM Bookings;"
   echo "DELETE FROM Highlights;"
+  echo "DELETE FROM SocialLinks;"
   echo "DELETE FROM Tables;"
   echo "DELETE FROM Sections;"
   echo "DELETE FROM Restaurants;"
   echo "DELETE FROM BrandSettings;"
   echo "DELETE FROM EmailSettings;"
   echo "DELETE FROM AdminCredentials;"
-  echo "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','Highlights','Tables','Sections','Restaurants','BrandSettings','EmailSettings','AdminCredentials','AdminNotifications','EmailFailures');"
+  echo "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','Highlights','SocialLinks','Tables','Sections','Restaurants','BrandSettings','EmailSettings','AdminCredentials','AdminNotifications','EmailFailures');"
 
   # Brand (EmailSettings intentionally left empty — no SMTP creds in source control)
-  echo "INSERT INTO BrandSettings(AppName,PrimaryColor,AccentColor,FaviconIcon,HeaderImageUrl,WebsiteUrl) VALUES('Paddy''s Pub','#059669',NULL,'pizza','/media/hero.jpg','https://openres.to');"
+  echo "INSERT INTO BrandSettings(AppName,PrimaryColor,AccentColor,FaviconIcon,HeaderImageUrl,WebsiteUrl,CopyrightText) VALUES('Paddy''s Pub','#059669',NULL,'pizza','/media/hero.jpg','https://openres.to',NULL);"
 
   # Restaurants (WalkInOnly=0 / WalkInDays=NULL keeps online bookings enabled everywhere)
   echo "INSERT INTO Restaurants(Id,Name,Address,OpenTime,CloseTime,OpenDays,Timezone,BookingsPausedUntil,Tags,ImageUrl,IsArchived,WalkInOnly,WalkInDays) VALUES(1,'Paddy''s Pub','346 W Girard Ave, Philadelphia, PA','09:00','23:45','1,2,3,4,5,6','America/Toronto',NULL,'mac and cheese,fight milk','/media/location-1.jpg',0,0,NULL);"
@@ -194,6 +195,10 @@ exec 3>"$SQL_FILE"
   echo "INSERT INTO Highlights(Id,Title,Body,IconKey,SortOrder) VALUES(2,'Frank''s Famous Rum Ham','A Reynolds family tradition since 1981. Seasonal availability. Do not ask about the ingredients. Do not ask where Frank has been.','pizza-outline',1);"
   echo "INSERT INTO Highlights(Id,Title,Body,IconKey,SortOrder) VALUES(3,'Chardee MacDennis','The Game of Games. Teams of 2. Bring your own wine glass to smash. Management not responsible for emotional damage.','gift-outline',2);"
   echo "INSERT INTO Highlights(Id,Title,Body,IconKey,SortOrder) VALUES(4,'Milk Steak - Our Signature Dish','Boiled over hard, served with a side of your finest jelly beans. Charlie''s personal recipe. Our most polarising menu item. Loved by ghouls.','nutrition-outline',3);"
+
+  # Social Links (footer)
+  echo "INSERT INTO SocialLinks(Id,Label,Url,IconKey,SortOrder) VALUES(1,'Instagram','https://instagram.com/paddyspub','logo-instagram',0);"
+  echo "INSERT INTO SocialLinks(Id,Label,Url,IconKey,SortOrder) VALUES(2,'Yelp','https://yelp.com/biz/paddys-pub','star-outline',1);"
 } >&3
 
 # ── Generate bookings (±14 days, lunch + dinner, ~10% cancelled) ─────────────
@@ -266,7 +271,7 @@ sqlite3 "$DB" < "$SQL_FILE"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log "Done. Row counts:"
-for t in Restaurants Sections Tables Highlights BrandSettings Bookings AdminCredentials; do
+for t in Restaurants Sections Tables Highlights SocialLinks BrandSettings Bookings AdminCredentials; do
   log "  $t: $(sqlite3 "$DB" "SELECT COUNT(*) FROM $t;")"
 done
 log "Seeded $booking_count bookings."
