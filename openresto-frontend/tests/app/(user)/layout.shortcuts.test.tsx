@@ -30,6 +30,11 @@ jest.mock("@/components/layout/Navbar", () => ({
   default: () => null,
 }));
 
+jest.mock("@/components/layout/Footer", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock("@/utils/focusRegistry", () => ({
   focusTarget: jest.fn(),
 }));

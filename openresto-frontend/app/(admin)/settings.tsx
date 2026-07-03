@@ -6,6 +6,7 @@ import { getThemeColors } from "@/theme/theme";
 
 // Components
 import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard";
+import { FooterSettingsCard } from "@/components/admin/settings/FooterSettingsCard";
 import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard";
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
 import { HighlightsCard } from "@/components/admin/settings/HighlightsCard";
@@ -40,6 +41,7 @@ export default function AdminSettingsScreen() {
           GLOBAL SETTINGS
         </ThemedText>
         <BrandSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
+        <FooterSettingsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
         <HighlightsCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
         <EmailSettingsCard
           borderColor={borderColor}

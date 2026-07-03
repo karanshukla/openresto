@@ -4,6 +4,14 @@ declare namespace NodeJS {
   }
 }
 
+export interface SocialLinks {
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  tiktok?: string;
+  youtube?: string;
+}
+
 export interface Brand {
   appName: string;
   primaryColor: string;
@@ -11,4 +19,6 @@ export interface Brand {
   headerImageUrl?: string;
   faviconIcon?: string;
   websiteUrl?: string;
+  copyrightText?: string;
+  socialLinks?: SocialLinks;
 }

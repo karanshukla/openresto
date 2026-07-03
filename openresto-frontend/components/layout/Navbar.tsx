@@ -16,19 +16,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" as const, match: (p: string) => p === "/", adminOnly: false },
+  { label: "Home", href: "/" as const, match: (p: string) => p === "/" },
   {
     label: "My Bookings",
     href: "/(user)/lookup" as const,
     match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
-    adminOnly: false,
-  },
-  {
-    label: "Admin",
-    href: "/(admin)/dashboard" as const,
-    match: (p: string) =>
-      p === "/dashboard" || p.startsWith("/bookings") || p === "/settings" || p === "/login",
-    adminOnly: true,
   },
 ];
 
@@ -48,7 +40,6 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
 
   const isMobile = width < 768;
   const isTiny = width < 380;
-  const visibleLinks = isMobile ? NAV_LINKS.filter((l) => !l.adminOnly) : NAV_LINKS;
   const showBack = pathname !== "/";
 
   return (
@@ -104,7 +95,7 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
         </View>
 
         <View style={[styles.links, isMobile && { gap: 0 }]}>
-          {visibleLinks.map(({ label, href, match }) => {
+          {NAV_LINKS.map(({ label, href, match }) => {
             const active = match(pathname);
             const isHomeActive = href === "/" && active && !!onScrollToTop;
 
