@@ -1,9 +1,14 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import { useBrand } from "@/context/BrandContext";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
+}));
+
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: jest.fn(() => ({ appName: "Open Resto", primaryColor: "#0a7ea4" })),
 }));
 
 jest.mock("expo-haptics", () => ({
@@ -23,6 +28,7 @@ describe("ConfirmModal", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (useBrand as jest.Mock).mockReturnValue({ appName: "Open Resto", primaryColor: "#0a7ea4" });
   });
 
   it("renders title and message when visible", () => {
@@ -59,5 +65,17 @@ describe("ConfirmModal", () => {
     render(<ConfirmModal {...defaultProps} cancelLabel="Nope" />);
     fireEvent.press(screen.getByText("Nope"));
     expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a destructive confirm button", () => {
+    render(<ConfirmModal {...defaultProps} destructive confirmLabel="Delete" />);
+    fireEvent.press(screen.getByText("Delete"));
+    expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the default primary color when the brand has none", () => {
+    (useBrand as jest.Mock).mockReturnValue({ appName: "Open Resto", primaryColor: "" });
+    render(<ConfirmModal {...defaultProps} confirmLabel="OK" />);
+    expect(screen.getByText("OK")).toBeTruthy();
   });
 });

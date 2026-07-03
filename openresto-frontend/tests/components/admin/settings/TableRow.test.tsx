@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { TableRow } from "@/components/admin/settings/TableRow";
 import * as restaurantsApi from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -16,10 +17,9 @@ jest.mock("@/utils/colors", () => ({
   hexToRgba: (hex: string, _opacity: number) => hex,
 }));
 
-jest.mock("@/context/BrandContext", () => {
-  const brand = { primaryColor: "#0a7ea4", appName: "Open Resto" };
-  return { useBrand: () => brand };
-});
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: jest.fn(() => ({ primaryColor: "#0a7ea4", appName: "Open Resto" })),
+}));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -174,6 +174,87 @@ describe("TableRow", () => {
   it("renders tableIcon with seats=10 (albums-outline branch)", () => {
     render(<TableRow {...baseProps} table={{ ...baseTable, seats: 10 }} />);
     expect(screen.getByText("10")).toBeTruthy();
+  });
+
+  it("falls back to the default primary color when the brand has none", () => {
+    (useBrand as jest.Mock).mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
+    render(<TableRow {...baseProps} />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[0]);
+    });
+    expect(screen.getByText("Save")).toBeTruthy();
+  });
+
+  it("seeds the edit form and delete confirmation with the table id when name is null", async () => {
+    (baseProps.confirmAction as jest.Mock).mockResolvedValue(false);
+    render(<TableRow {...baseProps} table={{ ...baseTable, name: null }} />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[0]);
+    });
+    expect(screen.getByDisplayValue("")).toBeTruthy();
+    expect(screen.getByText("EDITING · Table 5")).toBeTruthy();
+    fireEvent.press(screen.getByText("Cancel"));
+
+    const accessibleAfterCancel = screen.UNSAFE_getAllByProps({ accessible: true });
+    await act(async () => {
+      fireEvent.press(accessibleAfterCancel[2]);
+    });
+    expect(baseProps.confirmAction).toHaveBeenCalledWith('Delete table "Table 5"?');
+  });
+
+  it("does not call onDeleted when deleteTable resolves falsy", async () => {
+    (baseProps.confirmAction as jest.Mock).mockResolvedValue(true);
+    (restaurantsApi.deleteTable as jest.Mock).mockResolvedValue(false);
+    render(<TableRow {...baseProps} />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    await act(async () => {
+      fireEvent.press(accessible[2]);
+    });
+    expect(restaurantsApi.deleteTable).toHaveBeenCalledWith(1, 2, 5);
+    expect(baseProps.onDeleted).not.toHaveBeenCalled();
+  });
+
+  it("renders the edit-mode background in dark mode", () => {
+    render(<TableRow {...baseProps} isDark />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[0]);
+    });
+    expect(screen.getByText("Save")).toBeTruthy();
+  });
+
+  it("saves with an undefined name when the name field is cleared", async () => {
+    const updatedTable = { id: 5, name: null, seats: 4 };
+    (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
+    render(<TableRow {...baseProps} />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[0]);
+    });
+    fireEvent.changeText(screen.getByDisplayValue("T1"), "   ");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
+      name: undefined,
+      seats: 4,
+    });
+  });
+
+  it("stays in edit mode when updateTable resolves falsy", async () => {
+    (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(null);
+    render(<TableRow {...baseProps} />);
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    act(() => {
+      fireEvent.press(accessible[0]);
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(baseProps.onUpdated).not.toHaveBeenCalled();
+    expect(screen.getByText("Save")).toBeTruthy();
   });
 
   it("shows saving state while updating", async () => {

@@ -1,13 +1,14 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import CalendarActions from "@/components/booking/CalendarActions";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: jest.fn(() => "light"),
 }));
 
 jest.mock("@/utils/calendar", () => ({
@@ -85,6 +86,18 @@ describe("CalendarActions", () => {
 
   it("renders with specialRequests prop", () => {
     render(<CalendarActions {...baseProps} specialRequests="window seat" />);
+    expect(screen.getByText("Google Calendar")).toBeTruthy();
+  });
+
+  it("renders compact variant in dark mode", () => {
+    (useColorScheme as jest.Mock).mockReturnValueOnce("dark");
+    render(<CalendarActions {...baseProps} variant="compact" />);
+    expect(screen.getByText("Google")).toBeTruthy();
+  });
+
+  it("renders full variant in dark mode", () => {
+    (useColorScheme as jest.Mock).mockReturnValueOnce("dark");
+    render(<CalendarActions {...baseProps} />);
     expect(screen.getByText("Google Calendar")).toBeTruthy();
   });
 });

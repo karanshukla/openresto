@@ -1,9 +1,10 @@
 import React from "react";
 import { render, screen } from "@testing-library/react-native";
 import RestaurantDetails from "@/components/restaurant/RestaurantDetails";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: jest.fn(() => "light"),
 }));
 
 jest.mock("@expo/vector-icons", () => ({
@@ -73,6 +74,12 @@ describe("RestaurantDetails", () => {
     render(<RestaurantDetails restaurant={noAddress} />);
     expect(screen.getByText("Sushi Spot")).toBeTruthy();
     expect(screen.queryByText(/456 Ocean Ave/)).toBeNull();
+  });
+
+  it("renders table chips with the dark-mode background", () => {
+    (useColorScheme as jest.Mock).mockReturnValueOnce("dark");
+    render(<RestaurantDetails restaurant={restaurant} />);
+    expect(screen.getByText("A1")).toBeTruthy();
   });
 
   it("renders table fallback name when table.name is null", () => {

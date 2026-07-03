@@ -16,10 +16,9 @@ jest.mock("@/api/admin", () => ({
   adminCreateBooking: jest.fn(),
 }));
 
-jest.mock("@/context/BrandContext", () => {
-  const brand = { primaryColor: "#0a7ea4", appName: "Open Resto" };
-  return { useBrand: () => brand };
-});
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: jest.fn(() => ({ primaryColor: "#0a7ea4", appName: "Open Resto" })),
+}));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -76,6 +75,19 @@ jest.mock("@/components/common/DatePicker", () => {
         >
           <Text>Select Past Date</Text>
         </Pressable>
+        <Pressable
+          testID="date-picker-future"
+          onPress={() => {
+            const d = new Date();
+            d.setDate(d.getDate() + 7);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            onSelect(`${y}-${m}-${day}`);
+          }}
+        >
+          <Text>Select Future Date</Text>
+        </Pressable>
       </View>
     ),
   };
@@ -116,8 +128,12 @@ jest.mock("@/components/common/Button", () => {
   const { Pressable, Text } = require("react-native");
   return {
     __esModule: true,
+    // Note: `disabled` is surfaced via accessibilityState (not the native
+    // `disabled` prop) so tests can still press through it to exercise the
+    // component's own validity guard, mirroring how an accessibility tool
+    // (or a stale re-render) could invoke onPress while disabled.
     default: ({ onPress, children, disabled }: any) => (
-      <Pressable onPress={onPress} disabled={disabled}>
+      <Pressable onPress={onPress} accessibilityState={{ disabled }}>
         <Text>{children}</Text>
       </Pressable>
     ),
@@ -209,6 +225,13 @@ describe("NewBookingModal", () => {
     render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
     await waitFor(() => expect(screen.getByText("Test Restaurant")).toBeTruthy());
     fireEvent.press(screen.getByText("Test Restaurant"));
+    expect(screen.getByText("New Booking")).toBeTruthy();
+  });
+
+  it("handles table change", async () => {
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByText("Table 2 (2 seats)")).toBeTruthy());
+    fireEvent.press(screen.getByText("Table 2 (2 seats)"));
     expect(screen.getByText("New Booking")).toBeTruthy();
   });
 
@@ -328,5 +351,163 @@ describe("NewBookingModal", () => {
     // The submitted date is genuinely in the past.
     expect(new Date(payload.date).getTime()).toBeLessThan(Date.now());
     expect(onCreated).toHaveBeenCalledWith(77);
+  });
+
+  it("selects a future date without applying the back-date special-casing", async () => {
+    (adminApi.adminCreateBooking as jest.Mock).mockResolvedValue({ id: 88 });
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId("date-picker-future"));
+    fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "test@example.com");
+
+    await act(async () => {
+      fireEvent.press(screen.getByText("Create Booking"));
+    });
+    await waitFor(() => expect(adminApi.adminCreateBooking).toHaveBeenCalled());
+
+    const payload = (adminApi.adminCreateBooking as jest.Mock).mock.calls[0][0];
+    expect(new Date(payload.date).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("computes the next slot within opening hours, rounding minutes up to :30", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T14:20:00Z"));
+    try {
+      render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+      await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
+      expect(screen.getByTestId("time-picker").props.children).toBe("14:30");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("computes the next slot within opening hours, rounding minutes up to :45", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T14:35:00Z"));
+    try {
+      render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+      await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
+      expect(screen.getByTestId("time-picker").props.children).toBe("14:45");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("rolls over to the next hour when minutes round up past :45", async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T14:50:00Z"));
+    try {
+      render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+      await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
+      expect(screen.getByTestId("time-picker").props.children).toBe("15:00");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("falls back to the default primary color when the brand has none", async () => {
+    const { useBrand } = require("@/context/BrandContext");
+    (useBrand as jest.Mock).mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByText("New Booking")).toBeTruthy());
+  });
+
+  it("handles an empty restaurant list", async () => {
+    (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue([]);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
+    expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy();
+  });
+
+  it("handles a restaurant with no sections", async () => {
+    (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue([
+      { ...mockRestaurants[0], sections: [] },
+    ]);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByText("Test Restaurant")).toBeTruthy());
+    expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy();
+  });
+
+  it("falls back to a generic table label when a table has no name", async () => {
+    (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue([
+      {
+        ...mockRestaurants[0],
+        sections: [
+          {
+            id: 10,
+            name: "Main",
+            tables: [{ id: 100, seats: 4 }],
+          },
+        ],
+      },
+    ]);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByText("Table 100 (4 seats)")).toBeTruthy());
+  });
+
+  it("does not submit while the form is invalid", async () => {
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+    fireEvent.press(screen.getByText("Create Booking"));
+    expect(adminApi.adminCreateBooking).not.toHaveBeenCalled();
+  });
+
+  it("does not call onCreated/onClose when the booking result is falsy", async () => {
+    (adminApi.adminCreateBooking as jest.Mock).mockResolvedValue(null);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "test@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Create Booking"));
+    });
+    await waitFor(() => expect(adminApi.adminCreateBooking).toHaveBeenCalled());
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("shows a generic error message when the rejection is not an Error instance", async () => {
+    (adminApi.adminCreateBooking as jest.Mock).mockRejectedValue("network down");
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "test@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Create Booking"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Failed to create booking.")).toBeTruthy();
+    });
+  });
+
+  it("falls back to noon when the resolved opening hour is an empty string", async () => {
+    (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue([
+      { ...mockRestaurants[0], openTime: "", openHours: null },
+    ]);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByText("Test Restaurant")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("date-picker-past"));
+    await waitFor(() => expect(screen.getByTestId("time-picker").props.children).toBe("12:00"));
+  });
+
+  it("resolves default opening hours when no restaurant is selected", async () => {
+    (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue([]);
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByTestId("date-picker-past")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("date-picker-past"));
+    expect(screen.getByTestId("date-picker")).toBeTruthy();
+  });
+
+  it("submits the trimmed guest name when provided", async () => {
+    (adminApi.adminCreateBooking as jest.Mock).mockResolvedValue({ id: 55 });
+    render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
+    await waitFor(() => expect(screen.getByPlaceholderText("guest@example.com")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("guest@example.com"), "test@example.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Full name"), "  Jane Doe  ");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Create Booking"));
+    });
+    await waitFor(() => expect(adminApi.adminCreateBooking).toHaveBeenCalled());
+    const payload = (adminApi.adminCreateBooking as jest.Mock).mock.calls[0][0];
+    expect(payload.customerName).toBe("Jane Doe");
   });
 });

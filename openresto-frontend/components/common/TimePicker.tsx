@@ -6,7 +6,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors, COLORS, FORM_SIZES, BORDER_RADIUS } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 
-function generateTimeOptions(
+export function generateTimeOptions(
   minTime = "09:00",
   maxTime = "22:00"
 ): { label: string; value: string }[] {
@@ -56,7 +56,11 @@ export default function TimePicker({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setModalVisible(false)}>
+        <Pressable
+          testID="time-picker-backdrop"
+          style={styles.backdrop}
+          onPress={() => setModalVisible(false)}
+        >
           <ThemedView style={[styles.modalView, { borderColor }]}>
             <ThemedText type="bodyBold" style={styles.modalTitle}>
               Select a time

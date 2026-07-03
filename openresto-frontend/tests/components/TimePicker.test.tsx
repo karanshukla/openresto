@@ -2,11 +2,13 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react-native";
-import TimePicker from "@/components/common/TimePicker";
+import { render, screen, fireEvent, act } from "@testing-library/react-native";
+import { Modal } from "react-native";
+import TimePicker, { generateTimeOptions } from "@/components/common/TimePicker";
+import { useBrand } from "@/context/BrandContext";
 
 jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ appName: "Test App", primaryColor: "#000" }),
+  useBrand: jest.fn(() => ({ appName: "Test App", primaryColor: "#000" })),
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
@@ -46,19 +48,54 @@ describe("TimePicker Native", () => {
     expect(screen.getByText("Select a time")).toBeTruthy();
   });
 
-  it("closes modal when backdrop is pressed", () => {
-    render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
-    fireEvent.press(screen.getByText("09:00"));
-    // Modal is open — press backdrop to close
-    const backdrop = screen.getByText("Select a time");
-    // backdrop is the Pressable container; pressing the modal title area closes via onRequestClose
-    expect(backdrop).toBeTruthy();
-  });
-
   it("shows checkmark for currently selected time option", () => {
     render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
     fireEvent.press(screen.getByText("09:00"));
     // The selected option renders a checkmark
     expect(screen.getByText("✓")).toBeTruthy();
+  });
+
+  it("closes the modal when the backdrop is pressed", () => {
+    render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
+    fireEvent.press(screen.getByText("09:00"));
+    expect(screen.getByText("Select a time")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("time-picker-backdrop"));
+    expect(screen.queryByText("Select a time")).toBeNull();
+  });
+
+  it("closes the modal when onRequestClose fires (e.g. Android back button)", () => {
+    render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
+    fireEvent.press(screen.getByText("09:00"));
+    expect(screen.getByText("Select a time")).toBeTruthy();
+    act(() => {
+      screen.UNSAFE_getByType(Modal).props.onRequestClose();
+    });
+    expect(screen.queryByText("Select a time")).toBeNull();
+  });
+
+  it("falls back to the default primary color when the brand has none", () => {
+    (useBrand as jest.Mock).mockReturnValueOnce({ appName: "Test App", primaryColor: "" });
+    render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
+    expect(screen.getByText("09:00")).toBeTruthy();
+  });
+
+  it("highlights the trigger border when hovered", () => {
+    render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
+    let node = screen.getByText("09:00").parent;
+    while (node && typeof node.props?.style !== "function") {
+      node = node.parent;
+    }
+    const styleFn = node?.props.style as (state: { hovered: boolean }) => unknown;
+    expect(typeof styleFn).toBe("function");
+    const hoveredStyle = styleFn({ hovered: true });
+    expect(hoveredStyle).toContainEqual({ borderColor: "#000" });
+  });
+});
+
+describe("generateTimeOptions", () => {
+  it("defaults to a 09:00-22:00 range when called with no arguments", () => {
+    const options = generateTimeOptions();
+    expect(options[0]).toEqual({ label: "09:00", value: "09:00" });
+    expect(options[options.length - 1]).toEqual({ label: "22:00", value: "22:00" });
   });
 });
