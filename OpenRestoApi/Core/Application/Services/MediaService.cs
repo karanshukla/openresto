@@ -9,7 +9,7 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
     private readonly AppDbContext _db = db;
     private readonly string _mediaDir = Path.Combine(env.ContentRootPath, "wwwroot", "media");
 
-    public async Task<string> UploadHeroAsync(Stream fileStream, string contentType)
+    public virtual async Task<string> UploadHeroAsync(Stream fileStream, string contentType)
     {
         EnsureMediaDir();
         foreach (string old in Directory.GetFiles(_mediaDir, "hero.*"))
@@ -32,7 +32,7 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
         return url;
     }
 
-    public async Task DeleteHeroAsync()
+    public virtual async Task DeleteHeroAsync()
     {
         BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
         if (brand?.HeaderImageUrl != null)
@@ -46,7 +46,7 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
         }
     }
 
-    public async Task<string?> UploadLocationAsync(int id, Stream fileStream, string contentType)
+    public virtual async Task<string?> UploadLocationAsync(int id, Stream fileStream, string contentType)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
         if (restaurant == null) return null;
@@ -65,7 +65,7 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
         return url;
     }
 
-    public async Task<bool> DeleteLocationAsync(int id)
+    public virtual async Task<bool> DeleteLocationAsync(int id)
     {
         Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
         if (restaurant == null) return false;

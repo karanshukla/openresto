@@ -141,4 +141,84 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetPwaIcon_ReturnsNotFound_WhenNoFaviconIconConfigured()
+    {
+        // BrandService.SaveAsync treats a null faviconIcon as "leave unchanged", so an
+        // icon set by another test in the shared fixture can't be cleared via the API —
+        // use a freshly seeded factory instead to guarantee no icon is configured.
+        using var factory = new TestWebAppFactory();
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/brand/pwa-icon.svg");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPwaIcon_ReturnsSvg_WhenFaviconIconConfigured()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            faviconIcon = "utensils",
+            primaryColor = "#123456",
+        });
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        HttpResponseMessage response = await client.GetAsync("/api/brand/pwa-icon.svg");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/svg+xml", response.Content.Headers.ContentType?.MediaType);
+        string body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("<svg", body);
+        Assert.Contains("#123456", body);
+        Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(1024)]
+    public async Task GetPwaIconPng_ReturnsNotFound_ForUnsupportedSize(int size)
+    {
+        HttpClient client = _factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync($"/api/brand/pwa-icon-{size}.png");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPwaIconPng_ReturnsNotFound_WhenNoFaviconIconConfigured()
+    {
+        using var factory = new TestWebAppFactory();
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/brand/pwa-icon-192.png");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(192)]
+    [InlineData(512)]
+    public async Task GetPwaIconPng_ReturnsPng_WhenFaviconIconConfigured(int size)
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            faviconIcon = "flame",
+            primaryColor = "#0a7ea4",
+        });
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        HttpResponseMessage response = await client.GetAsync($"/api/brand/pwa-icon-{size}.png");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.NotEmpty(bytes);
+        Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
+    }
 }

@@ -7,6 +7,9 @@ namespace OpenRestoApi.Infrastructure.Notifications;
 
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Infrastructure.Notifications.*")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationQueueTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationWorkerTests")]
+[ExternalAccessAllowed]
 internal sealed class NotificationQueue : INotificationQueue
 {
     internal readonly Channel<NotificationWorkItem> Channel =
@@ -26,4 +29,24 @@ internal sealed class NotificationQueue : INotificationQueue
 
     public void EnqueueCapacityCheck(int restaurantId, string restaurantName, DateTime bookingDate) =>
         Channel.Writer.TryWrite(new CapacityCheckWork(restaurantId, restaurantName, bookingDate));
+
+    // The CustomAccessibility analyzer's [OnlyAccessibleBy]/[ExternalAccessAllowed]
+    // pair on the class only covers construction and the (public,
+    // interface-implementing) Enqueue* methods — internal members need the same
+    // pair repeated on themselves individually to be callable from the
+    // whitelisted test classes, so these carry their own.
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationQueueTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationWorkerTests")]
+    [ExternalAccessAllowed]
+    internal bool TryReadForTests(out NotificationWorkItem? item) => Channel.Reader.TryRead(out item);
+
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationQueueTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationWorkerTests")]
+    [ExternalAccessAllowed]
+    internal bool TryWriteForTests(NotificationWorkItem item) => Channel.Writer.TryWrite(item);
+
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationQueueTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationWorkerTests")]
+    [ExternalAccessAllowed]
+    internal void CompleteForTests() => Channel.Writer.Complete();
 }

@@ -1,7 +1,11 @@
+using CustomAccessibility.Attributes;
 using OpenRestoApi.Core.Application.Interfaces;
 
 namespace OpenRestoApi.Infrastructure.Notifications;
 
+[OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NotificationWorkerTests")]
+[ExternalAccessAllowed]
 internal sealed class NotificationWorker(
     NotificationQueue queue,
     IServiceScopeFactory scopeFactory,

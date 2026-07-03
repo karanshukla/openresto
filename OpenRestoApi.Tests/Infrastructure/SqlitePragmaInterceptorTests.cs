@@ -55,10 +55,88 @@ public class SqlitePragmaInterceptorTests
     }
     
     [Fact]
-    public void ApplyPragmas_HandlesReadOnlyException()
+    public void ConnectionOpened_AppliesPragmas()
     {
-        // Mock a connection that throws SqliteException with error code 8 (SQLITE_READONLY)
-        // This is hard to do with a real connection, but we can't easily mock DbConnection for this.
-        // However, the catch block is there for safety. 
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        var interceptor = new SqlitePragmaInterceptor();
+
+        // The interceptor never dereferences eventData — it only forwards it to the
+        // (no-op) base implementation — so a null event data is safe here.
+        interceptor.ConnectionOpened(connection, null!);
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "PRAGMA foreign_keys";
+        Assert.Equal(1, Convert.ToInt32(cmd.ExecuteScalar()));
+    }
+
+    [Fact]
+    public async Task ConnectionOpenedAsync_AppliesPragmas()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var interceptor = new SqlitePragmaInterceptor();
+
+        await interceptor.ConnectionOpenedAsync(connection, null!);
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "PRAGMA foreign_keys";
+        Assert.Equal(1, Convert.ToInt32(await cmd.ExecuteScalarAsync()));
+    }
+
+    private static string CreateReadOnlyDbPath()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"openresto-pragma-{Guid.NewGuid()}.db");
+        using (var init = new SqliteConnection($"Data Source={path}"))
+        {
+            init.Open();
+            using SqliteCommand cmd = init.CreateCommand();
+            cmd.CommandText = "CREATE TABLE t (id INTEGER)";
+            cmd.ExecuteNonQuery();
+        }
+        return path;
+    }
+
+    [Fact]
+    public void ApplyPragmas_SwallowsReadOnlyException()
+    {
+        // Opening a read-only connection against a real SQLite file makes the
+        // write-mode PRAGMAs (journal_mode=WAL, etc.) fail with SQLITE_READONLY (8) —
+        // the same failure mode the catch clause exists to swallow.
+        string path = CreateReadOnlyDbPath();
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+            connection.Open();
+            var interceptor = new SqlitePragmaInterceptor();
+
+            Exception? ex = Record.Exception(() => interceptor.ConnectionOpened(connection, null!));
+
+            Assert.Null(ex);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task ApplyPragmasAsync_SwallowsReadOnlyException()
+    {
+        string path = CreateReadOnlyDbPath();
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+            await connection.OpenAsync();
+            var interceptor = new SqlitePragmaInterceptor();
+
+            Exception? ex = await Record.ExceptionAsync(() => interceptor.ConnectionOpenedAsync(connection, null!));
+
+            Assert.Null(ex);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }
