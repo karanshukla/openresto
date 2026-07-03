@@ -152,6 +152,36 @@ describe("FooterSettingsCard", () => {
     });
   });
 
+  it("shows 'Saving…' while a save is in flight", async () => {
+    let resolve: (v: { message: string }) => void;
+    (adminApi.saveBrandSettings as jest.Mock).mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      })
+    );
+    render(<FooterSettingsCard {...baseProps} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
+      "© 2026 My Resto"
+    );
+    act(() => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(screen.getByText("Saving…")).toBeTruthy();
+    await act(async () => {
+      resolve!({ message: "Brand settings saved." });
+    });
+  });
+
+  it("shows the error color once copyright text exceeds 200 characters", () => {
+    render(<FooterSettingsCard {...baseProps} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
+      "a".repeat(201)
+    );
+    expect(screen.getByText("201/200")).toBeTruthy();
+  });
+
   it("syncs fields when brand context updates", async () => {
     const { rerender } = render(<FooterSettingsCard {...baseProps} />);
     mockBrandData = {
