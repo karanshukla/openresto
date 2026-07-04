@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-03
+
+This one's mostly driven by your feedback — thanks for all the issues and comments since 1.1.0! The headline items are per-day opening hours, walk-in-only locations, admin-changeable email, and a customizable footer with social links. There's also a decent pile of smaller bug fixes around past bookings, calendar/email consistency, and mobile UX. As always, please open an issue if anything looks off after upgrading.
+
+### Added
+
+- **Per-day opening hours** (#175) — restaurants can set different open/close times for each day of the week (e.g. Mon–Fri 12–22, Sat 11–23) instead of one set of hours applied globally. `OpenDays` remains the canonical open/closed toggle; hours are stored per-day in `Restaurant.OpenHoursJson` and collapse back to the simple `OpenTime`/`CloseTime` fields when all seven days match. Existing restaurants with uniform hours are unaffected.
+- **Walk-in-only locations** (#176) — a location (or specific days of a location) can be marked walk-in only. It stays listed and visible on the public search/home page, but the online booking flow is disabled and replaced with a walk-in notice; the restaurant card shows which days are walk-in-only, including a friendly hint for fully walk-in locations. Admin-recorded bookings are exempt so staff can still log walk-ins during those hours.
+- **Customizable booking duration** (#135, #177) — admins can configure how long a booking slot lasts per restaurant instead of the previous hardcoded 1 hour. Availability, conflict checks, and now calendar/ICS event lengths and confirmation emails all respect the configured duration.
+- **Admin can change their own email** (#172) — a new field in the admin settings panel lets an admin update the login email for their account directly from the UI, instead of needing manual DB/env changes.
+- **Customizable footer with social links** (#186, #182) — the "Admin" link has been moved out of the header (where it was over-prominent on desktop and hidden entirely below 768px on mobile) into a new, always-visible page footer alongside configurable copyright text and social links (Instagram, Facebook, X, TikTok, YouTube, or any custom link) editable from the Admin settings.
+- **Keyboard shortcuts** (#140) — logical keyboard shortcuts added across both the admin dashboard and the customer-facing booking UI for faster navigation and common actions.
+- **Haptic feedback on mobile** (#147) — key interactions (selecting a time slot, confirming a booking, admin actions) now trigger `expo-haptics` feedback on native mobile; no-ops safely on web.
+- **More brand favicon icons** (#188) — hamburger, sandwich, soup, cake, and ice-cream-cone added to the selectable Lucide icon set (15 total, up from 10).
+- **Nginx caching headers** — Expo's content-hashed static bundles are now served with a permanent `Cache-Control: public, max-age=31536000, immutable`, the app-shell HTML is marked `no-cache` so it's always revalidated, and gzip settings were tightened across all three nginx configs (dev, prod, release).
+
+### Fixed
+
+- **Past bookings** (#159, #160) — customers can no longer cancel a booking that's already in the past, and can no longer create a new booking in a past time slot; admins remain able to record past walk-in bookings.
+- **Admin dashboard not refreshing after actions** (#93) — cancelling or deleting a booking (and other admin actions) now correctly refreshes the dashboard view instead of leaving stale data on screen.
+- **Calendar/ICS event duration** (#192 follow-up to #135/#177) — Google Calendar links, Outlook links, and the downloaded `.ics` file now use the restaurant's actual configured booking duration instead of a hardcoded 60 minutes; the calendar/ICS description also now includes the assigned table and section.
+- **Booking confirmation email formatting** — fixed spacing issues and a missing table/section line in the confirmation email; simplified the confirmation time-range formatting logic.
+- **Purge-bookings script** — now also wipes and restores uploaded media (moved the media snapshot into `data/` for VPS persistence across the demo reset cron), so a purge leaves the media volume in a consistent state with the database.
+- **Nginx ports bound to localhost** — the nginx container's exposed ports are now bound to `127.0.0.1` instead of all interfaces, reducing exposure on multi-tenant hosts.
+- **Location Manager polish** — removed leftover step-number labels and a stray monospace font from the Location Manager UI.
+
 ## [1.1.1] - 2026-06-29
 
 Fixed an issue with the Admin Email not correctly being set by the ENV vars in the Docker Environment
@@ -61,3 +87,4 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.0.0]: https://github.com/karanshukla/openresto/releases/tag/v1.0.0
 [1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0
 [1.1.1]: https://github.com/karanshukla/openresto/releases/tag/v1.1.1
+[1.2.0]: https://github.com/karanshukla/openresto/releases/tag/v1.2.0
