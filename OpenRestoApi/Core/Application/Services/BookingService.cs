@@ -1,8 +1,8 @@
-using System.Globalization;
 using System.Net;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Mappings;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -56,18 +56,7 @@ public class BookingService(
         }
 
         // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
-        DateTime bookingDate;
-        if (bookingDto.Date.Kind == DateTimeKind.Unspecified)
-        {
-            TimeZoneInfo tz;
-            try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-            catch { tz = TimeZoneInfo.Utc; }
-            bookingDate = TimeZoneInfo.ConvertTimeToUtc(bookingDto.Date, tz);
-        }
-        else
-        {
-            bookingDate = bookingDto.Date.ToUniversalTime();
-        }
+        DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(bookingDto.Date, restaurant.Timezone);
 
         // 0. Reject bookings in the past
         if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
@@ -222,17 +211,12 @@ public class BookingService(
 
     private static string BuildConfirmationEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl)
     {
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
-
-        DateTime localDate = TimeZoneInfo.ConvertTimeFromUtc(booking.Date, tz);
-        string dateStr = localDate.ToString("dddd, d MMMM yyyy", CultureInfo.InvariantCulture);
-        string timeStr = localDate.ToString("h:mm tt", CultureInfo.InvariantCulture);
+        DateTime localDate = TimeZoneHelper.ConvertUtcToLocal(booking.Date, restaurant.Timezone);
+        string dateStr = DateFormatter.FormatLongDate(localDate);
 
         // EndTime is always set by CreateBookingAsync before this is called.
-        DateTime localEndDate = TimeZoneInfo.ConvertTimeFromUtc(booking.EndTime!.Value, tz);
-        string timeRangeStr = $"{timeStr} – {localEndDate.ToString("h:mm tt", CultureInfo.InvariantCulture)}";
+        DateTime localEndDate = TimeZoneHelper.ConvertUtcToLocal(booking.EndTime!.Value, restaurant.Timezone);
+        string timeRangeStr = DateFormatter.FormatTimeRange(localDate, localEndDate);
 
         string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
         string appName = brand.AppName ?? "Open Resto";

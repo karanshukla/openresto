@@ -1,5 +1,6 @@
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -18,9 +19,7 @@ public class AvailabilityService(
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId)
             ?? throw new ArgumentException("Restaurant not found.");
 
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
+        TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 
         // Check if restaurant is paused
         bool isPaused = restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow;

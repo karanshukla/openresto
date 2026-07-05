@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
@@ -38,18 +39,7 @@ public class HoldsController(
         }
 
         // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
-        DateTime bookingDate;
-        if (request.Date.Kind == DateTimeKind.Unspecified)
-        {
-            TimeZoneInfo tz;
-            try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-            catch { tz = TimeZoneInfo.Utc; }
-            bookingDate = TimeZoneInfo.ConvertTimeToUtc(request.Date, tz);
-        }
-        else
-        {
-            bookingDate = request.Date.ToUniversalTime();
-        }
+        DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(request.Date, restaurant.Timezone);
 
         // 3. Basic validation: date in future
         if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
@@ -109,11 +99,7 @@ public class HoldsController(
 
     private static bool IsTimeWithinOpeningHours(OpenRestoApi.Core.Domain.Restaurant restaurant, DateTime requestedUtc)
     {
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
-
-        DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(requestedUtc, tz);
+        DateTime localTime = TimeZoneHelper.ConvertUtcToLocal(requestedUtc, restaurant.Timezone);
 
         int isoDay = (int)localTime.DayOfWeek;
         if (isoDay == 0)

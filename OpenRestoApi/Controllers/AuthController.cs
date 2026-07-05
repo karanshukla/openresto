@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
@@ -68,7 +69,7 @@ public class AuthController(AuthService authService) : ControllerBase
     public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest req)
     {
         string trimmedEmail = req.NewEmail?.Trim() ?? string.Empty;
-        if (trimmedEmail.Length == 0 || !IsValidEmail(trimmedEmail))
+        if (!EmailValidator.IsValid(trimmedEmail))
             return BadRequest(new { message = "A valid email address is required." });
 
         try
@@ -125,9 +126,6 @@ public class AuthController(AuthService authService) : ControllerBase
             return BadRequest(new { message = "Invalid or expired reset token." });
         return Ok(new { message = "Password reset successfully." });
     }
-
-    private static bool IsValidEmail(string email) =>
-        System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$");
 
     private void SetAuthCookie(string jwt)
     {

@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createHold, releaseHold, HoldResponse } from "@/api/holds";
+import { isValidEmail } from "@/utils/validation";
 
 export type HoldStatus = "idle" | "pending" | "held" | "unavailable" | "expired";
 
 const HOLD_DEBOUNCE_MS = 2000;
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function isValidEmail(value: string): boolean {
-  return EMAIL_REGEX.test(value.trim());
-}
 
 export interface UseTableHoldParams {
   restaurantId: number;

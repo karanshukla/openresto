@@ -1,4 +1,5 @@
 using System.Globalization;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -49,11 +50,7 @@ public static class WalkInHelper
             return false;
         }
 
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
-
-        DateTime local = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+        DateTime local = TimeZoneHelper.ConvertUtcToLocal(utc, restaurant.Timezone);
         int isoDay = (int)local.DayOfWeek;
         if (isoDay == 0)
         {

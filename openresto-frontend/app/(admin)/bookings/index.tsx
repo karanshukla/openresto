@@ -35,29 +35,9 @@ import { AvailabilityGrid } from "@/components/admin/bookings/AvailabilityGrid";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { fmtDate, isoDate, initials } from "@/utils/formatters";
 
 type ViewMode = "timetable" | "list";
-
-function fmtDate(d: Date) {
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-
-function isoDate(d: Date) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function initials(nameOrEmail: string) {
-  const name = nameOrEmail.includes("@")
-    ? nameOrEmail.split("@")[0].replace(/[._-]/g, " ").trim()
-    : nameOrEmail.trim();
-  const parts = name.split(" ");
-  return parts.length > 1
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase();
-}
 
 export default function AdminBookingsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);

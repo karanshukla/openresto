@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -36,7 +37,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         List<BookingDetailDto> todayBookingsList = [];
         foreach (Restaurant? r in restaurants)
         {
-            (DateTime start, DateTime end) = GetUtcRangeForLocalDay(nowUtc, r.Timezone);
+            (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(nowUtc, r.Timezone);
             List<Booking> rTodayBookings = await _db.Bookings
                 .Include(b => b.Restaurant)
                 .Include(b => b.Section)
@@ -127,7 +128,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
             if (bookingDate.HasValue)
             {
-                (DateTime start, DateTime end) = GetUtcRangeForLocalDay(bookingDate.Value, tz);
+                (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(bookingDate.Value, tz);
                 q = q.Where(b => b.Date >= start && b.Date < end);
             }
         }
@@ -209,18 +210,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         }
 
         // Normalize date: if Unspecified, treat as restaurant local and convert to UTC
-        DateTime newStart;
-        if (req.Date.Kind == DateTimeKind.Unspecified)
-        {
-            TimeZoneInfo tz;
-            try { tz = TimeZoneInfo.FindSystemTimeZoneById(table.Section.Restaurant!.Timezone); }
-            catch { tz = TimeZoneInfo.Utc; }
-            newStart = TimeZoneInfo.ConvertTimeToUtc(req.Date, tz);
-        }
-        else
-        {
-            newStart = req.Date.ToUniversalTime();
-        }
+        DateTime newStart = TimeZoneHelper.ConvertLocalToUtc(req.Date, table.Section.Restaurant!.Timezone);
 
         int durationMinutes = table.Section!.Restaurant!.DefaultBookingDurationMinutes;
         DateTime newEnd = newStart.AddMinutes(durationMinutes);
@@ -692,36 +682,6 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
     }
 
     // ── Mapping ─────────────────────────────────────────────────────────────
-
-    private static (DateTime Start, DateTime End) GetUtcRangeForLocalDay(DateTime referenceDate, string timezoneId)
-    {
-        TimeZoneInfo tz;
-        try
-        {
-            tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        }
-        catch
-        {
-            tz = TimeZoneInfo.Utc;
-        }
-
-        // When given a UTC timestamp (e.g. from GetOverviewAsync), convert to the restaurant's
-        // local time first so we get the correct local calendar date — a UTC+ restaurant may
-        // already be on the next calendar day while UTC is still "yesterday".
-        // When given an Unspecified value (a client date-only param like "2026-05-26"), treat
-        // it directly as the restaurant's local date without conversion.
-        DateTime localDay = referenceDate.Kind == DateTimeKind.Utc
-            ? TimeZoneInfo.ConvertTimeFromUtc(referenceDate, tz).Date
-            : referenceDate.Date;
-
-        DateTime localStart = DateTime.SpecifyKind(localDay, DateTimeKind.Unspecified);
-        DateTime localEnd = DateTime.SpecifyKind(localDay.AddDays(1), DateTimeKind.Unspecified);
-
-        DateTime utcStart = TimeZoneInfo.ConvertTimeToUtc(localStart, tz);
-        DateTime utcEnd = TimeZoneInfo.ConvertTimeToUtc(localEnd, tz);
-
-        return (utcStart, utcEnd);
-    }
 
     private static BookingDetailDto ToDetailDto(Booking b)
     {
