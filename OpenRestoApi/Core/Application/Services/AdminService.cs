@@ -1,36 +1,35 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class AdminService(AppDbContext db, IHoldService holdService, INotificationQueue? notificationQueue = null)
+public class AdminService(
+    IBookingRepository bookingRepository,
+    IBookingFilterRepository bookingFilterRepository,
+    IRestaurantRepository restaurantRepository,
+    ISectionRepository sectionRepository,
+    ITableRepository tableRepository,
+    IHoldService holdService,
+    INotificationQueue? notificationQueue = null)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IBookingRepository _bookingRepository = bookingRepository;
+    private readonly IBookingFilterRepository _bookingFilterRepository = bookingFilterRepository;
+    private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
+    private readonly ISectionRepository _sectionRepository = sectionRepository;
+    private readonly ITableRepository _tableRepository = tableRepository;
     private readonly IHoldService _holdService = holdService;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
-
-    private static string NormalizeStatus(string status) => status.ToLowerInvariant() switch
-    {
-        "upcoming" => "active",
-        "past" => "past",
-        "cancelled" => "cancelled",
-        "active" => "active",
-        "all" => "all",
-        _ => "active",
-    };
 
     public virtual async Task<AdminOverviewDto> GetOverviewAsync()
     {
         DateTime nowUtc = DateTime.UtcNow;
-        List<Restaurant> restaurants = await _db.Restaurants.Where(r => !r.IsArchived).ToListAsync();
+        List<Restaurant> restaurants = await _restaurantRepository.GetAllActiveAsync();
 
         int totalRestaurants = restaurants.Count;
-        int totalBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled);
-        int totalSeats = await _db.Bookings.Where(b => !b.IsCancelled).SumAsync(b => (int?)b.Seats) ?? 0;
+        int totalBookings = await _bookingRepository.CountActiveAsync();
+        int totalSeats = await _bookingRepository.SumActiveSeatsAsync();
 
         int todayBookingsCount = 0;
         int pausedRestaurantsCount = 0;
@@ -38,16 +37,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         foreach (Restaurant? r in restaurants)
         {
             (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(nowUtc, r.Timezone);
-            List<Booking> rTodayBookings = await _db.Bookings
-                .Include(b => b.Restaurant)
-                .Include(b => b.Section)
-                .Include(b => b.Table)
-                .Where(b =>
-                    b.RestaurantId == r.Id &&
-                    b.Date >= start && b.Date < end &&
-                    !b.IsCancelled)
-                .OrderBy(b => b.Date)
-                .ToListAsync();
+            List<Booking> rTodayBookings = await _bookingRepository.GetForRestaurantInUtcRangeAsync(r.Id, start, end);
             todayBookingsCount += rTodayBookings.Count;
             todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
 
@@ -64,7 +54,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         {
             DateTime dayStart = DateTime.SpecifyKind(nowUtc.Date.AddDays(-i), DateTimeKind.Utc);
             DateTime dayEnd = dayStart.AddDays(1);
-            int dayBookings = await _db.Bookings.CountAsync(b => !b.IsCancelled && b.Date >= dayStart && b.Date < dayEnd);
+            int dayBookings = await _bookingRepository.CountActiveByDayAsync(dayStart, dayEnd);
             rawCounts.Add(dayBookings);
         }
 
@@ -88,120 +78,27 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
     public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null)
     {
-        IQueryable<Booking> q = _db.Bookings
-            .Include(b => b.Restaurant)
-            .Include(b => b.Section)
-            .Include(b => b.Table)
-            .AsQueryable();
-
-        DateTime nowUtc = DateTime.UtcNow;
-        string normalized = NormalizeStatus(status);
-
-        // Grid view logic: if a date is explicitly provided, we usually want all bookings for that day
-        // unless a specific status (like cancelled) is requested.
-        bool isGridMode = bookingDate.HasValue && normalized == "active";
-
-        if (restaurantId.HasValue)
+        List<Booking> bookings = await _bookingFilterRepository.QueryAsync(new BookingFilter
         {
-            q = q.Where(b => b.RestaurantId == restaurantId.Value);
-            Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId.Value);
-            string tz = restaurant?.Timezone ?? "UTC";
+            RestaurantId = restaurantId,
+            BookingDate = bookingDate,
+            Status = status,
+            Email = email,
+            BookingRef = bookingRef,
+        });
 
-            DateTime cutoff = nowUtc.AddMinutes(-90);
-
-            if (isGridMode)
-            {
-                // In grid mode for a specific date, show everything non-cancelled for that day
-                q = q.Where(b => !b.IsCancelled);
-            }
-            else
-            {
-                q = normalized switch
-                {
-                    "cancelled" => q.Where(b => b.IsCancelled),
-                    "past" => q.Where(b => !b.IsCancelled && b.Date < cutoff),
-                    "all" => q,
-                    "active" => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
-                    _ => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
-                };
-            }
-
-            if (bookingDate.HasValue)
-            {
-                (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(bookingDate.Value, tz);
-                q = q.Where(b => b.Date >= start && b.Date < end);
-            }
-        }
-        else
-        {
-            if (isGridMode)
-            {
-                // In grid mode for a specific date, show everything non-cancelled for that day
-                q = q.Where(b => !b.IsCancelled);
-            }
-            else
-            {
-                DateTime globalCutoff = nowUtc.AddMinutes(-90);
-
-                q = normalized switch
-                {
-                    "cancelled" => q.Where(b => b.IsCancelled),
-                    "past" => q.Where(b => !b.IsCancelled && b.Date < globalCutoff),
-                    "all" => q,
-                    "active" => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-                    _ => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-                };
-            }
-
-            if (bookingDate.HasValue)
-            {
-                DateTime dayStart = bookingDate.Value.Date;
-                DateTime nextDayStart = dayStart.AddDays(1);
-                q = q.Where(b => b.Date >= dayStart && b.Date < nextDayStart);
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(email))
-        {
-            // SQLite EF Core cannot translate StringComparison overloads — use ToLower for case-insensitive LIKE
-            string normalizedEmail = email.Trim().ToLowerInvariant();
-            // EF Core maps ToLower() → SQLite lower(), which is locale-independent at the DB level
-#pragma warning disable CA1862, CA1311, CA1304 // ToLower in LINQ-to-EF is intentional (ToLowerInvariant is not translatable)
-            q = q.Where(b => b.CustomerEmail != null && b.CustomerEmail.ToLower().Contains(normalizedEmail));
-#pragma warning restore CA1862, CA1311, CA1304
-        }
-
-        if (!string.IsNullOrWhiteSpace(bookingRef))
-        {
-            string normalizedRef = bookingRef.Trim().ToLowerInvariant();
-#pragma warning disable CA1862, CA1311, CA1304
-            q = q.Where(b => b.BookingRef != null && b.BookingRef.ToLower().Contains(normalizedRef));
-#pragma warning restore CA1862, CA1311, CA1304
-        }
-
-        return await q
-            .OrderBy(b => b.Date)
-            .Select(b => ToDetailDto(b))
-            .ToListAsync();
+        return bookings.Select(ToDetailDto).ToList();
     }
 
     public virtual async Task<BookingDetailDto?> GetBookingAsync(int id)
     {
-        Booking? b = await _db.Bookings
-            .Include(b => b.Restaurant)
-            .Include(b => b.Section)
-            .Include(b => b.Table)
-            .FirstOrDefaultAsync(b => b.Id == id);
-
+        Booking? b = await _bookingRepository.GetByIdAsync(id);
         return b == null ? null : ToDetailDto(b);
     }
 
     public virtual async Task<BookingDetailDto> CreateBookingAsync(AdminCreateBookingRequest req)
     {
-        Table table = await _db.Tables
-            .Include(t => t.Section)
-                .ThenInclude(s => s!.Restaurant)
-            .FirstOrDefaultAsync(t => t.Id == req.TableId && t.SectionId == req.SectionId)
+        Table table = await _tableRepository.GetWithSectionRestaurantAsync(req.TableId, req.SectionId)
             ?? throw new ArgumentException("Table not found in the specified section.");
 
         if (table.Section!.RestaurantId != req.RestaurantId)
@@ -215,11 +112,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         int durationMinutes = table.Section!.Restaurant!.DefaultBookingDurationMinutes;
         DateTime newEnd = newStart.AddMinutes(durationMinutes);
 
-        bool conflict = await _db.Bookings.AnyAsync(b =>
-            b.TableId == req.TableId &&
-            !b.IsCancelled &&
-            b.Date < newEnd &&
-            (b.EndTime != null ? b.EndTime > newStart : b.Date.AddMinutes(durationMinutes) > newStart));
+        bool conflict = await _bookingRepository.HasConflictAsync(req.TableId, newStart, newEnd, durationMinutes);
 
         if (conflict)
         {
@@ -244,13 +137,14 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
             BookingRef = BookingRefGenerator.Generate(),
         };
 
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
+        await _bookingRepository.AddAsync(booking);
 
-        // Reload to get names and ensure UTC consistency
-        await _db.Entry(booking).Reference(b => b.Table).LoadAsync();
-        await _db.Entry(booking).Reference(b => b.Section).LoadAsync();
-        await _db.Entry(booking).Reference(b => b.Restaurant).LoadAsync();
+        // Reload via the eager-loading GetByIdAsync to populate names and ensure UTC consistency.
+        Booking? reloaded = await _bookingRepository.GetByIdAsync(booking.Id);
+        if (reloaded != null)
+        {
+            booking = reloaded;
+        }
 
         if (_notificationQueue != null)
         {
@@ -263,7 +157,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
     public virtual async Task<DateTime?> ExtendBookingAsync(int id, int minutes)
     {
-        Booking? booking = await _db.Bookings.FindAsync(id);
+        Booking? booking = await _bookingRepository.FindByIdAsync(id);
         if (booking == null)
         {
             return null;
@@ -278,18 +172,18 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         }
         else
         {
-            Restaurant? restaurant = await _db.Restaurants.FindAsync(booking.RestaurantId);
+            Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(booking.RestaurantId);
             from = booking.Date.AddMinutes(restaurant?.DefaultBookingDurationMinutes ?? 60);
         }
 
         booking.EndTime = from.AddMinutes(minutes);
-        await _db.SaveChangesAsync();
+        await _bookingRepository.UpdateAsync(booking);
         return booking.EndTime;
     }
 
     public virtual async Task<bool> CancelBookingAsync(int id)
     {
-        Booking? booking = await _db.Bookings.FindAsync(id);
+        Booking? booking = await _bookingRepository.FindByIdAsync(id);
         if (booking == null)
         {
             return false;
@@ -302,12 +196,12 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
         booking.IsCancelled = true;
         booking.CancelledAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await _bookingRepository.UpdateAsync(booking);
 
         if (_notificationQueue != null)
         {
-            await _db.Entry(booking).Reference(b => b.Restaurant).LoadAsync();
-            _notificationQueue.EnqueueBookingCancelled(booking, booking.Restaurant?.Name ?? "");
+            Booking? withRestaurant = await _bookingRepository.GetByIdAsync(id);
+            _notificationQueue.EnqueueBookingCancelled(withRestaurant ?? booking, withRestaurant?.Restaurant?.Name ?? "");
         }
 
         return true;
@@ -315,20 +209,19 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
     public virtual async Task<bool> PurgeBookingAsync(int id)
     {
-        Booking? booking = await _db.Bookings.FindAsync(id);
+        Booking? booking = await _bookingRepository.FindByIdAsync(id);
         if (booking == null)
         {
             return false;
         }
 
-        _db.Bookings.Remove(booking);
-        await _db.SaveChangesAsync();
+        await _bookingRepository.DeleteAsync(id);
         return true;
     }
 
     public virtual async Task<BookingDetailDto?> RestoreBookingAsync(int id)
     {
-        Booking? booking = await _db.Bookings.FindAsync(id);
+        Booking? booking = await _bookingRepository.FindByIdAsync(id);
         if (booking == null)
         {
             return null;
@@ -341,18 +234,14 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
         booking.IsCancelled = false;
         booking.CancelledAt = null;
-        await _db.SaveChangesAsync();
+        await _bookingRepository.UpdateAsync(booking);
 
         return ToDetailDto(booking);
     }
 
     public virtual async Task<BookingDetailDto?> AdminUpdateBookingAsync(int id, AdminUpdateBookingRequest req)
     {
-        Booking? booking = await _db.Bookings
-            .Include(b => b.Restaurant)
-            .Include(b => b.Section)
-            .Include(b => b.Table)
-            .FirstOrDefaultAsync(b => b.Id == id);
+        Booking? booking = await _bookingRepository.GetByIdAsync(id);
 
         if (booking == null)
         {
@@ -363,7 +252,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         Restaurant? restaurant = booking.Restaurant;
         if (req.RestaurantId.HasValue && req.RestaurantId.Value != booking.RestaurantId)
         {
-            Restaurant? newRestaurant = await _db.Restaurants.FindAsync(req.RestaurantId.Value);
+            Restaurant? newRestaurant = await _restaurantRepository.FindByIdAsync(req.RestaurantId.Value);
             if (newRestaurant == null)
             {
                 throw new ArgumentException("Invalid restaurant.");
@@ -377,9 +266,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         // Validate table exists and belongs to the (possibly new) restaurant
         if (req.TableId.HasValue && req.TableId.Value != booking.TableId)
         {
-            Table? table = await _db.Tables
-                .Include(t => t.Section)
-                .FirstOrDefaultAsync(t => t.Id == req.TableId.Value && t.Section!.RestaurantId == booking.RestaurantId);
+            Table? table = await _tableRepository.GetWithSectionForRestaurantAsync(req.TableId.Value, booking.RestaurantId);
 
             if (table == null)
             {
@@ -423,12 +310,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
             DateTime newStart = booking.Date.ToUniversalTime();
             DateTime newEnd = booking.EndTime ?? newStart.AddMinutes(durationMinutes);
 
-            bool conflict = await _db.Bookings.AnyAsync(b =>
-                b.Id != id && // Exclude the current booking itself
-                b.TableId == booking.TableId &&
-                !b.IsCancelled &&
-                b.Date < newEnd &&
-                (b.EndTime != null ? b.EndTime > newStart : b.Date.AddMinutes(durationMinutes) > newStart));
+            bool conflict = await _bookingRepository.HasConflictAsync(booking.TableId, newStart, newEnd, durationMinutes, id);
 
             if (conflict)
             {
@@ -441,7 +323,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
             int? resolvedTableId = req.TableId ?? booking.TableId;
             if (resolvedTableId.HasValue)
             {
-                Table? currentTable = await _db.Tables.FindAsync(resolvedTableId.Value);
+                Table? currentTable = await _tableRepository.FindByIdAsync(resolvedTableId.Value);
                 if (currentTable != null && req.Seats.Value > currentTable.Seats)
                 {
                     throw new InvalidOperationException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.");
@@ -462,44 +344,23 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
             booking.SpecialRequests = req.SpecialRequests;
         }
 
-        await _db.SaveChangesAsync();
+        await _bookingRepository.UpdateAsync(booking);
 
-        // Reload to get updated names
-        await _db.Entry(booking).Reference(b => b.Restaurant).LoadAsync();
-        await _db.Entry(booking).Reference(b => b.Section).LoadAsync();
-        await _db.Entry(booking).Reference(b => b.Table).LoadAsync();
-
-        return ToDetailDto(booking);
+        // Reload via the eager-loading GetByIdAsync to get updated names.
+        Booking? reloaded = await _bookingRepository.GetByIdAsync(id);
+        return reloaded == null ? ToDetailDto(booking) : ToDetailDto(reloaded);
     }
 
     public virtual async Task<List<LookupDto>> GetRestaurantsAsync()
     {
         DateTime nowUtc = DateTime.UtcNow;
-
-        return await _db.Restaurants
-            .OrderBy(r => r.Name)
-            .Select(r => new LookupDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                BookingsPausedUntil = r.BookingsPausedUntil,
-                IsArchived = r.IsArchived,
-                ActiveBookingsCount = _db.Bookings.Count(b =>
-                    b.RestaurantId == r.Id &&
-                    !b.IsCancelled &&
-                    b.Date <= nowUtc &&
-                    (b.EndTime.HasValue ? b.EndTime.Value > nowUtc : b.Date.AddMinutes(r.DefaultBookingDurationMinutes) > nowUtc))
-            })
-            .ToListAsync();
+        return await _restaurantRepository.GetAllWithActiveBookingsCountAsync(nowUtc);
     }
 
     public virtual async Task<List<LookupDto>> GetSectionsAsync(int restaurantId)
     {
-        return await _db.Sections
-            .Where(s => s.RestaurantId == restaurantId)
-            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
-            .Select(s => new LookupDto { Id = s.Id, Name = s.Name })
-            .ToListAsync();
+        List<Section> sections = await _sectionRepository.GetByRestaurantAsync(restaurantId);
+        return sections.Select(s => new LookupDto { Id = s.Id, Name = s.Name }).ToList();
     }
 
     /// <summary>
@@ -513,73 +374,40 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
     /// </summary>
     public virtual async Task<bool?> ReorderSectionsAsync(int restaurantId, List<int> sectionIds)
     {
-        bool restaurantExists = await _db.Restaurants.AnyAsync(r => r.Id == restaurantId);
-        if (!restaurantExists)
-        {
-            return null;
-        }
-
-        if (sectionIds == null)
-        {
-            return false;
-        }
-
-        List<Section> sections = await _db.Sections
-            .Where(s => s.RestaurantId == restaurantId)
-            .ToListAsync();
-
-        if (sectionIds.Count != sections.Count ||
-            sectionIds.Distinct().Count() != sectionIds.Count)
-        {
-            return false;
-        }
-
-        Dictionary<int, Section> sectionsById = sections.ToDictionary(s => s.Id);
-        if (sectionIds.Any(id => !sectionsById.ContainsKey(id)))
-        {
-            return false;
-        }
-
-        for (int i = 0; i < sectionIds.Count; i++)
-        {
-            sectionsById[sectionIds[i]].SortOrder = i;
-        }
-
-        await _db.SaveChangesAsync();
-        return true;
+        return await _sectionRepository.ReorderAsync(restaurantId, sectionIds);
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────
 
     public virtual async Task<bool> PauseRestaurantBookingsAsync(int restaurantId, int durationMinutes)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(restaurantId);
         if (restaurant == null)
         {
             return false;
         }
 
         restaurant.BookingsPausedUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.SaveChangesAsync();
         return true;
     }
 
     public virtual async Task<bool> UnpauseRestaurantBookingsAsync(int restaurantId)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(restaurantId);
         if (restaurant == null)
         {
             return false;
         }
 
         restaurant.BookingsPausedUntil = null;
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.SaveChangesAsync();
         return true;
     }
 
     public virtual async Task<List<BookingDetailDto>?> ExtendAllActiveBookingsAsync(int restaurantId, int extensionMinutes)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(restaurantId);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(restaurantId);
         if (restaurant == null)
         {
             return null;
@@ -588,15 +416,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         DateTime nowUtc = DateTime.UtcNow;
 
         // Active bookings are those that are currently in progress and not cancelled
-        List<Booking> activeBookings = await _db.Bookings
-            .Include(b => b.Restaurant)
-            .Include(b => b.Section)
-            .Include(b => b.Table)
-            .Where(b => b.RestaurantId == restaurantId &&
-                        !b.IsCancelled &&
-                        b.Date <= nowUtc &&
-                        (b.EndTime.HasValue ? b.EndTime.Value > nowUtc : b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes) > nowUtc))
-            .ToListAsync();
+        List<Booking> activeBookings = await _bookingRepository.GetInProgressForRestaurantAsync(restaurantId, nowUtc, restaurant.DefaultBookingDurationMinutes);
 
         foreach (Booking? booking in activeBookings)
         {
@@ -604,15 +424,16 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
             booking.EndTime = currentEndTime.AddMinutes(extensionMinutes);
         }
 
-        await _db.SaveChangesAsync();
+        // Single SaveChanges flushes every mutated EndTime — same DB round-trip count as the
+        // original implementation. The entities are already tracked on the shared DI-scoped DbContext.
+        await _bookingRepository.SaveChangesAsync();
         return activeBookings.Select(ToDetailDto).ToList();
     }
 
     public virtual async Task<RestaurantDto> CreateRestaurantAsync(string name, string? address)
     {
         var restaurant = new Restaurant { Name = name.Trim(), Address = address?.Trim() };
-        _db.Restaurants.Add(restaurant);
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.AddAsync(restaurant);
 
         return new RestaurantDto
         {
@@ -626,29 +447,31 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
     public virtual async Task<bool> SetArchivedAsync(int id, bool archived)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null)
         {
             return false;
         }
 
         restaurant.IsArchived = archived;
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.SaveChangesAsync();
         return true;
     }
 
     public virtual async Task<bool> DeleteRestaurantAsync(int id)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null)
         {
             return false;
         }
 
-        List<Booking> bookings = await _db.Bookings.Where(b => b.RestaurantId == id).ToListAsync();
-        _db.Bookings.RemoveRange(bookings);
-        _db.Restaurants.Remove(restaurant);
-        await _db.SaveChangesAsync();
+        // Cascade-delete all bookings for this restaurant (cancelled and active alike), then the restaurant row,
+        // in a single SaveChanges — faithful to the original ".Where(b => b.RestaurantId == id)" semantics.
+        List<Booking> bookings = (await _bookingRepository.GetBookingsByRestaurantIdAsync(id)).ToList();
+        _bookingRepository.RemoveRange(bookings);
+        _restaurantRepository.Remove(restaurant);
+        await _restaurantRepository.SaveChangesAsync();
         return true;
     }
 
@@ -656,11 +479,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
 
     public virtual async Task<List<SectionDto>?> GetTablesAsync(int restaurantId)
     {
-        List<Section> sections = await _db.Sections
-            .Where(s => s.RestaurantId == restaurantId)
-            .Include(s => s.Tables)
-            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
-            .ToListAsync();
+        List<Section> sections = await _sectionRepository.GetByRestaurantAsync(restaurantId, includeTables: true);
 
         if (sections.Count == 0)
         {

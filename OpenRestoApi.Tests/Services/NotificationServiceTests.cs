@@ -7,6 +7,7 @@ using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -36,7 +37,13 @@ public class NotificationServiceTests : IDisposable
     private NotificationService CreateService(VapidSettings? vapid = null)
     {
         vapid ??= new VapidSettings();
-        return new NotificationService(_db, Options.Create(vapid), NullLogger<NotificationService>.Instance);
+        return new NotificationService(
+            new AdminNotificationRepository(_db),
+            new AdminPushSubscriptionRepository(_db),
+            new TableRepository(_db),
+            new BookingRepository(_db),
+            Options.Create(vapid),
+            NullLogger<NotificationService>.Instance);
     }
 
     private async Task<Restaurant> SeedRestaurantAsync(int id = 1)

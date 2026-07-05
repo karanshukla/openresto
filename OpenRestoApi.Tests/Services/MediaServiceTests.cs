@@ -4,6 +4,7 @@ using Moq;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -36,7 +37,10 @@ public class MediaServiceTests : IDisposable
     {
         var env = new Mock<IWebHostEnvironment>();
         env.Setup(e => e.ContentRootPath).Returns(_tempRoot);
-        return new MediaService(db, env.Object);
+        return new MediaService(
+            new BrandSettingsRepository(db),
+            new RestaurantRepository(db),
+            env.Object);
     }
 
     private string MediaDir => Path.Combine(_tempRoot, "wwwroot", "media");

@@ -3,6 +3,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -21,6 +22,12 @@ public class WalkInTests
             .Options;
         return new AppDbContext(opts);
     }
+
+    private static RestaurantManagementService CreateService(AppDbContext db) => new(
+        new RestaurantRepository(db),
+        new SectionRepository(db),
+        new TableRepository(db),
+        new BookingRepository(db));
 
     // ── WalkInHelper ──────────────────────────────────────────────────────────
 
@@ -112,7 +119,7 @@ public class WalkInTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
@@ -136,7 +143,7 @@ public class WalkInTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInOnly = true, WalkInDays = "6,7" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
@@ -160,7 +167,7 @@ public class WalkInTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         await Assert.ThrowsAsync<ArgumentException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
@@ -175,7 +182,7 @@ public class WalkInTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInOnly = true, WalkInDays = "6" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "T2" });
 
         Assert.NotNull(dto);
@@ -190,7 +197,7 @@ public class WalkInTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInDays = "6,7" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.GetByIdAsync(1);
 
         Assert.NotNull(dto);

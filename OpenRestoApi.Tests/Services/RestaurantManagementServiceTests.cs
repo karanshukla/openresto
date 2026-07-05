@@ -3,6 +3,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -16,13 +17,19 @@ public class RestaurantManagementServiceTests
         return new AppDbContext(opts);
     }
 
+    private static RestaurantManagementService CreateService(AppDbContext db) => new(
+        new RestaurantRepository(db),
+        new SectionRepository(db),
+        new TableRepository(db),
+        new BookingRepository(db));
+
     [Fact]
     public async Task GetAllAsync_ReturnsAll()
     {
         using AppDbContext db = CreateDb(nameof(GetAllAsync_ReturnsAll));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R1" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         List<RestaurantDto> result = await svc.GetAllAsync();
         Assert.Single(result);
     }
@@ -31,7 +38,7 @@ public class RestaurantManagementServiceTests
     public async Task GetByIdAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsNull_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.GetByIdAsync(999));
     }
 
@@ -39,7 +46,7 @@ public class RestaurantManagementServiceTests
     public async Task CreateAsync_HandlesNestedEntities()
     {
         using AppDbContext db = CreateDb(nameof(CreateAsync_HandlesNestedEntities));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         var dto = new RestaurantDto
         {
             Name = "New",
@@ -57,7 +64,7 @@ public class RestaurantManagementServiceTests
         // bulk section-creation mapping, so every section created through this path defaulted
         // to SortOrder = 0 instead of reflecting the order the caller supplied them in.
         using AppDbContext db = CreateDb(nameof(CreateAsync_AssignsSequentialSortOrder_ToBulkCreatedSections));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         var dto = new RestaurantDto
         {
             Name = "New",
@@ -81,7 +88,7 @@ public class RestaurantManagementServiceTests
         // DefaultBookingDurationMinutes from the field-by-field entity mapping, silently
         // discarding any caller-supplied value and always persisting the entity default (60).
         using AppDbContext db = CreateDb(nameof(CreateAsync_CopiesDefaultBookingDurationMinutes_FromDto));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         var dto = new RestaurantDto { Name = "New", DefaultBookingDurationMinutes = 90 };
 
         RestaurantDto result = await svc.CreateAsync(dto);
@@ -95,7 +102,7 @@ public class RestaurantManagementServiceTests
     public async Task UpdateAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.UpdateAsync(999, new UpdateRestaurantRequest()));
     }
 
@@ -105,7 +112,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_UpdatesFields));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "Old", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "New",
@@ -126,7 +133,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_StoresPerDayHours_AndReturnsResolvedWeek));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         var hours = Enumerable.Range(1, 7)
             .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "20:00" })
@@ -156,7 +163,7 @@ public class RestaurantManagementServiceTests
             OpenHoursJson = """{"6":{"open":"11:00","close":"23:00"}}"""
         });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         var uniform = Enumerable.Range(1, 7)
             .Select(d => new DayHoursDto { Day = d, Open = "08:00", Close = "18:00" })
@@ -181,7 +188,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_Throws_WhenOpenHoursInvalid));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         var invalid = new List<DayHoursDto> { new() { Day = 9, Open = "10:00", Close = "20:00" } };
 
@@ -203,7 +210,7 @@ public class RestaurantManagementServiceTests
             OpenHoursJson = """{"6":{"open":"11:00","close":"23:00"}}"""
         });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         RestaurantDto? dto = await svc.GetByIdAsync(1);
 
@@ -221,7 +228,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsDefaultBookingDurationMinutes));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", DefaultBookingDurationMinutes = 90 });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
         Assert.Equal(90, result!.DefaultBookingDurationMinutes);
     }
@@ -239,7 +246,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_UpdatesDefaultBookingDurationMinutes));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", DefaultBookingDurationMinutes = 120 });
 
@@ -254,7 +261,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_KeepsExistingDuration_WhenNotProvided));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", DefaultBookingDurationMinutes = 90 });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R" });
 
@@ -271,7 +278,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb($"{nameof(UpdateAsync_Throws_WhenDurationNotInAllowedSet)}_{invalidDuration}");
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", DefaultBookingDurationMinutes = invalidDuration }));
@@ -287,7 +294,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb($"{nameof(UpdateAsync_Accepts_WhenDurationInAllowedSet)}_{validDuration}");
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
 
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", DefaultBookingDurationMinutes = validDuration });
 
@@ -298,7 +305,7 @@ public class RestaurantManagementServiceTests
     public async Task AddSectionAsync_ReturnsNull_WhenRestaurantNotFound()
     {
         using AppDbContext db = CreateDb(nameof(AddSectionAsync_ReturnsNull_WhenRestaurantNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.AddSectionAsync(999, "S1"));
     }
 
@@ -306,7 +313,7 @@ public class RestaurantManagementServiceTests
     public async Task UpdateSectionAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(UpdateSectionAsync_ReturnsNull_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.UpdateSectionAsync(1, 1, "New"));
     }
 
@@ -314,7 +321,7 @@ public class RestaurantManagementServiceTests
     public async Task DeleteSectionAsync_ReturnsFalse_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(DeleteSectionAsync_ReturnsFalse_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.False(await svc.DeleteSectionAsync(1, 1));
     }
 
@@ -322,7 +329,7 @@ public class RestaurantManagementServiceTests
     public async Task AddTableAsync_ReturnsNull_WhenSectionNotFound()
     {
         using AppDbContext db = CreateDb(nameof(AddTableAsync_ReturnsNull_WhenSectionNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.AddTableAsync(1, 1, "T1", 4));
     }
 
@@ -330,7 +337,7 @@ public class RestaurantManagementServiceTests
     public async Task UpdateTableAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(UpdateTableAsync_ReturnsNull_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.UpdateTableAsync(1, 1, 1, "New", 2));
     }
 
@@ -338,7 +345,7 @@ public class RestaurantManagementServiceTests
     public async Task DeleteTableAsync_ReturnsFalse_WhenNotFound()
     {
         using AppDbContext db = CreateDb(nameof(DeleteTableAsync_ReturnsFalse_WhenNotFound));
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.False(await svc.DeleteTableAsync(1, 1, 1));
     }
 
@@ -349,7 +356,7 @@ public class RestaurantManagementServiceTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "Active" });
         db.Restaurants.Add(new Restaurant { Id = 2, Name = "Archived", IsArchived = true });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         List<RestaurantDto> result = await svc.GetAllAsync();
         Assert.Single(result);
         Assert.Equal("Active", result[0].Name);
@@ -361,7 +368,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsDto_WhenFound));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "Found", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
         Assert.NotNull(result);
         Assert.Equal("Found", result.Name);
@@ -373,7 +380,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsNull_WhenArchived));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "Archived", IsArchived = true });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         Assert.Null(await svc.GetByIdAsync(1));
     }
 
@@ -383,7 +390,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_SplitsTags));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Tags = "Italian, Pizza, Casual" });
         Assert.Equal(3, result!.Tags.Length);
         Assert.Contains("Italian", result.Tags);
@@ -395,7 +402,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(UpdateAsync_HandlesEmptyTags));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Tags = "old", Timezone = "UTC" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Tags = "" });
         Assert.Empty(result!.Tags);
     }
@@ -406,7 +413,7 @@ public class RestaurantManagementServiceTests
         using AppDbContext db = CreateDb(nameof(AddSectionAsync_ReturnsSection_WhenRestaurantExists));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         SectionDto? result = await svc.AddSectionAsync(1, "Patio");
         Assert.NotNull(result);
         Assert.Equal("Patio", result.Name);
@@ -420,7 +427,7 @@ public class RestaurantManagementServiceTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
         db.Sections.Add(new Section { Id = 1, Name = "Old", RestaurantId = 1 });
         await db.SaveChangesAsync();
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         SectionDto? result = await svc.UpdateSectionAsync(1, 1, "New");
         Assert.NotNull(result);
         Assert.Equal("New", result.Name);
@@ -436,7 +443,7 @@ public class RestaurantManagementServiceTests
         db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = DateTime.UtcNow, BookingRef = "REF1" });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         bool result = await svc.DeleteSectionAsync(1, 1);
 
         Assert.True(result);
@@ -454,7 +461,7 @@ public class RestaurantManagementServiceTests
         db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         TableDto? result = await svc.AddTableAsync(1, 1, "T1", 4);
         Assert.NotNull(result);
         Assert.Equal("T1", result.Name);
@@ -470,7 +477,7 @@ public class RestaurantManagementServiceTests
         db.Tables.Add(new Table { Id = 1, Name = "Old", Seats = 2, SectionId = 1 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         TableDto? result = await svc.UpdateTableAsync(1, 1, 1, "New", 6);
         Assert.NotNull(result);
         Assert.Equal("New", result.Name);
@@ -487,7 +494,7 @@ public class RestaurantManagementServiceTests
         db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = DateTime.UtcNow, BookingRef = "REF1" });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         bool result = await svc.DeleteTableAsync(1, 1, 1);
 
         Assert.True(result);
@@ -510,7 +517,7 @@ public class RestaurantManagementServiceTests
         db.Sections.Add(new Section { Id = 3, Name = "Middle", RestaurantId = 1, SortOrder = 1 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
 
         Assert.NotNull(result);
@@ -526,7 +533,7 @@ public class RestaurantManagementServiceTests
         db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
 
         Assert.Equal(["First", "Second"], result!.Sections.Select(s => s.Name));
@@ -541,7 +548,7 @@ public class RestaurantManagementServiceTests
         db.Sections.Add(new Section { Id = 2, Name = "Existing2", RestaurantId = 1, SortOrder = 1 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         SectionDto? result = await svc.AddSectionAsync(1, "New");
 
         Assert.NotNull(result);
@@ -557,7 +564,7 @@ public class RestaurantManagementServiceTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         SectionDto? result = await svc.AddSectionAsync(1, "Only");
 
         Assert.NotNull(result);
@@ -571,7 +578,7 @@ public class RestaurantManagementServiceTests
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
 
         Assert.NotNull(result);
@@ -586,7 +593,7 @@ public class RestaurantManagementServiceTests
         db.Sections.Add(new Section { Id = 1, Name = "Only", RestaurantId = 1, SortOrder = 0 });
         await db.SaveChangesAsync();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? result = await svc.GetByIdAsync(1);
 
         Assert.NotNull(result);

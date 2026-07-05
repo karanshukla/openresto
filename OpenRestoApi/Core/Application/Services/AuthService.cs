@@ -2,20 +2,19 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
 public enum PvqVerifyStatus { NotConfigured, WrongAnswer, Success }
 public record PvqVerifyOutcome(PvqVerifyStatus Status, string? ResetToken = null);
 
-public class AuthService(AppDbContext db, IConfiguration config)
+public class AuthService(IAdminCredentialRepository credentialRepository, IConfiguration config)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IAdminCredentialRepository _credentialRepository = credentialRepository;
     private readonly IConfiguration _config = config;
 
     public virtual async Task<string?> LoginAsync(string email, string password)
@@ -34,7 +33,7 @@ public class AuthService(AppDbContext db, IConfiguration config)
         if (!VerifyPassword(currentPassword, cred.PasswordHash, cred.PasswordSalt))
             return false;
         (cred.PasswordHash, cred.PasswordSalt) = HashPassword(newPassword);
-        await _db.SaveChangesAsync();
+        await _credentialRepository.SaveChangesAsync();
         return true;
     }
 
@@ -47,13 +46,13 @@ public class AuthService(AppDbContext db, IConfiguration config)
         if (string.Equals(normalizedEmail, cred.Email, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("New email must be different from the current email.");
         cred.Email = normalizedEmail;
-        await _db.SaveChangesAsync();
+        await _credentialRepository.SaveChangesAsync();
         return GenerateJwt(cred.Email);
     }
 
     public virtual async Task<PvqStatusDto> GetPvqStatusAsync()
     {
-        AdminCredential? cred = await _db.AdminCredentials.FirstOrDefaultAsync();
+        AdminCredential? cred = await _credentialRepository.GetAsync();
         return new PvqStatusDto
         {
             IsConfigured = cred?.PvqQuestion != null,
@@ -66,13 +65,12 @@ public class AuthService(AppDbContext db, IConfiguration config)
         AdminCredential cred = await GetOrCreateCredentialAsync();
         (cred.PvqAnswerHash, cred.PvqAnswerSalt) = HashPassword(NormaliseAnswer(answer));
         cred.PvqQuestion = question.Trim();
-        await _db.SaveChangesAsync();
+        await _credentialRepository.SaveChangesAsync();
     }
 
     public virtual async Task<PvqVerifyOutcome> VerifyPvqAsync(string email, string answer)
     {
-        AdminCredential? cred = (await _db.AdminCredentials.ToListAsync())
-            .FirstOrDefault(c => string.Equals(c.Email, email, StringComparison.OrdinalIgnoreCase));
+        AdminCredential? cred = await _credentialRepository.GetByEmailAsync(email);
 
         if (cred?.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
             return new PvqVerifyOutcome(PvqVerifyStatus.NotConfigured);
@@ -83,26 +81,25 @@ public class AuthService(AppDbContext db, IConfiguration config)
         string token = Guid.NewGuid().ToString("N");
         cred.ResetToken = token;
         cred.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
-        await _db.SaveChangesAsync();
+        await _credentialRepository.SaveChangesAsync();
         return new PvqVerifyOutcome(PvqVerifyStatus.Success, token);
     }
 
     public virtual async Task<bool> ResetPasswordAsync(string resetToken, string newPassword)
     {
-        AdminCredential? cred = await _db.AdminCredentials
-            .FirstOrDefaultAsync(c => c.ResetToken == resetToken);
+        AdminCredential? cred = await _credentialRepository.GetByResetTokenAsync(resetToken);
         if (cred == null || cred.ResetTokenExpiry < DateTime.UtcNow)
             return false;
         (cred.PasswordHash, cred.PasswordSalt) = HashPassword(newPassword);
         cred.ResetToken = null;
         cred.ResetTokenExpiry = null;
-        await _db.SaveChangesAsync();
+        await _credentialRepository.SaveChangesAsync();
         return true;
     }
 
     private async Task<AdminCredential> GetOrCreateCredentialAsync()
     {
-        AdminCredential? cred = await _db.AdminCredentials.FirstOrDefaultAsync();
+        AdminCredential? cred = await _credentialRepository.GetAsync();
         if (cred != null) return cred;
 
         string? configEmail = _config["Admin:Email"];
@@ -121,8 +118,7 @@ public class AuthService(AppDbContext db, IConfiguration config)
 
         (string? hash, string? salt) = HashPassword(password);
         cred = new AdminCredential { Email = email, PasswordHash = hash, PasswordSalt = salt };
-        _db.AdminCredentials.Add(cred);
-        await _db.SaveChangesAsync();
+        await _credentialRepository.AddAsync(cred);
         return cred;
     }
 

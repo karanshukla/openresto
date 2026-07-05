@@ -1,20 +1,16 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class HighlightService(AppDbContext db)
+public class HighlightService(IHighlightRepository highlightRepository)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IHighlightRepository _highlightRepository = highlightRepository;
 
     public async Task<List<HighlightDto>> GetAllAsync()
     {
-        List<RestaurantHighlight> items = await _db.Highlights
-            .OrderBy(h => h.SortOrder)
-            .ThenBy(h => h.Id)
-            .ToListAsync();
+        List<RestaurantHighlight> items = await _highlightRepository.GetAllAsync();
         return items.Select(ToDto).ToList();
     }
 
@@ -27,14 +23,13 @@ public class HighlightService(AppDbContext db)
             IconKey = req.IconKey,
             SortOrder = req.SortOrder,
         };
-        _db.Highlights.Add(entity);
-        await _db.SaveChangesAsync();
+        await _highlightRepository.AddAsync(entity);
         return ToDto(entity);
     }
 
     public async Task<HighlightDto?> UpdateAsync(int id, UpdateHighlightRequest req)
     {
-        RestaurantHighlight? entity = await _db.Highlights.FindAsync(id);
+        RestaurantHighlight? entity = await _highlightRepository.FindByIdAsync(id);
         if (entity == null)
         {
             return null;
@@ -43,19 +38,19 @@ public class HighlightService(AppDbContext db)
         entity.Body = req.Body;
         entity.IconKey = req.IconKey;
         entity.SortOrder = req.SortOrder;
-        await _db.SaveChangesAsync();
+        await _highlightRepository.SaveChangesAsync();
         return ToDto(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        RestaurantHighlight? entity = await _db.Highlights.FindAsync(id);
+        RestaurantHighlight? entity = await _highlightRepository.FindByIdAsync(id);
         if (entity == null)
         {
             return false;
         }
-        _db.Highlights.Remove(entity);
-        await _db.SaveChangesAsync();
+        _highlightRepository.Remove(entity);
+        await _highlightRepository.SaveChangesAsync();
         return true;
     }
 

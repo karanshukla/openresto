@@ -15,9 +15,9 @@ public class AdminControllerUnitTests
 
     public AdminControllerUnitTests()
     {
-        // AdminService needs AppDbContext and IHoldService.
+        // AdminService needs 5 repositories + IHoldService + INotificationQueue?.
         // We can pass nulls if we only mock the virtual methods.
-        _mockAdminService = new Mock<AdminService>(null!, null!, null!);
+        _mockAdminService = new Mock<AdminService>(null!, null!, null!, null!, null!, null!, null!);
         _mockEmailService = new Mock<IEmailService>();
         _controller = new AdminController(_mockAdminService.Object, _mockEmailService.Object);
     }

@@ -38,7 +38,7 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdService,
             new BookingMapper(),
-            new BrandService(db, config.Object),
+            new BrandService(new BrandSettingsRepository(db), config.Object),
             emailSettingsService,
             emailService);
     }
@@ -721,7 +721,7 @@ public class BookingServiceTests
         db.SaveChanges();
 
         var emailServiceMock = new Mock<IEmailService>();
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -762,7 +762,7 @@ public class BookingServiceTests
             .Callback<string, string, string>((_, _, body) => capturedBody = body)
             .Returns(Task.CompletedTask);
 
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -803,7 +803,7 @@ public class BookingServiceTests
             .Callback<string, string, string>((_, _, body) => capturedBody = body)
             .Returns(Task.CompletedTask);
 
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -844,7 +844,7 @@ public class BookingServiceTests
             .Callback<string, string, string>((_, _, body) => capturedBody = body)
             .Returns(Task.CompletedTask);
 
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -878,7 +878,7 @@ public class BookingServiceTests
         db.SaveChanges();
 
         var emailServiceMock = new Mock<IEmailService>();
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -936,7 +936,7 @@ public class BookingServiceTests
             .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new InvalidOperationException("SMTP failure"));
 
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 
@@ -970,7 +970,7 @@ public class BookingServiceTests
         db.SaveChanges();
 
         var emailServiceMock = new Mock<IEmailService>();
-        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!);
+        var emailSettingsService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         emailSettingsService.Setup(s => s.GetAsync()).ReturnsAsync(
             await db.Set<EmailSettings>().FirstAsync());
 

@@ -5,7 +5,6 @@ using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
@@ -19,7 +18,7 @@ public class BookingService(
     BrandService brandService,
     EmailSettingsService? emailSettingsService = null,
     IEmailService? emailService = null,
-    AppDbContext? db = null,
+    IEmailFailureRepository? emailFailureRepository = null,
     INotificationQueue? notificationQueue = null)
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
@@ -31,7 +30,7 @@ public class BookingService(
     private readonly BrandService _brandService = brandService;
     private readonly EmailSettingsService? _emailSettingsService = emailSettingsService;
     private readonly IEmailService? _emailService = emailService;
-    private readonly AppDbContext? _db = db;
+    private readonly IEmailFailureRepository? _emailFailureRepository = emailFailureRepository;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
 
     /// <summary>
@@ -144,16 +143,15 @@ public class BookingService(
             catch (Exception ex)
             {
                 Console.WriteLine($"[BookingService] Confirmation email failed for ref {newBooking.BookingRef}: {ex.Message}");
-                if (_db != null)
+                if (_emailFailureRepository != null)
                 {
-                    _db.EmailFailures.Add(new EmailFailure
+                    await _emailFailureRepository.AddAsync(new EmailFailure
                     {
                         BookingRef = newBooking.BookingRef,
                         RecipientEmail = newBooking.CustomerEmail,
                         ErrorMessage = ex.Message,
                         AttemptedAt = DateTime.UtcNow,
                     });
-                    await _db.SaveChangesAsync();
                 }
             }
         }
@@ -267,7 +265,7 @@ public class BookingService(
                """
             : "";
 
-        string tableLabel = booking.Table?.Name ?? (booking.TableId.HasValue ? $"Table #{booking.TableId}" : null);
+        string? tableLabel = booking.Table?.Name ?? (booking.TableId.HasValue ? $"Table #{booking.TableId}" : null);
         string tableHtml = tableLabel != null
             ? $"""
                <tr>

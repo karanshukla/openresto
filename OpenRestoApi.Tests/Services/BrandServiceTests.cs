@@ -4,6 +4,7 @@ using Moq;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -20,7 +21,12 @@ public class BrandServiceTests
     private static BrandService CreateService(AppDbContext db)
     {
         var config = new Mock<IConfiguration>();
-        return new BrandService(db, config.Object);
+        return new BrandService(new BrandSettingsRepository(db), config.Object);
+    }
+
+    private static BrandService CreateService(AppDbContext db, IConfiguration config)
+    {
+        return new BrandService(new BrandSettingsRepository(db), config);
     }
 
     [Fact]
@@ -186,7 +192,7 @@ public class BrandServiceTests
     {
         var config = new Mock<IConfiguration>();
         config.Setup(c => c["Website:Url"]).Returns("https://configured.example.com");
-        var svc = new BrandService(CreateDb(nameof(GetWebsiteUrl_FallsBackToConfig_WhenBrandUrlMissing)), config.Object);
+        var svc = CreateService(CreateDb(nameof(GetWebsiteUrl_FallsBackToConfig_WhenBrandUrlMissing)), config.Object);
 
         string result = svc.GetWebsiteUrl(null);
 
@@ -198,7 +204,7 @@ public class BrandServiceTests
     {
         var config = new Mock<IConfiguration>();
         config.Setup(c => c["Cors:Origins"]).Returns("https://cors-a.example.com, https://cors-b.example.com");
-        var svc = new BrandService(CreateDb(nameof(GetWebsiteUrl_FallsBackToFirstCorsOrigin_WhenConfigMissing)), config.Object);
+        var svc = CreateService(CreateDb(nameof(GetWebsiteUrl_FallsBackToFirstCorsOrigin_WhenConfigMissing)), config.Object);
 
         string result = svc.GetWebsiteUrl(null);
 

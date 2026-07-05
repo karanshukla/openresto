@@ -16,7 +16,7 @@ public class MediaControllerUnitTests
     {
         var env = new Mock<IWebHostEnvironment>();
         env.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
-        _mockService = new Mock<MediaService>(null!, env.Object);
+        _mockService = new Mock<MediaService>(null!, null!, env.Object);
         _controller = new MediaController(_mockService.Object);
     }
 

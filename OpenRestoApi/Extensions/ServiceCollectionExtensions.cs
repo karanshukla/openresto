@@ -158,9 +158,18 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IHoldService, HoldService>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingFilterRepository, BookingFilterRepository>();
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<ISectionRepository, SectionRepository>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+        services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
+        services.AddScoped<IAdminPushSubscriptionRepository, AdminPushSubscriptionRepository>();
+        services.AddScoped<IAdminCredentialRepository, AdminCredentialRepository>();
+        services.AddScoped<IBrandSettingsRepository, BrandSettingsRepository>();
+        services.AddScoped<IEmailSettingsRepository, EmailSettingsRepository>();
+        services.AddScoped<IEmailFailureRepository, EmailFailureRepository>();
+        services.AddScoped<IHighlightRepository, HighlightRepository>();
+        services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
 
         services.AddScoped<AuthService>();
         services.AddScoped<BookingService>();

@@ -1,20 +1,27 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 using WebPush;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidOptions, ILogger<NotificationService> logger) : INotificationService
+public class NotificationService(
+    IAdminNotificationRepository notificationRepository,
+    IAdminPushSubscriptionRepository pushSubscriptionRepository,
+    ITableRepository tableRepository,
+    IBookingRepository bookingRepository,
+    IOptions<VapidSettings> vapidOptions,
+    ILogger<NotificationService> logger) : INotificationService
 {
-    private readonly AppDbContext _db = db;
+    private readonly IAdminNotificationRepository _notificationRepository = notificationRepository;
+    private readonly IAdminPushSubscriptionRepository _pushSubscriptionRepository = pushSubscriptionRepository;
+    private readonly ITableRepository _tableRepository = tableRepository;
+    private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly VapidSettings _vapid = vapidOptions.Value;
     private readonly ILogger<NotificationService> _log = logger;
 
@@ -49,8 +56,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             IsRead = false,
             CreatedAt = DateTime.UtcNow,
         };
-        _db.AdminNotifications.Add(notification);
-        await _db.SaveChangesAsync();
+        await _notificationRepository.AddAsync(notification);
         _log.LogInformation("[Notif] BookingCreated saved id={Id}", notification.Id);
 
         string localTime = FormatUtcAsLocalTime(booking.Date);
@@ -85,8 +91,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             IsRead = false,
             CreatedAt = DateTime.UtcNow,
         };
-        _db.AdminNotifications.Add(notification);
-        await _db.SaveChangesAsync();
+        await _notificationRepository.AddAsync(notification);
         _log.LogInformation("[Notif] BookingCancelled saved id={Id}", notification.Id);
 
         string localTime = FormatUtcAsLocalTime(booking.Date);
@@ -109,8 +114,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
         DateTime dayStart = bookingDate.Date;
         DateTime dayEnd = dayStart.AddDays(1);
 
-        int totalTables = await _db.Tables
-            .CountAsync(t => t.Section!.RestaurantId == restaurantId);
+        int totalTables = await _tableRepository.CountByRestaurantAsync(restaurantId);
 
         if (totalTables == 0)
         {
@@ -118,16 +122,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             return;
         }
 
-        int bookedTables = await _db.Bookings
-            .Where(b =>
-                b.RestaurantId == restaurantId &&
-                !b.IsCancelled &&
-                b.TableId != null &&
-                b.Date >= dayStart &&
-                b.Date < dayEnd)
-            .Select(b => b.TableId)
-            .Distinct()
-            .CountAsync();
+        int bookedTables = await _bookingRepository.CountDistinctBookedTablesAsync(restaurantId, dayStart, dayEnd);
 
         double ratio = (double)bookedTables / totalTables;
         double previousRatio = (double)(bookedTables - 1) / totalTables;
@@ -139,11 +134,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
         if (ratio < _capacityThreshold || previousRatio >= _capacityThreshold) return;
 
         // Deduplicate: don't fire if we already have a RestaurantNearlyFull notification for today
-        bool alreadyFired = await _db.AdminNotifications.AnyAsync(n =>
-            n.RestaurantId == restaurantId &&
-            n.Type == NotificationType.RestaurantNearlyFull &&
-            n.BookingDate >= dayStart &&
-            n.BookingDate < dayEnd);
+        bool alreadyFired = await _notificationRepository.ExistsNearlyFullForDayAsync(restaurantId, dayStart, dayEnd);
 
         if (alreadyFired)
         {
@@ -164,8 +155,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             IsRead = false,
             CreatedAt = DateTime.UtcNow,
         };
-        _db.AdminNotifications.Add(notification);
-        await _db.SaveChangesAsync();
+        await _notificationRepository.AddAsync(notification);
 
         await SendPushAsync(
             restaurantId,
@@ -185,46 +175,18 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
     public async Task<(List<AdminNotificationDto> Items, int TotalCount)> GetNotificationsAsync(
         int? restaurantId, string? type, bool? unreadOnly, int page, int pageSize)
     {
-        IQueryable<AdminNotification> q = _db.AdminNotifications.AsQueryable();
-
-        if (restaurantId.HasValue)
-            q = q.Where(n => n.RestaurantId == restaurantId.Value);
-
-        if (!string.IsNullOrWhiteSpace(type))
-            q = q.Where(n => n.Type == type);
-
-        if (unreadOnly == true)
-            q = q.Where(n => !n.IsRead);
-
-        q = q.OrderByDescending(n => n.CreatedAt);
-
-        int total = await q.CountAsync();
-        List<AdminNotification> items = await q
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
+        (List<AdminNotification> items, int total) = await _notificationRepository.QueryPagedAsync(restaurantId, type, unreadOnly, page, pageSize);
         return (items.Select(ToDto).ToList(), total);
     }
 
     public async Task<int> GetUnreadCountAsync(int? restaurantId) =>
-        await _db.AdminNotifications.CountAsync(n =>
-            (!restaurantId.HasValue || n.RestaurantId == restaurantId.Value) && !n.IsRead);
+        await _notificationRepository.CountUnreadAsync(restaurantId);
 
-    public async Task MarkReadAsync(int notificationId)
-    {
-        AdminNotification? n = await _db.AdminNotifications.FindAsync(notificationId);
-        if (n is { IsRead: false })
-        {
-            n.IsRead = true;
-            await _db.SaveChangesAsync();
-        }
-    }
+    public async Task MarkReadAsync(int notificationId) =>
+        await _notificationRepository.MarkReadAsync(notificationId);
 
     public async Task MarkAllReadAsync(int restaurantId) =>
-        await _db.AdminNotifications
-            .Where(n => n.RestaurantId == restaurantId && !n.IsRead)
-            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
+        await _notificationRepository.MarkAllReadAsync(restaurantId);
 
     // ── Push subscriptions ────────────────────────────────────────────────────
 
@@ -232,8 +194,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
     {
         // Deduplicate per (endpoint, restaurantId) so the same browser can receive
         // notifications for multiple restaurants independently.
-        AdminPushSubscription? existing = await _db.AdminPushSubscriptions
-            .FirstOrDefaultAsync(s => s.Endpoint == request.Endpoint && s.RestaurantId == restaurantId);
+        AdminPushSubscription? existing = await _pushSubscriptionRepository.GetByEndpointAndRestaurantAsync(request.Endpoint, restaurantId);
 
         if (existing is not null)
         {
@@ -241,10 +202,11 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             existing.Auth = request.Auth;
             existing.UserAgent = request.UserAgent;
             _log.LogInformation("[Push] Updated subscription id={Id} for restaurant {RestaurantId}", existing.Id, restaurantId);
+            await _pushSubscriptionRepository.SaveChangesAsync();
         }
         else
         {
-            _db.AdminPushSubscriptions.Add(new AdminPushSubscription
+            await _pushSubscriptionRepository.AddAsync(new AdminPushSubscription
             {
                 RestaurantId = restaurantId,
                 Endpoint = request.Endpoint,
@@ -255,20 +217,17 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             });
             _log.LogInformation("[Push] New subscription for restaurant {RestaurantId}", restaurantId);
         }
-        await _db.SaveChangesAsync();
     }
 
     public async Task UnsubscribeAsync(string endpoint)
     {
         // Remove all restaurant rows for this endpoint so a single unsubscribe
         // clears push across all locations.
-        List<AdminPushSubscription> subs = await _db.AdminPushSubscriptions
-            .Where(s => s.Endpoint == endpoint)
-            .ToListAsync();
+        List<AdminPushSubscription> subs = await _pushSubscriptionRepository.GetByEndpointAsync(endpoint);
         if (subs.Count > 0)
         {
-            _db.AdminPushSubscriptions.RemoveRange(subs);
-            await _db.SaveChangesAsync();
+            _pushSubscriptionRepository.RemoveRange(subs);
+            await _pushSubscriptionRepository.SaveChangesAsync();
             _log.LogInformation("[Push] Unsubscribed {Count} subscription(s)", subs.Count);
         }
         else
@@ -277,44 +236,14 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
         }
     }
 
-    public async Task DeleteByIdAsync(int notificationId)
-    {
-        AdminNotification? n = await _db.AdminNotifications.FindAsync(notificationId);
-        if (n is not null)
-        {
-            _db.AdminNotifications.Remove(n);
-            await _db.SaveChangesAsync();
-        }
-    }
+    public async Task DeleteByIdAsync(int notificationId) =>
+        await _notificationRepository.DeleteByIdAsync(notificationId);
 
-    public async Task DeleteByIdsAsync(List<int> notificationIds)
-    {
-        List<AdminNotification> notifications = await _db.AdminNotifications
-            .Where(n => notificationIds.Contains(n.Id))
-            .ToListAsync();
+    public async Task DeleteByIdsAsync(List<int> notificationIds) =>
+        await _notificationRepository.DeleteByIdsAsync(notificationIds);
 
-        if (notifications.Count > 0)
-        {
-            _db.AdminNotifications.RemoveRange(notifications);
-            await _db.SaveChangesAsync();
-        }
-    }
-
-    public async Task DeleteAllAsync(int? restaurantId, string? type, bool? unreadOnly)
-    {
-        IQueryable<AdminNotification> q = _db.AdminNotifications.AsQueryable();
-
-        if (restaurantId.HasValue)
-            q = q.Where(n => n.RestaurantId == restaurantId.Value);
-
-        if (!string.IsNullOrWhiteSpace(type))
-            q = q.Where(n => n.Type == type);
-
-        if (unreadOnly == true)
-            q = q.Where(n => !n.IsRead);
-
-        await q.ExecuteDeleteAsync();
-    }
+    public async Task DeleteAllAsync(int? restaurantId, string? type, bool? unreadOnly) =>
+        await _notificationRepository.DeleteAllAsync(restaurantId, type, unreadOnly);
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
@@ -326,9 +255,7 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             return;
         }
 
-        List<AdminPushSubscription> subscriptions = await _db.AdminPushSubscriptions
-            .Where(s => s.RestaurantId == restaurantId)
-            .ToListAsync();
+        List<AdminPushSubscription> subscriptions = await _pushSubscriptionRepository.GetByRestaurantAsync(restaurantId);
 
         _log.LogInformation("[Push] Sending notificationId={NotifId} to {Count} subscription(s) for restaurant {RestaurantId}",
             notificationId, subscriptions.Count, restaurantId);
@@ -366,20 +293,22 @@ public class NotificationService(AppDbContext db, IOptions<VapidSettings> vapidO
             }
         }
 
+        // Mirror the original single-SaveChangesAsync: stage stale removals + the notification
+        // push-outcome update on the shared DbContext, then flush once.
         if (stale.Count > 0)
         {
-            _db.AdminPushSubscriptions.RemoveRange(stale);
+            _pushSubscriptionRepository.RemoveRange(stale);
         }
 
         // Update the notification record with push outcome
-        AdminNotification? record = await _db.AdminNotifications.FindAsync(notificationId);
+        AdminNotification? record = await _notificationRepository.FindByIdAsync(notificationId);
         if (record is not null)
         {
             record.PushSentAt = sentAt;
             record.PushError = lastError;
         }
 
-        await _db.SaveChangesAsync();
+        await _notificationRepository.SaveChangesAsync();
     }
 
     private static string FormatUtcAsLocalTime(DateTime utc) =>

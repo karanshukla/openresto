@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -23,7 +24,11 @@ public class EmailSettingsServiceTests
     {
         protectorMock ??= new Mock<CredentialProtector>(Mock.Of<IDataProtectionProvider>());
         emailMock ??= new Mock<IEmailService>();
-        return new EmailSettingsService(db, protectorMock.Object, emailMock.Object);
+        return new EmailSettingsService(
+            new EmailSettingsRepository(db),
+            new EmailFailureRepository(db),
+            protectorMock.Object,
+            emailMock.Object);
     }
 
     [Fact]

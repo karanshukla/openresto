@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -37,7 +38,13 @@ public class AdminServiceTests : IDisposable
 
     private AdminService CreateService()
     {
-        return new AdminService(_db, _holdServiceMock.Object);
+        return new AdminService(
+            new BookingRepository(_db),
+            new BookingFilterRepository(_db),
+            new RestaurantRepository(_db),
+            new SectionRepository(_db),
+            new TableRepository(_db),
+            _holdServiceMock.Object);
     }
 
     private void SeedBase(int restaurantId = 1)

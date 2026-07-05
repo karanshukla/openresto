@@ -1,12 +1,15 @@
-using Microsoft.EntityFrameworkCore;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class MediaService(AppDbContext db, IWebHostEnvironment env)
+public class MediaService(
+    IBrandSettingsRepository brandRepository,
+    IRestaurantRepository restaurantRepository,
+    IWebHostEnvironment env)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IBrandSettingsRepository _brandRepository = brandRepository;
+    private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly string _mediaDir = Path.Combine(env.ContentRootPath, "wwwroot", "media");
 
     public virtual async Task<string> UploadHeroAsync(Stream fileStream, string contentType)
@@ -21,34 +24,43 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
 
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 
-        BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
+        BrandSettings? brand = await _brandRepository.GetAsync();
+        bool isNew = false;
         if (brand == null)
         {
             brand = new BrandSettings();
-            _db.Set<BrandSettings>().Add(brand);
+            isNew = true;
         }
         brand.HeaderImageUrl = url;
-        await _db.SaveChangesAsync();
+
+        if (isNew)
+        {
+            await _brandRepository.AddAsync(brand);
+        }
+        else
+        {
+            await _brandRepository.SaveChangesAsync();
+        }
         return url;
     }
 
     public virtual async Task DeleteHeroAsync()
     {
-        BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
+        BrandSettings? brand = await _brandRepository.GetAsync();
         if (brand?.HeaderImageUrl != null)
         {
             // Clear the persisted reference first so a missing/invalid physical file
             // never blocks removal. Best-effort deletion of the file on disk.
             string url = brand.HeaderImageUrl;
             brand.HeaderImageUrl = null;
-            await _db.SaveChangesAsync();
+            await _brandRepository.SaveChangesAsync();
             TryDeleteFile(url);
         }
     }
 
     public virtual async Task<string?> UploadLocationAsync(int id, Stream fileStream, string contentType)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null) return null;
 
         EnsureMediaDir();
@@ -61,13 +73,13 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
 
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.ImageUrl = url;
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.SaveChangesAsync();
         return url;
     }
 
     public virtual async Task<bool> DeleteLocationAsync(int id)
     {
-        Restaurant? restaurant = await _db.Restaurants.FindAsync(id);
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null) return false;
         if (restaurant.ImageUrl != null)
         {
@@ -75,7 +87,7 @@ public class MediaService(AppDbContext db, IWebHostEnvironment env)
             // never blocks removal. Best-effort deletion of the file on disk.
             string url = restaurant.ImageUrl;
             restaurant.ImageUrl = null;
-            await _db.SaveChangesAsync();
+            await _restaurantRepository.SaveChangesAsync();
             TryDeleteFile(url);
         }
         return true;
