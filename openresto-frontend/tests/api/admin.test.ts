@@ -13,6 +13,7 @@ import {
   adminGetTables,
   adminGetRestaurants,
   adminGetSections,
+  reorderSections,
   adminRestoreBooking,
   adminUpdateBookingFull,
   getEmailSettings,
@@ -496,6 +497,27 @@ describe("adminSetRestaurantArchived", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await adminSetRestaurantArchived(1, true)).toBe(false);
+  });
+});
+
+describe("reorderSections", () => {
+  it("sends PATCH with sectionIds and returns true on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    expect(await reorderSections(1, [3, 1, 2])).toBe(true);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/restaurants/1/sections/reorder");
+    expect(opts.method).toBe("PATCH");
+    expect(JSON.parse(opts.body)).toEqual({ sectionIds: [3, 1, 2] });
+  });
+
+  it("returns false on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await reorderSections(1, [1, 2])).toBe(false);
+  });
+
+  it("returns false on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await reorderSections(1, [1, 2])).toBe(false);
   });
 });
 

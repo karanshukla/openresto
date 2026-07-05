@@ -5,6 +5,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { LocationCard } from "@/components/admin/settings/LocationCard";
 import * as restaurantsApi from "@/api/restaurants";
+import * as adminApi from "@/api/admin";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -14,6 +15,10 @@ jest.mock("@/api/restaurants", () => ({
   addSection: jest.fn(),
   uploadLocationImage: jest.fn(),
   deleteLocationImage: jest.fn(),
+}));
+
+jest.mock("@/api/admin", () => ({
+  reorderSections: jest.fn(),
 }));
 
 jest.mock("@/context/BrandContext", () => {
@@ -40,6 +45,10 @@ jest.mock("@/components/admin/settings/SectionBlock", () => ({
     onTableAdded,
     onTableUpdated,
     onTableDeleted,
+    isFirst,
+    isLast,
+    onMoveUp,
+    onMoveDown,
   }: {
     section: { id: number; name: string; tables: { id: number; name: string; seats: number }[] };
     onSectionRenamed: (name: string) => void;
@@ -47,6 +56,10 @@ jest.mock("@/components/admin/settings/SectionBlock", () => ({
     onTableAdded: (t: { id: number; name: string; seats: number }) => void;
     onTableUpdated: (t: { id: number; name: string; seats: number }) => void;
     onTableDeleted: (id: number) => void;
+    isFirst: boolean;
+    isLast: boolean;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
   }) => {
     const { View, Text, Pressable } = require("react-native");
     return (
@@ -84,6 +97,14 @@ jest.mock("@/components/admin/settings/SectionBlock", () => ({
           onPress={() => onTableDeleted(section.tables[0]?.id ?? 100)}
         >
           <Text>Delete Table</Text>
+        </Pressable>
+        <Text testID={`is-first-${section.id}`}>{String(isFirst)}</Text>
+        <Text testID={`is-last-${section.id}`}>{String(isLast)}</Text>
+        <Pressable testID={`move-up-${section.id}`} onPress={onMoveUp}>
+          <Text>Move Up</Text>
+        </Pressable>
+        <Pressable testID={`move-down-${section.id}`} onPress={onMoveDown}>
+          <Text>Move Down</Text>
         </Pressable>
       </View>
     );
@@ -592,5 +613,114 @@ describe("LocationCard", () => {
         ]),
       })
     );
+  });
+
+  // ── Reorder up/down move buttons (#178) ──────────────────────────────────
+
+  it("marks the first section as isFirst and the last as isLast", () => {
+    render(<LocationCard {...baseProps} />);
+    expect(screen.getByTestId("is-first-10").props.children).toBe("true");
+    expect(screen.getByTestId("is-last-10").props.children).toBe("false");
+    expect(screen.getByTestId("is-first-11").props.children).toBe("false");
+    expect(screen.getByTestId("is-last-11").props.children).toBe("true");
+  });
+
+  it("calls reorderSections and onSaved with swapped order when moving a section down", async () => {
+    (adminApi.reorderSections as jest.Mock).mockResolvedValue(true);
+    render(<LocationCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-down-10"));
+    });
+    expect(adminApi.reorderSections).toHaveBeenCalledWith(1, [11, 10]);
+    expect(baseProps.onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sections: [expect.objectContaining({ id: 11 }), expect.objectContaining({ id: 10 })],
+      })
+    );
+  });
+
+  it("calls reorderSections and onSaved with swapped order when moving a section up", async () => {
+    (adminApi.reorderSections as jest.Mock).mockResolvedValue(true);
+    render(<LocationCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-up-11"));
+    });
+    expect(adminApi.reorderSections).toHaveBeenCalledWith(1, [11, 10]);
+    expect(baseProps.onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sections: [expect.objectContaining({ id: 11 }), expect.objectContaining({ id: 10 })],
+      })
+    );
+  });
+
+  it("does not call onSaved when reorderSections fails", async () => {
+    (adminApi.reorderSections as jest.Mock).mockResolvedValue(false);
+    render(<LocationCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-down-10"));
+    });
+    expect(adminApi.reorderSections).toHaveBeenCalled();
+    expect(baseProps.onSaved).not.toHaveBeenCalled();
+  });
+
+  it("ignores a second move while the first reorder request is still in flight", async () => {
+    // Regression guard (#178 review): handleMove had no in-flight guard, so two rapid
+    // move clicks before the first PATCH resolves both computed their swap from the same
+    // stale `restaurant.sections` closure, letting the second overwrite the first.
+    let resolveFirst!: (value: boolean) => void;
+    (adminApi.reorderSections as jest.Mock).mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveFirst = resolve;
+        })
+    );
+    render(<LocationCard {...baseProps} />);
+
+    fireEvent.press(screen.getByTestId("move-down-10"));
+    fireEvent.press(screen.getByTestId("move-up-11"));
+
+    expect(adminApi.reorderSections).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirst(true);
+    });
+
+    expect(adminApi.reorderSections).toHaveBeenCalledTimes(1);
+    expect(baseProps.onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call reorderSections when moving the first section up (out of bounds)", async () => {
+    render(<LocationCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-up-10"));
+    });
+    expect(adminApi.reorderSections).not.toHaveBeenCalled();
+    expect(baseProps.onSaved).not.toHaveBeenCalled();
+  });
+
+  it("does not call reorderSections when moving the last section down (out of bounds)", async () => {
+    render(<LocationCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-down-11"));
+    });
+    expect(adminApi.reorderSections).not.toHaveBeenCalled();
+    expect(baseProps.onSaved).not.toHaveBeenCalled();
+  });
+
+  it("does not render move buttons' bound checks incorrectly with a single section", async () => {
+    const singleSectionRestaurant = {
+      ...baseRestaurant,
+      sections: [baseRestaurant.sections[0]],
+    };
+    render(<LocationCard {...baseProps} restaurant={singleSectionRestaurant} />);
+    expect(screen.getByTestId("is-first-10").props.children).toBe("true");
+    expect(screen.getByTestId("is-last-10").props.children).toBe("true");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-up-10"));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("move-down-10"));
+    });
+    expect(adminApi.reorderSections).not.toHaveBeenCalled();
   });
 });

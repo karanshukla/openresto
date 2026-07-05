@@ -42,6 +42,10 @@ const baseProps = {
   onTableAdded: jest.fn(),
   onTableUpdated: jest.fn(),
   onTableDeleted: jest.fn(),
+  isFirst: false,
+  isLast: false,
+  onMoveUp: jest.fn(),
+  onMoveDown: jest.fn(),
 };
 
 describe("SectionBlock", () => {
@@ -238,5 +242,49 @@ describe("SectionBlock", () => {
       fireEvent.press(screen.getByText("Add"));
     });
     expect(restaurantsApi.addTable).toHaveBeenCalledWith(42, 1, { name: "T5", seats: 2 });
+  });
+
+  // ── Reorder up/down move buttons (#178) ──────────────────────────────────
+
+  it("renders move-up and move-down buttons", () => {
+    render(<SectionBlock {...baseProps} />);
+    expect(screen.getByTestId("section-move-up-btn")).toBeTruthy();
+    expect(screen.getByTestId("section-move-down-btn")).toBeTruthy();
+  });
+
+  it("calls onMoveUp when move-up is pressed", () => {
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByTestId("section-move-up-btn"));
+    expect(baseProps.onMoveUp).toHaveBeenCalled();
+  });
+
+  it("calls onMoveDown when move-down is pressed", () => {
+    render(<SectionBlock {...baseProps} />);
+    fireEvent.press(screen.getByTestId("section-move-down-btn"));
+    expect(baseProps.onMoveDown).toHaveBeenCalled();
+  });
+
+  it("disables move-up when isFirst is true", () => {
+    render(<SectionBlock {...baseProps} isFirst />);
+    expect(screen.getByTestId("section-move-up-btn").props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it("disables move-down when isLast is true", () => {
+    render(<SectionBlock {...baseProps} isLast />);
+    expect(screen.getByTestId("section-move-down-btn").props.accessibilityState?.disabled).toBe(
+      true
+    );
+  });
+
+  it("does not call onMoveUp when disabled at first position", () => {
+    render(<SectionBlock {...baseProps} isFirst />);
+    fireEvent.press(screen.getByTestId("section-move-up-btn"));
+    expect(baseProps.onMoveUp).not.toHaveBeenCalled();
+  });
+
+  it("does not call onMoveDown when disabled at last position", () => {
+    render(<SectionBlock {...baseProps} isLast />);
+    fireEvent.press(screen.getByTestId("section-move-down-btn"));
+    expect(baseProps.onMoveDown).not.toHaveBeenCalled();
   });
 });

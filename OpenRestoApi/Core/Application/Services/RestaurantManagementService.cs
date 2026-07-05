@@ -42,9 +42,10 @@ public class RestaurantManagementService(AppDbContext db)
             Name = dto.Name,
             Address = dto.Address,
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
-            Sections = dto.Sections.Select(s => new Section
+            Sections = dto.Sections.Select((s, index) => new Section
             {
                 Name = s.Name,
+                SortOrder = index,
                 Tables = s.Tables.Select(t => new Table { Name = t.Name, Seats = t.Seats }).ToList()
             }).ToList()
         };
@@ -148,11 +149,12 @@ public class RestaurantManagementService(AppDbContext db)
             return null;
         }
 
-        var section = new Section { Name = name, RestaurantId = restaurantId };
+        int nextSortOrder = await _db.Sections.CountAsync(s => s.RestaurantId == restaurantId);
+        var section = new Section { Name = name, RestaurantId = restaurantId, SortOrder = nextSortOrder };
         _db.Sections.Add(section);
         await _db.SaveChangesAsync();
 
-        return new SectionDto { Id = section.Id, Name = section.Name, Tables = [] };
+        return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
     public async Task<SectionDto?> UpdateSectionAsync(int restaurantId, int sectionId, string name)
@@ -167,7 +169,7 @@ public class RestaurantManagementService(AppDbContext db)
 
         section.Name = name;
         await _db.SaveChangesAsync();
-        return new SectionDto { Id = section.Id, Name = section.Name, Tables = [] };
+        return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
     public async Task<bool> DeleteSectionAsync(int restaurantId, int sectionId)
@@ -273,11 +275,14 @@ public class RestaurantManagementService(AppDbContext db)
         WalkInOnly = r.WalkInOnly,
         WalkInDays = r.WalkInDays ?? "",
         DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
-        Sections = r.Sections.Select(s => new SectionDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
-        }).ToList()
+        Sections = r.Sections
+            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
+            .Select(s => new SectionDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                SortOrder = s.SortOrder,
+                Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
+            }).ToList()
     };
 }

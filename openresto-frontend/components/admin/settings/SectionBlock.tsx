@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { SectionDto, TableDto, updateSection, deleteSection, addTable } from "@/api/restaurants";
 import { TableRow } from "./TableRow";
@@ -21,6 +22,11 @@ export function SectionBlock({
   onTableUpdated,
   onTableDeleted,
   confirmAction,
+  isFirst,
+  isLast,
+  moveDisabled,
+  onMoveUp,
+  onMoveDown,
 }: {
   section: SectionDto;
   restaurantId: number;
@@ -33,6 +39,11 @@ export function SectionBlock({
   onTableAdded: (t: TableDto) => void;
   onTableUpdated: (t: TableDto) => void;
   onTableDeleted: (id: number) => void;
+  isFirst: boolean;
+  isLast: boolean;
+  moveDisabled?: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
   const brand = useBrand();
   const primaryColor = brand.primaryColor || COLORS.primary;
@@ -119,6 +130,38 @@ export function SectionBlock({
             </>
           ) : (
             <>
+              <Pressable
+                testID="section-move-up-btn"
+                accessibilityLabel={`Move ${section.name} section up`}
+                accessibilityHint="Moves this section earlier in the display order"
+                style={{ padding: 6 }}
+                disabled={isFirst || moveDisabled}
+                onPress={() => {
+                  if (!isFirst) onMoveUp();
+                }}
+              >
+                <Ionicons
+                  name="arrow-up-outline"
+                  size={16}
+                  color={isFirst ? mutedColor : primaryColor}
+                />
+              </Pressable>
+              <Pressable
+                testID="section-move-down-btn"
+                accessibilityLabel={`Move ${section.name} section down`}
+                accessibilityHint="Moves this section later in the display order"
+                style={{ padding: 6 }}
+                disabled={isLast || moveDisabled}
+                onPress={() => {
+                  if (!isLast) onMoveDown();
+                }}
+              >
+                <Ionicons
+                  name="arrow-down-outline"
+                  size={16}
+                  color={isLast ? mutedColor : primaryColor}
+                />
+              </Pressable>
               <Pressable
                 testID="section-edit-btn"
                 style={styles.smallBtn}

@@ -392,6 +392,26 @@ export async function adminGetSections(
   }
 }
 
+/**
+ * Persists a new display order for a restaurant's sections. Pass the full list of
+ * section IDs in the desired order (used by the up/down move buttons — the caller
+ * computes the swapped order locally and resends the whole list).
+ */
+export async function reorderSections(
+  restaurantId: number,
+  sectionIds: number[]
+): Promise<boolean> {
+  try {
+    const res = await patch(`/admin/restaurants/${restaurantId}/sections/reorder`, {
+      sectionIds,
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("reorderSections error:", err);
+    return false;
+  }
+}
+
 export interface EmailFailureDto {
   id: number;
   bookingRef: string | null;

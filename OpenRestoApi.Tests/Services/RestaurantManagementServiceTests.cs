@@ -51,6 +51,30 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_AssignsSequentialSortOrder_ToBulkCreatedSections()
+    {
+        // Regression test (#178 review): CreateAsync previously omitted SortOrder from the
+        // bulk section-creation mapping, so every section created through this path defaulted
+        // to SortOrder = 0 instead of reflecting the order the caller supplied them in.
+        using AppDbContext db = CreateDb(nameof(CreateAsync_AssignsSequentialSortOrder_ToBulkCreatedSections));
+        var svc = new RestaurantManagementService(db);
+        var dto = new RestaurantDto
+        {
+            Name = "New",
+            Sections =
+            [
+                new SectionDto { Name = "First", Tables = [] },
+                new SectionDto { Name = "Second", Tables = [] },
+                new SectionDto { Name = "Third", Tables = [] },
+            ]
+        };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        Assert.Equal([0, 1, 2], result.Sections.Select(s => s.SortOrder));
+    }
+
+    [Fact]
     public async Task CreateAsync_CopiesDefaultBookingDurationMinutes_FromDto()
     {
         // Regression test (#135 review): CreateAsync previously omitted
@@ -470,5 +494,102 @@ public class RestaurantManagementServiceTests
         Booking? booking = await db.Bookings.FindAsync(1);
         Assert.Null(booking!.TableId);
         Assert.False(await db.Tables.AnyAsync(t => t.Id == 1));
+    }
+
+    // ── SortOrder / reorderable sections (#178) ──────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_OrdersSectionsBySortOrder_ThenById()
+    {
+        using AppDbContext db = CreateDb(nameof(GetByIdAsync_OrdersSectionsBySortOrder_ThenById));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        // Inserted out of SortOrder order, and out of alphabetical order too, to prove
+        // neither insertion order nor name drives the result.
+        db.Sections.Add(new Section { Id = 1, Name = "Zebra", RestaurantId = 1, SortOrder = 2 });
+        db.Sections.Add(new Section { Id = 2, Name = "Alpha", RestaurantId = 1, SortOrder = 0 });
+        db.Sections.Add(new Section { Id = 3, Name = "Middle", RestaurantId = 1, SortOrder = 1 });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Equal(["Alpha", "Middle", "Zebra"], result!.Sections.Select(s => s.Name));
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_OrdersBySections_TieBreaksById_WhenSortOrderEqual()
+    {
+        using AppDbContext db = CreateDb(nameof(GetByIdAsync_OrdersBySections_TieBreaksById_WhenSortOrderEqual));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 2, Name = "Second", RestaurantId = 1, SortOrder = 0 });
+        db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.Equal(["First", "Second"], result!.Sections.Select(s => s.Name));
+    }
+
+    [Fact]
+    public async Task AddSectionAsync_AppendsSortOrder_AtEndOfExistingSections()
+    {
+        using AppDbContext db = CreateDb(nameof(AddSectionAsync_AppendsSortOrder_AtEndOfExistingSections));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "Existing1", RestaurantId = 1, SortOrder = 0 });
+        db.Sections.Add(new Section { Id = 2, Name = "Existing2", RestaurantId = 1, SortOrder = 1 });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        SectionDto? result = await svc.AddSectionAsync(1, "New");
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result!.SortOrder);
+        Section saved = await db.Sections.SingleAsync(s => s.Name == "New");
+        Assert.Equal(2, saved.SortOrder);
+    }
+
+    [Fact]
+    public async Task AddSectionAsync_FirstSection_GetsSortOrderZero()
+    {
+        using AppDbContext db = CreateDb(nameof(AddSectionAsync_FirstSection_GetsSortOrderZero));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        SectionDto? result = await svc.AddSectionAsync(1, "Only");
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result!.SortOrder);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsEmptySections_WhenRestaurantHasNone()
+    {
+        using AppDbContext db = CreateDb(nameof(GetByIdAsync_ReturnsEmptySections_WhenRestaurantHasNone));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Empty(result!.Sections);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_OrdersSingleSection_WithoutError()
+    {
+        using AppDbContext db = CreateDb(nameof(GetByIdAsync_OrdersSingleSection_WithoutError));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "Only", RestaurantId = 1, SortOrder = 0 });
+        await db.SaveChangesAsync();
+
+        var svc = new RestaurantManagementService(db);
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Equal(["Only"], result!.Sections.Select(s => s.Name));
     }
 }

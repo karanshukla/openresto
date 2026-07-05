@@ -15,7 +15,9 @@ npm run dev          # starts backend (dotnet watch) + frontend (expo) concurren
 ```bash
 cd OpenRestoApi
 dotnet watch run     # hot reload on :8080
-dotnet test          # all backend tests
+
+cd OpenRestoApi.Tests    # or: dotnet test openresto.sln from the repo root
+dotnet test          # all backend tests — NOTE: `dotnet test` from OpenRestoApi/ runs zero tests, that project isn't the test project
 dotnet test --filter "FullyQualifiedName~BookingServiceTests"  # single test class
 ```
 
@@ -112,6 +114,7 @@ OpenRestoApi/
 - `HoldService` is a **singleton** in-memory store — appropriate for single-instance deployment. Holds expire after 5 minutes. If you need multi-instance, swap for Redis.
 - The OpenAPI spec (`/openapi/v1.json`) is only exposed when `ASPNETCORE_ENVIRONMENT=Development`. The dev nginx template (`nginx/default.conf.template`) proxies `/openapi/` to the backend for ZAP CI scanning; the prod nginx (`nginx-vps/`) does not.
 - **EF migrations with running dev server**: exe is locked, so use `dotnet ef migrations add <Name> --no-build`. If obj/ DLLs are stale the generated `Up()` will be empty — write it manually.
+- **`dotnet ef migrations add` Roslyn version pin**: `Microsoft.EntityFrameworkCore.Design`'s own dependency on `Microsoft.CodeAnalysis.CSharp.Workspaces`/`Microsoft.CodeAnalysis.Workspaces.MSBuild` resolves to an older version than `Microsoft.CodeAnalysis.CSharp`/`.Common` get bumped to elsewhere in the graph (via `csulpizi.CustomAccessibility`'s own floor requirement) — a split-version Roslyn install that crashes migration scaffolding at design-time with `TypeLoadException: ReduceExtensionMember ... does not have an implementation` (build/test/runtime never hit this path, so it stays silent otherwise). `OpenRestoApi.csproj` pins `Microsoft.CodeAnalysis.CSharp.Workspaces`/`Workspaces.MSBuild` to match the higher-resolved version to unify the chain; these are `PrivateAssets="all"` and confirmed (via `dotnet publish` diff) not to ship in the runtime output. If `dotnet ef migrations add` starts crashing again after an EF Core upgrade, re-check these pins against whatever `Microsoft.CodeAnalysis.CSharp`/`.Common` actually resolve to (`dotnet restore` + inspect `obj/project.assets.json`) and bump them to match.
 - **SCRIPTS** - `scripts/` contains dev scripts for generating test data, purging bookings, and running a local SMTP server. They are not part of the production image. Make sure you update them if the DB is changing in a way that would break them (e.g. new required fields).
 - **Migration safety invariant**: a new migration's `Up()` must produce an identical schema whether applied to a fresh database or an upgrade from the previous migration. The `migration-check.yml` CI workflow enforces this by generating SQL for both paths, applying them to SQLite, and diffing the schemas. If they diverge (e.g. `EnsureCreated` and `Migrate()` produce different column order or constraints), the check fails. Always verify that `dotnet ef migrations script "0" PREV_MIGRATION` + `dotnet ef migrations script PREV_MIGRATION` together match `dotnet ef migrations script`.
 - **Auto-migration on startup**: `DatabaseExtensions.InitializeDatabase` calls `db.Database.Migrate()` with a retry loop before `app.Run()`. Fresh installs and upgrades are both handled automatically — no manual SQL steps needed.

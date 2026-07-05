@@ -8,6 +8,7 @@ import {
   uploadLocationImage,
   deleteLocationImage,
 } from "@/api/restaurants";
+import { reorderSections } from "@/api/admin";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/theme/theme";
 import { RestaurantInfoForm } from "./RestaurantInfoForm";
@@ -85,6 +86,7 @@ export function LocationCard({
 
   const [imgUploading, setImgUploading] = useState(false);
   const [imgMsg, setImgMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   const handlePickImage = () => {
     const input = document.createElement("input");
@@ -120,6 +122,25 @@ export function LocationCard({
       setImgMsg({ text: "Image removed.", ok: true });
     } else {
       setImgMsg({ text: "Failed to remove image.", ok: false });
+    }
+  };
+
+  const handleMove = async (index: number, direction: -1 | 1) => {
+    if (reordering) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= restaurant.sections.length) return;
+
+    const reordered = [...restaurant.sections];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+
+    setReordering(true);
+    const success = await reorderSections(
+      restaurant.id,
+      reordered.map((s) => s.id)
+    );
+    setReordering(false);
+    if (success) {
+      onSaved({ sections: reordered });
     }
   };
 
@@ -336,7 +357,7 @@ export function LocationCard({
         </ThemedText>
 
         <View style={{ gap: 14 }}>
-          {restaurant.sections.map((section) => (
+          {restaurant.sections.map((section, index) => (
             <SectionBlock
               key={section.id}
               section={section}
@@ -345,6 +366,11 @@ export function LocationCard({
               borderColor={borderColor}
               mutedColor={mutedColor}
               confirmAction={confirmAction}
+              isFirst={index === 0}
+              isLast={index === restaurant.sections.length - 1}
+              moveDisabled={reordering}
+              onMoveUp={() => handleMove(index, -1)}
+              onMoveDown={() => handleMove(index, 1)}
               onSectionRenamed={(name) =>
                 onSaved({
                   sections: restaurant.sections.map((s) =>

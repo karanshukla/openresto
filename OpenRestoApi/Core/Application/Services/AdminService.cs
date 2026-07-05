@@ -507,9 +507,56 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
     {
         return await _db.Sections
             .Where(s => s.RestaurantId == restaurantId)
-            .OrderBy(s => s.Name)
+            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new LookupDto { Id = s.Id, Name = s.Name })
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Persists a new display order for a restaurant's sections. Accepts the full
+    /// ordered list of section IDs (rather than a single swap) so both the up/down
+    /// move-button UI and any future bulk-reorder UI can share one endpoint — the
+    /// client computes the desired order locally and resends the whole list, matching
+    /// the existing "resend full record" convention used by Highlights/SocialLinks.
+    /// Returns null when the restaurant doesn't exist, false when sectionIds doesn't
+    /// exactly match the restaurant's current sections, true on success.
+    /// </summary>
+    public virtual async Task<bool?> ReorderSectionsAsync(int restaurantId, List<int> sectionIds)
+    {
+        bool restaurantExists = await _db.Restaurants.AnyAsync(r => r.Id == restaurantId);
+        if (!restaurantExists)
+        {
+            return null;
+        }
+
+        if (sectionIds == null)
+        {
+            return false;
+        }
+
+        List<Section> sections = await _db.Sections
+            .Where(s => s.RestaurantId == restaurantId)
+            .ToListAsync();
+
+        if (sectionIds.Count != sections.Count ||
+            sectionIds.Distinct().Count() != sectionIds.Count)
+        {
+            return false;
+        }
+
+        Dictionary<int, Section> sectionsById = sections.ToDictionary(s => s.Id);
+        if (sectionIds.Any(id => !sectionsById.ContainsKey(id)))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < sectionIds.Count; i++)
+        {
+            sectionsById[sectionIds[i]].SortOrder = i;
+        }
+
+        await _db.SaveChangesAsync();
+        return true;
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────
@@ -622,7 +669,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         List<Section> sections = await _db.Sections
             .Where(s => s.RestaurantId == restaurantId)
             .Include(s => s.Tables)
-            .OrderBy(s => s.Name)
+            .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .ToListAsync();
 
         if (sections.Count == 0)
@@ -634,6 +681,7 @@ public class AdminService(AppDbContext db, IHoldService holdService, INotificati
         {
             Id = s.Id,
             Name = s.Name,
+            SortOrder = s.SortOrder,
             Tables = s.Tables.Select(t => new TableDto
             {
                 Id = t.Id,

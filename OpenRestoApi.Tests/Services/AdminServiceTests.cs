@@ -867,6 +867,188 @@ public class AdminServiceTests : IDisposable
         Assert.Single(list);
     }
 
+    // ── SortOrder / reorderable sections (#178) ──────────────────────────────
+
+    [Fact]
+    public async Task GetSectionsAsync_OrdersBySortOrder_NotAlphabetically()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "Zebra", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Alpha", RestaurantId = 1, SortOrder = 1 });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> list = await svc.GetSectionsAsync(1);
+
+        Assert.Equal(["Zebra", "Alpha"], list.Select(s => s.Name));
+    }
+
+    [Fact]
+    public async Task GetTablesAsync_OrdersSectionsBySortOrder_NotAlphabetically()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "Zebra", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Alpha", RestaurantId = 1, SortOrder = 1 });
+        await _db.SaveChangesAsync();
+
+        List<SectionDto>? result = await svc.GetTablesAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Equal(["Zebra", "Alpha"], result!.Select(s => s.Name));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_PersistsNewOrder_AndReadBackIsCorrect()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Second", RestaurantId = 1, SortOrder = 1 });
+        _db.Sections.Add(new Section { Id = 3, Name = "Third", RestaurantId = 1, SortOrder = 2 });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, [3, 1, 2]);
+
+        Assert.True(result);
+        List<LookupDto> list = await svc.GetSectionsAsync(1);
+        Assert.Equal(["Third", "First", "Second"], list.Select(s => s.Name));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_MoveUpSwap_PersistsCorrectly()
+    {
+        // Simulates the up/down-button UX: moving "Second" up swaps it with "First".
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Second", RestaurantId = 1, SortOrder = 1 });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, [2, 1]);
+
+        Assert.True(result);
+        Assert.Equal(0, (await _db.Sections.FindAsync(2))!.SortOrder);
+        Assert.Equal(1, (await _db.Sections.FindAsync(1))!.SortOrder);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        AdminService svc = CreateService();
+        Assert.Null(await svc.ReorderSectionsAsync(999, [1, 2]));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsFalse_WhenSectionCountMismatch()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        Assert.False(await svc.ReorderSectionsAsync(1, [1, 2]));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsFalse_WhenSectionIdBelongsToDifferentRestaurant()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "R1", Timezone = "UTC" });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "R2", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "S1", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "S2", RestaurantId = 2, SortOrder = 0 });
+        await _db.SaveChangesAsync();
+
+        Assert.False(await svc.ReorderSectionsAsync(1, [2]));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsFalse_WhenDuplicateIdsProvided()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Second", RestaurantId = 1, SortOrder = 1 });
+        await _db.SaveChangesAsync();
+
+        Assert.False(await svc.ReorderSectionsAsync(1, [1, 1]));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_Succeeds_WithSingleSection()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "Only", RestaurantId = 1, SortOrder = 0 });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, [1]);
+
+        Assert.True(result);
+        Assert.Equal(0, (await _db.Sections.FindAsync(1))!.SortOrder);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_Succeeds_WhenRestaurantHasZeroSections_AndEmptyListProvided()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, []);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsFalse_WhenRestaurantHasZeroSections_ButIdsProvided()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        await _db.SaveChangesAsync();
+
+        Assert.False(await svc.ReorderSectionsAsync(1, [1]));
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_ReturnsFalse_WhenSectionIdsIsNull()
+    {
+        // Regression guard (#178 review): System.Text.Json overwrites the request DTO's
+        // `= new()` field initializer with null when the client sends an explicit
+        // `"sectionIds": null`. Without a guard, that null reaches sectionIds.Count /
+        // .Distinct() below and throws an unhandled NullReferenceException (500) instead
+        // of the clean 400 the rest of the method is designed to return.
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "First", RestaurantId = 1, SortOrder = 0 });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, null!);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task ReorderSectionsAsync_OnlyAffectsTargetRestaurant_WhenReorderingConcurrently()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "R1", Timezone = "UTC" });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "R2", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "R1-First", RestaurantId = 1, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 2, Name = "R1-Second", RestaurantId = 1, SortOrder = 1 });
+        _db.Sections.Add(new Section { Id = 3, Name = "R2-First", RestaurantId = 2, SortOrder = 0 });
+        _db.Sections.Add(new Section { Id = 4, Name = "R2-Second", RestaurantId = 2, SortOrder = 1 });
+        await _db.SaveChangesAsync();
+
+        bool? result = await svc.ReorderSectionsAsync(1, [2, 1]);
+
+        Assert.True(result);
+        Assert.Equal(0, (await _db.Sections.FindAsync(2))!.SortOrder);
+        Assert.Equal(1, (await _db.Sections.FindAsync(1))!.SortOrder);
+        Assert.Equal(0, (await _db.Sections.FindAsync(3))!.SortOrder);
+        Assert.Equal(1, (await _db.Sections.FindAsync(4))!.SortOrder);
+    }
+
     [Fact]
     public async Task CreateRestaurantAsync_Works()
     {

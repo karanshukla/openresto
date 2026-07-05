@@ -73,7 +73,17 @@ public class SectionDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = null!;
+    public int SortOrder { get; set; }
     public List<TableDto> Tables { get; set; } = new();
+}
+
+public class ReorderSectionsRequest
+{
+    /// <summary>
+    /// The restaurant's sections, in the desired display order. Must contain exactly the
+    /// same set of section IDs the restaurant currently has (no additions/removals here).
+    /// </summary>
+    public List<int> SectionIds { get; set; } = new();
 }
 
 public class DayHoursDto

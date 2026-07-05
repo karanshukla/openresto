@@ -9,6 +9,7 @@ export interface TableDto {
 export interface SectionDto {
   id: number;
   name: string;
+  sortOrder?: number;
   tables: TableDto[];
 }
 

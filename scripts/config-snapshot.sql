@@ -181,29 +181,29 @@ VALUES
 
 -- Sections
 INSERT INTO
-  Sections (Id, Name, RestaurantId)
+  Sections (Id, Name, RestaurantId, SortOrder)
 VALUES
-  (1, 'Indoor', 1);
+  (1, 'Indoor', 1, 0);
 
 INSERT INTO
-  Sections (Id, Name, RestaurantId)
+  Sections (Id, Name, RestaurantId, SortOrder)
 VALUES
-  (2, 'Patio', 1);
+  (2, 'Patio', 1, 1);
 
 INSERT INTO
-  Sections (Id, Name, RestaurantId)
+  Sections (Id, Name, RestaurantId, SortOrder)
 VALUES
-  (3, 'Bar', 2);
+  (3, 'Bar', 2, 0);
 
 INSERT INTO
-  Sections (Id, Name, RestaurantId)
+  Sections (Id, Name, RestaurantId, SortOrder)
 VALUES
-  (4, 'The Bar', 3);
+  (4, 'The Bar', 3, 0);
 
 INSERT INTO
-  Sections (Id, Name, RestaurantId)
+  Sections (Id, Name, RestaurantId, SortOrder)
 VALUES
-  (5, 'Tables', 2);
+  (5, 'Tables', 2, 1);
 
 -- Tables
 INSERT INTO

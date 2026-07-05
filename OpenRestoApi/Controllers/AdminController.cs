@@ -147,6 +147,18 @@ public class AdminController(AdminService adminService, IEmailService emailServi
         return Ok(sections);
     }
 
+    [HttpPatch("restaurants/{id}/sections/reorder")]
+    public async Task<IActionResult> ReorderSections(int id, [FromBody] ReorderSectionsRequest req)
+    {
+        bool? result = await _adminService.ReorderSectionsAsync(id, req.SectionIds);
+        return result switch
+        {
+            null => NotFound(),
+            false => BadRequest(new MessageResponse { Message = "sectionIds must include exactly the restaurant's current sections, with no duplicates." }),
+            true => NoContent(),
+        };
+    }
+
     [HttpGet("restaurants/{restaurantId}/tables")]
     public async Task<IActionResult> GetTables(int restaurantId)
     {
