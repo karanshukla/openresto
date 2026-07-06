@@ -1,4 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
+import { buildUpdateRestaurantBody } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 // Pasta Place (id=1) is the primary seeded restaurant used across specs.
@@ -42,38 +43,18 @@ test.describe("Restaurant detail page", () => {
   }
 
   /**
-   * Build a PUT body shaped for UpdateRestaurantRequest. The GET response and
-   * the request type diverge on two fields, so map explicitly:
-   *   - `tags` is string[] on the DTO but a comma-separated string on the
-   *     request, and
-   *   - the request type assigns every field unconditionally, so we must echo
-   *     the full state back (not just walkInOnly) or the seeded Address/Hours
-   *     etc. get wiped to null.
+   * PUT a full restaurant update (see buildUpdateRestaurantBody in helpers for
+   * why the full body is required). `overrides` are applied last.
    */
-  function buildUpdateBody(
-    restaurant: Record<string, unknown>,
-    walkInOnly: boolean
-  ): Record<string, unknown> {
-    return {
-      name: restaurant.name,
-      address: restaurant.address,
-      openTime: restaurant.openTime,
-      closeTime: restaurant.closeTime,
-      openDays: restaurant.openDays,
-      openHours: restaurant.openHours,
-      timezone: restaurant.timezone,
-      tags: Array.isArray(restaurant.tags) ? (restaurant.tags as string[]).join(",") : "",
-      defaultBookingDurationMinutes: restaurant.defaultBookingDurationMinutes,
-      walkInOnly,
-      walkInDays: restaurant.walkInDays,
-    };
-  }
-
-  async function putRestaurant(browser: Browser, body: Record<string, unknown>): Promise<void> {
+  async function putRestaurant(
+    browser: Browser,
+    body: Record<string, unknown>,
+    expectOk = true
+  ): Promise<void> {
     const ctx = await browser.newContext({ storageState: ADMIN_STATE_FILE });
     const page = await ctx.newPage();
     const res = await page.request.put(`/api/restaurants/${PASTA_PLACE_ID}`, { data: body });
-    expect(res.ok()).toBeTruthy();
+    if (expectOk) expect(res.ok()).toBeTruthy();
     await ctx.close();
   }
 
@@ -82,7 +63,10 @@ test.describe("Restaurant detail page", () => {
     if (originalRestaurant !== undefined) {
       await putRestaurant(
         browser,
-        buildUpdateBody(originalRestaurant, originalRestaurant.walkInOnly as boolean)
+        buildUpdateRestaurantBody(originalRestaurant, {
+          walkInOnly: originalRestaurant.walkInOnly,
+          walkInDays: originalRestaurant.walkInDays,
+        })
       );
       originalRestaurant = undefined;
     }
@@ -129,7 +113,10 @@ test.describe("Restaurant detail page", () => {
   }) => {
     // Capture full state, then flip walk-in only.
     originalRestaurant = await readRestaurant(browser);
-    await putRestaurant(browser, buildUpdateBody(originalRestaurant, true));
+    await putRestaurant(
+      browser,
+      buildUpdateRestaurantBody(originalRestaurant, { walkInOnly: true })
+    );
 
     // The detail page refetches /api/restaurants/:id on mount, so a fresh
     // navigation picks up the flip.

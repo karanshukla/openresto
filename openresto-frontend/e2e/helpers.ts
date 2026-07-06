@@ -196,3 +196,33 @@ export async function expectVisibleWithReload(
     }
   }
 }
+
+/**
+ * Build a PUT /api/restaurants/:id body shaped for `UpdateRestaurantRequest`.
+ *
+ * The GET response DTO and the request type diverge on `tags` (string[] on the
+ * DTO vs a comma-separated string on the request), and the handler assigns
+ * every field unconditionally (`r.Address = req.Address`), so a partial body
+ * wipes whatever is omitted. Echo the full state back, applying `overrides`
+ * last so callers can flip walkInOnly / walkInDays / etc. without clobbering
+ * anything else. Pass the GET response body as `restaurant`.
+ */
+export function buildUpdateRestaurantBody(
+  restaurant: Record<string, unknown>,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    name: restaurant.name,
+    address: restaurant.address,
+    openTime: restaurant.openTime,
+    closeTime: restaurant.closeTime,
+    openDays: restaurant.openDays,
+    openHours: restaurant.openHours,
+    timezone: restaurant.timezone,
+    tags: Array.isArray(restaurant.tags) ? (restaurant.tags as string[]).join(",") : "",
+    defaultBookingDurationMinutes: restaurant.defaultBookingDurationMinutes,
+    walkInOnly: restaurant.walkInOnly,
+    walkInDays: restaurant.walkInDays,
+    ...overrides,
+  };
+}
