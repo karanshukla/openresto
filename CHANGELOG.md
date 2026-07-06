@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-07-06
+
+Fixed an issue with the Dates appearing incorrectly in the home page
+
+Added a React Native calendar view with closed days blocked out
+
+Fixed the new Lucide icons not working correctly
+
 ## [1.2.0] - 2026-07-03
 
 This one's mostly driven by your feedback — thanks for all the issues and comments since 1.1.0! The headline items are per-day opening hours, walk-in-only locations, admin-changeable email, and a customizable footer with social links. There's also a decent pile of smaller bug fixes around past bookings, calendar/email consistency, and mobile UX. As always, please open an issue if anything looks off after upgrading.
@@ -88,3 +96,4 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0
 [1.1.1]: https://github.com/karanshukla/openresto/releases/tag/v1.1.1
 [1.2.0]: https://github.com/karanshukla/openresto/releases/tag/v1.2.0
+[1.2.1]: https://github.com/karanshukla/openresto/releases/tag/v1.2.1
