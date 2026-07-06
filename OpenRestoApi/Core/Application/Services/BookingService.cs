@@ -41,7 +41,7 @@ public class BookingService(
             throw new ArgumentException("Restaurant not found.");
         }
 
-        if (restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
+        if (restaurant.IsPaused())
         {
             throw new InvalidOperationException("Bookings for this restaurant are currently paused. Please try again later.");
         }
@@ -49,15 +49,15 @@ public class BookingService(
         // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
         DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(bookingDto.Date, restaurant.Timezone);
 
-        // 0. Reject bookings in the past
-        if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
+        // 0. Reject bookings in the past (same 5-min tolerance as booking cancellation).
+        if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
         {
             throw new InvalidOperationException("Cannot create a booking in the past.");
         }
 
         // Walk-in-only locations (or walk-in-only days) never take online bookings.
         // Admin-recorded bookings use AdminService.CreateBookingAsync and are unaffected.
-        if (WalkInHelper.IsWalkInOnlyAt(restaurant, bookingDate))
+        if (restaurant.IsWalkInOnlyAt(bookingDate))
         {
             throw new InvalidOperationException(restaurant.WalkInOnly
                 ? "This location accepts walk-ins only and does not take online bookings."
@@ -202,7 +202,7 @@ public class BookingService(
             return true;
         }
 
-        if (booking.Date < DateTime.UtcNow.AddMinutes(-5))
+        if (!booking.CanBeCancelledAt(DateTime.UtcNow))
         {
             throw new InvalidOperationException("Cannot cancel a booking that has already passed.");
         }

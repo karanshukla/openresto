@@ -50,7 +50,10 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             Restaurant? restaurant = await _db.Restaurants.FindAsync(filter.RestaurantId.Value);
             string tz = restaurant?.Timezone ?? "UTC";
 
-            DateTime cutoff = nowUtc.AddMinutes(-90);
+            // Grid "active" window — bookings started within this many minutes are still
+            // "active" in the admin grid. Mirrors Booking.IsPastForGrid; kept inline because
+            // EF must translate the Where expression (an instance method would break translation).
+            DateTime cutoff = nowUtc.AddMinutes(-Booking.GridGraceMinutes);
 
             if (isGridMode)
             {
@@ -84,7 +87,7 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             }
             else
             {
-                DateTime globalCutoff = nowUtc.AddMinutes(-90);
+                DateTime globalCutoff = nowUtc.AddMinutes(-Booking.GridGraceMinutes);
 
                 q = normalized switch
                 {

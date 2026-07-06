@@ -209,7 +209,7 @@ public class AdminService(
             return false;
         }
 
-        if (!booking.IsCancelled && booking.Date < DateTime.UtcNow.AddMinutes(-5))
+        if (!booking.IsCancelled && !booking.CanBeCancelledAt(DateTime.UtcNow))
         {
             throw new InvalidOperationException("Cannot cancel a booking that has already passed.");
         }

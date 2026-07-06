@@ -22,7 +22,7 @@ public sealed class AvailabilityService(
         TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 
         // Check if restaurant is paused
-        bool isPaused = restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow;
+        bool isPaused = restaurant.IsPaused();
 
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, bookingDate);

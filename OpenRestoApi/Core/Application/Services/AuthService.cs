@@ -25,7 +25,7 @@ public class AuthService(
         AdminCredential cred = await GetOrCreateCredentialAsync();
         if (!string.Equals(email, cred.Email, StringComparison.OrdinalIgnoreCase))
             return null;
-        if (!_passwordService.Verify(password, cred.PasswordHash, cred.PasswordSalt))
+        if (!CredentialHelper.VerifyPassword(cred, password, _passwordService))
             return null;
         return _jwtTokenService.Generate(cred.Email);
     }
@@ -35,7 +35,7 @@ public class AuthService(
         if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
             throw new ArgumentException("Password must be at least 6 characters.");
         AdminCredential cred = await GetOrCreateCredentialAsync();
-        if (!_passwordService.Verify(currentPassword, cred.PasswordHash, cred.PasswordSalt))
+        if (!CredentialHelper.VerifyPassword(cred, currentPassword, _passwordService))
             return false;
         (cred.PasswordHash, cred.PasswordSalt) = _passwordService.Hash(newPassword);
         await _credentialRepository.SaveChangesAsync();
@@ -47,7 +47,7 @@ public class AuthService(
         if (!EmailValidator.IsValid(newEmail))
             throw new ArgumentException("A valid email address is required.");
         AdminCredential cred = await GetOrCreateCredentialAsync();
-        if (!_passwordService.Verify(currentPassword, cred.PasswordHash, cred.PasswordSalt))
+        if (!CredentialHelper.VerifyPassword(cred, currentPassword, _passwordService))
             return null;
         string normalizedEmail = newEmail.Trim().ToLowerInvariant();
         if (string.Equals(normalizedEmail, cred.Email, StringComparison.OrdinalIgnoreCase))

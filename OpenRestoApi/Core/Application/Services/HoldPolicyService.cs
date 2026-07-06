@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -31,20 +30,20 @@ public sealed class HoldPolicyService(
         // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC.
         DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(requestedDate, restaurant.Timezone);
 
-        // 3. Past-date guard (5-minute tolerance for clock skew).
-        if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
+        // 3. Past-date guard (same 5-min tolerance as booking create/cancel).
+        if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
         {
             return HoldPolicyResult.Rejected("Cannot hold a table for a past time.");
         }
 
         // 4. Pause window.
-        if (restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
+        if (restaurant.IsPaused())
         {
             return HoldPolicyResult.Rejected("Bookings are currently paused for this restaurant.");
         }
 
         // 5. Walk-in-only policy (location-wide or per ISO day).
-        if (WalkInHelper.IsWalkInOnlyAt(restaurant, bookingDate))
+        if (restaurant.IsWalkInOnlyAt(bookingDate))
         {
             return HoldPolicyResult.Rejected(restaurant.WalkInOnly
                 ? "This location accepts walk-ins only and does not take online bookings."
@@ -52,7 +51,7 @@ public sealed class HoldPolicyService(
         }
 
         // 6. Operating hours / open days.
-        if (!IsTimeWithinOpeningHours(restaurant, bookingDate))
+        if (!restaurant.IsOpenAt(bookingDate))
         {
             return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.");
         }
@@ -66,55 +65,5 @@ public sealed class HoldPolicyService(
         }
 
         return HoldPolicyResult.Eligible(restaurant, bookingDate);
-    }
-
-    private static bool IsTimeWithinOpeningHours(Restaurant restaurant, DateTime requestedUtc)
-    {
-        DateTime localTime = TimeZoneHelper.ConvertUtcToLocal(requestedUtc, restaurant.Timezone);
-
-        int isoDay = (int)localTime.DayOfWeek;
-        if (isoDay == 0)
-        {
-            isoDay = 7; // Sunday: 0 -> 7
-        }
-
-        // Check OpenDays
-        if (!string.IsNullOrEmpty(restaurant.OpenDays))
-        {
-            var openDaysList = restaurant.OpenDays.Split(',').Select(s => s.Trim());
-            if (!openDaysList.Contains(isoDay.ToString(CultureInfo.InvariantCulture)))
-            {
-                return false;
-            }
-        }
-
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
-        {
-            openHour = 9; openMin = 0;
-        }
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
-        {
-            closeHour = 22; closeMin = 0;
-        }
-
-        TimeSpan open = new TimeSpan(openHour, openMin, 0);
-        TimeSpan close = new TimeSpan(closeHour, closeMin, 0);
-        TimeSpan current = localTime.TimeOfDay;
-
-        if (close > open)
-        {
-            return current >= open && current < close;
-        }
-        else if (close < open)
-        {
-            // Closes after midnight (e.g. 18:00 to 02:00)
-            return current >= open || current < close;
-        }
-        else
-        {
-            // close == open usually means 24h
-            return true;
-        }
     }
 }

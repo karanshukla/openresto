@@ -1,3 +1,7 @@
+using System.Globalization;
+using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
+
 namespace OpenRestoApi.Core.Domain;
 
 public class Restaurant
@@ -60,4 +64,80 @@ public class Restaurant
     /// Used wherever a booking's end time is computed (creation, availability, holds).
     /// </summary>
     public int DefaultBookingDurationMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// True when online bookings are paused: a future <see cref="BookingsPausedUntil"/>
+    /// is set. Consolidates the previously-inlined
+    /// <c>BookingsPausedUntil.HasValue &amp;&amp; BookingsPausedUntil.Value &gt; DateTime.UtcNow</c>
+    /// check that was duplicated across BookingService, HoldPolicyService, AvailabilityService,
+    /// and AdminService.GetOverview.
+    /// </summary>
+    public bool IsPaused()
+        => BookingsPausedUntil.HasValue && BookingsPausedUntil.Value > DateTime.UtcNow;
+
+    /// <summary>
+    /// True when the restaurant does not take online bookings on the local day of
+    /// <paramref name="utc"/> — either globally (<see cref="WalkInOnly"/>) or because the
+    /// resolved local ISO day is in <see cref="WalkInDays"/>. Delegates to
+    /// <see cref="WalkInHelper.IsWalkInOnlyAt"/> for the timezone + ISO-day resolution.
+    /// </summary>
+    public bool IsWalkInOnlyAt(DateTime utc)
+        => WalkInHelper.IsWalkInOnlyAt(this, utc);
+
+    /// <summary>
+    /// True when the restaurant is open at the given UTC instant. Resolves the local time
+    /// via <see cref="Timezone"/>, checks <see cref="OpenDays"/> membership, and consults
+    /// the per-day opening hours (with past-midnight wrap and 24h handling). Handles an
+    /// unparseable <see cref="Timezone"/> by falling back to UTC. Mirrors the logic
+    /// previously inlined as <c>HoldPolicyService.IsTimeWithinOpeningHours</c>.
+    /// </summary>
+    public bool IsOpenAt(DateTime utc)
+    {
+        DateTime localTime = TimeZoneHelper.ConvertUtcToLocal(utc, Timezone);
+
+        int isoDay = (int)localTime.DayOfWeek;
+        if (isoDay == 0)
+        {
+            isoDay = 7; // Sunday: 0 -> 7
+        }
+
+        // Check OpenDays
+        if (!string.IsNullOrEmpty(OpenDays))
+        {
+            var openDaysList = OpenDays.Split(',').Select(s => s.Trim());
+            if (!openDaysList.Contains(isoDay.ToString(CultureInfo.InvariantCulture)))
+            {
+                return false;
+            }
+        }
+
+        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(this, isoDay);
+        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
+        {
+            openHour = 9; openMin = 0;
+        }
+        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
+        {
+            closeHour = 22; closeMin = 0;
+        }
+
+        TimeSpan open = new TimeSpan(openHour, openMin, 0);
+        TimeSpan close = new TimeSpan(closeHour, closeMin, 0);
+        TimeSpan current = localTime.TimeOfDay;
+
+        if (close > open)
+        {
+            return current >= open && current < close;
+        }
+        else if (close < open)
+        {
+            // Closes after midnight (e.g. 18:00 to 02:00)
+            return current >= open || current < close;
+        }
+        else
+        {
+            // close == open usually means 24h
+            return true;
+        }
+    }
 }
