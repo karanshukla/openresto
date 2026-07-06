@@ -15,13 +15,13 @@ internal sealed record UnknownWork : NotificationWorkItem;
 
 public class NotificationWorkerTests
 {
-    private static (NotificationWorker Worker, NotificationQueue Queue, Mock<INotificationService> Notify) CreateWorker()
+    private static (NotificationWorker Worker, NotificationQueue Queue, Mock<IBookingNotificationService> Notify) CreateWorker()
     {
         var queue = new NotificationQueue();
-        var notifyMock = new Mock<INotificationService>();
+        var notifyMock = new Mock<IBookingNotificationService>();
 
         var spMock = new Mock<IServiceProvider>();
-        spMock.Setup(sp => sp.GetService(typeof(INotificationService))).Returns(notifyMock.Object);
+        spMock.Setup(sp => sp.GetService(typeof(IBookingNotificationService))).Returns(notifyMock.Object);
 
         var scopeMock = new Mock<IServiceScope>();
         scopeMock.Setup(s => s.ServiceProvider).Returns(spMock.Object);
@@ -36,7 +36,7 @@ public class NotificationWorkerTests
     [Fact]
     public async Task ProcessesBookingCreatedWork()
     {
-        (NotificationWorker worker, NotificationQueue queue, Mock<INotificationService> notify) = CreateWorker();
+        (NotificationWorker worker, NotificationQueue queue, Mock<IBookingNotificationService> notify) = CreateWorker();
         var booking = new Booking { BookingRef = "R1" };
         var tcs = new TaskCompletionSource();
         notify.Setup(n => n.NotifyBookingCreatedAsync(booking, "Resto"))
@@ -60,7 +60,7 @@ public class NotificationWorkerTests
     [Fact]
     public async Task ProcessesBookingCancelledWork()
     {
-        (NotificationWorker worker, NotificationQueue queue, Mock<INotificationService> notify) = CreateWorker();
+        (NotificationWorker worker, NotificationQueue queue, Mock<IBookingNotificationService> notify) = CreateWorker();
         var booking = new Booking { BookingRef = "R2" };
         var tcs = new TaskCompletionSource();
         notify.Setup(n => n.NotifyBookingCancelledAsync(booking, "Resto"))
@@ -84,7 +84,7 @@ public class NotificationWorkerTests
     [Fact]
     public async Task ProcessesCapacityCheckWork()
     {
-        (NotificationWorker worker, NotificationQueue queue, Mock<INotificationService> notify) = CreateWorker();
+        (NotificationWorker worker, NotificationQueue queue, Mock<IBookingNotificationService> notify) = CreateWorker();
         DateTime date = DateTime.UtcNow;
         var tcs = new TaskCompletionSource();
         notify.Setup(n => n.CheckAndNotifyCapacityAsync(7, "Resto", date))
@@ -125,7 +125,7 @@ public class NotificationWorkerTests
     [Fact]
     public async Task ContinuesProcessingAfterServiceThrows()
     {
-        (NotificationWorker worker, NotificationQueue queue, Mock<INotificationService> notify) = CreateWorker();
+        (NotificationWorker worker, NotificationQueue queue, Mock<IBookingNotificationService> notify) = CreateWorker();
         var failing = new Booking { BookingRef = "FAIL" };
         var succeeding = new Booking { BookingRef = "OK" };
         var tcs = new TaskCompletionSource();
@@ -155,7 +155,7 @@ public class NotificationWorkerTests
     [Fact]
     public async Task IgnoresUnrecognizedWorkItemTypes()
     {
-        (NotificationWorker worker, NotificationQueue queue, Mock<INotificationService> notify) = CreateWorker();
+        (NotificationWorker worker, NotificationQueue queue, Mock<IBookingNotificationService> notify) = CreateWorker();
         var afterUnknown = new Booking { BookingRef = "AFTER" };
         var tcs = new TaskCompletionSource();
         notify.Setup(n => n.NotifyBookingCreatedAsync(afterUnknown, "Resto"))

@@ -10,6 +10,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.AdminServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.NotificationServiceTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingNotificationServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.RestaurantManagementServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.WalkInTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerRestoreTests")]

@@ -7,6 +7,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.NotificationServiceTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingNotificationServiceTests")]
 [ExternalAccessAllowed]
 internal class AdminPushSubscriptionRepository(AppDbContext db) : IAdminPushSubscriptionRepository
 {

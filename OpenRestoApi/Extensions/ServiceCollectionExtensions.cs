@@ -198,6 +198,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailTemplateService, OpenRestoApi.Core.Application.Services.EmailTemplateService>();
         services.AddScoped<IBookingConfirmationService, OpenRestoApi.Core.Application.Services.BookingConfirmationService>();
         services.AddScoped<INotificationService, OpenRestoApi.Core.Application.Services.NotificationService>();
+        services.AddScoped<IBookingNotificationService, OpenRestoApi.Core.Application.Services.BookingNotificationService>();
         services.AddOptions<OpenRestoApi.Core.Application.Settings.VapidSettings>()
                 .BindConfiguration("Vapid");
 
