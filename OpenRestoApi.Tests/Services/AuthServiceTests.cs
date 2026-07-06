@@ -151,6 +151,20 @@ public class AuthServiceTests
         Assert.NotNull(await svc.LoginAsync("admin@example.com", "newpass"));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("short")]
+    [InlineData("12345")]
+    public async Task ChangePasswordAsync_Throws_ArgumentException_When_New_Password_Too_Short(string weak)
+    {
+        using AppDbContext db = CreateDb(nameof(ChangePasswordAsync_Throws_ArgumentException_When_New_Password_Too_Short) + weak);
+        SeedCredential(db, "admin@example.com", "pw");
+        AuthService svc = CreateService(db, BuildConfig());
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => svc.ChangePasswordAsync("pw", weak));
+        Assert.Contains("at least 6 characters", ex.Message);
+    }
+
     // ── ChangeEmailAsync ────────────────────────────────────────────────────────
 
     [Fact]
@@ -189,6 +203,21 @@ public class AuthServiceTests
         string? jwt = await svc.ChangeEmailAsync("wrong", "new@example.com");
 
         Assert.Null(jwt);
+    }
+
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("missing-domain@")]
+    [InlineData("@missing-local.com")]
+    [InlineData("   ")]
+    public async Task ChangeEmailAsync_Throws_ArgumentException_When_Email_Invalid(string malformed)
+    {
+        using AppDbContext db = CreateDb(nameof(ChangeEmailAsync_Throws_ArgumentException_When_Email_Invalid) + malformed.GetHashCode());
+        SeedCredential(db, "admin@example.com", "pw");
+        AuthService svc = CreateService(db, BuildConfig());
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => svc.ChangeEmailAsync("pw", malformed));
+        Assert.Contains("valid email", ex.Message);
     }
 
     // ── ResetPasswordAsync ──────────────────────────────────────────────────────
@@ -243,5 +272,22 @@ public class AuthServiceTests
         Assert.Null(after.ResetTokenExpiry);
         Assert.Null(await svc.LoginAsync("admin@example.com", "pw"));
         Assert.NotNull(await svc.LoginAsync("admin@example.com", "freshpw"));
+    }
+
+    [Theory]
+    [InlineData("short")]
+    [InlineData("12345")]
+    public async Task ResetPasswordAsync_Throws_ArgumentException_When_New_Password_Too_Short(string weak)
+    {
+        using AppDbContext db = CreateDb(nameof(ResetPasswordAsync_Throws_ArgumentException_When_New_Password_Too_Short) + weak);
+        SeedCredential(db, "admin@example.com", "pw");
+        AdminCredential cred = await db.AdminCredentials.SingleAsync();
+        cred.ResetToken = "valid-token";
+        cred.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+        await db.SaveChangesAsync();
+        AuthService svc = CreateService(db, BuildConfig());
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() => svc.ResetPasswordAsync("valid-token", weak));
+        Assert.Contains("at least 6 characters", ex.Message);
     }
 }

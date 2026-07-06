@@ -5,6 +5,22 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
+/// <summary>
+/// Outcome of <see cref="AdminService.SendBookingEmailAsync"/>. <see cref="Recipient"/> is populated
+/// only on <see cref="Sent"/> so the controller can echo it back in the success message without a
+/// second fetch. SMTP/transport failures are NOT surfaced here — they propagate as exceptions for
+/// the controller to map to a 400, preserving the prior behaviour.
+/// </summary>
+public enum SendBookingEmailStatus { Sent, NotFound, MissingFields, NoCustomerEmail }
+
+public record SendBookingEmailResult(SendBookingEmailStatus Status, string? Recipient = null)
+{
+    public static SendBookingEmailResult Sent(string recipient) => new(SendBookingEmailStatus.Sent, recipient);
+    public static SendBookingEmailResult NotFound() => new(SendBookingEmailStatus.NotFound);
+    public static SendBookingEmailResult MissingFields() => new(SendBookingEmailStatus.MissingFields);
+    public static SendBookingEmailResult NoCustomerEmail() => new(SendBookingEmailStatus.NoCustomerEmail);
+}
+
 public class AdminService(
     IBookingRepository bookingRepository,
     IBookingFilterRepository bookingFilterRepository,
@@ -12,6 +28,8 @@ public class AdminService(
     ISectionRepository sectionRepository,
     ITableRepository tableRepository,
     IHoldService holdService,
+    IEmailService emailService,
+    BrandService? brandService = null,
     INotificationQueue? notificationQueue = null)
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
@@ -20,6 +38,8 @@ public class AdminService(
     private readonly ISectionRepository _sectionRepository = sectionRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
     private readonly IHoldService _holdService = holdService;
+    private readonly IEmailService _emailService = emailService;
+    private readonly BrandService? _brandService = brandService;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
 
     public virtual async Task<AdminOverviewDto> GetOverviewAsync()
@@ -498,6 +518,36 @@ public class AdminService(
                 Seats = t.Seats,
             }).ToList(),
         }).ToList();
+    }
+
+    /// <summary>
+    /// Sends an arbitrary admin-authored email to a booking's customer. Resolves the booking,
+    /// validates that subject/body/customer-email are all present, wraps the body in the brand
+    /// template (via <see cref="EmailHelper.BuildEmailContentFromBrand"/>), and dispatches via
+    /// <see cref="IEmailService.SendEmailAsync"/>. SMTP/transport failures propagate as exceptions
+    /// — the controller catches them to map a 400, preserving the prior behaviour.
+    /// </summary>
+    public virtual async Task<SendBookingEmailResult> SendBookingEmailAsync(int bookingId, SendBookingEmailRequest req)
+    {
+        BookingDetailDto? booking = await GetBookingAsync(bookingId);
+        if (booking == null)
+        {
+            return SendBookingEmailResult.NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
+        {
+            return SendBookingEmailResult.MissingFields();
+        }
+
+        if (string.IsNullOrWhiteSpace(booking.CustomerEmail))
+        {
+            return SendBookingEmailResult.NoCustomerEmail();
+        }
+
+        string htmlBody = await EmailHelper.BuildEmailContentFromBrand(_brandService, req.Body);
+        await _emailService.SendEmailAsync(booking.CustomerEmail, req.Subject, htmlBody);
+        return SendBookingEmailResult.Sent(booking.CustomerEmail);
     }
 
     // ── Mapping ─────────────────────────────────────────────────────────────

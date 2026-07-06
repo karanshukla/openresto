@@ -156,6 +156,7 @@ public static class ServiceCollectionExtensions
         // HoldService must be Singleton — the in-memory dictionary must survive across requests
         services.AddSingleton<ISystemClock, SystemClock>();
         services.AddSingleton<IHoldService, HoldService>();
+        services.AddScoped<IHoldPolicyService, HoldPolicyService>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IBookingFilterRepository, BookingFilterRepository>();
@@ -193,6 +194,7 @@ public static class ServiceCollectionExtensions
             dpBuilder.PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
         services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
         services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
+        services.AddSingleton<IAuthCookieService, AuthCookieService>();
         services.AddScoped<Func<ISmtpClient>>(_ => () => new SmtpClient());
         services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
         services.AddScoped<IEmailTemplateService, OpenRestoApi.Core.Application.Services.EmailTemplateService>();

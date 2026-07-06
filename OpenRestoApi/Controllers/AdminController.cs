@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
@@ -9,12 +8,10 @@ namespace OpenRestoApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AdminController(AdminService adminService, IEmailService emailService, BrandService? brandService = null) : ControllerBase
+public class AdminController(AdminService adminService) : ControllerBase
 {
     public enum bookingStatus { active, cancelled, all, past, upcoming }
     private readonly AdminService _adminService = adminService;
-    private readonly IEmailService _email = emailService;
-    private readonly BrandService? _brand = brandService;
 
     [HttpGet("overview")]
     public async Task<IActionResult> Overview()
@@ -171,31 +168,16 @@ public class AdminController(AdminService adminService, IEmailService emailServi
     [HttpPost("bookings/{id}/email")]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
     {
-        BookingDetailDto? booking = await _adminService.GetBookingAsync(id);
-        if (booking == null)
-        {
-            return NotFound();
-        }
-
-        if (string.IsNullOrWhiteSpace(req.Subject) || string.IsNullOrWhiteSpace(req.Body))
-        {
-            return BadRequest(new MessageResponse { Message = "Subject and body are required." });
-        }
-
-        if (string.IsNullOrWhiteSpace(booking.CustomerEmail))
-        {
-            return BadRequest(new MessageResponse { Message = "Customer email is not available." });
-        }
-
         try
         {
-            string htmlBody = await EmailHelper.BuildEmailContentFromBrand(_brand, req.Body);
-            await _email.SendEmailAsync(booking.CustomerEmail, req.Subject, htmlBody);
-            return Ok(new MessageResponse { Message = $"Email sent to {booking.CustomerEmail}." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}" });
+            SendBookingEmailResult result = await _adminService.SendBookingEmailAsync(id, req);
+            return result.Status switch
+            {
+                SendBookingEmailStatus.NotFound => NotFound(),
+                SendBookingEmailStatus.MissingFields => BadRequest(new MessageResponse { Message = "Subject and body are required." }),
+                SendBookingEmailStatus.NoCustomerEmail => BadRequest(new MessageResponse { Message = "Customer email is not available." }),
+                _ => Ok(new MessageResponse { Message = $"Email sent to {result.Recipient}." })
+            };
         }
         catch (Exception ex)
         {

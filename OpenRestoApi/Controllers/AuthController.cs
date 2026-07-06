@@ -5,17 +5,20 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
-using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/admin/auth")]
 [EnableRateLimiting("auth")]
-public class AuthController(IAuthService authService, ISecurityQuestionsService securityQuestions) : ControllerBase
+public class AuthController(
+    IAuthService authService,
+    ISecurityQuestionsService securityQuestions,
+    IAuthCookieService cookies) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly ISecurityQuestionsService _securityQuestions = securityQuestions;
+    private readonly IAuthCookieService _cookies = cookies;
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
@@ -23,24 +26,14 @@ public class AuthController(IAuthService authService, ISecurityQuestionsService 
         string? jwt = await _authService.LoginAsync(req.Email, req.Password);
         if (jwt == null)
             return Unauthorized(new { message = "Invalid email or password." });
-        SetAuthCookie(jwt);
+        _cookies.Set(Response, jwt);
         return Ok(new { message = "Login successful." });
     }
 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        bool isProduction = !string.Equals(
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
-            "Development",
-            StringComparison.OrdinalIgnoreCase);
-
-        Response.Cookies.Delete("openresto_auth", new CookieOptions
-        {
-            Path = "/",
-            Secure = isProduction,
-            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
-        });
+        _cookies.Clear(Response);
         return Ok(new { message = "Logged out." });
     }
 
@@ -57,30 +50,34 @@ public class AuthController(IAuthService authService, ISecurityQuestionsService 
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
-        if (req.NewPassword.Length < 6)
-            return BadRequest(new { message = "New password must be at least 6 characters." });
-
-        bool ok = await _authService.ChangePasswordAsync(req.CurrentPassword, req.NewPassword);
-        if (!ok)
-            return Unauthorized(new { message = "Current password is incorrect." });
-        return Ok(new { message = "Password changed successfully." });
+        try
+        {
+            bool ok = await _authService.ChangePasswordAsync(req.CurrentPassword, req.NewPassword);
+            if (!ok)
+                return Unauthorized(new { message = "Current password is incorrect." });
+            return Ok(new { message = "Password changed successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("change-email")]
     [Authorize]
     public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest req)
     {
-        string trimmedEmail = req.NewEmail?.Trim() ?? string.Empty;
-        if (!EmailValidator.IsValid(trimmedEmail))
-            return BadRequest(new { message = "A valid email address is required." });
-
         try
         {
-            string? jwt = await _authService.ChangeEmailAsync(req.CurrentPassword, trimmedEmail);
+            string? jwt = await _authService.ChangeEmailAsync(req.CurrentPassword, req.NewEmail ?? string.Empty);
             if (jwt == null)
                 return Unauthorized(new { message = "Current password is incorrect." });
-            SetAuthCookie(jwt);
-            return Ok(new { message = "Email changed successfully.", email = trimmedEmail.ToLowerInvariant() });
+            _cookies.Set(Response, jwt);
+            return Ok(new { message = "Email changed successfully.", email = req.NewEmail!.Trim().ToLowerInvariant() });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException)
         {
@@ -120,29 +117,16 @@ public class AuthController(IAuthService authService, ISecurityQuestionsService 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
     {
-        if (req.NewPassword.Length < 6)
-            return BadRequest(new { message = "Password must be at least 6 characters." });
-
-        bool ok = await _authService.ResetPasswordAsync(req.ResetToken, req.NewPassword);
-        if (!ok)
-            return BadRequest(new { message = "Invalid or expired reset token." });
-        return Ok(new { message = "Password reset successfully." });
-    }
-
-    private void SetAuthCookie(string jwt)
-    {
-        bool isProduction = !string.Equals(
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
-            "Development",
-            StringComparison.OrdinalIgnoreCase);
-
-        Response.Cookies.Append("openresto_auth", jwt, new CookieOptions
+        try
         {
-            HttpOnly = true,
-            Secure = isProduction,
-            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
-            Path = "/",
-            Expires = DateTimeOffset.UtcNow.AddDays(30),
-        });
+            bool ok = await _authService.ResetPasswordAsync(req.ResetToken, req.NewPassword);
+            if (!ok)
+                return BadRequest(new { message = "Invalid or expired reset token." });
+            return Ok(new { message = "Password reset successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

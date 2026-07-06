@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -31,6 +32,8 @@ public class AuthService(
 
     public virtual async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {
+        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            throw new ArgumentException("Password must be at least 6 characters.");
         AdminCredential cred = await GetOrCreateCredentialAsync();
         if (!_passwordService.Verify(currentPassword, cred.PasswordHash, cred.PasswordSalt))
             return false;
@@ -41,6 +44,8 @@ public class AuthService(
 
     public virtual async Task<string?> ChangeEmailAsync(string currentPassword, string newEmail)
     {
+        if (!EmailValidator.IsValid(newEmail))
+            throw new ArgumentException("A valid email address is required.");
         AdminCredential cred = await GetOrCreateCredentialAsync();
         if (!_passwordService.Verify(currentPassword, cred.PasswordHash, cred.PasswordSalt))
             return null;
@@ -54,6 +59,8 @@ public class AuthService(
 
     public virtual async Task<bool> ResetPasswordAsync(string resetToken, string newPassword)
     {
+        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            throw new ArgumentException("Password must be at least 6 characters.");
         AdminCredential? cred = await _credentialRepository.GetByResetTokenAsync(resetToken);
         if (cred == null || cred.ResetTokenExpiry < DateTime.UtcNow)
             return false;

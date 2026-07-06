@@ -32,15 +32,16 @@ namespace OpenRestoApi.Tests.Controllers
             SeedTestData();
 
             var holdService = new Mock<IHoldService>().Object;
+            var emailService = new MockEmailService();
             var adminService = new OpenRestoApi.Core.Application.Services.AdminService(
                 new BookingRepository(_dbContext),
                 new BookingFilterRepository(_dbContext),
                 new RestaurantRepository(_dbContext),
                 new SectionRepository(_dbContext),
                 new TableRepository(_dbContext),
-                holdService);
-            var emailService = new MockEmailService();
-            _adminController = new AdminController(adminService, emailService);
+                holdService,
+                emailService);
+            _adminController = new AdminController(adminService);
         }
 
         private void SeedTestData()

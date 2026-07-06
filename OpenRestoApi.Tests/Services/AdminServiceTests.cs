@@ -15,6 +15,7 @@ public class AdminServiceTests : IDisposable
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _db;
     private readonly Mock<IHoldService> _holdServiceMock = new();
+    private readonly Mock<IEmailService> _emailServiceMock = new();
 
     public AdminServiceTests()
     {
@@ -44,7 +45,8 @@ public class AdminServiceTests : IDisposable
             new RestaurantRepository(_db),
             new SectionRepository(_db),
             new TableRepository(_db),
-            _holdServiceMock.Object);
+            _holdServiceMock.Object,
+            _emailServiceMock.Object);
     }
 
     private void SeedBase(int restaurantId = 1)
