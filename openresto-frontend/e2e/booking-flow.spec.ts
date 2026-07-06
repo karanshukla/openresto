@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { futureDateStr } from "./helpers";
+import { futureDateStr, selectBookingDate } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 const PASTA_PLACE_ID = 1;
@@ -47,19 +47,8 @@ test.describe("Customer booking end to end", () => {
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
     await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
 
-    // ── 2. Set a date 14 days out ─────────────────────────────────────────────
-    // plain fill() sets the native value but React's controlled input may not
-    // fire onChange. Use the native setter + synthetic events so React re-renders.
-    await page.evaluate((value: string) => {
-      const input = document.querySelector('input[type="date"]') as HTMLInputElement;
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )!.set!;
-      nativeSetter.call(input, value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    }, futureDateStr(14));
+    // ── 2. Set a date 14 days out via the calendar picker ────────────────────
+    await selectBookingDate(page, futureDateStr(14));
 
     // ── 3. Wait for availability to load, then pick a midday slot ────────────
     // Waiting for the "Lunch" tab confirms availability has loaded.

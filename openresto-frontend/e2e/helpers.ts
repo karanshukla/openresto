@@ -105,6 +105,27 @@ export function futureDateStr(daysAhead = 7): string {
   return d.toISOString().split("T")[0];
 }
 
+/**
+ * Selects a date on the custom calendar-grid DatePicker (web), which replaced
+ * the native <input type="date"> — the OS/browser date picker couldn't grey
+ * out individual closed weekdays, so it's now a component we render and
+ * control ourselves (see components/common/DatePicker.web.tsx).
+ *
+ * Opens the picker, clicks "next month" until the target day's cell is in the
+ * DOM (cells for other months aren't rendered at all), then clicks it.
+ */
+export async function selectBookingDate(page: Page, dateStr: string): Promise<void> {
+  await page.getByTestId("date-picker-trigger").click();
+  await expect(page.getByTestId("date-picker-calendar")).toBeVisible({ timeout: 10_000 });
+
+  const dayCell = page.getByTestId(`date-picker-day-${dateStr}`);
+  for (let attempt = 0; attempt < 6 && !(await dayCell.isVisible()); attempt++) {
+    await page.getByTestId("date-picker-next-month").click();
+  }
+  await expect(dayCell).toBeVisible({ timeout: 5_000 });
+  await dayCell.click();
+}
+
 /** Returns a UTC ISO timestamp for N minutes ago. */
 export function pastUtcISO(minutesAgo: number): string {
   return new Date(Date.now() - minutesAgo * 60_000).toISOString();

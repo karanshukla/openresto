@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { futureDateStr } from "./helpers";
+import { futureDateStr, selectBookingDate } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 const PASTA_PLACE_ID = 1;
@@ -54,19 +54,10 @@ test.describe("Booking Flow", () => {
       await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
     }
 
-    // 3. Set a far-out date via the native setter so React's controlled input fires onChange.
+    // 3. Set a far-out date via the calendar picker.
     //    21 days out uses a different date than booking-flow.spec.ts (14 days) to avoid
     //    accumulating bookings on the same date across test files.
-    await page.evaluate((value: string) => {
-      const input = document.querySelector('input[type="date"]') as HTMLInputElement;
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )!.set!;
-      nativeSetter.call(input, value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    }, futureDateStr(21));
+    await selectBookingDate(page, futureDateStr(21));
 
     // 4. Wait for availability then click a lunchtime slot
     await expect(page.getByText("Lunch").first()).toBeVisible({ timeout: 20_000 });

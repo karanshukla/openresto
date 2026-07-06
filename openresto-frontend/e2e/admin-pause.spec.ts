@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoAdminDashboard, futureDateStr } from "./helpers";
+import { gotoAdminDashboard, futureDateStr, selectBookingDate } from "./helpers";
 
 const PASTA_PLACE_ID = 1;
 
@@ -33,9 +33,9 @@ test.describe("Admin pause bookings", () => {
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
     await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
 
-    // Pick tomorrow via the native date input so we're not looking at today's
+    // Pick tomorrow via the calendar picker so we're not looking at today's
     // half-gone slot list for an unrelated reason
-    await page.locator('input[type="date"]').fill(futureDateStr(1));
+    await selectBookingDate(page, futureDateStr(1));
 
     // When paused, every slot has isAvailable:false → PopularTimesPicker shows
     // "No slots available for this period." on every category tab
