@@ -26,7 +26,7 @@ public class AuthController(
         string? jwt = await _authService.LoginAsync(req.Email, req.Password);
         if (jwt == null)
             return Unauthorized(new { message = "Invalid email or password." });
-        _cookies.Set(Response, jwt);
+        _cookies.SetCookie(Response, jwt);
         return Ok(new { message = "Login successful." });
     }
 
@@ -67,7 +67,7 @@ public class AuthController(
         string? jwt = await _authService.ChangeEmailAsync(req.CurrentPassword, req.NewEmail ?? string.Empty);
         if (jwt == null)
             return Unauthorized(new { message = "Current password is incorrect." });
-        _cookies.Set(Response, jwt);
+        _cookies.SetCookie(Response, jwt);
         return Ok(new { message = "Email changed successfully.", email = req.NewEmail!.Trim().ToLowerInvariant() });
     }
 

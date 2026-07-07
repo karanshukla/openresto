@@ -34,7 +34,7 @@ public class AuthCookieServiceTests
         var svc = new AuthCookieService(Env("Development"));
         HttpResponse response = NewResponse();
 
-        svc.Set(response, "jwt-token");
+        svc.SetCookie(response, "jwt-token");
 
         SetCookieHeaderValue cookie = ParseSingle(response);
         Assert.Equal(_cookieName, cookie.Name.Value);
@@ -53,7 +53,7 @@ public class AuthCookieServiceTests
         var svc = new AuthCookieService(Env("Production"));
         HttpResponse response = NewResponse();
 
-        svc.Set(response, "jwt-token");
+        svc.SetCookie(response, "jwt-token");
 
         SetCookieHeaderValue cookie = ParseSingle(response);
         Assert.Equal(_cookieName, cookie.Name.Value);

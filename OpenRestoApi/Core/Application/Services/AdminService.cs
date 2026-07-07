@@ -7,13 +7,16 @@ using OpenRestoApi.Core.Domain;
 namespace OpenRestoApi.Core.Application.Services;
 
 /// <summary>
-/// Outcome of <see cref="AdminService.SendBookingEmailAsync"/>. <see cref="Recipient"/> is populated
+/// Outcome status of <see cref="AdminService.SendBookingEmailAsync"/>.
+/// </summary>
+public enum SendBookingEmailStatus { Sent, NotFound, MissingFields, NoCustomerEmail }
+
+/// <summary>
+/// Result of <see cref="AdminService.SendBookingEmailAsync"/>. <see cref="Recipient"/> is populated
 /// only on <see cref="Sent"/> so the controller can echo it back in the success message without a
 /// second fetch. SMTP/transport failures are NOT surfaced here — they propagate as exceptions for
 /// the controller to map to a 400, preserving the prior behaviour.
 /// </summary>
-public enum SendBookingEmailStatus { Sent, NotFound, MissingFields, NoCustomerEmail }
-
 public record SendBookingEmailResult(SendBookingEmailStatus Status, string? Recipient = null)
 {
     public static SendBookingEmailResult Sent(string recipient) => new(SendBookingEmailStatus.Sent, recipient);

@@ -9,7 +9,7 @@ namespace OpenRestoApi.Core.Application.Interfaces;
 public interface IAuthCookieService
 {
     /// <summary>Appends the JWT to the response as an HttpOnly cookie.</summary>
-    void Set(HttpResponse response, string jwt);
+    void SetCookie(HttpResponse response, string jwt);
 
     /// <summary>Deletes the auth cookie (logout).</summary>
     void Clear(HttpResponse response);

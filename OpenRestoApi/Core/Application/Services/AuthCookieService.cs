@@ -13,7 +13,7 @@ public sealed class AuthCookieService(IWebHostEnvironment env) : IAuthCookieServ
     private const string _cookieName = "openresto_auth";
     private readonly bool _isProduction = !env.IsDevelopment();
 
-    public void Set(HttpResponse response, string jwt)
+    public void SetCookie(HttpResponse response, string jwt)
     {
         response.Cookies.Append(_cookieName, jwt, new CookieOptions
         {
