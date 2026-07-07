@@ -2,32 +2,14 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import RestaurantScreen from "@/app/(user)/restaurant/[id]";
-import { AppThemeProvider } from "@/context/ThemeContext";
-import { BrandProvider } from "@/context/BrandContext";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-// Polyfill fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-  })
-) as jest.Mock;
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="mock-footer" /> };
 });
-
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
-}));
-
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
-}));
 
 const mockPush = jest.fn();
 const mockUseLocalSearchParams = jest.fn(() => ({ id: "1" }));
@@ -69,21 +51,6 @@ describe("RestaurantScreen", () => {
     const { fetchRestaurantById } = require("@/api/restaurants");
     fetchRestaurantById.mockResolvedValue(mockRestaurant);
   });
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   it("renders restaurant name after loading", async () => {
     renderWithProviders(<RestaurantScreen />);

@@ -2,28 +2,16 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { Platform, ScrollView } from "react-native";
 import HomeScreen, { resetHomeCache } from "@/app/(user)/index";
 import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
-import { BrandProvider } from "@/context/BrandContext";
-
-// Polyfill fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-  })
-) as jest.Mock;
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="mock-footer" /> };
 });
-
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: jest.fn(() => null),
-}));
 
 jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn(),
@@ -53,9 +41,6 @@ jest.mock("expo-router", () => {
     Link: jest.fn(({ children }) => children),
   };
 });
-
-import { AppThemeProvider } from "@/context/ThemeContext";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 
 jest.setTimeout(15000);
 
@@ -97,21 +82,6 @@ describe("HomeScreen", () => {
       },
     ]);
   });
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   it("renders loading state initially", async () => {
     renderWithProviders(<HomeScreen />);
@@ -187,11 +157,15 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Curated by the owner")).toBeTruthy();
   });
 
-  it("renders empty highlights gracefully", async () => {
+  it("renders empty highlights gracefully (section heading hidden too)", async () => {
     (fetchHighlights as jest.Mock).mockResolvedValue([]);
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    // No highlights → the entire section (heading + "Curated by the owner" tag
+    // + grid) must be absent, not just the card body.
     expect(screen.queryByText("Wood-fired kitchen")).toBeNull();
+    expect(screen.queryByText("Restaurant highlights")).toBeNull();
+    expect(screen.queryByText("Curated by the owner")).toBeNull();
   });
 
   it("onScroll handler updates scrollY", async () => {

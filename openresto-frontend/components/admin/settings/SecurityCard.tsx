@@ -5,7 +5,8 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
+import { validatePasswordChange } from "@/utils/validation";
 import {
   getPvqStatus,
   setupPvq,
@@ -14,7 +15,7 @@ import {
   checkSession,
   PvqStatus,
 } from "@/api/auth";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 
@@ -43,8 +44,7 @@ export function SecurityCard({
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [expanded, setExpanded] = usePersistedState("settings:security:expanded", true);
 
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
 
   useEffect(() => {
     getPvqStatus().then(setPvqStatus);
@@ -81,12 +81,9 @@ export function SecurityCard({
   };
 
   const handleChangePw = async () => {
-    if (newPw !== confirmPw) {
-      setMsg({ text: "Passwords do not match.", ok: false });
-      return;
-    }
-    if (newPw.length < 6) {
-      setMsg({ text: "Password must be at least 6 characters.", ok: false });
+    const v = validatePasswordChange(newPw, confirmPw);
+    if (!v.ok) {
+      setMsg({ text: v.error, ok: false });
       return;
     }
     setSaving(true);
@@ -192,7 +189,7 @@ export function SecurityCard({
                   {pvqStatus.question}
                 </ThemedText>
               ) : (
-                <ThemedText style={[styles.secRowSub, { color: COLORS.warning }]}>
+                <ThemedText style={[styles.secRowSub, { color: theme.colors.warning }]}>
                   Not configured — set one up to enable password reset
                 </ThemedText>
               )}

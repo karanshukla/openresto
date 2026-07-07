@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoAdminDashboard } from "./helpers";
+import { gotoAdminDashboard, expectVisibleWithReload } from "./helpers";
 
 // Seeded restaurant structure (see admin-extend.spec.ts for the same reference table):
 //   Pasta Place (id=1)
@@ -36,7 +36,9 @@ test.describe("Admin reorder sections", () => {
   test("moving a section down via the settings UI persists across reload", async ({ page }) => {
     await gotoAdminDashboard(page);
     await page.goto("/locations");
-    await expect(page.getByText("Sections & tables")).toBeVisible({ timeout: 20_000 });
+    // /locations hydrates from rate-limited admin fetches; reload (cool-down
+    // first) if the page hasn't rendered within the window.
+    await expectVisibleWithReload(page, page.getByText("Sections & tables"), { timeout: 20_000 });
 
     // Sanity check the seeded starting order: Indoor above Patio.
     const indoorBefore = await page.getByText("Indoor", { exact: true }).boundingBox();
@@ -78,7 +80,9 @@ test.describe("Admin reorder sections", () => {
   }) => {
     await gotoAdminDashboard(page);
     await page.goto("/locations");
-    await expect(page.getByText("Sections & tables")).toBeVisible({ timeout: 20_000 });
+    // /locations hydrates from rate-limited admin fetches; reload (cool-down
+    // first) if the page hasn't rendered within the window.
+    await expectVisibleWithReload(page, page.getByText("Sections & tables"), { timeout: 20_000 });
 
     const moveUpButtons = page.getByTestId("section-move-up-btn");
     const moveDownButtons = page.getByTestId("section-move-down-btn");

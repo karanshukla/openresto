@@ -2,9 +2,9 @@ import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { theme, getThemeColors } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./settings.styles";
 
 export function EditableRow({
@@ -29,8 +29,7 @@ export function EditableRow({
   const [saving, setSaving] = useState(false);
   const colors = getThemeColors(isDark);
   const mutedColor = colors.muted;
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
 
   if (!editing) {
     return (
@@ -54,7 +53,7 @@ export function EditableRow({
                 if (ok) await onDelete();
               }}
             >
-              <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+              <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
             </Pressable>
           )}
         </View>

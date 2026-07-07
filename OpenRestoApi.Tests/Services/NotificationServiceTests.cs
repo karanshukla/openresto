@@ -7,6 +7,7 @@ using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -36,7 +37,11 @@ public class NotificationServiceTests : IDisposable
     private NotificationService CreateService(VapidSettings? vapid = null)
     {
         vapid ??= new VapidSettings();
-        return new NotificationService(_db, Options.Create(vapid), NullLogger<NotificationService>.Instance);
+        return new NotificationService(
+            new AdminNotificationRepository(_db),
+            new AdminPushSubscriptionRepository(_db),
+            Options.Create(vapid),
+            NullLogger<NotificationService>.Instance);
     }
 
     private async Task<Restaurant> SeedRestaurantAsync(int id = 1)
@@ -76,181 +81,10 @@ public class NotificationServiceTests : IDisposable
         Assert.Equal("my-public-key", svc.GetVapidPublicKey());
     }
 
-    // ── NotifyBookingCreatedAsync ─────────────────────────────────────────────
-
-    [Fact]
-    public async Task NotifyBookingCreatedAsync_CreatesNotification()
-    {
-        await SeedRestaurantAsync();
-        var booking = MakeBooking();
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
-
-        await CreateService().NotifyBookingCreatedAsync(booking, "My Restaurant");
-
-        AdminNotification? n = await _db.AdminNotifications.FirstOrDefaultAsync();
-        Assert.NotNull(n);
-        Assert.Equal(NotificationType.BookingCreated, n.Type);
-        Assert.Equal("My Restaurant", n.RestaurantName);
-        Assert.Equal("Alice", n.CustomerName);
-        Assert.Equal(2, n.Seats);
-        Assert.False(n.IsRead);
-    }
-
-    [Fact]
-    public async Task NotifyBookingCreatedAsync_UsesGuestFallback_WhenCustomerNameNull()
-    {
-        await SeedRestaurantAsync();
-        var booking = MakeBooking();
-        booking.CustomerName = null;
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
-
-        await CreateService().NotifyBookingCreatedAsync(booking, "Resto");
-
-        AdminNotification? n = await _db.AdminNotifications.FirstOrDefaultAsync();
-        Assert.Equal("Guest", n!.CustomerName);
-    }
-
-    // ── NotifyBookingCancelledAsync ───────────────────────────────────────────
-
-    [Fact]
-    public async Task NotifyBookingCancelledAsync_CreatesNotification()
-    {
-        await SeedRestaurantAsync();
-        var booking = MakeBooking();
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
-
-        await CreateService().NotifyBookingCancelledAsync(booking, "Resto");
-
-        AdminNotification? n = await _db.AdminNotifications.FirstOrDefaultAsync();
-        Assert.NotNull(n);
-        Assert.Equal(NotificationType.BookingCancelled, n.Type);
-    }
-
-    [Fact]
-    public async Task NotifyBookingCancelledAsync_UsesGuestFallback_WhenCustomerNameNull()
-    {
-        await SeedRestaurantAsync();
-        var booking = MakeBooking();
-        booking.CustomerName = null;
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync();
-
-        await CreateService().NotifyBookingCancelledAsync(booking, "Resto");
-
-        AdminNotification? n = await _db.AdminNotifications.FirstOrDefaultAsync();
-        Assert.Equal("Guest", n!.CustomerName);
-    }
-
-    // ── CheckAndNotifyCapacityAsync ───────────────────────────────────────────
-
-    [Fact]
-    public async Task CheckAndNotifyCapacityAsync_SkipsWhenNoTables()
-    {
-        await CreateService().CheckAndNotifyCapacityAsync(1, "Resto", DateTime.UtcNow);
-        Assert.Empty(await _db.AdminNotifications.ToListAsync());
-    }
-
-    [Fact]
-    public async Task CheckAndNotifyCapacityAsync_FiresWhenThresholdCrossed()
-    {
-        await SeedRestaurantAsync();
-        var section = new Section { Name = "Main", RestaurantId = 1 };
-        _db.Sections.Add(section);
-        await _db.SaveChangesAsync();
-        for (int i = 0; i < 5; i++)
-            _db.Tables.Add(new Table { Name = $"T{i}", Seats = 4, SectionId = section.Id });
-        await _db.SaveChangesAsync();
-
-        // 4/5 = 80% — just crosses the 0.8 threshold
-        DateTime date = DateTime.UtcNow.Date.AddHours(12);
-        int tableId = 1;
-        foreach (Table t in await _db.Tables.ToListAsync())
-        {
-            if (tableId > 4) break;
-            _db.Bookings.Add(new Booking
-            {
-                BookingRef = $"REF{tableId}",
-                RestaurantId = 1,
-                TableId = t.Id,
-                Date = date,
-                Seats = 2,
-                IsCancelled = false,
-            });
-            tableId++;
-        }
-        await _db.SaveChangesAsync();
-
-        await CreateService().CheckAndNotifyCapacityAsync(1, "Resto", date);
-
-        AdminNotification? n = await _db.AdminNotifications.FirstOrDefaultAsync();
-        Assert.NotNull(n);
-        Assert.Equal(NotificationType.RestaurantNearlyFull, n.Type);
-    }
-
-    [Fact]
-    public async Task CheckAndNotifyCapacityAsync_SkipsBelowThreshold()
-    {
-        await SeedRestaurantAsync();
-        var section = new Section { Name = "Main", RestaurantId = 1 };
-        _db.Sections.Add(section);
-        await _db.SaveChangesAsync();
-        for (int i = 0; i < 5; i++)
-            _db.Tables.Add(new Table { Name = $"T{i}", Seats = 4, SectionId = section.Id });
-        await _db.SaveChangesAsync();
-
-        // 3/5 = 60% — below 80% threshold
-        DateTime date = DateTime.UtcNow.Date.AddHours(12);
-        int count = 0;
-        foreach (Table t in await _db.Tables.ToListAsync())
-        {
-            if (count >= 3) break;
-            _db.Bookings.Add(new Booking { BookingRef = $"R{count}", RestaurantId = 1, TableId = t.Id, Date = date, Seats = 2, IsCancelled = false });
-            count++;
-        }
-        await _db.SaveChangesAsync();
-
-        await CreateService().CheckAndNotifyCapacityAsync(1, "Resto", date);
-
-        Assert.Empty(await _db.AdminNotifications.ToListAsync());
-    }
-
-    [Fact]
-    public async Task CheckAndNotifyCapacityAsync_DeduplicatesNearlyFull()
-    {
-        await SeedRestaurantAsync();
-        var section = new Section { Name = "Main", RestaurantId = 1 };
-        _db.Sections.Add(section);
-        await _db.SaveChangesAsync();
-        for (int i = 0; i < 5; i++)
-            _db.Tables.Add(new Table { Name = $"T{i}", Seats = 4, SectionId = section.Id });
-        await _db.SaveChangesAsync();
-
-        DateTime date = DateTime.UtcNow.Date.AddHours(12);
-        int count = 0;
-        foreach (Table t in await _db.Tables.ToListAsync())
-        {
-            if (count >= 4) break;
-            _db.Bookings.Add(new Booking { BookingRef = $"R{count}", RestaurantId = 1, TableId = t.Id, Date = date, Seats = 2, IsCancelled = false });
-            count++;
-        }
-        // Seed an existing NearlyFull notification for today
-        _db.AdminNotifications.Add(new AdminNotification
-        {
-            RestaurantId = 1,
-            Type = NotificationType.RestaurantNearlyFull,
-            BookingDate = date,
-            BookingRef = string.Empty,
-            CreatedAt = DateTime.UtcNow,
-        });
-        await _db.SaveChangesAsync();
-
-        await CreateService().CheckAndNotifyCapacityAsync(1, "Resto", date);
-
-        Assert.Equal(1, await _db.AdminNotifications.CountAsync());
-    }
+    // Booking-event and capacity-threshold notification tests moved to
+    // BookingNotificationServiceTests (those methods now live on IBookingNotificationService,
+    // consumed by the background NotificationWorker — no longer on the controller-facing
+    // INotificationService surface tested here).
 
     // ── GetNotificationsAsync ─────────────────────────────────────────────────
 

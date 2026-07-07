@@ -1,14 +1,13 @@
 import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
-import { Platform } from "react-native";
+import { StorageService } from "@/services/storage";
 
 export function usePersistedState<T>(
   key: string,
   defaultValue: T
 ): [T, Dispatch<SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
-    if (Platform.OS !== "web") return defaultValue;
+    const stored = StorageService.getItem(key);
     try {
-      const stored = localStorage.getItem(key);
       return stored !== null ? (JSON.parse(stored) as T) : defaultValue;
     } catch {
       return defaultValue;
@@ -16,12 +15,7 @@ export function usePersistedState<T>(
   });
 
   useEffect(() => {
-    if (Platform.OS !== "web") return;
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {
-      // storage full or unavailable — ignore
-    }
+    StorageService.setItem(key, JSON.stringify(state));
   }, [key, state]);
 
   return [state, setState];

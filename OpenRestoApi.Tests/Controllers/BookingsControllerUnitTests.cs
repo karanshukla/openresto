@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Infrastructure.Cookies;
 
@@ -17,7 +18,7 @@ public class BookingsControllerUnitTests
 
     public BookingsControllerUnitTests()
     {
-        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
+        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!);
 
         var mockProvider = new Mock<IDataProtectionProvider>();
         mockProvider.Setup(p => p.CreateProtector(It.IsAny<string>())).Returns(new Mock<IDataProtector>().Object);
@@ -28,14 +29,16 @@ public class BookingsControllerUnitTests
     }
 
     [Fact]
-    public async Task CreateBooking_InvalidOperationException_ReturnsConflict()
+    public async Task CreateBooking_ConflictException_Propagates()
     {
+        // Post-Bundle-6 the controller no longer catches; ConflictException propagates
+        // to GlobalExceptionHandler which maps it → 409 with a {message} body.
         _mockBookingService.Setup(s => s.CreateBookingAsync(It.IsAny<BookingDto>()))
-            .ThrowsAsync(new InvalidOperationException("Conflict"));
+            .ThrowsAsync(new ConflictException("Conflict"));
 
-        var result = await _controller.CreateBooking(new BookingDto());
-
-        Assert.IsType<ConflictObjectResult>(result);
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(
+            () => _controller.CreateBooking(new BookingDto()));
+        Assert.Equal("Conflict", ex.Message);
     }
 
     [Fact]
@@ -99,14 +102,14 @@ public class BookingsControllerUnitTests
     }
 
     [Fact]
-    public async Task CancelBookingByRef_ReturnsConflict_WhenBookingIsInThePast()
+    public async Task CancelBookingByRef_ConflictException_Propagates_WhenBookingIsInThePast()
     {
+        // ConflictException → 409 is mapped by GlobalExceptionHandler.
         _mockBookingService.Setup(s => s.CancelBookingAsync("R", "a@a.com"))
-            .ThrowsAsync(new InvalidOperationException("Cannot cancel a booking that has already passed."));
+            .ThrowsAsync(new ConflictException("Cannot cancel a booking that has already passed."));
 
-        var result = await _controller.CancelBookingByRef("R", new CancelBookingByRefRequest { Email = "a@a.com" });
-
-        var conflict = Assert.IsType<ConflictObjectResult>(result);
-        Assert.Contains("already passed", conflict.Value!.ToString());
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(
+            () => _controller.CancelBookingByRef("R", new CancelBookingByRefRequest { Email = "a@a.com" }));
+        Assert.Contains("already passed", ex.Message);
     }
 }

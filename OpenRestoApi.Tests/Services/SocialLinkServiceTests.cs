@@ -3,24 +3,17 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
 public class SocialLinkServiceTests
 {
-    private static AppDbContext CreateDb(string name)
-    {
-        DbContextOptions<AppDbContext> opts = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(name)
-            .Options;
-        return new AppDbContext(opts);
-    }
-
     [Fact]
     public async Task GetAllAsync_ReturnsEmpty_WhenNoSocialLinks()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_ReturnsEmpty_WhenNoSocialLinks));
-        var svc = new SocialLinkService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_ReturnsEmpty_WhenNoSocialLinks));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
 
         List<SocialLinkDto> result = await svc.GetAllAsync();
 
@@ -30,7 +23,7 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task GetAllAsync_ReturnsSortedBySortOrderThenId()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_ReturnsSortedBySortOrderThenId));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_ReturnsSortedBySortOrderThenId));
         db.SocialLinks.AddRange(
             new SocialLink { Label = "C", Url = "https://c.example.com", SortOrder = 2 },
             new SocialLink { Label = "A", Url = "https://a.example.com", SortOrder = 1 },
@@ -38,7 +31,7 @@ public class SocialLinkServiceTests
         );
         await db.SaveChangesAsync();
 
-        var svc = new SocialLinkService(db);
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         List<SocialLinkDto> result = await svc.GetAllAsync();
 
         Assert.Equal(3, result.Count);
@@ -50,7 +43,7 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task GetAllAsync_MapsAllFields()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_MapsAllFields));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_MapsAllFields));
         db.SocialLinks.Add(new SocialLink
         {
             Label = "Instagram",
@@ -60,7 +53,7 @@ public class SocialLinkServiceTests
         });
         await db.SaveChangesAsync();
 
-        var svc = new SocialLinkService(db);
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         List<SocialLinkDto> result = await svc.GetAllAsync();
 
         SocialLinkDto dto = Assert.Single(result);
@@ -74,8 +67,8 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task CreateAsync_PersistsAndReturnsDto()
     {
-        using AppDbContext db = CreateDb(nameof(CreateAsync_PersistsAndReturnsDto));
-        var svc = new SocialLinkService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_PersistsAndReturnsDto));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         var req = new CreateSocialLinkRequest
         {
             Label = "Yelp",
@@ -96,12 +89,12 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsUpdatedDto_WhenFound()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_ReturnsUpdatedDto_WhenFound));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsUpdatedDto_WhenFound));
         db.SocialLinks.Add(new SocialLink { Label = "Old", Url = "https://old.example.com", SortOrder = 0 });
         await db.SaveChangesAsync();
         int id = db.SocialLinks.First().Id;
 
-        var svc = new SocialLinkService(db);
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         var req = new UpdateSocialLinkRequest
         {
             Label = "New",
@@ -122,8 +115,8 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsNull_WhenNotFound()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
-        var svc = new SocialLinkService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         var req = new UpdateSocialLinkRequest { Label = "X", Url = "https://x.example.com", SortOrder = 0 };
 
         SocialLinkDto? result = await svc.UpdateAsync(9999, req);
@@ -134,12 +127,12 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsTrue_WhenFound()
     {
-        using AppDbContext db = CreateDb(nameof(DeleteAsync_ReturnsTrue_WhenFound));
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteAsync_ReturnsTrue_WhenFound));
         db.SocialLinks.Add(new SocialLink { Label = "Del", Url = "https://del.example.com", SortOrder = 0 });
         await db.SaveChangesAsync();
         int id = db.SocialLinks.First().Id;
 
-        var svc = new SocialLinkService(db);
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
         bool result = await svc.DeleteAsync(id);
 
         Assert.True(result);
@@ -149,8 +142,8 @@ public class SocialLinkServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsFalse_WhenNotFound()
     {
-        using AppDbContext db = CreateDb(nameof(DeleteAsync_ReturnsFalse_WhenNotFound));
-        var svc = new SocialLinkService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteAsync_ReturnsFalse_WhenNotFound));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
 
         bool result = await svc.DeleteAsync(9999);
 

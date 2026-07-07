@@ -1,13 +1,13 @@
 using System.Text.RegularExpressions;
-using Microsoft.EntityFrameworkCore;
+using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class BrandService(AppDbContext db, IConfiguration configuration)
+public class BrandService(IBrandSettingsRepository brandRepository, IConfiguration configuration)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IBrandSettingsRepository _brandRepository = brandRepository;
     private readonly IConfiguration _configuration = configuration;
 
     private static bool IsValidHexColor(string color)
@@ -38,13 +38,13 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
 
     public async Task<string> GetWebsiteUrlAsync()
     {
-        BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
+        BrandSettings? brand = await _brandRepository.GetAsync();
         return GetWebsiteUrl(brand);
     }
 
     public async Task<BrandSettings> GetAsync()
     {
-        return await _db.Set<BrandSettings>().FirstOrDefaultAsync()
+        return await _brandRepository.GetAsync()
             ?? new BrandSettings
             {
                 AppName = "Open Resto",
@@ -62,34 +62,35 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
     {
         if (appName != null && appName.Length > 32)
         {
-            throw new ArgumentException("App name cannot exceed 32 characters.");
+            throw new ValidationException("App name cannot exceed 32 characters.");
         }
 
         if (primaryColor != null && !IsValidHexColor(primaryColor))
         {
-            throw new ArgumentException("Invalid primary color hex code.");
+            throw new ValidationException("Invalid primary color hex code.");
         }
 
         if (accentColor != null && !IsValidHexColor(accentColor))
         {
-            throw new ArgumentException("Invalid accent color hex code.");
+            throw new ValidationException("Invalid accent color hex code.");
         }
 
         if (faviconIcon != null && LucideIconPaths.Get(faviconIcon) == null)
         {
-            throw new ArgumentException("Invalid favicon icon.");
+            throw new ValidationException("Invalid favicon icon.");
         }
 
         if (copyrightText != null && copyrightText.Length > 200)
         {
-            throw new ArgumentException("Copyright text cannot exceed 200 characters.");
+            throw new ValidationException("Copyright text cannot exceed 200 characters.");
         }
 
-        BrandSettings? brand = await _db.Set<BrandSettings>().FirstOrDefaultAsync();
+        BrandSettings? brand = await _brandRepository.GetAsync();
+        bool isNew = false;
         if (brand == null)
         {
             brand = new BrandSettings();
-            _db.Set<BrandSettings>().Add(brand);
+            isNew = true;
         }
 
         brand.AppName = appName ?? brand.AppName;
@@ -108,6 +109,13 @@ public class BrandService(AppDbContext db, IConfiguration configuration)
             brand.CopyrightText = string.IsNullOrWhiteSpace(copyrightText) ? null : copyrightText.Trim();
         }
 
-        await _db.SaveChangesAsync();
+        if (isNew)
+        {
+            await _brandRepository.AddAsync(brand);
+        }
+        else
+        {
+            await _brandRepository.SaveChangesAsync();
+        }
     }
 }

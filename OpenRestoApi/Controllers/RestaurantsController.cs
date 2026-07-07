@@ -36,15 +36,10 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Put(int id, UpdateRestaurantRequest req)
     {
-        try
-        {
-            RestaurantDto? result = await _service.UpdateAsync(id, req);
-            return result == null ? NotFound() : Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new MessageResponse { Message = ex.Message });
-        }
+        // ValidationException (bad DefaultBookingDurationMinutes) → 400 is mapped
+        // by GlobalExceptionHandler.
+        RestaurantDto? result = await _service.UpdateAsync(id, req);
+        return result == null ? NotFound() : Ok(result);
     }
 
     // ── Sections ────────────────────────────────────────────────────────────

@@ -1,11 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
+import { GOPHER_PREFIX, GOPHER_TIMEOUT_MS, resolvePrefixKey } from "@/hooks/prefixBuffer";
 
 export type ShortcutHandler = (e: KeyboardEvent) => void;
 export type ShortcutMap = Record<string, ShortcutHandler>;
-
-const GOPHER_PREFIX = "g";
-const GOPHER_TIMEOUT_MS = 1500;
 
 function isTypingTarget(target: HTMLElement | null): boolean {
   if (!target) return false;
@@ -48,20 +46,18 @@ export function useKeyboardShortcuts(map: ShortcutMap): void {
 
       const currentMap = mapRef.current;
 
-      if (pendingPrefix === GOPHER_PREFIX) {
-        const spec = `${GOPHER_PREFIX} ${e.key}`;
-        clearPendingPrefix();
-        currentMap[spec]?.(e);
-        return;
-      }
-
-      if (e.key === GOPHER_PREFIX) {
+      const decision = resolvePrefixKey(pendingPrefix, e.key);
+      if (decision.startPrefix) {
         pendingPrefix = GOPHER_PREFIX;
         prefixTimer = setTimeout(clearPendingPrefix, GOPHER_TIMEOUT_MS);
         return;
       }
-
-      currentMap[e.key]?.(e);
+      if (decision.reset) {
+        clearPendingPrefix();
+      }
+      if (decision.dispatchKey !== undefined) {
+        currentMap[decision.dispatchKey]?.(e);
+      }
     };
 
     window.addEventListener("keydown", handler);

@@ -4,7 +4,11 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBrand } from "@/context/BrandContext";
 import { getThemeColors } from "@/theme/theme";
 
-jest.mock("@/hooks/use-color-scheme");
+// Override the global jest.setup.ts mock (which returns a plain "light") with a
+// controllable jest.fn() so each test can drive light/dark mode.
+jest.mock("@/hooks/use-color-scheme", () => ({
+  useColorScheme: jest.fn(),
+}));
 jest.mock("@/context/BrandContext");
 jest.mock("@/theme/theme");
 
@@ -39,15 +43,5 @@ describe("useAppTheme", () => {
     const { result } = renderHook(() => useAppTheme());
 
     expect(result.current.primaryColor).toBe("#0a7ea4");
-  });
-
-  it("getOpacityColor works correctly", () => {
-    (useColorScheme as jest.Mock).mockReturnValue("light");
-    const { result } = renderHook(() => useAppTheme());
-
-    const transparentBlue = result.current.getOpacityColor("#0000FF", 0.5);
-    // 0.5 * 255 = 127.5 -> 128 (80 in hex) or 127 (7f in hex)
-    // Math.round(0.5 * 255) = 128 -> 80
-    expect(transparentBlue.toLowerCase()).toBe("#0000ff80");
   });
 });

@@ -3,7 +3,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, Platform, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, BORDER_RADIUS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
@@ -135,9 +135,11 @@ export function PushNotificationsCard() {
   const isDenied = pushState === "denied";
   const isUnconfigured = pushState === "unconfigured";
 
-  const iconColor = isDenied || isUnconfigured ? COLORS.warning : primaryColor;
+  const iconColor = isDenied || isUnconfigured ? theme.colors.warning : primaryColor;
   const iconBg =
-    isDenied || isUnconfigured ? hexToRgba(COLORS.warning, 0.1) : hexToRgba(primaryColor, 0.1);
+    isDenied || isUnconfigured
+      ? hexToRgba(theme.colors.warning, 0.1)
+      : hexToRgba(primaryColor, 0.1);
   const stateIcon: "notifications-outline" | "notifications-off-outline" = isDenied
     ? "notifications-off-outline"
     : "notifications-outline";
@@ -166,7 +168,7 @@ export function PushNotificationsCard() {
           <ThemedText
             style={[
               styles.secSub,
-              { color: isUnconfigured || isDenied ? COLORS.warning : mutedColor },
+              { color: isUnconfigured || isDenied ? theme.colors.warning : mutedColor },
             ]}
           >
             {stateSub}
@@ -187,7 +189,7 @@ export function PushNotificationsCard() {
                 <Ionicons
                   name="warning-outline"
                   size={16}
-                  color={COLORS.warning}
+                  color={theme.colors.warning}
                   style={{ marginTop: 1 }}
                 />
                 <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
@@ -201,7 +203,7 @@ export function PushNotificationsCard() {
                 <Ionicons
                   name="information-circle-outline"
                   size={16}
-                  color={COLORS.warning}
+                  color={theme.colors.warning}
                   style={{ marginTop: 1 }}
                 />
                 <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
@@ -222,7 +224,9 @@ export function PushNotificationsCard() {
                 </ThemedText>
 
                 {errorMsg && (
-                  <ThemedText style={{ fontSize: 13, color: COLORS.error }}>{errorMsg}</ThemedText>
+                  <ThemedText style={{ fontSize: 13, color: theme.colors.error }}>
+                    {errorMsg}
+                  </ThemedText>
                 )}
 
                 <Pressable
@@ -235,11 +239,11 @@ export function PushNotificationsCard() {
                     gap: 8,
                     paddingVertical: 10,
                     paddingHorizontal: 16,
-                    borderRadius: BORDER_RADIUS.md,
+                    borderRadius: theme.borderRadius.md,
                     borderWidth: 1,
-                    borderColor: isActive ? COLORS.error : primaryColor,
+                    borderColor: isActive ? theme.colors.error : primaryColor,
                     backgroundColor: isActive
-                      ? hexToRgba(COLORS.error, isDark ? 0.1 : 0.06)
+                      ? hexToRgba(theme.colors.error, isDark ? 0.1 : 0.06)
                       : hexToRgba(primaryColor, isDark ? 0.12 : 0.08),
                     opacity: working ? 0.6 : 1,
                     alignSelf: "flex-start",
@@ -248,14 +252,14 @@ export function PushNotificationsCard() {
                   {working && (
                     <ActivityIndicator
                       size="small"
-                      color={isActive ? COLORS.error : primaryColor}
+                      color={isActive ? theme.colors.error : primaryColor}
                     />
                   )}
                   <ThemedText
                     style={{
                       fontSize: 14,
                       fontWeight: "600",
-                      color: isActive ? COLORS.error : primaryColor,
+                      color: isActive ? theme.colors.error : primaryColor,
                     }}
                   >
                     {working

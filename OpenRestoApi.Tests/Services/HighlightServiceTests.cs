@@ -3,24 +3,17 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
 public class HighlightServiceTests
 {
-    private static AppDbContext CreateDb(string name)
-    {
-        DbContextOptions<AppDbContext> opts = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(name)
-            .Options;
-        return new AppDbContext(opts);
-    }
-
     [Fact]
     public async Task GetAllAsync_ReturnsEmpty_WhenNoHighlights()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_ReturnsEmpty_WhenNoHighlights));
-        var svc = new HighlightService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_ReturnsEmpty_WhenNoHighlights));
+        var svc = new HighlightService(new HighlightRepository(db));
 
         List<HighlightDto> result = await svc.GetAllAsync();
 
@@ -30,7 +23,7 @@ public class HighlightServiceTests
     [Fact]
     public async Task GetAllAsync_ReturnsSortedBySortOrderThenId()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_ReturnsSortedBySortOrderThenId));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_ReturnsSortedBySortOrderThenId));
         db.Highlights.AddRange(
             new RestaurantHighlight { Title = "C", Body = "b", SortOrder = 2 },
             new RestaurantHighlight { Title = "A", Body = "b", SortOrder = 1 },
@@ -38,7 +31,7 @@ public class HighlightServiceTests
         );
         await db.SaveChangesAsync();
 
-        var svc = new HighlightService(db);
+        var svc = new HighlightService(new HighlightRepository(db));
         List<HighlightDto> result = await svc.GetAllAsync();
 
         Assert.Equal(3, result.Count);
@@ -50,11 +43,11 @@ public class HighlightServiceTests
     [Fact]
     public async Task GetAllAsync_MapsAllFields()
     {
-        using AppDbContext db = CreateDb(nameof(GetAllAsync_MapsAllFields));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_MapsAllFields));
         db.Highlights.Add(new RestaurantHighlight { Title = "T", Body = "B", IconKey = "flame", SortOrder = 3 });
         await db.SaveChangesAsync();
 
-        var svc = new HighlightService(db);
+        var svc = new HighlightService(new HighlightRepository(db));
         List<HighlightDto> result = await svc.GetAllAsync();
 
         HighlightDto dto = Assert.Single(result);
@@ -68,8 +61,8 @@ public class HighlightServiceTests
     [Fact]
     public async Task CreateAsync_PersistsAndReturnsDto()
     {
-        using AppDbContext db = CreateDb(nameof(CreateAsync_PersistsAndReturnsDto));
-        var svc = new HighlightService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_PersistsAndReturnsDto));
+        var svc = new HighlightService(new HighlightRepository(db));
         var req = new CreateHighlightRequest { Title = "Test", Body = "body", IconKey = "star", SortOrder = 0 };
 
         HighlightDto result = await svc.CreateAsync(req);
@@ -84,12 +77,12 @@ public class HighlightServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsUpdatedDto_WhenFound()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_ReturnsUpdatedDto_WhenFound));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsUpdatedDto_WhenFound));
         db.Highlights.Add(new RestaurantHighlight { Title = "Old", Body = "old body", SortOrder = 0 });
         await db.SaveChangesAsync();
         int id = db.Highlights.First().Id;
 
-        var svc = new HighlightService(db);
+        var svc = new HighlightService(new HighlightRepository(db));
         var req = new UpdateHighlightRequest { Title = "New", Body = "new body", IconKey = "flame", SortOrder = 5 };
 
         HighlightDto? result = await svc.UpdateAsync(id, req);
@@ -104,8 +97,8 @@ public class HighlightServiceTests
     [Fact]
     public async Task UpdateAsync_ReturnsNull_WhenNotFound()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
-        var svc = new HighlightService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
+        var svc = new HighlightService(new HighlightRepository(db));
         var req = new UpdateHighlightRequest { Title = "X", Body = "y", SortOrder = 0 };
 
         HighlightDto? result = await svc.UpdateAsync(9999, req);
@@ -116,12 +109,12 @@ public class HighlightServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsTrue_WhenFound()
     {
-        using AppDbContext db = CreateDb(nameof(DeleteAsync_ReturnsTrue_WhenFound));
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteAsync_ReturnsTrue_WhenFound));
         db.Highlights.Add(new RestaurantHighlight { Title = "Del", Body = "body", SortOrder = 0 });
         await db.SaveChangesAsync();
         int id = db.Highlights.First().Id;
 
-        var svc = new HighlightService(db);
+        var svc = new HighlightService(new HighlightRepository(db));
         bool result = await svc.DeleteAsync(id);
 
         Assert.True(result);
@@ -131,8 +124,8 @@ public class HighlightServiceTests
     [Fact]
     public async Task DeleteAsync_ReturnsFalse_WhenNotFound()
     {
-        using AppDbContext db = CreateDb(nameof(DeleteAsync_ReturnsFalse_WhenNotFound));
-        var svc = new HighlightService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteAsync_ReturnsFalse_WhenNotFound));
+        var svc = new HighlightService(new HighlightRepository(db));
 
         bool result = await svc.DeleteAsync(9999);
 

@@ -1,10 +1,10 @@
 import { ScrollView, View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { getThemeColors, COLORS } from "@/theme/theme";
+import { getThemeColors } from "@/theme/theme";
 import { SectionWithTables, BookingDetailDto } from "@/api/admin";
 import { styles } from "./bookings.styles";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 
 function buildTimeSlots(openTime: string, closeTime: string) {
@@ -59,8 +59,7 @@ export function AvailabilityGrid({
   const headerBg = isDark ? "#28292b" : "#f4f5f6";
   const sectionBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
   const availBg = isDark ? "#18191b" : "#fafafa";
-  const brand = useBrand();
-  const PRIMARY = brand.primaryColor || COLORS.primary;
+  const { primaryColor: PRIMARY } = useAppTheme();
   const bookedBg = isDark ? hexToRgba(PRIMARY, 0.22) : hexToRgba(PRIMARY, 0.1);
   const mutedColor = colors.muted;
 

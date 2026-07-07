@@ -10,11 +10,11 @@ import {
 } from "@/api/restaurants";
 import { reorderSections } from "@/api/admin";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { summarizeHours } from "@/utils/openingHours";
 import { styles } from "./settings.styles";
 
@@ -80,8 +80,7 @@ export function LocationCard({
   mutedColor: string;
   confirmAction: (msg: string) => Promise<boolean>;
 }) {
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
   const accentSoft = `${primaryColor}18`;
 
   const [imgUploading, setImgUploading] = useState(false);
@@ -326,12 +325,17 @@ export function LocationCard({
                 onPress={handleDeleteImage}
                 disabled={imgUploading}
               >
-                <ThemedText style={[styles.secBtnText, { color: COLORS.error }]}>Remove</ThemedText>
+                <ThemedText style={[styles.secBtnText, { color: theme.colors.error }]}>
+                  Remove
+                </ThemedText>
               </Pressable>
             )}
             {imgMsg && (
               <ThemedText
-                style={{ fontSize: 12, color: imgMsg.ok ? COLORS.success : COLORS.error }}
+                style={{
+                  fontSize: 12,
+                  color: imgMsg.ok ? theme.colors.success : theme.colors.error,
+                }}
               >
                 {imgMsg.text}
               </ThemedText>

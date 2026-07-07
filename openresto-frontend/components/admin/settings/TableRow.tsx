@@ -2,10 +2,10 @@ import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { theme, getThemeColors } from "@/theme/theme";
 import { TableDto, deleteTable, updateTable } from "@/api/restaurants";
 import { Ionicons } from "@expo/vector-icons";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { styles } from "./settings.styles";
 
@@ -34,8 +34,7 @@ export function TableRow({
   const [saving, setSaving] = useState(false);
   const colors = getThemeColors(isDark);
   const mutedColor = colors.muted;
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
 
   if (!editing) {
     return (
@@ -76,7 +75,9 @@ export function TableRow({
             if (success) onDeleted();
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: COLORS.error }]}>Delete</ThemedText>
+          <ThemedText style={[styles.smallBtnText, { color: theme.colors.error }]}>
+            Delete
+          </ThemedText>
         </Pressable>
       </View>
     );

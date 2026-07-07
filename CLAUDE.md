@@ -37,7 +37,14 @@ npm run lint:fix     # auto-fix lint issues
 ### Docker (full stack through nginx)
 
 ```bash
-docker compose up    # full stack on localhost:5062 (builds from source)
+# Full stack on localhost:5062 (builds from source). Default profile runs the
+# backend in ASPNETCORE_ENVIRONMENT=Development.
+docker compose up
+
+# E2E profile: layers docker-compose.e2e.yml on top, which sets
+# ASPNETCORE_ENVIRONMENT=Testing. This is MANDATORY for Playwright runs —
+# see "Running E2E tests" below.
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d
 ```
 
 **Starting Docker Desktop on this machine (Windows):** if `docker info` fails
@@ -60,10 +67,43 @@ while ((Get-Date) -lt $deadline) {
 }
 ```
 
-Once `docker info` succeeds, proceed with `docker compose up` / `npm run
-test:e2e` as normal. Docker Desktop only needs to be launched once per machine
-session — if it's already running, `docker info` succeeds immediately and this
-whole step is a no-op.
+Once `docker info` succeeds, bring the stack up with the appropriate profile
+(see "Running E2E tests" below for why the e2e profile matters). Docker
+Desktop only needs to be launched once per machine session — if it's already
+running, `docker info` succeeds immediately and this whole step is a no-op.
+
+### Running E2E tests (Playwright) — read before running
+
+The full-stack rate limiters are gated on `ASPNETCORE_ENVIRONMENT` (see
+`OpenRestoApi/Extensions/ServiceCollectionExtensions.cs`):
+
+- **Development** (plain `docker compose up`): auth 10/min, public 120/min,
+  global 300/min — fine for manual clicking, **far too tight for the suite**.
+- **Testing** (`docker-compose.e2e.yml` override): all three raised to
+  10000/min. This is what the suite is designed for.
+
+**Always start the stack with the e2e override before `npm run test:e2e`:**
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
+npm run test:e2e --prefix openresto-frontend
+```
+
+Running against the Development profile produces cascading 429s: pages that
+hydrate from rate-limited fetches (booking form, /locations, /settings) fail
+to render within timeout, booking-creation POSTs exhaust their retries, and
+the customer lookup endpoint returns null (rendered as a false "No booking
+found"). The failures look like selector/locator bugs but are purely
+rate-limit exhaustion — they pass reliably under the Testing profile
+(the suite drops from ~2.5 min to under a minute). Verify with
+`docker compose exec backend printenv ASPNETCORE_ENVIRONMENT` if anything
+looks off.
+
+The Playwright config uses `workers: 1` and `globalSetup` logs in once,
+saving the auth cookie to `e2e/.auth/admin.json` so admin-project specs skip
+the login form. Specs that hit rate-limited endpoints still use
+`postWithRetry`/`getWithRetry` (helpers.ts) and `expectVisibleWithReload`
+as belt-and-suspenders for the rare in-Testing-window collision.
 
 ### Release (tag-triggered)
 

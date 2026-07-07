@@ -1,17 +1,8 @@
 import { Modal, Pressable, StyleSheet, View, TouchableWithoutFeedback } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  COLORS,
-  BUTTON_SIZES,
-  BORDER_RADIUS,
-  SHADOWS,
-  SPACING,
-  TYPOGRAPHY,
-  getThemeColors,
-} from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -34,9 +25,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
+  const { colors, primaryColor } = useAppTheme();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -61,9 +50,7 @@ export default function ConfirmModal({
                 style={[
                   styles.btn,
                   {
-                    backgroundColor: destructive
-                      ? COLORS.error
-                      : brand.primaryColor || COLORS.primary,
+                    backgroundColor: destructive ? theme.colors.error : primaryColor,
                   },
                 ]}
                 onPress={() => {
@@ -91,16 +78,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.xxl,
+    padding: theme.spacing.xxl,
   },
   card: {
-    borderRadius: BORDER_RADIUS.modal,
+    borderRadius: theme.borderRadius.modal,
     borderWidth: 1,
-    padding: SPACING.xxl,
+    padding: theme.spacing.xxl,
     width: "100%",
     maxWidth: 400,
-    gap: SPACING.md,
-    ...SHADOWS.popup,
+    gap: theme.spacing.md,
+    ...theme.shadows.popup,
   },
   message: {
     fontSize: 14,
@@ -108,26 +95,26 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
-    gap: SPACING.xsm,
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.lg,
+    gap: theme.spacing.xsm,
+    marginTop: theme.spacing.sm,
+    paddingTop: theme.spacing.lg,
     borderTopWidth: 1,
   },
   btn: {
     flex: 1,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: BORDER_RADIUS.lg,
+    ...theme.buttonSizes.secondary,
+    borderRadius: theme.borderRadius.lg,
     alignItems: "center",
   },
   cancelBtn: {
     borderWidth: 1,
   },
   btnText: {
-    ...TYPOGRAPHY.bodyBold,
+    ...theme.typography.bodyBold,
   },
   confirmBtnText: {
-    color: COLORS.white,
-    ...TYPOGRAPHY.bodyBold,
+    color: theme.colors.white,
+    ...theme.typography.bodyBold,
     fontWeight: "700",
   },
 });

@@ -23,10 +23,6 @@ jest.mock("expo-router", () => {
   };
 });
 
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
-}));
-
 jest.mock("@/api/auth", () => ({
   logout: jest.fn().mockResolvedValue(true),
 }));
@@ -38,10 +34,6 @@ jest.mock("@/api/admin", () => ({
 
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ appName: "Test App", primaryColor: "#000" }),
-}));
-
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
 }));
 
 import { usePathname, useRouter } from "expo-router";

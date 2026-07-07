@@ -2,32 +2,15 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
+import { screen, fireEvent, waitFor } from "@testing-library/react-native";
 import BookingForm from "@/components/booking/BookingForm";
 import { useTableHold } from "@/components/booking/useTableHold";
-import { AppThemeProvider } from "@/context/ThemeContext";
-import { BrandProvider } from "@/context/BrandContext";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-// Polyfill fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-  })
-) as jest.Mock;
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 // Mock useTableHold
 jest.mock("@/components/booking/useTableHold");
 const mockReleaseCurrentHold = jest.fn();
 const mockSetHoldStatus = jest.fn();
-
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
-}));
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
-}));
 
 jest.mock("@/api/availability", () => ({
   fetchAvailability: jest.fn(() =>
@@ -81,21 +64,6 @@ describe("BookingForm", () => {
     delete (window as any).confirm;
     (window as any).confirm = jest.fn(() => true);
   });
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   it("renders correctly and handles submission", async () => {
     const onSubmit = jest.fn();

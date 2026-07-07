@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminLocationsScreen from "@/app/(admin)/locations";
 import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
 import {
@@ -13,17 +13,7 @@ import {
   unpauseRestaurantBookings,
   extendRestaurantBookings,
 } from "@/api/admin";
-import { AppThemeProvider } from "@/context/ThemeContext";
-import { BrandProvider } from "@/context/BrandContext";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-// Polyfill fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-  })
-) as jest.Mock;
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@/api/restaurants");
 jest.mock("@/api/admin", () => ({
@@ -36,12 +26,6 @@ jest.mock("@/api/admin", () => ({
 }));
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
-}));
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
-}));
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
 }));
 
 jest.mock("@/components/admin/settings/LocationCard", () => ({
@@ -73,21 +57,6 @@ describe("AdminLocationsScreen", () => {
     (unpauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
     (extendRestaurantBookings as jest.Mock).mockResolvedValue({ ok: true, extendedBookings: [] });
   });
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   it("renders locations after loading", async () => {
     renderWithProviders(<AdminLocationsScreen />);
@@ -486,24 +455,6 @@ describe("AdminLocationsScreen selected-location persistence", () => {
     { id: 1, name: "Resto 1", sections: [], activeBookingsCount: 0 },
     { id: 2, name: "Resto 2", sections: [], activeBookingsCount: 0 },
   ];
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    const { SafeAreaProvider } = require("react-native-safe-area-context");
-    const { AppThemeProvider } = require("@/context/ThemeContext");
-    const { BrandProvider } = require("@/context/BrandContext");
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();

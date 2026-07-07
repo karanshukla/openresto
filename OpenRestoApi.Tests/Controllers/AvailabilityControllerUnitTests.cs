@@ -1,51 +1,36 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OpenRestoApi.Controllers;
-using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
 
 namespace OpenRestoApi.Tests.Controllers;
 
 public class AvailabilityControllerUnitTests
 {
     [Fact]
-    public async Task Get_ReturnsInternalServerError_OnException()
+    public async Task Get_NotFoundException_Propagates()
     {
-        // Arrange
-        var mockService = new Mock<AvailabilityService>(null!, null!, null!);
+        // Post-Bundle-6 the controller no longer catches; NotFoundException propagates
+        // to GlobalExceptionHandler which maps it → 404 with a {message} body.
+        var mockService = new Mock<IAvailabilityService>();
         mockService.Setup(s => s.GetAvailabilityAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
-            .ThrowsAsync(new InvalidOperationException("Unexpected error"));
+            .ThrowsAsync(new NotFoundException("Restaurant not found."));
 
         var controller = new AvailabilityController(mockService.Object);
 
-        // Act
-        var result = await controller.Get(1, DateTime.Now, 2);
-
-        // Assert
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(500, objectResult.StatusCode);
+        NotFoundException ex = await Assert.ThrowsAsync<NotFoundException>(
+            () => controller.Get(999, DateTime.Now, 2));
+        Assert.Equal("Restaurant not found.", ex.Message);
     }
 
-    [Fact]
-    public async Task Get_ReturnsNotFound_WhenServiceThrowsArgumentException()
-    {
-        var mockService = new Mock<AvailabilityService>(null!, null!, null!);
-        mockService.Setup(s => s.GetAvailabilityAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
-            .ThrowsAsync(new ArgumentException("Restaurant not found"));
-
-        var controller = new AvailabilityController(mockService.Object);
-
-        var result = await controller.Get(999, DateTime.Now, 2);
-
-        var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal(
-            "Restaurant not found",
-            notFound.Value!.GetType().GetProperty("message")!.GetValue(notFound.Value));
-    }
+    // The 500 path for unexpected exceptions is now covered by GlobalExceptionHandlerTests
+    // (the mapping lives in middleware, not the controller).
 
     [Fact]
     public async Task Get_ReturnsOk_OnSuccess()
     {
-        var mockService = new Mock<AvailabilityService>(null!, null!, null!);
+        var mockService = new Mock<IAvailabilityService>();
         var response = new OpenRestoApi.Core.Application.DTOs.AvailabilityResponseDto { Slots = [] };
         mockService.Setup(s => s.GetAvailabilityAsync(1, It.IsAny<DateTime>(), 2))
             .ReturnsAsync(response);

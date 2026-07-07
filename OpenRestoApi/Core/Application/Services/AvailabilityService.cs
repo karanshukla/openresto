@@ -1,29 +1,29 @@
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class AvailabilityService(
+public sealed class AvailabilityService(
     IBookingRepository bookingRepository,
     IRestaurantRepository restaurantRepository,
-    IHoldService holdService)
+    IHoldService holdService) : IAvailabilityService
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IHoldService _holdService = holdService;
 
-    public virtual async Task<AvailabilityResponseDto> GetAvailabilityAsync(int restaurantId, DateTime bookingDate, int seats)
+    public async Task<AvailabilityResponseDto> GetAvailabilityAsync(int restaurantId, DateTime bookingDate, int seats)
     {
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId)
-            ?? throw new ArgumentException("Restaurant not found.");
+            ?? throw new NotFoundException("Restaurant not found.");
 
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
+        TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 
         // Check if restaurant is paused
-        bool isPaused = restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow;
+        bool isPaused = restaurant.IsPaused();
 
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, bookingDate);

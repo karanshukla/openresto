@@ -153,70 +153,73 @@ export default function HomeScreen() {
             </View>
 
             {/* ── Highlights ── */}
-            <View style={[styles.highlights, isMobile && { paddingHorizontal: 20 }]}>
-              <View style={styles.highlightsHead}>
-                <ThemedText
-                  style={[
-                    styles.highlightsLabel,
-                    { color: hasHero ? "rgba(255,255,255,0.92)" : mutedColor },
-                    hasHero && ({ textShadow: heroTextShadow } as object),
-                  ]}
-                >
-                  Restaurant highlights
-                </ThemedText>
-                <ThemedText
-                  style={[
-                    styles.highlightsBy,
-                    { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
-                    hasHero && ({ textShadow: heroTextShadow } as object),
-                  ]}
-                >
-                  Curated by the owner
-                </ThemedText>
-              </View>
-              <View
-                style={[
-                  styles.highlightsGrid,
-                  numHighlightCols > 1 && { flexDirection: "row", flexWrap: "wrap" },
-                ]}
-              >
-                {highlights.map((h) => (
-                  <View
-                    key={h.id}
+            {/* Hide the whole section (heading included) when no highlights exist. */}
+            {highlights.length > 0 && (
+              <View style={[styles.highlights, isMobile && { paddingHorizontal: 20 }]}>
+                <View style={styles.highlightsHead}>
+                  <ThemedText
                     style={[
-                      styles.highlightCard,
-                      { backgroundColor: surface, borderColor: border },
-                      numHighlightCols > 1 && {
-                        width:
-                          numHighlightCols === 2
-                            ? ("calc(50% - 6px)" as unknown as number)
-                            : ("calc(25% - 9px)" as unknown as number),
-                        minWidth: 200,
-                      },
+                      styles.highlightsLabel,
+                      { color: hasHero ? "rgba(255,255,255,0.92)" : mutedColor },
+                      hasHero && ({ textShadow: heroTextShadow } as object),
                     ]}
                   >
-                    <View style={styles.highlightHeader}>
-                      <View
-                        style={[
-                          styles.highlightIconBox,
-                          { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)` },
-                        ]}
-                      >
-                        <Ionicons
-                          name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                          size={16}
-                          color={primaryColor}
-                        />
+                    Restaurant highlights
+                  </ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.highlightsBy,
+                      { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
+                      hasHero && ({ textShadow: heroTextShadow } as object),
+                    ]}
+                  >
+                    Curated by the owner
+                  </ThemedText>
+                </View>
+                <View
+                  style={[
+                    styles.highlightsGrid,
+                    numHighlightCols > 1 && { flexDirection: "row", flexWrap: "wrap" },
+                  ]}
+                >
+                  {highlights.map((h) => (
+                    <View
+                      key={h.id}
+                      style={[
+                        styles.highlightCard,
+                        { backgroundColor: surface, borderColor: border },
+                        numHighlightCols > 1 && {
+                          width:
+                            numHighlightCols === 2
+                              ? ("calc(50% - 6px)" as unknown as number)
+                              : ("calc(25% - 9px)" as unknown as number),
+                          minWidth: 200,
+                        },
+                      ]}
+                    >
+                      <View style={styles.highlightHeader}>
+                        <View
+                          style={[
+                            styles.highlightIconBox,
+                            { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)` },
+                          ]}
+                        >
+                          <Ionicons
+                            name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
+                            size={16}
+                            color={primaryColor}
+                          />
+                        </View>
+                        <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
                       </View>
-                      <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
+                      <ThemedText style={[styles.highlightBody, { color: mutedColor }]}>
+                        {h.body}
+                      </ThemedText>
                     </View>
-                    <ThemedText style={[styles.highlightBody, { color: mutedColor }]}>
-                      {h.body}
-                    </ThemedText>
-                  </View>
-                ))}
+                  ))}
+                </View>
               </View>
-            </View>
+            )}
           </View>
 
           {/* ── Main body ── */}

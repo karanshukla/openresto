@@ -1,18 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import LoadingScreen from "@/components/common/LoadingScreen";
 import { Brand } from "@/types";
-import { injectBrandFavicon } from "@/utils/injectBrandFavicon";
-
-function buildEndpoint(path: string): string {
-  const base = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-  if (!base) return `/api${path}`;
-  return base.includes("/api") ? `${base}${path}` : `${base}/api${path}`;
-}
-
-const DEFAULT_BRAND: Brand = {
-  appName: "Open Resto",
-  primaryColor: "#0a7ea4",
-};
+import { buildUrl } from "@/api/client";
+import { DEFAULT_BRAND } from "@/context/brandDefaults";
+import { useBrandDocumentEffect } from "@/hooks/useBrandDocumentEffect";
 
 const BrandContext = createContext<Brand>(DEFAULT_BRAND);
 
@@ -20,12 +11,16 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND);
   const [loading, setLoading] = useState(process.env.NODE_ENV !== "test");
 
+  // DOM side-effects (document.title + favicon + theme-color + SW patch) are
+  // a pure function of `brand` — extracted so the fetch below owns only data.
+  useBrandDocumentEffect(brand);
+
   useEffect(() => {
-    fetch(buildEndpoint("/brand"))
+    fetch(buildUrl("/brand"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
-          const newBrand = {
+          setBrand({
             appName: data.appName || DEFAULT_BRAND.appName,
             primaryColor: data.primaryColor || DEFAULT_BRAND.primaryColor,
             accentColor: data.accentColor || undefined,
@@ -33,16 +28,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             faviconIcon: data.faviconIcon || undefined,
             websiteUrl: data.websiteUrl || undefined,
             copyrightText: data.copyrightText || undefined,
-          };
-          setBrand(newBrand);
-
-          /* istanbul ignore else */
-          if (typeof document !== "undefined") {
-            if (!document.title || document.title === DEFAULT_BRAND.appName) {
-              document.title = newBrand.appName;
-            }
-            injectBrandFavicon(newBrand);
-          }
+          });
         }
       })
       .catch(() => {})

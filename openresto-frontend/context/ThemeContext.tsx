@@ -1,5 +1,6 @@
 import { createContext, useContext, useLayoutEffect, useState, ReactNode } from "react";
 import { Platform } from "react-native";
+import { StorageService } from "@/services/storage";
 
 export type ColorScheme = "light" | "dark";
 export type ThemePreference = "light" | "dark" | "system";
@@ -21,14 +22,12 @@ const ThemeContext = createContext<ThemeContextValue>({
 const STORAGE_KEY = "openresto-theme";
 
 function readStorage(): ThemePreference {
-  if (Platform.OS !== "web" || typeof localStorage === "undefined") return "system";
-  return (localStorage.getItem(STORAGE_KEY) as ThemePreference) ?? "system";
+  return (StorageService.getItem(STORAGE_KEY) as ThemePreference) ?? "system";
 }
 
 function writeStorage(pref: ThemePreference) {
-  if (Platform.OS !== "web" || typeof localStorage === "undefined") return;
-  if (pref === "system") localStorage.removeItem(STORAGE_KEY);
-  else localStorage.setItem(STORAGE_KEY, pref);
+  if (pref === "system") StorageService.removeItem(STORAGE_KEY);
+  else StorageService.setItem(STORAGE_KEY, pref);
 }
 
 function getSystemScheme(): ColorScheme {

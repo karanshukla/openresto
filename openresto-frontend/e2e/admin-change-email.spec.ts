@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { gotoAdminDashboard, ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
+import {
+  gotoAdminDashboard,
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  expectVisibleWithReload,
+} from "./helpers";
 
 const NEW_EMAIL = "e2e-change-email@example.com";
 
@@ -23,10 +28,16 @@ test.describe("Admin change email", () => {
   test("changing email via Settings updates login credentials", async ({ page }) => {
     await gotoAdminDashboard(page);
     await page.goto("/settings");
-    await expect(page.getByText("ACCOUNT SECURITY", { exact: true })).toBeVisible({
+    // The Account Security card hydrates from rate-limited admin fetches;
+    // reload (cool-down first) if it hasn't rendered within the window. Once
+    // the heading is up the rest of the card (incl. ADMIN_EMAIL) has hydrated.
+    await expectVisibleWithReload(page, page.getByText("ACCOUNT SECURITY", { exact: true }), {
       timeout: 10_000,
     });
-    await expect(page.getByText(ADMIN_EMAIL)).toBeVisible({ timeout: 10_000 });
+    // The card renders in stages — the heading appears before the email row
+    // finishes hydrating from the rate-limited admin fetch, so gate the email
+    // on the same reload fallback rather than a bare expect.
+    await expectVisibleWithReload(page, page.getByText(ADMIN_EMAIL), { timeout: 10_000 });
 
     // Scoped by testID rather than DOM position — the Brand Identity card
     // also renders a "Change" button (shown when a header image is already

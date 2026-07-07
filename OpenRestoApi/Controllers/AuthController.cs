@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
@@ -10,9 +11,14 @@ namespace OpenRestoApi.Controllers;
 [ApiController]
 [Route("api/admin/auth")]
 [EnableRateLimiting("auth")]
-public class AuthController(AuthService authService) : ControllerBase
+public class AuthController(
+    IAuthService authService,
+    ISecurityQuestionsService securityQuestions,
+    IAuthCookieService cookies) : ControllerBase
 {
-    private readonly AuthService _authService = authService;
+    private readonly IAuthService _authService = authService;
+    private readonly ISecurityQuestionsService _securityQuestions = securityQuestions;
+    private readonly IAuthCookieService _cookies = cookies;
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
@@ -20,24 +26,14 @@ public class AuthController(AuthService authService) : ControllerBase
         string? jwt = await _authService.LoginAsync(req.Email, req.Password);
         if (jwt == null)
             return Unauthorized(new { message = "Invalid email or password." });
-        SetAuthCookie(jwt);
+        _cookies.SetCookie(Response, jwt);
         return Ok(new { message = "Login successful." });
     }
 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        bool isProduction = !string.Equals(
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
-            "Development",
-            StringComparison.OrdinalIgnoreCase);
-
-        Response.Cookies.Delete("openresto_auth", new CookieOptions
-        {
-            Path = "/",
-            Secure = isProduction,
-            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
-        });
+        _cookies.Clear(Response);
         return Ok(new { message = "Logged out." });
     }
 
@@ -54,9 +50,7 @@ public class AuthController(AuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
-        if (req.NewPassword.Length < 6)
-            return BadRequest(new { message = "New password must be at least 6 characters." });
-
+        // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
         bool ok = await _authService.ChangePasswordAsync(req.CurrentPassword, req.NewPassword);
         if (!ok)
             return Unauthorized(new { message = "Current password is incorrect." });
@@ -67,28 +61,20 @@ public class AuthController(AuthService authService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest req)
     {
-        string trimmedEmail = req.NewEmail?.Trim() ?? string.Empty;
-        if (trimmedEmail.Length == 0 || !IsValidEmail(trimmedEmail))
-            return BadRequest(new { message = "A valid email address is required." });
-
-        try
-        {
-            string? jwt = await _authService.ChangeEmailAsync(req.CurrentPassword, trimmedEmail);
-            if (jwt == null)
-                return Unauthorized(new { message = "Current password is incorrect." });
-            SetAuthCookie(jwt);
-            return Ok(new { message = "Email changed successfully.", email = trimmedEmail.ToLowerInvariant() });
-        }
-        catch (InvalidOperationException)
-        {
-            return BadRequest(new { message = "New email must be different from the current email." });
-        }
+        // ValidationException (invalid email) and BusinessRuleException (same email)
+        // → 400 are mapped by GlobalExceptionHandler; the BusinessRuleException's
+        // message is "New email must be different from the current email.".
+        string? jwt = await _authService.ChangeEmailAsync(req.CurrentPassword, req.NewEmail ?? string.Empty);
+        if (jwt == null)
+            return Unauthorized(new { message = "Current password is incorrect." });
+        _cookies.SetCookie(Response, jwt);
+        return Ok(new { message = "Email changed successfully.", email = req.NewEmail!.Trim().ToLowerInvariant() });
     }
 
     [HttpGet("pvq")]
     public async Task<IActionResult> GetPvqStatus()
     {
-        return Ok(await _authService.GetPvqStatusAsync());
+        return Ok(await _securityQuestions.GetStatusAsync());
     }
 
     [HttpPost("pvq/setup")]
@@ -98,14 +84,14 @@ public class AuthController(AuthService authService) : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Question) || string.IsNullOrWhiteSpace(req.Answer))
             return BadRequest(new { message = "Question and answer are required." });
 
-        await _authService.SetupPvqAsync(req.Question, req.Answer);
+        await _securityQuestions.SetupAsync(req.Question, req.Answer);
         return Ok(new { message = "Security question configured." });
     }
 
     [HttpPost("pvq/verify")]
     public async Task<IActionResult> VerifyPvq([FromBody] VerifyPvqRequest req)
     {
-        PvqVerifyOutcome outcome = await _authService.VerifyPvqAsync(req.Email, req.Answer);
+        PvqVerifyOutcome outcome = await _securityQuestions.VerifyAsync(req.Email, req.Answer);
         return outcome.Status switch
         {
             PvqVerifyStatus.NotConfigured => BadRequest(new { message = "Security question not configured for this account." }),
@@ -117,32 +103,10 @@ public class AuthController(AuthService authService) : ControllerBase
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
     {
-        if (req.NewPassword.Length < 6)
-            return BadRequest(new { message = "Password must be at least 6 characters." });
-
+        // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
         bool ok = await _authService.ResetPasswordAsync(req.ResetToken, req.NewPassword);
         if (!ok)
             return BadRequest(new { message = "Invalid or expired reset token." });
         return Ok(new { message = "Password reset successfully." });
-    }
-
-    private static bool IsValidEmail(string email) =>
-        System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$");
-
-    private void SetAuthCookie(string jwt)
-    {
-        bool isProduction = !string.Equals(
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
-            "Development",
-            StringComparison.OrdinalIgnoreCase);
-
-        Response.Cookies.Append("openresto_auth", jwt, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = isProduction,
-            SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.Lax,
-            Path = "/",
-            Expires = DateTimeOffset.UtcNow.AddDays(30),
-        });
     }
 }

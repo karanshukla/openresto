@@ -1,6 +1,6 @@
 import { View, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
@@ -72,7 +72,7 @@ export function EditBookingForm({
   return (
     <View style={[styles.section, { borderColor }]}>
       {loadingRestaurants ? (
-        <ActivityIndicator size="small" color={COLORS.primary} />
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       ) : (
         <>
           <ThemedText style={styles.label}>Restaurant</ThemedText>

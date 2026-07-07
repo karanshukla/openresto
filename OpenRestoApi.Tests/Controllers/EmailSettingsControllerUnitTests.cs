@@ -13,7 +13,7 @@ public class EmailSettingsControllerUnitTests
 
     public EmailSettingsControllerUnitTests()
     {
-        _mockService = new Mock<EmailSettingsService>(null!, null!, null!);
+        _mockService = new Mock<EmailSettingsService>(null!, null!, null!, null!);
         _controller = new EmailSettingsController(_mockService.Object);
     }
 

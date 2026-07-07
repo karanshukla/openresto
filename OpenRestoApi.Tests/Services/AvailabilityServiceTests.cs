@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
@@ -11,32 +11,11 @@ namespace OpenRestoApi.Tests.Services;
 
 public class AvailabilityServiceTests
 {
-    private static AppDbContext CreateDb(string name)
-    {
-        DbContextOptions<AppDbContext> opts = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(name)
-            .Options;
-        return new AppDbContext(opts);
-    }
-
-    private static void SeedRestaurant(AppDbContext db)
-    {
-        var r = new Restaurant { Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC" };
-        var s = new Section { Id = 1, Name = "Main", RestaurantId = 1 };
-        var t1 = new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 };
-        var t2 = new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 };
-
-        db.Restaurants.Add(r);
-        db.Sections.Add(s);
-        db.Tables.AddRange(t1, t2);
-        db.SaveChanges();
-    }
-
     [Fact]
     public async Task GetAvailabilityAsync_ReturnsAllSlots_WhenNoBookings()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsAllSlots_WhenNoBookings));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsAllSlots_WhenNoBookings));
+        TestSeed.RestaurantWithHours(db);
         var bookingRepo = new BookingRepository(db);
         var restRepo = new RestaurantRepository(db);
         var holdSvc = new Mock<IHoldService>();
@@ -53,8 +32,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_FiltersOccupiedSlots()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_FiltersOccupiedSlots));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_FiltersOccupiedSlots));
+        TestSeed.RestaurantWithHours(db);
 
         // Book both tables at 12:00
         var date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
@@ -82,7 +61,7 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_UsesRestaurantConfiguredDuration_ForConflictWindow()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesRestaurantConfiguredDuration_ForConflictWindow));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesRestaurantConfiguredDuration_ForConflictWindow));
         db.Restaurants.Add(new Restaurant
         {
             Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
@@ -117,8 +96,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_ConsidersHolds()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ConsidersHolds));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ConsidersHolds));
+        TestSeed.RestaurantWithHours(db);
 
         var date = new DateTime(2026, 10, 10, 11, 0, 0, DateTimeKind.Utc);
         var holdSvc = new Mock<IHoldService>();
@@ -139,8 +118,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_FiltersByCapacity()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_FiltersByCapacity));
-        SeedRestaurant(db); // Table 1 (2 seats), Table 2 (4 seats)
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_FiltersByCapacity));
+        TestSeed.RestaurantWithHours(db); // Table 1 (2 seats), Table 2 (4 seats)
 
         var bookingRepo = new BookingRepository(db);
         var restRepo = new RestaurantRepository(db);
@@ -157,18 +136,18 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_Throws_WhenRestaurantNotFound()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_Throws_WhenRestaurantNotFound));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_Throws_WhenRestaurantNotFound));
         var bookingRepo = new BookingRepository(db);
         var restRepo = new RestaurantRepository(db);
         var svc = new AvailabilityService(bookingRepo, restRepo, new Mock<IHoldService>().Object);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => svc.GetAvailabilityAsync(999, DateTime.UtcNow, 2));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.GetAvailabilityAsync(999, DateTime.UtcNow, 2));
     }
 
     [Fact]
     public async Task GetAvailabilityAsync_UsesUtc_WhenTimezoneInvalid()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesUtc_WhenTimezoneInvalid));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesUtc_WhenTimezoneInvalid));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", Timezone = "Invalid/Timezone", OpenTime = "09:00", CloseTime = "10:00" });
         db.SaveChanges();
         var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
@@ -180,7 +159,7 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenPaused()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenPaused));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenPaused));
         db.Restaurants.Add(new Restaurant 
         { 
             Id = 1, Name = "T", OpenTime = "09:00", CloseTime = "10:00", Timezone = "UTC",
@@ -196,7 +175,7 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_UsesDefaultHours_WhenTimeFormatInvalid()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesDefaultHours_WhenTimeFormatInvalid));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesDefaultHours_WhenTimeFormatInvalid));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", OpenTime = "invalid", CloseTime = "", Timezone = "UTC" });
         db.SaveChanges();
         var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
@@ -210,7 +189,7 @@ public class AvailabilityServiceTests
     public async Task GetAvailabilityAsync_HandlesDayNames_InOpenDays()
     {
         // This test ensures frontend format "Mon,Tue,Wed..." works correctly
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_HandlesDayNames_InOpenDays));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_HandlesDayNames_InOpenDays));
         db.Restaurants.Add(new Restaurant
         {
             Id = 1,
@@ -238,7 +217,7 @@ public class AvailabilityServiceTests
     public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenClosedDay()
     {
         // Weekend-only restaurant
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenClosedDay));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenClosedDay));
         db.Restaurants.Add(new Restaurant
         {
             Id = 1,
@@ -264,8 +243,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_PopulatesAvailableTableIds()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_PopulatesAvailableTableIds));
-        SeedRestaurant(db); // Table 1 (2 seats), Table 2 (4 seats)
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_PopulatesAvailableTableIds));
+        TestSeed.RestaurantWithHours(db); // Table 1 (2 seats), Table 2 (4 seats)
 
         // Book Table 1 at 12:00
         var date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
@@ -309,7 +288,7 @@ public class AvailabilityServiceTests
     {
         // Regression test: midnight UTC on a Monday is Sunday evening in UTC-negative timezones.
         // The service must treat the incoming date as the local date (not convert from UTC).
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsSlots_ForMondayInNegativeUtcOffsetTimezone));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsSlots_ForMondayInNegativeUtcOffsetTimezone));
         db.Restaurants.Add(new Restaurant
         {
             Id = 1,
@@ -337,8 +316,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_UsesPerDayHours_ForOverriddenDay()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesPerDayHours_ForOverriddenDay));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesPerDayHours_ForOverriddenDay));
+        TestSeed.RestaurantWithHours(db);
         Restaurant r = db.Restaurants.First();
         // Saturday opens later and shorter than the uniform 11:00–13:00
         r.OpenHoursJson = """{"6":{"open":"12:00","close":"13:00"}}""";
@@ -359,8 +338,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_UsesUniformHours_ForDayWithoutOverride()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_UsesUniformHours_ForDayWithoutOverride));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesUniformHours_ForDayWithoutOverride));
+        TestSeed.RestaurantWithHours(db);
         Restaurant r = db.Restaurants.First();
         r.OpenHoursJson = """{"6":{"open":"12:00","close":"13:00"}}""";
         db.SaveChanges();
@@ -378,8 +357,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_ClosedDay_ReturnsNoSlots_EvenWithPerDayHours()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ClosedDay_ReturnsNoSlots_EvenWithPerDayHours));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ClosedDay_ReturnsNoSlots_EvenWithPerDayHours));
+        TestSeed.RestaurantWithHours(db);
         Restaurant r = db.Restaurants.First();
         // Saturday has hours configured but is excluded from OpenDays
         r.OpenDays = "1,2,3,4,5";
@@ -399,8 +378,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenLocationIsWalkInOnly));
+        TestSeed.RestaurantWithHours(db);
         Restaurant walkInOnly = db.Restaurants.First();
         walkInOnly.WalkInOnly = true;
         db.SaveChanges();
@@ -416,8 +395,8 @@ public class AvailabilityServiceTests
     [Fact]
     public async Task GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay()
     {
-        using AppDbContext db = CreateDb(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay));
-        SeedRestaurant(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnWalkInDay));
+        TestSeed.RestaurantWithHours(db);
         Restaurant withWalkInDay = db.Restaurants.First();
         withWalkInDay.WalkInDays = "6";
         db.SaveChanges();

@@ -2,39 +2,21 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import BookScreen from "@/app/(user)/book/[restaurantId]";
 import { createBooking } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
-import { AppThemeProvider } from "@/context/ThemeContext";
-import { BrandProvider } from "@/context/BrandContext";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="mock-footer" /> };
 });
 
-jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
-}));
-
-jest.mock("@expo/vector-icons", () => ({
-  Ionicons: () => null,
-}));
-
 jest.mock("expo-image", () => ({
   Image: ({ testID, onError }: any) =>
     require("react").createElement("Image", { testID: testID ?? "expo-image-banner", onError }),
 }));
-
-// Polyfill fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
-  })
-) as jest.Mock;
 
 // Mock Modal to always render children
 jest.mock("react-native", () => {
@@ -108,21 +90,6 @@ describe("BookScreen", () => {
     (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
     (createBooking as jest.Mock).mockResolvedValue({ id: 50, bookingRef: "REF123" });
   });
-
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <SafeAreaProvider
-        initialMetrics={{
-          frame: { x: 0, y: 0, width: 0, height: 0 },
-          insets: { top: 0, left: 0, right: 0, bottom: 0 },
-        }}
-      >
-        <AppThemeProvider>
-          <BrandProvider>{ui}</BrandProvider>
-        </AppThemeProvider>
-      </SafeAreaProvider>
-    );
-  };
 
   it("handles successful booking with bookingRef", async () => {
     renderWithProviders(<BookScreen />);

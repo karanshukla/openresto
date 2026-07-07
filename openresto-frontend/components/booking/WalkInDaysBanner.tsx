@@ -1,8 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { WalkInSource, walkInDaysLabel } from "@/utils/walkIn";
 
 /**
@@ -14,8 +13,7 @@ import { WalkInSource, walkInDaysLabel } from "@/utils/walkIn";
  * `WalkInNotice` instead.
  */
 export default function WalkInDaysBanner({ restaurant }: { restaurant: WalkInSource }) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors } = useAppTheme();
   const daysLabel = walkInDaysLabel(restaurant);
   if (!daysLabel) return null;
 

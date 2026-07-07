@@ -1,20 +1,23 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class EmailSettingsService(AppDbContext db, CredentialProtector protector, IEmailService emailService)
+public class EmailSettingsService(
+    IEmailSettingsRepository settingsRepository,
+    IEmailFailureRepository emailFailureRepository,
+    CredentialProtector protector,
+    IEmailService emailService)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IEmailSettingsRepository _settingsRepository = settingsRepository;
+    private readonly IEmailFailureRepository _emailFailureRepository = emailFailureRepository;
     private readonly CredentialProtector _protector = protector;
     private readonly IEmailService _emailService = emailService;
 
     public virtual async Task<EmailSettings?> GetAsync()
     {
-        return await _db.Set<EmailSettings>().FirstOrDefaultAsync();
+        return await _settingsRepository.GetAsync();
     }
 
     public virtual async Task SaveAsync(
@@ -22,11 +25,12 @@ public class EmailSettingsService(AppDbContext db, CredentialProtector protector
         bool enableSsl, string? fromName, string? fromEmail,
         bool sendBookingConfirmations = false)
     {
-        EmailSettings? settings = await _db.Set<EmailSettings>().FirstOrDefaultAsync();
+        EmailSettings? settings = await _settingsRepository.GetAsync();
+        bool isNew = false;
         if (settings == null)
         {
             settings = new EmailSettings();
-            _db.Set<EmailSettings>().Add(settings);
+            isNew = true;
         }
 
         settings.Host = host;
@@ -42,7 +46,14 @@ public class EmailSettingsService(AppDbContext db, CredentialProtector protector
             settings.EncryptedPassword = _protector.Encrypt(password);
         }
 
-        await _db.SaveChangesAsync();
+        if (isNew)
+        {
+            await _settingsRepository.AddAsync(settings);
+        }
+        else
+        {
+            await _settingsRepository.SaveChangesAsync();
+        }
     }
 
     public virtual async Task<bool> TestConnectionAsync()
@@ -52,9 +63,6 @@ public class EmailSettingsService(AppDbContext db, CredentialProtector protector
 
     public virtual async Task<IReadOnlyList<EmailFailure>> GetFailuresAsync()
     {
-        return await _db.EmailFailures
-            .OrderByDescending(f => f.AttemptedAt)
-            .Take(50)
-            .ToListAsync();
+        return await _emailFailureRepository.GetRecentAsync(50);
     }
 }

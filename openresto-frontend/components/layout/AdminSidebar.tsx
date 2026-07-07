@@ -3,11 +3,10 @@ import { usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTheme } from "@/context/ThemeContext";
 import { logout } from "@/api/auth";
-import { COLORS, BORDER_RADIUS, FORM_SIZES, TYPOGRAPHY, getThemeColors } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
@@ -53,13 +52,10 @@ const NAV_ITEMS = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, isDark, brand, primaryColor: PRIMARY } = useAppTheme();
   const { toggle } = useTheme();
   const [locationCount, setLocationCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-  const brand = useBrand();
-  const PRIMARY = brand.primaryColor || COLORS.primary;
   const insets = useSafeAreaInsets();
 
   const [lookupQuery, setLookupQuery] = useState("");
@@ -116,7 +112,7 @@ export default function AdminSidebar() {
 
   return (
     <ThemedView
-      lightColor={COLORS.white}
+      lightColor={theme.colors.white}
       style={[
         styles.sidebar,
         {
@@ -130,7 +126,7 @@ export default function AdminSidebar() {
     >
       <View style={styles.brand}>
         <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
-          <Ionicons name="restaurant-outline" size={16} color={COLORS.white} />
+          <Ionicons name="restaurant-outline" size={16} color={theme.colors.white} />
         </View>
         <View style={styles.brandTextGroup}>
           <ThemedText style={styles.brandName} numberOfLines={1}>
@@ -178,7 +174,9 @@ export default function AdminSidebar() {
                       paddingHorizontal: 2,
                     }}
                   >
-                    <ThemedText style={{ fontSize: 9, fontWeight: "700", color: COLORS.white }}>
+                    <ThemedText
+                      style={{ fontSize: 9, fontWeight: "700", color: theme.colors.white }}
+                    >
                       {unreadNotifCount > 99 ? "99+" : String(unreadNotifCount)}
                     </ThemedText>
                   </View>
@@ -240,16 +238,16 @@ export default function AdminSidebar() {
           ]}
         >
           {lookupLoading ? (
-            <ActivityIndicator size="small" color={COLORS.white} />
+            <ActivityIndicator size="small" color={theme.colors.white} />
           ) : (
             <>
-              <Ionicons name="search-outline" size={15} color={COLORS.white} />
+              <Ionicons name="search-outline" size={15} color={theme.colors.white} />
               <ThemedText style={styles.lookupBtnText}>Search</ThemedText>
             </>
           )}
         </Pressable>
         {lookupStatus === "not_found" && (
-          <ThemedText style={[styles.lookupHint, { color: COLORS.error }]}>
+          <ThemedText style={[styles.lookupHint, { color: theme.colors.error }]}>
             No booking found.
           </ThemedText>
         )}
@@ -331,7 +329,7 @@ const styles = StyleSheet.create({
   brandIcon: {
     width: 32,
     height: 32,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -340,12 +338,12 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   brandName: {
-    ...TYPOGRAPHY.bodyBold,
+    ...theme.typography.bodyBold,
     fontWeight: "800",
     letterSpacing: -0.3,
   },
   brandSub: {
-    ...TYPOGRAPHY.captionSmall,
+    ...theme.typography.captionSmall,
     fontWeight: "500",
   },
   divider: {
@@ -363,7 +361,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     position: "relative",
     gap: 10,
   },
@@ -392,15 +390,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   lookupLabel: {
-    ...TYPOGRAPHY.labelSmall,
+    ...theme.typography.labelSmall,
     fontWeight: "700",
     paddingLeft: 2,
   },
   lookupInput: {
-    height: FORM_SIZES.inputSmHeight,
-    paddingHorizontal: FORM_SIZES.inputPaddingH,
+    height: theme.formSizes.inputSmHeight,
+    paddingHorizontal: theme.formSizes.inputPaddingH,
     fontSize: 13,
-    borderRadius: FORM_SIZES.inputBorderRadius,
+    borderRadius: theme.formSizes.inputBorderRadius,
     borderWidth: 1,
   },
   lookupBtn: {
@@ -408,16 +406,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: FORM_SIZES.inputSmHeight,
-    borderRadius: FORM_SIZES.inputBorderRadius,
+    height: theme.formSizes.inputSmHeight,
+    borderRadius: theme.formSizes.inputBorderRadius,
   },
   lookupBtnText: {
-    color: COLORS.white,
+    color: theme.colors.white,
     fontSize: 13,
     fontWeight: "600",
   },
   lookupHint: {
-    ...TYPOGRAPHY.captionSmall,
+    ...theme.typography.captionSmall,
     paddingLeft: 2,
   },
   footer: {
@@ -431,7 +429,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
   },
   footerText: {
     fontSize: 13,

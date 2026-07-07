@@ -16,7 +16,7 @@ internal sealed class NotificationWorker(
         await foreach (NotificationWorkItem item in queue.Channel.Reader.ReadAllAsync(stoppingToken))
         {
             await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
-            INotificationService svc = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            IBookingNotificationService svc = scope.ServiceProvider.GetRequiredService<IBookingNotificationService>();
             try
             {
                 await (item switch

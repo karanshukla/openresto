@@ -140,6 +140,21 @@ jest.mock("@/components/common/Button", () => {
   };
 });
 
+// Mirrors NewBookingModal.nextSlotTime's local-time rounding so the next-slot
+// assertions are deterministic regardless of the host machine's timezone.
+// The component displays wall-clock (local) time, so the expected value must
+// be derived from the same local-time interpretation of the setSystemTime instant.
+const expectedLocalSlot = (now: Date, openTime = "09:00", closeTime = "22:00") => {
+  let h = now.getHours();
+  const min = now.getMinutes();
+  const m = min < 15 ? 15 : min < 30 ? 30 : min < 45 ? 45 : 0;
+  if (m === 0) h += 1;
+  const [openH] = openTime.split(":").map(Number);
+  const [closeH] = closeTime.split(":").map(Number);
+  if (h < openH || h >= closeH) return `${(openH + 1).toString().padStart(2, "0")}:00`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+};
+
 const mockRestaurants = [
   {
     id: 1,
@@ -372,11 +387,12 @@ describe("NewBookingModal", () => {
 
   it("computes the next slot within opening hours, rounding minutes up to :30", async () => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-01-05T14:20:00Z"));
+    const now = new Date("2026-01-05T14:20:00Z");
+    jest.setSystemTime(now);
     try {
       render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
       await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
-      expect(screen.getByTestId("time-picker").props.children).toBe("14:30");
+      expect(screen.getByTestId("time-picker").props.children).toBe(expectedLocalSlot(now));
     } finally {
       jest.useRealTimers();
     }
@@ -384,11 +400,12 @@ describe("NewBookingModal", () => {
 
   it("computes the next slot within opening hours, rounding minutes up to :45", async () => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-01-05T14:35:00Z"));
+    const now = new Date("2026-01-05T14:35:00Z");
+    jest.setSystemTime(now);
     try {
       render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
       await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
-      expect(screen.getByTestId("time-picker").props.children).toBe("14:45");
+      expect(screen.getByTestId("time-picker").props.children).toBe(expectedLocalSlot(now));
     } finally {
       jest.useRealTimers();
     }
@@ -396,11 +413,12 @@ describe("NewBookingModal", () => {
 
   it("rolls over to the next hour when minutes round up past :45", async () => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-01-05T14:50:00Z"));
+    const now = new Date("2026-01-05T14:50:00Z");
+    jest.setSystemTime(now);
     try {
       render(<NewBookingModal visible onClose={onClose} onCreated={onCreated} />);
       await waitFor(() => expect(screen.getByTestId("time-picker")).toBeTruthy());
-      expect(screen.getByTestId("time-picker").props.children).toBe("15:00");
+      expect(screen.getByTestId("time-picker").props.children).toBe(expectedLocalSlot(now));
     } finally {
       jest.useRealTimers();
     }

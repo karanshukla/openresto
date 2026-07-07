@@ -1,8 +1,7 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./settings.styles";
 
 export function GlobalSettingRow({
@@ -22,8 +21,7 @@ export function GlobalSettingRow({
   cardBg: string;
   comingSoon?: boolean;
 }) {
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
 
   return (
     <Pressable

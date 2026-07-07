@@ -2,8 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 import { ThemedText } from "../themed-text";
 import { ThemedView } from "../themed-view";
 import { HoldStatus } from "./useTableHold";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface HoldStatusBannerProps {
   holdStatus: HoldStatus;
@@ -18,8 +17,7 @@ export default function HoldStatusBanner({
   hasSelection,
   onRefresh,
 }: HoldStatusBannerProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, isDark } = useAppTheme();
 
   if (!hasSelection) {
     return null;

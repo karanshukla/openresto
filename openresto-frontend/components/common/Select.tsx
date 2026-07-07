@@ -2,9 +2,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS, FORM_SIZES } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import * as Haptics from "expo-haptics";
 
 export interface SelectOption {
@@ -24,11 +23,7 @@ export default function Select({
   placeholder?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const colorScheme = useColorScheme() ?? "light";
-  const isDark = colorScheme === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const placeholderColor = colors.muted;
   const backgroundColor = colors.input;
@@ -110,12 +105,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderRadius: FORM_SIZES.inputBorderRadius,
-    paddingHorizontal: FORM_SIZES.inputPaddingH,
-    height: FORM_SIZES.inputHeight,
+    borderRadius: theme.formSizes.inputBorderRadius,
+    paddingHorizontal: theme.formSizes.inputPaddingH,
+    height: theme.formSizes.inputHeight,
   },
   triggerText: {
-    fontSize: FORM_SIZES.inputFontSize,
+    fontSize: theme.formSizes.inputFontSize,
   },
   chevron: {
     fontSize: 14,

@@ -1,20 +1,16 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class SocialLinkService(AppDbContext db)
+public class SocialLinkService(ISocialLinkRepository socialLinkRepository)
 {
-    private readonly AppDbContext _db = db;
+    private readonly ISocialLinkRepository _socialLinkRepository = socialLinkRepository;
 
     public async Task<List<SocialLinkDto>> GetAllAsync()
     {
-        List<SocialLink> items = await _db.SocialLinks
-            .OrderBy(s => s.SortOrder)
-            .ThenBy(s => s.Id)
-            .ToListAsync();
+        List<SocialLink> items = await _socialLinkRepository.GetAllAsync();
         return items.Select(ToDto).ToList();
     }
 
@@ -27,14 +23,13 @@ public class SocialLinkService(AppDbContext db)
             IconKey = req.IconKey,
             SortOrder = req.SortOrder,
         };
-        _db.SocialLinks.Add(entity);
-        await _db.SaveChangesAsync();
+        await _socialLinkRepository.AddAsync(entity);
         return ToDto(entity);
     }
 
     public async Task<SocialLinkDto?> UpdateAsync(int id, UpdateSocialLinkRequest req)
     {
-        SocialLink? entity = await _db.SocialLinks.FindAsync(id);
+        SocialLink? entity = await _socialLinkRepository.FindByIdAsync(id);
         if (entity == null)
         {
             return null;
@@ -43,19 +38,19 @@ public class SocialLinkService(AppDbContext db)
         entity.Url = req.Url;
         entity.IconKey = req.IconKey;
         entity.SortOrder = req.SortOrder;
-        await _db.SaveChangesAsync();
+        await _socialLinkRepository.SaveChangesAsync();
         return ToDto(entity);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        SocialLink? entity = await _db.SocialLinks.FindAsync(id);
+        SocialLink? entity = await _socialLinkRepository.FindByIdAsync(id);
         if (entity == null)
         {
             return false;
         }
-        _db.SocialLinks.Remove(entity);
-        await _db.SaveChangesAsync();
+        _socialLinkRepository.Remove(entity);
+        await _socialLinkRepository.SaveChangesAsync();
         return true;
     }
 

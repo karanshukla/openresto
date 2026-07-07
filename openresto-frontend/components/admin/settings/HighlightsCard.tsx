@@ -4,9 +4,8 @@ import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { ThemeColors } from "@/theme/theme";
 import {
   adminGetHighlights,
   adminCreateHighlight,
@@ -72,10 +71,7 @@ export function HighlightsCard({
   mutedColor: string;
   cardBg: string;
 }) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { colors, isDark, primaryColor } = useAppTheme();
   const surface2 = isDark ? "#252729" : "#f9fafb";
 
   const [highlights, setHighlights] = useState<AdminHighlightDto[]>([]);
@@ -314,7 +310,7 @@ function HighlightEditForm({
   surface2: string;
   borderColor: string;
   mutedColor: string;
-  colors: ReturnType<typeof getThemeColors>;
+  colors: ThemeColors;
 }) {
   return (
     <View

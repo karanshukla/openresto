@@ -89,21 +89,16 @@ public class BrandController(BrandService brandService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Save([FromBody] BrandRequest req)
     {
-        try
-        {
-            await _brand.SaveAsync(
-                req.AppName,
-                req.PrimaryColor,
-                req.AccentColor,
-                req.FaviconIcon,
-                req.WebsiteUrl,
-                req.CopyrightText);
-            return Ok(new { message = "Brand settings saved." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        // ValidationException (bad app-name/color/favicon/copyright) → 400 is mapped
+        // by GlobalExceptionHandler.
+        await _brand.SaveAsync(
+            req.AppName,
+            req.PrimaryColor,
+            req.AccentColor,
+            req.FaviconIcon,
+            req.WebsiteUrl,
+            req.CopyrightText);
+        return Ok(new { message = "Brand settings saved." });
     }
 }
 

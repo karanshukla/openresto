@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { gotoAdminDashboard, pastUtcISO } from "./helpers";
+import { gotoAdminDashboard, pastUtcISO, postWithRetry } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 // Seeded restaurant structure (see admin-extend.spec.ts):
@@ -50,17 +50,24 @@ test.describe("Cancel a past booking (#159)", () => {
     await gotoAdminDashboard(page);
 
     // Two days in the past — well outside the 5-minute grace window.
-    const res = await page.request.post("/api/admin/bookings", {
-      data: {
-        restaurantId: RESTAURANT_ID,
-        sectionId: PATIO_SECTION_ID,
-        tableId: P1_TABLE_ID,
-        date: pastUtcISO(2 * 24 * 60),
-        customerEmail: PAST_BOOKING_EMAIL,
-        customerName: "E2E Past Cancel Test",
-        seats: 2,
+    // postWithRetry backs off on 429 — the admin endpoint sits behind the
+    // shared per-IP rate-limit window which can be saturated mid-suite.
+    const res = await postWithRetry(
+      page.request,
+      "/api/admin/bookings",
+      {
+        data: {
+          restaurantId: RESTAURANT_ID,
+          sectionId: PATIO_SECTION_ID,
+          tableId: P1_TABLE_ID,
+          date: pastUtcISO(2 * 24 * 60),
+          customerEmail: PAST_BOOKING_EMAIL,
+          customerName: "E2E Past Cancel Test",
+          seats: 2,
+        },
       },
-    });
+      5
+    );
     expect(res.ok()).toBeTruthy();
     const booking = (await res.json()) as { id: number; bookingRef: string };
     bookingRef = booking.bookingRef;
@@ -117,21 +124,35 @@ test.describe("Cancel a past booking (#159)", () => {
 
   test("customer lookup disables cancellation for the same past booking", async ({ page }) => {
     expect(bookingRef).toBeTruthy();
+    test.setTimeout(120_000);
 
+    // The public lookup endpoint sits behind the "public" rate-limit policy
+    // (120 req/min). When it 429s, getBookingByRef returns null and the page
+    // renders "No booking found" — indistinguishable from a genuine 404. This
+    // is the last test of a long single-worker suite, so the window is most
+    // saturated here. Cool down for a full 60s window reset before the first
+    // attempt, then retry the lookup with reloads until it genuinely succeeds.
     await page.goto("/lookup");
-    await page.getByPlaceholder("e.g. crispy-basil-thyme").fill(bookingRef);
-    await page.getByPlaceholder("The email used when booking").fill(PAST_BOOKING_EMAIL);
-    await page.getByText("Look Up", { exact: true }).click();
+    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
 
-    await expect(page.getByText("Booking Found")).toBeVisible({ timeout: 10_000 });
+    const foundHeading = page.getByText("Booking Found");
+    const passedLabel = page.getByText("Booking Has Passed");
 
-    // Label switches from "Cancel This Booking" to "Booking Has Passed" once past.
-    const cancelSection = page.getByText("Booking Has Passed");
-    await expect(cancelSection).toBeVisible({ timeout: 10_000 });
+    await expect(async () => {
+      // Each pass: clear any prior error state by reloading, then re-search.
+      await page.reload();
+      await page.getByPlaceholder("e.g. crispy-basil-thyme").fill(bookingRef);
+      await page.getByPlaceholder("The email used when booking").fill(PAST_BOOKING_EMAIL);
+      await page.getByText("Look Up", { exact: true }).click();
+      // Require BOTH the success heading and the past-booking label so a
+      // transient/empty render can't satisfy the assertion mid-hydration.
+      await expect(foundHeading).toBeVisible({ timeout: 5_000 });
+      await expect(passedLabel).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 90_000, intervals: [5_000, 10_000, 10_000] });
 
     // Functional check, not just copy: pressing it must not open the
     // "Cancel Reservation" confirmation dialog (disabled={... isPast(...)} in lookup.tsx).
-    await cancelSection.click({ force: true });
+    await passedLabel.click({ force: true });
     await expect(page.getByText("Are you sure you want to cancel this booking?")).toHaveCount(0);
   });
 });

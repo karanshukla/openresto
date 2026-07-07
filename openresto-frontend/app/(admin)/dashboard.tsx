@@ -16,7 +16,7 @@ import { getAdminDashboardStats, AdminDashboardStats, BookingSummaryDto } from "
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { ThemeColors, COLORS, BORDER_RADIUS, SPACING, TYPOGRAPHY } from "@/theme/theme";
+import { theme, ThemeColors } from "@/theme/theme";
 import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
 import AlertModal from "@/components/common/AlertModal";
 
@@ -73,7 +73,7 @@ export default function AdminDashboardScreen() {
             stats.pausedCount > 0
               ? ("pause-circle-outline" as const)
               : ("checkmark-circle-outline" as const),
-          accent: stats.pausedCount > 0 ? COLORS.error : COLORS.success,
+          accent: stats.pausedCount > 0 ? theme.colors.error : theme.colors.success,
         },
         {
           label: "Total Covers",
@@ -189,10 +189,10 @@ export default function AdminDashboardScreen() {
                     <Ionicons
                       name={action.icon}
                       size={24}
-                      color={action.primary ? COLORS.white : primaryColor}
+                      color={action.primary ? theme.colors.white : primaryColor}
                     />
                     <ThemedText
-                      style={[styles.actionTitle, action.primary && { color: COLORS.white }]}
+                      style={[styles.actionTitle, action.primary && { color: theme.colors.white }]}
                     >
                       {action.title}
                     </ThemedText>
@@ -350,12 +350,16 @@ function BookingItem({
   const isActive = !isCancelled && now >= startTime && now <= endTime;
 
   const bubbleBg = isCancelled
-    ? `${COLORS.error}1a`
+    ? `${theme.colors.error}1a`
     : isActive
       ? `${colors.success}18`
       : `${colors.muted}14`;
 
-  const bubbleTextColor = isCancelled ? COLORS.error : isActive ? colors.success : colors.muted;
+  const bubbleTextColor = isCancelled
+    ? theme.colors.error
+    : isActive
+      ? colors.success
+      : colors.muted;
 
   return (
     <Pressable
@@ -403,113 +407,118 @@ function BookingItem({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   outer: {
-    padding: SPACING.xxl,
-    paddingTop: SPACING.xxxl,
+    padding: theme.spacing.xxl,
+    paddingTop: theme.spacing.xxxl,
     paddingBottom: 60,
     maxWidth: 1200,
     width: "100%",
     alignSelf: "center",
   },
-  header: { marginBottom: SPACING.xxxl },
-  pageTitle: { ...TYPOGRAPHY.pageTitle },
-  pageSub: { ...TYPOGRAPHY.body, marginTop: SPACING.xs },
+  header: { marginBottom: theme.spacing.xxxl },
+  pageTitle: { ...theme.typography.pageTitle },
+  pageSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
   spinner: { marginTop: 100 },
   metricsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: SPACING.lg,
-    marginBottom: SPACING.xxl,
+    gap: theme.spacing.lg,
+    marginBottom: theme.spacing.xxl,
   },
   metricsGridWide: { flexWrap: "nowrap" },
   metricCard: {
     flex: 1,
     minWidth: 200,
-    padding: SPACING.xl,
-    borderRadius: BORDER_RADIUS.card,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.card,
     borderWidth: 1,
   },
   metricIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: BORDER_RADIUS.xl,
+    borderRadius: theme.borderRadius.xl,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SPACING.lg,
+    marginBottom: theme.spacing.lg,
   },
-  metricValue: { fontSize: 24, fontWeight: "800", marginBottom: SPACING.xs },
-  metricLabel: { ...TYPOGRAPHY.label },
-  metricSub: { ...TYPOGRAPHY.caption, marginTop: 2 },
-  mainRow: { flexDirection: "column", gap: SPACING.xxl, marginBottom: SPACING.xxl },
+  metricValue: { fontSize: 24, fontWeight: "800", marginBottom: theme.spacing.xs },
+  metricLabel: { ...theme.typography.label },
+  metricSub: { ...theme.typography.caption, marginTop: 2 },
+  mainRow: { flexDirection: "column", gap: theme.spacing.xxl, marginBottom: theme.spacing.xxl },
   mainRowWide: { flexDirection: "row" },
-  chartCard: { flex: 2, borderRadius: BORDER_RADIUS.card, borderWidth: 1, padding: SPACING.xxl },
+  chartCard: {
+    flex: 2,
+    borderRadius: theme.borderRadius.card,
+    borderWidth: 1,
+    padding: theme.spacing.xxl,
+  },
   chartCardWide: { minHeight: 400 },
-  chartHeader: { marginBottom: SPACING.xxxl },
-  cardTitle: { ...TYPOGRAPHY.h3 },
-  chartSub: { ...TYPOGRAPHY.body, marginTop: SPACING.xs },
+  chartHeader: { marginBottom: theme.spacing.xxxl },
+  cardTitle: { ...theme.typography.h3 },
+  chartSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
   chartArea: { flex: 1, justifyContent: "flex-end", minHeight: 200 },
   chartBars: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    gap: SPACING.md,
+    gap: theme.spacing.md,
     height: 200,
   },
-  barContainer: { flex: 1, alignItems: "center", gap: SPACING.sm },
+  barContainer: { flex: 1, alignItems: "center", gap: theme.spacing.sm },
   barTrack: {
     width: "100%",
     height: 160,
     backgroundColor: "rgba(0,0,0,0.03)",
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: theme.borderRadius.sm,
     justifyContent: "flex-end",
     overflow: "hidden",
   },
-  barFill: { width: "100%", borderRadius: BORDER_RADIUS.xs },
-  barLabel: { ...TYPOGRAPHY.caption, fontWeight: "600" },
-  actionsCol: { flex: 1, gap: SPACING.lg },
+  barFill: { width: "100%", borderRadius: theme.borderRadius.xs },
+  barLabel: { ...theme.typography.caption, fontWeight: "600" },
+  actionsCol: { flex: 1, gap: theme.spacing.lg },
   actionsColWide: { maxWidth: 300 },
   actionCard: {
-    padding: SPACING.xl,
-    borderRadius: BORDER_RADIUS.card,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.card,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.lg,
+    gap: theme.spacing.lg,
   },
-  actionTitle: { ...TYPOGRAPHY.bodyBold },
-  listCard: { borderRadius: BORDER_RADIUS.card, borderWidth: 1, overflow: "hidden" },
+  actionTitle: { ...theme.typography.bodyBold },
+  listCard: { borderRadius: theme.borderRadius.card, borderWidth: 1, overflow: "hidden" },
   listHeader: {
-    padding: SPACING.xl,
+    padding: theme.spacing.xl,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  viewAll: { ...TYPOGRAPHY.label },
+  viewAll: { ...theme.typography.label },
   emptyRecent: { padding: 40, alignItems: "center" },
   emptyText: { fontStyle: "italic" },
   bookingItem: {
-    padding: SPACING.lg,
+    padding: theme.spacing.lg,
     borderTopWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.lg,
+    gap: theme.spacing.lg,
   },
   bookingTime: {
-    paddingHorizontal: SPACING.xsm,
-    paddingVertical: SPACING.xxs,
-    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: theme.spacing.xsm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.borderRadius.md,
   },
-  bookingTimeText: { ...TYPOGRAPHY.label, fontWeight: "700" },
+  bookingTimeText: { ...theme.typography.label, fontWeight: "700" },
   bookingInfo: { flex: 1, gap: 2 },
-  bookingEmail: { ...TYPOGRAPHY.label, fontWeight: "500" },
-  bookingMeta: { ...TYPOGRAPHY.caption },
+  bookingEmail: { ...theme.typography.label, fontWeight: "500" },
+  bookingMeta: { ...theme.typography.caption },
   cancelledBadge: {
-    backgroundColor: `${COLORS.error}1a`,
-    paddingHorizontal: SPACING.sm,
+    backgroundColor: `${theme.colors.error}1a`,
+    paddingHorizontal: theme.spacing.sm,
     paddingVertical: 3,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: theme.borderRadius.full,
   },
   cancelledBadgeText: {
-    color: COLORS.error,
+    color: theme.colors.error,
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.4,

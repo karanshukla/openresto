@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 import { StyleSheet } from "react-native";
-import { BUTTON_SIZES, COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 
 export const editableRowStyles = StyleSheet.create({
   editableRow: {
@@ -13,7 +13,7 @@ export const editableRowStyles = StyleSheet.create({
   editableValue: { fontSize: 15, fontWeight: "600", flex: 1 },
   editableInput: { flex: 1 },
   rowActions: { flexDirection: "row", gap: 8, alignItems: "center" },
-  smallBtn: { ...BUTTON_SIZES.secondary, borderRadius: 8 },
+  smallBtn: { ...theme.buttonSizes.secondary, borderRadius: 8 },
   smallBtnText: { fontSize: 14, fontWeight: "600" },
-  deleteText: { fontSize: 14, fontWeight: "600", color: COLORS.error },
+  deleteText: { fontSize: 14, fontWeight: "600", color: theme.colors.error },
 });

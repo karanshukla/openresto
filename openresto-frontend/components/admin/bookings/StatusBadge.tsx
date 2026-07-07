@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { STATUS_COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { styles } from "./bookings.styles";
 
 export type BadgeVariant = "arrived" | "seated" | "upcoming" | "scheduled" | "completed";
@@ -32,23 +32,23 @@ const BADGE_STYLES: Record<
   BadgeVariant,
   { bg: { light: string; dark: string }; text: string | { light: string; dark: string } }
 > = {
-  arrived: STATUS_COLORS.arrived as {
+  arrived: theme.status.arrived as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  seated: STATUS_COLORS.seated as {
+  seated: theme.status.seated as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  upcoming: STATUS_COLORS.upcoming as {
+  upcoming: theme.status.upcoming as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  scheduled: STATUS_COLORS.scheduled as {
+  scheduled: theme.status.scheduled as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  completed: STATUS_COLORS.completed as {
+  completed: theme.status.completed as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },

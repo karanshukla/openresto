@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, View, TouchableWithoutFeedback } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { BORDER_RADIUS, SHADOWS, SPACING, TYPOGRAPHY, getThemeColors } from "@/theme/theme";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { SHORTCUTS_BY_SCOPE, ShortcutScope } from "@/constants/keyboardShortcuts";
 
 interface KeyboardShortcutsHelpProps {
@@ -15,8 +15,7 @@ export default function KeyboardShortcutsHelp({
   scope,
   onClose,
 }: KeyboardShortcutsHelpProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors } = useAppTheme();
   const shortcuts = SHORTCUTS_BY_SCOPE[scope];
 
   return (
@@ -62,49 +61,49 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.xxl,
+    padding: theme.spacing.xxl,
   },
   card: {
-    borderRadius: BORDER_RADIUS.modal,
+    borderRadius: theme.borderRadius.modal,
     borderWidth: 1,
-    padding: SPACING.xxl,
+    padding: theme.spacing.xxl,
     width: "100%",
     maxWidth: 420,
-    gap: SPACING.md,
-    ...SHADOWS.popup,
+    gap: theme.spacing.md,
+    ...theme.shadows.popup,
   },
   list: {
-    gap: SPACING.sm,
+    gap: theme.spacing.sm,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.md,
+    gap: theme.spacing.md,
   },
   keyBadge: {
     minWidth: 56,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xxs,
-    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     alignItems: "center",
   },
   keyText: {
-    ...TYPOGRAPHY.captionSmall,
+    ...theme.typography.captionSmall,
     fontWeight: "700",
   },
   description: {
-    ...TYPOGRAPHY.caption,
+    ...theme.typography.caption,
     flex: 1,
   },
   closeBtn: {
     paddingVertical: 11,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: theme.borderRadius.lg,
     alignItems: "center",
-    marginTop: SPACING.sm,
+    marginTop: theme.spacing.sm,
     borderWidth: 1,
   },
   closeBtnText: {
-    ...TYPOGRAPHY.bodyBold,
+    ...theme.typography.bodyBold,
   },
 });

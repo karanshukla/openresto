@@ -3,9 +3,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
@@ -124,11 +122,8 @@ export default function RestaurantCard({
   index?: number; // kept for API compatibility
   party?: number;
 }) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, isDark, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
   const router = useRouter();
 
   const [slots, setSlots] = useState<TimeSlotDto[]>([]);

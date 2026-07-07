@@ -1,14 +1,15 @@
 using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Interfaces;
 
+/// <summary>
+/// Request-scoped notification surface consumed by <c>NotificationsController</c>:
+/// notification query/CRUD, push-subscription lifecycle, and VAPID public-key exposure.
+/// Booking-event and capacity-threshold notifications live on
+/// <see cref="IBookingNotificationService"/> (consumed by the background worker).
+/// </summary>
 public interface INotificationService
 {
-    Task NotifyBookingCreatedAsync(Booking booking, string restaurantName);
-    Task NotifyBookingCancelledAsync(Booking booking, string restaurantName);
-    // Called after every booking creation — fires RestaurantNearlyFull if threshold crossed
-    Task CheckAndNotifyCapacityAsync(int restaurantId, string restaurantName, DateTime bookingDate);
     Task<(List<AdminNotificationDto> Items, int TotalCount)> GetNotificationsAsync(
         int? restaurantId, string? type, bool? unreadOnly, int page, int pageSize);
     Task<int> GetUnreadCountAsync(int? restaurantId);

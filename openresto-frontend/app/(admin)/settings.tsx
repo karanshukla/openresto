@@ -1,8 +1,7 @@
 import { ScrollView, View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 // Components
 import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard";
@@ -14,9 +13,8 @@ import { PushNotificationsCard } from "@/components/admin/settings/PushNotificat
 import { styles } from "@/components/admin/settings/settings.styles";
 
 export default function AdminSettingsScreen() {
-  const isDark = useColorScheme() === "dark";
+  const { colors, isDark } = useAppTheme();
 
-  const colors = getThemeColors(isDark);
   const borderColor = colors.border;
   const cardBg = colors.card;
   const mutedColor = colors.muted;

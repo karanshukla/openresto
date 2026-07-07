@@ -1,6 +1,6 @@
 import { View, ViewStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
 
 interface BookingDetailsCardProps {
@@ -101,7 +101,7 @@ export function BookingDetailsCard({
               style={[
                 styles.rowValue,
                 label === "Status" &&
-                  value === "CANCELLED" && { color: COLORS.error, fontWeight: "700" },
+                  value === "CANCELLED" && { color: theme.colors.error, fontWeight: "700" },
               ]}
             >
               {value}

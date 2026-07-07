@@ -1,7 +1,7 @@
 import { Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
 
 interface BookingActionButtonsProps {
@@ -34,7 +34,7 @@ export function BookingActionButtons({
           onPress={onUncancel}
           disabled={uncancelling}
         >
-          <Ionicons name="refresh-outline" size={16} color={COLORS.success} />
+          <Ionicons name="refresh-outline" size={16} color={theme.colors.success} />
           <ThemedText style={styles.uncancelBtnText}>
             {uncancelling ? "Restoring…" : "Restore Booking"}
           </ThemedText>
@@ -48,7 +48,7 @@ export function BookingActionButtons({
           onPress={onCancel}
           disabled={deleting}
         >
-          <Ionicons name="trash-outline" size={15} color={COLORS.error} />
+          <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
           <ThemedText style={styles.cancelBtnText}>
             {deleting ? "Cancelling…" : "Cancel Booking"}
           </ThemedText>

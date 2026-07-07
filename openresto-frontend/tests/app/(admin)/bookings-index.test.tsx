@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminBookingsScreen from "@/app/(admin)/bookings/index";
 import {
@@ -755,7 +755,6 @@ describe("AdminBookingsScreen refresh after mutation", () => {
 
   it("does not refresh the list when a row cancel fails", async () => {
     (adminDeleteBooking as jest.Mock).mockRejectedValue(new Error("Failed to cancel the booking."));
-    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
     render(<AdminBookingsScreen />);
     fireEvent.press(await screen.findByText("List"));
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
@@ -769,10 +768,7 @@ describe("AdminBookingsScreen refresh after mutation", () => {
 
     await waitFor(() => expect(adminDeleteBooking).toHaveBeenCalledWith(1));
     expect((getAdminBookings as jest.Mock).mock.calls.length).toBe(callsBefore);
-    await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith("Error", "Failed to cancel the booking.")
-    );
-    alertSpy.mockRestore();
+    await waitFor(() => expect(screen.getByText("Failed to cancel the booking.")).toBeTruthy());
   });
 });
 

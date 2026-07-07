@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, Platform } from "react-native";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import { ActivityIndicator, Pressable, ScrollView, View, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { hexToRgba } from "@/utils/colors";
-import { COLORS, BORDER_RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { fetchRestaurants } from "@/api/restaurants";
 import {
   getNotifications,
@@ -15,219 +14,14 @@ import {
   markAllRead,
   deleteNotification,
   deleteNotifications,
-  subscribePush,
-  getVapidPublicKey,
   AdminNotificationDto,
-  NotificationType,
 } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import ConfirmModal from "@/components/common/ConfirmModal";
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const output = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
-  return output;
-}
-
-const PAGE_SIZE = 20;
-const PIN_STORAGE_KEY = "openresto_pinned_notifs";
-
-const TYPE_LABELS: Record<NotificationType, string> = {
-  BookingCreated: "New Booking",
-  BookingCancelled: "Booking Cancelled",
-  RestaurantNearlyFull: "Nearly Full",
-};
-
-type TypeIcon = {
-  name: "checkmark-circle-outline" | "close-circle-outline" | "warning-outline";
-  color: string;
-};
-
-const TYPE_ICONS: Record<NotificationType, TypeIcon> = {
-  BookingCreated: { name: "checkmark-circle-outline", color: COLORS.success },
-  BookingCancelled: { name: "close-circle-outline", color: COLORS.error },
-  RestaurantNearlyFull: { name: "warning-outline", color: COLORS.warning },
-};
-
-const TYPE_FILTERS = [
-  { label: "All Types", value: "" },
-  { label: "New Bookings", value: "BookingCreated" },
-  { label: "Cancelled", value: "BookingCancelled" },
-  { label: "Nearly Full", value: "RestaurantNearlyFull" },
-];
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-}
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function formatBookingDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-type PushStatus = "unknown" | "active" | "inactive" | "denied" | "unsupported";
-
-function usePushStatus(vapidKey: string | null | undefined) {
-  const [status, setStatus] = useState<PushStatus>("unknown");
-
-  useEffect(() => {
-    if (Platform.OS !== "web" || vapidKey === undefined) return;
-    if (vapidKey === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStatus("unsupported");
-      return;
-    }
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("unsupported");
-      return;
-    }
-    if (Notification.permission === "denied") {
-      setStatus("denied");
-      return;
-    }
-    navigator.serviceWorker.ready.then(async (sw) => {
-      const existing = await sw.pushManager.getSubscription();
-      setStatus(existing ? "active" : "inactive");
-    });
-  }, [vapidKey]);
-
-  return [status, setStatus] as const;
-}
-
-function PushBanner({
-  restaurantId,
-  primaryColor,
-  isDark,
-}: {
-  restaurantId: number | null;
-  primaryColor: string;
-  isDark: boolean;
-}) {
-  const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
-  const [pushStatus, setPushStatus] = usePushStatus(vapidKey);
-  const [working, setWorking] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    getVapidPublicKey().then(setVapidKey);
-  }, []);
-
-  if (Platform.OS !== "web") return null;
-  if (vapidKey === undefined) return null;
-  if (pushStatus === "unsupported" || pushStatus === "active" || pushStatus === "unknown")
-    return null;
-
-  const handleEnable = async () => {
-    if (!vapidKey) return;
-    setWorking(true);
-    setErrorMsg(null);
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === "denied") {
-        setPushStatus("denied");
-        setErrorMsg("Blocked by browser — allow notifications in site settings.");
-        setWorking(false);
-        return;
-      }
-      if (permission !== "granted") {
-        setWorking(false);
-        return;
-      }
-      const sw = await navigator.serviceWorker.ready;
-      const sub = await sw.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
-      const p256dhBuffer = sub.getKey("p256dh");
-      const authBuffer = sub.getKey("auth");
-      if (!p256dhBuffer || !authBuffer) throw new Error("Missing push keys");
-      await subscribePush(restaurantId ?? 0, {
-        endpoint: sub.endpoint,
-        p256dh: arrayBufferToBase64(p256dhBuffer),
-        auth: arrayBufferToBase64(authBuffer),
-      });
-      setPushStatus("active");
-    } catch (err) {
-      console.error("Push subscribe error:", err);
-      setErrorMsg("Failed to enable — try again.");
-    }
-    setWorking(false);
-  };
-
-  if (pushStatus === "denied") {
-    return (
-      <View
-        style={[
-          styles.pushBanner,
-          {
-            borderColor: isDark ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.25)",
-            backgroundColor: isDark ? "rgba(245,158,11,0.07)" : "rgba(245,158,11,0.04)",
-          },
-        ]}
-      >
-        <Ionicons name="notifications-off-outline" size={16} color={COLORS.warning} />
-        <ThemedText style={[styles.pushBannerText, { color: COLORS.warning }]}>
-          Push notifications blocked — enable in browser site settings.
-        </ThemedText>
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={[
-        styles.pushBanner,
-        {
-          borderColor: isDark ? hexToRgba(primaryColor, 0.25) : hexToRgba(primaryColor, 0.2),
-          backgroundColor: isDark ? hexToRgba(primaryColor, 0.07) : hexToRgba(primaryColor, 0.04),
-        },
-      ]}
-    >
-      <Ionicons name="notifications-outline" size={16} color={primaryColor} />
-      <ThemedText style={[styles.pushBannerText, { color: primaryColor }]}>
-        Enable push notifications to get real-time booking alerts.
-      </ThemedText>
-      {errorMsg && (
-        <ThemedText style={[styles.pushBannerText, { color: COLORS.error, flex: undefined }]}>
-          {errorMsg}
-        </ThemedText>
-      )}
-      <Pressable
-        onPress={handleEnable}
-        disabled={working}
-        style={[
-          styles.pushBannerBtn,
-          { backgroundColor: primaryColor, opacity: working ? 0.7 : 1 },
-        ]}
-      >
-        {working ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <ThemedText style={styles.pushBannerBtnText}>Enable</ThemedText>
-        )}
-      </Pressable>
-    </View>
-  );
-}
+import { PushBanner } from "@/components/admin/notifications/PushBanner";
+import { NotificationRow } from "@/components/admin/notifications/NotificationRow";
+import { PAGE_SIZE, PIN_STORAGE_KEY, TYPE_FILTERS } from "@/utils/notifications";
+import { styles } from "@/components/admin/notifications/notifications.styles";
 
 export default function NotificationsScreen() {
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -516,146 +310,25 @@ export default function NotificationsScreen() {
     list: AdminNotificationDto[],
     showDivider: boolean
   ) => {
-    const typeIcon = TYPE_ICONS[n.type];
     const isLast = index === list.length - 1 && !showDivider && !hasMore;
-    const isPinned = pinnedIds.has(n.id);
-    const meta = [
-      n.restaurantName,
-      n.seats > 0 ? `${n.seats} guest${n.seats !== 1 ? "s" : ""}` : null,
-      n.bookingDate ? formatBookingDate(n.bookingDate) : null,
-      relativeTime(n.createdAt),
-    ]
-      .filter(Boolean)
-      .join(" · ");
-
     return (
-      <ReanimatedSwipeable
+      <NotificationRow
         key={n.id}
-        friction={2}
-        leftThreshold={64}
-        rightThreshold={64}
-        enabled={(Platform.OS !== "web" || webTouchActive) && !isPinned}
-        renderLeftActions={() => (
-          <View style={styles.swipeDeleteBg}>
-            <Ionicons name="trash-outline" size={20} color="#fff" />
-          </View>
-        )}
-        renderRightActions={() => (
-          <View style={styles.swipeDeleteBg}>
-            <Ionicons name="trash-outline" size={20} color="#fff" />
-          </View>
-        )}
-        onSwipeableOpen={() => handleDelete(n.id)}
-      >
-        <Pressable
-          onPress={() => handleRowTap(n)}
-          style={(state) => [
-            styles.notifRow,
-            !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
-            (state as { hovered?: boolean }).hovered && {
-              backgroundColor: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.018)",
-            },
-          ]}
-        >
-          {/* Unread accent bar */}
-          <View
-            style={[
-              styles.accentBar,
-              { backgroundColor: !n.isRead ? primaryColor : "transparent" },
-            ]}
-          />
-
-          {/* Type icon */}
-          <View style={[styles.notifIcon, { backgroundColor: hexToRgba(typeIcon.color, 0.1) }]}>
-            <Ionicons name={typeIcon.name} size={18} color={typeIcon.color} />
-          </View>
-
-          {/* Text content */}
-          <View style={styles.notifBody}>
-            <View style={styles.notifTitleRow}>
-              <ThemedText style={styles.notifType}>{TYPE_LABELS[n.type]}</ThemedText>
-              {n.bookingRef ? (
-                <ThemedText style={[styles.notifRef, { color: mutedColor }]}>
-                  #{n.bookingRef}
-                </ThemedText>
-              ) : null}
-              {!n.isRead && <View style={[styles.unreadPip, { backgroundColor: primaryColor }]} />}
-            </View>
-
-            {n.type !== "RestaurantNearlyFull" && n.customerName ? (
-              <ThemedText style={styles.notifName}>{n.customerName}</ThemedText>
-            ) : null}
-
-            <ThemedText style={[styles.notifMeta, { color: mutedColor }]}>{meta}</ThemedText>
-          </View>
-
-          {/* Action buttons — nested Pressables so they don't trigger row navigation */}
-          <View style={styles.rowActions}>
-            <Pressable
-              onPress={() => togglePin(n.id)}
-              hitSlop={6}
-              style={[
-                styles.actionPinBtn,
-                {
-                  backgroundColor: isPinned
-                    ? primaryColor
-                    : isDark
-                      ? "rgba(255,255,255,0.08)"
-                      : "rgba(0,0,0,0.06)",
-                },
-              ]}
-            >
-              <ThemedText style={[styles.actionText, { color: isPinned ? "#fff" : mutedColor }]}>
-                {isPinned ? "Unpin" : "Pin"}
-              </ThemedText>
-            </Pressable>
-            {n.isRead ? (
-              <Pressable
-                onPress={() => handleMarkUnread(n.id)}
-                hitSlop={6}
-                style={[
-                  styles.actionToggleBtn,
-                  {
-                    backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-                  },
-                ]}
-              >
-                <ThemedText style={[styles.actionText, { color: mutedColor }]}>
-                  Mark Unread
-                </ThemedText>
-              </Pressable>
-            ) : (
-              <Pressable
-                onPress={() => handleMarkRead(n.id)}
-                hitSlop={6}
-                style={[
-                  styles.actionToggleBtn,
-                  {
-                    backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-                  },
-                ]}
-              >
-                <ThemedText style={[styles.actionText, { color: mutedColor }]}>
-                  Mark Read
-                </ThemedText>
-              </Pressable>
-            )}
-            <Pressable
-              testID={`delete-notif-${n.id}`}
-              onPress={() => requestDelete(n.id)}
-              hitSlop={6}
-              style={[styles.actionDeleteBtn, { backgroundColor: hexToRgba(COLORS.error, 0.12) }]}
-            >
-              <Ionicons name="trash-outline" size={13} color={COLORS.error} />
-            </Pressable>
-          </View>
-
-          {/* Navigate arrow */}
-          {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (
-            <Ionicons name="chevron-forward" size={15} color={mutedColor} />
-          )}
-        </Pressable>
-      </ReanimatedSwipeable>
+        notification={n}
+        isPinned={pinnedIds.has(n.id)}
+        isLast={isLast}
+        webTouchActive={webTouchActive}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        isDark={isDark}
+        primaryColor={primaryColor}
+        onRowTap={handleRowTap}
+        onTogglePin={togglePin}
+        onMarkRead={handleMarkRead}
+        onMarkUnread={handleMarkUnread}
+        onRequestDelete={requestDelete}
+        onSwipeDelete={handleDelete}
+      />
     );
   };
 
@@ -686,7 +359,7 @@ export default function NotificationsScreen() {
                 style={[
                   styles.markAllBtn,
                   {
-                    backgroundColor: COLORS.error,
+                    backgroundColor: theme.colors.error,
                     opacity: items.length === 0 ? 0.35 : 1,
                   },
                 ]}
@@ -711,7 +384,7 @@ export default function NotificationsScreen() {
                     style={[
                       styles.markAllBtn,
                       {
-                        backgroundColor: COLORS.error,
+                        backgroundColor: theme.colors.error,
                         opacity: !hasRead || clearingRead ? 0.35 : 1,
                       },
                     ]}
@@ -975,260 +648,3 @@ export default function NotificationsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: SPACING.xxl,
-    paddingTop: SPACING.xxxl,
-    gap: SPACING.lg,
-    maxWidth: 1200,
-    width: "100%",
-    alignSelf: "center",
-  },
-
-  // ── Header
-  pageHeader: { gap: 4 },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  pageTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  pageSub: { ...TYPOGRAPHY.body },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-    marginTop: 2,
-  },
-  unreadBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#fff",
-    lineHeight: 14,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  markAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.md,
-    minHeight: 44,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // ── Push banner
-  pushBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-    flexWrap: "wrap",
-  },
-  pushBannerText: { fontSize: 13, flex: 1, lineHeight: 18 },
-  pushBannerBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.md,
-    minWidth: 68,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pushBannerBtnText: { fontSize: 13, fontWeight: "700", color: "#fff" },
-
-  // ── Filters
-  filtersSection: { gap: 8 },
-  pillRow: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-  },
-  pillRow2: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1,
-  },
-  pillText: { fontSize: 13, fontWeight: "600" },
-  unreadDot: { width: 6, height: 6, borderRadius: 3 },
-
-  // ── List card
-  listCard: {
-    borderRadius: BORDER_RADIUS.card,
-    borderWidth: 1,
-    overflow: "hidden",
-    ...SHADOWS.sm,
-  },
-  sectionDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 7,
-    borderBottomWidth: 1,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  notifRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: SPACING.lg,
-    paddingVertical: 13,
-    gap: 10,
-  },
-  accentBar: {
-    width: 3,
-    alignSelf: "stretch",
-    borderRadius: 2,
-    minHeight: 40,
-  },
-  notifIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  notifBody: { flex: 1, gap: 2 },
-  notifTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexWrap: "wrap",
-  },
-  notifType: { fontSize: 13, fontWeight: "700" },
-  notifRef: { fontSize: 12 },
-  unreadPip: { width: 6, height: 6, borderRadius: 3 },
-  notifName: { fontSize: 14, fontWeight: "500", lineHeight: 20 },
-  notifMeta: { fontSize: 12, lineHeight: 17 },
-
-  // ── Per-row actions
-  rowActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  actionPinBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 30,
-    minWidth: 52,
-  },
-  actionToggleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 30,
-    width: 106,
-  },
-  actionDeleteBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: BORDER_RADIUS.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  swipeDeleteBg: {
-    backgroundColor: COLORS.error,
-    width: 72,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toast: {
-    position: "absolute",
-    bottom: 28,
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.82)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  toastText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600" as const,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // ── Empty / error states
-  center: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 72,
-    gap: SPACING.md,
-  },
-  emptyIconRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.bodyBold,
-    fontSize: 16,
-    textAlign: "center",
-  },
-  emptyBody: {
-    ...TYPOGRAPHY.body,
-    textAlign: "center",
-    maxWidth: 280,
-    lineHeight: 22,
-  },
-
-  // ── Load more
-  loadMoreBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-  },
-  loadMoreText: { fontSize: 13, fontWeight: "500" },
-});

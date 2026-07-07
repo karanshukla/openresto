@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { theme, getThemeColors } from "@/theme/theme";
 import {
   getEmailSettings,
   saveEmailSettings,
@@ -13,9 +13,13 @@ import {
   getEmailFailures,
   type EmailFailureDto,
 } from "@/api/admin";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
+import { SubLabel } from "./settingsShared";
+import { SmtpTestPanel } from "./SmtpTestPanel";
+import { BookingConfirmationToggle } from "./BookingConfirmationToggle";
+import { EmailFailuresList } from "./EmailFailuresList";
 
 // Design CSS var mappings:
 // --surface   = cardBg
@@ -55,72 +59,6 @@ const PORT_PRESETS = [25, 465, 587, 2525];
 
 type TestState = "idle" | "testing" | "ok" | "fail";
 
-function SubLabel({ children, mutedColor }: { children: string; mutedColor: string }) {
-  return (
-    <ThemedText
-      style={{
-        fontSize: 10,
-        textTransform: "uppercase" as const,
-        letterSpacing: 1,
-        color: mutedColor,
-        fontWeight: "600" as const,
-        marginBottom: 10,
-      }}
-    >
-      {children}
-    </ThemedText>
-  );
-}
-
-function ToggleSwitch({
-  checked,
-  onChange,
-  disabled,
-  primaryColor,
-  borderColor,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  disabled?: boolean;
-  primaryColor: string;
-  borderColor: string;
-}) {
-  return (
-    <Pressable
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onPress={() => !disabled && onChange(!checked)}
-      style={[
-        {
-          width: 34,
-          height: 20,
-          borderRadius: 999,
-          backgroundColor: checked ? primaryColor : borderColor,
-          padding: 2,
-          justifyContent: "center" as const,
-          flexShrink: 0,
-        },
-        disabled && { opacity: 0.5 },
-      ]}
-    >
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: "white",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.18,
-          shadowRadius: 1,
-          transform: [{ translateX: checked ? 14 : 0 }],
-        }}
-      />
-    </Pressable>
-  );
-}
-
 export function EmailSettingsCard({
   borderColor,
   mutedColor,
@@ -136,10 +74,10 @@ export function EmailSettingsCard({
   // surface-2: the slightly recessed inner surface (used inside cards)
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const borderStrong = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)";
-  const okColor = COLORS.success;
+  const okColor = theme.colors.success;
   const okSoft = isDark ? `${okColor}22` : "#dcfce7";
   const okBorder = `${okColor}50`;
-  const dangerColor = COLORS.error;
+  const dangerColor = theme.colors.error;
   const dangerSoft = isDark ? `${dangerColor}22` : "#fef2f2";
   const dangerBorder = `${dangerColor}50`;
 
@@ -161,8 +99,7 @@ export function EmailSettingsCard({
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
   const [failures, setFailures] = useState<EmailFailureDto[]>([]);
 
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
   const accentSoft = `${primaryColor}18`;
 
   const { width } = useWindowDimensions();
@@ -474,255 +411,55 @@ export function EmailSettingsCard({
     <View style={{ gap: 14 }}>
       <SubLabel mutedColor={mutedColor}>Status</SubLabel>
 
-      {/* Test panel: indicator | title+desc | button — single row */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 14,
-          padding: 14,
-          paddingHorizontal: 16,
-          borderWidth: 1,
-          borderRadius: 12,
-          borderColor:
-            testState === "ok" ? okBorder : testState === "fail" ? dangerBorder : borderColor,
-          backgroundColor:
-            testState === "ok" ? okSoft : testState === "fail" ? dangerSoft : surface2,
+      {/* Test panel (decomposed into <SmtpTestPanel/>) */}
+      <SmtpTestPanel
+        testState={testState}
+        host={host}
+        port={port}
+        testMsg={testMsg}
+        username={username}
+        onTest={handleTest}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={cardBg}
+        surface2={surface2}
+        okColor={okColor}
+        okSoft={okSoft}
+        okBorder={okBorder}
+        dangerColor={dangerColor}
+        dangerSoft={dangerSoft}
+        dangerBorder={dangerBorder}
+      />
+
+      {/* Booking confirmation toggle (decomposed into <BookingConfirmationToggle/>) */}
+      <BookingConfirmationToggle
+        sendConfirmations={sendConfirmations}
+        confirmDisabled={confirmDisabled}
+        onToggle={(next) => {
+          setSendConfirmations(next);
+          if (next)
+            setSaveMsg({
+              text: "Emails will be sent using your SMTP account. Save to apply.",
+              ok: false,
+            });
         }}
-      >
-        {/* Circular indicator */}
-        <View
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor:
-              testState === "ok" ? okColor : testState === "fail" ? dangerColor : borderColor,
-            backgroundColor:
-              testState === "ok" ? okColor : testState === "fail" ? dangerColor : cardBg,
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          {testState === "idle" && (
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: mutedColor }} />
-          )}
-          {testState === "testing" && (
-            <Ionicons name="reload-outline" size={14} color={mutedColor} />
-          )}
-          {testState === "ok" && <Ionicons name="checkmark" size={16} color="#fff" />}
-          {testState === "fail" && (
-            <ThemedText style={{ fontSize: 18, fontWeight: "700", color: "#fff", lineHeight: 20 }}>
-              ×
-            </ThemedText>
-          )}
-        </View>
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={cardBg}
+        surface2={surface2}
+        accentSoft={accentSoft}
+      />
 
-        {/* Text */}
-        <View style={{ flex: 1 }}>
-          <ThemedText
-            style={{
-              fontSize: 13.5,
-              fontWeight: "600",
-            }}
-          >
-            {testState === "idle" && "Not yet tested"}
-            {testState === "testing" && "Testing connection…"}
-            {testState === "ok" && "Connection successful"}
-            {testState === "fail" && "Connection failed"}
-          </ThemedText>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }}>
-            {testState === "idle" && "Send a test to verify settings before going live."}
-            {testState === "testing" && `Reaching ${host || "host"}:${port}…`}
-            {testState === "ok" && (testMsg || "Authentication accepted. Test email delivered.")}
-            {testState === "fail" && (testMsg || "Check your credentials and try again.")}
-          </ThemedText>
-        </View>
-
-        {/* Button */}
-        <Pressable
-          onPress={() => {
-            if (testState !== "testing" && host && username) handleTest();
-          }}
-          style={[
-            styles.secBtn,
-            { flexDirection: "row", gap: 6, paddingHorizontal: 14, borderColor, flexShrink: 0 },
-            (!host || !username) && { opacity: 0.4 },
-          ]}
-        >
-          <Ionicons name="flash-outline" size={14} color={primaryColor} />
-          <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
-            {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
-          </ThemedText>
-        </Pressable>
-      </View>
-
-      {/* Booking confirmation toggle */}
-      <View style={{ gap: 8 }}>
-        <SubLabel mutedColor={mutedColor}>Booking confirmations</SubLabel>
-        <View
-          style={[
-            {
-              borderWidth: 1,
-              borderColor,
-              borderRadius: 12,
-              overflow: "hidden",
-              backgroundColor: surface2,
-            },
-            confirmDisabled && { opacity: 0.65 },
-          ]}
-        >
-          <Pressable
-            onPress={() => {
-              if (confirmDisabled) return;
-              const next = !sendConfirmations;
-              setSendConfirmations(next);
-              if (next)
-                setSaveMsg({
-                  text: "Emails will be sent using your SMTP account. Save to apply.",
-                  ok: false,
-                });
-            }}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-              padding: 12,
-              paddingHorizontal: 14,
-            }}
-          >
-            {/* Icon box */}
-            <View
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                backgroundColor: cardBg,
-                borderWidth: 1,
-                borderColor,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="mail-outline" size={14} color={mutedColor} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <ThemedText style={{ fontSize: 14, fontWeight: "500" }}>
-                  Booking confirmation
-                </ThemedText>
-                <View
-                  style={{
-                    backgroundColor: accentSoft,
-                    borderRadius: 999,
-                    paddingHorizontal: 7,
-                    paddingVertical: 2,
-                  }}
-                ></View>
-              </View>
-              <ThemedText style={{ fontSize: 12.5, color: mutedColor, marginTop: 2 }}>
-                Sent the moment a guest books a table.
-              </ThemedText>
-            </View>
-            <ToggleSwitch
-              checked={sendConfirmations}
-              onChange={(v) => {
-                if (confirmDisabled) return;
-                setSendConfirmations(v);
-                if (v)
-                  setSaveMsg({
-                    text: "Emails will be sent using your SMTP account. Save to apply.",
-                    ok: false,
-                  });
-              }}
-              disabled={confirmDisabled}
-              primaryColor={primaryColor}
-              borderColor={borderColor}
-            />
-          </Pressable>
-          {confirmDisabled && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                padding: 10,
-                paddingHorizontal: 14,
-                borderTopWidth: 1,
-                borderTopColor: borderColor,
-                backgroundColor: cardBg,
-              }}
-            >
-              <Ionicons name="shield-outline" size={13} color={mutedColor} />
-              <ThemedText style={{ fontSize: 12, color: mutedColor }}>
-                Configure and test SMTP above to enable.
-              </ThemedText>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Send failures */}
-      {failures.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <SubLabel mutedColor={mutedColor}>Send failures</SubLabel>
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: dangerBorder,
-              borderRadius: 12,
-              overflow: "hidden",
-              backgroundColor: dangerSoft,
-            }}
-          >
-            {failures.map((f, i) => {
-              const date = new Date(f.attemptedAt);
-              const dateStr = date.toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              return (
-                <View
-                  key={f.id}
-                  style={{
-                    padding: 12,
-                    paddingHorizontal: 14,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: dangerBorder,
-                    gap: 3,
-                  }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Ionicons name="warning-outline" size={13} color={dangerColor} />
-                    <ThemedText
-                      style={{ fontSize: 12.5, fontWeight: "500", flex: 1 }}
-                      numberOfLines={1}
-                    >
-                      {f.recipientEmail}
-                    </ThemedText>
-                    <ThemedText style={{ fontSize: 11, color: mutedColor }}>{dateStr}</ThemedText>
-                  </View>
-                  {f.bookingRef && (
-                    <ThemedText style={{ fontSize: 11.5, color: mutedColor, paddingLeft: 19 }}>
-                      Ref: {f.bookingRef}
-                    </ThemedText>
-                  )}
-                  <ThemedText
-                    style={{ fontSize: 11.5, color: dangerColor, paddingLeft: 19 }}
-                    numberOfLines={2}
-                  >
-                    {f.errorMessage}
-                  </ThemedText>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
+      {/* Send failures (decomposed into <EmailFailuresList/>) */}
+      <EmailFailuresList
+        failures={failures}
+        mutedColor={mutedColor}
+        dangerBorder={dangerBorder}
+        dangerSoft={dangerSoft}
+        dangerColor={dangerColor}
+      />
     </View>
   );
 
@@ -763,10 +500,14 @@ export function EmailSettingsCard({
               style={[
                 styles.successBanner,
                 {
-                  backgroundColor: saveMsg.ok ? `${COLORS.success}10` : `${COLORS.warning}10`,
+                  backgroundColor: saveMsg.ok
+                    ? `${theme.colors.success}10`
+                    : `${theme.colors.warning}10`,
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: saveMsg.ok ? `${COLORS.success}30` : `${COLORS.warning}30`,
+                  borderColor: saveMsg.ok
+                    ? `${theme.colors.success}30`
+                    : `${theme.colors.warning}30`,
                   padding: 10,
                 },
               ]}
@@ -774,12 +515,12 @@ export function EmailSettingsCard({
               <Ionicons
                 name={saveMsg.ok ? "checkmark-circle" : "warning-outline"}
                 size={16}
-                color={saveMsg.ok ? COLORS.success : COLORS.warning}
+                color={saveMsg.ok ? theme.colors.success : theme.colors.warning}
               />
               <ThemedText
                 style={[
                   saveMsg.ok ? styles.successText : styles.secBtnText,
-                  { flex: 1, color: saveMsg.ok ? COLORS.success : COLORS.warning },
+                  { flex: 1, color: saveMsg.ok ? theme.colors.success : theme.colors.warning },
                 ]}
               >
                 {saveMsg.text}

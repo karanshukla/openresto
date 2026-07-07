@@ -1,13 +1,13 @@
 import { StyleSheet } from "react-native";
-import { COLORS, BUTTON_SIZES, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { hexToRgba } from "@/utils/colors";
 
 export const bookingDetailStyles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   container: {
-    padding: SPACING.xxl,
-    paddingTop: SPACING.xxxl,
-    gap: SPACING.lg,
+    padding: theme.spacing.xxl,
+    paddingTop: theme.spacing.xxxl,
+    gap: theme.spacing.lg,
     maxWidth: 1100,
     width: "100%",
     alignSelf: "center",
@@ -19,7 +19,7 @@ export const bookingDetailStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
     flexWrap: "wrap",
-    gap: SPACING.md,
+    gap: theme.spacing.md,
   },
   headerLeft: {
     gap: 6,
@@ -27,16 +27,16 @@ export const bookingDetailStyles = StyleSheet.create({
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.sm,
+    gap: theme.spacing.sm,
   },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   backText: { fontSize: 14, fontWeight: "600" },
-  pageTitle: { ...TYPOGRAPHY.h1 },
+  pageTitle: { ...theme.typography.h1 },
 
   // Two-column layout
   twoCol: {
     flexDirection: "row",
-    gap: SPACING.lg,
+    gap: theme.spacing.lg,
     alignItems: "flex-start",
   },
   colLeft: { flex: 1 },
@@ -44,18 +44,18 @@ export const bookingDetailStyles = StyleSheet.create({
 
   // Details card
   card: {
-    borderRadius: BORDER_RADIUS.card,
+    borderRadius: theme.borderRadius.card,
     borderWidth: 1,
     overflow: "hidden",
-    ...SHADOWS.md,
+    ...theme.shadows.md,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 13,
-    gap: SPACING.lg,
+    gap: theme.spacing.lg,
   },
   rowLabel: { fontSize: 13, fontWeight: "500", width: 100 },
   rowValue: { fontSize: 14, flex: 1, textAlign: "right" },
@@ -64,21 +64,21 @@ export const bookingDetailStyles = StyleSheet.create({
   // Edit form / sections
   section: {
     borderWidth: 1,
-    borderRadius: BORDER_RADIUS.card,
-    padding: SPACING.lg,
-    gap: SPACING.md,
+    borderRadius: theme.borderRadius.card,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
   sectionTitle: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6 },
   label: { fontSize: 13, fontWeight: "600", marginBottom: 4, marginTop: 8 },
-  fieldRow: { flexDirection: "row", gap: SPACING.md },
+  fieldRow: { flexDirection: "row", gap: theme.spacing.md },
   fieldHalf: { flex: 1 },
 
   // Extend buttons
-  extendBtns: { flexDirection: "row", gap: SPACING.sm },
+  extendBtns: { flexDirection: "row", gap: theme.spacing.sm },
   extendBtn: {
     flex: 1,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     paddingVertical: 10,
     alignItems: "center",
     cursor: "pointer" as const,
@@ -87,14 +87,19 @@ export const bookingDetailStyles = StyleSheet.create({
 
   // Email section
   emailTo: { fontSize: 13, marginBottom: 4 },
-  emailActions: { flexDirection: "row", alignItems: "center", gap: SPACING.md, flexWrap: "wrap" },
+  emailActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+    flexWrap: "wrap",
+  },
   emailSendBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 10,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
   },
   emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   emailResultText: { fontSize: 13, fontWeight: "500" },
@@ -105,10 +110,10 @@ export const bookingDetailStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: BORDER_RADIUS.md,
+    ...theme.buttonSizes.secondary,
+    borderRadius: theme.borderRadius.md,
   },
-  actionBtnText: { ...TYPOGRAPHY.label },
+  actionBtnText: { ...theme.typography.label },
 
   // Danger zone buttons (bottom of page)
   uncancelBtn: {
@@ -116,30 +121,30 @@ export const bookingDetailStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: hexToRgba(COLORS.success, 0.1),
+    ...theme.buttonSizes.secondary,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: hexToRgba(theme.colors.success, 0.1),
     cursor: "pointer" as const,
   },
-  uncancelBtnText: { color: COLORS.success, fontSize: 14, fontWeight: "700" },
+  uncancelBtnText: { color: theme.colors.success, fontSize: 14, fontWeight: "700" },
   cancelBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: hexToRgba(COLORS.error, 0.1),
+    ...theme.buttonSizes.secondary,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: hexToRgba(theme.colors.error, 0.1),
     cursor: "pointer" as const,
   },
-  cancelBtnText: { color: COLORS.error, fontSize: 14, fontWeight: "700" },
+  cancelBtnText: { color: theme.colors.error, fontSize: 14, fontWeight: "700" },
   purgeBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    ...BUTTON_SIZES.secondary,
-    borderRadius: BORDER_RADIUS.md,
+    ...theme.buttonSizes.secondary,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     marginTop: 4,
   },

@@ -1,17 +1,13 @@
 import React from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
-import { useBrand } from "@/context/BrandContext";
-import { getThemeColors } from "@/theme/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function PageLoader() {
-  const brand = useBrand();
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, primaryColor } = useAppTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.page }]} testID="loading-screen">
-      <ActivityIndicator size="large" color={brand.primaryColor} />
+      <ActivityIndicator size="large" color={primaryColor} />
     </View>
   );
 }

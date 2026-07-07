@@ -156,13 +156,26 @@ public static class ServiceCollectionExtensions
         // HoldService must be Singleton — the in-memory dictionary must survive across requests
         services.AddSingleton<ISystemClock, SystemClock>();
         services.AddSingleton<IHoldService, HoldService>();
+        services.AddScoped<IHoldPolicyService, HoldPolicyService>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingFilterRepository, BookingFilterRepository>();
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<ISectionRepository, SectionRepository>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+        services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
+        services.AddScoped<IAdminPushSubscriptionRepository, AdminPushSubscriptionRepository>();
+        services.AddScoped<IAdminCredentialRepository, AdminCredentialRepository>();
+        services.AddScoped<IBrandSettingsRepository, BrandSettingsRepository>();
+        services.AddScoped<IEmailSettingsRepository, EmailSettingsRepository>();
+        services.AddScoped<IEmailFailureRepository, EmailFailureRepository>();
+        services.AddScoped<IHighlightRepository, HighlightRepository>();
+        services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
 
-        services.AddScoped<AuthService>();
+        services.AddScoped<IPasswordService, PasswordService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<ISecurityQuestionsService, SecurityQuestionsService>();
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<BookingService>();
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();
@@ -170,7 +183,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<EmailSettingsService>();
         services.AddScoped<HighlightService>();
         services.AddScoped<SocialLinkService>();
-        services.AddScoped<AvailabilityService>();
+        services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<MediaService>();
 
         services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
@@ -181,9 +194,13 @@ public static class ServiceCollectionExtensions
             dpBuilder.PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
         services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
         services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
+        services.AddSingleton<IAuthCookieService, AuthCookieService>();
         services.AddScoped<Func<ISmtpClient>>(_ => () => new SmtpClient());
         services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
+        services.AddScoped<IEmailTemplateService, OpenRestoApi.Core.Application.Services.EmailTemplateService>();
+        services.AddScoped<IBookingConfirmationService, OpenRestoApi.Core.Application.Services.BookingConfirmationService>();
         services.AddScoped<INotificationService, OpenRestoApi.Core.Application.Services.NotificationService>();
+        services.AddScoped<IBookingNotificationService, OpenRestoApi.Core.Application.Services.BookingNotificationService>();
         services.AddOptions<OpenRestoApi.Core.Application.Settings.VapidSettings>()
                 .BindConfiguration("Vapid");
 

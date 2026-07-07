@@ -8,8 +8,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { createBooking } from "@/api/bookings";
 import PageContainer from "@/components/layout/PageContainer";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, BORDER_RADIUS, getThemeColors } from "@/theme/theme";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { convertLocalToUtc } from "@/utils/date";
 import BookingSkeleton from "@/components/booking/BookingSkeleton";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
@@ -40,8 +40,7 @@ export default function BookScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
   const router = useRouter();
-  const isDark = useColorScheme() === "dark";
-  const mutedColor = getThemeColors(isDark).muted;
+  const mutedColor = useAppTheme().colors.muted;
 
   useEffect(() => {
     if (restaurantId) {
@@ -192,12 +191,12 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     backgroundColor: "rgba(220,38,38,0.08)",
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     padding: 12,
     marginBottom: 8,
   },
   errorText: {
-    color: COLORS.error,
+    color: theme.colors.error,
     fontSize: 14,
   },
 });

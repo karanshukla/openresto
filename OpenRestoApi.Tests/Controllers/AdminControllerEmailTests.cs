@@ -7,6 +7,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Controllers
 {
@@ -28,9 +29,16 @@ namespace OpenRestoApi.Tests.Controllers
             SeedTestData();
 
             var holdService = new Mock<IHoldService>().Object;
-            var adminService = new OpenRestoApi.Core.Application.Services.AdminService(_dbContext, holdService);
             var emailService = new MockEmailService();
-            _adminController = new AdminController(adminService, emailService);
+            var adminService = new OpenRestoApi.Core.Application.Services.AdminService(
+                new BookingRepository(_dbContext),
+                new BookingFilterRepository(_dbContext),
+                new RestaurantRepository(_dbContext),
+                new SectionRepository(_dbContext),
+                new TableRepository(_dbContext),
+                holdService,
+                emailService);
+            _adminController = new AdminController(adminService);
         }
 
         private void SeedTestData()

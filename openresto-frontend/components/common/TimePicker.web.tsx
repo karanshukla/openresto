@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 function roundTo15(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -29,10 +27,7 @@ export default function TimePicker({
   minTime?: string;
   maxTime?: string;
 }) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { colors, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const bg = colors.input;
   const textColor = colors.text;

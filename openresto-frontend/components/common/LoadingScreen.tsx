@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, ActivityIndicator, Animated, Easing, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { Brand } from "@/types";
 
 interface LoadingScreenProps {
@@ -14,8 +13,7 @@ export default function LoadingScreen({
   brand,
   message = "Preparing your table...",
 }: LoadingScreenProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors } = useAppTheme();
 
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [scaleAnim] = useState(() => new Animated.Value(0.9));

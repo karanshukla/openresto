@@ -59,27 +59,23 @@ namespace OpenRestoApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
-                BookingDto newBooking = await _bookingService.CreateBookingAsync(bookingDto);
+            // ConflictException (overlap, paused, walk-in, past, held, seats) → 409 is mapped
+            // by GlobalExceptionHandler with a MessageResponse { Message } body, which
+            // serializes identically to the prior anonymous { message } shape.
+            BookingDto newBooking = await _bookingService.CreateBookingAsync(bookingDto);
 
-                string? restaurantName = await _bookingService.GetRestaurantNameAsync(bookingDto.RestaurantId);
+            string? restaurantName = await _bookingService.GetRestaurantNameAsync(bookingDto.RestaurantId);
 
-                _recentCookie.Append(Request, Response, new CachedBookingEntry(
-                    BookingRef: newBooking.BookingRef ?? "",
-                    Email: newBooking.CustomerEmail ?? "",
-                    Date: newBooking.Date.ToString("O"),
-                    Seats: newBooking.Seats,
-                    RestaurantName: restaurantName,
-                    CreatedAt: DateTime.UtcNow.ToString("O")
-                ));
+            _recentCookie.Append(Request, Response, new CachedBookingEntry(
+                BookingRef: newBooking.BookingRef ?? "",
+                Email: newBooking.CustomerEmail ?? "",
+                Date: newBooking.Date.ToString("O"),
+                Seats: newBooking.Seats,
+                RestaurantName: restaurantName,
+                CreatedAt: DateTime.UtcNow.ToString("O")
+            ));
 
-                return CreatedAtAction(nameof(GetBooking), new { id = newBooking.Id }, newBooking);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
+            return CreatedAtAction(nameof(GetBooking), new { id = newBooking.Id }, newBooking);
         }
 
         /// <summary>Returns the user's recent bookings from their encrypted HttpOnly cookie.</summary>
@@ -124,19 +120,14 @@ namespace OpenRestoApi.Controllers
                 return BadRequest(new { message = "Email is required to cancel a booking." });
             }
 
-            try
+            // ConflictException (past booking) → 409 is mapped by GlobalExceptionHandler;
+            // body serializes identically to the prior anonymous { message } shape.
+            bool ok = await _bookingService.CancelBookingAsync(bookingRef, req.Email);
+            if (!ok)
             {
-                bool ok = await _bookingService.CancelBookingAsync(bookingRef, req.Email);
-                if (!ok)
-                {
-                    return NotFound(new { message = "No booking found matching that reference and email." });
-                }
-                return NoContent();
+                return NotFound(new { message = "No booking found matching that reference and email." });
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
+            return NoContent();
         }
     }
 }

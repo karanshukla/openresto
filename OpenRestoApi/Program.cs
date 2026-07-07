@@ -1,4 +1,5 @@
 using OpenRestoApi.Extensions;
+using OpenRestoApi.Infrastructure.Exceptions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,12 @@ builder.WebHost.ConfigureKestrel(options =>
     options.AddServerHeader = false;
 });
 
+// ProblemDetails backs UseStatusCodePages (bare 404/405 etc.) and [ApiController]
+// model-state validation. The typed GlobalExceptionHandler runs first for *thrown*
+// exceptions (AddExceptionHandler registers it ahead of the default ProblemDetails
+// handler) and owns the {message: "..."} body shape for OpenRestoException types.
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProjectDependencies();
 builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddCustomRateLimiting(builder.Environment);
@@ -25,8 +31,10 @@ builder.Services.AddDatabaseSetup(connectionString, builder.Environment);
 WebApplication app = builder.Build();
 
 // Convert unhandled exceptions and bare status-code responses (404/405/etc.)
-// into RFC 7807 ProblemDetails JSON. Must be one of the first middlewares so
-// it can wrap the rest of the pipeline.
+// into JSON. Must be one of the first middlewares so it can wrap the rest of the
+// pipeline. Thrown OpenRestoException types are mapped to {message:"..."} by the
+// registered GlobalExceptionHandler (above); bare status codes fall back to
+// ProblemDetails via UseStatusCodePages below.
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

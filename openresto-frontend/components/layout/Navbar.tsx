@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
-import { BUTTON_SIZES, BORDER_RADIUS, TYPOGRAPHY } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 36,
     height: 36,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: -18,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   brandText: {
-    ...TYPOGRAPHY.h2,
+    ...theme.typography.h2,
     fontSize: 20,
     letterSpacing: -0.5,
   },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   linkBtn: {
-    ...BUTTON_SIZES.secondary,
+    ...theme.buttonSizes.secondary,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   themeBtn: {
     width: 36,
     height: 36,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: theme.borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,

@@ -1,10 +1,12 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Browser } from "@playwright/test";
 import {
   gotoAdminDashboard,
   postWithRetry,
   futureDateStr,
   pressEscapeUntilClosed,
+  expectVisibleWithReload,
 } from "./helpers";
+import { ADMIN_STATE_FILE } from "./global-setup";
 
 // Seeded restaurant structure (see admin-extend.spec.ts):
 //   Pasta Place (id=1) → Patio (sectionId=2): P1 (id=3, 4 seats)
@@ -26,6 +28,50 @@ const P1_TABLE_ID = 3;
  * jsdom/react-dom, so window-level keydown/Escape wiring is unverifiable there).
  */
 test.describe("Admin keyboard shortcuts", () => {
+  test.describe.configure({ mode: "serial" });
+
+  /**
+   * Purge stale e2e-shortcuts bookings from interrupted/crashed prior runs.
+   *
+   * Each test creates a booking at a fixed future offset on Patio/P1 and
+   * cleans it up in a `finally`. But if a run is killed mid-test (timeout,
+   * CI cancel, etc.) the booking is left behind at that exact table+date+time,
+   * and the NEXT run's creation 409s on "already booked" — a hard failure
+   * postWithRetry can't fix (it only retries 429s). Purging every
+   * e2e-shortcuts-* booking on this restaurant before the suite starts keeps
+   * the slots virgin regardless of how the previous run ended. Mirrors the
+   * purgeTestBookings pattern in booking.spec.ts / cancel-past-booking.spec.ts.
+   */
+  async function purgeShortcutsBookings(browser: Browser) {
+    const ctx = await browser.newContext({ storageState: ADMIN_STATE_FILE });
+    const page = await ctx.newPage();
+    const res = await page.request.get(
+      `/api/admin/bookings?restaurantId=${RESTAURANT_ID}&status=all`
+    );
+    if (res.ok()) {
+      const bookings = (await res.json()) as Array<{
+        id: number;
+        customerEmail?: string;
+      }>;
+      for (const b of bookings) {
+        if (b.customerEmail?.startsWith("e2e-shortcuts-")) {
+          await page.request.delete(`/api/admin/bookings/${b.id}`);
+        }
+      }
+    }
+    await ctx.close();
+  }
+
+  test.beforeAll(async ({ browser }) => {
+    await purgeShortcutsBookings(browser);
+  });
+
+  test.afterAll(async ({ browser }) => {
+    // Belt-and-suspenders: also purge after, so a clean run leaves nothing
+    // behind even if a test's own finally was skipped.
+    await purgeShortcutsBookings(browser);
+  });
+
   test("? opens and Esc closes the help overlay", async ({ page }) => {
     await gotoAdminDashboard(page);
 
@@ -64,31 +110,51 @@ test.describe("Admin keyboard shortcuts", () => {
     await gotoAdminDashboard(page);
 
     const uniqueEmail = `e2e-shortcuts-${Date.now()}@example.com`;
-    const bookingRes = await postWithRetry(page.request, "/api/admin/bookings", {
-      data: {
-        restaurantId: RESTAURANT_ID,
-        sectionId: PATIO_SECTION_ID,
-        tableId: P1_TABLE_ID,
-        date: `${futureDateStr(30)}T15:00:00.000Z`,
-        customerEmail: uniqueEmail,
-        customerName: "E2E Shortcuts Test",
-        seats: 2,
+    const bookingRes = await postWithRetry(
+      page.request,
+      "/api/admin/bookings",
+      {
+        data: {
+          restaurantId: RESTAURANT_ID,
+          sectionId: PATIO_SECTION_ID,
+          tableId: P1_TABLE_ID,
+          date: `${futureDateStr(30)}T15:00:00.000Z`,
+          customerEmail: uniqueEmail,
+          customerName: "E2E Shortcuts Test",
+          seats: 2,
+        },
       },
-    });
+      5
+    );
     expect(bookingRes.ok()).toBeTruthy();
     const booking = (await bookingRes.json()) as { id?: number; Id?: number };
     const createdBookingId = booking.id ?? booking.Id;
 
     try {
-      await page.goto("/bookings");
-
       // Page-local search (nth(1)) — a single match auto-opens the detail popup.
-      const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
-      await expect(searchInput).toBeVisible({ timeout: 10_000 });
-      await searchInput.fill(uniqueEmail);
-      await page.getByText("Find", { exact: true }).click();
-
+      // The search API sits behind the shared rate-limit window; if it 429s the
+      // page shows "No booking found." even though the booking exists. Reload +
+      // re-search until the detail popup actually opens.
       const detailsHeading = page.getByText("Booking Details");
+      let opened = false;
+      for (let attempt = 0; attempt < 3 && !opened; attempt++) {
+        if (attempt > 0) {
+          await page.waitForTimeout(10_000); // let the rate-limit window recover
+          await page.reload();
+        } else {
+          await page.goto("/bookings");
+        }
+        const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
+        await expect(searchInput).toBeVisible({ timeout: 10_000 });
+        await searchInput.fill(uniqueEmail);
+        await page.getByText("Find", { exact: true }).click();
+        try {
+          await expect(detailsHeading).toBeVisible({ timeout: 8_000 });
+          opened = true;
+        } catch {
+          // search 429'd or the page didn't hydrate — loop and retry
+        }
+      }
       await expect(detailsHeading).toBeVisible({ timeout: 10_000 });
 
       await pressEscapeUntilClosed(page, detailsHeading);
@@ -128,17 +194,22 @@ test.describe("Admin keyboard shortcuts", () => {
     // intermediate DOM selection state (react-native-web does not expose
     // accessibilityState.selected as aria-selected for role="button" rows,
     // so that can't be inspected directly from Playwright).
-    const bookingRes = await postWithRetry(page.request, "/api/admin/bookings", {
-      data: {
-        restaurantId: RESTAURANT_ID,
-        sectionId: PATIO_SECTION_ID,
-        tableId: P1_TABLE_ID,
-        date: `${futureDateStr(730)}T16:00:00.000Z`,
-        customerEmail: uniqueEmail,
-        customerName: "E2E Row Nav Test",
-        seats: 2,
+    const bookingRes = await postWithRetry(
+      page.request,
+      "/api/admin/bookings",
+      {
+        data: {
+          restaurantId: RESTAURANT_ID,
+          sectionId: PATIO_SECTION_ID,
+          tableId: P1_TABLE_ID,
+          date: `${futureDateStr(730)}T16:00:00.000Z`,
+          customerEmail: uniqueEmail,
+          customerName: "E2E Row Nav Test",
+          seats: 2,
+        },
       },
-    });
+      5
+    );
     expect(bookingRes.ok()).toBeTruthy();
     const booking = (await bookingRes.json()) as { id?: number; Id?: number };
     const createdBookingId = booking.id ?? booking.Id;
@@ -149,7 +220,9 @@ test.describe("Admin keyboard shortcuts", () => {
       await page.getByText("List", { exact: true }).click();
 
       const targetRow = page.getByTestId(`booking-row-${createdBookingId}`);
-      await expect(targetRow).toBeVisible({ timeout: 10_000 });
+      // The bookings list hydrates from a rate-limited admin fetch; reload
+      // (cool-down first) if the row hasn't appeared within the window.
+      await expectVisibleWithReload(page, targetRow, { timeout: 10_000 });
 
       // Clicking the "List" toggle leaves the browser's DOM focus on that
       // <button>. Pressing Enter while it's still focused re-triggers the

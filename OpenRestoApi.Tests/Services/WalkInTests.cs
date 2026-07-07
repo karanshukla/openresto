@@ -1,8 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -14,13 +15,11 @@ namespace OpenRestoApi.Tests.Services;
 /// </summary>
 public class WalkInTests
 {
-    private static AppDbContext CreateDb(string name)
-    {
-        DbContextOptions<AppDbContext> opts = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(name)
-            .Options;
-        return new AppDbContext(opts);
-    }
+    private static RestaurantManagementService CreateService(AppDbContext db) => new(
+        new RestaurantRepository(db),
+        new SectionRepository(db),
+        new TableRepository(db),
+        new BookingRepository(db));
 
     // ── WalkInHelper ──────────────────────────────────────────────────────────
 
@@ -59,7 +58,7 @@ public class WalkInTests
     [InlineData("monday")]
     public void NormalizeWalkInDays_Throws_ForInvalidEntries(string input)
     {
-        Assert.Throws<ArgumentException>(() => WalkInHelper.NormalizeWalkInDays(input));
+        Assert.Throws<ValidationException>(() => WalkInHelper.NormalizeWalkInDays(input));
     }
 
     [Fact]
@@ -108,11 +107,11 @@ public class WalkInTests
     [Fact]
     public async Task UpdateAsync_SetsAndNormalizesWalkInFields()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_SetsAndNormalizesWalkInFields));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_SetsAndNormalizesWalkInFields));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
@@ -132,11 +131,11 @@ public class WalkInTests
     [Fact]
     public async Task UpdateAsync_ClearsWalkInDays_WithEmptyString()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_ClearsWalkInDays_WithEmptyString));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ClearsWalkInDays_WithEmptyString));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInOnly = true, WalkInDays = "6,7" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
@@ -156,12 +155,12 @@ public class WalkInTests
     [Fact]
     public async Task UpdateAsync_Throws_ForInvalidWalkInDays()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_Throws_ForInvalidWalkInDays));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Throws_ForInvalidWalkInDays));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
-        await Assert.ThrowsAsync<ArgumentException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
+        var svc = CreateService(db);
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
         {
             Name = "T",
             WalkInDays = "8"
@@ -171,11 +170,11 @@ public class WalkInTests
     [Fact]
     public async Task UpdateAsync_LeavesWalkInFieldsUntouched_WhenOmitted()
     {
-        using AppDbContext db = CreateDb(nameof(UpdateAsync_LeavesWalkInFieldsUntouched_WhenOmitted));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_LeavesWalkInFieldsUntouched_WhenOmitted));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInOnly = true, WalkInDays = "6" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "T2" });
 
         Assert.NotNull(dto);
@@ -186,11 +185,11 @@ public class WalkInTests
     [Fact]
     public async Task GetByIdAsync_ExposesWalkInFields()
     {
-        using AppDbContext db = CreateDb(nameof(GetByIdAsync_ExposesWalkInFields));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_ExposesWalkInFields));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", WalkInDays = "6,7" });
         db.SaveChanges();
 
-        var svc = new RestaurantManagementService(db);
+        var svc = CreateService(db);
         RestaurantDto? dto = await svc.GetByIdAsync(1);
 
         Assert.NotNull(dto);

@@ -1,13 +1,20 @@
-using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class RestaurantManagementService(AppDbContext db)
+public class RestaurantManagementService(
+    IRestaurantRepository restaurantRepository,
+    ISectionRepository sectionRepository,
+    ITableRepository tableRepository,
+    IBookingRepository bookingRepository)
 {
-    private readonly AppDbContext _db = db;
+    private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
+    private readonly ISectionRepository _sectionRepository = sectionRepository;
+    private readonly ITableRepository _tableRepository = tableRepository;
+    private readonly IBookingRepository _bookingRepository = bookingRepository;
 
     private static readonly HashSet<int> _allowedBookingDurationsMinutes =
         [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
@@ -16,22 +23,13 @@ public class RestaurantManagementService(AppDbContext db)
 
     public async Task<List<RestaurantDto>> GetAllAsync()
     {
-        List<Restaurant> restaurants = await _db.Restaurants
-            .Where(r => !r.IsArchived)
-            .Include(r => r.Sections)
-                .ThenInclude(s => s.Tables)
-            .ToListAsync();
-
+        List<Restaurant> restaurants = await _restaurantRepository.GetAllActiveWithSectionsAsync();
         return restaurants.Select(ToDto).ToList();
     }
 
     public async Task<RestaurantDto?> GetByIdAsync(int id)
     {
-        Restaurant? r = await _db.Restaurants
-            .Include(x => x.Sections)
-                .ThenInclude(s => s.Tables)
-            .FirstOrDefaultAsync(x => x.Id == id && !x.IsArchived);
-
+        Restaurant? r = await _restaurantRepository.GetByIdAsync(id);
         return r == null ? null : ToDto(r);
     }
 
@@ -50,14 +48,13 @@ public class RestaurantManagementService(AppDbContext db)
             }).ToList()
         };
 
-        _db.Restaurants.Add(entity);
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.AddAsync(entity);
         return ToDto(entity);
     }
 
     public async Task<RestaurantDto?> UpdateAsync(int id, UpdateRestaurantRequest req)
     {
-        Restaurant? r = await _db.Restaurants.FindAsync(id);
+        Restaurant? r = await _restaurantRepository.FindByIdAsync(id);
         if (r == null)
         {
             return null;
@@ -99,7 +96,7 @@ public class RestaurantManagementService(AppDbContext db)
         {
             if (!_allowedBookingDurationsMinutes.Contains(req.DefaultBookingDurationMinutes.Value))
             {
-                throw new ArgumentException(
+                throw new ValidationException(
                     $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", _allowedBookingDurationsMinutes.Order())}.");
             }
 
@@ -116,7 +113,7 @@ public class RestaurantManagementService(AppDbContext db)
             r.WalkInDays = WalkInHelper.NormalizeWalkInDays(req.WalkInDays);
         }
 
-        await _db.SaveChangesAsync();
+        await _restaurantRepository.SaveChangesAsync();
 
         return new RestaurantDto
         {
@@ -143,24 +140,22 @@ public class RestaurantManagementService(AppDbContext db)
 
     public async Task<SectionDto?> AddSectionAsync(int restaurantId, string name)
     {
-        Restaurant? r = await _db.Restaurants.FindAsync(restaurantId);
+        Restaurant? r = await _restaurantRepository.FindByIdAsync(restaurantId);
         if (r == null)
         {
             return null;
         }
 
-        int nextSortOrder = await _db.Sections.CountAsync(s => s.RestaurantId == restaurantId);
+        int nextSortOrder = await _sectionRepository.CountByRestaurantAsync(restaurantId);
         var section = new Section { Name = name, RestaurantId = restaurantId, SortOrder = nextSortOrder };
-        _db.Sections.Add(section);
-        await _db.SaveChangesAsync();
+        await _sectionRepository.AddAsync(section);
 
         return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
     public async Task<SectionDto?> UpdateSectionAsync(int restaurantId, int sectionId, string name)
     {
-        Section? section = await _db.Sections
-            .FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == restaurantId);
+        Section? section = await _sectionRepository.FindForRestaurantAsync(sectionId, restaurantId);
 
         if (section == null)
         {
@@ -168,33 +163,31 @@ public class RestaurantManagementService(AppDbContext db)
         }
 
         section.Name = name;
-        await _db.SaveChangesAsync();
+        await _sectionRepository.SaveChangesAsync();
         return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
     public async Task<bool> DeleteSectionAsync(int restaurantId, int sectionId)
     {
-        Section? section = await _db.Sections
-            .Include(s => s.Tables)
-            .FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == restaurantId);
+        Section? section = await _sectionRepository.GetWithTablesForRestaurantAsync(sectionId, restaurantId);
 
         if (section == null)
         {
             return false;
         }
 
+        // FK-null affected bookings before removing the section. All entities share the same scoped
+        // DbContext, so the booking mutations + the section removal below flush in a single SaveChanges.
         var tableIds = section.Tables.Select(t => t.Id).ToList();
-        var affected = await _db.Bookings
-            .Where(b => b.SectionId == sectionId || (b.TableId != null && tableIds.Contains(b.TableId.Value)))
-            .ToListAsync();
+        List<Booking> affected = await _bookingRepository.GetBySectionOrTablesAsync(sectionId, tableIds);
         foreach (Booking b in affected)
         {
             b.TableId = null;
             b.SectionId = null;
         }
 
-        _db.Sections.Remove(section);
-        await _db.SaveChangesAsync();
+        _sectionRepository.Remove(section);
+        await _sectionRepository.SaveChangesAsync();
         return true;
     }
 
@@ -202,8 +195,7 @@ public class RestaurantManagementService(AppDbContext db)
 
     public async Task<TableDto?> AddTableAsync(int restaurantId, int sectionId, string? name, int seats)
     {
-        Section? section = await _db.Sections
-            .FirstOrDefaultAsync(s => s.Id == sectionId && s.RestaurantId == restaurantId);
+        Section? section = await _sectionRepository.FindForRestaurantAsync(sectionId, restaurantId);
 
         if (section == null)
         {
@@ -211,17 +203,14 @@ public class RestaurantManagementService(AppDbContext db)
         }
 
         var table = new Table { Name = name, Seats = seats, SectionId = sectionId };
-        _db.Tables.Add(table);
-        await _db.SaveChangesAsync();
+        await _tableRepository.AddAsync(table);
 
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
     public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats)
     {
-        Table? table = await _db.Tables
-            .Include(t => t.Section)
-            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId && t.Section!.RestaurantId == restaurantId);
+        Table? table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurantId);
 
         if (table == null)
         {
@@ -230,28 +219,27 @@ public class RestaurantManagementService(AppDbContext db)
 
         table.Name = name;
         table.Seats = seats;
-        await _db.SaveChangesAsync();
+        await _tableRepository.SaveChangesAsync();
 
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
     public async Task<bool> DeleteTableAsync(int restaurantId, int sectionId, int tableId)
     {
-        Table? table = await _db.Tables
-            .Include(t => t.Section)
-            .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId && t.Section!.RestaurantId == restaurantId);
+        Table? table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurantId);
 
         if (table == null)
         {
             return false;
         }
 
-        List<Booking> affected = await _db.Bookings.Where(b => b.TableId == tableId).ToListAsync();
+        // FK-null bookings on this table before removing it (same single-save pattern as DeleteSection).
+        List<Booking> affected = await _bookingRepository.GetByTableAsync(tableId);
         foreach (Booking b in affected)
             b.TableId = null;
 
-        _db.Tables.Remove(table);
-        await _db.SaveChangesAsync();
+        _tableRepository.Remove(table);
+        await _tableRepository.SaveChangesAsync();
         return true;
     }
 

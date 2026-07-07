@@ -1,54 +1,27 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View, Platform, Pressable, TextInput } from "react-native";
+import { ActivityIndicator, ScrollView, View, Platform, Pressable } from "react-native";
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, BORDER_RADIUS, getThemeColors } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { fetchRestaurants, createRestaurant, RestaurantDto } from "@/api/restaurants";
 import {
-  adminDeleteRestaurant,
   adminGetRestaurants,
-  adminSetRestaurantArchived,
   pauseRestaurantBookings,
   unpauseRestaurantBookings,
   extendRestaurantBookings,
   BookingDetailDto,
 } from "@/api/admin";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
+import { useConfirm } from "@/hooks/use-confirm";
 
 import { LocationCard } from "@/components/admin/settings/LocationCard";
+import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
+import { DangerZone } from "@/components/admin/locations/DangerZone";
 import { styles } from "@/components/admin/settings/settings.styles";
-
-function useConfirmLocal() {
-  const [state, setState] = useState<{ message: string } | null>(null);
-  const resolveRef = { current: null as ((v: boolean) => void) | null };
-
-  const confirm = (message: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      resolveRef.current = resolve;
-      setState({ message });
-    });
-  };
-
-  const handleConfirm = () => {
-    resolveRef.current?.(true);
-    resolveRef.current = null;
-    setState(null);
-  };
-
-  const handleCancel = () => {
-    resolveRef.current?.(false);
-    resolveRef.current = null;
-    setState(null);
-  };
-
-  return { state, confirm, handleConfirm, handleCancel };
-}
 
 export default function AdminLocationsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -61,16 +34,6 @@ export default function AdminLocationsScreen() {
   const [addingLocation, setAddingLocation] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [savingLocation, setSavingLocation] = useState(false);
-  const [dangerZoneExpanded, setDangerZoneExpanded] = usePersistedState(
-    "locations:danger:expanded",
-    false
-  );
-  const [dangerSelectedId, setDangerSelectedId] = useState<number | null>(null);
-  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
-  const [archiving, setArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState(false);
   const [allRestaurants, setAllRestaurants] = useState<
     {
       id: number;
@@ -84,17 +47,9 @@ export default function AdminLocationsScreen() {
   const [extending, setExtending] = useState(false);
   const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
   const [extendNoActive, setExtendNoActive] = useState(false);
-  const isDark = useColorScheme() === "dark";
-  const {
-    state: confirmState,
-    confirm: confirmAction,
-    handleConfirm,
-    handleCancel,
-  } = useConfirmLocal();
+  const { state: confirmState, confirm: confirmAction, handleConfirm, handleCancel } = useConfirm();
 
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
-  const colors = getThemeColors(isDark);
+  const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const cardBg = colors.card;
   const mutedColor = colors.muted;
@@ -125,7 +80,6 @@ export default function AdminLocationsScreen() {
   }, []);
 
   const selectedRestaurant = restaurants.find((r) => r.id === selectedId) ?? null;
-  const dangerSelectedRestaurant = allRestaurants.find((r) => r.id === dangerSelectedId) ?? null;
   const selectedAdminData = allRestaurants.find((r) => r.id === selectedId) ?? null;
   const activeCount = selectedAdminData?.activeBookingsCount ?? 0;
   const isPaused = selectedAdminData?.bookingsPausedUntil
@@ -149,13 +103,6 @@ export default function AdminLocationsScreen() {
     selectLocation(id);
     setExtendedBookings(null);
     setExtendNoActive(false);
-  }
-
-  function handleDangerSelect(id: number) {
-    setDangerSelectedId(id);
-    setDeleteStep("idle");
-    setDeleteError(false);
-    setArchiveError(false);
   }
 
   if (loading) {
@@ -189,7 +136,7 @@ export default function AdminLocationsScreen() {
             gap: 7,
             paddingHorizontal: 14,
             paddingVertical: 10,
-            borderRadius: BORDER_RADIUS.md,
+            borderRadius: theme.borderRadius.md,
             backgroundColor: primaryColor,
             minHeight: 44,
             opacity: addingLocation ? 0.5 : 1,
@@ -204,69 +151,30 @@ export default function AdminLocationsScreen() {
 
       {/* ── Add location form ────────────────────────────────────────── */}
       {addingLocation && (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            padding: 14,
-            borderWidth: 1,
-            borderColor: isDark ? `${primaryColor}40` : `${primaryColor}30`,
-            borderRadius: BORDER_RADIUS.card,
-            backgroundColor: isDark ? `${primaryColor}08` : `${primaryColor}04`,
-          }}
-        >
-          <Ionicons name="storefront-outline" size={18} color={primaryColor} />
-          <TextInput
-            value={newLocationName}
-            onChangeText={setNewLocationName}
-            placeholder="Location name (e.g. Downtown, Westside)"
-            placeholderTextColor={mutedColor}
-            autoFocus
-            style={{
-              flex: 1,
-              fontSize: 14,
-              color: isDark ? "#fff" : "#111",
-            }}
-          />
-          <Pressable
-            disabled={savingLocation || !newLocationName.trim()}
-            onPress={async () => {
-              if (!newLocationName.trim()) return;
-              setSavingLocation(true);
-              const created = await createRestaurant(newLocationName.trim());
-              setSavingLocation(false);
-              if (created) {
-                setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
-                selectLocation(created.id);
-              }
-              setNewLocationName("");
-              setAddingLocation(false);
-            }}
-            style={{
-              backgroundColor: primaryColor,
-              borderRadius: BORDER_RADIUS.md,
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              opacity: savingLocation || !newLocationName.trim() ? 0.45 : 1,
-            }}
-          >
-            <ThemedText style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-              {savingLocation ? "Adding…" : "Add"}
-            </ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={
-              /* istanbul ignore next */ () => {
-                setAddingLocation(false);
-                setNewLocationName("");
-              }
+        <AddLocationForm
+          value={newLocationName}
+          saving={savingLocation}
+          isDark={isDark}
+          mutedColor={mutedColor}
+          primaryColor={primaryColor}
+          onValueChange={setNewLocationName}
+          onSubmit={async () => {
+            if (!newLocationName.trim()) return;
+            setSavingLocation(true);
+            const created = await createRestaurant(newLocationName.trim());
+            setSavingLocation(false);
+            if (created) {
+              setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
+              selectLocation(created.id);
             }
-            style={{ padding: 6 }}
-          >
-            <Ionicons name="close-outline" size={20} color={mutedColor} />
-          </Pressable>
-        </View>
+            setNewLocationName("");
+            setAddingLocation(false);
+          }}
+          onCancel={() => {
+            setAddingLocation(false);
+            setNewLocationName("");
+          }}
+        />
       )}
 
       {/* ── Location selector pills ──────────────────────────────────── */}
@@ -345,7 +253,7 @@ export default function AdminLocationsScreen() {
               justifyContent: "center",
               gap: 6,
               paddingVertical: 10,
-              borderRadius: BORDER_RADIUS.md,
+              borderRadius: theme.borderRadius.md,
               borderWidth: 1,
               borderColor: isPaused ? "#16a34a" : "#ca8a04",
               backgroundColor: isPaused ? "rgba(22,163,74,0.08)" : "rgba(234,179,8,0.08)",
@@ -390,7 +298,7 @@ export default function AdminLocationsScreen() {
               justifyContent: "center",
               gap: 6,
               paddingVertical: 10,
-              borderRadius: BORDER_RADIUS.md,
+              borderRadius: theme.borderRadius.md,
               borderWidth: 1,
               borderColor: borderColor,
               opacity:
@@ -483,318 +391,44 @@ export default function AdminLocationsScreen() {
         </View>
       ) : null}
 
-      {/* ── Archive / Delete ─────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>
-          ARCHIVE / DELETE
-        </ThemedText>
-        <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-          <Pressable
-            style={styles.secHeader}
-            onPress={() => {
-              setDangerZoneExpanded((v) => !v);
-              if (dangerZoneExpanded) {
-                setDeleteStep("idle");
-                setDeleteError(false);
-                setArchiveError(false);
+      {/* ── Archive / Delete (decomposed into <DangerZone/>) ───────── */}
+      <DangerZone
+        restaurants={allRestaurants}
+        borderColor={borderColor}
+        cardBg={cardBg}
+        mutedColor={mutedColor}
+        isDark={isDark}
+        onArchived={async (id, archived) => {
+          // Patch the all-restaurants list in place (faithful to the original).
+          setAllRestaurants((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, isArchived: archived } : r))
+          );
+          if (archived) {
+            // Archiving: drop from active list; relocate selection if it was the deleted one.
+            setRestaurants((prev) => {
+              const remaining = prev.filter((r) => r.id !== id);
+              if (selectedId === id) {
+                selectLocation(remaining.length > 0 ? remaining[0].id : null);
               }
-            }}
-          >
-            <View style={[styles.secIcon, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
-              <Ionicons name="warning-outline" size={20} color="#dc2626" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText style={styles.secTitle}>Archive or delete a location</ThemedText>
-              <ThemedText style={[styles.secSub, { color: mutedColor }]}>
-                {dangerSelectedRestaurant
-                  ? `Selected: ${dangerSelectedRestaurant.name}${dangerSelectedRestaurant.isArchived ? " (archived)" : ""}`
-                  : "Permanently remove or hide a location"}
-              </ThemedText>
-            </View>
-            <Ionicons
-              name={dangerZoneExpanded ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={mutedColor}
-            />
-          </Pressable>
-
-          <AnimatedAccordion expanded={dangerZoneExpanded}>
-            <View style={[styles.secForm, { borderTopColor: borderColor, gap: 16 }]}>
-              {allRestaurants.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}
-                >
-                  {allRestaurants.map((r) => {
-                    const active = dangerSelectedId === r.id;
-                    const archived = r.isArchived ?? false;
-                    const pillColor = archived ? mutedColor : "#dc2626";
-                    return (
-                      <Pressable
-                        key={r.id}
-                        onPress={() => handleDangerSelect(r.id)}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 7,
-                          paddingHorizontal: 12,
-                          paddingVertical: 6,
-                          borderRadius: 9999,
-                          borderWidth: 1,
-                          borderColor: active ? pillColor : borderColor,
-                          backgroundColor: active ? pillColor : "transparent",
-                          opacity: archived ? 0.65 : 1,
-                        }}
-                      >
-                        <Ionicons
-                          name={archived ? "archive-outline" : "storefront-outline"}
-                          size={13}
-                          color={active ? "#fff" : pillColor}
-                        />
-                        <ThemedText
-                          style={{
-                            fontSize: 13,
-                            fontWeight: "600",
-                            color: active ? "#fff" : mutedColor,
-                            textDecorationLine: archived ? "line-through" : "none",
-                          }}
-                        >
-                          {r.name}
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              )}
-
-              {dangerSelectedRestaurant ? (
-                <>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: 14,
-                      borderWidth: 1,
-                      borderColor: isDark ? "rgba(217,119,6,0.3)" : "rgba(217,119,6,0.2)",
-                      borderRadius: 10,
-                      backgroundColor: isDark ? "rgba(217,119,6,0.06)" : "rgba(217,119,6,0.03)",
-                    }}
-                  >
-                    <View style={[styles.secIcon, { backgroundColor: "rgba(217,119,6,0.12)" }]}>
-                      <Ionicons
-                        name={
-                          dangerSelectedRestaurant.isArchived
-                            ? "refresh-outline"
-                            : "archive-outline"
-                        }
-                        size={20}
-                        color="#d97706"
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <ThemedText style={styles.secRowTitle}>
-                        {dangerSelectedRestaurant.isArchived
-                          ? "Restore Location"
-                          : "Archive Location"}
-                      </ThemedText>
-                      <ThemedText style={[styles.secRowSub, { color: mutedColor }]}>
-                        {dangerSelectedRestaurant.isArchived
-                          ? `Restore "${dangerSelectedRestaurant.name}" so customers can book again. All data is intact.`
-                          : `Hide "${dangerSelectedRestaurant.name}" from customers. All data is preserved and can be restored at any time.`}
-                      </ThemedText>
-                      {archiveError && (
-                        <ThemedText style={{ fontSize: 12, color: "#d97706", marginTop: 4 }}>
-                          Failed. Please try again.
-                        </ThemedText>
-                      )}
-                    </View>
-                    <Pressable
-                      disabled={archiving}
-                      onPress={async () => {
-                        setArchiving(true);
-                        setArchiveError(false);
-                        const target = !dangerSelectedRestaurant.isArchived;
-                        const ok = await adminSetRestaurantArchived(
-                          dangerSelectedRestaurant.id,
-                          target
-                        );
-                        setArchiving(false);
-                        if (ok) {
-                          setAllRestaurants((prev) =>
-                            prev.map((r) =>
-                              r.id === dangerSelectedRestaurant.id
-                                ? { ...r, isArchived: target }
-                                : r
-                            )
-                          );
-                          if (target) {
-                            setRestaurants((prev) => {
-                              const remaining = prev.filter(
-                                (r) => r.id !== dangerSelectedRestaurant.id
-                              );
-                              if (selectedId === dangerSelectedRestaurant.id) {
-                                selectLocation(remaining.length > 0 ? remaining[0].id : null);
-                              }
-                              return remaining;
-                            });
-                          } else {
-                            fetchRestaurants().then((active) => {
-                              setRestaurants(active);
-                              selectLocation(dangerSelectedRestaurant.id);
-                            });
-                          }
-                        } else {
-                          setArchiveError(true);
-                        }
-                      }}
-                      style={[
-                        styles.secBtn,
-                        {
-                          borderColor: "#d97706",
-                          backgroundColor: isDark ? "rgba(217,119,6,0.1)" : "rgba(217,119,6,0.06)",
-                          opacity: archiving ? 0.5 : 1,
-                        },
-                      ]}
-                    >
-                      <ThemedText style={[styles.secBtnText, { color: "#d97706" }]}>
-                        {archiving
-                          ? "Saving…"
-                          : dangerSelectedRestaurant.isArchived
-                            ? "Restore"
-                            : "Archive…"}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-
-                  <View
-                    style={{
-                      padding: 14,
-                      borderWidth: 1,
-                      borderColor: isDark ? "rgba(220,38,38,0.3)" : "rgba(220,38,38,0.2)",
-                      borderRadius: 10,
-                      backgroundColor: isDark ? "rgba(220,38,38,0.06)" : "rgba(220,38,38,0.03)",
-                      gap: 12,
-                    }}
-                  >
-                    {deleteStep === "idle" ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                        <View style={[styles.secIcon, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
-                          <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <ThemedText style={styles.secRowTitle}>Delete Location</ThemedText>
-                          <ThemedText style={[styles.secRowSub, { color: mutedColor }]}>
-                            Permanently removes &ldquo;{dangerSelectedRestaurant.name}&rdquo; and
-                            all its sections, tables, and bookings.
-                          </ThemedText>
-                        </View>
-                        <Pressable
-                          onPress={() => setDeleteStep("confirm")}
-                          style={[
-                            styles.secBtn,
-                            {
-                              borderColor: "#dc2626",
-                              backgroundColor: isDark
-                                ? "rgba(220,38,38,0.1)"
-                                : "rgba(220,38,38,0.06)",
-                            },
-                          ]}
-                        >
-                          <ThemedText style={[styles.secBtnText, { color: "#dc2626" }]}>
-                            Delete…
-                          </ThemedText>
-                        </Pressable>
-                      </View>
-                    ) : (
-                      <>
-                        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-                          <Ionicons
-                            name="warning-outline"
-                            size={18}
-                            color="#dc2626"
-                            style={{ marginTop: 1 }}
-                          />
-                          <ThemedText style={{ flex: 1, fontSize: 13, lineHeight: 19 }}>
-                            <ThemedText style={{ fontWeight: "700" }}>
-                              Delete &ldquo;{dangerSelectedRestaurant.name}&rdquo;?
-                            </ThemedText>{" "}
-                            All sections, tables, and bookings will be permanently destroyed. This
-                            cannot be undone.
-                          </ThemedText>
-                        </View>
-                        {deleteError && (
-                          <ThemedText style={{ fontSize: 12, color: "#dc2626" }}>
-                            Failed to delete. Please try again.
-                          </ThemedText>
-                        )}
-                        <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
-                          <Pressable
-                            onPress={() => {
-                              setDeleteStep("idle");
-                              setDeleteError(false);
-                            }}
-                            disabled={deleting}
-                            style={[styles.secBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
-                          >
-                            <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>
-                              Cancel
-                            </ThemedText>
-                          </Pressable>
-                          <Pressable
-                            onPress={async () => {
-                              setDeleting(true);
-                              setDeleteError(false);
-                              const ok = await adminDeleteRestaurant(dangerSelectedRestaurant.id);
-                              setDeleting(false);
-                              if (ok) {
-                                const deletedId = dangerSelectedRestaurant.id;
-                                setAllRestaurants((prev) => prev.filter((r) => r.id !== deletedId));
-                                setRestaurants((prev) => {
-                                  const remaining = prev.filter((r) => r.id !== deletedId);
-                                  selectLocation(remaining.length > 0 ? remaining[0].id : null);
-                                  return remaining;
-                                });
-                                setDangerSelectedId(null);
-                                setDeleteStep("idle");
-                              } else {
-                                setDeleteError(true);
-                              }
-                            }}
-                            disabled={deleting}
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 6,
-                              paddingHorizontal: 14,
-                              paddingVertical: 8,
-                              borderRadius: 8,
-                              backgroundColor: "#dc2626",
-                              opacity: deleting ? 0.7 : 1,
-                            }}
-                          >
-                            {deleting && <ActivityIndicator size="small" color="#fff" />}
-                            <ThemedText style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>
-                              {deleting ? "Deleting…" : "Yes, delete permanently"}
-                            </ThemedText>
-                          </Pressable>
-                        </View>
-                      </>
-                    )}
-                  </View>
-                </>
-              ) : (
-                <View style={{ paddingVertical: 20, alignItems: "center", gap: 6 }}>
-                  <ThemedText style={{ fontSize: 13, color: mutedColor, fontStyle: "italic" }}>
-                    Select a location above to see options.
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-          </AnimatedAccordion>
-        </View>
-      </View>
+              return remaining;
+            });
+          } else {
+            // Restoring: re-fetch active list + select the restored restaurant.
+            fetchRestaurants().then((active) => {
+              setRestaurants(active);
+              selectLocation(id);
+            });
+          }
+        }}
+        onDeleted={async (id) => {
+          setAllRestaurants((prev) => prev.filter((r) => r.id !== id));
+          setRestaurants((prev) => {
+            const remaining = prev.filter((r) => r.id !== id);
+            selectLocation(remaining.length > 0 ? remaining[0].id : null);
+            return remaining;
+          });
+        }}
+      />
 
       <ConfirmModal
         visible={!!confirmState}

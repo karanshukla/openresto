@@ -10,9 +10,7 @@ import {
 } from "react-native";
 import { ThemedText } from "../themed-text";
 import { TimeSlotDto } from "@/api/availability";
-import { COLORS, getThemeColors } from "@/theme/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import { getNowInTimezone } from "@/utils/date";
 import * as Haptics from "expo-haptics";
@@ -34,10 +32,7 @@ export default function PopularTimesPicker({
   selectedDate,
   timezone,
 }: PopularTimesPickerProps) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const PRIMARY = brand.primaryColor || COLORS.primary;
+  const { colors, isDark, primaryColor: PRIMARY } = useAppTheme();
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
 
   const scrollRef = useRef<ScrollView>(null);

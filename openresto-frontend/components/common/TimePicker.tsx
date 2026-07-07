@@ -2,9 +2,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS, FORM_SIZES, BORDER_RADIUS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export function generateTimeOptions(
   minTime = "09:00",
@@ -38,10 +37,7 @@ export default function TimePicker({
   maxTime?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { colors, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const placeholderColor = colors.muted;
   const backgroundColor = colors.input;
@@ -119,10 +115,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: FORM_SIZES.inputHeight,
+    height: theme.formSizes.inputHeight,
     borderWidth: 1,
-    borderRadius: FORM_SIZES.inputBorderRadius,
-    paddingHorizontal: FORM_SIZES.inputPaddingH,
+    borderRadius: theme.formSizes.inputBorderRadius,
+    paddingHorizontal: theme.formSizes.inputPaddingH,
   },
   chevron: {
     fontSize: 14,
@@ -135,7 +131,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalView: {
-    borderRadius: BORDER_RADIUS.card,
+    borderRadius: theme.borderRadius.card,
     borderWidth: 1,
     maxHeight: 400,
     width: "100%",

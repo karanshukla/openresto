@@ -5,7 +5,7 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { SPACING } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 
 interface FooterProps {
@@ -89,14 +89,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     flexWrap: "wrap",
-    rowGap: SPACING.sm,
-    columnGap: SPACING.md,
+    rowGap: theme.spacing.sm,
+    columnGap: theme.spacing.md,
     maxWidth: 1320,
     width: "100%",
     minHeight: 56,
     alignSelf: "center",
     paddingHorizontal: 28,
-    paddingVertical: SPACING.lg,
+    paddingVertical: theme.spacing.lg,
   },
   innerMobile: {
     justifyContent: "center",
@@ -109,12 +109,12 @@ const styles = StyleSheet.create({
   right: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.lg,
+    gap: theme.spacing.lg,
   },
   social: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.md,
+    gap: theme.spacing.md,
   },
   socialBtn: {
     minWidth: 32,
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     minHeight: 32,
-    paddingHorizontal: SPACING.xs,
+    paddingHorizontal: theme.spacing.xs,
   },
   adminText: {
     fontSize: 13,

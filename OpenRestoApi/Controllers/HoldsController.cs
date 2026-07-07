@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Controllers;
 
@@ -11,12 +10,10 @@ namespace OpenRestoApi.Controllers;
 [EnableRateLimiting("public")]
 public class HoldsController(
     IHoldService holdService,
-    IRestaurantRepository restaurantRepository,
-    IBookingRepository bookingRepository) : ControllerBase
+    IHoldPolicyService holdPolicyService) : ControllerBase
 {
     private readonly IHoldService _holdService = holdService;
-    private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
-    private readonly IBookingRepository _bookingRepository = bookingRepository;
+    private readonly IHoldPolicyService _holdPolicyService = holdPolicyService;
 
     /// <summary>
     /// Places a temporary hold on a table for a given date.
@@ -30,70 +27,27 @@ public class HoldsController(
             return BadRequest(ModelState);
         }
 
-        // 1. Fetch restaurant first to get its timezone
-        var restaurant = await _restaurantRepository.GetByIdAsync(request.RestaurantId);
-        if (restaurant == null)
-        {
-            return NotFound(new MessageResponse { Message = "Restaurant not found." });
-        }
+        HoldPolicyResult policy = await _holdPolicyService.ValidateAsync(
+            request.RestaurantId, request.TableId, request.Date);
 
-        // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
-        DateTime bookingDate;
-        if (request.Date.Kind == DateTimeKind.Unspecified)
+        return policy.Status switch
         {
-            TimeZoneInfo tz;
-            try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-            catch { tz = TimeZoneInfo.Utc; }
-            bookingDate = TimeZoneInfo.ConvertTimeToUtc(request.Date, tz);
-        }
-        else
-        {
-            bookingDate = request.Date.ToUniversalTime();
-        }
+            HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found." }),
+            HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage! }),
+            HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage! }),
+            _ => PlaceEligibleHold(request, policy)
+        };
+    }
 
-        // 3. Basic validation: date in future
-        if (bookingDate < DateTime.UtcNow.AddMinutes(-5))
-        {
-            return BadRequest(new MessageResponse { Message = "Cannot hold a table for a past time." });
-        }
-
-        if (restaurant.BookingsPausedUntil.HasValue && restaurant.BookingsPausedUntil.Value > DateTime.UtcNow)
-        {
-            return BadRequest(new MessageResponse { Message = "Bookings are currently paused for this restaurant." });
-        }
-
-        if (WalkInHelper.IsWalkInOnlyAt(restaurant, bookingDate))
-        {
-            return BadRequest(new MessageResponse
-            {
-                Message = restaurant.WalkInOnly
-                    ? "This location accepts walk-ins only and does not take online bookings."
-                    : "This location accepts walk-ins only on the selected day."
-            });
-        }
-
-        // 4. Check operating hours and days
-        if (!IsTimeWithinOpeningHours(restaurant, bookingDate))
-        {
-            return BadRequest(new MessageResponse { Message = "The restaurant is closed at the requested time." });
-        }
-
-        // 5. Check for existing booking in DB
-        bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            request.TableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
-        if (alreadyBooked)
-        {
-            return Conflict(new MessageResponse { Message = "This table is already booked for that time." });
-        }
-
-        // 6. Place hold (atomically replacing CurrentHoldId if provided)
+    private IActionResult PlaceEligibleHold(PlaceHoldRequest request, HoldPolicyResult policy)
+    {
         HoldResult? result = _holdService.PlaceHold(
             request.RestaurantId,
             request.TableId,
             request.SectionId,
-            bookingDate,
+            policy.BookingDate,
             request.CurrentHoldId,
-            restaurant.DefaultBookingDurationMinutes);
+            policy.Restaurant!.DefaultBookingDurationMinutes);
 
         if (result == null)
         {
@@ -105,60 +59,6 @@ public class HoldsController(
             HoldId = result.HoldId,
             ExpiresAt = result.ExpiresAt
         });
-    }
-
-    private static bool IsTimeWithinOpeningHours(OpenRestoApi.Core.Domain.Restaurant restaurant, DateTime requestedUtc)
-    {
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
-
-        DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(requestedUtc, tz);
-
-        int isoDay = (int)localTime.DayOfWeek;
-        if (isoDay == 0)
-        {
-            isoDay = 7; // Sunday: 0 -> 7
-        }
-
-        // Check OpenDays
-        if (!string.IsNullOrEmpty(restaurant.OpenDays))
-        {
-            var openDaysList = restaurant.OpenDays.Split(',').Select(s => s.Trim());
-            if (!openDaysList.Contains(isoDay.ToString(System.Globalization.CultureInfo.InvariantCulture)))
-            {
-                return false;
-            }
-        }
-
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
-        {
-            openHour = 9; openMin = 0;
-        }
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
-        {
-            closeHour = 22; closeMin = 0;
-        }
-
-        TimeSpan open = new TimeSpan(openHour, openMin, 0);
-        TimeSpan close = new TimeSpan(closeHour, closeMin, 0);
-        TimeSpan current = localTime.TimeOfDay;
-
-        if (close > open)
-        {
-            return current >= open && current < close;
-        }
-        else if (close < open)
-        {
-            // Closes after midnight (e.g. 18:00 to 02:00)
-            return current >= open || current < close;
-        }
-        else
-        {
-            // close == open usually means 24h
-            return true;
-        }
     }
 
     /// <summary>

@@ -179,3 +179,71 @@ export async function pressEscapeUntilClosed(page: Page, closedIndicator: Locato
     await expect(closedIndicator).not.toBeVisible({ timeout: 500 });
   }).toPass({ timeout: 10_000 });
 }
+
+/**
+ * Wait for `locator` to become visible, reloading the page on timeout.
+ *
+ * Several admin pages (settings, locations, the booking form) hydrate by
+ * fetching from rate-limited API endpoints. Under the Docker stack's shared
+ * per-IP windows (10 req/min auth, 300 req/min global) a fetch can land a 429
+ * mid-suite and the page never renders the awaited text within the normal
+ * timeout — even though the page itself is fine, as a reload proves (the
+ * client's own 429 retry then succeeds on a fresh window).
+ *
+ * This mirrors the inline reload-fallback already used in booking.spec.ts and
+ * home.spec.ts, factored out so every rate-limit-susceptible wait can share
+ * it. `attempts` reloads are tried, each preceded by a `waitMs` cool-down to
+ * give the window time to recover.
+ */
+export async function expectVisibleWithReload(
+  page: Page,
+  locator: Locator,
+  {
+    timeout = 15_000,
+    attempts = 2,
+    waitMs = 15_000,
+  }: { timeout?: number; attempts?: number; waitMs?: number } = {}
+): Promise<void> {
+  for (let i = 0; i <= attempts; i++) {
+    try {
+      await expect(locator).toBeVisible({ timeout });
+      return;
+    } catch (e) {
+      if (i === attempts) throw e;
+      // Window hasn't cleared yet — cool down, then reload so the client's
+      // own 429 retry runs against a fresh rate-limit window.
+      await delay(waitMs);
+      await page.reload();
+    }
+  }
+}
+
+/**
+ * Build a PUT /api/restaurants/:id body shaped for `UpdateRestaurantRequest`.
+ *
+ * The GET response DTO and the request type diverge on `tags` (string[] on the
+ * DTO vs a comma-separated string on the request), and the handler assigns
+ * every field unconditionally (`r.Address = req.Address`), so a partial body
+ * wipes whatever is omitted. Echo the full state back, applying `overrides`
+ * last so callers can flip walkInOnly / walkInDays / etc. without clobbering
+ * anything else. Pass the GET response body as `restaurant`.
+ */
+export function buildUpdateRestaurantBody(
+  restaurant: Record<string, unknown>,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    name: restaurant.name,
+    address: restaurant.address,
+    openTime: restaurant.openTime,
+    closeTime: restaurant.closeTime,
+    openDays: restaurant.openDays,
+    openHours: restaurant.openHours,
+    timezone: restaurant.timezone,
+    tags: Array.isArray(restaurant.tags) ? (restaurant.tags as string[]).join(",") : "",
+    defaultBookingDurationMinutes: restaurant.defaultBookingDurationMinutes,
+    walkInOnly: restaurant.walkInOnly,
+    walkInDays: restaurant.walkInDays,
+    ...overrides,
+  };
+}

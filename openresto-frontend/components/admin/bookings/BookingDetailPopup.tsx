@@ -15,9 +15,7 @@ import {
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors, COLORS } from "@/theme/theme";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 
@@ -70,12 +68,9 @@ export function BookingDetailPopup({
   const [editRestaurantId, setEditRestaurantId] = useState<number | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors, isDark, primaryColor: PRIMARY } = useAppTheme();
   const borderColor = colors.border;
   const mutedColor = colors.muted;
-  const brand = useBrand();
-  const PRIMARY = brand.primaryColor || COLORS.primary;
 
   const scrollRef = useRef<ScrollView>(null);
   const extendSectionRef = useRef<View>(null);

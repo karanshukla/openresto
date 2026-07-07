@@ -1,4 +1,6 @@
 using System.Globalization;
+using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -49,11 +51,7 @@ public static class WalkInHelper
             return false;
         }
 
-        TimeZoneInfo tz;
-        try { tz = TimeZoneInfo.FindSystemTimeZoneById(restaurant.Timezone); }
-        catch { tz = TimeZoneInfo.Utc; }
-
-        DateTime local = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+        DateTime local = TimeZoneHelper.ConvertUtcToLocal(utc, restaurant.Timezone);
         int isoDay = (int)local.DayOfWeek;
         if (isoDay == 0)
         {
@@ -75,7 +73,7 @@ public static class WalkInHelper
         {
             if (!int.TryParse(part, out int day) || day < 1 || day > 7)
             {
-                throw new ArgumentException("WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday).");
+                throw new ValidationException("WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday).");
             }
 
             days.Add(day);

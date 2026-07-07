@@ -2,9 +2,9 @@ import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { COLORS } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./settings.styles";
 
 export function AddRow({
@@ -23,8 +23,7 @@ export function AddRow({
   const [extra, setExtra] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { primaryColor } = useAppTheme();
 
   if (!open) {
     return (
@@ -89,7 +88,7 @@ export function AddRow({
             setExtra("");
           }}
         >
-          <Ionicons name="close-outline" size={20} color={COLORS.muted.light} />
+          <Ionicons name="close-outline" size={20} color={theme.colors.muted.light} />
         </Pressable>
       </View>
     </View>

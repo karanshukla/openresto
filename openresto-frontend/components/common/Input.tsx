@@ -1,11 +1,10 @@
 import { forwardRef } from "react";
 import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { FORM_SIZES, getThemeColors } from "@/theme/theme";
+import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
+  const { colors } = useAppTheme();
 
   return (
     <View style={styles.container}>
@@ -30,10 +29,10 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   input: {
-    height: FORM_SIZES.inputHeight,
+    height: theme.formSizes.inputHeight,
     borderWidth: 1,
-    borderRadius: FORM_SIZES.inputBorderRadius,
-    paddingHorizontal: FORM_SIZES.inputPaddingH,
-    fontSize: FORM_SIZES.inputFontSize,
+    borderRadius: theme.formSizes.inputBorderRadius,
+    paddingHorizontal: theme.formSizes.inputPaddingH,
+    fontSize: theme.formSizes.inputFontSize,
   },
 });

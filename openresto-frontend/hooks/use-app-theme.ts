@@ -1,6 +1,7 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import { theme } from "@/theme/theme";
 import { useMemo } from "react";
 
 /**
@@ -15,21 +16,7 @@ export function useAppTheme() {
   // Memoize colors to prevent unnecessary re-renders when passing to style arrays
   const colors = useMemo(() => getThemeColors(isDark), [isDark]);
 
-  const primaryColor = brand.primaryColor || "#0a7ea4";
+  const primaryColor = brand.primaryColor || theme.colors.primary;
 
-  return {
-    brand,
-    isDark,
-    colors,
-    primaryColor,
-    // Helper for common opacity patterns
-    getOpacityColor: (hex: string, opacity: number) => {
-      // Basic hex-only opacity helper
-      const cleanHex = hex.replace("#", "");
-      const op = Math.round(opacity * 255)
-        .toString(16)
-        .padStart(2, "0");
-      return `#${cleanHex}${op}`;
-    },
-  };
+  return { brand, isDark, colors, primaryColor };
 }

@@ -1,9 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
-import { useBrand } from "@/context/BrandContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { COLORS, getThemeColors } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 /**
  * Friendly banner shown wherever the booking flow is disabled because a
@@ -18,10 +16,7 @@ export default function WalkInNotice({
   /** e.g. "Saturdays and Sundays" — names the walk-in days for a more specific message. */
   daysLabel?: string;
 }) {
-  const isDark = useColorScheme() === "dark";
-  const colors = getThemeColors(isDark);
-  const brand = useBrand();
-  const primaryColor = brand.primaryColor || COLORS.primary;
+  const { colors, primaryColor } = useAppTheme();
 
   const accentHex = primaryColor.replace("#", "");
   const r = parseInt(accentHex.slice(0, 2), 16);

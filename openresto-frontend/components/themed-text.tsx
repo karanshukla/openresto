@@ -1,9 +1,9 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { TYPOGRAPHY } from "@/theme/theme";
+import { theme } from "@/theme/theme";
 
 export type ThemedTextType =
-  // TYPOGRAPHY-aligned variants (prefer these)
+  // theme.typography-aligned variants (prefer these)
   | "pageTitle"
   | "h1"
   | "h2"
@@ -48,17 +48,17 @@ export function ThemedText({
 }
 
 const styles = StyleSheet.create({
-  // TYPOGRAPHY scale variants
-  pageTitle: TYPOGRAPHY.pageTitle,
-  h1: TYPOGRAPHY.h1,
-  h2: TYPOGRAPHY.h2,
-  h3: TYPOGRAPHY.h3,
-  body: TYPOGRAPHY.body,
-  bodyBold: TYPOGRAPHY.bodyBold,
-  label: TYPOGRAPHY.label,
-  labelSmall: TYPOGRAPHY.labelSmall,
-  caption: TYPOGRAPHY.caption,
-  captionSmall: TYPOGRAPHY.captionSmall,
+  // theme.typography scale variants
+  pageTitle: theme.typography.pageTitle,
+  h1: theme.typography.h1,
+  h2: theme.typography.h2,
+  h3: theme.typography.h3,
+  body: theme.typography.body,
+  bodyBold: theme.typography.bodyBold,
+  label: theme.typography.label,
+  labelSmall: theme.typography.labelSmall,
+  caption: theme.typography.caption,
+  captionSmall: theme.typography.captionSmall,
 
   // Legacy Expo template variants
   default: {

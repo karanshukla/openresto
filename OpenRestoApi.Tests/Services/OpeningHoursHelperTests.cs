@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 
@@ -198,7 +199,7 @@ public class OpeningHoursHelperTests
         Restaurant r = MakeRestaurant();
         var hours = new List<DayHoursDto> { new() { Day = day, Open = "09:00", Close = "22:00" } };
 
-        Assert.Throws<ArgumentException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+        Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
     }
 
     [Fact]
@@ -211,7 +212,7 @@ public class OpeningHoursHelperTests
             new() { Day = 1, Open = "10:00", Close = "20:00" }
         };
 
-        Assert.Throws<ArgumentException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+        Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
     }
 
     [Theory]
@@ -225,7 +226,7 @@ public class OpeningHoursHelperTests
         Restaurant r = MakeRestaurant();
         var hours = new List<DayHoursDto> { new() { Day = 1, Open = open, Close = close } };
 
-        Assert.Throws<ArgumentException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+        Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
     }
 
     [Theory]
