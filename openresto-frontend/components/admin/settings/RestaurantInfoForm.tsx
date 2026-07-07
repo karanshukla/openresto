@@ -2,12 +2,15 @@ import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import TimePicker from "@/components/common/TimePicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { DayHoursDto, RestaurantDto, updateRestaurant } from "@/api/restaurants";
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { Ionicons } from "@expo/vector-icons";
+import { isOvernight } from "./sectionHelpers";
+import { OpeningHoursSection } from "./OpeningHoursSection";
+import { WalkInPolicySection } from "./WalkInPolicySection";
+import { LocationTagsSection } from "./LocationTagsSection";
 
 const TIMEZONES = [
   "UTC",
@@ -64,9 +67,6 @@ const TIMEZONES = [
   "Africa/Nairobi",
 ];
 
-const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
 
 function formatDurationLabel(minutes: number): string {
@@ -102,10 +102,6 @@ function buildOpenHoursPayload(
     );
   }
   return payload;
-}
-
-function isOvernight(open: string, close: string): boolean {
-  return close <= open;
 }
 
 export function RestaurantInfoForm({
@@ -256,35 +252,6 @@ export function RestaurantInfoForm({
     ? openDays.some((d) => isOvernight(weekHours[d].open, weekHours[d].close))
     : isOvernight(openTime, closeTime);
 
-  const modeButton = (label: string, active: boolean, onPress: () => void, testID: string) => (
-    <Pressable
-      onPress={onPress}
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      style={{
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 7,
-        backgroundColor: active ? (isDark ? "#33363a" : "#fff") : "transparent",
-        ...(active && {
-          borderWidth: 1,
-          borderColor,
-        }),
-      }}
-    >
-      <ThemedText
-        style={{
-          fontSize: 12,
-          fontWeight: active ? "600" : "500",
-          color: active ? colors.text : mutedColor,
-        }}
-      >
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-
   return (
     <View>
       {/* Card head */}
@@ -393,411 +360,57 @@ export function RestaurantInfoForm({
           </View>
         </View>
 
-        {/* Opening hours */}
-        <View
-          style={{
-            gap: 12,
-            borderWidth: 1,
-            borderColor,
-            borderRadius: 12,
-            padding: 14,
-            backgroundColor: surface2,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <View style={{ gap: 2 }}>
-              <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>Opening hours</ThemedText>
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                {openDays.length} of 7 days open
-              </ThemedText>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 2,
-                padding: 3,
-                borderRadius: 9,
-                backgroundColor: isDark ? "#1b1d1f" : "#eef0f2",
-              }}
-            >
-              {modeButton(
-                "Same every day",
-                !customHours,
-                () => setCustomHours(false),
-                "hours-mode-uniform"
-              )}
-              {modeButton(
-                "Custom per day",
-                customHours,
-                () => setCustomHours(true),
-                "hours-mode-custom"
-              )}
-            </View>
-          </View>
+        {/* Opening hours (decomposed into <OpeningHoursSection/>) */}
+        <OpeningHoursSection
+          customHours={customHours}
+          openTime={openTime}
+          closeTime={closeTime}
+          weekHours={weekHours}
+          openDays={openDays}
+          anyOvernight={anyOvernight}
+          onSetCustomHours={setCustomHours}
+          onSetOpenTime={setOpenTime}
+          onSetCloseTime={setCloseTime}
+          onSetDayHours={setDayHours}
+          onCopyHoursToAllDays={copyHoursToAllDays}
+          onToggleDay={toggleDay}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          primaryColor={primaryColor}
+          cardBg={colors.card}
+          textColor={colors.text}
+          surface2={surface2}
+          isDark={isDark}
+        />
 
-          {!customHours ? (
-            <>
-              <View style={{ flexDirection: "row", gap: 14 }}>
-                <View style={{ flex: 1, gap: 6 }}>
-                  <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                    Opens
-                  </ThemedText>
-                  <TimePicker
-                    selectedTime={openTime}
-                    onSelect={setOpenTime}
-                    minTime="00:00"
-                    maxTime="23:45"
-                  />
-                </View>
-                <View style={{ flex: 1, gap: 6 }}>
-                  <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                    Closes
-                  </ThemedText>
-                  <TimePicker
-                    selectedTime={closeTime}
-                    onSelect={setCloseTime}
-                    minTime="00:00"
-                    maxTime="23:45"
-                  />
-                </View>
-              </View>
+        {/* Reservations / walk-in policy (decomposed into <WalkInPolicySection/>) */}
+        <WalkInPolicySection
+          walkInOnly={walkInOnly}
+          walkInDays={walkInDays}
+          openDays={openDays}
+          onSetWalkInOnly={setWalkInOnly}
+          onToggleWalkInDay={toggleWalkInDay}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          primaryColor={primaryColor}
+          cardBg={colors.card}
+          textColor={colors.text}
+          surface2={surface2}
+          isDark={isDark}
+        />
 
-              <View style={{ gap: 6 }}>
-                <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                  Open days
-                </ThemedText>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {DAY_LABELS.map((label, i) => {
-                    const day = i + 1;
-                    const active = openDays.includes(day);
-                    return (
-                      <Pressable
-                        key={day}
-                        onPress={() => toggleDay(day)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        style={{
-                          minWidth: 96,
-                          flexGrow: 1,
-                          backgroundColor: active ? primaryColor : colors.card,
-                          borderWidth: 1,
-                          borderColor: active ? primaryColor : borderColor,
-                          borderRadius: 9,
-                          paddingVertical: 10,
-                          paddingHorizontal: 12,
-                          alignItems: "center",
-                        }}
-                      >
-                        <ThemedText
-                          style={{
-                            fontSize: 12,
-                            fontWeight: "500",
-                            color: active ? "#fff" : colors.text,
-                          }}
-                        >
-                          {label}
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                  Tap a day to mark it open or closed.
-                </ThemedText>
-              </View>
-            </>
-          ) : (
-            <View style={{ gap: 8 }}>
-              {DAY_SHORT.map((label, i) => {
-                const day = i + 1;
-                const active = openDays.includes(day);
-                const hours = weekHours[day];
-                return (
-                  <View
-                    key={day}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 10,
-                      opacity: active ? 1 : 0.75,
-                    }}
-                  >
-                    <Pressable
-                      onPress={() => toggleDay(day)}
-                      testID={`day-toggle-${day}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "open" : "closed"}. Tap to toggle.`}
-                      style={{
-                        width: 58,
-                        backgroundColor: active ? primaryColor : colors.card,
-                        borderWidth: 1,
-                        borderColor: active ? primaryColor : borderColor,
-                        borderRadius: 8,
-                        paddingVertical: 9,
-                        alignItems: "center",
-                      }}
-                    >
-                      <ThemedText
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "600",
-                          color: active ? "#fff" : mutedColor,
-                        }}
-                      >
-                        {label}
-                      </ThemedText>
-                    </Pressable>
-
-                    {active ? (
-                      <>
-                        <View style={{ flex: 1, minWidth: 96 }}>
-                          <TimePicker
-                            selectedTime={hours.open}
-                            onSelect={(t) => setDayHours(day, { open: t })}
-                            minTime="00:00"
-                            maxTime="23:45"
-                          />
-                        </View>
-                        <ThemedText style={{ fontSize: 12, color: mutedColor }}>–</ThemedText>
-                        <View style={{ flex: 1, minWidth: 96 }}>
-                          <TimePicker
-                            selectedTime={hours.close}
-                            onSelect={(t) => setDayHours(day, { close: t })}
-                            minTime="00:00"
-                            maxTime="23:45"
-                          />
-                        </View>
-                        <Pressable
-                          onPress={() => copyHoursToAllDays(day)}
-                          testID={`copy-hours-${day}`}
-                          accessibilityLabel={`Copy ${DAY_LABELS[i]}'s hours to every day`}
-                          style={(state) => ({
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            borderWidth: 1,
-                            borderColor: (state as { hovered?: boolean }).hovered
-                              ? primaryColor
-                              : borderColor,
-                            backgroundColor: colors.card,
-                            alignItems: "center",
-                            justifyContent: "center",
-                          })}
-                        >
-                          <Ionicons name="copy-outline" size={14} color={mutedColor} />
-                        </Pressable>
-                      </>
-                    ) : (
-                      <ThemedText
-                        style={{ flex: 1, fontSize: 12.5, color: mutedColor, fontStyle: "italic" }}
-                      >
-                        Closed
-                      </ThemedText>
-                    )}
-                  </View>
-                );
-              })}
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                Tap a day to mark it open or closed. Use{" "}
-                <Ionicons name="copy-outline" size={11} color={mutedColor} /> to apply one day's
-                hours to the whole week.
-              </ThemedText>
-            </View>
-          )}
-
-          {anyOvernight && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="moon-outline" size={12} color={mutedColor} />
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                A closing time at or before opening means the restaurant closes after midnight.
-              </ThemedText>
-            </View>
-          )}
-        </View>
-
-        {/* Reservations / walk-in policy */}
-        <View
-          style={{
-            gap: 12,
-            borderWidth: 1,
-            borderColor,
-            borderRadius: 12,
-            padding: 14,
-            backgroundColor: surface2,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <View style={{ gap: 2 }}>
-              <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>Reservations</ThemedText>
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                {walkInOnly
-                  ? "Walk-ins only, online booking is off"
-                  : walkInDays.length > 0
-                    ? `Walk-ins only on ${walkInDays.length} ${walkInDays.length === 1 ? "day" : "days"}`
-                    : "Online bookings on every open day"}
-              </ThemedText>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 2,
-                padding: 3,
-                borderRadius: 9,
-                backgroundColor: isDark ? "#1b1d1f" : "#eef0f2",
-              }}
-            >
-              {modeButton(
-                "Online bookings",
-                !walkInOnly,
-                () => setWalkInOnly(false),
-                "walkin-mode-bookings"
-              )}
-              {modeButton(
-                "Walk-ins only",
-                walkInOnly,
-                () => setWalkInOnly(true),
-                "walkin-mode-walkin"
-              )}
-            </View>
-          </View>
-
-          {walkInOnly ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="walk-outline" size={12} color={mutedColor} />
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                The location stays listed publicly, but guests can't book online. They'll see a
-                walk-in notice instead. Toggle back anytime; nothing is deleted or archived.
-              </ThemedText>
-            </View>
-          ) : (
-            <View style={{ gap: 6 }}>
-              <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                Walk-in only days
-              </ThemedText>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {DAY_SHORT.map((label, i) => {
-                  const day = i + 1;
-                  const active = walkInDays.includes(day);
-                  const closed = !openDays.includes(day);
-                  return (
-                    <Pressable
-                      key={day}
-                      onPress={() => toggleWalkInDay(day)}
-                      testID={`walkin-day-${day}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "walk-ins only" : "online bookings"}. Tap to toggle.`}
-                      style={{
-                        minWidth: 96,
-                        flexGrow: 1,
-                        backgroundColor: active ? primaryColor : colors.card,
-                        borderWidth: 1,
-                        borderColor: active ? primaryColor : borderColor,
-                        borderRadius: 9,
-                        paddingVertical: 10,
-                        paddingHorizontal: 12,
-                        alignItems: "center",
-                        opacity: closed ? 0.55 : 1,
-                      }}
-                    >
-                      <ThemedText
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "500",
-                          color: active ? "#fff" : colors.text,
-                        }}
-                      >
-                        {label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-                Highlighted days stay open but only take walk-ins. The booking form is disabled for
-                those dates. Dimmed days are currently marked closed.
-              </ThemedText>
-            </View>
-          )}
-        </View>
-
-        {/* Location tags */}
-        <View style={{ gap: 6 }}>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-            Location tags
-          </ThemedText>
-          {tags.length > 0 && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
-              {tags.map((tag) => (
-                <View
-                  key={tag}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    backgroundColor: surface2,
-                    borderWidth: 1,
-                    borderColor,
-                    borderRadius: 999,
-                    paddingLeft: 10,
-                    paddingRight: 6,
-                    paddingVertical: 4,
-                  }}
-                >
-                  <ThemedText style={{ fontSize: 12 }}>{tag}</ThemedText>
-                  <Pressable onPress={() => removeTag(tag)} testID={`remove-tag-${tag}`}>
-                    <Ionicons name="close" size={12} color={mutedColor} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          )}
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Input
-                value={tagInput}
-                onChangeText={setTagInput}
-                placeholder="Add tag (press Enter)"
-                onSubmitEditing={() => addTag(tagInput)}
-                onBlur={() => tagInput.trim() && addTag(tagInput)}
-              />
-            </View>
-            <Pressable
-              onPress={() => addTag(tagInput)}
-              disabled={!tagInput.trim()}
-              style={{
-                opacity: tagInput.trim() ? 1 : 0.4,
-                backgroundColor: primaryColor,
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="add" size={18} color="#fff" />
-            </Pressable>
-          </View>
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-            Short labels shown on the public restaurant card (e.g. "Dog friendly", "Terrace").
-          </ThemedText>
-        </View>
+        {/* Location tags (decomposed into <LocationTagsSection/>) */}
+        <LocationTagsSection
+          tags={tags}
+          tagInput={tagInput}
+          onSetTagInput={setTagInput}
+          onAddTag={addTag}
+          onRemoveTag={removeTag}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+          primaryColor={primaryColor}
+          surface2={surface2}
+        />
       </View>
 
       {/* Dashed separator */}
