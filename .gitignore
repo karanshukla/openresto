@@ -60,6 +60,14 @@ data/
 nginx/ssl/
 auto_update.sh
 update.log
+
+# Local SQLite dev DB + WAL/SHM sidecars. Never commit runtime DB files:
+# they change on every transaction, bloat the repo, and the -wal/-shm sidecars
+# are only valid alongside their main .db file.
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
 # Playwright MCP plugin snapshots
 .playwright-mcp/
 # Session handoff notes

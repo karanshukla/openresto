@@ -4,6 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Exclude the local SQLite DB + its WAL/SHM sidecars from dotnet watch.
+         SQLite writes to -wal/-shm on every transaction; if watch sees those as
+         source changes it restarts the process mid-write and corrupts the main
+         .db file (SQLite Error 11: 'database disk image is malformed'). -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);*.db;*.db-shm;*.db-wal;*.db-journal</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

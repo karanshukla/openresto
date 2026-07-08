@@ -2,6 +2,17 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
+// git check-ignore returns 0 (and prints the file) if the path is ignored,
+// non-zero otherwise. Used to avoid `git add` aborting on ignored files.
+function isIgnored(file) {
+  try {
+    execSync(`git check-ignore "${file}"`, { encoding: "utf8", stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Get staged files
 let stagedFiles = [];
 try {
@@ -95,9 +106,18 @@ if (backendFiles.length > 0) {
 }
 
 // 5. Re-add modified files
+// Only re-stage files that (a) still exist on disk (deleted files are already
+// staged and need no re-add) and (b) are not git-ignored (git add refuses
+// ignored files and aborts the commit — e.g. the local SQLite DB after it was
+// untracked and added to .gitignore).
 if (modified) {
-  console.log("Re-staging modified files...");
-  execSync(`git add ${stagedFiles.map((f) => `"${f}"`).join(" ")}`);
+  const reAddable = stagedFiles.filter(
+    (f) => fs.existsSync(f) && !isIgnored(f),
+  );
+  if (reAddable.length > 0) {
+    console.log("Re-staging modified files...");
+    execSync(`git add ${reAddable.map((f) => `"${f}"`).join(" ")}`);
+  }
 }
 
 console.log("Pre-commit checks passed!");

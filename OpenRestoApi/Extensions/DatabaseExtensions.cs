@@ -44,6 +44,15 @@ public static partial class DatabaseExtensions
     [LoggerMessage(Level = LogLevel.Information, Message = "  - Migration history is already up to date. No remap needed.")]
     private static partial void LogMigrationRemapSkipped(ILogger logger);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - DB diagnostics: MainDbBytes={MainBytes} WalExists={WalExists} WalBytes={WalBytes} ShmExists={ShmExists} JournalMode=\"{JournalMode}\"")]
+    private static partial void LogDbDiagnostics(ILogger logger, long mainBytes, bool walExists, long walBytes, bool shmExists, string journalMode);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "  - integrity_check: {Result}")]
+    private static partial void LogIntegrityOk(ILogger logger, string result);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "  - integrity_check FAILED: {Result}")]
+    private static partial void LogIntegrityFailed(ILogger logger, string result);
+
     private const string ConsolidatedMigrationId = "20260530173531_InitialCreate";
 
     private static void RemapLegacyMigrationHistory(AppDbContext db, ILogger logger)
@@ -233,6 +242,63 @@ public static partial class DatabaseExtensions
         return services;
     }
 
+    /// <summary>
+    /// Logs DB file sizes (main + WAL + SHM sidecars), current journal mode, and the result of
+    /// <c>PRAGMA integrity_check</c>. Pure diagnostic — never mutates state. Used to root-cause
+    /// the recurring "database disk image is malformed" symptom seen after dotnet-watch kills.
+    /// </summary>
+    private static void DiagnoseDbState(AppDbContext db, string? dbFile, ILogger logger)
+    {
+        // File sizes — these reveal whether a stale/partial WAL or SHM is present, which is the
+        // usual fingerprint of an interrupted shutdown.
+        long mainBytes = 0, walBytes = 0;
+        bool walExists = false, shmExists = false;
+
+        if (!string.IsNullOrEmpty(dbFile))
+        {
+            string main = Path.GetFullPath(dbFile);
+            string wal = main + "-wal";
+            string shm = main + "-shm";
+            try { if (File.Exists(main)) mainBytes = new FileInfo(main).Length; } catch { /* read-only fs */ }
+            try { walExists = File.Exists(wal); if (walExists) walBytes = new FileInfo(wal).Length; } catch { }
+            try { shmExists = File.Exists(shm); } catch { }
+        }
+
+        string journalMode;
+        try
+        {
+            journalMode = db.Database.SqlQueryRaw<string>("PRAGMA journal_mode").FirstOrDefault() ?? "unknown";
+        }
+        catch (Exception ex)
+        {
+            journalMode = "error: " + ex.Message;
+        }
+
+        LogDbDiagnostics(logger, mainBytes, walExists, walBytes, shmExists, journalMode);
+
+        // integrity_check returns one row per problem; "ok" (single row) means healthy.
+        try
+        {
+            List<string> rows = db.Database.SqlQueryRaw<string>("PRAGMA integrity_check").ToList();
+            string result = rows.Count == 0 ? "(no rows)" : string.Join(" | ", rows);
+            if (result == "ok")
+            {
+                LogIntegrityOk(logger, result);
+            }
+            else
+            {
+                // Any non-"ok" output means structural damage. Capture it at Critical so it's
+                // impossible to miss in logs next time the symptom recurs.
+                LogIntegrityFailed(logger, result);
+            }
+        }
+        catch (Exception ex)
+        {
+            // integrity_check itself threw (often the malformed error itself) — record that too.
+            LogIntegrityFailed(logger, $"integrity_check threw: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
     public static void InitializeDatabase(this WebApplication app, string connectionString, IConfiguration configuration)
     {
         using IServiceScope scope = app.Services.CreateScope();
@@ -295,6 +361,11 @@ public static partial class DatabaseExtensions
             {
                 try { db.Database.ExecuteSqlRaw("PRAGMA wal_checkpoint(TRUNCATE)"); }
                 catch { /* non-fatal */ }
+
+                // DIAGNOSTICS: capture DB file state + integrity before any further work, so we
+                // can tell *why* it later fails (e.g. "database disk image is malformed") after
+                // an abrupt dotnet-watch kill. Pure logging, no behavior change.
+                DiagnoseDbState(db, dbFile, logger);
             }
 
             // Checkpoint WAL on graceful shutdown so the next dotnet watch restart finds a clean slate.
