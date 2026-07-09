@@ -16,7 +16,7 @@
 
 A self-hosted, zero-dependency restaurant booking system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, floor sections, branding, and booking pauses from a dedicated dashboard - all from a single Docker Compose command with no external services required beyond optional SMTP.
 
-**[Live Demo](https://openres.to)** — admin: `example@example.com` / `password` · resets every 2 hours
+**[Live Demo](https://openres.to)** - admin: `example@example.com` / `password` · resets every 2 hours, feel free to play around and change anything
 
 ## Philosophy
 
