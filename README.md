@@ -53,47 +53,6 @@ The Restaurant business has changed. Indie restaurants run on razor thin margins
 | Security CI  | OWASP ZAP API scan on every push (OpenAPI-driven, rules in `.zap-rules.tsv`) |
 | Code mappers | Mapperly (source-gen, zero reflection)                                       |
 
-## Architecture
-
-```mermaid
-flowchart TD
-    Client(["Browser / Mobile"])
-
-    subgraph compose["Docker Compose — localhost:5062"]
-        Nginx["Nginx Reverse Proxy"]
-
-        subgraph fe_container["Frontend Container"]
-            FE["Expo / React Native\n:8081"]
-        end
-
-        subgraph be_container["Backend Container"]
-            API["ASP.NET Core 10\n:8080"]
-            DB[("SQLite")]
-        end
-
-        Vol[("media_data\nShared Volume")]
-    end
-
-    SMTP(["SMTP Server"])
-
-    Client -- "HTTP :5062" --> Nginx
-    Nginx -- "/*" --> FE
-    Nginx -- "/api/*" --> API
-    Nginx -- "/media/*" --> Vol
-    API --- DB
-    API -- "MailKit" --> SMTP
-
-    classDef container fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    classDef storage fill:#fef9c3,stroke:#ca8a04,color:#3d2b00
-    classDef external fill:#dcfce7,stroke:#16a34a,color:#052e16
-    classDef proxy fill:#fce7f3,stroke:#db2777,color:#500724
-
-    class FE,API container
-    class DB,Vol storage
-    class SMTP,Client external
-    class Nginx proxy
-```
-
 ## Quick Start
 
 ### Self-hosted install (pre-built images — recommended for production)
@@ -125,51 +84,10 @@ docker compose up
 **Prerequisites:** .NET 10 SDK, Node.js 20+
 
 ```bash
-# Backend
-cd OpenRestoApi
-dotnet watch run
-# → http://localhost:5062
-
-# Frontend (separate terminal)
-cd openresto-frontend
-npm install
-npm run web
-# → http://localhost:8081
+# run from the repo root
+npm run dev 
 ```
-
-The SQLite database is created automatically on first run.
-
-## Project Structure
-
-```
-openresto/
-├── OpenRestoApi/                # ASP.NET Core API
-│   ├── Controllers/             # API endpoints
-│   ├── Core/
-│   │   ├── Domain/              # Entities (Booking, Restaurant, Table, etc.)
-│   │   └── Application/         # DTOs, interfaces, services, mappings
-│   ├── Infrastructure/          # EF Core, email, auth, holds, cookies
-│   └── Migrations/              # EF Core migration history
-├── OpenRestoApi.Tests/          # xUnit + Moq tests
-├── openresto-frontend/          # Expo/React Native app
-│   ├── app/                     # File-based routing
-│   │   ├── (user)/              # Customer routes (book, lookup, search)
-│   │   └── (admin)/             # Admin routes (dashboard, bookings, settings)
-│   ├── api/                     # API client layer
-│   ├── components/              # React components
-│   ├── context/                 # State management (Theme, Brand)
-│   └── hooks/                   # Custom hooks
-├── docs/
-│   └── backup-restore.md        # SQLite backup, restore, and upgrade guide
-├── .github/workflows/
-│   ├── ci.yml                   # PR/push CI (lint, test, Docker, ZAP, E2E)
-│   ├── release.yml              # Tag-triggered multi-arch GHCR build + GitHub Release
-│   └── migration-check.yml      # Schema safety check for EF Core migration PRs
-├── docker-compose.yml           # Build-from-source dev/CI stack
-├── docker-compose.release.yml   # Pull-from-GHCR self-hosted install
-├── docker-compose.vps.yml       # VPS deployment with SSL
-└── CHANGELOG.md                 # Release history (Keep a Changelog format)
-```
+The SQLite database is created automatically on first run. Since this is not running via docker, Images and other media will not work, however HMR is enabled. 
 
 ## Configuration
 
@@ -191,6 +109,8 @@ Set via environment variables or `appsettings.json`:
 | --------------------- | -------------------- | ----------------------- |
 | `EXPO_PUBLIC_API_URL` | Backend API base URL | `http://localhost:5062` |
 
+The VAPID key variables are also required for push notification support, but are optional for developing.
+
 ## Testing
 
 ```bash
@@ -203,6 +123,7 @@ cd openresto-frontend && npm test
 # Full frontend coverage report
 cd openresto-frontend && npm test -- --coverage
 ```
+Note: VSCode may not pick up on the Jest config, unless you use the command palette to activate all the test runners.
 
 ## Key Features
 
