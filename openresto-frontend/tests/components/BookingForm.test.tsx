@@ -113,6 +113,25 @@ describe("BookingForm", () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
+  it("does not submit when the seats-exceed-capacity confirmation is declined", async () => {
+    (window as any).confirm = jest.fn(() => false);
+    const onSubmit = jest.fn();
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+
+    // Bumping guests to 5 (above every table's capacity) re-runs
+    // auto-selection, which falls back to the first table (T1, 2 seats),
+    // so submitting triggers the capacity-warning confirm().
+    fireEvent.press(screen.getByText("2 seats"));
+    fireEvent.press(screen.getByText("5 seats"));
+
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
+    fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
+    fireEvent.press(screen.getByText("Confirm Booking"));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("disables submit when invalid", () => {
     (useTableHold as jest.Mock).mockReturnValue({
       holdStatus: "idle",
@@ -121,13 +140,39 @@ describe("BookingForm", () => {
       setHoldStatus: mockSetHoldStatus,
       releaseCurrentHold: mockReleaseCurrentHold,
     });
-    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+    const onSubmit = jest.fn();
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
 
     const btn = screen.getByText("Confirm Booking");
     // Button component renders a Pressable.
     // We check if it's disabled via props if we can, or just try to press it.
     fireEvent.press(btn);
-    // onSubmit shouldn't be called (we'd need to pass a mock to verify)
+    // holdStatus "idle" makes isValid false, so handleSubmit's early-return
+    // guard should keep onSubmit from ever firing.
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("renders a fallback 'Table {id}' label when a table has no name", () => {
+    const restaurant = {
+      ...mockRestaurant,
+      sections: [
+        {
+          id: 10,
+          name: "Main",
+          tables: [
+            { id: 100, name: "T1", seats: 2, sectionId: 10 },
+            { id: 102, seats: 6, sectionId: 10 }, // no `name` -> falls back to "Table {id}"
+          ],
+        },
+      ],
+    };
+    renderWithProviders(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+
+    // T1 (2 seats) is auto-selected by default; open the table Select to
+    // reveal the full option list, including the unnamed table's fallback label.
+    fireEvent.press(screen.getByText("T1 (2 seats)"));
+
+    expect(screen.getByText("Table 102 (6 seats)")).toBeTruthy();
   });
 
   it("renders 'No tables available' when guests exceed all tables", () => {
