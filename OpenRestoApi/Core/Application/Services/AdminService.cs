@@ -329,6 +329,11 @@ public class AdminService(
 
         // --- CONFLICT CHECK ---
         // If either the Date or Table changed, verify that the new slot doesn't conflict with existing bookings
+        // NOTE: booking.Date/booking.TableId are mutated above before this guard runs, so both
+        // comparisons are always false and this block is unreachable dead code today (pre-existing,
+        // out of scope here — see .claude/investigations/135-reexamine.md and
+        // AdminServiceTests.AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug,
+        // which pins the current behaviour). Left uninstrumented/uncovered intentionally.
         if ((req.Date.HasValue && req.Date.Value != booking.Date) || (req.TableId.HasValue && req.TableId.Value != booking.TableId))
         {
             DateTime newStart = booking.Date.ToUniversalTime();
