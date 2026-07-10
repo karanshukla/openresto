@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
@@ -10,10 +11,10 @@ namespace OpenRestoApi.Tests.Services;
 
 public class SecurityQuestionsServiceTests
 {
-    private static (SecurityQuestionsService svc, IPasswordService passwords) CreateService(AppDbContext db)
+    private static (SecurityQuestionsService svc, IPasswordService passwords) CreateService(AppDbContext db, IConfiguration? config = null)
     {
         var passwords = new PasswordService();
-        var config = new ConfigurationBuilder().Build(); // empty config — env-var fallback in bootstrap
+        config ??= new ConfigurationBuilder().Build(); // empty config — env-var fallback in bootstrap
         var svc = new SecurityQuestionsService(
             new AdminCredentialRepository(db),
             passwords,
@@ -78,6 +79,78 @@ public class SecurityQuestionsServiceTests
         Assert.NotNull(cred.PvqAnswerSalt);
         // Normalised answer verifies under the canonical password service.
         Assert.True(passwords.Verify("blue", cred.PvqAnswerHash!, cred.PvqAnswerSalt!));
+    }
+
+    [Fact]
+    public async Task SetupAsync_CreatesCredential_UsingConfigValues_WhenNoneExists()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_CreatesCredential_UsingConfigValues_WhenNoneExists));
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Admin:Email"] = "config@openresto.com",
+                ["Admin:Password"] = "config-password",
+            })
+            .Build();
+        (SecurityQuestionsService svc, IPasswordService passwords) = CreateService(db, config);
+
+        await svc.SetupAsync("Q?", "A");
+
+        AdminCredential cred = await db.AdminCredentials.SingleAsync();
+        Assert.Equal("config@openresto.com", cred.Email);
+        Assert.True(passwords.Verify("config-password", cred.PasswordHash, cred.PasswordSalt));
+    }
+
+    [Fact]
+    public async Task SetupAsync_CreatesCredential_UsingEnvVarFallback_WhenConfigMissing()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_CreatesCredential_UsingEnvVarFallback_WhenConfigMissing));
+        (SecurityQuestionsService svc, _) = CreateService(db);
+
+        Environment.SetEnvironmentVariable("ADMIN_EMAIL", "env@openresto.com");
+        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", "env-password");
+        try
+        {
+            await svc.SetupAsync("Q?", "A");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ADMIN_EMAIL", null);
+            Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
+        }
+
+        AdminCredential cred = await db.AdminCredentials.SingleAsync();
+        Assert.Equal("env@openresto.com", cred.Email);
+    }
+
+    [Fact]
+    public async Task SetupAsync_UsesDefaultEmail_WhenConfigAndEnvVarEmailMissing()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_UsesDefaultEmail_WhenConfigAndEnvVarEmailMissing));
+        (SecurityQuestionsService svc, _) = CreateService(db);
+
+        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", "env-password");
+        try
+        {
+            await svc.SetupAsync("Q?", "A");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
+        }
+
+        AdminCredential cred = await db.AdminCredentials.SingleAsync();
+        Assert.Equal("admin@openresto.com", cred.Email);
+    }
+
+    [Fact]
+    public async Task SetupAsync_Throws_WhenNoCredentialExists_AndNoPasswordConfigured()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Throws_WhenNoCredentialExists_AndNoPasswordConfigured));
+        (SecurityQuestionsService svc, _) = CreateService(db);
+
+        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
+        await Assert.ThrowsAsync<InfrastructureException>(() => svc.SetupAsync("Q?", "A"));
     }
 
     // ── VerifyAsync ─────────────────────────────────────────────────────────────

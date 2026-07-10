@@ -1076,6 +1076,41 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SetArchivedAsync_ReturnsFalse_WhenNotFound()
+    {
+        AdminService svc = CreateService();
+        Assert.False(await svc.SetArchivedAsync(999, true));
+    }
+
+    [Fact]
+    public async Task SetArchivedAsync_ArchivesRestaurant_AndReturnsTrue()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        await _db.SaveChangesAsync();
+
+        bool result = await svc.SetArchivedAsync(1, true);
+
+        Assert.True(result);
+        Restaurant restaurant = await _db.Restaurants.SingleAsync(r => r.Id == 1);
+        Assert.True(restaurant.IsArchived);
+    }
+
+    [Fact]
+    public async Task SetArchivedAsync_UnarchivesRestaurant_WhenArchivedFalse()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", IsArchived = true });
+        await _db.SaveChangesAsync();
+
+        bool result = await svc.SetArchivedAsync(1, false);
+
+        Assert.True(result);
+        Restaurant restaurant = await _db.Restaurants.SingleAsync(r => r.Id == 1);
+        Assert.False(restaurant.IsArchived);
+    }
+
+    [Fact]
     public async Task GetTablesAsync_ReturnsNull_WhenNoSections()
     {
         AdminService svc = CreateService();

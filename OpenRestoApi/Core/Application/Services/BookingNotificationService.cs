@@ -17,6 +17,7 @@ public sealed class BookingNotificationService(
     ITableRepository tableRepository,
     IBookingRepository bookingRepository,
     IOptions<VapidSettings> vapidOptions,
+    IWebPushClient webPushClient,
     ILogger<BookingNotificationService> logger) : IBookingNotificationService
 {
     private readonly IAdminNotificationRepository _notificationRepository = notificationRepository;
@@ -24,6 +25,7 @@ public sealed class BookingNotificationService(
     private readonly ITableRepository _tableRepository = tableRepository;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly VapidSettings _vapid = vapidOptions.Value;
+    private readonly IWebPushClient _webPushClient = webPushClient;
     private readonly ILogger<BookingNotificationService> _log = logger;
 
     // Fraction of tables booked on a day that triggers the RestaurantNearlyFull notification
@@ -188,7 +190,6 @@ public sealed class BookingNotificationService(
         string json = JsonSerializer.Serialize(payload, _jsonOptions);
 
         var vapidDetails = new VapidDetails(_vapid.Subject, _vapid.PublicKey, _vapid.PrivateKey);
-        var client = new WebPushClient();
         List<AdminPushSubscription> stale = [];
         DateTime? sentAt = null;
         string? lastError = null;
@@ -198,7 +199,7 @@ public sealed class BookingNotificationService(
             var pushSub = new PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
             try
             {
-                await client.SendNotificationAsync(pushSub, json, vapidDetails);
+                await _webPushClient.SendNotificationAsync(pushSub, json, vapidDetails);
                 sentAt = DateTime.UtcNow;
                 _log.LogInformation("[Push] Delivered sub={SubId} notifId={NotifId}", sub.Id, notificationId);
             }

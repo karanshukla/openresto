@@ -1,12 +1,15 @@
+using System.Net;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
+using WebPush;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -14,6 +17,7 @@ public class BookingNotificationServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _db;
+    private readonly Mock<IWebPushClient> _webPushClientMock = new();
 
     public BookingNotificationServiceTests()
     {
@@ -33,6 +37,13 @@ public class BookingNotificationServiceTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private static VapidSettings ConfiguredVapid() => new()
+    {
+        Subject = "mailto:ops@openresto.com",
+        PublicKey = "BPUBLICKEY",
+        PrivateKey = "PRIVATEKEY",
+    };
+
     private BookingNotificationService CreateService(VapidSettings? vapid = null)
     {
         vapid ??= new VapidSettings();
@@ -42,7 +53,28 @@ public class BookingNotificationServiceTests : IDisposable
             new TableRepository(_db),
             new BookingRepository(_db),
             Options.Create(vapid),
+            _webPushClientMock.Object,
             NullLogger<BookingNotificationService>.Instance);
+    }
+
+    private async Task<AdminPushSubscription> SeedPushSubscriptionAsync(int restaurantId = 1)
+    {
+        var sub = new AdminPushSubscription
+        {
+            RestaurantId = restaurantId,
+            Endpoint = "https://push.example/sub1",
+            P256dh = "p256dh-key",
+            Auth = "auth-secret",
+        };
+        _db.AdminPushSubscriptions.Add(sub);
+        await _db.SaveChangesAsync();
+        return sub;
+    }
+
+    private static WebPushException MakeWebPushException(HttpStatusCode statusCode, PushSubscription? subscription = null)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        return new WebPushException("push failed", subscription ?? new PushSubscription("https://push.example/sub1", "p256dh-key", "auth-secret"), response);
     }
 
     private async Task<Restaurant> SeedRestaurantAsync(int id = 1)
@@ -236,5 +268,88 @@ public class BookingNotificationServiceTests : IDisposable
         await CreateService().CheckAndNotifyCapacityAsync(1, "Resto", date);
 
         Assert.Equal(1, await _db.AdminNotifications.CountAsync());
+    }
+
+    // ── SendPushAsync (via NotifyBookingCreatedAsync) ─────────────────────────
+
+    [Fact]
+    public async Task SendPushAsync_DoesNotCallClient_WhenNoSubscriptions()
+    {
+        await SeedRestaurantAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto");
+
+        _webPushClientMock.Verify(
+            c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendPushAsync_Delivers_AndRecordsPushSentAt_OnSuccess()
+    {
+        await SeedRestaurantAsync();
+        await SeedPushSubscriptionAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto");
+
+        AdminNotification notification = await _db.AdminNotifications.SingleAsync();
+        Assert.NotNull(notification.PushSentAt);
+        Assert.Null(notification.PushError);
+        Assert.Equal(1, await _db.AdminPushSubscriptions.CountAsync());
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Gone)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task SendPushAsync_RemovesStaleSubscription_OnGoneOrNotFound(HttpStatusCode statusCode)
+    {
+        await SeedRestaurantAsync();
+        await SeedPushSubscriptionAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(MakeWebPushException(statusCode));
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto");
+
+        Assert.Empty(await _db.AdminPushSubscriptions.ToListAsync());
+        AdminNotification notification = await _db.AdminNotifications.SingleAsync();
+        Assert.Null(notification.PushSentAt);
+        Assert.Null(notification.PushError);
+    }
+
+    [Fact]
+    public async Task SendPushAsync_RecordsPushError_OnOtherFailure_AndKeepsSubscription()
+    {
+        await SeedRestaurantAsync();
+        await SeedPushSubscriptionAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(MakeWebPushException(HttpStatusCode.InternalServerError));
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto");
+
+        Assert.Equal(1, await _db.AdminPushSubscriptions.CountAsync());
+        AdminNotification notification = await _db.AdminNotifications.SingleAsync();
+        Assert.Null(notification.PushSentAt);
+        Assert.NotNull(notification.PushError);
+        Assert.Contains("500", notification.PushError);
     }
 }
