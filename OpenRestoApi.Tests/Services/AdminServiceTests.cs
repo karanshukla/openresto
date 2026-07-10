@@ -287,6 +287,36 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetBookingsAsync_EmailFilter_IsCaseInsensitiveAndPartial()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "A", CustomerEmail = "Alice@Example.com" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B", CustomerEmail = "bob@example.com" });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(1, null, "all", email: "alice");
+
+        Assert.Single(results);
+        Assert.Equal("A", results[0].BookingRef);
+    }
+
+    [Fact]
+    public async Task GetBookingsAsync_BookingRefFilter_IsCaseInsensitiveAndPartial()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "ABC123" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "XYZ789" });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(1, null, "all", bookingRef: "abc");
+
+        Assert.Single(results);
+        Assert.Equal("ABC123", results[0].BookingRef);
+    }
+
+    [Fact]
     public async Task GetBookingAsync_ReturnsNull_WhenNotFound()
     {
         AdminService svc = CreateService();

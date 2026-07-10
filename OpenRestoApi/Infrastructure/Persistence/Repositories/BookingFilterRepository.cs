@@ -62,6 +62,8 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             }
             else
             {
+                // The `_` arm is unreachable: NormalizeStatus only ever returns "active", "past",
+                // "cancelled", or "all", all of which are already handled above.
                 q = normalized switch
                 {
                     "cancelled" => q.Where(b => b.IsCancelled),
@@ -89,6 +91,8 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             {
                 DateTime globalCutoff = nowUtc.AddMinutes(-Booking.GridGraceMinutes);
 
+                // The `_` arm is unreachable: NormalizeStatus only ever returns "active", "past",
+                // "cancelled", or "all", all of which are already handled above.
                 q = normalized switch
                 {
                     "cancelled" => q.Where(b => b.IsCancelled),

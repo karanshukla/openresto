@@ -66,6 +66,29 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddCustomAuthentication_Throws_WhenJwtKeyMissing()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder().Build();
+        Environment.SetEnvironmentVariable("JWT_KEY", null);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => services.AddCustomAuthentication(config));
+        Assert.Contains("Jwt:Key must be set", ex.Message);
+    }
+
+    [Fact]
+    public void AddCustomAuthentication_Throws_WhenJwtKeyTooShort()
+    {
+        var services = new ServiceCollection();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = "too-short" })
+            .Build();
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => services.AddCustomAuthentication(config));
+        Assert.Contains("at least 32 characters", ex.Message);
+    }
+
+    [Fact]
     public void AddProjectDependencies_RegistersExpectedServices()
     {
         var services = new ServiceCollection();
@@ -107,6 +130,21 @@ public class ServiceCollectionExtensionsTests
         using IServiceScope scope = provider.CreateScope();
         IHoldService scopedHoldService = scope.ServiceProvider.GetRequiredService<IHoldService>();
         Assert.Same(holdService, scopedHoldService);
+    }
+
+    [Fact]
+    public void AddProjectDependencies_ConfiguresSessionCookieOptions()
+    {
+        var services = new ServiceCollection();
+        services.AddProjectDependencies();
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        // Resolving IOptions<SessionOptions> triggers the AddSession(...) configure delegate.
+        var sessionOptions = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Builder.SessionOptions>>().Value;
+
+        Assert.Equal(TimeSpan.FromSeconds(10), sessionOptions.IdleTimeout);
+        Assert.True(sessionOptions.Cookie.HttpOnly);
+        Assert.True(sessionOptions.Cookie.IsEssential);
     }
 
     [Fact]

@@ -170,4 +170,33 @@ public class AdminControllerUnitTests
             () => _controller.AdminUpdateBooking(1, new AdminUpdateBookingRequest()));
         Assert.Equal("This update would cause a conflict with an existing booking.", ex.Message);
     }
+
+    [Fact]
+    public async Task PatchRestaurant_ArchivesSuccessfully_ReturnsNoContent()
+    {
+        _mockAdminService.Setup(s => s.SetArchivedAsync(1, true)).ReturnsAsync(true);
+
+        var result = await _controller.PatchRestaurant(1, new AdminRestaurantPatchRequest { IsArchived = true });
+
+        Assert.IsType<NoContentResult>(result);
+    }
+
+    [Fact]
+    public async Task PatchRestaurant_ReturnsNotFound_WhenRestaurantMissing()
+    {
+        _mockAdminService.Setup(s => s.SetArchivedAsync(999, false)).ReturnsAsync(false);
+
+        var result = await _controller.PatchRestaurant(999, new AdminRestaurantPatchRequest { IsArchived = false });
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task PatchRestaurant_DoesNotCallSetArchived_WhenIsArchivedNull()
+    {
+        var result = await _controller.PatchRestaurant(1, new AdminRestaurantPatchRequest { IsArchived = null });
+
+        Assert.IsType<NoContentResult>(result);
+        _mockAdminService.Verify(s => s.SetArchivedAsync(It.IsAny<int>(), It.IsAny<bool>()), Times.Never);
+    }
 }

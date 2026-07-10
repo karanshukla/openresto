@@ -161,4 +161,32 @@ public class EmailSettingsServiceTests
         var svc = CreateService(db, emailMock: emailMock);
         Assert.False(await svc.TestConnectionAsync());
     }
+
+    [Fact]
+    public async Task GetFailuresAsync_ReturnsMostRecentFirst()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetFailuresAsync_ReturnsMostRecentFirst));
+        DateTime now = DateTime.UtcNow;
+        db.Set<EmailFailure>().Add(new EmailFailure { BookingRef = "OLD", RecipientEmail = "a@a.com", ErrorMessage = "err1", AttemptedAt = now.AddMinutes(-10) });
+        db.Set<EmailFailure>().Add(new EmailFailure { BookingRef = "NEW", RecipientEmail = "b@b.com", ErrorMessage = "err2", AttemptedAt = now });
+        await db.SaveChangesAsync();
+
+        var svc = CreateService(db);
+        IReadOnlyList<EmailFailure> failures = await svc.GetFailuresAsync();
+
+        Assert.Equal(2, failures.Count);
+        Assert.Equal("NEW", failures[0].BookingRef);
+        Assert.Equal("OLD", failures[1].BookingRef);
+    }
+
+    [Fact]
+    public async Task GetFailuresAsync_ReturnsEmpty_WhenNoneRecorded()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetFailuresAsync_ReturnsEmpty_WhenNoneRecorded));
+        var svc = CreateService(db);
+
+        IReadOnlyList<EmailFailure> failures = await svc.GetFailuresAsync();
+
+        Assert.Empty(failures);
+    }
 }
