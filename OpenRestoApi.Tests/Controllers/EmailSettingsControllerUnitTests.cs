@@ -83,13 +83,24 @@ public class EmailSettingsControllerUnitTests
     [Fact]
     public async Task GetFailures_ReturnsOk_WithMappedResponse()
     {
+        DateTime attemptedAt = DateTime.UtcNow;
         var failures = new List<EmailFailure>
         {
-            new() { Id = 1, BookingRef = "ABC", RecipientEmail = "a@a.com", ErrorMessage = "err", AttemptedAt = DateTime.UtcNow }
+            new() { Id = 1, BookingRef = "ABC", RecipientEmail = "a@a.com", ErrorMessage = "err", AttemptedAt = attemptedAt }
         };
         _mockService.Setup(s => s.GetFailuresAsync()).ReturnsAsync(failures);
 
         var result = await _controller.GetFailures();
-        Assert.IsType<OkObjectResult>(result);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        // Force enumeration of the deferred Select() to exercise the mapping itself
+        // (a bare IsType<OkObjectResult> assertion never enumerates the IEnumerable).
+        var mapped = Assert.IsAssignableFrom<IEnumerable<EmailFailureResponse>>(okResult.Value).ToList();
+        Assert.Single(mapped);
+        Assert.Equal(1, mapped[0].Id);
+        Assert.Equal("ABC", mapped[0].BookingRef);
+        Assert.Equal("a@a.com", mapped[0].RecipientEmail);
+        Assert.Equal("err", mapped[0].ErrorMessage);
+        Assert.Equal(attemptedAt, mapped[0].AttemptedAt);
     }
 }
