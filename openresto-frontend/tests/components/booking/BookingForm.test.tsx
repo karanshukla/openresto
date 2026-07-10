@@ -4,10 +4,22 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import BookingForm from "@/components/booking/BookingForm";
+import { getNowInTimezone } from "@/utils/date";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
+
+// This whole file renders under Platform.OS === "web" so the isWeb-only
+// layout branches (fieldRow/fieldHalf/holdPush styles) get exercised. The
+// native (non-web) branches are already covered by
+// tests/components/BookingForm.test.tsx, which uses the jest-expo default
+// (Platform.OS === "ios").
+jest.mock("react-native", () => {
+  const rn = jest.requireActual("react-native");
+  rn.Platform.OS = "web";
+  return rn;
+});
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -77,23 +89,47 @@ jest.mock("@/components/common/Button", () => ({
   },
 }));
 
+// TimePicker mock also surfaces minTime/maxTime so tests can assert the
+// after-midnight-closing fallback (maxPickerTime -> "23:45").
 jest.mock("@/components/common/TimePicker", () => ({
   __esModule: true,
-  default: ({ selectedTime }: { selectedTime: string }) => {
+  default: ({
+    selectedTime,
+    minTime,
+    maxTime,
+  }: {
+    selectedTime: string;
+    minTime?: string;
+    maxTime?: string;
+  }) => {
     const { Text } = require("react-native");
-    return <Text testID="time-picker">{selectedTime}</Text>;
+    return (
+      <Text testID="time-picker">
+        {selectedTime}|{minTime}|{maxTime}
+      </Text>
+    );
   },
 }));
 
-// DatePicker mock that lets tests trigger a date selection
+// DatePicker mock that lets tests trigger a date selection: a closed Saturday,
+// a Sunday (to exercise the jsDay===0 -> isoDay 7 mapping), and clearing the
+// date entirely (to exercise the "no date selected" fallback branches).
 jest.mock("@/components/common/DatePicker", () => ({
   __esModule: true,
   default: ({ onSelect }: { onSelect: (date: string) => void }) => {
-    const { Pressable, Text } = require("react-native");
+    const { Pressable, Text, View } = require("react-native");
     return (
-      <Pressable testID="date-picker-sat" onPress={() => onSelect("2026-06-20")}>
-        <Text>Pick Saturday</Text>
-      </Pressable>
+      <View>
+        <Pressable testID="date-picker-sat" onPress={() => onSelect("2026-06-20")}>
+          <Text>Pick Saturday</Text>
+        </Pressable>
+        <Pressable testID="date-picker-sun" onPress={() => onSelect("2026-06-21")}>
+          <Text>Pick Sunday</Text>
+        </Pressable>
+        <Pressable testID="date-picker-clear" onPress={() => onSelect("")}>
+          <Text>Clear date</Text>
+        </Pressable>
+      </View>
     );
   },
 }));
@@ -106,12 +142,23 @@ jest.mock("@/utils/date", () => ({
 
 jest.mock("@/components/common/Select", () => ({
   __esModule: true,
-  default: ({ onSelect, placeholder, selectedValue }: any) => {
+  default: ({ onSelect, placeholder, selectedValue, options }: any) => {
     const { Pressable, Text } = require("react-native");
     if (placeholder === "Select a section") {
       return (
         <Pressable testID="section-select" onPress={() => onSelect(20)}>
           <Text>SectionSelect:{selectedValue}</Text>
+        </Pressable>
+      );
+    }
+    if (placeholder === "Select a table") {
+      // Pick whichever option isn't already selected, so pressing always
+      // fires a real onSelect(<different id>) call.
+      const alt =
+        options?.find((o: { value: number }) => o.value !== selectedValue) ?? options?.[0];
+      return (
+        <Pressable testID="table-select" onPress={() => onSelect(alt?.value)}>
+          <Text>TableSelect:{selectedValue}</Text>
         </Pressable>
       );
     }
@@ -148,12 +195,56 @@ const mockRestaurantAllDays = {
   openDays: "1,2,3,4,5,6,7",
 };
 
+// No `openDays` at all -> exercises the "default to every day" fallback.
+// (openDays is required on RestaurantDto; cast to model a real-world/older
+// payload that omits it, which is exactly what the `restaurant.openDays?.`
+// optional chaining in the component defends against.)
+const mockRestaurantNoOpenDays = (() => {
+  const { openDays: _openDays, ...rest } = mockRestaurantAllDays;
+  return rest as unknown as typeof mockRestaurantAllDays;
+})();
+
+// No sections -> exercises the sectionId/tablesInSection/timezone fallbacks.
+// timezone: "" (rather than omitted) keeps this assignable to RestaurantDto
+// while still being falsy, which is what triggers the `|| "UTC"` fallback.
+const mockRestaurantEmptySections = {
+  id: 2,
+  name: "Empty Spot",
+  address: "2 Side St",
+  openTime: "11:00",
+  closeTime: "22:00",
+  openDays: "1,2,3,4,5,6,7",
+  timezone: "",
+  sections: [],
+};
+
+// Closing time wraps past midnight -> exercises the "23:45" max-picker-time
+// fallback (close <= open).
+const mockRestaurantLateNight = {
+  ...mockRestaurantAllDays,
+  openTime: "18:00",
+  closeTime: "02:00",
+};
+
+// Open all hours so the mocked "now" (10:00) always falls inside the open
+// window -> exercises suggestTime's minute-bucket branches directly, rather
+// than its (already istanbul-ignored) "outside open hours" early return.
+const mockRestaurantWideOpen = {
+  ...mockRestaurantAllDays,
+  openTime: "00:00",
+  closeTime: "23:59",
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockHoldStatus = "idle";
   mockFetchAvailability.mockResolvedValue({
     slots: [{ time: "19:00", isAvailable: true, availableTableIds: [100], category: "Dinner" }],
   });
+  // jest.clearAllMocks() clears call history but not a mockReturnValue set by
+  // an earlier test — restore the module's default "now" here so tests don't
+  // leak their overrides into one another.
+  (getNowInTimezone as jest.Mock).mockReturnValue({ dateStr: "2026-06-23", hours: 10, minutes: 0 });
 });
 
 describe("BookingForm", () => {
@@ -238,5 +329,136 @@ describe("BookingForm", () => {
   it("does not show the walk-in days banner when no walk-in days are configured", () => {
     render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
     expect(screen.queryByTestId("walk-in-days-banner")).toBeNull();
+  });
+
+  it("falls back to a WalkInNotice with no days label when walk-in-only is set globally (no walkInDays)", async () => {
+    const restaurant = { ...mockRestaurantAllDays, walkInOnly: true };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("walk-in-notice")).toBeTruthy();
+    });
+  });
+
+  it("renders 'No tables available' and omits the timezone hint for a restaurant with no sections and no timezone", () => {
+    render(<BookingForm restaurant={mockRestaurantEmptySections} onSubmit={jest.fn()} />);
+    expect(screen.getByText("No tables available for 2 guests.")).toBeTruthy();
+    expect(screen.queryByText(/All times are in/)).toBeNull();
+  });
+
+  it("defaults to a 7-day open list when restaurant.openDays is not provided", () => {
+    render(<BookingForm restaurant={mockRestaurantNoOpenDays} onSubmit={jest.fn()} />);
+    // Today ("2026-06-23") should be treated as open, so PopularTimesPicker
+    // renders instead of the closed-day notice.
+    expect(screen.getByText("PopularTimesPicker")).toBeTruthy();
+    expect(
+      screen.queryByText("The restaurant is closed on this day. Please select a different date.")
+    ).toBeNull();
+  });
+
+  it("maps a Sunday selection to ISO day 7 and flags it closed for a weekdays-only restaurant", async () => {
+    render(<BookingForm restaurant={mockRestaurantWeekdays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+    mockFetchAvailability.mockClear();
+
+    // "2026-06-21" is a Sunday — not in openDays "1,2,3,4,5"
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sun"));
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("The restaurant is closed on this day. Please select a different date.")
+      ).toBeTruthy();
+    });
+    expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("treats a cleared date as open with no selected day", async () => {
+    render(<BookingForm restaurant={mockRestaurantWeekdays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+    mockFetchAvailability.mockClear();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-clear"));
+    });
+    // With no date selected, isClosedDay/isWalkInDay are both forced false,
+    // so PopularTimesPicker renders rather than a closed/walk-in notice.
+    await waitFor(() => {
+      expect(screen.getByText("PopularTimesPicker")).toBeTruthy();
+    });
+    expect(
+      screen.queryByText("The restaurant is closed on this day. Please select a different date.")
+    ).toBeNull();
+  });
+
+  it("rolls suggestDate over to the next day once the current time is past the last bookable window", async () => {
+    // Restaurant closes at 12:00, so the latest bookable start is 10:45.
+    // Mocked "now" of 23:00 is well past that, forcing the addDays fallback.
+    const restaurant = { ...mockRestaurantAllDays, openTime: "08:00", closeTime: "12:00" };
+    (getNowInTimezone as jest.Mock).mockReturnValue({
+      dateStr: "2026-06-23",
+      hours: 23,
+      minutes: 0,
+    });
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} initialTime="10:00" />);
+    await waitFor(() => {
+      expect(mockFetchAvailability).toHaveBeenCalledWith(restaurant.id, "2026-06-24", 2);
+    });
+  });
+
+  it.each([
+    [5, "10:15"], // minutes < 15
+    [20, "10:30"], // 15 <= minutes < 30
+    [35, "10:45"], // 30 <= minutes < 45
+    [50, "11:00"], // minutes >= 45 -> rolls to the next hour
+  ])("suggests %i minutes past the hour as %s", async (minutes, expected) => {
+    (getNowInTimezone as jest.Mock).mockReturnValue({
+      dateStr: "2026-06-23",
+      hours: 10,
+      minutes,
+    });
+    render(<BookingForm restaurant={mockRestaurantWideOpen} onSubmit={jest.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("time-picker").props.children[0]).toBe(expected);
+    });
+  });
+
+  it("does not auto-select a time when no slots are available at all", async () => {
+    mockFetchAvailability.mockResolvedValue({
+      slots: [{ time: "12:00", isAvailable: false, availableTableIds: [], category: "Lunch" }],
+    });
+    render(<BookingForm restaurant={mockRestaurantWideOpen} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // suggestTime(10:00) -> "10:15"; since no slot is available, time is left alone.
+    expect(screen.getByTestId("time-picker").props.children[0]).toBe("10:15");
+  });
+
+  it("falls back to 23:45 as the max picker time when closing wraps past midnight", () => {
+    render(<BookingForm restaurant={mockRestaurantLateNight} onSubmit={jest.fn()} />);
+    const text = screen.getByTestId("time-picker").props.children.join("");
+    expect(text).toContain("|23:45");
+  });
+
+  it("resets hold status to idle when the table is changed while held", async () => {
+    mockHoldStatus = "held";
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("table-select"));
+    expect(mockSetHoldStatus).toHaveBeenCalledWith("idle");
+  });
+
+  it("resets hold status to idle when the table is changed while expired", async () => {
+    mockHoldStatus = "expired";
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("table-select"));
+    expect(mockSetHoldStatus).toHaveBeenCalledWith("idle");
+  });
+
+  it("does not reset hold status when the table is changed while idle", async () => {
+    mockHoldStatus = "idle";
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("table-select"));
+    expect(mockSetHoldStatus).not.toHaveBeenCalled();
   });
 });

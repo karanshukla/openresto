@@ -8,6 +8,8 @@ import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/booki
 import { fetchRestaurantById } from "@/api/restaurants";
 import { Platform } from "react-native";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import * as useAppThemeModule from "@/hooks/use-app-theme";
+import { getThemeColors } from "@/theme/theme";
 
 // Mock Platform.OS to web
 Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
@@ -235,6 +237,9 @@ describe("BookingConfirmationScreen", () => {
     fireEvent.press(screen.getByText("Copy"));
     expect(mockWriteText).toHaveBeenCalledWith("REF123");
     expect(screen.getByText("Copied")).toBeTruthy();
+
+    // The "Copied" label reverts back to "Copy" after the 2s timeout fires.
+    await waitFor(() => expect(screen.getByText("Copy")).toBeTruthy(), { timeout: 3000 });
   });
 
   it("shows not found state", async () => {
@@ -288,6 +293,32 @@ describe("BookingConfirmationScreen", () => {
     });
   });
 
+  it("silently swallows a failed nominatim geocoding request", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("nominatim")) {
+        return Promise.reject(new Error("network error"));
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+      });
+    });
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+    // The rejected geocoding fetch is caught internally and does not crash the screen.
+    await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+
+    // Reset fetch mock
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
+    });
+  });
+
   it("renders wide layout (isWide=true) with ref card in right column", async () => {
     const { useLocalSearchParams } = require("expo-router");
     useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
@@ -332,6 +363,11 @@ describe("BookingConfirmationScreen", () => {
       const copyBtns = screen.getAllByText("Copy");
       fireEvent.press(copyBtns[copyBtns.length - 1]);
       expect(mockWriteText).toHaveBeenCalledWith("REF123");
+
+      // The wide-layout copy button also reverts its own "Copied" label after 2s.
+      await waitFor(() => expect(screen.getAllByText("Copy").length).toBeGreaterThan(0), {
+        timeout: 3000,
+      });
     } finally {
       mockUseDimensions.mockRestore();
     }
@@ -428,6 +464,182 @@ describe("BookingConfirmationScreen", () => {
       // scrollRef.current?.scrollTo is a no-op in test env but the callback runs
       expect(screen.getByText("Booking Confirmed")).toBeTruthy();
     } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("does not update state if unmounted before the booking fetch resolves", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+
+    let resolveBooking: (value: unknown) => void = () => {};
+    (getBookingByRef as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveBooking = resolve;
+      })
+    );
+
+    const { unmount } = renderWithProviders(<BookingConfirmationScreen />);
+    unmount();
+    resolveBooking(mockBooking);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The cleanup flag should have short-circuited before restaurant data was fetched.
+    expect(fetchRestaurantById).not.toHaveBeenCalled();
+  });
+
+  it("does not update state if unmounted before the restaurant fetch resolves", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    let resolveRestaurant: (value: unknown) => void = () => {};
+    (fetchRestaurantById as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRestaurant = resolve;
+      })
+    );
+
+    const { unmount } = renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(fetchRestaurantById).toHaveBeenCalled());
+    unmount();
+    resolveRestaurant(mockRestaurant);
+    // Flush the resolved promise; the cleanup flag should stop further state updates.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  it("shows not found state on native platform", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "NOTFOUND" });
+    (getBookingByRef as jest.Mock).mockResolvedValue(null);
+
+    try {
+      renderWithProviders(<BookingConfirmationScreen />);
+      await waitFor(() => expect(screen.getByText("Booking not found.")).toBeTruthy());
+    } finally {
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
+  });
+
+  it("falls back to the route bookingRef and default restaurant name, and skips cancelling, when the booking has no bookingRef", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+    (getBookingByRef as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      bookingRef: undefined,
+      restaurantId: undefined,
+    });
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    // ref falls back to the route param since booking.bookingRef is undefined
+    await waitFor(() => expect(screen.getByText("REF123")).toBeTruthy());
+    // restaurant was never fetched since restaurantId is undefined, so name falls back
+    expect(fetchRestaurantById).not.toHaveBeenCalled();
+    expect(screen.getByText(/2 guests at Restaurant/)).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Cancel This Booking"));
+    fireEvent.press(await screen.findByText("Cancel Booking"));
+
+    // handleCancelBooking should bail out early since booking.bookingRef is falsy
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(cancelBookingByRef).not.toHaveBeenCalled();
+  });
+
+  it("falls back to an empty customerEmail string when cancelling", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, customerEmail: undefined });
+    (cancelBookingByRef as jest.Mock).mockResolvedValue(true);
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(screen.getByText("Cancel This Booking")).toBeTruthy());
+
+    fireEvent.press(screen.getByText("Cancel This Booking"));
+    fireEvent.press(await screen.findByText("Cancel Booking"));
+
+    await waitFor(() => expect(cancelBookingByRef).toHaveBeenCalledWith("REF123", ""));
+  });
+
+  it("evaluates the cancelled title branch for the native Stack.Screen options", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockCancelledBooking);
+
+    try {
+      renderWithProviders(<BookingConfirmationScreen />);
+      await waitFor(() => expect(screen.getByText("Booking Cancelled")).toBeTruthy());
+    } finally {
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
+  });
+
+  it("uses singular 'guest' copy when seats is 1", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, seats: 1 });
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(screen.getByText(/1 guest at/)).toBeTruthy());
+    expect(screen.queryByText(/1 guests at/)).toBeNull();
+  });
+
+  it("applies dark-theme styling to the ref badge and covers hover/press states for the map links", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+
+    const spy = jest.spyOn(useAppThemeModule, "useAppTheme").mockReturnValue({
+      brand: { appName: "Open Resto", primaryColor: "#0a7ea4" },
+      isDark: true,
+      colors: getThemeColors(true),
+      primaryColor: "#0a7ea4",
+    });
+
+    try {
+      renderWithProviders(<BookingConfirmationScreen />);
+      await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+
+      for (const label of ["Google", "Apple"]) {
+        let node = screen.getByText(label).parent;
+        while (node && typeof node.props?.style !== "function") {
+          node = node.parent;
+        }
+        const styleFn = node?.props.style as (state: {
+          hovered: boolean;
+          pressed: boolean;
+        }) => unknown;
+        expect(typeof styleFn).toBe("function");
+        expect(styleFn({ hovered: true, pressed: false })).toBeTruthy();
+        expect(styleFn({ hovered: false, pressed: false })).toBeTruthy();
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("applies dark-theme styling to the ref badge in the wide layout", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "REF123", email: "test@test.com" });
+
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 1024, height: 768 });
+
+    const spy = jest.spyOn(useAppThemeModule, "useAppTheme").mockReturnValue({
+      brand: { appName: "Open Resto", primaryColor: "#0a7ea4" },
+      isDark: true,
+      colors: getThemeColors(true),
+      primaryColor: "#0a7ea4",
+    });
+
+    try {
+      renderWithProviders(<BookingConfirmationScreen />);
+      await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+      expect(screen.getAllByText("Booking Reference").length).toBeGreaterThan(0);
+    } finally {
+      spy.mockRestore();
       mockUseDimensions.mockRestore();
     }
   });

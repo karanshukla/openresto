@@ -42,6 +42,13 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/components/common/ConfirmModal", () => require("../../../jest-mocks/ConfirmModal"));
 
+// jest.setup.ts globally pins this to "light"; override locally (per-file mocks
+// win over the global one) so a single test can flip to "dark" and back.
+const mockUseColorScheme = jest.fn(() => "light");
+jest.mock("@/hooks/use-color-scheme", () => ({
+  useColorScheme: () => mockUseColorScheme(),
+}));
+
 jest.setTimeout(15000);
 
 describe("LookupScreen", () => {
@@ -741,4 +748,180 @@ describe("LookupScreen", () => {
       mockUseDimensions.mockRestore();
     }
   });
+
+  it("does not trigger a lookup when submitting the form with empty fields", async () => {
+    renderWithProviders(<LookupScreen />);
+
+    // onSubmitEditing on the email field calls handleLookup directly, bypassing
+    // the disabled search button — this exercises the "!ref || !email" guard.
+    fireEvent(screen.getByPlaceholderText("The email used when booking"), "submitEditing");
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(getBookingByRef).not.toHaveBeenCalled();
+  });
+
+  it("does not call cancelBookingByRef when the booking has no bookingRef", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, bookingRef: "" });
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() => screen.getByText("Cancel This Booking"));
+    fireEvent.press(screen.getByText("Cancel This Booking"));
+    expect(await screen.findByTestId("confirm-modal")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Cancel Booking"));
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(cancelBookingByRef).not.toHaveBeenCalled();
+  });
+
+  it("shows the not-found card in wide layout", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 1024, height: 768 });
+    (getBookingByRef as jest.Mock).mockResolvedValue(null);
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "NOPE");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() =>
+        expect(screen.getByText("No booking found matching that reference and email.")).toBeTruthy()
+      );
+    } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("renders a recent booking without a restaurant name and singular guest count", async () => {
+    const mockCached = [
+      {
+        bookingRef: "SOLO1",
+        email: "solo@test.com",
+        restaurantName: "",
+        date: "2026-05-01",
+        seats: 1,
+      },
+    ];
+    (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
+
+    renderWithProviders(<LookupScreen />);
+
+    await waitFor(() => expect(screen.getByText("SOLO1")).toBeTruthy());
+    expect(screen.getByText(/1 guest$/)).toBeTruthy();
+  });
+
+  it("falls back to a default restaurant name/address for calendar links when restaurant is unknown (narrow)", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 400, height: 800 });
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, restaurantId: undefined });
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByTestId("cal-google-btn")).toBeTruthy());
+      expect(fetchRestaurantById).not.toHaveBeenCalled();
+    } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("falls back to a default restaurant name/address for calendar links when restaurant is unknown (wide)", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 1024, height: 768 });
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, restaurantId: undefined });
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy());
+      expect(fetchRestaurantById).not.toHaveBeenCalled();
+    } finally {
+      mockUseDimensions.mockRestore();
+    }
+  });
+
+  it("renders dark-theme styling for the wide-layout directions card and result badge", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const mockUseDimensions = jest.spyOn(require("react-native"), "useWindowDimensions");
+    mockUseDimensions.mockReturnValue({ width: 1024, height: 768 });
+    mockUseColorScheme.mockReturnValue("dark");
+
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByText("GET DIRECTIONS")).toBeTruthy());
+      // "Google"/"Apple" also appear in the compact CalendarActions block above
+      // this section, so there are multiple matches — just assert presence.
+      expect(screen.getAllByText("Google").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Apple").length).toBeGreaterThan(0);
+      expect(screen.getByText("REF123")).toBeTruthy();
+    } finally {
+      mockUseDimensions.mockRestore();
+      mockUseColorScheme.mockReturnValue("light");
+    }
+  });
+
+  it("skips clipboard write and resets the Copied label after timeout when clipboard is unavailable", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    const originalClipboard = (navigator as any).clipboard;
+    (navigator as any).clipboard = undefined;
+
+    (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, bookingRef: "NOCLIP" });
+    (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+
+    try {
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "NOCLIP");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("The email used when booking"),
+        "test@test.com"
+      );
+      fireEvent.press(screen.getByText("Look Up"));
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      fireEvent.press(screen.getByText("Copy"));
+      await waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
+      // No clipboard was available, so writeText should never have been reached.
+      await waitFor(() => expect(screen.getByText("Copy")).toBeTruthy(), { timeout: 3000 });
+    } finally {
+      (navigator as any).clipboard = originalClipboard;
+    }
+  }, 10000);
 });

@@ -847,6 +847,245 @@ describe("BookingDetailPopup", () => {
     await waitFor(() => expect(baseProps.onMutated).toHaveBeenCalled());
   });
 
+  describe("race guards, fallbacks, and dead-end branches", () => {
+    it("ignores a stale getAdminBooking response after bookingId changes before it resolves", async () => {
+      let resolveFirst!: (value: unknown) => void;
+      (adminApi.getAdminBooking as jest.Mock).mockImplementation((id: number) => {
+        if (id === 1) {
+          return new Promise((resolve) => {
+            resolveFirst = resolve;
+          });
+        }
+        return new Promise(() => {});
+      });
+      const { rerender } = render(<BookingDetailPopup {...baseProps} bookingId={1} />);
+      rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+      // The id=1 fetch resolves only after bookingId moved on to 2 — the
+      // effect's cleanup already set `cancelled = true` for that request, so
+      // this stale response must not overwrite state.
+      await act(async () => {
+        resolveFirst(mockBooking);
+      });
+      expect(screen.queryByTestId("booking-details-card")).toBeNull();
+    });
+
+    it("falls back to empty strings for a booking with no email/specialRequests and omits them on save", async () => {
+      const bookingNoOptional: adminApi.BookingDetailDto = {
+        ...mockBooking,
+        customerEmail: null as unknown as string,
+        specialRequests: undefined,
+      };
+      (adminApi.getAdminBooking as jest.Mock).mockResolvedValue(bookingNoOptional);
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockResolvedValue(bookingNoOptional);
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+      await waitFor(() => expect(adminApi.adminUpdateBookingFull).toHaveBeenCalled());
+      const payload = (adminApi.adminUpdateBookingFull as jest.Mock).mock.calls[0][1];
+      expect(payload.customerEmail).toBeUndefined();
+      expect(payload.specialRequests).toBeUndefined();
+    });
+
+    it("re-populates edit fields with empty strings when cancelling edit for a booking with no email/specialRequests", async () => {
+      const bookingNoOptional: adminApi.BookingDetailDto = {
+        ...mockBooking,
+        customerEmail: null as unknown as string,
+        specialRequests: undefined,
+      };
+      (adminApi.getAdminBooking as jest.Mock).mockResolvedValue(bookingNoOptional);
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Cancel")).toBeTruthy());
+      fireEvent.press(screen.getByText("Cancel"));
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+    });
+
+    it("no-ops handleDeleteConfirmed if booking became null before the confirm modal was actioned", async () => {
+      (adminApi.getAdminBooking as jest.Mock).mockImplementation((id: number) =>
+        id === 1 ? Promise.resolve(mockBooking) : new Promise(() => {})
+      );
+      const { rerender } = render(<BookingDetailPopup {...baseProps} bookingId={1} />);
+      await waitFor(() => expect(screen.getByTestId("cancel-btn")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("cancel-btn"));
+      await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+      rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+      expect(adminApi.adminDeleteBooking).not.toHaveBeenCalled();
+    });
+
+    it("no-ops handleUncancel if booking became null before the confirm modal was actioned", async () => {
+      (adminApi.getAdminBooking as jest.Mock).mockImplementation((id: number) =>
+        id === 1 ? Promise.resolve(cancelledBooking) : new Promise(() => {})
+      );
+      const { rerender } = render(<BookingDetailPopup {...baseProps} bookingId={1} />);
+      await waitFor(() => expect(screen.getByTestId("uncancel-btn")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("uncancel-btn"));
+      await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+      rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+      expect(adminApi.adminRestoreBooking).not.toHaveBeenCalled();
+    });
+
+    it("no-ops the purge confirm handler if booking became null before it was actioned", async () => {
+      (adminApi.getAdminBooking as jest.Mock).mockImplementation((id: number) =>
+        id === 1 ? Promise.resolve(mockBooking) : new Promise(() => {})
+      );
+      const { rerender } = render(<BookingDetailPopup {...baseProps} bookingId={1} />);
+      await waitFor(() => expect(screen.getByTestId("purge-btn")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("purge-btn"));
+      await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+      rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+      expect(adminApi.adminPurgeBooking).not.toHaveBeenCalled();
+    });
+
+    it("no-ops handleSaveEdit and handleCancelEdit if booking became null while still editing", async () => {
+      (adminApi.getAdminBooking as jest.Mock).mockImplementation((id: number) =>
+        id === 1 ? Promise.resolve(mockBooking) : new Promise(() => {})
+      );
+      const { rerender } = render(<BookingDetailPopup {...baseProps} bookingId={1} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+      // The header's Save Changes/Cancel buttons render whenever `editing` is
+      // true, independent of `booking` — so switching to a bookingId whose
+      // fetch never resolves leaves them mounted with booking now null.
+      rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+      expect(adminApi.adminUpdateBookingFull).not.toHaveBeenCalled();
+      fireEvent.press(screen.getByText("Cancel"));
+      await waitFor(() => {
+        expect(screen.queryByText("Save Changes")).toBeNull();
+        expect(screen.queryByText("Edit")).toBeNull();
+      });
+    });
+
+    it("clears section/table selection for a restaurant with no sections and omits them on save", async () => {
+      const mockRestaurants = [
+        {
+          id: 1,
+          name: "Restaurant A",
+          sections: [{ id: 10, name: "Main", tables: [{ id: 100, name: "T1", seats: 4 }] }],
+        },
+        { id: 2, name: "Restaurant B", sections: [] },
+      ];
+      (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockResolvedValue(mockBooking);
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByTestId("edit-booking-form")).toBeTruthy());
+      // change-restaurant-btn selects restaurant id=2, which has no sections.
+      fireEvent.press(screen.getByTestId("change-restaurant-btn"));
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+      await waitFor(() => expect(adminApi.adminUpdateBookingFull).toHaveBeenCalled());
+      const payload = (adminApi.adminUpdateBookingFull as jest.Mock).mock.calls[0][1];
+      expect(payload.sectionId).toBeUndefined();
+      expect(payload.tableId).toBeUndefined();
+    });
+
+    it("shows a generic message when cancel fails with a non-Error rejection", async () => {
+      (adminApi.adminDeleteBooking as jest.Mock).mockRejectedValue("boom");
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByTestId("cancel-btn")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("cancel-btn"));
+      await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("confirm-btn"));
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId("alert-message").props.children).toBe(
+          "Failed to cancel the booking."
+        );
+      });
+    });
+
+    it("shows a generic message when handleSaveEdit fails with a non-Error rejection", async () => {
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockRejectedValue("boom");
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId("alert-message").props.children).toBe(
+          "Failed to update booking."
+        );
+      });
+    });
+
+    it("falls back to 'Table {id}' label when a table has no name", async () => {
+      const mockRestaurants = [
+        {
+          id: 1,
+          name: "Restaurant A",
+          sections: [{ id: 10, name: "Main", tables: [{ id: 100, name: null, seats: 4 }] }],
+        },
+      ];
+      (restaurantsApi.fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      // booking.restaurantId=1/sectionId=10 match this restaurant/section, so
+      // the nameless table is resolved into tableOptions on render, exercising
+      // the `t.name ?? "Table {id}"` fallback.
+      await waitFor(() => expect(screen.getByTestId("edit-booking-form")).toBeTruthy());
+    });
+
+    it("shows 'Saving…' while handleSaveEdit is in flight", async () => {
+      let resolveSave!: (value: unknown) => void;
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveSave = resolve;
+          })
+      );
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+      fireEvent.press(screen.getByText("Save Changes"));
+      await waitFor(() => expect(screen.getByText("Saving…")).toBeTruthy());
+      await act(async () => {
+        resolveSave(mockBooking);
+      });
+    });
+
+    it("ignores a stale fetchRestaurants response after leaving edit mode before it resolves", async () => {
+      let resolveRestaurants!: (value: unknown) => void;
+      (restaurantsApi.fetchRestaurants as jest.Mock).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveRestaurants = resolve;
+          })
+      );
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByTestId("edit-booking-form")).toBeTruthy());
+      // Leaving edit mode before fetchRestaurants resolves flips `editing`,
+      // which triggers that effect's cleanup (cancelled = true) ahead of
+      // the stale response arriving.
+      fireEvent.press(screen.getByText("Cancel"));
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      await act(async () => {
+        resolveRestaurants([{ id: 1, name: "R", sections: [] }]);
+      });
+      expect(screen.getByText("Edit")).toBeTruthy();
+    });
+  });
+
   describe("initialFocus='extend' (bound to the bookings-list 'e' shortcut)", () => {
     afterEach(() => {
       Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
