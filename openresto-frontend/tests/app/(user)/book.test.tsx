@@ -27,7 +27,9 @@ jest.mock("react-native", () => {
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
-const mockUseLocalSearchParams = jest.fn(() => ({ restaurantId: "1" }));
+const mockUseLocalSearchParams = jest.fn(
+  (): { restaurantId: string; time?: string; party?: string } => ({ restaurantId: "1" })
+);
 jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockUseLocalSearchParams(),
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
@@ -206,6 +208,100 @@ describe("BookScreen", () => {
       });
     }
     expect(screen.getByText(/Toronto Resto/)).toBeTruthy();
+  });
+
+  it("parses a valid party query param into initialSeats", async () => {
+    mockUseLocalSearchParams.mockReturnValue({ restaurantId: "1", party: "4" });
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+  });
+
+  it("falls back to undefined initialSeats when party query param is not a number", async () => {
+    mockUseLocalSearchParams.mockReturnValue({ restaurantId: "1", party: "abc" });
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+  });
+
+  it("skips setting state after unmount so the effect cleanup guards against late resolution", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    (fetchRestaurantById as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const { unmount } = renderWithProviders(<BookScreen />);
+    unmount();
+    resolveFetch(mockRestaurant);
+
+    // Give the resolved promise's microtask/finally a chance to run.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const updateWarning = consoleError.mock.calls.some((call) =>
+      String(call[0]).includes("Can't perform a React state update")
+    );
+    expect(updateWarning).toBe(false);
+    consoleError.mockRestore();
+  });
+
+  it("falls back to UTC when the restaurant has no timezone", async () => {
+    (fetchRestaurantById as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      timezone: undefined,
+    });
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId("submit-trigger"));
+
+    await waitFor(() => expect(createBooking).toHaveBeenCalled());
+  });
+
+  it("falls back to sectionId 0 when no section contains the booked table", async () => {
+    (fetchRestaurantById as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      sections: [
+        {
+          id: 1,
+          name: "Main",
+          restaurantId: 1,
+          tables: [{ id: 999, name: "T9", seats: 4, sectionId: 1 }],
+        },
+      ],
+    });
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId("submit-trigger"));
+
+    await waitFor(() => {
+      expect(createBooking).toHaveBeenCalledWith(expect.objectContaining({ sectionId: 0 }));
+    });
+  });
+
+  it("does not navigate when createBooking resolves without a booking", async () => {
+    (createBooking as jest.Mock).mockResolvedValue(null);
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId("submit-trigger"));
+
+    await waitFor(() => expect(createBooking).toHaveBeenCalled());
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("shows a generic error message when a non-Error value is thrown", async () => {
+    (createBooking as jest.Mock).mockRejectedValue("some string failure");
+    renderWithProviders(<BookScreen />);
+    await waitFor(() => expect(screen.getByText(/Toronto Resto/)).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId("submit-trigger"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
+    });
   });
 
   it("pressing ScrollToTopFab calls scrollToTop in book screen", async () => {

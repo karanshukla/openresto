@@ -32,6 +32,10 @@ import {
   getEmailFailures,
   uploadHeroImage,
   deleteHeroImage,
+  adminGetSocialLinks,
+  adminCreateSocialLink,
+  adminUpdateSocialLink,
+  adminDeleteSocialLink,
 } from "@/api/admin";
 
 // Admin API now uses credentials: "include" for cookie-based auth — no mock needed
@@ -1109,5 +1113,124 @@ describe("deleteHeroImage", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await deleteHeroImage()).toBe(false);
+  });
+});
+
+// ---------- Social Links ----------
+
+describe("adminGetSocialLinks", () => {
+  it("returns parsed social links on success", async () => {
+    const links = [
+      {
+        id: 1,
+        label: "Instagram",
+        url: "https://instagram.com/r",
+        iconKey: "instagram",
+        sortOrder: 0,
+      },
+    ];
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => links });
+
+    const result = await adminGetSocialLinks();
+
+    expect(result).toEqual(links);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/social-links");
+  });
+
+  it("returns empty array on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminGetSocialLinks()).toEqual([]);
+  });
+
+  it("returns empty array on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminGetSocialLinks()).toEqual([]);
+  });
+});
+
+describe("adminCreateSocialLink", () => {
+  const req = {
+    label: "Instagram",
+    url: "https://instagram.com/r",
+    iconKey: "instagram",
+    sortOrder: 0,
+  };
+
+  it("returns created social link on success", async () => {
+    const created = { id: 5, ...req };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => created });
+
+    const result = await adminCreateSocialLink(req);
+
+    expect(result).toEqual(created);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/social-links");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual(req);
+  });
+
+  it("returns null on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminCreateSocialLink(req)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminCreateSocialLink(req)).toBeNull();
+  });
+});
+
+describe("adminUpdateSocialLink", () => {
+  const req = {
+    label: "Facebook",
+    url: "https://facebook.com/r",
+    iconKey: "facebook",
+    sortOrder: 1,
+  };
+
+  it("returns updated social link on success", async () => {
+    const updated = { id: 3, ...req };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
+
+    const result = await adminUpdateSocialLink(3, req);
+
+    expect(result).toEqual(updated);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/social-links/3");
+    expect(opts.method).toBe("PUT");
+    expect(JSON.parse(opts.body)).toEqual(req);
+  });
+
+  it("returns null on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminUpdateSocialLink(3, req)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminUpdateSocialLink(3, req)).toBeNull();
+  });
+});
+
+describe("adminDeleteSocialLink", () => {
+  it("returns true when delete succeeds", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    const result = await adminDeleteSocialLink(1);
+
+    expect(result).toBe(true);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/social-links/1");
+    expect(opts.method).toBe("DELETE");
+  });
+
+  it("returns false when delete fails", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminDeleteSocialLink(1)).toBe(false);
+  });
+
+  it("returns false on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminDeleteSocialLink(1)).toBe(false);
   });
 });
