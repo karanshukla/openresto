@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react-native";
 import { RestaurantInfoForm } from "@/components/admin/settings/RestaurantInfoForm";
 import * as restaurantsApi from "@/api/restaurants";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -17,7 +18,7 @@ jest.mock("@/context/BrandContext", () => {
 });
 
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: jest.fn(() => "light"),
 }));
 
 jest.mock("@/components/common/TimePicker", () => {
@@ -489,5 +490,79 @@ describe("RestaurantInfoForm", () => {
       expect(screen.getByText("All changes saved")).toBeTruthy();
       expect(screen.getByText("Walk-ins only, online booking is off")).toBeTruthy();
     });
+  });
+
+  // ── Fallback branches for unset optional restaurant fields ─────────────
+  // RestaurantDto marks address/tags/walkInOnly/walkInDays/defaultBookingDurationMinutes as
+  // optional, and even openTime/closeTime/timezone (typed as required strings) are read
+  // defensively with `??` in case the API ever omits them. mockRestaurant always supplies
+  // every field, so those `??` fallback branches (state init, initialOpenHours, the dirty
+  // check, and discard()) were never exercised on the "value is missing" side.
+  const sparseRestaurant = {
+    id: 2,
+    name: "Sparse Resto",
+    openDays: "1,2,3,4,5,6,7",
+    openTime: undefined as unknown as string,
+    closeTime: undefined as unknown as string,
+    timezone: undefined as unknown as string,
+    sections: [],
+  };
+
+  it("falls back to defaults when optional restaurant fields are unset", () => {
+    render(<RestaurantInfoForm restaurant={sparseRestaurant} onSaved={onSaved} />);
+    expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();
+    expect(screen.getByPlaceholderText("e.g. 123 Main St")).toBeTruthy();
+    expect(getDurationSelect().props.value).toBe(60);
+    expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+
+  it("discard restores fallback defaults when optional restaurant fields are unset", () => {
+    render(<RestaurantInfoForm restaurant={sparseRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Sparse Resto"), "Changed Name");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    fireEvent.press(screen.getByText("Discard"));
+    expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+
+  it("saves address as null when the address field is cleared to blank", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      address: null,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("123 Main St"), "   ");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ address: null })
+    );
+  });
+
+  it("renders without crashing in dark mode", () => {
+    (useColorScheme as jest.Mock).mockReturnValueOnce("dark");
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(screen.getByDisplayValue("Test Resto")).toBeTruthy();
+  });
+
+  it("shows the Saving… label while the update request is in flight", async () => {
+    let resolveUpdate: (value: unknown) => void = () => {};
+    (restaurantsApi.updateRestaurant as jest.Mock).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        })
+    );
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
+    fireEvent.press(screen.getByText("Save changes"));
+    expect(await screen.findByText("Saving…")).toBeTruthy();
+    await act(async () => {
+      resolveUpdate({ ...mockRestaurant, name: "Updated Resto" });
+    });
+    expect(screen.getByText("Save changes")).toBeTruthy();
   });
 });
