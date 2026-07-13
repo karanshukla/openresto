@@ -168,6 +168,7 @@ export default function AdminDashboardScreen() {
                   isDark={isDark}
                   data={stats?.occupancyData ?? []}
                   dates={stats?.occupancyDates ?? []}
+                  counts={stats?.occupancyCounts ?? []}
                 />
               </View>
 
@@ -297,12 +298,14 @@ function OccupancyChart({
   isDark,
   data,
   dates,
+  counts,
 }: {
   primaryColor: string;
   colors: ThemeColors;
   isDark: boolean;
   data: number[];
   dates?: string[];
+  counts?: number[];
 }) {
   const chartData = data?.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
   const [labelMode, setLabelMode] = useState<"relative" | "calendar">("relative");
@@ -318,67 +321,109 @@ function OccupancyChart({
     return relativeLabels[i];
   };
 
+  const hasCounts = !!counts && counts.length > 0;
+  const peakCount = hasCounts ? Math.max(...(counts as number[])) : 0;
+  const peakIndex = hasCounts ? (counts as number[]).indexOf(peakCount) : -1;
+  const totalBookings = hasCounts ? (counts as number[]).reduce((a, b) => a + b, 0) : 0;
+  const peakWeekday =
+    peakIndex >= 0 && dates && dates[peakIndex]
+      ? new Date(dates[peakIndex]).toLocaleDateString(undefined, { weekday: "short" })
+      : peakIndex >= 0
+        ? relativeLabels[peakIndex]
+        : "";
+
+  const summary =
+    totalBookings > 0
+      ? `${totalBookings} bookings · ${(totalBookings / 7).toFixed(1)}/day · peak ${peakWeekday}`
+      : "No bookings in the last 7 days";
+
   return (
     <View style={styles.chartArea}>
-      <View style={styles.toggleRow}>
-        <Pressable
-          testID="occupancy-toggle-relative"
-          onPress={() => setLabelMode("relative")}
-          style={[
-            styles.toggleSegment,
-            labelMode === "relative"
-              ? { backgroundColor: primaryColor }
-              : { backgroundColor: `${colors.muted}14` },
-          ]}
+      <View style={styles.chartHeaderRow}>
+        <ThemedText
+          testID="occupancy-summary"
+          style={[styles.summaryText, { color: colors.muted }]}
         >
-          <ThemedText
+          {summary}
+        </ThemedText>
+        <View style={styles.toggleRow}>
+          <Pressable
+            testID="occupancy-toggle-relative"
+            onPress={() => setLabelMode("relative")}
             style={[
-              styles.toggleText,
-              { color: labelMode === "relative" ? theme.colors.white : colors.muted },
+              styles.toggleSegment,
+              labelMode === "relative"
+                ? { backgroundColor: primaryColor }
+                : { backgroundColor: `${colors.muted}14` },
             ]}
           >
-            T-x
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          testID="occupancy-toggle-calendar"
-          onPress={() => setLabelMode("calendar")}
-          style={[
-            styles.toggleSegment,
-            labelMode === "calendar"
-              ? { backgroundColor: primaryColor }
-              : { backgroundColor: `${colors.muted}14` },
-          ]}
-        >
-          <ThemedText
+            <ThemedText
+              style={[
+                styles.toggleText,
+                { color: labelMode === "relative" ? theme.colors.white : colors.muted },
+              ]}
+            >
+              T-x
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            testID="occupancy-toggle-calendar"
+            onPress={() => setLabelMode("calendar")}
             style={[
-              styles.toggleText,
-              { color: labelMode === "calendar" ? theme.colors.white : colors.muted },
+              styles.toggleSegment,
+              labelMode === "calendar"
+                ? { backgroundColor: primaryColor }
+                : { backgroundColor: `${colors.muted}14` },
             ]}
           >
-            Dates
-          </ThemedText>
-        </Pressable>
+            <ThemedText
+              style={[
+                styles.toggleText,
+                { color: labelMode === "calendar" ? theme.colors.white : colors.muted },
+              ]}
+            >
+              Dates
+            </ThemedText>
+          </Pressable>
+        </View>
       </View>
       <View style={styles.chartBars}>
-        {chartData.map((val, i) => (
-          <View key={i} style={styles.barContainer}>
-            <View style={styles.barTrack}>
-              <View
+        {chartData.map((val, i) => {
+          const isPeak = i === peakIndex;
+          const count = hasCounts ? (counts as number[])[i] : null;
+          return (
+            <View key={i} style={styles.barContainer}>
+              <ThemedText
+                testID={`occupancy-count-${i}`}
                 style={[
-                  styles.barFill,
-                  {
-                    backgroundColor: isDark ? `${primaryColor}CC` : primaryColor,
-                    height: `${Math.max(2, val)}%` as `${number}%`,
-                  },
+                  styles.countLabel,
+                  { color: isPeak ? primaryColor : colors.muted },
+                  isPeak && styles.countLabelPeak,
                 ]}
-              />
+              >
+                {count === null ? "–" : count}
+              </ThemedText>
+              <View style={styles.barTrack}>
+                <View
+                  style={[
+                    styles.barFill,
+                    {
+                      backgroundColor: isPeak
+                        ? primaryColor
+                        : isDark
+                          ? `${primaryColor}99`
+                          : `${primaryColor}55`,
+                      height: `${Math.max(2, val)}%` as `${number}%`,
+                    },
+                  ]}
+                />
+              </View>
+              <ThemedText style={[styles.barLabel, { color: colors.muted }]}>
+                {labelFor(i)}
+              </ThemedText>
             </View>
-            <ThemedText style={[styles.barLabel, { color: colors.muted }]}>
-              {labelFor(i)}
-            </ThemedText>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -509,16 +554,25 @@ const styles = StyleSheet.create({
   chartHeader: { marginBottom: theme.spacing.xxxl },
   cardTitle: { ...theme.typography.h3 },
   chartSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
-  chartArea: { flex: 1, justifyContent: "flex-end", minHeight: 200 },
+  chartArea: { flex: 1, justifyContent: "flex-end", minHeight: 220 },
+  chartHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    flexWrap: "wrap",
+  },
+  summaryText: { ...theme.typography.caption, fontWeight: "600", flexShrink: 1 },
   toggleRow: {
     flexDirection: "row",
-    alignSelf: "flex-end",
     borderRadius: theme.borderRadius.full,
     overflow: "hidden",
-    marginBottom: theme.spacing.lg,
   },
   toggleSegment: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xsm },
   toggleText: { ...theme.typography.label, fontWeight: "700", fontSize: 12 },
+  countLabel: { ...theme.typography.captionSmall, fontWeight: "700", fontSize: 12 },
+  countLabelPeak: { fontSize: 13 },
   chartBars: {
     flexDirection: "row",
     alignItems: "flex-end",

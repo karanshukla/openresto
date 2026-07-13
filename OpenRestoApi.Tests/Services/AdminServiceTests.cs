@@ -196,6 +196,63 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_OccupancyCounts_HasSevenElements()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(7, overview.OccupancyCounts.Count);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyCounts_AlignedWithOccupancyData()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(overview.OccupancyData.Count, overview.OccupancyCounts.Count);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyCounts_MatchRawBookingsAtPeakDay()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime nowUtc = DateTime.UtcNow;
+        // 3 bookings today (peak), 1 yesterday
+        _db.Bookings.Add(new Booking { Id = 40, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddHours(12), BookingRef = "T1" });
+        _db.Bookings.Add(new Booking { Id = 41, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddHours(13), BookingRef = "T2" });
+        _db.Bookings.Add(new Booking { Id = 42, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddHours(14), BookingRef = "T3" });
+        _db.Bookings.Add(new Booking { Id = 43, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.Date.AddDays(-1).AddHours(12), BookingRef = "Y1" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        // Today (index 6) is the peak: 3 raw bookings, normalized to 100%.
+        Assert.Equal(3, overview.OccupancyCounts[6]);
+        Assert.Equal(100, overview.OccupancyData[6]);
+        Assert.Equal(1, overview.OccupancyCounts[5]);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyCounts_AllZeroWhenNoBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.All(overview.OccupancyCounts, c => Assert.Equal(0, c));
+    }
+
+    [Fact]
     public async Task GetOverviewAsync_TodayBookingsList_ContainsTodayBookings()
     {
         AdminService svc = CreateService();

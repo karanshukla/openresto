@@ -20,6 +20,7 @@ public class AdminOverviewDto
     public int PausedRestaurantsCount { get; set; }
     public List<int> OccupancyData { get; set; } = [];
     public List<string> OccupancyDates { get; set; } = [];
+    public List<int> OccupancyCounts { get; set; } = [];
     public List<BookingDetailDto> TodayBookingsList { get; set; } = [];
 }
 

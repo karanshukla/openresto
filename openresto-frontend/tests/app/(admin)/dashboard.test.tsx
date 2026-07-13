@@ -74,6 +74,7 @@ const mockStats: AdminDashboardStats = {
   pausedCount: 1,
   totalCovers: 100,
   occupancyData: [10, 20, 30, 40, 50, 60, 70],
+  occupancyCounts: [1, 2, 3, 4, 5, 6, 12],
   occupancyDates: Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -105,7 +106,9 @@ describe("AdminDashboardScreen", () => {
     await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
 
     expect(screen.getByText("today@test.com")).toBeTruthy();
-    expect(screen.getByText("5")).toBeTruthy();
+    // "5" appears both as the Today's Bookings metric and as an occupancy count label,
+    // so assert presence (not uniqueness) here.
+    expect(screen.getAllByText("5").length).toBeGreaterThan(0);
     expect(screen.getByText("1 venues are currently paused")).toBeTruthy();
     expect(screen.getByText("100")).toBeTruthy();
   });
@@ -399,5 +402,41 @@ describe("AdminDashboardScreen", () => {
 
     fireEvent.press(screen.getByTestId("occupancy-toggle-relative"));
     expect(screen.getByText("T-6")).toBeTruthy();
+  });
+
+  it("renders a summary line with total, average, and peak", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    // occupancyCounts = [1,2,3,4,5,6,12] → total 33, avg 33/7 = 4.7/day, peak = Today
+    const summary = screen.getByTestId("occupancy-summary");
+    expect(summary.props.children).toEqual(expect.stringContaining("33 bookings · 4.7/day · peak"));
+  });
+
+  it("shows the raw booking count above each bar", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    // Peak bar (index 6, count 12)
+    expect(screen.getByTestId("occupancy-count-6").props.children).toBe(12);
+    // First bar (index 0, count 1)
+    expect(screen.getByTestId("occupancy-count-0").props.children).toBe(1);
+  });
+
+  it("renders the no-bookings summary and does not crash when counts are all zero", async () => {
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({
+      ...mockStats,
+      occupancyData: [0, 0, 0, 0, 0, 0, 0],
+      occupancyCounts: [0, 0, 0, 0, 0, 0, 0],
+    });
+
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByTestId("occupancy-summary").props.children).toBe(
+      "No bookings in the last 7 days"
+    );
+    // Counts still render as 0 above each bar
+    expect(screen.getByTestId("occupancy-count-6").props.children).toBe(0);
   });
 });

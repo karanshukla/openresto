@@ -101,6 +101,7 @@ public class AdminService(
             PausedRestaurantsCount = pausedRestaurantsCount,
             OccupancyData = occupancyData,
             OccupancyDates = occupancyDates,
+            OccupancyCounts = rawCounts,
             TodayBookingsList = [.. todayBookingsList.OrderBy(b => b.Date)],
         };
     }
