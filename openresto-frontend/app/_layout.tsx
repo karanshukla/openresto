@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
 
@@ -89,10 +90,12 @@ function AppWithTheme() {
 
 export default function RootLayout() {
   return (
-    <BrandProvider>
-      <AppThemeProvider>
-        <AppWithTheme />
-      </AppThemeProvider>
-    </BrandProvider>
+    <SafeAreaProvider>
+      <BrandProvider>
+        <AppThemeProvider>
+          <AppWithTheme />
+        </AppThemeProvider>
+      </BrandProvider>
+    </SafeAreaProvider>
   );
 }

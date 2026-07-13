@@ -73,6 +73,10 @@ jest.mock("@/context/ThemeContext", () => ({
   AppThemeProvider: ({ children }: any) => children,
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaProvider: ({ children }: any) => children,
+}));
+
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));

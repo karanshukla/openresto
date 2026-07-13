@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import { View, StyleSheet, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ interface FooterProps {
 export default function Footer({ backgroundColor }: FooterProps) {
   const { brand, colors } = useAppTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isMobile = width < 600;
 
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
@@ -32,7 +34,7 @@ export default function Footer({ backgroundColor }: FooterProps) {
     <ThemedView
       style={[
         styles.footer,
-        { borderTopColor: colors.border },
+        { borderTopColor: colors.border, paddingBottom: insets.bottom },
         backgroundColor && { backgroundColor },
       ]}
     >
