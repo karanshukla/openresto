@@ -167,6 +167,7 @@ export default function AdminDashboardScreen() {
                   colors={colors}
                   isDark={isDark}
                   data={stats?.occupancyData ?? []}
+                  dates={stats?.occupancyDates ?? []}
                 />
               </View>
 
@@ -295,15 +296,70 @@ function OccupancyChart({
   colors,
   isDark,
   data,
+  dates,
 }: {
   primaryColor: string;
   colors: ThemeColors;
   isDark: boolean;
   data: number[];
+  dates?: string[];
 }) {
   const chartData = data?.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
+  const [labelMode, setLabelMode] = useState<"relative" | "calendar">("relative");
+
+  const relativeLabels = ["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"];
+  const formatCalendar = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  const labelFor = (i: number) => {
+    if (labelMode === "calendar" && dates && dates[i]) {
+      return i === 6 ? "Today" : formatCalendar(dates[i]);
+    }
+    return relativeLabels[i];
+  };
+
   return (
     <View style={styles.chartArea}>
+      <View style={styles.toggleRow}>
+        <Pressable
+          testID="occupancy-toggle-relative"
+          onPress={() => setLabelMode("relative")}
+          style={[
+            styles.toggleSegment,
+            labelMode === "relative"
+              ? { backgroundColor: primaryColor }
+              : { backgroundColor: `${colors.muted}14` },
+          ]}
+        >
+          <ThemedText
+            style={[
+              styles.toggleText,
+              { color: labelMode === "relative" ? theme.colors.white : colors.muted },
+            ]}
+          >
+            T-x
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          testID="occupancy-toggle-calendar"
+          onPress={() => setLabelMode("calendar")}
+          style={[
+            styles.toggleSegment,
+            labelMode === "calendar"
+              ? { backgroundColor: primaryColor }
+              : { backgroundColor: `${colors.muted}14` },
+          ]}
+        >
+          <ThemedText
+            style={[
+              styles.toggleText,
+              { color: labelMode === "calendar" ? theme.colors.white : colors.muted },
+            ]}
+          >
+            Dates
+          </ThemedText>
+        </Pressable>
+      </View>
       <View style={styles.chartBars}>
         {chartData.map((val, i) => (
           <View key={i} style={styles.barContainer}>
@@ -319,7 +375,7 @@ function OccupancyChart({
               />
             </View>
             <ThemedText style={[styles.barLabel, { color: colors.muted }]}>
-              {["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"][i]}
+              {labelFor(i)}
             </ThemedText>
           </View>
         ))}
@@ -454,6 +510,15 @@ const styles = StyleSheet.create({
   cardTitle: { ...theme.typography.h3 },
   chartSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
   chartArea: { flex: 1, justifyContent: "flex-end", minHeight: 200 },
+  toggleRow: {
+    flexDirection: "row",
+    alignSelf: "flex-end",
+    borderRadius: theme.borderRadius.full,
+    overflow: "hidden",
+    marginBottom: theme.spacing.lg,
+  },
+  toggleSegment: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xsm },
+  toggleText: { ...theme.typography.label, fontWeight: "700", fontSize: 12 },
   chartBars: {
     flexDirection: "row",
     alignItems: "flex-end",

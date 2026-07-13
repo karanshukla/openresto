@@ -100,6 +100,7 @@ describe("getAdminDashboardStats", () => {
       pausedCount: 0,
       totalCovers: 100,
       occupancyData: [],
+      occupancyDates: [],
       recentBookings: [
         {
           id: 1,
@@ -113,6 +114,28 @@ describe("getAdminDashboardStats", () => {
         },
       ],
     });
+  });
+
+  it("passes occupancyDates through when present in overview", async () => {
+    const overview = {
+      todayBookings: 1,
+      totalSeats: 10,
+      occupancyDates: [
+        "2026-07-07",
+        "2026-07-08",
+        "2026-07-09",
+        "2026-07-10",
+        "2026-07-11",
+        "2026-07-12",
+        "2026-07-13",
+      ],
+      todayBookingsList: [],
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+
+    const result = await getAdminDashboardStats();
+
+    expect(result?.occupancyDates).toEqual(overview.occupancyDates);
   });
 
   it("returns null if overview fails", async () => {

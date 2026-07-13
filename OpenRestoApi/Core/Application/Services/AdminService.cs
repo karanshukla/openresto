@@ -73,13 +73,17 @@ public class AdminService(
 
         // Calculate Occupancy Data (Last 7 days) — raw counts first, then normalize to 0-100
         // relative to the peak day so the busiest day fills the chart and others are proportional.
+        // OccupancyDates carries the ISO calendar date (yyyy-MM-dd) for each bar so the client can
+        // toggle between the T-x relative labels and actual calendar dates (see issue #180).
         List<int> rawCounts = [];
+        List<string> occupancyDates = [];
         for (int i = 6; i >= 0; i--)
         {
             DateTime dayStart = DateTime.SpecifyKind(nowUtc.Date.AddDays(-i), DateTimeKind.Utc);
             DateTime dayEnd = dayStart.AddDays(1);
             int dayBookings = await _bookingRepository.CountActiveByDayAsync(dayStart, dayEnd);
             rawCounts.Add(dayBookings);
+            occupancyDates.Add(dayStart.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         }
 
         int maxCount = rawCounts.Count > 0 ? rawCounts.Max() : 0;
@@ -96,6 +100,7 @@ public class AdminService(
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
             PausedRestaurantsCount = pausedRestaurantsCount,
             OccupancyData = occupancyData,
+            OccupancyDates = occupancyDates,
             TodayBookingsList = [.. todayBookingsList.OrderBy(b => b.Date)],
         };
     }
