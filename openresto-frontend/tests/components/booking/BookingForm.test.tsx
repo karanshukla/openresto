@@ -138,6 +138,7 @@ jest.mock("@/components/common/DatePicker", () => ({
 jest.mock("@/utils/date", () => ({
   getNowInTimezone: jest.fn(() => ({ dateStr: "2026-06-23", hours: 10, minutes: 0 })),
   formatCurrentTimeInTimezone: jest.fn(() => "10:00 AM"),
+  isViewerInTimezone: jest.fn(() => false),
 }));
 
 jest.mock("@/components/common/Select", () => ({

@@ -12,7 +12,7 @@ import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { getNowInTimezone, formatCurrentTimeInTimezone } from "@/utils/date";
+import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
 import { isValidEmail } from "@/utils/validation";
 import { getHoursForDate, HoursSource } from "@/utils/openingHours";
 import { isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
@@ -366,7 +366,7 @@ export default function BookingForm({
         </View>
       </View>
 
-      {restaurant.timezone && (
+      {restaurant.timezone && !isViewerInTimezone(timezone) && (
         <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
           All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
         </ThemedText>

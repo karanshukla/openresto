@@ -3,6 +3,7 @@ import {
   isTodayInTimezone,
   getNowInTimezone,
   formatCurrentTimeInTimezone,
+  isViewerInTimezone,
 } from "@/utils/date";
 
 describe("date utility - convertLocalToUtc", () => {
@@ -175,5 +176,51 @@ describe("date utility - isTodayInTimezone", () => {
     const now = new Date().toISOString();
     const result = isTodayInTimezone(now, "");
     expect(typeof result).toBe("boolean");
+  });
+});
+
+describe("date utility - isViewerInTimezone", () => {
+  const realDateTimeFormat = Intl.DateTimeFormat;
+
+  afterEach(() => {
+    // Restore the real Intl.DateTimeFormat after each test
+    global.Intl.DateTimeFormat = realDateTimeFormat;
+  });
+
+  function mockDeviceTimezone(deviceTz: string | undefined) {
+    const mock = jest.fn(() => ({
+      resolvedOptions: () => ({ timeZone: deviceTz }),
+    })) as unknown as typeof Intl.DateTimeFormat;
+    global.Intl.DateTimeFormat = mock as never;
+  }
+
+  it("returns true when device timezone matches the restaurant's", () => {
+    mockDeviceTimezone("America/Toronto");
+    expect(isViewerInTimezone("America/Toronto")).toBe(true);
+  });
+
+  it("returns false when device timezone differs from the restaurant's", () => {
+    mockDeviceTimezone("Europe/London");
+    expect(isViewerInTimezone("America/Toronto")).toBe(false);
+  });
+
+  it("returns false for an empty timezone", () => {
+    mockDeviceTimezone("America/Toronto");
+    expect(isViewerInTimezone("")).toBe(false);
+  });
+
+  it("returns false when resolvedOptions() has no timeZone", () => {
+    mockDeviceTimezone(undefined);
+    expect(isViewerInTimezone("America/Toronto")).toBe(false);
+  });
+
+  it("falls back to false if resolvedOptions() throws", () => {
+    const throwing = jest.fn(() => ({
+      resolvedOptions: () => {
+        throw new Error("unsupported");
+      },
+    })) as unknown as typeof Intl.DateTimeFormat;
+    global.Intl.DateTimeFormat = throwing as never;
+    expect(isViewerInTimezone("America/Toronto")).toBe(false);
   });
 });
