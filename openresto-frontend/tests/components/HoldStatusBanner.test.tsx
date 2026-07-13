@@ -31,9 +31,22 @@ describe("HoldStatusBanner", () => {
     expect(screen.getByText(/Table held - expires in 3:05/)).toBeTruthy();
   });
 
-  it("shows unavailable message", () => {
+  it("shows generic unavailable message when no holdMessage is provided", () => {
     render(<HoldStatusBanner holdStatus="unavailable" secondsLeft={0} hasSelection={true} />);
     expect(screen.getByText(/Table not available/)).toBeTruthy();
+  });
+
+  it("shows the backend holdMessage when provided", () => {
+    render(
+      <HoldStatusBanner
+        holdStatus="unavailable"
+        secondsLeft={0}
+        hasSelection={true}
+        holdMessage="Cannot hold a table for a past time."
+      />
+    );
+    expect(screen.getByText(/Cannot hold a table for a past time/)).toBeTruthy();
+    expect(screen.queryByText(/Table not available/)).toBeNull();
   });
 
   it("shows expired message with refresh button", () => {

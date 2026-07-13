@@ -28,32 +28,63 @@ describe("createHold", () => {
     });
 
     const result = await createHold(request);
-    expect(result).toEqual(holdResp);
+    expect(result).toEqual({ ok: true, hold: holdResp });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/holds");
     expect(opts.method).toBe("POST");
     expect(JSON.parse(opts.body)).toEqual(request);
   });
 
-  it("returns null on 409 (table already held)", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 409 });
+  it("surfaces backend message on 400 past-time rejection", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: "Cannot hold a table for a past time." }),
+    });
 
     const result = await createHold(request);
-    expect(result).toBeNull();
+    expect(result).toEqual({ ok: false, message: "Cannot hold a table for a past time." });
   });
 
-  it("returns null on server error", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+  it("surfaces backend message on 409 (table already held)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ message: "This table is already booked for that time." }),
+    });
 
     const result = await createHold(request);
-    expect(result).toBeNull();
+    expect(result).toEqual({ ok: false, message: "This table is already booked for that time." });
   });
 
-  it("returns null on network failure", async () => {
+  it("falls back to generic message when 4xx has no body", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => {
+        throw new Error("no json");
+      },
+    });
+
+    const result = await createHold(request);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toBe("Table not available for this date. Please choose another.");
+    }
+  });
+
+  it("returns generic failure on server error", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
+
+    const result = await createHold(request);
+    expect(result.ok).toBe(false);
+  });
+
+  it("returns generic failure on network failure", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
 
     const result = await createHold(request);
-    expect(result).toBeNull();
+    expect(result.ok).toBe(false);
   });
 });
 

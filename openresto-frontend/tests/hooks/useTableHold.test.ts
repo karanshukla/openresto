@@ -53,9 +53,12 @@ describe("useTableHold", () => {
   it("transitions to pending then held after debounce when tableId is set", async () => {
     const expiresAt = new Date(Date.now() + 120_000).toISOString();
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-1",
-      expiresAt,
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-1",
+        expiresAt,
+        secondsRemaining: 120,
+      },
     });
 
     const params = { ...defaultParams, tableId: 100 };
@@ -81,8 +84,11 @@ describe("useTableHold", () => {
     expect(result.current.hold?.holdId).toBe("hold-1");
   });
 
-  it("sets unavailable status when createHold returns null", async () => {
-    mockCreateHold.mockResolvedValueOnce(null);
+  it("sets unavailable status when createHold fails", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: false,
+      message: "Cannot hold a table for a past time.",
+    });
 
     const params = { ...defaultParams, tableId: 100 };
     const { result } = renderHook(() => useTableHold(params));
@@ -92,15 +98,19 @@ describe("useTableHold", () => {
     });
 
     expect(result.current.holdStatus).toBe("unavailable");
+    expect(result.current.holdMessage).toBe("Cannot hold a table for a past time.");
   });
 
   it("countdown decreases secondsLeft and expires to idle", async () => {
     // Hold expires in 3 seconds for fast test
     const expiresAt = new Date(Date.now() + 3_000).toISOString();
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-2",
-      expiresAt,
-      secondsRemaining: 3,
+      ok: true,
+      hold: {
+        holdId: "hold-2",
+        expiresAt,
+        secondsRemaining: 3,
+      },
     });
 
     const params = { ...defaultParams, tableId: 100 };
@@ -124,9 +134,12 @@ describe("useTableHold", () => {
 
   it("releases hold on unmount", async () => {
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-cleanup",
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-cleanup",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
     });
 
     const params = { ...defaultParams, tableId: 100 };
@@ -145,9 +158,12 @@ describe("useTableHold", () => {
 
   it("releaseCurrentHold resets state and calls releaseHold", async () => {
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-manual",
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-manual",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
     });
 
     const params = { ...defaultParams, tableId: 100 };
@@ -170,9 +186,12 @@ describe("useTableHold", () => {
 
   it("re-triggers hold when date changes, passing currentHoldId for atomic replace", async () => {
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-date-1",
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-date-1",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
     });
 
     const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
@@ -190,9 +209,12 @@ describe("useTableHold", () => {
     const newProps = { ...defaultParams, tableId: 100, date: "2026-06-16" };
 
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-date-2",
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-date-2",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
     });
 
     rerender(newProps);
@@ -216,9 +238,12 @@ describe("useTableHold", () => {
 
   it("releases previous hold explicitly when createHold fails", async () => {
     mockCreateHold.mockResolvedValueOnce({
-      holdId: "hold-fail-1",
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      secondsRemaining: 120,
+      ok: true,
+      hold: {
+        holdId: "hold-fail-1",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
     });
 
     const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
@@ -232,7 +257,10 @@ describe("useTableHold", () => {
     expect(result.current.holdStatus).toBe("held");
 
     // Second attempt fails — table taken by someone else
-    mockCreateHold.mockResolvedValueOnce(null);
+    mockCreateHold.mockResolvedValueOnce({
+      ok: false,
+      message: "This table is already held by another user.",
+    });
     rerender({ ...defaultParams, tableId: 100, date: "2026-06-16" });
 
     await act(async () => {

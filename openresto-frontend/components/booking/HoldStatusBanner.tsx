@@ -8,6 +8,8 @@ interface HoldStatusBannerProps {
   holdStatus: HoldStatus;
   secondsLeft: number;
   hasSelection: boolean;
+  /** Specific rejection reason from the backend (e.g. past time, closed). Falls back to a generic line when absent. */
+  holdMessage?: string | null;
   onRefresh?: () => void;
 }
 
@@ -15,6 +17,7 @@ export default function HoldStatusBanner({
   holdStatus,
   secondsLeft,
   hasSelection,
+  holdMessage,
   onRefresh,
 }: HoldStatusBannerProps) {
   const { colors, isDark } = useAppTheme();
@@ -46,7 +49,7 @@ export default function HoldStatusBanner({
       return (
         <ThemedView style={styles.holdRow}>
           <ThemedText style={[styles.holdUnavailable, { color: colors.error }]}>
-            ✗ Table not available for this date. Please choose another.
+            ✗ {holdMessage ?? "Table not available for this date. Please choose another."}
           </ThemedText>
         </ThemedView>
       );
