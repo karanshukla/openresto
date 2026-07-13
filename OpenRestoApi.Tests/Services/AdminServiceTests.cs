@@ -148,6 +148,54 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_OccupancyDates_HasSevenElements()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(7, overview.OccupancyDates.Count);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyDates_LastIsToday()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(DateTime.UtcNow.Date.ToString("yyyy-MM-dd"), overview.OccupancyDates[6]);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyDates_AreIsoDateFormat()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.All(overview.OccupancyDates, d => Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", d));
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_OccupancyDates_AlignedWithOccupancyData()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(overview.OccupancyData.Count, overview.OccupancyDates.Count);
+    }
+
+    [Fact]
     public async Task GetOverviewAsync_TodayBookingsList_ContainsTodayBookings()
     {
         AdminService svc = CreateService();

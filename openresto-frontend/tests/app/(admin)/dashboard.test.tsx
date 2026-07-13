@@ -74,6 +74,11 @@ const mockStats: AdminDashboardStats = {
   pausedCount: 1,
   totalCovers: 100,
   occupancyData: [10, 20, 30, 40, 50, 60, 70],
+  occupancyDates: Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().slice(0, 10);
+  }),
   recentBookings: [
     {
       id: 10,
@@ -353,5 +358,46 @@ describe("AdminDashboardScreen", () => {
     fireEvent.press(screen.getByTestId("action-modal-close"));
 
     await waitFor(() => expect(getAdminDashboardStats).toHaveBeenCalledTimes(2));
+  });
+
+  it("defaults to the T-x relative occupancy labels", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("T-6")).toBeTruthy();
+    expect(screen.getByText("Today")).toBeTruthy();
+  });
+
+  it("swaps to calendar date labels when the Dates toggle is pressed", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    // Sanity: relative label present before toggling
+    expect(screen.getByText("T-6")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("occupancy-toggle-calendar"));
+
+    // T-6 should be replaced by the oldest calendar date; Today remains.
+    expect(screen.queryByText("T-6")).toBeNull();
+    expect(screen.getByText("Today")).toBeTruthy();
+    // The oldest bar's date (6 days ago) should render as a short month/day.
+    const oldest = new Date();
+    oldest.setDate(oldest.getDate() - 6);
+    const oldestLabel = oldest.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    expect(screen.getByText(oldestLabel)).toBeTruthy();
+  });
+
+  it("restores T-x labels when switching back to relative mode", async () => {
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    fireEvent.press(screen.getByTestId("occupancy-toggle-calendar"));
+    expect(screen.queryByText("T-6")).toBeNull();
+
+    fireEvent.press(screen.getByTestId("occupancy-toggle-relative"));
+    expect(screen.getByText("T-6")).toBeTruthy();
   });
 });
