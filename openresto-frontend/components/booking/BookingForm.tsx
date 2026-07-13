@@ -137,14 +137,15 @@ export default function BookingForm({
     return eligible[0]?.id ?? pool[0]?.id;
   }
 
-  const { holdStatus, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } = useTableHold({
-    restaurantId: restaurant.id,
-    sections: restaurant.sections,
-    tableId,
-    date,
-    time,
-    email: customerEmail,
-  });
+  const { holdStatus, holdMessage, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } =
+    useTableHold({
+      restaurantId: restaurant.id,
+      sections: restaurant.sections,
+      tableId,
+      date,
+      time,
+      email: customerEmail,
+    });
 
   // Fetch availability when date/seats change
   useEffect(() => {
@@ -425,6 +426,7 @@ export default function BookingForm({
               holdStatus={holdStatus}
               secondsLeft={secondsLeft}
               hasSelection={!!tableId && !!date && !!time}
+              holdMessage={holdMessage}
               onRefresh={onRefresh}
             />
           </View>

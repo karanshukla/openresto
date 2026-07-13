@@ -19,6 +19,7 @@ export interface UseTableHoldParams {
 export interface UseTableHoldResult {
   hold: HoldResponse | null;
   holdStatus: HoldStatus;
+  holdMessage: string | null;
   secondsLeft: number;
   holdId: string | null;
   setHoldStatus: (status: HoldStatus) => void;
@@ -35,6 +36,7 @@ export function useTableHold({
 }: UseTableHoldParams): UseTableHoldResult {
   const [hold, setHold] = useState<HoldResponse | null>(null);
   const [holdStatus, setHoldStatus] = useState<HoldStatus>("idle");
+  const [holdMessage, setHoldMessage] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [holdId, setHoldId] = useState<string | null>(null);
 
@@ -76,6 +78,7 @@ export function useTableHold({
     }
     setHold(null);
     setHoldStatus("idle");
+    setHoldMessage(null);
     clearCountdown();
   }
 
@@ -117,20 +120,23 @@ export function useTableHold({
         currentHoldId: previousHoldId ?? undefined,
       });
 
-      if (result) {
+      if (result.ok) {
         // Backend atomically released previousHoldId and placed the new hold
-        currentHoldId.current = result.holdId;
-        setHoldId(result.holdId);
-        setHold(result);
+        currentHoldId.current = result.hold.holdId;
+        setHoldId(result.hold.holdId);
+        setHold(result.hold);
+        setHoldMessage(null);
         setHoldStatus("held");
-        startCountdown(result.expiresAt);
+        startCountdown(result.hold.expiresAt);
       } else {
-        // Table is held by someone else — release our previous hold and surface unavailable
+        // Hold rejected (already-held, past time, paused, closed, walk-in).
+        // Release our previous hold and surface the backend's reason.
         if (previousHoldId) releaseHold(previousHoldId);
         currentHoldId.current = null;
         setHoldId(null);
         setHold(null);
         clearCountdown();
+        setHoldMessage(result.message);
         setHoldStatus("unavailable");
       }
     }, HOLD_DEBOUNCE_MS);
@@ -159,6 +165,7 @@ export function useTableHold({
   return {
     hold,
     holdStatus,
+    holdMessage,
     secondsLeft,
     holdId,
     setHoldStatus,

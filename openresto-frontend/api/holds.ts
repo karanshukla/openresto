@@ -14,15 +14,31 @@ export interface HoldResponse {
   secondsRemaining: number;
 }
 
-export async function createHold(request: HoldRequest): Promise<HoldResponse | null> {
+/** Successful hold. */
+export type HoldSuccess = { ok: true; hold: HoldResponse };
+/** Hold rejected (409 already-held, or 400 past-time / paused / closed / walk-in). */
+export type HoldFailure = { ok: false; message: string };
+export type HoldResult = HoldSuccess | HoldFailure;
+
+const GENERIC_UNAVAILABLE = "Table not available for this date. Please choose another.";
+
+export async function createHold(request: HoldRequest): Promise<HoldResult> {
   try {
     const res = await post("/holds", request);
-    if (res.status === 409) return null;
-    if (!res.ok) throw new Error("Failed to place hold");
-    return await res.json();
+
+    if (res.ok) {
+      return { ok: true, hold: await res.json() };
+    }
+
+    // 409 (already held/booked) and 400 (past time, paused, closed, walk-in)
+    // both carry a descriptive { message } from the backend — surface it
+    // instead of discarding it so the customer sees the real reason.
+    const body = await res.json().catch(() => ({}));
+    return { ok: false, message: body?.message ?? GENERIC_UNAVAILABLE };
   } catch (err) {
+    // Network failure or non-JSON body — fall back to a generic message.
     console.error("createHold error:", err);
-    return null;
+    return { ok: false, message: GENERIC_UNAVAILABLE };
   }
 }
 
