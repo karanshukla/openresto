@@ -83,6 +83,22 @@ export function convertLocalToUtc(date: string, time: string, timezone: string):
 }
 
 /**
+ * Returns true when the viewer's device timezone matches the given IANA
+ * timezone, e.g. to hide a "times shown in X" hint from local customers.
+ * Resolves the device timezone via Intl; any failure resolves to false so
+ * the hint stays visible (the safe default for an unknown comparison).
+ */
+export function isViewerInTimezone(timezone: string): boolean {
+  if (!timezone) return false;
+  try {
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return !!deviceTz && deviceTz === timezone;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Checks if a UTC date string represents "today" in a specific timezone.
  */
 export function isTodayInTimezone(utcDateStr: string, timezone: string): boolean {
