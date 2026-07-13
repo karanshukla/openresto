@@ -11,6 +11,7 @@ export interface AdminOverviewDto {
   pausedRestaurantsCount?: number;
   occupancyData?: number[];
   occupancyDates?: string[];
+  occupancyCounts?: number[];
   todayBookingsList?: BookingDetailDto[];
 }
 
@@ -33,6 +34,7 @@ export interface AdminDashboardStats {
   totalCovers: number;
   occupancyData: number[];
   occupancyDates: string[];
+  occupancyCounts: number[];
   recentBookings: BookingSummaryDto[];
 }
 
@@ -49,6 +51,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
       occupancyDates: overview.occupancyDates ?? [],
+      occupancyCounts: overview.occupancyCounts ?? [],
       recentBookings: (overview.todayBookingsList ?? [])
         .map((b) => ({
           id: b.id,

@@ -53,7 +53,9 @@ test.describe("Admin dashboard", () => {
     await gotoAdminDashboard(page);
 
     await expect(page.getByText("Occupancy Overview")).toBeVisible();
-    await expect(page.getByText("Last 7 days")).toBeVisible();
+    // { exact: true } because the occupancy summary line also contains
+    // the words "last 7 days" (see OccupancyChart in dashboard.tsx).
+    await expect(page.getByText("Last 7 days", { exact: true })).toBeVisible();
     // The chart axis labels (OccupancyChart.tsx) — T-6 through Today.
     for (const label of ["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"]) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();

@@ -101,6 +101,7 @@ describe("getAdminDashboardStats", () => {
       totalCovers: 100,
       occupancyData: [],
       occupancyDates: [],
+      occupancyCounts: [],
       recentBookings: [
         {
           id: 1,
@@ -136,6 +137,20 @@ describe("getAdminDashboardStats", () => {
     const result = await getAdminDashboardStats();
 
     expect(result?.occupancyDates).toEqual(overview.occupancyDates);
+  });
+
+  it("passes occupancyCounts through when present in overview", async () => {
+    const overview = {
+      todayBookings: 1,
+      totalSeats: 10,
+      occupancyCounts: [0, 1, 2, 3, 4, 5, 6],
+      todayBookingsList: [],
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => overview });
+
+    const result = await getAdminDashboardStats();
+
+    expect(result?.occupancyCounts).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   it("returns null if overview fails", async () => {
