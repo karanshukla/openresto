@@ -2,6 +2,7 @@ import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import { styles } from "./settings.styles";
 
 export interface LocationTagsSectionProps {
   tags: string[];
@@ -35,9 +36,7 @@ export function LocationTagsSection({
 }: LocationTagsSectionProps) {
   return (
     <View style={{ gap: 6 }}>
-      <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-        Location tags
-      </ThemedText>
+      <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Location tags</ThemedText>
       {tags.length > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
           {tags.map((tag) => (

@@ -2,6 +2,7 @@ import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
+import { styles } from "./settings.styles";
 
 export interface WalkInPolicySectionProps {
   walkInOnly: boolean;
@@ -107,7 +108,7 @@ export function WalkInPolicySection({
         </View>
       ) : (
         <View style={{ gap: 6 }}>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+          <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>
             Walk-in only days
           </ThemedText>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
