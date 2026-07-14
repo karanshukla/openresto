@@ -25,11 +25,17 @@ export function BrandSettingsCard({
   cardBg: string;
 }) {
   const brand = useBrand();
-  const { primaryColor } = useAppTheme();
+  const { primaryColor, colors } = useAppTheme();
   const [appName, setAppName] = useState(brand.appName);
   const [brandPrimaryColor, setBrandPrimaryColor] = useState(brand.primaryColor);
   const [faviconIcon, setFaviconIcon] = useState<string | undefined>(brand.faviconIcon);
   const [websiteUrl, setWebsiteUrl] = useState(brand.websiteUrl ?? "");
+  const [subtitle, setSubtitle] = useState(brand.subtitle ?? "");
+  const [highlightsHeading, setHighlightsHeading] = useState(brand.highlightsHeading ?? "");
+  const [highlightsSubheading, setHighlightsSubheading] = useState(
+    brand.highlightsSubheading ?? ""
+  );
+  const [headerImageFit, setHeaderImageFit] = useState(brand.headerImageFit ?? "Cover");
   const [heroPreview, setHeroPreview] = useState<string | null>(brand.headerImageUrl ?? null);
   const [heroUploading, setHeroUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,6 +47,10 @@ export function BrandSettingsCard({
     brandPrimaryColor !== brand.primaryColor ||
     faviconIcon !== brand.faviconIcon ||
     websiteUrl.trim() !== (brand.websiteUrl ?? "") ||
+    subtitle.trim() !== (brand.subtitle ?? "") ||
+    highlightsHeading.trim() !== (brand.highlightsHeading ?? "") ||
+    highlightsSubheading.trim() !== (brand.highlightsSubheading ?? "") ||
+    headerImageFit !== (brand.headerImageFit ?? "Cover") ||
     heroPreview !== (brand.headerImageUrl ?? null);
 
   useEffect(() => {
@@ -49,6 +59,10 @@ export function BrandSettingsCard({
     setBrandPrimaryColor(brand.primaryColor);
     setFaviconIcon(brand.faviconIcon);
     setWebsiteUrl(brand.websiteUrl ?? "");
+    setSubtitle(brand.subtitle ?? "");
+    setHighlightsHeading(brand.highlightsHeading ?? "");
+    setHighlightsSubheading(brand.highlightsSubheading ?? "");
+    setHeaderImageFit(brand.headerImageFit ?? "Cover");
     setHeroPreview(brand.headerImageUrl ?? null);
   }, [brand]);
 
@@ -94,6 +108,10 @@ export function BrandSettingsCard({
       primaryColor: brandPrimaryColor,
       faviconIcon,
       websiteUrl: websiteUrl.trim() || undefined,
+      subtitle: subtitle.trim() || "",
+      highlightsHeading: highlightsHeading.trim() || "",
+      highlightsSubheading: highlightsSubheading.trim() || "",
+      headerImageFit,
     });
     setSaving(false);
     if (result) {
@@ -157,6 +175,35 @@ export function BrandSettingsCard({
               placeholder="Open Resto"
               maxLength={32}
             />
+          </View>
+
+          <View style={styles.field}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <ThemedText style={styles.fieldLabel}>Home Page Subtitle</ThemedText>
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: subtitle.length > 160 ? theme.colors.error : mutedColor,
+                }}
+              >
+                {subtitle.length}/160
+              </ThemedText>
+            </View>
+            <Input
+              value={subtitle}
+              onChangeText={setSubtitle}
+              placeholder="Scroll down to pick a location below…"
+              maxLength={160}
+            />
+            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+              Tagline shown under the app name. Leave blank for the default text.
+            </ThemedText>
           </View>
 
           <View style={styles.field}>
@@ -240,10 +287,63 @@ export function BrandSettingsCard({
           </View>
 
           <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Highlights Heading</ThemedText>
+            <Input
+              value={highlightsHeading}
+              onChangeText={setHighlightsHeading}
+              placeholder="Restaurant highlights"
+              maxLength={60}
+            />
+            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+              Heading above the highlights section. Leave blank for the default.
+            </ThemedText>
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Highlights Subheading</ThemedText>
+            <Input
+              value={highlightsSubheading}
+              onChangeText={setHighlightsSubheading}
+              placeholder="Curated by the owner"
+              maxLength={60}
+            />
+          </View>
+
+          <View style={styles.field}>
             <ThemedText style={styles.fieldLabel}>
               Homepage Header Image (max {MAX_HERO_MB} MB)
             </ThemedText>
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: 6 }}>
+              <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+                Image fit
+              </ThemedText>
+              <select
+                data-testid="header-image-fit-select"
+                value={headerImageFit}
+                onChange={/* istanbul ignore next */ (e) => setHeaderImageFit(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: 44,
+                  borderWidth: 1,
+                  borderStyle: "solid" as const,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  fontSize: 14,
+                  backgroundColor: colors.input,
+                  color: colors.text,
+                  cursor: "pointer",
+                }}
+              >
+                <option value="Cover">Cover (fill, may crop)</option>
+                <option value="Contain">Contain (show whole image)</option>
+              </select>
+              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+                &quot;Contain&quot; avoids cropping on mobile; &quot;Cover&quot; fills the frame.
+              </ThemedText>
+            </View>
+            <View style={{ gap: 8, marginTop: 8 }}>
               {heroPreview ? (
                 <View
                   style={{

@@ -22,6 +22,7 @@ public class HighlightService(IHighlightRepository highlightRepository)
             Body = req.Body,
             IconKey = req.IconKey,
             SortOrder = req.SortOrder,
+            Link = NormalizeLink(req.Link),
         };
         await _highlightRepository.AddAsync(entity);
         return ToDto(entity);
@@ -38,6 +39,7 @@ public class HighlightService(IHighlightRepository highlightRepository)
         entity.Body = req.Body;
         entity.IconKey = req.IconKey;
         entity.SortOrder = req.SortOrder;
+        entity.Link = NormalizeLink(req.Link);
         await _highlightRepository.SaveChangesAsync();
         return ToDto(entity);
     }
@@ -61,5 +63,19 @@ public class HighlightService(IHighlightRepository highlightRepository)
         Body = h.Body,
         IconKey = h.IconKey,
         SortOrder = h.SortOrder,
+        Link = h.Link,
     };
+
+    /// <summary>
+    /// Trims the link URL and treats blank/whitespace as null so empty inputs are stored
+    /// consistently (matching the whitespace-to-null convention used for brand text fields).
+    /// </summary>
+    private static string? NormalizeLink(string? link)
+    {
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return null;
+        }
+        return link.Trim();
+    }
 }

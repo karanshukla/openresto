@@ -23,6 +23,10 @@ let mockBrandData: {
   headerImageUrl: string | null;
   faviconIcon?: string;
   websiteUrl?: string;
+  subtitle?: string;
+  highlightsHeading?: string;
+  highlightsSubheading?: string;
+  headerImageFit?: string;
 } = {
   primaryColor: "#0a7ea4",
   appName: "Open Resto",
@@ -112,10 +116,12 @@ describe("BrandSettingsCard", () => {
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });
-    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith({
-      appName: "My Resto",
-      primaryColor: "#0a7ea4",
-    });
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appName: "My Resto",
+        primaryColor: "#0a7ea4",
+      })
+    );
     await waitFor(() => {
       expect(screen.getByText("Saved successfully.")).toBeTruthy();
     });
@@ -400,5 +406,104 @@ describe("BrandSettingsCard", () => {
       rerender(<BrandSettingsCard {...baseProps} />);
     });
     expect(screen.getByDisplayValue("https://v2.example.com")).toBeTruthy();
+  });
+
+  // ── New home-page customization fields (#183, #185, #187) ──────────────────
+
+  it("renders the Home Page Subtitle field and char counter", () => {
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByText("Home Page Subtitle")).toBeTruthy();
+    expect(screen.getByText("0/160")).toBeTruthy();
+  });
+
+  it("pre-fills subtitle from brand context and updates it", () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: null,
+      subtitle: "Welcome to our table",
+    };
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByDisplayValue("Welcome to our table")).toBeTruthy();
+  });
+
+  it("passes subtitle to saveBrandSettings when set", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Scroll down to pick a location below…"),
+      "Best pizza in town"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: "Best pizza in town" })
+    );
+  });
+
+  it("renders Highlights Heading and Subheading fields", () => {
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByText("Highlights Heading")).toBeTruthy();
+    expect(screen.getByText("Highlights Subheading")).toBeTruthy();
+  });
+
+  it("pre-fills highlights heading/subheading from brand context", () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: null,
+      highlightsHeading: "What we love",
+      highlightsSubheading: "Hand-picked",
+    };
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByDisplayValue("What we love")).toBeTruthy();
+    expect(screen.getByDisplayValue("Hand-picked")).toBeTruthy();
+  });
+
+  it("passes highlights heading/subheading to saveBrandSettings", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<BrandSettingsCard {...baseProps} />);
+    fireEvent.changeText(screen.getByPlaceholderText("Restaurant highlights"), "Why visit us");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ highlightsHeading: "Why visit us" })
+    );
+  });
+
+  it("renders the Header image fit select defaulting to Cover", () => {
+    render(<BrandSettingsCard {...baseProps} />);
+    // Raw web <select> forwards `data-testid` not `testID` (same as the booking-duration
+    // select in RestaurantInfoForm), so query via UNSAFE_getByProps.
+    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
+    expect(select.props.value).toBe("Cover");
+  });
+
+  it("pre-fills headerImageFit from brand context", () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: null,
+      headerImageFit: "Contain",
+    };
+    render(<BrandSettingsCard {...baseProps} />);
+    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
+    expect(select.props.value).toBe("Contain");
+  });
+
+  it("passes headerImageFit to saveBrandSettings", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<BrandSettingsCard {...baseProps} />);
+    // Change the fit select to Contain.
+    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
+    fireEvent(select, "change", { target: { value: "Contain" } });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ headerImageFit: "Contain" })
+    );
   });
 });

@@ -75,6 +75,44 @@ public class HighlightServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_PersistsLink_Trimmed_AndReturnsDto()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_PersistsLink_Trimmed_AndReturnsDto));
+        var svc = new HighlightService(new HighlightRepository(db));
+        var req = new CreateHighlightRequest
+        {
+            Title = "Test",
+            Body = "body",
+            IconKey = "star",
+            SortOrder = 0,
+            Link = "  https://example.com/menu  "
+        };
+
+        HighlightDto result = await svc.CreateAsync(req);
+
+        Assert.Equal("https://example.com/menu", result.Link);
+    }
+
+    [Fact]
+    public async Task CreateAsync_NormalizesBlankLink_ToNull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_NormalizesBlankLink_ToNull));
+        var svc = new HighlightService(new HighlightRepository(db));
+        var req = new CreateHighlightRequest
+        {
+            Title = "Test",
+            Body = "body",
+            IconKey = "star",
+            SortOrder = 0,
+            Link = "   "
+        };
+
+        HighlightDto result = await svc.CreateAsync(req);
+
+        Assert.Null(result.Link);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ReturnsUpdatedDto_WhenFound()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsUpdatedDto_WhenFound));
@@ -83,7 +121,14 @@ public class HighlightServiceTests
         int id = db.Highlights.First().Id;
 
         var svc = new HighlightService(new HighlightRepository(db));
-        var req = new UpdateHighlightRequest { Title = "New", Body = "new body", IconKey = "flame", SortOrder = 5 };
+        var req = new UpdateHighlightRequest
+        {
+            Title = "New",
+            Body = "new body",
+            IconKey = "flame",
+            SortOrder = 5,
+            Link = "https://example.com"
+        };
 
         HighlightDto? result = await svc.UpdateAsync(id, req);
 
@@ -92,6 +137,57 @@ public class HighlightServiceTests
         Assert.Equal("new body", result.Body);
         Assert.Equal("flame", result.IconKey);
         Assert.Equal(5, result.SortOrder);
+        Assert.Equal("https://example.com", result.Link);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsLink_WhenBlankProvided()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ClearsLink_WhenBlankProvided));
+        db.Highlights.Add(new RestaurantHighlight
+        {
+            Title = "H",
+            Body = "b",
+            SortOrder = 0,
+            Link = "https://example.com"
+        });
+        await db.SaveChangesAsync();
+        int id = db.Highlights.First().Id;
+
+        var svc = new HighlightService(new HighlightRepository(db));
+        var req = new UpdateHighlightRequest
+        {
+            Title = "H",
+            Body = "b",
+            IconKey = "star-outline",
+            SortOrder = 0,
+            Link = "   "
+        };
+
+        HighlightDto? result = await svc.UpdateAsync(id, req);
+
+        Assert.NotNull(result);
+        Assert.Null(result.Link);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_MapsLink()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_MapsLink));
+        db.Highlights.Add(new RestaurantHighlight
+        {
+            Title = "T",
+            Body = "B",
+            SortOrder = 0,
+            Link = "https://example.com"
+        });
+        await db.SaveChangesAsync();
+
+        var svc = new HighlightService(new HighlightRepository(db));
+        List<HighlightDto> result = await svc.GetAllAsync();
+
+        HighlightDto dto = Assert.Single(result);
+        Assert.Equal("https://example.com", dto.Link);
     }
 
     [Fact]

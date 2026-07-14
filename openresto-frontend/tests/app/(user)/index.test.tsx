@@ -156,6 +156,82 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Curated by the owner")).toBeTruthy();
   });
 
+  it("renders the default hero subtitle when brand.subtitle is unset", async () => {
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(
+      screen.getByText(
+        "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!"
+      )
+    ).toBeTruthy();
+  });
+
+  it("renders a custom brand subtitle when set", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          appName: "Custom Brand",
+          primaryColor: "#0a7ea4",
+          subtitle: "Book the best table in town.",
+        }),
+    });
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.getAllByText("Custom Brand").length).toBeGreaterThan(0));
+    expect(screen.getByText("Book the best table in town.")).toBeTruthy();
+    expect(screen.queryByText(/Scroll down to pick a location/)).toBeNull();
+  });
+
+  it("renders custom highlights heading/subheading from brand settings", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          appName: "Open Resto",
+          primaryColor: "#0a7ea4",
+          highlightsHeading: "Why visit us",
+          highlightsSubheading: "Hand-picked favourites",
+        }),
+    });
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(screen.getByText("Why visit us")).toBeTruthy();
+    expect(screen.getByText("Hand-picked favourites")).toBeTruthy();
+    expect(screen.queryByText("Restaurant highlights")).toBeNull();
+    expect(screen.queryByText("Curated by the owner")).toBeNull();
+  });
+
+  it("opens the url when a linked highlight card is pressed", async () => {
+    const { Linking } = require("react-native");
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
+    (fetchHighlights as jest.Mock).mockResolvedValue([
+      {
+        id: 10,
+        title: "Full menu",
+        body: "See what's cooking.",
+        iconKey: "restaurant-outline",
+        sortOrder: 0,
+        link: "https://example.com/menu",
+      },
+    ]);
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    // The linked card carries the url as its accessibilityHint.
+    const link = screen.getByA11yHint("https://example.com/menu");
+    fireEvent.press(link);
+    expect(openURLSpy).toHaveBeenCalledWith("https://example.com/menu");
+    openURLSpy.mockRestore();
+  });
+
+  it("renders a non-linked highlight as a plain card (no link role)", async () => {
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    // The default mock highlight has no link → no link hint present.
+    expect(screen.queryByA11yHint("https://example.com/menu")).toBeNull();
+    expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
+  });
+
   it("renders empty highlights gracefully (section heading hidden too)", async () => {
     (fetchHighlights as jest.Mock).mockResolvedValue([]);
     renderWithProviders(<HomeScreen />);

@@ -32,6 +32,8 @@ export interface RestaurantDto {
   timezone: string;
   tags?: string[];
   imageUrl?: string | null;
+  /** Optional blurb shown on the location detail page (supports [label](url) links). */
+  description?: string | null;
   isArchived?: boolean;
   /** When true the whole location is walk-in only — the booking flow is disabled. */
   walkInOnly?: boolean;
@@ -86,6 +88,7 @@ export interface HighlightDto {
   body: string;
   iconKey: string;
   sortOrder: number;
+  link?: string | null;
 }
 
 export async function fetchHighlights(): Promise<HighlightDto[]> {
@@ -132,6 +135,7 @@ export async function updateRestaurant(
     defaultBookingDurationMinutes?: number;
     walkInOnly?: boolean;
     walkInDays?: string;
+    description?: string | null;
   }
 ): Promise<RestaurantDto | null> {
   try {

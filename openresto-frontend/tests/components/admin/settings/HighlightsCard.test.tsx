@@ -271,4 +271,82 @@ describe("HighlightsCard", () => {
     fireEvent.press(accessible[accessible.length - 1]);
     expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy();
   });
+
+  // ── Link field (#185) ───────────────────────────────────────────────────
+
+  it("renders the Link input in the new highlight form", async () => {
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("https://example.com/menu")).toBeTruthy()
+    );
+  });
+
+  it("passes link to adminCreateHighlight when set", async () => {
+    const created = {
+      id: 5,
+      title: "Menu",
+      body: "",
+      iconKey: "star-outline",
+      sortOrder: 0,
+      link: "https://example.com/menu",
+    };
+    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue(created);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Menu");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("https://example.com/menu"),
+      "https://example.com/menu"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminCreateHighlight).toHaveBeenCalledWith(
+      expect.objectContaining({ link: "https://example.com/menu" })
+    );
+  });
+
+  it("passes null link when the link field is left blank", async () => {
+    const created = {
+      id: 5,
+      title: "Plain",
+      body: "",
+      iconKey: "star-outline",
+      sortOrder: 0,
+      link: null,
+    };
+    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue(created);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Plain");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    expect(adminApi.adminCreateHighlight).toHaveBeenCalledWith(
+      expect.objectContaining({ link: null })
+    );
+  });
+
+  it("pre-fills the link field when editing a highlight that has one", async () => {
+    (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([
+      { ...mockHighlights[0], link: "https://example.com/book" },
+    ]);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
+    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
+    fireEvent.press(accessible[4]);
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("https://example.com/book")).toBeTruthy();
+    });
+  });
 });

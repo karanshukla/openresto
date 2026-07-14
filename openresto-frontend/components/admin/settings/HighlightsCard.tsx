@@ -56,10 +56,11 @@ interface EditState {
   body: string;
   iconKey: IconKey;
   sortOrder: number;
+  link: string;
 }
 
 function emptyEdit(sortOrder = 0): EditState {
-  return { title: "", body: "", iconKey: "star-outline", sortOrder };
+  return { title: "", body: "", iconKey: "star-outline", sortOrder, link: "" };
 }
 
 export function HighlightsCard({
@@ -95,6 +96,7 @@ export function HighlightsCard({
       body: h.body,
       iconKey: h.iconKey as IconKey,
       sortOrder: h.sortOrder,
+      link: h.link ?? "",
     });
   };
 
@@ -117,6 +119,7 @@ export function HighlightsCard({
         body: editState.body.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
+        link: editState.link.trim() || null,
       });
       if (created) setHighlights((prev) => [...prev, created]);
     } else if (editingId != null) {
@@ -125,6 +128,7 @@ export function HighlightsCard({
         body: editState.body.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
+        link: editState.link.trim() || null,
       });
       if (updated) {
         setHighlights((prev) => prev.map((h) => (h.id === editingId ? updated : h)));
@@ -253,6 +257,24 @@ export function HighlightsCard({
                         <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }}>
                           {h.body}
                         </ThemedText>
+                        {h.link ? (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 3,
+                              marginTop: 3,
+                            }}
+                          >
+                            <Ionicons name="link-outline" size={11} color={primaryColor} />
+                            <ThemedText
+                              style={{ fontSize: 11, color: primaryColor }}
+                              numberOfLines={1}
+                            >
+                              {h.link}
+                            </ThemedText>
+                          </View>
+                        ) : null}
                       </View>
                       <View style={{ flexDirection: "row", gap: 6 }}>
                         <Pressable onPress={() => startEdit(h)} style={{ padding: 6 }}>
@@ -377,6 +399,23 @@ function HighlightEditForm({
           numberOfLines={3}
           style={{ height: 76, paddingTop: 10, paddingBottom: 10 }}
         />
+      </View>
+
+      {/* Link (optional) */}
+      <View style={{ gap: 4 }}>
+        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+          Link (optional)
+        </ThemedText>
+        <Input
+          value={state.link}
+          onChangeText={(v) => onChange({ ...state, link: v })}
+          placeholder="https://example.com/menu"
+          autoCapitalize="none"
+          keyboardType="url"
+        />
+        <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          Makes the whole card clickable. Leave blank for a static highlight.
+        </ThemedText>
       </View>
 
       {/* Actions */}

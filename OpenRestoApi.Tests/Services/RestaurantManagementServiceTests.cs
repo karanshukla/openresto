@@ -118,6 +118,79 @@ public class RestaurantManagementServiceTests
         Assert.Equal("GMT", result.Timezone);
     }
 
+    // ── Description blurb (#184) ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_Persists_Description_Trimmed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Persists_Description_Trimmed));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            Description = "  A cozy spot with [menu](https://example.com) links.  "
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("A cozy spot with [menu](https://example.com) links.", result.Description);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Clears_Description_WhenBlank()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Clears_Description_WhenBlank));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", Description = "Old blurb" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            Description = "   "
+        });
+
+        Assert.NotNull(result);
+        Assert.Null(result.Description);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Keeps_Description_WhenNull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Keeps_Description_WhenNull));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", Description = "Persisted blurb" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        // No Description on the request → PATCH leaves it untouched.
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R2" });
+
+        Assert.NotNull(result);
+        Assert.Equal("Persisted blurb", result.Description);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Returns_Description()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_Returns_Description));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            Timezone = "UTC",
+            Description = "Our little place"
+        });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Equal("Our little place", result.Description);
+    }
+
     // ── Per-day opening hours (#175) ─────────────────────────────────────────
 
     [Fact]

@@ -7,6 +7,7 @@ public class HighlightDto
     public string Body { get; set; } = null!;
     public string IconKey { get; set; } = "star-outline";
     public int SortOrder { get; set; }
+    public string? Link { get; set; }
 }
 
 public class CreateHighlightRequest
@@ -15,6 +16,7 @@ public class CreateHighlightRequest
     public string Body { get; set; } = null!;
     public string IconKey { get; set; } = "star-outline";
     public int SortOrder { get; set; }
+    public string? Link { get; set; }
 }
 
 public class UpdateHighlightRequest
@@ -23,4 +25,5 @@ public class UpdateHighlightRequest
     public string Body { get; set; } = null!;
     public string IconKey { get; set; } = "star-outline";
     public int SortOrder { get; set; }
+    public string? Link { get; set; }
 }

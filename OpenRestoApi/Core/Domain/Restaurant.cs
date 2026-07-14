@@ -43,6 +43,13 @@ public class Restaurant
 
     public string? ImageUrl { get; set; }
 
+    /// <summary>
+    /// Optional freeform blurb shown on the public location detail page. Supports basic
+    /// markdown-style inline links (e.g. "See our [menu](https://example.com/menu)").
+    /// Null/empty hides the blurb entirely.
+    /// </summary>
+    public string? Description { get; set; }
+
     public bool IsArchived { get; set; }
 
     /// <summary>

@@ -28,6 +28,10 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             faviconIcon: data.faviconIcon || undefined,
             websiteUrl: data.websiteUrl || undefined,
             copyrightText: data.copyrightText || undefined,
+            subtitle: data.subtitle || undefined,
+            highlightsHeading: data.highlightsHeading || undefined,
+            highlightsSubheading: data.highlightsSubheading || undefined,
+            headerImageFit: data.headerImageFit || undefined,
           });
         }
       })

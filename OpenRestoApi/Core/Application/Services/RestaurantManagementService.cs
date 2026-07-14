@@ -62,6 +62,10 @@ public class RestaurantManagementService(
 
         r.Name = req.Name;
         r.Address = req.Address;
+        if (req.Description != null)
+        {
+            r.Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description.Trim();
+        }
         if (req.OpenTime != null)
         {
             r.OpenTime = req.OpenTime;
@@ -129,6 +133,7 @@ public class RestaurantManagementService(
                 ? []
                 : r.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             ImageUrl = r.ImageUrl,
+            Description = r.Description,
             WalkInOnly = r.WalkInOnly,
             WalkInDays = r.WalkInDays ?? "",
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
@@ -259,6 +264,7 @@ public class RestaurantManagementService(
             ? []
             : r.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
         ImageUrl = r.ImageUrl,
+        Description = r.Description,
         IsArchived = r.IsArchived,
         WalkInOnly = r.WalkInOnly,
         WalkInDays = r.WalkInDays ?? "",

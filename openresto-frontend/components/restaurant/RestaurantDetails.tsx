@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { LinkedText } from "@/components/common/LinkedText";
 import { RestaurantDto } from "@/api/restaurants";
 import { StyleSheet, View } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -24,6 +25,10 @@ export default function RestaurantDetails({ restaurant }: { restaurant: Restaura
             {restaurant.address}
           </ThemedText>
         </View>
+      ) : null}
+
+      {restaurant.description ? (
+        <LinkedText text={restaurant.description} style={styles.description} />
       ) : null}
 
       <View style={[styles.divider, { backgroundColor: borderColor }]} />
@@ -71,6 +76,10 @@ const styles = StyleSheet.create({
   },
   address: {
     fontSize: 15,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   divider: {
     height: 1,
