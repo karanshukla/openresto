@@ -11,6 +11,7 @@ import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
+import { styles as sharedStyles } from "./settings.styles";
 
 const TIMEZONES = [
   "UTC",
@@ -284,21 +285,19 @@ export function RestaurantInfoForm({
       {/* Form */}
       <View style={{ gap: 14 }}>
         <View style={{ gap: 6 }}>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
             Restaurant name
           </ThemedText>
           <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
         </View>
 
         <View style={{ gap: 6 }}>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-            Address
-          </ThemedText>
+          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>Address</ThemedText>
           <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
         </View>
 
         <View style={{ gap: 6 }}>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
             Description (optional)
           </ThemedText>
           <Input
@@ -316,7 +315,7 @@ export function RestaurantInfoForm({
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
           <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
-            <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Timezone
             </ThemedText>
             <select
@@ -345,7 +344,7 @@ export function RestaurantInfoForm({
             </select>
           </View>
           <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
-            <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Default Booking duration
             </ThemedText>
             <select

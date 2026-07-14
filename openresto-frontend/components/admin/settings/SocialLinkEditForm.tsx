@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/theme/theme";
+import { styles } from "./settings.styles";
 
 /**
  * The icon-picker + label/url inputs + save/cancel actions used when creating or editing a
@@ -89,7 +90,7 @@ export function SocialLinkEditForm({
     >
       {/* Icon picker */}
       <View style={{ gap: 6 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>Icon</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
@@ -118,9 +119,7 @@ export function SocialLinkEditForm({
 
       {/* Label */}
       <View style={{ gap: 4 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-          Label
-        </ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Label</ThemedText>
         <Input
           value={state.label}
           onChangeText={(v) => onChange({ ...state, label: v })}
@@ -130,7 +129,7 @@ export function SocialLinkEditForm({
 
       {/* URL */}
       <View style={{ gap: 4 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>URL</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>URL</ThemedText>
         <Input
           value={state.url}
           onChangeText={(v) => onChange({ ...state, url: v })}

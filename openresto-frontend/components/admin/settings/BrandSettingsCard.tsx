@@ -314,9 +314,7 @@ export function BrandSettingsCard({
               Homepage Header Image (max {MAX_HERO_MB} MB)
             </ThemedText>
             <View style={{ gap: 6 }}>
-              <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                Image fit
-              </ThemedText>
+              <ThemedText style={styles.fieldLabel}>Image fit</ThemedText>
               <select
                 data-testid="header-image-fit-select"
                 value={headerImageFit}

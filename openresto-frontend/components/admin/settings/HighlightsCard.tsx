@@ -347,7 +347,7 @@ function HighlightEditForm({
     >
       {/* Icon picker */}
       <View style={{ gap: 6 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>Icon</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
@@ -376,9 +376,7 @@ function HighlightEditForm({
 
       {/* Title */}
       <View style={{ gap: 4 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-          Title
-        </ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Title</ThemedText>
         <Input
           value={state.title}
           onChangeText={(v) => onChange({ ...state, title: v })}
@@ -388,9 +386,7 @@ function HighlightEditForm({
 
       {/* Body */}
       <View style={{ gap: 4 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-          Description
-        </ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Description</ThemedText>
         <Input
           value={state.body}
           onChangeText={(v) => onChange({ ...state, body: v })}
@@ -403,9 +399,7 @@ function HighlightEditForm({
 
       {/* Link (optional) */}
       <View style={{ gap: 4 }}>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-          Link (optional)
-        </ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Link (optional)</ThemedText>
         <Input
           value={state.link}
           onChangeText={(v) => onChange({ ...state, link: v })}
