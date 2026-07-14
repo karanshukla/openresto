@@ -34,6 +34,16 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
         <ScrollViewStyleReset />
+        {/* ScrollViewStyleReset sizes #root off body's (percentage) height, so third-party
+            wrappers that pad body (e.g. a proxy-injected banner) can inflate it past the
+            viewport and push the sticky footer down (issue #226). Cap #root at the real
+            viewport height so the flex chain stays correct regardless of body's own size. */}
+        <style
+          id="root-viewport-height-cap"
+          dangerouslySetInnerHTML={{
+            __html: `#root { max-height: 100vh; max-height: 100dvh; }`,
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>
