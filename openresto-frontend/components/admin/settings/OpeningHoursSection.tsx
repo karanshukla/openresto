@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import TimePicker from "@/components/common/TimePicker";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
+import { styles } from "./settings.styles";
 
 type WeekHours = Record<number, { open: string; close: string }>;
 
@@ -115,9 +116,7 @@ export function OpeningHoursSection({
         <>
           <View style={{ flexDirection: "row", gap: 14 }}>
             <View style={{ flex: 1, gap: 6 }}>
-              <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                Opens
-              </ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Opens</ThemedText>
               <TimePicker
                 selectedTime={openTime}
                 onSelect={onSetOpenTime}
@@ -126,9 +125,7 @@ export function OpeningHoursSection({
               />
             </View>
             <View style={{ flex: 1, gap: 6 }}>
-              <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-                Closes
-              </ThemedText>
+              <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Closes</ThemedText>
               <TimePicker
                 selectedTime={closeTime}
                 onSelect={onSetCloseTime}
@@ -139,9 +136,7 @@ export function OpeningHoursSection({
           </View>
 
           <View style={{ gap: 6 }}>
-            <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
-              Open days
-            </ThemedText>
+            <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Open days</ThemedText>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {DAY_LABELS.map((label, i) => {
                 const day = i + 1;

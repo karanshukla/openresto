@@ -167,7 +167,9 @@ export const styles = StyleSheet.create({
   flex2: { flex: 2 },
   infoForm: { gap: theme.spacing.md },
   field: { gap: theme.spacing.xs },
-  fieldLabel: { ...theme.typography.label },
+  // Shared form-field label style used across every settings card. Inline copies in
+  // RestaurantInfoForm / HighlightsCard should migrate to this token (see #231).
+  fieldLabel: { fontSize: 12, fontWeight: "500" as const },
   hoursRow: { flexDirection: "row", gap: theme.spacing.md, marginTop: theme.spacing.xs },
   hoursField: { flex: 1, gap: theme.spacing.xs },
   dayRow: {
