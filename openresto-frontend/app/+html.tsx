@@ -34,14 +34,17 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
         <ScrollViewStyleReset />
-        {/* ScrollViewStyleReset sizes #root off body's (percentage) height, so third-party
-            wrappers that pad body (e.g. a proxy-injected banner) can inflate it past the
-            viewport and push the sticky footer down (issue #226). Cap #root at the real
-            viewport height so the flex chain stays correct regardless of body's own size. */}
+        {/* ScrollViewStyleReset sizes #root from body's height (`html,body,#root{height:100%}`),
+            so any padding a third-party layer adds to body — e.g. a reverse-proxy demo banner
+            reserving space with `body{padding-bottom}` — leaks into the sticky-footer flex chain
+            and leaves a blank gap below the footer (issue #226). Size #root against the viewport
+            instead so the layout is independent of body's box. No-op for normal deploys where
+            body has no extra padding (100dvh == 100%); `vh` is the fallback for browsers without
+            `dvh`. The dvh line is intentionally last so it wins the cascade over the reset above. */}
         <style
-          id="root-viewport-height-cap"
+          id="root-viewport-height"
           dangerouslySetInnerHTML={{
-            __html: `#root { max-height: 100vh; max-height: 100dvh; }`,
+            __html: `#root { height: 100vh; height: 100dvh; }`,
           }}
         />
       </head>
