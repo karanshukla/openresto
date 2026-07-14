@@ -119,6 +119,7 @@ export function RestaurantInfoForm({
 
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
+  const [description, setDescription] = useState(restaurant.description ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
   const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
   const [customHours, setCustomHours] = useState(() => hasCustomHours(restaurant));
@@ -187,6 +188,7 @@ export function RestaurantInfoForm({
   const dirty =
     name !== restaurant.name ||
     address !== (restaurant.address ?? "") ||
+    description !== (restaurant.description ?? "") ||
     hoursDirty ||
     openDays.join(",") !== parseOpenDays(restaurant.openDays).join(",") ||
     walkInOnly !== !!restaurant.walkInOnly ||
@@ -198,6 +200,7 @@ export function RestaurantInfoForm({
   const discard = () => {
     setName(restaurant.name);
     setAddress(restaurant.address ?? "");
+    setDescription(restaurant.description ?? "");
     setOpenTime(restaurant.openTime ?? "09:00");
     setCloseTime(restaurant.closeTime ?? "22:00");
     setCustomHours(hasCustomHours(restaurant));
@@ -220,6 +223,7 @@ export function RestaurantInfoForm({
     const result = await updateRestaurant(restaurant.id, {
       name: name.trim(),
       address: address.trim() || null,
+      description: description.trim() || null,
       openTime: customHours ? undefined : openTime,
       closeTime: customHours ? undefined : closeTime,
       openHours: openHoursPayload,
@@ -235,6 +239,7 @@ export function RestaurantInfoForm({
       onSaved({
         name: result.name,
         address: result.address,
+        description: result.description,
         openTime: result.openTime,
         closeTime: result.closeTime,
         openHours: result.openHours,
@@ -290,6 +295,23 @@ export function RestaurantInfoForm({
             Address
           </ThemedText>
           <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
+        </View>
+
+        <View style={{ gap: 6 }}>
+          <ThemedText style={{ fontSize: 12, color: mutedColor, fontWeight: "500" }}>
+            Description (optional)
+          </ThemedText>
+          <Input
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Short blurb shown on the location page. Supports links like [menu](https://example.com)."
+            multiline
+            numberOfLines={4}
+            style={{ height: 96, paddingTop: 10, paddingBottom: 10 }}
+          />
+          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            Shown on the public location page. Use [label](https://url) for links.
+          </ThemedText>
         </View>
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>

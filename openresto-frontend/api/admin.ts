@@ -494,6 +494,10 @@ export interface BrandSettingsDto {
   faviconIcon?: string;
   websiteUrl?: string;
   copyrightText?: string;
+  subtitle?: string;
+  highlightsHeading?: string;
+  highlightsSubheading?: string;
+  headerImageFit?: string;
 }
 
 export async function saveBrandSettings(
@@ -548,6 +552,7 @@ export interface AdminHighlightDto {
   body: string;
   iconKey: string;
   sortOrder: number;
+  link?: string | null;
 }
 
 export interface CreateHighlightRequest {
@@ -555,6 +560,7 @@ export interface CreateHighlightRequest {
   body: string;
   iconKey: string;
   sortOrder: number;
+  link?: string | null;
 }
 
 export interface UpdateHighlightRequest {
@@ -562,6 +568,7 @@ export interface UpdateHighlightRequest {
   body: string;
   iconKey: string;
   sortOrder: number;
+  link?: string | null;
 }
 
 export async function adminGetHighlights(): Promise<AdminHighlightDto[]> {

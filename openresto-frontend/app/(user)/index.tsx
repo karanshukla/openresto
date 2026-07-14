@@ -4,7 +4,9 @@ import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "
 import { useEffect, useState, useRef, useCallback, type ComponentProps } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -65,6 +67,19 @@ export default function HomeScreen() {
   const accentB = parseInt(accentHex.slice(4, 6), 16);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},0.18)`;
 
+  // Home-page copy falls back to the pre-customization defaults when unset.
+  const DEFAULT_SUBTITLE =
+    "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!";
+  const heroSubtitle = brand.subtitle?.trim() || DEFAULT_SUBTITLE;
+  const highlightsHeading = brand.highlightsHeading?.trim() || "Restaurant highlights";
+  const highlightsSubheading = brand.highlightsSubheading?.trim() || "Curated by the owner";
+
+  // "Contain" shows the whole image (avoids aggressive cropping on mobile); anything else
+  // (null unset, or "Cover") keeps today's cover behaviour — no visual regression.
+  const heroContain = brand.headerImageFit?.toLowerCase() === "contain";
+  const heroObjectFit = heroContain ? "contain" : "cover";
+  const heroObjectPosition = heroContain ? "center top" : "center";
+
   const numColumns = width < 600 ? 1 : width < 1000 ? 2 : 3;
   const numHighlightCols = width < 600 ? 1 : width < 900 ? 2 : 4;
 
@@ -111,8 +126,8 @@ export default function HomeScreen() {
                     bottom: 0,
                     width: "100%",
                     height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center",
+                    objectFit: heroObjectFit,
+                    objectPosition: heroObjectPosition,
                     pointerEvents: "none",
                   }}
                 />
@@ -146,8 +161,7 @@ export default function HomeScreen() {
                   {brand.appName}
                 </ThemedText>
                 <ThemedText style={[styles.heroSub, { color: mutedColor }]}>
-                  Scroll down to pick a location below, choose a time, enter your email address, and
-                  you're booked!
+                  {heroSubtitle}
                 </ThemedText>
               </View>
             </View>
@@ -164,7 +178,7 @@ export default function HomeScreen() {
                       hasHero && ({ textShadow: heroTextShadow } as object),
                     ]}
                   >
-                    Restaurant highlights
+                    {highlightsHeading}
                   </ThemedText>
                   <ThemedText
                     style={[
@@ -173,7 +187,7 @@ export default function HomeScreen() {
                       hasHero && ({ textShadow: heroTextShadow } as object),
                     ]}
                   >
-                    Curated by the owner
+                    {highlightsSubheading}
                   </ThemedText>
                 </View>
                 <View
@@ -182,41 +196,68 @@ export default function HomeScreen() {
                     numHighlightCols > 1 && { flexDirection: "row", flexWrap: "wrap" },
                   ]}
                 >
-                  {highlights.map((h) => (
-                    <View
-                      key={h.id}
-                      style={[
-                        styles.highlightCard,
-                        { backgroundColor: surface, borderColor: border },
-                        numHighlightCols > 1 && {
-                          width:
-                            numHighlightCols === 2
-                              ? ("calc(50% - 6px)" as unknown as number)
-                              : ("calc(25% - 9px)" as unknown as number),
-                          minWidth: 200,
-                        },
-                      ]}
-                    >
-                      <View style={styles.highlightHeader}>
-                        <View
-                          style={[
-                            styles.highlightIconBox,
-                            { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)` },
-                          ]}
-                        >
-                          <Ionicons
-                            name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                            size={16}
-                            color={primaryColor}
-                          />
+                  {highlights.map((h) => {
+                    const cardStyle = [
+                      styles.highlightCard,
+                      { backgroundColor: surface, borderColor: border },
+                      numHighlightCols > 1 && {
+                        width:
+                          numHighlightCols === 2
+                            ? ("calc(50% - 6px)" as unknown as number)
+                            : ("calc(25% - 9px)" as unknown as number),
+                        minWidth: 200,
+                      },
+                      // A linked card reads as interactive: lift it slightly.
+                      h.link && { cursor: "pointer" as const },
+                    ];
+                    const cardContent = (
+                      <>
+                        <View style={styles.highlightHeader}>
+                          <View
+                            style={[
+                              styles.highlightIconBox,
+                              {
+                                backgroundColor: `rgba(${accentR},${accentG},${accentB},0.18)`,
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
+                              size={16}
+                              color={primaryColor}
+                            />
+                          </View>
+                          <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
+                          {h.link ? (
+                            <Ionicons
+                              name="open-outline"
+                              size={13}
+                              color={mutedColor}
+                              style={{ marginLeft: "auto" }}
+                            />
+                          ) : null}
                         </View>
-                        <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
+                        <ThemedText style={[styles.highlightBody, { color: mutedColor }]}>
+                          {h.body}
+                        </ThemedText>
+                      </>
+                    );
+                    return h.link ? (
+                      <Pressable
+                        key={h.id}
+                        accessibilityRole="link"
+                        accessibilityHint={h.link}
+                        onPress={() => Linking.openURL(h.link!)}
+                        style={cardStyle}
+                      >
+                        {cardContent}
+                      </Pressable>
+                    ) : (
+                      <View key={h.id} style={cardStyle}>
+                        {cardContent}
                       </View>
-                      <ThemedText style={[styles.highlightBody, { color: mutedColor }]}>
-                        {h.body}
-                      </ThemedText>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             )}

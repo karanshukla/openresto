@@ -171,6 +171,120 @@ public class BrandServiceTests
         Assert.Null(result.WebsiteUrl);
     }
 
+    // ── Subtitle (#183) ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveAsync_Throws_WhenSubtitleTooLong()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Throws_WhenSubtitleTooLong));
+        var svc = CreateService(db);
+        await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, subtitle: new string('a', 161)));
+    }
+
+    [Fact]
+    public async Task SaveAsync_Persists_Subtitle_Trimmed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Persists_Subtitle_Trimmed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, subtitle: "  A cozy neighborhood spot  ");
+        BrandSettings result = await svc.GetAsync();
+        Assert.Equal("A cozy neighborhood spot", result.Subtitle);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Clears_Subtitle_WhenBlankPassed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Clears_Subtitle_WhenBlankPassed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, subtitle: "A tagline");
+        await svc.SaveAsync(null, null, null, subtitle: "   ");
+        BrandSettings result = await svc.GetAsync();
+        Assert.Null(result.Subtitle);
+    }
+
+    // ── Highlights heading / subheading (#185) ────────────────────────────────
+
+    [Fact]
+    public async Task SaveAsync_Persists_HighlightsHeading_AndSubheading()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Persists_HighlightsHeading_AndSubheading));
+        var svc = CreateService(db);
+        await svc.SaveAsync(
+            null, null, null,
+            highlightsHeading: "What we love",
+            highlightsSubheading: "Picked fresh weekly");
+        BrandSettings result = await svc.GetAsync();
+        Assert.Equal("What we love", result.HighlightsHeading);
+        Assert.Equal("Picked fresh weekly", result.HighlightsSubheading);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Throws_WhenHighlightsHeadingTooLong()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Throws_WhenHighlightsHeadingTooLong));
+        var svc = CreateService(db);
+        await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, highlightsHeading: new string('a', 61)));
+    }
+
+    // ── Header image fit (#187) ───────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("Cover")]
+    [InlineData("Contain")]
+    [InlineData("cover")]   // case-insensitive, normalized to canonical casing
+    [InlineData("CONTAIN")]
+    public async Task SaveAsync_Persists_HeaderImageFit_WhenAllowed(string fit)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Persists_HeaderImageFit_WhenAllowed) + fit);
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, headerImageFit: fit);
+        BrandSettings result = await svc.GetAsync();
+        Assert.NotNull(result.HeaderImageFit);
+        // Canonical casing (first-letter-capitalized form from the allow-list)
+        Assert.Equal(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(fit.ToLower()),
+            result.HeaderImageFit);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Throws_WhenHeaderImageFitInvalid()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Throws_WhenHeaderImageFitInvalid));
+        var svc = CreateService(db);
+        await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, headerImageFit: "fill"));
+    }
+
+    [Fact]
+    public async Task SaveAsync_Clears_HeaderImageFit_WhenBlankPassed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Clears_HeaderImageFit_WhenBlankPassed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, headerImageFit: "Contain");
+        await svc.SaveAsync(null, null, null, headerImageFit: "   ");
+        BrandSettings result = await svc.GetAsync();
+        Assert.Null(result.HeaderImageFit);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Preserves_HeaderImageFit_WhenNullPassed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Preserves_HeaderImageFit_WhenNullPassed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, headerImageFit: "Contain");
+        await svc.SaveAsync(null, null, null, headerImageFit: null);
+        BrandSettings result = await svc.GetAsync();
+        Assert.Equal("Contain", result.HeaderImageFit);
+    }
+
+    [Fact]
+    public void AllowedHeaderImageFits_ContainsCoverAndContain()
+    {
+        Assert.Contains("Cover", BrandService.AllowedHeaderImageFits);
+        Assert.Contains("Contain", BrandService.AllowedHeaderImageFits);
+    }
+
     [Fact]
     public void GetWebsiteUrl_ReturnsBrandWebsiteUrl_WhenSet()
     {

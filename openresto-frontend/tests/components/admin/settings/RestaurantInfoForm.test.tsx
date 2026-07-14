@@ -565,4 +565,85 @@ describe("RestaurantInfoForm", () => {
     });
     expect(screen.getByText("Save changes")).toBeTruthy();
   });
+
+  // ── Description blurb (#184) ──────────────────────────────────────────────
+
+  it("renders the description field (empty when unset)", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(
+      screen.getByPlaceholderText(
+        "Short blurb shown on the location page. Supports links like [menu](https://example.com)."
+      )
+    ).toBeTruthy();
+  });
+
+  it("pre-fills the description field from the restaurant", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, description: "A cozy spot." }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByDisplayValue("A cozy spot.")).toBeTruthy();
+  });
+
+  it("marks the form dirty and saves the description when edited", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      description: "Our little place",
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText(
+        "Short blurb shown on the location page. Supports links like [menu](https://example.com)."
+      ),
+      "Our little place"
+    );
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ description: "Our little place" })
+    );
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "Our little place" })
+    );
+  });
+
+  it("saves description as null when cleared to blank", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      description: null,
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, description: "Existing blurb" }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.changeText(screen.getByDisplayValue("Existing blurb"), "   ");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ description: null })
+    );
+  });
+
+  it("discard restores the original description", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, description: "Saved blurb" }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.changeText(screen.getByDisplayValue("Saved blurb"), "Typed something");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    fireEvent.press(screen.getByText("Discard"));
+    expect(screen.getByDisplayValue("Saved blurb")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
 });

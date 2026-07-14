@@ -66,6 +66,35 @@ describe("RestaurantScreen", () => {
     });
   });
 
+  it("renders the location description with a parsed inline link when set", async () => {
+    const { fetchRestaurantById } = require("@/api/restaurants");
+    const { Linking } = require("react-native");
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
+    fetchRestaurantById.mockResolvedValueOnce({
+      ...mockRestaurant,
+      description: "Family-run since 1998. See our [menu](https://example.com/menu).",
+    });
+    renderWithProviders(<RestaurantScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Sushi Spot")).toBeTruthy();
+    });
+    // Plain-text run rendered.
+    expect(screen.getByText(/Family-run since 1998/)).toBeTruthy();
+    // Link label rendered and tappable.
+    expect(screen.getByText("menu")).toBeTruthy();
+    fireEvent.press(screen.getByA11yHint("https://example.com/menu"));
+    expect(openURLSpy).toHaveBeenCalledWith("https://example.com/menu");
+    openURLSpy.mockRestore();
+  });
+
+  it("does not render a description block when the field is unset", async () => {
+    renderWithProviders(<RestaurantScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Sushi Spot")).toBeTruthy();
+    });
+    expect(screen.queryByText(/Family-run/)).toBeNull();
+  });
+
   it("replaces the Book a Table button with a walk-in notice for walk-in only locations", async () => {
     const { fetchRestaurantById } = require("@/api/restaurants");
     fetchRestaurantById.mockResolvedValueOnce({ ...mockRestaurant, walkInOnly: true });

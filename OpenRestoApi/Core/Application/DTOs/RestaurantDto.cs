@@ -11,6 +11,12 @@ public class UpdateRestaurantRequest
     public string? OpenDays { get; set; }
 
     /// <summary>
+    /// Optional freeform blurb shown on the public location detail page. Supports basic
+    /// markdown-style inline links. Empty string clears the field; null leaves it untouched.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Per-day opening hours (ISO day 1=Monday … 7=Sunday). When provided, takes
     /// precedence over OpenTime/CloseTime; identical hours for all 7 days collapse
     /// back into the uniform OpenTime/CloseTime pair.
@@ -109,6 +115,10 @@ public class RestaurantDto
     public string Timezone { get; set; } = "UTC";
     public string[] Tags { get; set; } = [];
     public string? ImageUrl { get; set; }
+
+    /// <summary>Optional blurb shown on the public location detail page (null when none).</summary>
+    public string? Description { get; set; }
+
     public bool IsArchived { get; set; }
 
     /// <summary>When true the whole location is walk-in only — the booking flow is disabled.</summary>

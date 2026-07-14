@@ -28,6 +28,10 @@ public class BrandController(BrandService brandService) : ControllerBase
             WebsiteUrl = _brand.GetWebsiteUrl(brand),
             FaviconIcon = brand.FaviconIcon,
             CopyrightText = brand.CopyrightText,
+            Subtitle = brand.Subtitle,
+            HighlightsHeading = brand.HighlightsHeading,
+            HighlightsSubheading = brand.HighlightsSubheading,
+            HeaderImageFit = brand.HeaderImageFit,
         });
     }
 
@@ -97,7 +101,11 @@ public class BrandController(BrandService brandService) : ControllerBase
             req.AccentColor,
             req.FaviconIcon,
             req.WebsiteUrl,
-            req.CopyrightText);
+            req.CopyrightText,
+            req.Subtitle,
+            req.HighlightsHeading,
+            req.HighlightsSubheading,
+            req.HeaderImageFit);
         return Ok(new { message = "Brand settings saved." });
     }
 }
@@ -113,6 +121,18 @@ public class BrandRequest
 
     [StringLength(200, ErrorMessage = "Copyright text cannot exceed 200 characters.")]
     public string? CopyrightText { get; set; }
+
+    [StringLength(160, ErrorMessage = "Subtitle cannot exceed 160 characters.")]
+    public string? Subtitle { get; set; }
+
+    [StringLength(60, ErrorMessage = "Highlights heading cannot exceed 60 characters.")]
+    public string? HighlightsHeading { get; set; }
+
+    [StringLength(60, ErrorMessage = "Highlights subheading cannot exceed 60 characters.")]
+    public string? HighlightsSubheading { get; set; }
+
+    /// <summary>"Cover" (default) or "Contain". Null means leave the stored value unchanged.</summary>
+    public string? HeaderImageFit { get; set; }
 }
 
 public class BrandResponse
@@ -124,4 +144,8 @@ public class BrandResponse
     public string? WebsiteUrl { get; set; }
     public string? FaviconIcon { get; set; }
     public string? CopyrightText { get; set; }
+    public string? Subtitle { get; set; }
+    public string? HighlightsHeading { get; set; }
+    public string? HighlightsSubheading { get; set; }
+    public string? HeaderImageFit { get; set; }
 }
