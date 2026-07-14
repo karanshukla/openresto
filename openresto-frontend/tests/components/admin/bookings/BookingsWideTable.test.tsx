@@ -31,6 +31,8 @@ const activeBooking: BookingDetailDto = {
   bookingRef: "ABC123",
 } as BookingDetailDto;
 
+const sort = { key: "date" as const, dir: "asc" as const };
+
 describe("BookingsWideTable", () => {
   it("renders one row per booking with the customer name + initials", () => {
     render(
@@ -39,6 +41,8 @@ describe("BookingsWideTable", () => {
         focusedRowId={null}
         onOpenBooking={() => {}}
         onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -55,6 +59,8 @@ describe("BookingsWideTable", () => {
         focusedRowId={null}
         onOpenBooking={() => {}}
         onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -69,6 +75,8 @@ describe("BookingsWideTable", () => {
         focusedRowId={null}
         onOpenBooking={() => {}}
         onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -84,6 +92,8 @@ describe("BookingsWideTable", () => {
         focusedRowId={null}
         onOpenBooking={onOpen}
         onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -99,10 +109,65 @@ describe("BookingsWideTable", () => {
         focusedRowId={null}
         onOpenBooking={() => {}}
         onCancelBooking={onCancel}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
     fireEvent.press(screen.getByLabelText("Cancel booking"));
     expect(onCancel).toHaveBeenCalledWith(activeBooking);
+  });
+
+  it("renders sortable TIME/GUEST/PARTY/TABLE headers (STATUS is not sortable)", () => {
+    render(
+      <BookingsWideTable
+        bookings={[activeBooking]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
+        {...theme}
+      />
+    );
+    expect(screen.getByLabelText(/Sort by TIME/)).toBeTruthy();
+    expect(screen.getByLabelText(/Sort by GUEST/)).toBeTruthy();
+    expect(screen.getByLabelText(/Sort by PARTY/)).toBeTruthy();
+    expect(screen.getByLabelText(/Sort by TABLE/)).toBeTruthy();
+    expect(screen.getByLabelText(/Sort by STATUS/)).toBeTruthy();
+  });
+
+  it("marks the active column header with its sort direction in the label", () => {
+    render(
+      <BookingsWideTable
+        bookings={[activeBooking]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        onCancelBooking={() => {}}
+        sort={{ key: "guest", dir: "desc" }}
+        onSortChange={() => {}}
+        {...theme}
+      />
+    );
+    expect(screen.getByLabelText("Sort by GUEST, descending")).toBeTruthy();
+    // An inactive header is labeled "not sorted".
+    expect(screen.getByLabelText("Sort by TIME, not sorted")).toBeTruthy();
+  });
+
+  it("calls onSortChange with the column key when a header is pressed", () => {
+    const onSort = jest.fn();
+    render(
+      <BookingsWideTable
+        bookings={[activeBooking]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={onSort}
+        {...theme}
+      />
+    );
+    fireEvent.press(screen.getByTestId("sort-header-table"));
+    expect(onSort).toHaveBeenCalledWith("table");
   });
 });

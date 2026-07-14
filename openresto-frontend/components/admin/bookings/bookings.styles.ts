@@ -103,6 +103,40 @@ export const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
   },
   thCell: { ...theme.typography.labelSmall, letterSpacing: 0.8 },
+  thCellActive: { color: undefined },
+  thSortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+    marginVertical: -2,
+    marginHorizontal: -2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  sortControl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    flexWrap: "wrap",
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  sortControlLabel: { ...theme.typography.caption, fontWeight: "600" as const },
+  sortControlChips: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  sortChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1,
+  },
+  sortChipText: { ...theme.typography.caption, fontWeight: "600" as const },
+  sortChipTextActive: { color: "#fff" },
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -132,6 +166,7 @@ export const styles = StyleSheet.create({
   rowActionBtn: { padding: 6, borderRadius: theme.borderRadius.md },
 
   // Card list (mobile)
+  cardListWrap: { gap: theme.spacing.md },
   cardList: { gap: theme.spacing.md },
   listCard: {
     borderRadius: theme.borderRadius.xl,

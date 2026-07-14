@@ -1,6 +1,11 @@
 import React from "react";
 import { render, screen } from "@testing-library/react-native";
-import { StatusBadge, getStatus, isPast } from "@/components/admin/bookings/StatusBadge";
+import {
+  StatusBadge,
+  getStatus,
+  isPast,
+  statusRankFor,
+} from "@/components/admin/bookings/StatusBadge";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -52,6 +57,28 @@ describe("getStatus", () => {
   it("returns 'Scheduled' for bookings more than 60 minutes in the future", () => {
     const date = new Date(Date.now() + 120 * 60 * 1000).toISOString();
     expect(getStatus(date)).toEqual({ label: "Scheduled", variant: "scheduled" });
+  });
+});
+
+describe("statusRankFor", () => {
+  const mk = (date: string, isCancelled = false) =>
+    ({ id: 1, restaurantId: 1, date, isCancelled }) as any;
+
+  it("ranks cancelled bookings lowest (0)", () => {
+    const now = Date.now();
+    expect(statusRankFor(mk(new Date(now + 120 * 60000).toISOString(), true))).toBe(0);
+  });
+
+  it("ranks in-progress (arrived) above upcoming/scheduled/completed", () => {
+    const now = Date.now();
+    const min = 60 * 1000;
+    const arrived = mk(new Date(now - 2 * min).toISOString());
+    const upcoming = mk(new Date(now + 30 * min).toISOString());
+    const scheduled = mk(new Date(now + 120 * min).toISOString());
+    const completed = mk(new Date(now - 100 * min).toISOString());
+    expect(statusRankFor(arrived)).toBeGreaterThan(statusRankFor(upcoming));
+    expect(statusRankFor(upcoming)).toBeGreaterThan(statusRankFor(scheduled));
+    expect(statusRankFor(scheduled)).toBeGreaterThan(statusRankFor(completed));
   });
 });
 

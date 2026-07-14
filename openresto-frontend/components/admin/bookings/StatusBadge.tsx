@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { styles } from "./bookings.styles";
+import { BookingDetailDto } from "@/api/admin";
 
 export type BadgeVariant = "arrived" | "seated" | "upcoming" | "scheduled" | "completed";
 
@@ -26,6 +27,25 @@ export function getStatus(date: string): { label: string; variant: BadgeVariant 
   if (diffMins < 5) return { label: "Arrived", variant: "arrived" };
   if (diffMins < 60) return { label: "Upcoming", variant: "upcoming" };
   return { label: "Scheduled", variant: "scheduled" };
+}
+
+// Lifecycle rank for status-based sorting (issue #208). Higher rank surfaces
+// earlier in the default (ascending) sort, so the most attention-worthy rows
+// land at the top: in-progress first, then upcoming/future, then historical,
+// with cancelled last. Reuses getStatus so the time thresholds stay defined
+// in exactly one place (see the keep-in-sync note on isPast above).
+const STATUS_RANK: Record<BadgeVariant, number> = {
+  arrived: 5, // in-progress: sitting down now
+  seated: 4, // in-progress: recently seated
+  upcoming: 3, // imminent (next hour)
+  scheduled: 2, // future
+  completed: 1, // historical
+};
+
+/** Numeric status rank for sorting; cancelled bookings sort last (rank 0). */
+export function statusRankFor(b: BookingDetailDto): number {
+  if (b.isCancelled) return 0;
+  return STATUS_RANK[getStatus(b.date).variant];
 }
 
 const BADGE_STYLES: Record<

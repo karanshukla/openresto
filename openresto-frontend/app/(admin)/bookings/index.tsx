@@ -11,7 +11,7 @@ import { getHoursForDay } from "@/utils/openingHours";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 import { NewBookingModal } from "@/components/admin/bookings/NewBookingModal";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useBookingsGrid } from "@/hooks/use-bookings-grid";
 import {
@@ -32,6 +32,13 @@ import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPop
 import { BookingsWideTable } from "@/components/admin/bookings/BookingsWideTable";
 import { BookingsCardList } from "@/components/admin/bookings/BookingsCardList";
 import { BookingLookupBar } from "@/components/admin/bookings/BookingLookupBar";
+import {
+  defaultSortFor,
+  nextSort,
+  sortBookings,
+  type SortKey,
+  type SortState,
+} from "@/components/admin/bookings/sorting";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -52,6 +59,13 @@ export default function AdminBookingsScreen() {
   const [statusFilter, setStatusFilter] = usePersistedState<BookingStatusFilter>(
     "bookings:statusFilter",
     "active"
+  );
+  // Sort preference persists across sessions but resets to the contextual
+  // default whenever the status filter changes (see effect below) — so the
+  // "past" tab still defaults to most-recent-first, etc.
+  const [sort, setSort] = usePersistedState<SortState>(
+    "bookings:sort",
+    defaultSortFor(statusFilter)
   );
 
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
@@ -173,6 +187,20 @@ export default function AdminBookingsScreen() {
     if (viewMode === "timetable") loadGrid(id, gridDate);
   };
 
+  // When the user switches status filter, reset the sort to that tab's
+  // contextual default (e.g. past = most-recent-first). We deliberately do NOT
+  // fire on the initial mount — a sort preference persisted from a previous
+  // session should survive reload. `prevStatusFilter` starts undefined, so the
+  // first (mount) run is skipped; subsequent real changes trigger the reset.
+  const prevStatusFilter = useRef<BookingStatusFilter | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevStatusFilter.current;
+    prevStatusFilter.current = statusFilter;
+    if (prev === undefined || prev === statusFilter) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSort(defaultSortFor(statusFilter));
+  }, [statusFilter, setSort]);
+
   const switchToTimetable = () => {
     setViewMode("timetable");
     if (selectedRestaurantId) loadGrid(selectedRestaurantId, gridDate);
@@ -186,11 +214,9 @@ export default function AdminBookingsScreen() {
     }
   };
 
-  // Past tab: most-recent first. All other views: soonest first.
-  const sorted = [...bookings].sort((a, b) => {
-    const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
-    return statusFilter === "past" ? -diff : diff;
-  });
+  const sorted = sortBookings(bookings, sort);
+
+  const handleSortChange = (key: SortKey) => setSort((prev) => nextSort(prev, key));
 
   // Only wired via useKeyboardShortcuts below when sorted.length > 0, so
   // sorted is guaranteed non-empty whenever this actually runs.
@@ -544,6 +570,8 @@ export default function AdminBookingsScreen() {
           focusedRowId={focusedRowId}
           onOpenBooking={(id) => openBooking(id)}
           onCancelBooking={(b) => setCancelTarget(b)}
+          sort={sort}
+          onSortChange={handleSortChange}
           borderColor={borderColor}
           cardBg={cardBg}
           mutedColor={mutedColor}
@@ -556,6 +584,8 @@ export default function AdminBookingsScreen() {
           bookings={sorted}
           focusedRowId={focusedRowId}
           onOpenBooking={(id) => openBooking(id)}
+          sort={sort}
+          onSortChange={handleSortChange}
           borderColor={borderColor}
           cardBg={cardBg}
           mutedColor={mutedColor}

@@ -1,4 +1,4 @@
-import { Pressable, View } from "react-native";
+import { Pressable, View, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
@@ -7,12 +7,16 @@ import { initials } from "@/utils/formatters";
 import { isPast, StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import { focusedRowHighlight, rowA11yProps } from "@/components/admin/bookings/bookingRowProps";
+import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
 
 export interface BookingsWideTableProps {
   bookings: BookingDetailDto[];
   focusedRowId: number | null;
   onOpenBooking: (id: number) => void;
   onCancelBooking: (booking: BookingDetailDto) => void;
+  /** Active sort (drives header indicator). */
+  sort: SortState;
+  onSortChange: (key: SortKey) => void;
   /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   cardBg: string;
@@ -24,35 +28,72 @@ export interface BookingsWideTableProps {
 /**
  * Wide (desktop/tablet) bookings list — a bordered table with one row per
  * booking. Extracted from the bookings screen for decomposition; presentational,
- * owns no state (the screen drives focus + open/cancel callbacks).
+ * owns no state (the screen drives focus + open/cancel callbacks + sort).
+ *
+ * TIME / GUEST / PARTY / TABLE headers are pressable and drive sort state;
+ * STATUS reflects booking state and isn't a sort axis.
  */
 export function BookingsWideTable({
   bookings,
   focusedRowId,
   onOpenBooking,
   onCancelBooking,
+  sort,
+  onSortChange,
   borderColor,
   cardBg,
   mutedColor,
   isDark,
   primaryColor,
 }: BookingsWideTableProps) {
+  const headerBg = isDark ? "#28292b" : "#f8f8f9";
+  // Subtle alternating row tint for scannability. Translucent so the focused-
+  // row highlight (`primaryColor` tint) still reads on top of it.
+  const zebraBg = isDark ? "rgba(255,255,255,0.022)" : "rgba(0,0,0,0.018)";
+
+  const renderSortHeader = (key: SortKey, label: string, columnStyle: ViewStyle) => {
+    const isActive = sort.key === key;
+    const dirLabel = isActive ? (sort.dir === "asc" ? "ascending" : "descending") : "not sorted";
+    const icon = !isActive
+      ? "swap-vertical-outline"
+      : sort.dir === "asc"
+        ? "chevron-up-outline"
+        : "chevron-down-outline";
+    return (
+      <Pressable
+        testID={`sort-header-${key}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Sort by ${label}, ${dirLabel}`}
+        style={[styles.thSortBtn, columnStyle]}
+        onPress={() => onSortChange(key)}
+      >
+        <ThemedText
+          style={[
+            styles.thCell,
+            { color: isActive ? primaryColor : mutedColor },
+            isActive && styles.thCellActive,
+          ]}
+        >
+          {label}
+        </ThemedText>
+        <Ionicons name={icon} size={11} color={isActive ? primaryColor : mutedColor} />
+      </Pressable>
+    );
+  };
+
   return (
     <View style={[styles.tableCard, { backgroundColor: cardBg, borderColor }]}>
-      <View style={[styles.tableHeader, { backgroundColor: isDark ? "#28292b" : "#f8f8f9" }]}>
-        <ThemedText style={[styles.thCell, styles.colTime, { color: mutedColor }]}>TIME</ThemedText>
-        <ThemedText style={[styles.thCell, styles.colGuest, { color: mutedColor }]}>
-          GUEST
-        </ThemedText>
-        <ThemedText style={[styles.thCell, styles.colParty, { color: mutedColor }]}>
-          PARTY
-        </ThemedText>
-        <ThemedText style={[styles.thCell, styles.colTable, { color: mutedColor }]}>
-          TABLE
-        </ThemedText>
-        <ThemedText style={[styles.thCell, styles.colStatus, { color: mutedColor }]}>
-          STATUS
-        </ThemedText>
+      <View
+        style={[
+          styles.tableHeader,
+          { backgroundColor: headerBg, borderBottomWidth: 1, borderBottomColor: borderColor },
+        ]}
+      >
+        {renderSortHeader("date", "TIME", styles.colTime)}
+        {renderSortHeader("guest", "GUEST", styles.colGuest)}
+        {renderSortHeader("seats", "PARTY", styles.colParty)}
+        {renderSortHeader("table", "TABLE", styles.colTable)}
+        {renderSortHeader("status", "STATUS", styles.colStatus)}
         <View style={styles.colAction} />
       </View>
 
@@ -64,6 +105,10 @@ export function BookingsWideTable({
             styles.tableRow,
             i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
             { cursor: "pointer" } as const,
+            // Even rows get the faint zebra tint unless they're focused.
+            i % 2 === 1 && !focusedRowHighlight(b.id, focusedRowId, primaryColor)
+              ? { backgroundColor: zebraBg }
+              : null,
             focusedRowHighlight(b.id, focusedRowId, primaryColor),
           ]}
           onPress={() => onOpenBooking(b.id)}
