@@ -232,7 +232,12 @@ test.describe("Admin keyboard shortcuts", () => {
       // first makes it reliable. Not our shortcut hook's bug (it's how any
       // focused HTML button responds to Enter), but real if a user clicks
       // the toggle then immediately uses j/k/Enter.
-      await page.getByText("TIME", { exact: true }).click();
+      //
+      // Blur via the DOM directly rather than clicking another element: the
+      // table column headers (TIME/GUEST/...) are now sortable <button>s, so
+      // clicking one would both steal focus and flip the sort out from under
+      // the "j clamps onto the last row" assumption below.
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
       // "j" advances the selection one row at a time and clamps at the last
       // row rather than wrapping (app/(admin)/bookings/index.tsx's

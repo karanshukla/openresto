@@ -32,12 +32,16 @@ const booking: BookingDetailDto = {
 } as BookingDetailDto;
 
 describe("BookingsCardList", () => {
+  const sort = { key: "date" as const, dir: "asc" as const };
+
   it("renders the customer name, email, party + table info", () => {
     render(
       <BookingsCardList
         bookings={[booking]}
         focusedRowId={null}
         onOpenBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -53,6 +57,8 @@ describe("BookingsCardList", () => {
         bookings={[{ ...booking, isCancelled: true }]}
         focusedRowId={null}
         onOpenBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
@@ -66,10 +72,26 @@ describe("BookingsCardList", () => {
         bookings={[booking]}
         focusedRowId={null}
         onOpenBooking={onOpen}
+        sort={sort}
+        onSortChange={() => {}}
         {...theme}
       />
     );
     fireEvent.press(screen.getByTestId("booking-row-2"));
     expect(onOpen).toHaveBeenCalledWith(2);
+  });
+
+  it("renders the sort control above the cards", () => {
+    render(
+      <BookingsCardList
+        bookings={[booking]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
+        {...theme}
+      />
+    );
+    expect(screen.getByLabelText(/Sort by Guest/)).toBeTruthy();
   });
 });

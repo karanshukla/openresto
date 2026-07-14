@@ -79,3 +79,6 @@ docs/*
 
 #Claude
 .claude/investigations
+
+# ZCode local session data
+.zcode/
