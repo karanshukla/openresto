@@ -29,6 +29,7 @@ WHERE
   );
 
 -- Brand
+-- HeaderImageFit left NULL → defaults to Cover (today's behaviour).
 INSERT INTO
   BrandSettings (
     Id,
@@ -38,7 +39,10 @@ INSERT INTO
     HeaderImageUrl,
     FaviconIcon,
     WebsiteUrl,
-    CopyrightText
+    CopyrightText,
+    Subtitle,
+    HighlightsHeading,
+    HighlightsSubheading
   )
 VALUES
   (
@@ -49,7 +53,10 @@ VALUES
     '/media/hero.jpg?v=1780749336371',
     'pizza',
     'https://openres.to',
-    NULL
+    NULL,
+    'Philadelphia''s home of milk steak and jelly beans.',
+    'What we''re known for',
+    'Curated by Frank Reynolds'
   );
 
 -- Social Links (footer)
@@ -68,6 +75,7 @@ VALUES
 -- DefaultBookingDurationMinutes defaults to 60 (NOT NULL, added by migration).
 -- OpenHoursJson is NULL so OpenTime/CloseTime apply to every day.
 -- WalkInOnly is 0 and WalkInDays is NULL so online bookings stay enabled.
+-- Description supports [label](url) inline links — see app/(user)/restaurant/[id].tsx.
 INSERT INTO
   Restaurants (
     Id,
@@ -84,7 +92,8 @@ INSERT INTO
     DefaultBookingDurationMinutes,
     OpenHoursJson,
     WalkInOnly,
-    WalkInDays
+    WalkInDays,
+    Description
   )
 VALUES
   (
@@ -102,7 +111,8 @@ VALUES
     60,
     NULL,
     0,
-    NULL
+    NULL,
+    'Philadelphia''s worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.'
   );
 
 INSERT INTO
@@ -121,7 +131,8 @@ INSERT INTO
     DefaultBookingDurationMinutes,
     OpenHoursJson,
     WalkInOnly,
-    WalkInDays
+    WalkInDays,
+    Description
   )
 VALUES
   (
@@ -139,7 +150,8 @@ VALUES
     60,
     NULL,
     0,
-    NULL
+    NULL,
+    'The Alley Behind the Alley. Walk-ins welcome, online bookings for the brave.'
   );
 
 INSERT INTO
@@ -158,7 +170,8 @@ INSERT INTO
     DefaultBookingDurationMinutes,
     OpenHoursJson,
     WalkInOnly,
-    WalkInDays
+    WalkInDays,
+    Description
   )
 VALUES
   (
@@ -176,7 +189,8 @@ VALUES
     60,
     NULL,
     0,
-    NULL
+    NULL,
+    'Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).'
   );
 
 -- Sections
@@ -246,49 +260,53 @@ INSERT INTO
 VALUES
   (8, 'Table 1', 4, 5);
 
--- Highlights
+-- Highlights (Link=NULL → static card; set a Link to make the whole card clickable)
 INSERT INTO
-  Highlights (Id, Title, Body, IconKey, SortOrder)
+  Highlights (Id, Title, Body, IconKey, SortOrder, Link)
 VALUES
   (
     1,
     'Dayman Live Every Friday',
     'Fighter of the Nightman. No cover charge. Cash only. Residency secured after a lengthy legal dispute.',
     'star-outline',
-    0
+    0,
+    'https://paddyspub.example/dayman'
   );
 
 INSERT INTO
-  Highlights (Id, Title, Body, IconKey, SortOrder)
+  Highlights (Id, Title, Body, IconKey, SortOrder, Link)
 VALUES
   (
     2,
     'Frank''s Famous Rum Ham',
     'A Reynolds family tradition since 1981. Seasonal availability. Do not ask about the ingredients. Do not ask where Frank has been.',
     'pizza-outline',
-    1
+    1,
+    NULL
   );
 
 INSERT INTO
-  Highlights (Id, Title, Body, IconKey, SortOrder)
+  Highlights (Id, Title, Body, IconKey, SortOrder, Link)
 VALUES
   (
     3,
     'Chardee MacDennis',
     'The Game of Games. Teams of 2. Bring your own wine glass to smash. Management not responsible for emotional damage.',
     'gift-outline',
-    2
+    2,
+    NULL
   );
 
 INSERT INTO
-  Highlights (Id, Title, Body, IconKey, SortOrder)
+  Highlights (Id, Title, Body, IconKey, SortOrder, Link)
 VALUES
   (
     4,
     'Milk Steak - Our Signature Dish',
     'Boiled over hard, served with a side of your finest jelly beans. Charlie''s personal recipe. Our most polarising menu item. Loved by ghouls.',
     'nutrition-outline',
-    3
+    3,
+    'https://paddyspub.example/menu'
   );
 
 PRAGMA foreign_keys = ON;
