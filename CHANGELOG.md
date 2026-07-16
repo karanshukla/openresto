@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-16
+
+Hello again! This release tackles some open feature requests I had, including Home Page customisation, dashboard polish, plus a large internal backend/frontend refactor that shouldn't change anything you see. For the next release, I'm looking into a better restaurant view for the customers as well as Admin Dashboard improvements, cheers!
+
+### Added
+
+- **Home-page customization** (#183, #184, #185, #187) — a configurable subtitle under the app name, a freeform location description (with `[label](url)` inline links), clickable highlight cards with a configurable section heading/subheading, and a hero image fit toggle (Cover/Contain). All fields default to today's behavior when unset.
+- **Sortable bookings list** (#208) — the admin bookings table can now be sorted by column.
+- **Occupancy chart improvements** (#180) — toggle between a rolling T-x view and calendar-date view, with real booking counts, a summary line, and peak highlighting.
+- **Custom time picker** — replaced the native web time input with a dropdown matching the existing date picker's style.
+
+### Fixed
+
+- **Backend hold rejection reasons** (#213) — the UI now surfaces the actual reason a table hold was rejected instead of a generic error.
+- **Timezone hint** (#181) — hidden when the viewer's device timezone already matches the restaurant's.
+- **Occupancy chart layout** (#223, #224, #225) — closed dead space and layout gaps in both wide and stacked layouts.
+- **Sticky footer gap on web** (#226) — `#root` now sizes against the viewport instead of `body`, eliminating a gap below the footer.
+- **Dependency security patches** — bumped ASP.NET Core / EF Core to 10.0.10 (July 2026 servicing release) and a handful of other verified non-breaking patch bumps.
+
+### Changed
+
+- Large internal backend and frontend refactor for maintainability — no user-facing behavior changes.
+
 ## [1.2.1] - 2026-07-06
 
 Fixed an issue with the Dates appearing incorrectly in the home page
@@ -97,3 +120,4 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.1.1]: https://github.com/karanshukla/openresto/releases/tag/v1.1.1
 [1.2.0]: https://github.com/karanshukla/openresto/releases/tag/v1.2.0
 [1.2.1]: https://github.com/karanshukla/openresto/releases/tag/v1.2.1
+[1.3.0]: https://github.com/karanshukla/openresto/releases/tag/v1.3.0
