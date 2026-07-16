@@ -105,14 +105,19 @@ export const styles = StyleSheet.create({
   },
   thCell: { ...theme.typography.labelSmall, letterSpacing: 0.8 },
   thCellActive: { fontWeight: "700" as const },
+  // Horizontal padding/margin are intentionally 0: each header cell's box must
+  // be exactly the column width (colTime/colGuest/...) so it lines up with the
+  // data cells below it. A marginHorizontal here would shrink the cell's layout
+  // footprint and make the flex GUEST column absorb the drift — the header row
+  // ends up wider/narrower than the data rows and every column skews. Only the
+  // vertical padding/margin are kept; they expand the tap target vertically
+  // without affecting column alignment.
   thSortBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingVertical: 2,
-    paddingHorizontal: 2,
     marginVertical: -2,
-    marginHorizontal: -2,
     borderRadius: theme.borderRadius.sm,
   },
   sortControl: {

@@ -70,6 +70,9 @@ update.log
 *.db-journal
 # Playwright MCP plugin snapshots
 .playwright-mcp/
+# Local debug screenshots (page captures, before/after diffs)
+bookings-table-*.png
+page-*.png
 # Session handoff notes
 .remember/
 docs/*
