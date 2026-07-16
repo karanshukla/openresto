@@ -94,6 +94,7 @@ export const styles = StyleSheet.create({
   tableCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
+    overflow: "hidden",
     ...theme.shadows.sm,
   },
   tableHeader: {
@@ -103,7 +104,7 @@ export const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
   },
   thCell: { ...theme.typography.labelSmall, letterSpacing: 0.8 },
-  thCellActive: { color: undefined },
+  thCellActive: { fontWeight: "700" as const },
   thSortBtn: {
     flexDirection: "row",
     alignItems: "center",

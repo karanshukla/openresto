@@ -64,7 +64,7 @@ export function BookingsWideTable({
         testID={`sort-header-${key}`}
         accessibilityRole="button"
         accessibilityLabel={`Sort by ${label}, ${dirLabel}`}
-        style={[styles.thSortBtn, columnStyle]}
+        style={[styles.thSortBtn, columnStyle, { alignItems: "center" }]}
         onPress={() => onSortChange(key)}
       >
         <ThemedText
