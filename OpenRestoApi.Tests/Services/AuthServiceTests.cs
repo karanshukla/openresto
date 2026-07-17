@@ -283,4 +283,24 @@ public class AuthServiceTests
         var ex = await Assert.ThrowsAsync<ValidationException>(() => svc.ResetPasswordAsync("valid-token", weak));
         Assert.Contains("at least 6 characters", ex.Message);
     }
+
+    // ── GetOrCreateCredentialAsync (via LoginAsync, no seeded credential) ────────
+
+    [Fact]
+    public async Task LoginAsync_Throws_InfrastructureException_When_NoCredential_AndNoAdminPasswordConfigured()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(LoginAsync_Throws_InfrastructureException_When_NoCredential_AndNoAdminPasswordConfigured));
+        AuthService svc = CreateService(db, BuildConfig());
+
+        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
+        try
+        {
+            var ex = await Assert.ThrowsAsync<InfrastructureException>(() => svc.LoginAsync("admin@example.com", "secret123"));
+            Assert.Contains("Admin:Password must be configured", ex.Message);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
+        }
+    }
 }
