@@ -91,6 +91,12 @@ public class OpeningHoursHelperTests
     }
 
     [Fact]
+    public void Parse_ReturnsNull_WhenJsonDeserializesToNull()
+    {
+        Assert.Null(OpeningHoursHelper.Parse("null"));
+    }
+
+    [Fact]
     public void ResolveWeek_Returns7ResolvedEntries()
     {
         Restaurant r = MakeRestaurant("""{"7":{"open":"12:00","close":"16:00"}}""");

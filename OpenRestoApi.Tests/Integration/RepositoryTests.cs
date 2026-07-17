@@ -363,7 +363,71 @@ public class RepositoryTests : IDisposable
         Assert.False(isBooked);
     }
 
+    [Fact]
+    public async Task BookingRepository_AddRangeAsync_AddsAllBookingsToChangeTracker()
+    {
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section? section, Table? table) = SeedRestaurantData(db);
+        var repo = new BookingRepository(db);
+
+        DateTime bookingDate = DateTime.UtcNow.Date.AddDays(12).AddHours(12).ToUniversalTime();
+        var bookings = new List<Booking>
+        {
+            new Booking
+            {
+                TableId = table.Id,
+                SectionId = section.Id,
+                RestaurantId = restaurant.Id,
+                Date = bookingDate,
+                CustomerEmail = "range1@test.com",
+                Seats = 2,
+                BookingRef = "RANGE1"
+            },
+            new Booking
+            {
+                TableId = table.Id,
+                SectionId = section.Id,
+                RestaurantId = restaurant.Id,
+                Date = bookingDate.AddHours(2),
+                CustomerEmail = "range2@test.com",
+                Seats = 2,
+                BookingRef = "RANGE2"
+            }
+        };
+
+        await repo.AddRangeAsync(bookings);
+        await repo.SaveChangesAsync();
+
+        Booking? first = await repo.GetByRefAsync("RANGE1");
+        Booking? second = await repo.GetByRefAsync("RANGE2");
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+    }
+
     // ─── RestaurantRepository ────────────────────────────────────────
+
+    [Fact]
+    public async Task RestaurantRepository_ExistsAsync_ReturnsTrue_WhenRestaurantExists()
+    {
+        using AppDbContext db = CreateContext();
+        (Restaurant? restaurant, Section _, Table _) = SeedRestaurantData(db);
+        var repo = new RestaurantRepository(db);
+
+        bool exists = await repo.ExistsAsync(restaurant.Id);
+
+        Assert.True(exists);
+    }
+
+    [Fact]
+    public async Task RestaurantRepository_ExistsAsync_ReturnsFalse_WhenRestaurantMissing()
+    {
+        using AppDbContext db = CreateContext();
+        var repo = new RestaurantRepository(db);
+
+        bool exists = await repo.ExistsAsync(9999);
+
+        Assert.False(exists);
+    }
 
     [Fact]
     public async Task RestaurantRepository_GetByIdAsync_LoadsSectionsAndTables()
@@ -418,6 +482,31 @@ public class RepositoryTests : IDisposable
         var repo = new SectionRepository(db);
 
         Section? result = await repo.GetByIdAsync(9999);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SectionRepository_FindByIdAsync_ReturnsSectionWithoutNavigationProperties()
+    {
+        using AppDbContext db = CreateContext();
+        (Restaurant _, Section? section, Table _) = SeedRestaurantData(db);
+        db.ChangeTracker.Clear();
+        var repo = new SectionRepository(db);
+
+        Section? result = await repo.FindByIdAsync(section.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal("Main Hall", result!.Name);
+    }
+
+    [Fact]
+    public async Task SectionRepository_FindByIdAsync_ReturnsNull_WhenNotFound()
+    {
+        using AppDbContext db = CreateContext();
+        var repo = new SectionRepository(db);
+
+        Section? result = await repo.FindByIdAsync(9999);
 
         Assert.Null(result);
     }
