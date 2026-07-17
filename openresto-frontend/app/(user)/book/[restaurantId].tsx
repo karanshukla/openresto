@@ -14,6 +14,7 @@ import { convertLocalToUtc } from "@/utils/date";
 import BookingSkeleton from "@/components/booking/BookingSkeleton";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import WalkInNotice from "@/components/booking/WalkInNotice";
+import { LinkedText } from "@/components/common/LinkedText";
 import Footer from "@/components/layout/Footer";
 
 export default function BookScreen() {
@@ -138,6 +139,10 @@ export default function BookScreen() {
             at {restaurant.name}
           </ThemedText>
 
+          {restaurant.description ? (
+            <LinkedText text={restaurant.description} style={styles.description} />
+          ) : null}
+
           {restaurant.walkInOnly ? (
             <WalkInNotice scope="location" />
           ) : (
@@ -180,6 +185,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
+    marginBottom: 24,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: -12,
     marginBottom: 24,
   },
   imageBanner: {
