@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-07-17
+
+A couple minor tweaks that I neede to fix after yesterday's release!
+
+- Updated the styling in the Admin Bookings page and fixed the column widths in the header row.
+- The Location description was added in the BE but not in the FE. In 1.4.0 (hopefully!) there'll be a location refactor which will surface the restaurant blurb, but for now, it appears in the "Booking" page.
+
 ## [1.3.0] - 2026-07-16
 
 Hello again! This release tackles some open feature requests I had, including Home Page customisation, dashboard polish, plus a large internal backend/frontend refactor that shouldn't change anything you see. For the next release, I'm looking into a better restaurant view for the customers as well as Admin Dashboard improvements, cheers!
@@ -121,3 +128,4 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.2.0]: https://github.com/karanshukla/openresto/releases/tag/v1.2.0
 [1.2.1]: https://github.com/karanshukla/openresto/releases/tag/v1.2.1
 [1.3.0]: https://github.com/karanshukla/openresto/releases/tag/v1.3.0
+[1.3.1]: https://github.com/karanshukla/openrest/releases/tag/v1.3.1
