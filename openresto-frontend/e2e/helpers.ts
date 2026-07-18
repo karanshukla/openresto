@@ -156,7 +156,7 @@ export async function gotoAdminDashboard(page: Page, loginFirst = false): Promis
       throw new Error(`Admin login failed (HTTP ${res.status()})`);
     }
   }
-  await page.goto("/dashboard");
+  await page.goto("/admin/dashboard");
   await page.waitForURL(/.*dashboard.*/, { timeout: 20_000 });
   await page.waitForSelector('input[placeholder="Email or reference…"]', { timeout: 10_000 });
 }

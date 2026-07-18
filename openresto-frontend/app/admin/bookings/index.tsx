@@ -273,7 +273,7 @@ export default function AdminBookingsScreen() {
         setLookupStatus("multiple");
         const isEmail = q.includes("@");
         router.replace({
-          pathname: "/(admin)/bookings",
+          pathname: "/admin/bookings",
           params: isEmail ? { email: q } : { bookingRef: q },
         });
       }
@@ -345,7 +345,7 @@ export default function AdminBookingsScreen() {
           {searchQuery ? (
             <Pressable
               style={[styles.newBookingBtn, { backgroundColor: mutedColor }]}
-              onPress={() => router.replace("/(admin)/bookings")}
+              onPress={() => router.replace("/admin/bookings")}
             >
               <Ionicons name="close-outline" size={16} color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>Clear</ThemedText>

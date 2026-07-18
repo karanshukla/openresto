@@ -121,6 +121,7 @@ export function RestaurantInfoForm({
   const [name, setName] = useState(restaurant.name);
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [description, setDescription] = useState(restaurant.description ?? "");
+  const [menuUrl, setMenuUrl] = useState(restaurant.menuUrl ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
   const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
   const [customHours, setCustomHours] = useState(() => hasCustomHours(restaurant));
@@ -190,6 +191,7 @@ export function RestaurantInfoForm({
     name !== restaurant.name ||
     address !== (restaurant.address ?? "") ||
     description !== (restaurant.description ?? "") ||
+    menuUrl !== (restaurant.menuUrl ?? "") ||
     hoursDirty ||
     openDays.join(",") !== parseOpenDays(restaurant.openDays).join(",") ||
     walkInOnly !== !!restaurant.walkInOnly ||
@@ -202,6 +204,7 @@ export function RestaurantInfoForm({
     setName(restaurant.name);
     setAddress(restaurant.address ?? "");
     setDescription(restaurant.description ?? "");
+    setMenuUrl(restaurant.menuUrl ?? "");
     setOpenTime(restaurant.openTime ?? "09:00");
     setCloseTime(restaurant.closeTime ?? "22:00");
     setCustomHours(hasCustomHours(restaurant));
@@ -225,6 +228,7 @@ export function RestaurantInfoForm({
       name: name.trim(),
       address: address.trim() || null,
       description: description.trim() || null,
+      menuUrl: menuUrl.trim() || null,
       openTime: customHours ? undefined : openTime,
       closeTime: customHours ? undefined : closeTime,
       openHours: openHoursPayload,
@@ -241,6 +245,7 @@ export function RestaurantInfoForm({
         name: result.name,
         address: result.address,
         description: result.description,
+        menuUrl: result.menuUrl,
         openTime: result.openTime,
         closeTime: result.closeTime,
         openHours: result.openHours,
@@ -310,6 +315,24 @@ export function RestaurantInfoForm({
           />
           <ThemedText style={{ fontSize: 11, color: mutedColor }}>
             Shown on the public location page. Use [label](https://url) for links.
+          </ThemedText>
+        </View>
+
+        <View style={{ gap: 6 }}>
+          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+            Menu link (optional)
+          </ThemedText>
+          <Input
+            value={menuUrl}
+            onChangeText={setMenuUrl}
+            placeholder="https://your-menu-url.com/menu.pdf"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
+          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            Link to your menu — a PDF, a page on your site, wherever it lives. Shown as a &quot;View
+            menu&quot; button on the location page.
           </ThemedText>
         </View>
 

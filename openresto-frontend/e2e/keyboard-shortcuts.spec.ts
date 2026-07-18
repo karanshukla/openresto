@@ -142,7 +142,7 @@ test.describe("Admin keyboard shortcuts", () => {
           await page.waitForTimeout(10_000); // let the rate-limit window recover
           await page.reload();
         } else {
-          await page.goto("/bookings");
+          await page.goto("/admin/bookings");
         }
         const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
         await expect(searchInput).toBeVisible({ timeout: 10_000 });
@@ -170,7 +170,7 @@ test.describe("Admin keyboard shortcuts", () => {
 
     await page.keyboard.press("c");
 
-    // "c" always routes to /(admin)/bookings?create=1 (app/(admin)/_layout.tsx),
+    // "c" always routes to /admin/bookings?create=1 (app/admin/_layout.tsx),
     // which the bookings page reads on mount to open NewBookingModal. Assert
     // on "Guest email" (a field label unique to the modal) rather than "New
     // Booking" — that text also appears on the page's own toolbar button
@@ -187,7 +187,7 @@ test.describe("Admin keyboard shortcuts", () => {
 
     const uniqueEmail = `e2e-shortcuts-row-${Date.now()}@example.com`;
     // ~2 years out: the bookings list sorts soonest-first by default (see
-    // app/(admin)/bookings/index.tsx's `sorted`), so this booking is
+    // app/admin/bookings/index.tsx's `sorted`), so this booking is
     // virtually guaranteed to land LAST regardless of how many other
     // bookings this restaurant/DB already has from other specs — letting
     // "j" be driven deterministically without needing to read any
@@ -216,7 +216,7 @@ test.describe("Admin keyboard shortcuts", () => {
     expect(createdBookingId).toBeTruthy();
 
     try {
-      await page.goto("/bookings");
+      await page.goto("/admin/bookings");
       await page.getByText("List", { exact: true }).click();
 
       const targetRow = page.getByTestId(`booking-row-${createdBookingId}`);
@@ -240,7 +240,7 @@ test.describe("Admin keyboard shortcuts", () => {
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
       // "j" advances the selection one row at a time and clamps at the last
-      // row rather than wrapping (app/(admin)/bookings/index.tsx's
+      // row rather than wrapping (app/admin/bookings/index.tsx's
       // moveRowFocus). Press it more times than there could possibly be
       // rows so the selection deterministically lands on the last (= our)
       // row regardless of how many other bookings exist.
@@ -261,7 +261,7 @@ test.describe("Admin keyboard shortcuts", () => {
       await pressEscapeUntilClosed(page, detailsHeading);
 
       // Row selection survives closing the popup (only the popup's own
-      // bookingId/initialFocus state resets — see app/(admin)/bookings/index.tsx),
+      // bookingId/initialFocus state resets — see app/admin/bookings/index.tsx),
       // so "e" re-opens the same booking directly. This time it should
       // reveal the extend section (BookingDetailPopup's initialFocus="extend"
       // scroll effect is already unit-tested in isolation; this confirms the

@@ -61,7 +61,7 @@ self.addEventListener("push", (event) => {
       icon: "/api/brand/pwa-icon-192.png",
       badge: "/api/brand/pwa-icon-192.png",
       tag: data.bookingId ? `booking-${data.bookingId}` : `capacity-${data.restaurantId}`,
-      data: { url: "(admin)/notifications" },
+      data: { url: "/admin/notifications" },
     })
   );
 });

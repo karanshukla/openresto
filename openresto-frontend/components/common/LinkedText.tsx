@@ -1,5 +1,4 @@
-import { type ReactNode } from "react";
-import { Pressable, Linking, type TextStyle, type ViewStyle } from "react-native";
+import { Linking, Text, type TextStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -52,43 +51,38 @@ export function parseLinkedText(input: string): TextSegment[] {
 
 /**
  * Renders text that may contain markdown-style inline links (`[label](url)`).
- * Plain-text runs use `ThemedText`; each link becomes an accessible `Pressable` that
- * opens the URL via `Linking.openURL`. No external markdown dependency.
+ *
+ * Plain runs and link runs are emitted as children of a single parent `<Text>`
+ * so the whole string flows as one inline paragraph (links do NOT break onto
+ * their own line). Links are nested `<Text onPress>` — the only RN construct
+ * that is both inline-flowing and tappable. No external markdown dependency.
+ *
+ * Each link's url is exposed via `accessibilityHint` (and the parent is
+ * `accessibilityRole="link"`) so assistive tech announces the destination.
  */
-export function LinkedText({
-  text,
-  style,
-  linkStyle,
-}: {
-  text: string;
-  style?: TextStyle;
-  linkStyle?: ViewStyle;
-}) {
+export function LinkedText({ text, style }: { text: string; style?: TextStyle }) {
   const { primaryColor } = useAppTheme();
   const segments = parseLinkedText(text);
 
-  const nodes: ReactNode[] = segments.map((seg, i) => {
-    if (seg.url) {
-      return (
-        <Pressable
-          key={`link-${i}`}
-          accessibilityRole="link"
-          accessibilityHint={seg.url}
-          onPress={() => Linking.openURL(seg.url!)}
-          style={linkStyle}
-        >
-          <ThemedText style={[style, { color: primaryColor, textDecorationLine: "underline" }]}>
+  return (
+    <ThemedText style={style}>
+      {segments.map((seg, i) =>
+        seg.url ? (
+          <Text
+            key={`link-${i}`}
+            accessibilityRole="link"
+            accessibilityHint={seg.url}
+            onPress={() => Linking.openURL(seg.url!)}
+            style={{ color: primaryColor, textDecorationLine: "underline" }}
+          >
             {seg.text}
-          </ThemedText>
-        </Pressable>
-      );
-    }
-    return (
-      <ThemedText key={`text-${i}`} style={style}>
-        {seg.text}
-      </ThemedText>
-    );
-  });
-
-  return <>{nodes}</>;
+          </Text>
+        ) : (
+          // Plain run: bare <Text> inherits the parent <ThemedText>'s styling
+          // (font, size, line-height, color) so the paragraph flows uniformly.
+          <Text key={`text-${i}`}>{seg.text}</Text>
+        )
+      )}
+    </ThemedText>
+  );
 }

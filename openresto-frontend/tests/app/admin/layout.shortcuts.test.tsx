@@ -4,7 +4,7 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { act } from "react-test-renderer";
-import AdminLayout from "@/app/(admin)/_layout";
+import AdminLayout from "@/app/admin/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, usePathname, useSegments } from "expo-router";
 import { focusTarget } from "@/utils/focusRegistry";
@@ -28,8 +28,8 @@ jest.mock("expo-router", () => {
     Slot,
     Stack,
     useRouter: jest.fn(),
-    usePathname: jest.fn().mockReturnValue("/dashboard"),
-    useSegments: jest.fn().mockReturnValue(["(admin)", "dashboard"]),
+    usePathname: jest.fn().mockReturnValue("/admin/dashboard"),
+    useSegments: jest.fn().mockReturnValue(["admin", "dashboard"]),
   };
 });
 
@@ -63,8 +63,8 @@ describe("AdminLayout keyboard shortcuts", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (usePathname as jest.Mock).mockReturnValue("/dashboard");
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+    (usePathname as jest.Mock).mockReturnValue("/admin/dashboard");
+    (useSegments as jest.Mock).mockReturnValue(["admin", "dashboard"]);
     const { Platform } = require("react-native");
     Platform.OS = "web";
   });
@@ -79,28 +79,28 @@ describe("AdminLayout keyboard shortcuts", () => {
     await renderAuthenticated();
     dispatchKeydown("g");
     dispatchKeydown("d");
-    expect(mockRouter.push).toHaveBeenCalledWith("/(admin)/dashboard");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/dashboard");
   });
 
   it("navigates to bookings on g then b", async () => {
     await renderAuthenticated();
     dispatchKeydown("g");
     dispatchKeydown("b");
-    expect(mockRouter.push).toHaveBeenCalledWith("/(admin)/bookings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/bookings");
   });
 
   it("navigates to locations on g then l", async () => {
     await renderAuthenticated();
     dispatchKeydown("g");
     dispatchKeydown("l");
-    expect(mockRouter.push).toHaveBeenCalledWith("/(admin)/locations");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/locations");
   });
 
   it("navigates to settings on g then s", async () => {
     await renderAuthenticated();
     dispatchKeydown("g");
     dispatchKeydown("s");
-    expect(mockRouter.push).toHaveBeenCalledWith("/(admin)/settings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/settings");
   });
 
   it("focuses the sidebar lookup input on '/'", async () => {
@@ -113,7 +113,7 @@ describe("AdminLayout keyboard shortcuts", () => {
     await renderAuthenticated();
     dispatchKeydown("c");
     expect(mockRouter.push).toHaveBeenCalledWith({
-      pathname: "/(admin)/bookings",
+      pathname: "/admin/bookings",
       params: { create: "1" },
     });
   });
@@ -130,7 +130,7 @@ describe("AdminLayout keyboard shortcuts", () => {
   });
 
   it("does not wire nav shortcuts on the login screen", async () => {
-    (usePathname as jest.Mock).mockReturnValue("/login");
+    (usePathname as jest.Mock).mockReturnValue("/admin/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
     render(<AdminLayout />);
     await waitFor(() => expect(screen.getByTestId("slot")).toBeTruthy());
@@ -154,7 +154,7 @@ describe("AdminLayout keyboard shortcuts", () => {
     expect(focusTarget).not.toHaveBeenCalled();
   });
 
-  it("resumes firing admin shortcuts once segments reflect an (admin) route again", async () => {
+  it("resumes firing admin shortcuts once segments reflect an admin route again", async () => {
     (useSegments as jest.Mock).mockReturnValue(["(user)", "lookup"]);
     (checkSession as jest.Mock).mockResolvedValue({ user: "admin" });
     const { rerender } = render(<AdminLayout />);
@@ -163,12 +163,12 @@ describe("AdminLayout keyboard shortcuts", () => {
     dispatchKeydown("c");
     expect(mockRouter.push).not.toHaveBeenCalled();
 
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+    (useSegments as jest.Mock).mockReturnValue(["admin", "dashboard"]);
     rerender(<AdminLayout />);
 
     dispatchKeydown("c");
     expect(mockRouter.push).toHaveBeenCalledWith({
-      pathname: "/(admin)/bookings",
+      pathname: "/admin/bookings",
       params: { create: "1" },
     });
   });

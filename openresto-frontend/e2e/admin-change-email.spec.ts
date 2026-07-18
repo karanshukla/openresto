@@ -27,7 +27,7 @@ test.describe("Admin change email", () => {
 
   test("changing email via Settings updates login credentials", async ({ page }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/settings");
+    await page.goto("/admin/settings");
     // The Account Security card hydrates from rate-limited admin fetches;
     // reload (cool-down first) if it hasn't rendered within the window. Once
     // the heading is up the rest of the card (incl. ADMIN_EMAIL) has hydrated.

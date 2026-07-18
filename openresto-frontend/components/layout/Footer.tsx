@@ -50,20 +50,23 @@ export default function Footer({ backgroundColor }: FooterProps) {
                   onPress={() => Linking.openURL(link.url)}
                   accessibilityRole="link"
                   accessibilityLabel={link.label}
-                  hitSlop={10}
+                  hitSlop={8}
                   style={({ hovered }: any) => [styles.socialBtn, hovered && { opacity: 0.65 }]}
                 >
                   <Ionicons
                     name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                    size={17}
+                    size={15}
                     color={colors.muted}
                   />
+                  <ThemedText style={[styles.socialLabel, { color: colors.muted }]}>
+                    {link.label}
+                  </ThemedText>
                 </Pressable>
               ))}
             </View>
           )}
 
-          <Link href={"/(admin)/dashboard" as const} asChild>
+          <Link href={"/admin/dashboard" as const} asChild>
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Restaurant admin"
@@ -118,10 +121,17 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   socialBtn: {
-    minWidth: 32,
-    minHeight: 32,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 6,
+    minHeight: 32,
+    paddingHorizontal: 4,
+    borderRadius: theme.borderRadius.md,
+  },
+  socialLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
   },
   adminBtn: {
     flexDirection: "row",

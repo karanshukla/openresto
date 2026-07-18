@@ -69,14 +69,14 @@ describe("AdminSidebar", () => {
     render(<AdminSidebar />);
     await waitFor(() => expect(screen.getByText("Overview")).toBeTruthy());
     fireEvent.press(screen.getByText("Overview"));
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/dashboard");
+    expect(mockPush).toHaveBeenCalledWith("/admin/dashboard");
   });
 
   it("navigates to bookings when Bookings is pressed", async () => {
     render(<AdminSidebar />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
     fireEvent.press(screen.getByText("Bookings"));
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
+    expect(mockPush).toHaveBeenCalledWith("/admin/bookings");
   });
 
   it("calls logout and redirects when Log out is pressed", async () => {
@@ -87,7 +87,7 @@ describe("AdminSidebar", () => {
       fireEvent.press(screen.getByText("Log out"));
     });
     expect(logout).toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith("/(admin)/login");
+    expect(mockReplace).toHaveBeenCalledWith("/admin/login");
   });
 
   it("navigates to site root when Back to site is pressed", async () => {
@@ -138,7 +138,7 @@ describe("AdminSidebar", () => {
     });
     await waitFor(() =>
       expect(mockPush).toHaveBeenCalledWith(
-        expect.objectContaining({ pathname: "/(admin)/bookings" })
+        expect.objectContaining({ pathname: "/admin/bookings" })
       )
     );
   });

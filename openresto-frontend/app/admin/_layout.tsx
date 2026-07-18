@@ -54,10 +54,10 @@ function AdminLayoutInner() {
   // load (page.goto() straight to a route never dispatches a "focus" nav
   // event) and would leave shortcutsEnabled stuck false. This also still
   // guards against the original scope-leak bug: once the user navigates to a
-  // (user) route, segments[0] flips away from "(admin)" even though this
+  // (user) route, segments[0] flips away from "admin" even though this
   // layout instance may remain mounted (React Navigation doesn't unmount
   // sibling stack screens on navigation).
-  const isAdminRouteActive = segments[0] === "(admin)";
+  const isAdminRouteActive = segments[0] === "admin";
   const brand = useBrand();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">(
     "loading"
@@ -69,22 +69,23 @@ function AdminLayoutInner() {
 
     /* istanbul ignore next */
     const PAGE_TITLES: Record<string, string> = {
-      "/dashboard": "Dashboard",
-      "/settings": "Settings",
-      "/bookings": "Bookings",
-      "/bookings/new": "New Walk-in",
-      "/locations": "Locations",
-      "/login": "Admin Login",
+      "/admin/dashboard": "Dashboard",
+      "/admin/settings": "Settings",
+      "/admin/bookings": "Bookings",
+      "/admin/bookings/new": "New Walk-in",
+      "/admin/locations": "Locations",
+      "/admin/login": "Admin Login",
     };
     /* istanbul ignore next */
     const title =
-      PAGE_TITLES[pathname] ?? (/^\/bookings\/\d+$/.test(pathname) ? "Booking Detail" : undefined);
+      PAGE_TITLES[pathname] ??
+      (/^\/admin\/bookings\/\d+$/.test(pathname) ? "Booking Detail" : undefined);
     /* istanbul ignore next */
     if (title) document.title = `${title} | ${brand.appName}`;
   }, [pathname, brand.appName]);
 
   useEffect(() => {
-    const onLoginScreen = pathname === "/login";
+    const onLoginScreen = pathname === "/admin/login";
     if (onLoginScreen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthState("authenticated");
@@ -102,7 +103,7 @@ function AdminLayoutInner() {
         setAuthState("authenticated");
       } else {
         setAuthState("unauthenticated");
-        router.replace("/(admin)/login");
+        router.replace("/admin/login");
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,20 +111,20 @@ function AdminLayoutInner() {
 
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const shortcutsEnabled =
-    authState === "authenticated" && pathname !== "/login" && isAdminRouteActive;
+    authState === "authenticated" && pathname !== "/admin/login" && isAdminRouteActive;
 
   useKeyboardShortcuts(
     shortcutsEnabled
       ? {
-          "g d": () => router.push("/(admin)/dashboard"),
-          "g b": () => router.push("/(admin)/bookings"),
-          "g l": () => router.push("/(admin)/locations"),
-          "g s": () => router.push("/(admin)/settings"),
+          "g d": () => router.push("/admin/dashboard"),
+          "g b": () => router.push("/admin/bookings"),
+          "g l": () => router.push("/admin/locations"),
+          "g s": () => router.push("/admin/settings"),
           "/": (e) => {
             e.preventDefault();
             focusTarget("admin-lookup");
           },
-          c: () => router.push({ pathname: "/(admin)/bookings", params: { create: "1" } }),
+          c: () => router.push({ pathname: "/admin/bookings", params: { create: "1" } }),
           "?": () => setShowShortcutsHelp((v) => !v),
         }
       : {}
@@ -133,7 +134,7 @@ function AdminLayoutInner() {
 
   /* istanbul ignore next */
   if (Platform.OS === "web") {
-    const onLoginScreen = pathname === "/login";
+    const onLoginScreen = pathname === "/admin/login";
     if (onLoginScreen) {
       return (
         <ThemedView style={{ flex: 1 }}>
@@ -160,7 +161,7 @@ function AdminLayoutInner() {
   }
 
   if (authState !== "authenticated") {
-    const onLoginScreen = pathname === "/login";
+    const onLoginScreen = pathname === "/admin/login";
     /* istanbul ignore else */
     if (!onLoginScreen) return null;
   }

@@ -43,10 +43,12 @@ test.describe("Booking Flow", () => {
     await expect(restaurantCards.first()).toBeVisible({ timeout: 30_000 });
     await restaurantCards.first().click({ force: true });
 
-    // Wait for navigation and booking form to load.
+    // Wait for navigation and booking form to load. Clicking a card routes
+    // into the merged Locations page, which auto-expands with the booking
+    // form inline (the old standalone /book/:id page is now just a redirect).
     // If the restaurant data is rate-limited after the preceding API-heavy tests,
     // reload once — the client's 429 retry will then succeed.
-    await page.waitForURL(/.*\/book\/\d+/, { timeout: 10000 });
+    await page.waitForURL(/.*\/locations\/\d+/, { timeout: 10000 });
     try {
       await expect(page.getByText("Book a table")).toBeVisible({ timeout: 15_000 });
     } catch {

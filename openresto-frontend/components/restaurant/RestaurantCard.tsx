@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { RestaurantDto } from "@/api/restaurants";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -9,81 +9,7 @@ import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
-
-function getRestaurantDate(timezone: string): string {
-  try {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(now);
-    const year = parts.find((p) => p.type === "year")?.value ?? "";
-    const month = parts.find((p) => p.type === "month")?.value ?? "";
-    const day = parts.find((p) => p.type === "day")?.value ?? "";
-    return `${year}-${month}-${day}`;
-  } catch {
-    return new Date().toISOString().split("T")[0];
-  }
-}
-
-function getRestaurantNow(timezone: string): { totalMins: number; isoDay: number } {
-  try {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      hour: "numeric",
-      minute: "numeric",
-      weekday: "long",
-      hour12: false,
-    }).formatToParts(now);
-    const rawHour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10) % 24;
-    const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
-    const weekday = parts.find((p) => p.type === "weekday")?.value ?? "Monday";
-    const dayMap: Record<string, number> = {
-      Monday: 1,
-      Tuesday: 2,
-      Wednesday: 3,
-      Thursday: 4,
-      Friday: 5,
-      Saturday: 6,
-      Sunday: 7,
-    };
-    return { totalMins: rawHour * 60 + minute, isoDay: dayMap[weekday] ?? 1 };
-  } catch {
-    const now = new Date();
-    const jsDay = now.getDay();
-    return {
-      totalMins: now.getHours() * 60 + now.getMinutes(),
-      isoDay: jsDay === 0 ? 7 : jsDay,
-    };
-  }
-}
-
-function parseDayOfWeek(day: string): number {
-  const num = parseInt(day, 10);
-  if (!isNaN(num) && num >= 1 && num <= 7) return num;
-
-  const lower = day.toLowerCase();
-  if (lower.startsWith("mon")) return 1;
-  if (lower.startsWith("tue")) return 2;
-  if (lower.startsWith("wed")) return 3;
-  if (lower.startsWith("thu")) return 4;
-  if (lower.startsWith("fri")) return 5;
-  if (lower.startsWith("sat")) return 6;
-  if (lower.startsWith("sun")) return 7;
-  return 0;
-}
-
-function getOpenDaysList(restaurant: RestaurantDto): number[] {
-  return (
-    restaurant.openDays
-      ?.split(",")
-      .map((d) => parseDayOfWeek(d.trim()))
-      .filter((d) => d > 0) ?? [1, 2, 3, 4, 5, 6, 7]
-  );
-}
+import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/restaurantTime";
 
 function opensLaterToday(restaurant: RestaurantDto): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -207,7 +133,7 @@ export default function RestaurantCard({
   return (
     <Pressable
       accessibilityRole="link"
-      onPress={() => router.push(`/(user)/book/${restaurant.id}`)}
+      onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,
         cardShadow,
@@ -358,9 +284,9 @@ export default function RestaurantCard({
             onPress={(e) => {
               e.stopPropagation?.();
               if (Platform.OS === "web") {
-                window.open(`/(user)/book/${restaurant.id}`, "_blank");
+                window.open(`/(user)/locations/${restaurant.id}`, "_blank");
               } else {
-                router.push(`/(user)/book/${restaurant.id}`);
+                router.push(`/(user)/locations/${restaurant.id}` as Href);
               }
             }}
             accessibilityLabel="Open booking page in new tab"
@@ -421,7 +347,7 @@ export default function RestaurantCard({
                       onPress={(e) => {
                         e.stopPropagation?.();
                         router.push(
-                          `/(user)/book/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}`
+                          `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
                         );
                       }}
                       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -462,7 +388,7 @@ export default function RestaurantCard({
           </View>
           <Pressable
             style={({ pressed }) => [styles.viewBtn, pressed && { backgroundColor: surface2 }]}
-            onPress={() => router.push(`/(user)/book/${restaurant.id}`)}
+            onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
           >
             <ThemedText style={[styles.viewBtnText, { color: primaryColor }]}>
               See details

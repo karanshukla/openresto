@@ -72,7 +72,7 @@ test.describe("Admin sections & tables", () => {
 
   test("the API-created section + table render on the Locations page", async ({ page }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/locations");
+    await page.goto("/admin/locations");
     await expect(page.getByText("Sections & tables")).toBeVisible({ timeout: 15_000 });
 
     await expect(page.getByText(SECTION_NAME, { exact: true })).toBeVisible({ timeout: 10_000 });
@@ -99,7 +99,7 @@ test.describe("Admin sections & tables", () => {
     expect(delRes.status()).toBeLessThan(300);
 
     await gotoAdminDashboard(page);
-    await page.goto("/locations");
+    await page.goto("/admin/locations");
     await expect(page.getByText("Sections & tables")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(SECTION_NAME, { exact: true })).toHaveCount(0);
 

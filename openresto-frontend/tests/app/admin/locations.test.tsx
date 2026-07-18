@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
-import AdminLocationsScreen from "@/app/(admin)/locations";
+import AdminLocationsScreen from "@/app/admin/locations";
 import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
 import {
   adminGetRestaurants,

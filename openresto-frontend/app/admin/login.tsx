@@ -46,7 +46,7 @@ export default function AdminLoginScreen() {
     const result = await login(email, password);
     setLoginLoading(false);
     if (result) {
-      router.replace("/(admin)/dashboard");
+      router.replace("/admin/dashboard");
     } else {
       setLoginError("Invalid email or password. Please try again.");
     }

@@ -70,7 +70,7 @@ test.describe("Admin dashboard", () => {
     await page.waitForURL(/.*\/bookings/, { timeout: 15_000 });
 
     // Navigate back to the dashboard, then test "Manage Settings".
-    await page.goto("/dashboard");
+    await page.goto("/admin/dashboard");
     await page.waitForURL(/.*dashboard.*/, { timeout: 15_000 });
     await page.getByText("Manage Settings").click();
     await page.waitForURL(/.*\/settings/, { timeout: 15_000 });

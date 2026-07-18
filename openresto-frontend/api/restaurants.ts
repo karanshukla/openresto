@@ -34,6 +34,8 @@ export interface RestaurantDto {
   imageUrl?: string | null;
   /** Optional blurb shown on the location detail page (supports [label](url) links). */
   description?: string | null;
+  /** Optional link to this location's menu (PDF, page, etc.). */
+  menuUrl?: string | null;
   isArchived?: boolean;
   /** When true the whole location is walk-in only — the booking flow is disabled. */
   walkInOnly?: boolean;
@@ -136,6 +138,7 @@ export async function updateRestaurant(
     walkInOnly?: boolean;
     walkInDays?: string;
     description?: string | null;
+    menuUrl?: string | null;
   }
 ): Promise<RestaurantDto | null> {
   try {

@@ -5,7 +5,7 @@ import React from "react";
 import { Platform } from "react-native";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { act } from "react-test-renderer";
-import AdminBookingsScreen from "@/app/(admin)/bookings/index";
+import AdminBookingsScreen from "@/app/admin/bookings/index";
 import { getAdminBookings, adminLookupBookings } from "@/api/admin";
 
 jest.mock("@/api/admin", () => ({

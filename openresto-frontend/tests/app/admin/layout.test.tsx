@@ -1,6 +1,6 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
-import AdminLayout from "@/app/(admin)/_layout";
+import AdminLayout from "@/app/admin/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, usePathname } from "expo-router";
 
@@ -11,7 +11,7 @@ jest.mock("@/api/auth", () => ({
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(),
   usePathname: jest.fn(),
-  useSegments: jest.fn().mockReturnValue(["(admin)", "dashboard"]),
+  useSegments: jest.fn().mockReturnValue(["admin", "dashboard"]),
   Slot: () => null,
   Stack: Object.assign(() => null, {
     Screen: jest.fn(() => null),
@@ -39,7 +39,7 @@ describe("AdminLayout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (usePathname as jest.Mock).mockReturnValue("/dashboard");
+    (usePathname as jest.Mock).mockReturnValue("/admin/dashboard");
   });
 
   it("shows loading state then authenticated stack when session is valid", async () => {
@@ -58,7 +58,7 @@ describe("AdminLayout", () => {
     render(<AdminLayout />);
 
     await waitFor(() => {
-      expect(mockRouter.replace).toHaveBeenCalledWith("/(admin)/login");
+      expect(mockRouter.replace).toHaveBeenCalledWith("/admin/login");
     });
   });
 
@@ -74,7 +74,7 @@ describe("AdminLayout", () => {
   });
 
   it("skips auth check when on login screen", async () => {
-    (usePathname as jest.Mock).mockReturnValue("/login");
+    (usePathname as jest.Mock).mockReturnValue("/admin/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     render(<AdminLayout />);
@@ -93,7 +93,7 @@ describe("AdminLayout", () => {
   });
 
   it("skips re-check when authState is already authenticated on pathname change", async () => {
-    (usePathname as jest.Mock).mockReturnValue("/login");
+    (usePathname as jest.Mock).mockReturnValue("/admin/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
 
     const { rerender } = render(<AdminLayout />);
@@ -102,7 +102,7 @@ describe("AdminLayout", () => {
     await waitFor(() => expect(checkSession).not.toHaveBeenCalled());
 
     // Simulate navigation away from login (pathname changes)
-    (usePathname as jest.Mock).mockReturnValue("/dashboard");
+    (usePathname as jest.Mock).mockReturnValue("/admin/dashboard");
     rerender(<AdminLayout />);
 
     // authState is still "authenticated" so the effect returns early; checkSession not called

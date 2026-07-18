@@ -50,9 +50,9 @@ test.describe("Admin session lifecycle", () => {
   test("an unauthenticated visit to /dashboard redirects to /login", async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await ctx.newPage();
-    await page.goto("/dashboard");
+    await page.goto("/admin/dashboard");
     // The admin layout's checkSession flips authState to "unauthenticated" on
-    // a 401 and router.replace's to /(admin)/login.
+    // a 401 and router.replace's to /admin/login.
     await page.waitForURL(/.*\/login/, { timeout: 15_000 });
     await expect(page.getByText("Sign in", { exact: true })).toBeVisible({ timeout: 10_000 });
     await ctx.close();
@@ -68,7 +68,7 @@ test.describe("Admin session lifecycle", () => {
     expect(meRes.status()).toBe(401);
 
     // And navigating to the dashboard now redirects to /login.
-    await page.goto("/dashboard");
+    await page.goto("/admin/dashboard");
     await page.waitForURL(/.*\/login/, { timeout: 15_000 });
     await expect(page.getByText("Sign in", { exact: true })).toBeVisible({ timeout: 10_000 });
   });

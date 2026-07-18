@@ -93,7 +93,8 @@ INSERT INTO
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
-    Description
+    Description,
+    MenuUrl
   )
 VALUES
   (
@@ -112,7 +113,8 @@ VALUES
     NULL,
     0,
     NULL,
-    'Philadelphia''s worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.'
+    'Philadelphia''s worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.',
+    'https://paddyspub.example/menu'
   );
 
 INSERT INTO
@@ -132,7 +134,8 @@ INSERT INTO
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
-    Description
+    Description,
+    MenuUrl
   )
 VALUES
   (
@@ -151,7 +154,8 @@ VALUES
     NULL,
     0,
     NULL,
-    'The Alley Behind the Alley. Walk-ins welcome, online bookings for the brave.'
+    'The Alley Behind the Alley. Walk-ins welcome, online bookings for the brave.',
+    NULL
   );
 
 INSERT INTO
@@ -171,7 +175,8 @@ INSERT INTO
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
-    Description
+    Description,
+    MenuUrl
   )
 VALUES
   (
@@ -190,7 +195,8 @@ VALUES
     NULL,
     0,
     NULL,
-    'Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).'
+    'Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).',
+    'https://paddyspub.example/vancouver-menu.pdf'
   );
 
 -- Sections

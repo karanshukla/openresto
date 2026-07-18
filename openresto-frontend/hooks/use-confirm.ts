@@ -24,7 +24,7 @@ export interface UseConfirmResult {
  *   if (await confirm("Delete this?")) { await doDelete(); }
  *   <ConfirmModal visible={!!state} message={state?.message ?? ""} onConfirm={handleConfirm} onCancel={handleCancel} />
  *
- * Extracted from `app/(admin)/locations.tsx` where it was inlined as
+ * Extracted from `app/admin/locations.tsx` where it was inlined as
  * `useConfirmLocal`; the pattern is reusable across admin screens.
  */
 export function useConfirm(): UseConfirmResult {

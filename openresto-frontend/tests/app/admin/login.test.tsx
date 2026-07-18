@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
-import AdminLoginScreen from "@/app/(admin)/login";
+import AdminLoginScreen from "@/app/admin/login";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRouter } from "expo-router";
 import { BrandProvider } from "@/context/BrandContext";
@@ -63,7 +63,7 @@ describe("AdminLoginScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("••••••••"), "password");
     fireEvent.press(screen.getByText("Sign In"));
 
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(admin)/dashboard"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/admin/dashboard"));
   });
 
   it("shows error on failed login", async () => {

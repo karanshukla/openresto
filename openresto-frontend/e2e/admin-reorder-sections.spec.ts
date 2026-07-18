@@ -35,7 +35,7 @@ test.describe("Admin reorder sections", () => {
 
   test("moving a section down via the settings UI persists across reload", async ({ page }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/locations");
+    await page.goto("/admin/locations");
     // /locations hydrates from rate-limited admin fetches; reload (cool-down
     // first) if the page hasn't rendered within the window.
     await expectVisibleWithReload(page, page.getByText("Sections & tables"), { timeout: 20_000 });
@@ -79,7 +79,7 @@ test.describe("Admin reorder sections", () => {
     page,
   }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/locations");
+    await page.goto("/admin/locations");
     // /locations hydrates from rate-limited admin fetches; reload (cool-down
     // first) if the page hasn't rendered within the window.
     await expectVisibleWithReload(page, page.getByText("Sections & tables"), { timeout: 20_000 });
