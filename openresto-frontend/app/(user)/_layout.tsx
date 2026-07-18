@@ -37,7 +37,7 @@ export default function UserLayout() {
   if (Platform.OS === "web") {
     return (
       <View style={{ flex: 1 }}>
-        <Navbar />
+        <Navbar onOpenShortcuts={() => setShowShortcutsHelp(true)} />
         <Slot />
         <KeyboardShortcutsHelp
           visible={showShortcutsHelp}
@@ -51,6 +51,8 @@ export default function UserLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
+      <Stack.Screen name="locations/index" options={{ title: "Locations" }} />
+      <Stack.Screen name="locations/[id]" options={{ title: "Locations" }} />
       <Stack.Screen name="restaurant/[id]" options={{ title: "Restaurant" }} />
       <Stack.Screen name="book" options={{ title: "Book a Table" }} />
       <Stack.Screen

@@ -50,6 +50,12 @@ public class Restaurant
     /// </summary>
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Optional link to this location's menu — a PDF, a page on their site, wherever it
+    /// lives. Null/empty hides the "View menu" affordance on the location page.
+    /// </summary>
+    public string? MenuUrl { get; set; }
+
     public bool IsArchived { get; set; }
 
     /// <summary>

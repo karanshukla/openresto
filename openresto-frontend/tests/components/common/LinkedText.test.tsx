@@ -45,6 +45,21 @@ describe("parseLinkedText", () => {
     expect(parseLinkedText("[a](b)")).toEqual([{ text: "a", url: "b" }]);
     expect(parseLinkedText("[a](b)")).toEqual([{ text: "a", url: "b" }]);
   });
+
+  it("preserves paragraph breaks (\\n\\n) within a single plain-text segment", () => {
+    // Multi-paragraph blurbs: the newline is emitted verbatim into the segment
+    // (RN <Text> renders \n as a real line break). No silent loss or merge.
+    expect(parseLinkedText("para one\n\npara two")).toEqual([{ text: "para one\n\npara two" }]);
+  });
+
+  it("handles mixed link/plain runs across line breaks", () => {
+    // A link in the first paragraph, plain text (with a line break) after.
+    expect(parseLinkedText("See [menu](https://e.com/m)\n\nOpen daily.")).toEqual([
+      { text: "See " },
+      { text: "menu", url: "https://e.com/m" },
+      { text: "\n\nOpen daily." },
+    ]);
+  });
 });
 
 describe("LinkedText component", () => {

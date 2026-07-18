@@ -25,6 +25,18 @@ jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({ colorScheme: "light", toggle: mockToggle }),
 }));
 
+jest.mock("@/components/layout/OverflowMenu", () => {
+  const { Pressable, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ onOpenShortcuts }: { onOpenShortcuts: () => void }) => (
+      <Pressable testID="overflow-menu" accessibilityLabel="Open menu" onPress={onOpenShortcuts}>
+        <Text>menu</Text>
+      </Pressable>
+    ),
+  };
+});
+
 jest.mock("expo-router", () => ({
   Link: ({ children }: any) => children,
   usePathname: jest.fn(),
@@ -84,23 +96,34 @@ describe("Navbar", () => {
     expect(mockBack).toHaveBeenCalled();
   });
 
-  it("calls toggle when theme button is pressed", () => {
+  it("renders the overflow menu control instead of a standalone theme toggle", () => {
     render(<Navbar />);
-    const themeBtn = screen.getByLabelText("Switch to dark mode");
-    fireEvent.press(themeBtn);
-    expect(mockToggle).toHaveBeenCalled();
+    expect(screen.getByTestId("overflow-menu")).toBeTruthy();
+    // The old standalone theme toggle is gone.
+    expect(screen.queryByLabelText("Switch to dark mode")).toBeNull();
   });
 
   it("never renders an Admin link (moved to the footer)", () => {
     render(<Navbar />);
     expect(screen.queryByText("Admin")).toBeNull();
-    expect(screen.getByText("Home")).toBeTruthy();
+  });
+
+  it("no longer renders a Home link (the clickable brand is the way home)", () => {
+    render(<Navbar />);
+    expect(screen.queryByText("Home")).toBeNull();
+    expect(screen.getByText("Locations")).toBeTruthy();
+  });
+
+  it("renders the Locations and My Bookings nav links", () => {
+    render(<Navbar />);
+    expect(screen.getByText("Locations")).toBeTruthy();
+    expect(screen.getByText("My Bookings")).toBeTruthy();
   });
 
   it("renders nav links on mobile widths", () => {
     (useWindowDimensions as jest.Mock).mockReturnValue({ width: 500, height: 768 });
     render(<Navbar />);
-    expect(screen.getByText("Home")).toBeTruthy();
+    expect(screen.getByText("Locations")).toBeTruthy();
     expect(screen.getByText("My Bookings")).toBeTruthy();
   });
 
@@ -108,5 +131,18 @@ describe("Navbar", () => {
     (usePathname as jest.Mock).mockReturnValue("/lookup");
     render(<Navbar />);
     expect(screen.getByText("My Bookings")).toBeTruthy();
+  });
+
+  it("marks the Locations link active on a /locations/ deep link", () => {
+    (usePathname as jest.Mock).mockReturnValue("/locations/3");
+    render(<Navbar />);
+    expect(screen.getByText("Locations")).toBeTruthy();
+  });
+
+  it("forwards onOpenShortcuts to the overflow menu trigger", () => {
+    const onOpenShortcuts = jest.fn();
+    render(<Navbar onOpenShortcuts={onOpenShortcuts} />);
+    fireEvent.press(screen.getByTestId("overflow-menu"));
+    expect(onOpenShortcuts).toHaveBeenCalled();
   });
 });

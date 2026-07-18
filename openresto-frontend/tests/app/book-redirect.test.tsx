@@ -23,10 +23,10 @@ describe("BookRedirect", () => {
     jest.clearAllMocks();
   });
 
-  it("redirects to /(user)/book/[restaurantId] when restaurantId param is present", () => {
+  it("redirects to /(user)/locations/[id] when restaurantId param is present", () => {
     (useLocalSearchParams as jest.Mock).mockReturnValue({ restaurantId: "42" });
     render(<BookRedirect />);
-    expect(capturedHref).toBe("/(user)/book/42");
+    expect(capturedHref).toBe("/(user)/locations/42");
   });
 
   it("redirects to / when restaurantId param is absent", () => {

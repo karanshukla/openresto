@@ -451,7 +451,7 @@ export default function BookingForm({
         the restaurant.
       </ThemedText>
 
-      <Button onPress={handleSubmit} disabled={!isValid || submitting} style={styles.submitBtn}>
+      <Button onPress={handleSubmit} disabled={!isValid || submitting}>
         {submitting ? (
           <View style={styles.submitContent}>
             <ActivityIndicator size="small" color="#fff" />
@@ -471,10 +471,9 @@ export default function BookingForm({
 
 const styles = StyleSheet.create({
   form: {
-    gap: 4,
+    gap: 20,
   },
   availabilityHeader: {
-    marginBottom: 8,
     width: "100%",
     overflow: "hidden",
   },
@@ -489,7 +488,7 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   field: {
-    marginBottom: 4,
+    gap: 6,
   },
   fieldHalf: {
     flex: 1,
@@ -497,26 +496,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 4,
-    marginTop: 4,
   },
   noTables: {
     color: "#e53e3e",
     fontSize: 13,
-    marginBottom: 12,
   },
   closedDayNotice: {
     fontSize: 13,
-    marginBottom: 8,
   },
   timezoneHint: {
     fontSize: 12,
     color: "#6b7280",
-    marginTop: -4,
-    marginBottom: 4,
-  },
-  submitBtn: {
-    marginTop: 8,
+    marginTop: -10,
   },
   submitContent: {
     flexDirection: "row",
@@ -537,12 +528,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     fontSize: 12,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: -10,
   },
   gdpr: {
     fontSize: 12,
     opacity: 0.5,
     lineHeight: 18,
-    marginTop: 8,
   },
 });

@@ -6,17 +6,21 @@ import {
   useWindowDimensions,
   ViewStyle,
 } from "react-native";
-import { Link, usePathname, useRouter } from "expo-router";
+import { Link, usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { useTheme } from "@/context/ThemeContext";
 import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import OverflowMenu from "@/components/layout/OverflowMenu";
 
 const NAV_LINKS = [
-  { label: "Home", href: "/" as const, match: (p: string) => p === "/" },
+  {
+    label: "Locations",
+    href: "/(user)/locations" as const,
+    match: (p: string) => p === "/locations" || p.startsWith("/locations/"),
+  },
   {
     label: "My Bookings",
     href: "/(user)/lookup" as const,
@@ -28,13 +32,13 @@ const NAV_HEIGHT = 64;
 
 interface NavbarProps {
   onScrollToTop?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
-export default function Navbar({ onScrollToTop }: NavbarProps) {
+export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { toggle } = useTheme();
-  const { brand, colors, primaryColor, isDark } = useAppTheme();
+  const { brand, colors, primaryColor } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -97,7 +101,6 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
         <View style={[styles.links, isMobile && { gap: 0 }]}>
           {NAV_LINKS.map(({ label, href, match }) => {
             const active = match(pathname);
-            const isHomeActive = href === "/" && active && !!onScrollToTop;
 
             const linkContent = (
               <>
@@ -122,24 +125,8 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
               </>
             );
 
-            if (isHomeActive) {
-              return (
-                <Pressable
-                  key={href}
-                  accessibilityRole="link"
-                  style={StyleSheet.flatten([
-                    styles.linkBtn,
-                    isMobile && { paddingHorizontal: 10 },
-                  ])}
-                  onPress={onScrollToTop}
-                >
-                  {linkContent}
-                </Pressable>
-              );
-            }
-
             return (
-              <Link key={href} href={href} asChild>
+              <Link key={href} href={href as Href} asChild>
                 <Pressable
                   style={StyleSheet.flatten([
                     styles.linkBtn,
@@ -152,21 +139,7 @@ export default function Navbar({ onScrollToTop }: NavbarProps) {
             );
           })}
 
-          <Pressable
-            onPress={toggle}
-            style={({ hovered }: any) => [
-              styles.themeBtn,
-              isMobile && { marginLeft: 0 },
-              hovered && { opacity: 0.7 },
-            ]}
-            accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            <Ionicons
-              name={isDark ? "sunny-outline" : "moon-outline"}
-              size={19}
-              color={colors.muted}
-            />
-          </Pressable>
+          <OverflowMenu onOpenShortcuts={() => onOpenShortcuts?.()} />
         </View>
       </View>
     </ThemedView>

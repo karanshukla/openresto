@@ -17,6 +17,12 @@ public class UpdateRestaurantRequest
     public string? Description { get; set; }
 
     /// <summary>
+    /// Optional link to this location's menu (PDF, page, etc.). Empty string clears the
+    /// field; null leaves it untouched.
+    /// </summary>
+    public string? MenuUrl { get; set; }
+
+    /// <summary>
     /// Per-day opening hours (ISO day 1=Monday … 7=Sunday). When provided, takes
     /// precedence over OpenTime/CloseTime; identical hours for all 7 days collapse
     /// back into the uniform OpenTime/CloseTime pair.
@@ -118,6 +124,9 @@ public class RestaurantDto
 
     /// <summary>Optional blurb shown on the public location detail page (null when none).</summary>
     public string? Description { get; set; }
+
+    /// <summary>Optional link to this location's menu (null when none).</summary>
+    public string? MenuUrl { get; set; }
 
     public bool IsArchived { get; set; }
 

@@ -101,7 +101,7 @@ describe("RestaurantCard", () => {
 
     fireEvent.press(screen.getByText("See details"));
 
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/(user)/book/1"));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("/(user)/locations/1"));
   });
 
   it("shows Google Maps and Apple Maps links", async () => {
@@ -251,7 +251,7 @@ describe("RestaurantCard", () => {
     await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
     // Press the restaurant name — it lives inside the outer card Pressable
     fireEvent.press(screen.getByText("Test Bistro"));
-    expect(mockPush).toHaveBeenCalledWith("/(user)/book/1");
+    expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1");
   });
 
   it("presses Google Maps link and opens URL", async () => {
@@ -279,7 +279,7 @@ describe("RestaurantCard", () => {
       const newTabBtn = screen.queryByLabelText("Open booking page in new tab");
       if (newTabBtn) {
         fireEvent.press(newTabBtn, { stopPropagation: () => {} });
-        expect(mockPush).toHaveBeenCalledWith("/(user)/book/1");
+        expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1");
       } else {
         // Button found via role or alternate selector
         expect(true).toBe(true);
