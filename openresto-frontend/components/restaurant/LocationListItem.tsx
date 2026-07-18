@@ -153,6 +153,20 @@ export default function LocationListItem({
     });
   };
 
+  // The "Book / details" CTA has booking intent, so on expand it scrolls the
+  // form itself into view (like a slot press) rather than just the header —
+  // unlike the generic header-click expand, which keeps the card top in view.
+  const handleViewDetailsPress = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      if (next) {
+        if (onScrollToForm) onScrollToForm(restaurant.id);
+        else if (onExpand) onExpand(restaurant.id);
+      }
+      return next;
+    });
+  };
+
   const handleSlotPress = (time: string) => {
     // Expanding with a prefilled time seeds BookingForm's initialTime via key
     // remount — the time is captured in the router query on the parent screen,
@@ -315,6 +329,11 @@ export default function LocationListItem({
           </View>
         </View>
 
+        {/* Blurb — visible in the collapsed card, not just when expanded */}
+        {restaurant.description ? (
+          <LinkedText text={restaurant.description} style={styles.description} />
+        ) : null}
+
         {tags.length > 0 && (
           <View style={styles.tags}>
             {tags.map((t) => (
@@ -327,6 +346,38 @@ export default function LocationListItem({
             ))}
           </View>
         )}
+
+        {/* Menu link — visible in the collapsed card, not just when expanded.
+            Nested inside the header's expand Pressable, so stop propagation to
+            open the menu instead of also toggling the accordion. */}
+        {restaurant.menuUrl ? (
+          <Pressable
+            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+              styles.menuLink,
+              {
+                backgroundColor: hovered || pressed ? accentSoft : surface2,
+                borderColor: hovered || pressed ? accentBorder : borderColor,
+              },
+            ]}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              Linking.openURL(restaurant.menuUrl!);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="View menu"
+          >
+            <Ionicons name="document-text-outline" size={16} color={primaryColor} />
+            <ThemedText style={[styles.menuLinkText, { color: primaryColor }]}>
+              View menu
+            </ThemedText>
+            <Ionicons
+              name="open-outline"
+              size={13}
+              color={mutedColor}
+              style={{ marginLeft: "auto" }}
+            />
+          </Pressable>
+        ) : null}
 
         {/* Hours + slot quick-pick */}
         <View style={styles.slotsArea}>
@@ -398,16 +449,22 @@ export default function LocationListItem({
               </>
             )}
           </View>
-          <View style={[styles.viewBtn, { backgroundColor: surface2 }]}>
+          <Pressable
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              handleViewDetailsPress();
+            }}
+            style={[styles.viewBtn, { backgroundColor: surface2 }]}
+          >
             <ThemedText style={[styles.viewBtnText, { color: primaryColor }]}>
               {expanded ? "Hide details" : "Book / details"}
             </ThemedText>
             <Ionicons
-              name={expanded ? "chevron-up" : "arrow-forward"}
+              name={expanded ? "chevron-up" : "chevron-down"}
               size={13}
               color={primaryColor}
             />
-          </View>
+          </Pressable>
         </View>
       </Pressable>
 
@@ -459,38 +516,6 @@ export default function LocationListItem({
               </Pressable>
             </View>
           )}
-
-          {/* Blurb */}
-          {restaurant.description ? (
-            <LinkedText text={restaurant.description} style={styles.description} />
-          ) : null}
-
-          {/* Menu link */}
-          {restaurant.menuUrl ? (
-            <Pressable
-              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                styles.menuLink,
-                {
-                  backgroundColor: hovered || pressed ? accentSoft : surface2,
-                  borderColor: hovered || pressed ? accentBorder : borderColor,
-                },
-              ]}
-              onPress={() => Linking.openURL(restaurant.menuUrl!)}
-              accessibilityRole="link"
-              accessibilityLabel="View menu"
-            >
-              <Ionicons name="document-text-outline" size={16} color={primaryColor} />
-              <ThemedText style={[styles.menuLinkText, { color: primaryColor }]}>
-                View menu
-              </ThemedText>
-              <Ionicons
-                name="open-outline"
-                size={13}
-                color={mutedColor}
-                style={{ marginLeft: "auto" }}
-              />
-            </Pressable>
-          ) : null}
 
           {/* Full weekly hours */}
           <View style={styles.subSection}>
