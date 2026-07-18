@@ -4,7 +4,7 @@
 import React from "react";
 import { Platform } from "react-native";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
-import AdminBookingsScreen from "@/app/(admin)/bookings/index";
+import AdminBookingsScreen from "@/app/admin/bookings/index";
 import {
   getAdminBookings,
   adminDeleteBooking,
@@ -345,7 +345,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Clear")).toBeTruthy());
     fireEvent.press(screen.getByText("Clear"));
-    expect(mockReplace).toHaveBeenCalledWith("/(admin)/bookings");
+    expect(mockReplace).toHaveBeenCalledWith("/admin/bookings");
   });
 
   it("renders cancelled booking badge in list view", async () => {

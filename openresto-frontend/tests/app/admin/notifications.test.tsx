@@ -4,7 +4,7 @@
 import React from "react";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import { Platform } from "react-native";
-import NotificationsScreen from "@/app/(admin)/notifications";
+import NotificationsScreen from "@/app/admin/notifications";
 import * as notificationsApi from "@/api/notifications";
 import * as restaurantsApi from "@/api/restaurants";
 

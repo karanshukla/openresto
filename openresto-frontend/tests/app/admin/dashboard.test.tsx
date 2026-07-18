@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import AdminDashboardScreen from "@/app/(admin)/dashboard";
+import AdminDashboardScreen from "@/app/admin/dashboard";
 import { getAdminDashboardStats, AdminDashboardStats } from "@/api/admin";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -133,7 +133,7 @@ describe("AdminDashboardScreen", () => {
 
     fireEvent.press(screen.getByText("View all →"));
 
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
+    expect(mockPush).toHaveBeenCalledWith("/admin/bookings");
   });
 
   it("shows Seated badge for a currently in-progress booking (via StatusBadge)", async () => {
@@ -241,12 +241,12 @@ describe("AdminDashboardScreen", () => {
 
     fireEvent.press(screen.getByText("New Booking"));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(admin)/bookings",
+      pathname: "/admin/bookings",
       params: { create: "1" },
     });
 
     fireEvent.press(screen.getByText("Manage Settings"));
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/settings");
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings");
   });
 
   it("navigates to bookings list on View All Bookings press", async () => {
@@ -256,7 +256,7 @@ describe("AdminDashboardScreen", () => {
 
     fireEvent.press(screen.getByText("View All Bookings"));
 
-    expect(mockPush).toHaveBeenCalledWith("/(admin)/bookings");
+    expect(mockPush).toHaveBeenCalledWith("/admin/bookings");
   });
 
   it("does not crash or navigate on Pause Bookings press", async () => {

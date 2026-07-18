@@ -80,8 +80,8 @@ describe("UserLayout keyboard shortcuts", () => {
     expect(focusTarget).not.toHaveBeenCalled();
   });
 
-  it("does not fire user shortcuts when the user route tree is mounted but the user has navigated to an (admin) route (issue #140 scope leak)", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+  it("does not fire user shortcuts when the user route tree is mounted but the user has navigated to an admin route (issue #140 scope leak)", async () => {
+    (useSegments as jest.Mock).mockReturnValue(["admin", "dashboard"]);
     render(<UserLayout />);
 
     dispatchKeydown("l");
@@ -93,7 +93,7 @@ describe("UserLayout keyboard shortcuts", () => {
   });
 
   it("resumes firing user shortcuts once segments reflect a (user) route again", async () => {
-    (useSegments as jest.Mock).mockReturnValue(["(admin)", "dashboard"]);
+    (useSegments as jest.Mock).mockReturnValue(["admin", "dashboard"]);
     const { rerender } = render(<UserLayout />);
 
     dispatchKeydown("l");

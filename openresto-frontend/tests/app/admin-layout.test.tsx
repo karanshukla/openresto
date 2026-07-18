@@ -11,7 +11,7 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { useWindowDimensions } from "react-native";
-import AdminLayout from "@/app/(admin)/_layout";
+import AdminLayout from "@/app/admin/_layout";
 import { checkSession } from "@/api/auth";
 import { useRouter, usePathname } from "expo-router";
 
@@ -29,8 +29,8 @@ jest.mock("expo-router", () => {
     Slot,
     Stack,
     useRouter: jest.fn(),
-    usePathname: jest.fn().mockReturnValue("/dashboard"),
-    useSegments: jest.fn().mockReturnValue(["(admin)", "dashboard"]),
+    usePathname: jest.fn().mockReturnValue("/admin/dashboard"),
+    useSegments: jest.fn().mockReturnValue(["admin", "dashboard"]),
   };
 });
 
@@ -71,7 +71,7 @@ describe("AdminLayout", () => {
   it("redirects to login if unauthenticated", async () => {
     (checkSession as jest.Mock).mockResolvedValue(null);
     render(<AdminLayout />);
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(admin)/login"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/admin/login"));
   });
 
   it("renders slot if authenticated and on web", async () => {
@@ -90,7 +90,7 @@ describe("AdminLayout", () => {
   });
 
   it("renders login screen without gate", async () => {
-    (usePathname as jest.Mock).mockReturnValue("/login");
+    (usePathname as jest.Mock).mockReturnValue("/admin/login");
     (checkSession as jest.Mock).mockResolvedValue(null);
     render(<AdminLayout />);
     await waitFor(() => expect(screen.getByTestId("slot")).toBeTruthy());

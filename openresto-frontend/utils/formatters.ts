@@ -1,6 +1,6 @@
 /**
  * Small shared formatting helpers used across the admin screens. Extracted from
- * app/(admin)/bookings/index.tsx where the same three utilities were defined inline.
+ * app/admin/bookings/index.tsx where the same three utilities were defined inline.
  */
 
 /**

@@ -89,13 +89,13 @@ export default function AdminDashboardScreen() {
     {
       title: "New Booking",
       icon: "person-add-outline" as const,
-      onPress: () => router.push({ pathname: "/(admin)/bookings", params: { create: "1" } }),
+      onPress: () => router.push({ pathname: "/admin/bookings", params: { create: "1" } }),
       primary: true,
     },
     {
       title: "View All Bookings",
       icon: "list-outline" as const,
-      route: "/(admin)/bookings" as const,
+      route: "/admin/bookings" as const,
     },
     {
       title: "Pause Bookings",
@@ -116,7 +116,7 @@ export default function AdminDashboardScreen() {
     {
       title: "Manage Settings",
       icon: "settings-outline" as const,
-      route: "/(admin)/settings" as const,
+      route: "/admin/settings" as const,
     },
   ];
 
@@ -210,7 +210,7 @@ export default function AdminDashboardScreen() {
             >
               <View style={styles.listHeader}>
                 <ThemedText style={styles.cardTitle}>Today&apos;s Bookings</ThemedText>
-                <Pressable onPress={() => router.push("/(admin)/bookings")}>
+                <Pressable onPress={() => router.push("/admin/bookings")}>
                   <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
                     View all →
                   </ThemedText>

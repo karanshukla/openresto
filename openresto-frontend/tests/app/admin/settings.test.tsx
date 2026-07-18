@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor } from "@testing-library/react-native";
-import AdminSettingsScreen from "@/app/(admin)/settings";
+import AdminSettingsScreen from "@/app/admin/settings";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("expo-router", () => ({

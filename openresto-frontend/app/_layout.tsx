@@ -45,9 +45,16 @@ function AppWithTheme() {
     };
 
     // segments is an array of the path components.
-    // We filter out groups like (admin) or (user) to get the actual functional segments.
+    // We filter out groups like (user) to get the actual functional segments.
     const actualSegments = segments.filter((s) => !s.startsWith("("));
     const primarySegment = actualSegments[0];
+
+    if (primarySegment === "admin") {
+      // Admin routes own their own document.title via app/admin/_layout.tsx's
+      // pathname-keyed PAGE_TITLES map — this generic per-segment fallback
+      // can't distinguish /admin/dashboard from /admin/settings.
+      return;
+    }
 
     if (!primarySegment || (primarySegment as string) === "index") {
       setTabTitle();
@@ -81,7 +88,7 @@ function AppWithTheme() {
         }}
       >
         <Stack.Screen name="(user)" />
-        <Stack.Screen name="(admin)" />
+        <Stack.Screen name="admin" />
       </Stack>
       <StatusBar style="auto" />
     </>

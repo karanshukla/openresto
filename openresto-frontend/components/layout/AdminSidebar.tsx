@@ -20,32 +20,32 @@ const NAV_ITEMS = [
   {
     label: "Overview",
     icon: "grid-outline" as const,
-    href: "/(admin)/dashboard" as const,
-    match: (p: string) => p === "/dashboard",
+    href: "/admin/dashboard" as const,
+    match: (p: string) => p === "/admin/dashboard",
   },
   {
     label: "Bookings",
     icon: "calendar-outline" as const,
-    href: "/(admin)/bookings" as const,
-    match: (p: string) => p === "/bookings" || p.startsWith("/bookings/"),
+    href: "/admin/bookings" as const,
+    match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
   },
   {
     label: "Locations",
     icon: "storefront-outline" as const,
-    href: "/(admin)/locations" as const,
-    match: (p: string) => p === "/locations",
+    href: "/admin/locations" as const,
+    match: (p: string) => p === "/admin/locations",
   },
   {
     label: "Notifications",
     icon: "notifications-outline" as const,
-    href: "/(admin)/notifications" as const,
-    match: (p: string) => p === "/notifications",
+    href: "/admin/notifications" as const,
+    match: (p: string) => p === "/admin/notifications",
   },
   {
     label: "Settings",
     icon: "settings-outline" as const,
-    href: "/(admin)/settings" as const,
-    match: (p: string) => p === "/settings",
+    href: "/admin/settings" as const,
+    match: (p: string) => p === "/admin/settings",
   },
 ];
 
@@ -96,7 +96,7 @@ export default function AdminSidebar() {
         setLookupStatus("multiple");
         const isEmail = q.includes("@");
         router.push({
-          pathname: "/(admin)/bookings",
+          pathname: "/admin/bookings",
           params: isEmail ? { email: q } : { bookingRef: q },
         });
       }
@@ -107,7 +107,7 @@ export default function AdminSidebar() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace("/(admin)/login");
+    router.replace("/admin/login");
   };
 
   return (

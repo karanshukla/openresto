@@ -96,7 +96,7 @@ test.describe("Brand colour", () => {
 
   test("admin settings page has a working Brand Identity section", async ({ page }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/settings");
+    await page.goto("/admin/settings");
     await expect(page.getByText("GLOBAL SETTINGS")).toBeVisible({ timeout: 10_000 });
 
     // The accordion is expanded by default — confirm the colour input is visible

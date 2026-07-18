@@ -22,7 +22,7 @@ export function useBrandDocumentEffect(brand: Brand): void {
     if (typeof document === "undefined") return;
 
     // Only claim the tab title if it is still the default or unset. Once the
-    // app's per-route title logic (app/_layout.tsx + (admin)/_layout.tsx) has
+    // app's per-route title logic (app/_layout.tsx + app/admin/_layout.tsx) has
     // stamped a "Page | App" title, we must not clobber it on a re-render.
     if (!document.title || document.title === DEFAULT_BRAND.appName) {
       document.title = appName;

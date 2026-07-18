@@ -83,7 +83,7 @@ test.describe("Cancel a past booking (#159)", () => {
     expect(bookingRef).toBeTruthy();
 
     await gotoAdminDashboard(page);
-    await page.goto("/bookings");
+    await page.goto("/admin/bookings");
 
     const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
     await expect(searchInput).toBeVisible({ timeout: 10_000 });
@@ -103,7 +103,7 @@ test.describe("Cancel a past booking (#159)", () => {
     expect(bookingRef).toBeTruthy();
 
     await gotoAdminDashboard(page);
-    await page.goto("/bookings");
+    await page.goto("/admin/bookings");
 
     const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
     await expect(searchInput).toBeVisible({ timeout: 10_000 });

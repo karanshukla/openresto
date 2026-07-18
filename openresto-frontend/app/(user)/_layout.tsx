@@ -15,7 +15,7 @@ export default function UserLayout() {
   // lifecycle. useIsFocused() never fires on a cold web load (page.goto()
   // straight to a route dispatches no "focus" nav event), which left
   // shortcuts stuck disabled for any session that didn't arrive via in-app
-  // navigation — see the matching comment in app/(admin)/_layout.tsx.
+  // navigation — see the matching comment in app/admin/_layout.tsx.
   const isUserRouteActive = segments[0] === "(user)";
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
 

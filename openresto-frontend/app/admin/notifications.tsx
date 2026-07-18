@@ -175,7 +175,7 @@ export default function NotificationsScreen() {
     if (n.bookingId != null) {
       setPopupBookingId(n.bookingId);
     } else if (n.type === "RestaurantNearlyFull") {
-      router.push(`/(admin)/bookings?restaurantId=${n.restaurantId}`);
+      router.push(`/admin/bookings?restaurantId=${n.restaurantId}`);
     }
   };
 

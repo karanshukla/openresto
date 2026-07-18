@@ -6,15 +6,22 @@ import { ADMIN_STATE_FILE } from "./global-setup";
 const PASTA_PLACE_ID = 1;
 
 /**
- * The restaurant detail page — a core customer entry point into the booking
- * flow that no other spec exercises directly. Covers four real paths:
+ * The old standalone `/restaurant/:id` page was folded into the Locations
+ * list (issue #205): `restaurant/[id].tsx` is now a thin redirect to
+ * `/locations/:id`, which renders the full Locations list with that one
+ * location pre-expanded (image, blurb, opening hours, inline booking form —
+ * see LocationListItem). This spec covers the redirect's real behaviour,
+ * not the old detail-page-plus-separate-booking-page flow it replaced:
  *
- *   1. /restaurant/:id renders the restaurant's name + address.
- *   2. The "Book a Table" CTA navigates into /book/:id.
- *   3. A walk-in-only location shows the WalkInNotice and hides the CTA. The
- *      seed has no walk-in restaurant, so Pasta Place is flipped to walk-in
- *      via the admin API for this test and restored in afterEach.
- *   4. An unknown id renders the "Restaurant not found." fallback.
+ *   1. /restaurant/:id redirects into /locations/:id and shows the
+ *      restaurant's name + address, pre-expanded with the booking form.
+ *   2. A walk-in-only location shows the WalkInNotice and no booking form.
+ *      The seed has no walk-in restaurant, so Pasta Place is flipped to
+ *      walk-in via the admin API for this test and restored in afterEach.
+ *   3. An unknown id still redirects and renders the full Locations list
+ *      (nothing highlighted/expanded) rather than crashing or erroring —
+ *      there's no more per-id "not found" state now that the id only
+ *      controls which list item auto-expands.
  *
  * Runs under the public "chromium" project. The walk-in flip uses the
  * global-setup storageState cookie via a fresh admin context, not the page.
@@ -25,7 +32,7 @@ const PASTA_PLACE_ID = 1;
  * send it back with only walkInOnly changed — both on flip and on restore — so
  * no other spec ever sees Pasta Place mutated.
  */
-test.describe("Restaurant detail page", () => {
+test.describe("Restaurant detail redirect", () => {
   test.describe.configure({ mode: "serial" });
 
   // Captured once in the test that flips, restored verbatim in afterEach.
@@ -72,33 +79,25 @@ test.describe("Restaurant detail page", () => {
     }
   });
 
-  test("renders the restaurant name and address", async ({ browser, page }) => {
+  test("redirects into the Locations list, pre-expanded with the name, address, and booking form", async ({
+    browser,
+    page,
+  }) => {
     // Read the address from the API rather than hardcoding the seed value, so
     // this stays correct regardless of what other specs (or this one) do.
     const restaurant = await readRestaurant(browser);
     const address = restaurant.address as string | null;
 
     await page.goto(`/restaurant/${PASTA_PLACE_ID}`);
+    await page.waitForURL(new RegExp(`.*/locations/${PASTA_PLACE_ID}`), { timeout: 15_000 });
 
     await expect(page.getByText("Pasta Place").first()).toBeVisible({ timeout: 15_000 });
     if (address) {
       await expect(page.getByText(address).first()).toBeVisible();
     }
-  });
 
-  test("the 'Book a Table' CTA navigates into the booking flow", async ({ page }) => {
-    await page.goto(`/restaurant/${PASTA_PLACE_ID}`);
-    const bookButton = page.getByText("Book a Table", { exact: true });
-    await expect(bookButton).toBeVisible({ timeout: 15_000 });
-
-    await bookButton.click();
-    // The link's href is /book/1, so the URL change alone proves the CTA works.
-    await page.waitForURL(/.*\/book\/1/, { timeout: 15_000 });
-
-    // Confirm the booking page hydrated. Its restaurant-data fetch can get a
-    // transient 429 when the shared rate-limit window is saturated by earlier
-    // specs (booking.spec.ts handles the same edge with a reload fallback);
-    // mirror that here so this isn't flaky under load.
+    // Pre-expanded via highlightId — the inline booking form is already
+    // showing, not a separate CTA into a separate page.
     try {
       await expect(page.getByText("Book a table")).toBeVisible({ timeout: 15_000 });
     } catch {
@@ -107,7 +106,7 @@ test.describe("Restaurant detail page", () => {
     }
   });
 
-  test("a walk-in-only location shows the walk-in notice and hides the booking CTA", async ({
+  test("a walk-in-only location shows the walk-in notice and no booking form", async ({
     browser,
     page,
   }) => {
@@ -118,17 +117,25 @@ test.describe("Restaurant detail page", () => {
       buildUpdateRestaurantBody(originalRestaurant, { walkInOnly: true })
     );
 
-    // The detail page refetches /api/restaurants/:id on mount, so a fresh
-    // navigation picks up the flip.
+    // The detail redirect target refetches all restaurants on mount, so a
+    // fresh navigation picks up the flip.
     await page.goto(`/restaurant/${PASTA_PLACE_ID}`);
+    await page.waitForURL(new RegExp(`.*/locations/${PASTA_PLACE_ID}`), { timeout: 15_000 });
     await expect(page.getByText("Walk-ins only").first()).toBeVisible({ timeout: 15_000 });
 
-    // The CTA is replaced by the notice — it must not be rendered at all.
-    await expect(page.getByText("Book a Table", { exact: true })).toHaveCount(0);
+    // The inline booking form must not be rendered at all when walk-in only.
+    await expect(page.getByText("Book a table")).toHaveCount(0);
   });
 
-  test("an unknown restaurant id renders the not-found fallback", async ({ page }) => {
+  test("an unknown restaurant id still redirects and renders the Locations list", async ({
+    page,
+  }) => {
     await page.goto("/restaurant/99999");
-    await expect(page.getByText("Restaurant not found.")).toBeVisible({ timeout: 15_000 });
+    await page.waitForURL(/.*\/locations\/99999/, { timeout: 15_000 });
+
+    // No restaurant matches highlightId=99999, so nothing auto-expands — the
+    // full list just renders normally rather than erroring.
+    await expect(page.getByText("Our locations").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Pasta Place").first()).toBeVisible({ timeout: 15_000 });
   });
 });

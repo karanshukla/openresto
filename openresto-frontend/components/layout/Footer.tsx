@@ -66,7 +66,7 @@ export default function Footer({ backgroundColor }: FooterProps) {
             </View>
           )}
 
-          <Link href={"/(admin)/dashboard" as const} asChild>
+          <Link href={"/admin/dashboard" as const} asChild>
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Restaurant admin"

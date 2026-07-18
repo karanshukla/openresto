@@ -145,7 +145,7 @@ test.describe("Booking lookup", () => {
     expect(bookingRef).toBeTruthy();
 
     await gotoAdminDashboard(page);
-    await page.goto("/bookings");
+    await page.goto("/admin/bookings");
 
     // .nth(1) = the bookings-page header search input (AdminSidebar has its own at nth(0))
     const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
@@ -161,7 +161,7 @@ test.describe("Booking lookup", () => {
     expect(bookingRef).toBeTruthy();
 
     await gotoAdminDashboard(page);
-    await page.goto("/bookings");
+    await page.goto("/admin/bookings");
 
     // .nth(1) = the bookings-page header search input (AdminSidebar has its own at nth(0))
     const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
