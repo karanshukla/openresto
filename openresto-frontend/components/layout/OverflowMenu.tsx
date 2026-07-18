@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import {
   Linking,
   Modal,
@@ -26,6 +26,13 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const [open, setOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
+  // Modal content is portaled to the document root on web, escaping the
+  // Navbar's centered maxWidth container — so the panel can't just anchor to
+  // a fixed distance from the window edge (the trigger isn't there once the
+  // viewport is wider than the navbar's content). Measure the trigger's real
+  // on-screen position instead and anchor the panel to that.
+  const [panelPos, setPanelPos] = useState({ top: 64, right: 18 });
+  const triggerRef = useRef<View>(null);
   const { toggle } = useTheme();
   const { colors, isDark } = useAppTheme();
   const brand = useBrand();
@@ -38,10 +45,26 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
     toggle();
   };
 
+  const openMenu = () => {
+    // This component is web-only (see doc comment above), so the ref's
+    // current node is a real DOM element — read its position synchronously
+    // rather than via RNW's measureInWindow, which always defers through a
+    // setTimeout(0) and would let the panel flash at the stale position.
+    const rect = (triggerRef.current as unknown as HTMLElement | null)?.getBoundingClientRect?.();
+    if (rect) {
+      setPanelPos({
+        top: rect.bottom + 8,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    }
+    setOpen(true);
+  };
+
   return (
     <>
       <Pressable
-        onPress={() => setOpen(true)}
+        ref={triggerRef}
+        onPress={openMenu}
         style={({ hovered }: any) => [styles.trigger, hovered && { opacity: 0.7 }]}
         accessibilityLabel="Open menu"
         accessibilityRole="button"
@@ -53,7 +76,11 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <TouchableWithoutFeedback>
             <View
-              style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.panel,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                { top: panelPos.top, right: panelPos.right },
+              ]}
             >
               <Pressable
                 style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -219,8 +246,6 @@ const styles = StyleSheet.create({
   },
   panel: {
     position: "absolute",
-    top: 64,
-    right: 18,
     minWidth: 230,
     borderRadius: theme.borderRadius.modal,
     borderWidth: 1,
