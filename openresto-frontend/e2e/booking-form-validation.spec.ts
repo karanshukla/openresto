@@ -41,9 +41,11 @@ test.describe("Booking form validation", () => {
 
     // Force-clicking the disabled Pressable must not leave the booking page —
     // the form guard (isValid) blocks submission regardless of the DOM event.
+    // Booking now lives inline on the Locations page (the old /book/:id page
+    // is just a redirect shim), so we assert we're still there, not confirmed.
     await confirmBtn.click({ force: true });
     await page.waitForTimeout(1000);
-    await expect(page).toHaveURL(/.*\/book/, { timeout: 5_000 });
+    await expect(page).toHaveURL(/.*\/locations/, { timeout: 5_000 });
     await expect(page.getByText("Booking Confirmed")).toHaveCount(0);
   });
 });

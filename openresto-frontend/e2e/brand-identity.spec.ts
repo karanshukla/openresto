@@ -60,7 +60,7 @@ test.describe("Brand identity (UI)", () => {
     // Navigate to the customer-facing home page. BrandContext re-fetches
     // /api/brand on mount so the new name + colour are applied.
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("link", { name: "Locations" })).toBeVisible({ timeout: 15_000 });
 
     const brandEl = page.getByText(TEST_APP_NAME, { exact: true }).first();
     await expect(brandEl).toBeVisible({ timeout: 10_000 });

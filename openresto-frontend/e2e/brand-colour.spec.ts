@@ -77,7 +77,7 @@ test.describe("Brand colour", () => {
     // ── Navigate to the home page as a customer would ─────────────────────────
     // BrandContext re-fetches /api/brand on page load so the new colour is applied.
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("link", { name: "Locations" })).toBeVisible({ timeout: 10_000 });
 
     // The app-name element in the Navbar uses `color: primaryColor` as an inline style.
     const appName = brand.appName || "Open Resto";
