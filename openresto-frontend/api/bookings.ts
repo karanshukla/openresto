@@ -21,8 +21,10 @@ export interface BookingDto {
 
 export interface BookingCreationDto {
   restaurantId: number;
-  tableId: number;
-  sectionId: number;
+  /** Omit (or null) for "Any section" auto-assign — the server picks the best table. */
+  tableId: number | null;
+  /** Omit (or null) for "Any section" auto-assign. */
+  sectionId: number | null;
   customerEmail: string;
   customerName: string;
   seats: number;

@@ -2,8 +2,12 @@ import { post, del } from "./client";
 
 export interface HoldRequest {
   restaurantId: number;
-  tableId: number;
-  sectionId: number;
+  /** Omit (or null) for "Any section" auto-assign — the server picks the best table. */
+  tableId: number | null;
+  /** Omit (or null) for "Any section" auto-assign. */
+  sectionId: number | null;
+  /** Required for auto-assign so the server can pick a table that fits the party. */
+  seats?: number;
   date: string; // ISO 8601
   currentHoldId?: string;
 }
@@ -12,6 +16,10 @@ export interface HoldResponse {
   holdId: string;
   expiresAt: string; // ISO 8601
   secondsRemaining: number;
+  /** Resolved table id for auto-assigned holds; null for explicit-table holds. */
+  tableId?: number | null;
+  /** Resolved section id for auto-assigned holds; null for explicit-table holds. */
+  sectionId?: number | null;
 }
 
 /** Successful hold. */

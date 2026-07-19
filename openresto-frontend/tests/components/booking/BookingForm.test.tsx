@@ -40,6 +40,8 @@ jest.mock("@/components/booking/useTableHold", () => ({
     holdStatus: mockHoldStatus,
     secondsLeft: 0,
     holdId: null,
+    resolvedTableId: null,
+    resolvedSectionId: null,
     setHoldStatus: mockSetHoldStatus,
     releaseCurrentHold: mockReleaseCurrentHold,
   }),
@@ -239,8 +241,12 @@ const mockRestaurantWideOpen = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockHoldStatus = "idle";
+  // Both tables (T1=100 in Main, T2=200 in Patio) are available so switching sections
+  // in either direction still surfaces a table dropdown.
   mockFetchAvailability.mockResolvedValue({
-    slots: [{ time: "19:00", isAvailable: true, availableTableIds: [100], category: "Dinner" }],
+    slots: [
+      { time: "19:00", isAvailable: true, availableTableIds: [100, 200], category: "Dinner" },
+    ],
   });
   // jest.clearAllMocks() clears call history but not a mockReturnValue set by
   // an earlier test — restore the module's default "now" here so tests don't
@@ -340,9 +346,11 @@ describe("BookingForm", () => {
     });
   });
 
-  it("renders 'No tables available' and omits the timezone hint for a restaurant with no sections and no timezone", () => {
+  it("renders the 'Any section' auto-assign hint and omits the timezone hint for a restaurant with no sections and no timezone", () => {
+    // With no sections to switch to, the form stays in "Any section" mode and shows the
+    // auto-assign hint instead of the legacy "No tables available" explicit-table message.
     render(<BookingForm restaurant={mockRestaurantEmptySections} onSubmit={jest.fn()} />);
-    expect(screen.getByText("No tables available for 2 guests.")).toBeTruthy();
+    expect(screen.getByText(/We'll seat you at the best available table/)).toBeTruthy();
     expect(screen.queryByText(/All times are in/)).toBeNull();
   });
 
@@ -442,24 +450,76 @@ describe("BookingForm", () => {
   it("resets hold status to idle when the table is changed while held", async () => {
     mockHoldStatus = "held";
     render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    // The form defaults to "Any section" (table dropdown hidden); switch to a concrete
+    // section to expose the table dropdown.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
     await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
-    fireEvent.press(screen.getByTestId("table-select"));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-select"));
+    });
     expect(mockSetHoldStatus).toHaveBeenCalledWith("idle");
   });
 
   it("resets hold status to idle when the table is changed while expired", async () => {
     mockHoldStatus = "expired";
     render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
     await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
-    fireEvent.press(screen.getByTestId("table-select"));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-select"));
+    });
     expect(mockSetHoldStatus).toHaveBeenCalledWith("idle");
   });
 
   it("does not reset hold status when the table is changed while idle", async () => {
     mockHoldStatus = "idle";
     render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
     await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
-    fireEvent.press(screen.getByTestId("table-select"));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-select"));
+    });
     expect(mockSetHoldStatus).not.toHaveBeenCalled();
+  });
+
+  // ── "Any section" auto-assign ──────────────────────────────────────────────
+
+  it("defaults to 'Any section' and shows the auto-assign hint instead of the table dropdown", () => {
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    // The auto-assign hint replaces the table dropdown.
+    expect(screen.getByText(/We'll seat you at the best available table/)).toBeTruthy();
+    expect(screen.queryByTestId("table-select")).toBeNull();
+  });
+
+  it("reveals the table dropdown when a concrete section is selected", async () => {
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    expect(screen.queryByTestId("table-select")).toBeNull();
+    // section-select mock fires onSelect(20) -> Patio section.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    // Switching out of "Any section" hides the auto-assign hint.
+    expect(screen.queryByText(/We'll seat you at the best available table/)).toBeNull();
+  });
+
+  it("submits with null tableId/sectionId when 'Any section' is active", async () => {
+    mockHoldStatus = "held";
+    const onSubmit = jest.fn();
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={onSubmit} />);
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Auto User");
+    fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "auto@test.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Confirm Booking"));
+    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ tableId: null, sectionId: null })
+    );
   });
 });

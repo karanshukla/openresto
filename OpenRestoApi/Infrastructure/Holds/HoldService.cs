@@ -12,6 +12,7 @@ namespace OpenRestoApi.Infrastructure.Holds;
 /// </summary>
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Holds.HoldServiceTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingServiceTests")]
 [ExternalAccessAllowed]
 internal class HoldService(ISystemClock clock) : IHoldService
 {
@@ -48,6 +49,47 @@ internal class HoldService(ISystemClock clock) : IHoldService
             _holds[holdId] = entry;
 
             return new HoldResult(holdId, expiresAt);
+        }
+    }
+
+    public AutoAssignResult? PlaceAutoHold(
+        int restaurantId,
+        IReadOnlyList<TableCandidate> candidates,
+        DateTime bookingDate,
+        string? currentHoldId = null,
+        int durationMinutes = 60)
+    {
+        // The candidate scan + the place must happen under the same lock so two concurrent
+        // "any" submissions can't both observe the same table as free and grab it (TOCTOU).
+        // IsTableHeld reads _holds, and PlaceHold writes to it — both under _placeLock today,
+        // so reusing that lock here keeps the auto-assign pick race-free by construction.
+        lock (_placeLock)
+        {
+            Cleanup();
+
+            foreach (TableCandidate candidate in candidates)
+            {
+                if (IsTableHeld(candidate.TableId, bookingDate, excludeHoldId: currentHoldId, durationMinutes: durationMinutes))
+                {
+                    continue;
+                }
+
+                // Atomically release the caller's previous hold before placing the new one
+                if (currentHoldId != null)
+                {
+                    _holds.TryRemove(currentHoldId, out _);
+                }
+
+                string holdId = Guid.NewGuid().ToString("N");
+                DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
+                var entry = new HoldEntry(holdId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, expiresAt);
+
+                _holds[holdId] = entry;
+
+                return new AutoAssignResult(holdId, expiresAt, candidate.TableId, candidate.SectionId);
+            }
+
+            return null;
         }
     }
 

@@ -310,4 +310,113 @@ public class HoldServiceTests
 
         Assert.Equal(_clock.UtcNow + HoldService.HoldDuration, result.ExpiresAt);
     }
+
+    // ── PlaceAutoHold ────────────────────────────────────────────────────────
+
+    private static readonly TableCandidate[] _twoCandidates =
+    [
+        new(10, 1, 2),  // smallest first
+        new(11, 1, 4)
+    ];
+
+    [Fact]
+    public void PlaceAutoHold_PicksFirstFreeCandidate()
+    {
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, _twoCandidates, _bookingDate);
+
+        Assert.NotNull(result);
+        Assert.Equal(10, result!.TableId);
+        Assert.Equal(1, result.SectionId);
+        Assert.NotEmpty(result.HoldId);
+        Assert.Equal(_baseTime.Add(HoldService.HoldDuration), result.ExpiresAt);
+    }
+
+    [Fact]
+    public void PlaceAutoHold_FallsThroughToNextCandidate_WhenFirstIsHeld()
+    {
+        // Hold the first candidate via the single-table path (simulating another user).
+        _svc.PlaceHold(_restaurantId, tableId: 10, sectionId: 1, _bookingDate);
+
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, _twoCandidates, _bookingDate);
+
+        Assert.NotNull(result);
+        Assert.Equal(11, result!.TableId); // fell through to the 4-seater
+        Assert.Equal(1, result.SectionId);
+    }
+
+    [Fact]
+    public void PlaceAutoHold_ReturnsNull_WhenAllCandidatesHeld()
+    {
+        _svc.PlaceHold(_restaurantId, tableId: 10, sectionId: 1, _bookingDate);
+        _svc.PlaceHold(_restaurantId, tableId: 11, sectionId: 1, _bookingDate);
+
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, _twoCandidates, _bookingDate);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void PlaceAutoHold_ReturnsNull_ForEmptyCandidateList()
+    {
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, Array.Empty<TableCandidate>(), _bookingDate);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void PlaceAutoHold_AtomicallyExcludesCallerCurrentHold_OnSameTable()
+    {
+        // Caller already holds T10; re-requesting auto-assign with currentHoldId must allow
+        // re-acquiring the same candidate (mirrors PlaceHold's atomic-replace semantics).
+        AutoAssignResult first = _svc.PlaceAutoHold(_restaurantId, _twoCandidates, _bookingDate)!;
+
+        AutoAssignResult? second = _svc.PlaceAutoHold(
+            _restaurantId, _twoCandidates, _bookingDate, currentHoldId: first.HoldId);
+
+        Assert.NotNull(second);
+        Assert.NotEqual(first.HoldId, second!.HoldId);
+        Assert.Null(_svc.GetHold(first.HoldId)); // previous hold released
+    }
+
+    [Fact]
+    public void PlaceAutoHold_PersistedEntry_HasChosenTableAndSection()
+    {
+        AutoAssignResult result = _svc.PlaceAutoHold(_restaurantId, _twoCandidates, _bookingDate)!;
+
+        HoldEntry? entry = _svc.GetHold(result.HoldId);
+
+        Assert.NotNull(entry);
+        Assert.Equal(result.TableId, entry!.TableId);
+        Assert.Equal(result.SectionId, entry.SectionId);
+        Assert.Equal(_restaurantId, entry.RestaurantId);
+    }
+
+    [Fact]
+    public async Task PlaceAutoHold_NeverDoubleBooksSameTable_WhenContended()
+    {
+        // Stress the lock: 20 concurrent auto-assign requests competing for 3 candidate tables.
+        // Exactly 3 should win (one per table); the rest get null.
+        var candidates = new TableCandidate[]
+        {
+            new(100, 1, 2),
+            new(101, 1, 2),
+            new(102, 1, 2)
+        };
+        int successes = 0;
+        var winners = new System.Collections.Concurrent.ConcurrentBag<int>();
+
+        var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
+        {
+            AutoAssignResult? r = _svc.PlaceAutoHold(_restaurantId, candidates, _bookingDate);
+            if (r is not null)
+            {
+                System.Threading.Interlocked.Increment(ref successes);
+                winners.Add(r.TableId);
+            }
+        })).ToArray();
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(3, successes);                         // one winner per table
+        Assert.Equal(3, winners.Distinct().Count());        // no two winners share a table
+    }
 }

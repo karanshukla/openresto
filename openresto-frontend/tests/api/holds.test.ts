@@ -86,6 +86,34 @@ describe("createHold", () => {
     const result = await createHold(request);
     expect(result.ok).toBe(false);
   });
+
+  it("posts auto-assign hold (null table/section + seats) and returns resolved table", async () => {
+    // "Any section" request: null tableId/sectionId + seats, so the server picks the table.
+    const autoRequest = {
+      restaurantId: 1,
+      tableId: null,
+      sectionId: null,
+      seats: 2,
+      date: "2026-06-15T19:00:00Z",
+    };
+    const holdResp = {
+      holdId: "auto-1",
+      expiresAt: "2026-06-15T19:05:00Z",
+      secondsRemaining: 300,
+      tableId: 42, // server-resolved
+      sectionId: 7,
+    };
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => holdResp,
+    });
+
+    const result = await createHold(autoRequest);
+    expect(result).toEqual({ ok: true, hold: holdResp });
+    const [, opts] = mockFetch.mock.calls[0];
+    expect(JSON.parse(opts.body)).toEqual(autoRequest);
+  });
 });
 
 describe("releaseHold", () => {

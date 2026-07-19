@@ -57,6 +57,8 @@ describe("BookingForm", () => {
       holdStatus: "held",
       secondsLeft: 60,
       holdId: "h-123",
+      resolvedTableId: null,
+      resolvedSectionId: null,
       setHoldStatus: mockSetHoldStatus,
       releaseCurrentHold: mockReleaseCurrentHold,
     });
@@ -64,6 +66,17 @@ describe("BookingForm", () => {
     delete (window as any).confirm;
     (window as any).confirm = jest.fn(() => true);
   });
+
+  /**
+   * The form defaults to "Any section" (table dropdown hidden). Tests that exercise the
+   * explicit-table path call this to switch into the "Main" section first.
+   */
+  function selectMainSection() {
+    // The section Select's trigger shows the selected option label. Open the modal, then
+    // pick "Main".
+    fireEvent.press(screen.getByText("Any section"));
+    fireEvent.press(screen.getByText("Main"));
+  }
 
   it("renders correctly and handles submission", async () => {
     const onSubmit = jest.fn();
@@ -88,6 +101,9 @@ describe("BookingForm", () => {
   it("shows warning when seats exceed table capacity", async () => {
     const onSubmit = jest.fn();
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    selectMainSection();
 
     // Select 4 guests (Table T1 has 2, T2 has 4).
     // The component defaults to best fitting table.
@@ -117,6 +133,9 @@ describe("BookingForm", () => {
     (window as any).confirm = jest.fn(() => false);
     const onSubmit = jest.fn();
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    selectMainSection();
 
     // Bumping guests to 5 (above every table's capacity) re-runs
     // auto-selection, which falls back to the first table (T1, 2 seats),
@@ -168,6 +187,9 @@ describe("BookingForm", () => {
     };
     renderWithProviders(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
 
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    selectMainSection();
+
     // T1 (2 seats) is auto-selected by default; open the table Select to
     // reveal the full option list, including the unnamed table's fallback label.
     fireEvent.press(screen.getByText("T1 (2 seats)"));
@@ -177,6 +199,9 @@ describe("BookingForm", () => {
 
   it("renders 'No tables available' when guests exceed all tables", () => {
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    selectMainSection();
 
     fireEvent.press(screen.getByText("2 seats"));
     fireEvent.press(screen.getByText("10 seats")); // mockRestaurant max is 4
@@ -211,6 +236,9 @@ describe("BookingForm", () => {
     renderWithProviders(
       <BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} initialTime="09:00" />
     );
+
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    selectMainSection();
 
     await waitFor(() => {
       // Only T2 (id 101) should be shown; T1 (id 100) should be filtered out

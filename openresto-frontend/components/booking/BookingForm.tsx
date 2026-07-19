@@ -25,8 +25,10 @@ export interface BookingFormData {
   customerEmail: string;
   customerName: string;
   seats: number;
-  tableId: number;
-  sectionId: number;
+  /** null when "Any section" is selected (server auto-assigns the table). */
+  tableId: number | null;
+  /** null when "Any section" is selected. */
+  sectionId: number | null;
   date: string;
   time: string;
   holdId: string | null;
@@ -93,10 +95,16 @@ export default function BookingForm({
   const [specialRequests, setSpecialRequests] = useState("");
   const [seats, setSeats] = useState(initialSeats ?? 2);
   const [submitting, setSubmitting] = useState(false);
-  const [sectionId, setSectionId] = useState<number>(() => restaurant.sections[0]?.id ?? 0);
+  const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
-  const sectionOptions = restaurant.sections.map((s) => ({ label: s.name, value: s.id }));
+  // "Any section" is the default option (value 0); concrete sections follow. When selected,
+  // the form hides the table dropdown and lets the server pick the best available table.
+  const sectionOptions = [
+    { label: "Any section", value: 0 },
+    ...restaurant.sections.map((s) => ({ label: s.name, value: s.id })),
+  ];
+  const isAutoAssign = sectionId === 0;
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
 
   const timezone = restaurant.timezone || "UTC";
@@ -137,15 +145,24 @@ export default function BookingForm({
     return eligible[0]?.id ?? pool[0]?.id;
   }
 
-  const { holdStatus, holdMessage, secondsLeft, holdId, setHoldStatus, releaseCurrentHold } =
-    useTableHold({
-      restaurantId: restaurant.id,
-      sections: restaurant.sections,
-      tableId,
-      date,
-      time,
-      email: customerEmail,
-    });
+  const {
+    holdStatus,
+    holdMessage,
+    secondsLeft,
+    holdId,
+    resolvedTableId,
+    setHoldStatus,
+    releaseCurrentHold,
+  } = useTableHold({
+    restaurantId: restaurant.id,
+    sections: restaurant.sections,
+    tableId,
+    date,
+    time,
+    email: customerEmail,
+    autoAssign: isAutoAssign,
+    seats,
+  });
 
   // Fetch availability when date/seats change
   useEffect(() => {
@@ -183,8 +200,13 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, seats, restaurant.id]);
 
-  // When availability or time changes, ensure we have a valid table selected
+  // When availability or time changes, ensure we have a valid table selected.
+  // Skipped in auto-assign mode — the server picks the table, so we don't pre-select one here.
   useEffect(() => {
+    if (isAutoAssign) {
+      if (tableId !== undefined) setTableId(undefined);
+      return;
+    }
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     if (availableTableIds.length > 0) {
       if (!tableId || !availableTableIds.includes(tableId)) {
@@ -195,11 +217,17 @@ export default function BookingForm({
       setTableId(bestTableFor(seats, undefined, candidates));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableTableIds, seats]);
+  }, [availableTableIds, seats, isAutoAssign]);
 
-  // When section changes, release hold and pick best table in new section
+  // When section changes, release hold and pick best table in new section (or clear the
+  // table selection when switching into "Any section" auto-assign mode).
   useEffect(() => {
     releaseCurrentHold();
+    if (isAutoAssign) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTableId(undefined);
+      return;
+    }
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTableId(
@@ -253,7 +281,7 @@ export default function BookingForm({
     selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
 
   const isValid =
-    !!tableId &&
+    (isAutoAssign || !!tableId) && // table dropdown hidden for "Any section" — auto-hold still gates
     !!date &&
     !!time &&
     customerName.trim().length > 0 &&
@@ -279,8 +307,10 @@ export default function BookingForm({
         customerEmail,
         customerName,
         seats,
-        tableId,
-        sectionId,
+        // For "Any section", defer table selection to the server (null ids trigger auto-assign
+        // on the booking create path; the server will adopt the held table from the hold id).
+        tableId: isAutoAssign ? null : (tableId ?? null),
+        sectionId: isAutoAssign ? null : sectionId,
         date,
         time,
         holdId,
@@ -377,7 +407,12 @@ export default function BookingForm({
       <View style={isWeb ? styles.fieldRow : undefined}>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Table</ThemedText>
-          {eligibleTables.length === 0 ? (
+          {isAutoAssign ? (
+            <ThemedText style={[styles.autoAssignHint, { color: colors.muted }]}>
+              We'll seat you at the best available table
+              {resolvedTableId ? "" : " across all sections"}.
+            </ThemedText>
+          ) : eligibleTables.length === 0 ? (
             <ThemedText style={[styles.noTables, { color: colors.error }]}>
               No tables available for {seats} guests.
             </ThemedText>
@@ -425,7 +460,7 @@ export default function BookingForm({
             <HoldStatusBanner
               holdStatus={holdStatus}
               secondsLeft={secondsLeft}
-              hasSelection={!!tableId && !!date && !!time}
+              hasSelection={(isAutoAssign || !!tableId) && !!date && !!time}
               holdMessage={holdMessage}
               onRefresh={onRefresh}
             />
@@ -462,7 +497,7 @@ export default function BookingForm({
         )}
       </Button>
 
-      {!submitting && holdStatus !== "held" && tableId && date && time && (
+      {!submitting && holdStatus !== "held" && (isAutoAssign || tableId) && date && time && (
         <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
       )}
     </View>
@@ -500,6 +535,10 @@ const styles = StyleSheet.create({
   noTables: {
     color: "#e53e3e",
     fontSize: 13,
+  },
+  autoAssignHint: {
+    fontSize: 13,
+    fontStyle: "italic",
   },
   closedDayNotice: {
     fontSize: 13,

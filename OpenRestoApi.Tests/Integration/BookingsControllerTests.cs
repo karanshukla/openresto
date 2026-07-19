@@ -418,4 +418,111 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.NotEmpty(body!);
         Assert.Contains(body!, e => e.Email == "recent@test.com");
     }
+
+    // ── Auto-assign ("Any section") ───────────────────────────────────────────
+
+    private (int restaurantId, int t2Id, int t2SectionId) GetPastaPlaceIds()
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Restaurant pasta = db.Restaurants.First(r => r.Name == "Pasta Place");
+        Table t2 = db.Tables.First(t => t.Name == "T2");
+        return (pasta.Id, t2.Id, t2.SectionId);
+    }
+
+    [Fact]
+    public async Task CreateBooking_AutoAssign_PersistsResolvedTable()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int t2Id, int t2SectionId) = GetPastaPlaceIds();
+        string date = DateTime.UtcNow.AddDays(90).ToString("yyyy-MM-ddT12:00:00");
+
+        // No tableId/sectionId/holdId → server must auto-assign. For 2 seats the smallest
+        // fitting free table across Pasta Place is T2 (2 seats).
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/bookings", new
+        {
+            restaurantId,
+            date,
+            customerEmail = "auto@test.com",
+            seats = 2
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("bookingRef").GetString()));
+        Assert.Equal(t2Id, body.GetProperty("tableId").GetInt32());
+        Assert.Equal(t2SectionId, body.GetProperty("sectionId").GetInt32());
+    }
+
+    [Fact]
+    public async Task CreateBooking_AutoAssign_ConsumesAutoHold()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int t2Id, _) = GetPastaPlaceIds();
+        string date = DateTime.UtcNow.AddDays(91).ToString("yyyy-MM-ddT12:00:00");
+
+        // Place an auto-assigned hold first.
+        HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            seats = 2,
+            date
+        });
+        Assert.Equal(HttpStatusCode.OK, holdResp.StatusCode);
+        JsonElement holdBody = await holdResp.Content.ReadFromJsonAsync<JsonElement>();
+        string? holdId = holdBody.GetProperty("holdId").GetString();
+        Assert.Equal(t2Id, holdBody.GetProperty("tableId").GetInt32()); // auto-resolved to T2
+
+        // Consume that hold with an auto-assign booking.
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/bookings", new
+        {
+            restaurantId,
+            date,
+            customerEmail = "auto2@test.com",
+            seats = 2,
+            holdId
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(t2Id, body.GetProperty("tableId").GetInt32());
+    }
+
+    [Fact]
+    public async Task CreateBooking_AutoAssign_NeverDoubleBooksSameTable_WhenContended()
+    {
+        // Concurrency AC: two near-simultaneous "any table" submissions for the same slot
+        // must never both land on the same table. Pasta Place has exactly one 2-seat table
+        // (T2) and two 4-seat tables (T1, P1). For a 4-seat request, exactly two of three
+        // concurrent submissions should succeed (one per 4-seat table); the third should
+        // conflict. No table should be double-booked.
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, _, _) = GetPastaPlaceIds();
+        string date = DateTime.UtcNow.AddDays(92).ToString("yyyy-MM-ddT12:00:00");
+
+        var tasks = Enumerable.Range(0, 3).Select(i => Task.Run(async () =>
+        {
+            HttpClient c = _factory.CreateClient();
+            HttpResponseMessage r = await c.PostAsJsonAsync("/api/bookings", new
+            {
+                restaurantId,
+                date,
+                customerEmail = $"race{i}@test.com",
+                seats = 4
+            });
+            JsonElement body = await r.Content.ReadFromJsonAsync<JsonElement>();
+            return new { status = r.StatusCode, body };
+        })).ToArray();
+        var results = await Task.WhenAll(tasks);
+
+        int created = results.Count(r => r.status == HttpStatusCode.Created);
+        Assert.Equal(2, created); // T1 and P1 each take one winner
+
+        // Collect the tableIds of the winners; they must be distinct.
+        var winnerTables = results
+            .Where(r => r.status == HttpStatusCode.Created)
+            .Select(r => r.body.GetProperty("tableId").GetInt32())
+            .ToList();
+        Assert.Equal(winnerTables.Count, winnerTables.Distinct().Count());
+    }
 }
