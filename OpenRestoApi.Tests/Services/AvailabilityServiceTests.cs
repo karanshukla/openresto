@@ -93,6 +93,119 @@ public class AvailabilityServiceTests
         Assert.False(slot1200.IsAvailable);
     }
 
+    // ── BookingSlotIntervalMinutes (#245) ────────────────────────────────────
+    // The interval controls the step between selectable start times, decoupled from the
+    // booking duration. A 15-min interval must produce slots at every quarter hour, and
+    // combining a longer duration with a shorter interval must not produce double-bookings.
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesRestaurantConfiguredSlotInterval_ForStep()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesRestaurantConfiguredSlotInterval_ForStep));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "12:00", Timezone = "UTC",
+            BookingSlotIntervalMinutes = 15
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        // 11:00 → 12:00 stepping by 15 min = 4 slots (11:00, 11:15, 11:30, 11:45).
+        Assert.Equal(4, result.Slots.Count);
+        Assert.Equal(["11:00", "11:15", "11:30", "11:45"], result.Slots.Select(s => s.Time).ToList());
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_DefaultInterval_StepsEvery30Minutes()
+    {
+        // Backwards-compat: with no interval set, the entity default (30) preserves the
+        // pre-setting slot grid exactly.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_DefaultInterval_StepsEvery30Minutes));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "12:00", Timezone = "UTC"
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal(["11:00", "11:30"], result.Slots.Select(s => s.Time).ToList());
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_60MinuteInterval_ProducesHourlySlots()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_60MinuteInterval_ProducesHourlySlots));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "14:00", Timezone = "UTC",
+            BookingSlotIntervalMinutes = 60
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal(["11:00", "12:00", "13:00"], result.Slots.Select(s => s.Time).ToList());
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_LongDurationShortInterval_NoDoubleBooking()
+    {
+        // #245 core acceptance criterion: a 90-minute duration with a 15-minute interval.
+        // A single table booked at 12:00 must mark every overlapping generated start time
+        // (11:15–12:15 all overlap a 12:00–13:30 booking window) unavailable — no start
+        // time that would double-book the table should be offered as available.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_LongDurationShortInterval_NoDoubleBooking));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "14:00", Timezone = "UTC",
+            DefaultBookingDurationMinutes = 90,
+            BookingSlotIntervalMinutes = 15
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        // Booking occupies 12:00–13:30 (90-min duration).
+        var bookingStart = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = bookingStart, BookingRef = "B1" });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, bookingStart, 2);
+
+        // Generated start times: 11:00, 11:15, 11:30, ..., 13:45. Each 90-min slot overlaps
+        // the 12:00–13:30 booking window iff slotStart < 13:30 AND slotStart+90 > 12:00,
+        // i.e. slotStart > 10:30. So every slot from 11:00 through 13:15 must be unavailable,
+        // and 13:30 / 13:45 (which end at/after the booking, no overlap) must be available.
+        var unavailable = result.Slots.Where(s => !s.IsAvailable).Select(s => s.Time).ToList();
+        Assert.Contains("11:00", unavailable);
+        Assert.Contains("11:15", unavailable);
+        Assert.Contains("12:00", unavailable);
+        Assert.Contains("13:15", unavailable);
+
+        var available = result.Slots.Where(s => s.IsAvailable).Select(s => s.Time).ToList();
+        Assert.Contains("13:30", available);
+        Assert.Contains("13:45", available);
+    }
+
     [Fact]
     public async Task GetAvailabilityAsync_ConsidersHolds()
     {

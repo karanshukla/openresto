@@ -73,6 +73,8 @@ VALUES
 -- Email settings intentionally left empty (no credentials in source control)
 -- Restaurants
 -- DefaultBookingDurationMinutes defaults to 60 (NOT NULL, added by migration).
+-- BookingSlotIntervalMinutes defaults to 30 (NOT NULL, added by migration) — the step
+--   between selectable start times, decoupled from the booking duration above.
 -- OpenHoursJson is NULL so OpenTime/CloseTime apply to every day.
 -- WalkInOnly is 0 and WalkInDays is NULL so online bookings stay enabled.
 -- Description supports [label](url) inline links — see app/(user)/restaurant/[id].tsx.
@@ -90,6 +92,7 @@ INSERT INTO
     ImageUrl,
     IsArchived,
     DefaultBookingDurationMinutes,
+    BookingSlotIntervalMinutes,
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
@@ -110,6 +113,7 @@ VALUES
     '/media/location-1.jpg?v=1779668717048',
     0,
     60,
+    30,
     NULL,
     0,
     NULL,
@@ -131,6 +135,7 @@ INSERT INTO
     ImageUrl,
     IsArchived,
     DefaultBookingDurationMinutes,
+    BookingSlotIntervalMinutes,
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
@@ -151,6 +156,7 @@ VALUES
     '/media/location-2.webp',
     0,
     60,
+    30,
     NULL,
     0,
     NULL,
@@ -172,6 +178,7 @@ INSERT INTO
     ImageUrl,
     IsArchived,
     DefaultBookingDurationMinutes,
+    BookingSlotIntervalMinutes,
     OpenHoursJson,
     WalkInOnly,
     WalkInDays,
@@ -192,6 +199,7 @@ VALUES
     '/media/location-3.jpg?v=1780155462249',
     0,
     60,
+    30,
     NULL,
     0,
     NULL,

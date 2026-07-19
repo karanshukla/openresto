@@ -19,6 +19,10 @@ public class RestaurantManagementService(
     private static readonly HashSet<int> _allowedBookingDurationsMinutes =
         [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
 
+    // Allowed start-time interval values — kept small and sane so the availability
+    // slot-generation loop can't be sent into a degenerate (e.g. 0 or negative) spin.
+    private static readonly HashSet<int> _allowedBookingSlotIntervalsMinutes = [15, 30, 60];
+
     // ── Restaurants ─────────────────────────────────────────────────────────
 
     public async Task<List<RestaurantDto>> GetAllAsync()
@@ -40,6 +44,7 @@ public class RestaurantManagementService(
             Name = dto.Name,
             Address = dto.Address,
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
+            BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
             Sections = dto.Sections.Select((s, index) => new Section
             {
                 Name = s.Name,
@@ -111,6 +116,17 @@ public class RestaurantManagementService(
             r.DefaultBookingDurationMinutes = req.DefaultBookingDurationMinutes.Value;
         }
 
+        if (req.BookingSlotIntervalMinutes.HasValue)
+        {
+            if (!_allowedBookingSlotIntervalsMinutes.Contains(req.BookingSlotIntervalMinutes.Value))
+            {
+                throw new ValidationException(
+                    $"BookingSlotIntervalMinutes must be one of: {string.Join(", ", _allowedBookingSlotIntervalsMinutes.Order())}.");
+            }
+
+            r.BookingSlotIntervalMinutes = req.BookingSlotIntervalMinutes.Value;
+        }
+
         if (req.WalkInOnly.HasValue)
         {
             r.WalkInOnly = req.WalkInOnly.Value;
@@ -142,6 +158,7 @@ public class RestaurantManagementService(
             WalkInOnly = r.WalkInOnly,
             WalkInDays = r.WalkInDays ?? "",
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
+            BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
             Sections = []
         };
     }
@@ -275,6 +292,7 @@ public class RestaurantManagementService(
         WalkInOnly = r.WalkInOnly,
         WalkInDays = r.WalkInDays ?? "",
         DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
+        BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
         Sections = r.Sections
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new SectionDto

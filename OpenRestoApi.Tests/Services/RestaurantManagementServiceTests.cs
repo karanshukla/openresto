@@ -92,6 +92,22 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_CopiesBookingSlotIntervalMinutes_FromDto()
+    {
+        // Regression test (#245): CreateAsync must map BookingSlotIntervalMinutes through,
+        // not silently drop it to the entity default (30).
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_CopiesBookingSlotIntervalMinutes_FromDto));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto { Name = "New", BookingSlotIntervalMinutes = 15 };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        Assert.Equal(15, result.BookingSlotIntervalMinutes);
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.Equal(15, entity!.BookingSlotIntervalMinutes);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsNull_WhenNotFound));
@@ -365,6 +381,110 @@ public class RestaurantManagementServiceTests
         RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", DefaultBookingDurationMinutes = validDuration });
 
         Assert.Equal(validDuration, result!.DefaultBookingDurationMinutes);
+    }
+
+    // ── BookingSlotIntervalMinutes (#245) ────────────────────────────────────
+    // Mirrors the DefaultBookingDurationMinutes coverage above: the interval is a separate
+    // restaurant-level setting (the step between selectable start times), decoupled from the
+    // booking duration. Defaults to 30 and is constrained to {15, 30, 60} server-side.
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsBookingSlotIntervalMinutes()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_ReturnsBookingSlotIntervalMinutes));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", BookingSlotIntervalMinutes = 15 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+        Assert.Equal(15, result!.BookingSlotIntervalMinutes);
+    }
+
+    [Fact]
+    public async Task RestaurantDto_DefaultsBookingSlotIntervalTo30()
+    {
+        var dto = new RestaurantDto();
+        Assert.Equal(30, dto.BookingSlotIntervalMinutes);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UpdatesBookingSlotIntervalMinutes()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_UpdatesBookingSlotIntervalMinutes));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", BookingSlotIntervalMinutes = 15 });
+
+        Assert.Equal(15, result!.BookingSlotIntervalMinutes);
+        Restaurant? entity = await db.Restaurants.FindAsync(1);
+        Assert.Equal(15, entity!.BookingSlotIntervalMinutes);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_KeepsExistingInterval_WhenNotProvided()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_KeepsExistingInterval_WhenNotProvided));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", BookingSlotIntervalMinutes = 15 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R" });
+
+        Assert.Equal(15, result!.BookingSlotIntervalMinutes);
+    }
+
+    [Theory]
+    [InlineData(45)]
+    [InlineData(0)]
+    [InlineData(-15)]
+    [InlineData(120)]
+    public async Task UpdateAsync_Throws_WhenIntervalNotInAllowedSet(int invalidInterval)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_Throws_WhenIntervalNotInAllowedSet)}_{invalidInterval}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", BookingSlotIntervalMinutes = invalidInterval }));
+    }
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(30)]
+    [InlineData(60)]
+    public async Task UpdateAsync_Accepts_WhenIntervalInAllowedSet(int validInterval)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_Accepts_WhenIntervalInAllowedSet)}_{validInterval}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", BookingSlotIntervalMinutes = validInterval });
+
+        Assert.Equal(validInterval, result!.BookingSlotIntervalMinutes);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DurationAndInterval_CanDiffer()
+    {
+        // The whole point of #245: a 90-minute booking duration with a 15-minute start-time
+        // interval must round-trip without either value rejecting the other.
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_DurationAndInterval_CanDiffer));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            DefaultBookingDurationMinutes = 90,
+            BookingSlotIntervalMinutes = 15
+        });
+
+        Assert.Equal(90, result!.DefaultBookingDurationMinutes);
+        Assert.Equal(15, result.BookingSlotIntervalMinutes);
     }
 
     [Fact]

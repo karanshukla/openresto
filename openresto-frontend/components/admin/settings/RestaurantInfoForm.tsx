@@ -70,6 +70,11 @@ const TIMEZONES = [
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
 
+// Allowed start-time intervals — must match the server-side allow-list
+// (RestaurantManagementService._allowedBookingSlotIntervalsMinutes). Kept small so
+// availability slot generation can't be sent into a degenerate spin.
+const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
+
 function formatDurationLabel(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -135,6 +140,9 @@ export function RestaurantInfoForm({
   const [defaultBookingDurationMinutes, setDefaultBookingDurationMinutes] = useState(
     restaurant.defaultBookingDurationMinutes ?? 60
   );
+  const [bookingSlotIntervalMinutes, setBookingSlotIntervalMinutes] = useState(
+    restaurant.bookingSlotIntervalMinutes ?? 30
+  );
   const [tags, setTags] = useState<string[]>(restaurant.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -198,6 +206,7 @@ export function RestaurantInfoForm({
     walkInDays.join(",") !== parseWalkInDays(restaurant.walkInDays).join(",") ||
     timezone !== (restaurant.timezone ?? "UTC") ||
     defaultBookingDurationMinutes !== (restaurant.defaultBookingDurationMinutes ?? 60) ||
+    bookingSlotIntervalMinutes !== (restaurant.bookingSlotIntervalMinutes ?? 30) ||
     tags.join(",") !== (restaurant.tags ?? []).join(",");
 
   const discard = () => {
@@ -214,6 +223,7 @@ export function RestaurantInfoForm({
     setWalkInDays(parseWalkInDays(restaurant.walkInDays));
     setTimezone(restaurant.timezone ?? "UTC");
     setDefaultBookingDurationMinutes(restaurant.defaultBookingDurationMinutes ?? 60);
+    setBookingSlotIntervalMinutes(restaurant.bookingSlotIntervalMinutes ?? 30);
     setTags(restaurant.tags ?? []);
     setTagInput("");
   };
@@ -237,6 +247,7 @@ export function RestaurantInfoForm({
       walkInDays: walkInDays.join(","),
       timezone,
       defaultBookingDurationMinutes,
+      bookingSlotIntervalMinutes,
       tags: finalTags.join(","),
     });
     setSaving(false);
@@ -254,6 +265,7 @@ export function RestaurantInfoForm({
         walkInDays: result.walkInDays,
         timezone: result.timezone,
         defaultBookingDurationMinutes: result.defaultBookingDurationMinutes,
+        bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
         tags: result.tags,
       });
     }
@@ -400,6 +412,42 @@ export function RestaurantInfoForm({
             </select>
             <ThemedText style={{ fontSize: 11, color: mutedColor }}>
               How long each new booking occupies a table by default
+            </ThemedText>
+          </View>
+          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Booking start-time interval
+            </ThemedText>
+            <select
+              data-testid="booking-slot-interval-select"
+              value={bookingSlotIntervalMinutes}
+              onChange={
+                /* istanbul ignore next */ (e) =>
+                  setBookingSlotIntervalMinutes(Number(e.target.value))
+              }
+              style={{
+                width: "100%",
+                height: 44,
+                borderWidth: 1,
+                borderStyle: "solid" as const,
+                borderColor: colors.border,
+                borderRadius: 8,
+                paddingLeft: 12,
+                paddingRight: 12,
+                fontSize: 14,
+                backgroundColor: colors.input,
+                color: colors.text,
+                cursor: "pointer",
+              }}
+            >
+              {SLOT_INTERVAL_OPTIONS.map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {formatDurationLabel(minutes)}
+                </option>
+              ))}
+            </select>
+            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+              How far apart selectable start times are (independent of booking duration)
             </ThemedText>
           </View>
         </View>
