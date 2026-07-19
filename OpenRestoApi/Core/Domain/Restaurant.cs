@@ -79,6 +79,16 @@ public class Restaurant
     public int DefaultBookingDurationMinutes { get; set; } = 60;
 
     /// <summary>
+    /// Step, in minutes, between selectable booking start times in
+    /// <see cref="Application.Services.AvailabilityService.GetAvailabilityAsync"/>.
+    /// Decoupled from <see cref="DefaultBookingDurationMinutes"/> so a restaurant can
+    /// offer, say, 90-minute bookings while still letting diners start every 15 minutes.
+    /// Constrained to a small set (15/30/60) server-side; defaults to 30 to preserve the
+    /// pre-setting behaviour (the old hardcoded slot step).
+    /// </summary>
+    public int BookingSlotIntervalMinutes { get; set; } = 30;
+
+    /// <summary>
     /// True when online bookings are paused: a future <see cref="BookingsPausedUntil"/>
     /// is set. Consolidates the previously-inlined
     /// <c>BookingsPausedUntil.HasValue &amp;&amp; BookingsPausedUntil.Value &gt; DateTime.UtcNow</c>

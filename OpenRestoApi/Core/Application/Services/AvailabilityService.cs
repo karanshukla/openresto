@@ -84,7 +84,14 @@ public sealed class AvailabilityService(
             localEnd = localEnd.AddDays(1);
         }
 
-        // 3. Generate 30-minute slots
+        // 3. Generate slots stepping by the restaurant's configured interval
+        // (decoupled from DefaultBookingDurationMinutes — see Restaurant.BookingSlotIntervalMinutes).
+        // Fall back to 30 min if the stored value is somehow degenerate (0/negative), which
+        // would otherwise spin the while-loop below forever — server-side validation keeps
+        // this to 15/30/60, but we defend against stale/corrupt rows regardless.
+        int slotIntervalMinutes = restaurant.BookingSlotIntervalMinutes > 0
+            ? restaurant.BookingSlotIntervalMinutes
+            : 30;
         var slots = new List<TimeSlotDto>();
         DateTime current = localStart;
 
@@ -144,7 +151,7 @@ public sealed class AvailabilityService(
                 Category = GetCategory(current)
             });
 
-            current = current.AddMinutes(30);
+            current = current.AddMinutes(slotIntervalMinutes);
         }
 
         return new AvailabilityResponseDto

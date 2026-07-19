@@ -33,6 +33,12 @@ public class UpdateRestaurantRequest
     public string? Tags { get; set; }
     public int? DefaultBookingDurationMinutes { get; set; }
 
+    /// <summary>
+    /// Step, in minutes, between selectable booking start times. Null leaves the stored
+    /// value untouched (PATCH-style); validated server-side against the allowed set (15/30/60).
+    /// </summary>
+    public int? BookingSlotIntervalMinutes { get; set; }
+
     /// <summary>When true the whole location becomes walk-in only (no online bookings).</summary>
     public bool? WalkInOnly { get; set; }
 
@@ -137,5 +143,9 @@ public class RestaurantDto
     public string WalkInDays { get; set; } = "";
 
     public int DefaultBookingDurationMinutes { get; set; } = 60;
+
+    /// <summary>Step (minutes) between selectable booking start times (default 30).</summary>
+    public int BookingSlotIntervalMinutes { get; set; } = 30;
+
     public List<SectionDto> Sections { get; set; } = new();
 }

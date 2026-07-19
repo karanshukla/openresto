@@ -290,6 +290,84 @@ describe("RestaurantInfoForm", () => {
     expect(getDurationSelect().props.value).toBe(90);
   });
 
+  // ── Booking start-time interval (#245) ──────────────────────────────────
+  // Same raw-<select>/data-testid caveat as the duration control above — query via
+  // UNSAFE_getByProps since testID doesn't forward to a queryable DOM attribute.
+  const getIntervalSelect = () =>
+    screen.UNSAFE_getByProps({ "data-testid": "booking-slot-interval-select" });
+
+  it("renders the slot interval select at the restaurant's saved value", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(getIntervalSelect().props.value).toBe(30);
+  });
+
+  it("defaults the slot interval to 30 minutes when the restaurant has none set", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{
+          ...mockRestaurant,
+          bookingSlotIntervalMinutes: undefined as unknown as number,
+        }}
+        onSaved={onSaved}
+      />
+    );
+    expect(getIntervalSelect().props.value).toBe(30);
+  });
+
+  it("marks the form dirty and updates the selection when the slot interval changes", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const select = getIntervalSelect();
+    fireEvent(select, "change", { target: { value: "15" } });
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    expect(getIntervalSelect().props.value).toBe(15);
+  });
+
+  it("includes the slot interval in the save payload", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      bookingSlotIntervalMinutes: 15,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ bookingSlotIntervalMinutes: 30 })
+    );
+  });
+
+  it("saves the newly selected slot interval", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      bookingSlotIntervalMinutes: 60,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const select = getIntervalSelect();
+    fireEvent(select, "change", { target: { value: "60" } });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ bookingSlotIntervalMinutes: 60 })
+    );
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingSlotIntervalMinutes: 60 })
+    );
+  });
+
+  it("reverts the slot interval to the saved value when Discard is pressed", () => {
+    const withCustomInterval = { ...mockRestaurant, bookingSlotIntervalMinutes: 15 };
+    render(<RestaurantInfoForm restaurant={withCustomInterval} onSaved={onSaved} />);
+    const select = getIntervalSelect();
+    expect(getIntervalSelect().props.value).toBe(15);
+    fireEvent(select, "change", { target: { value: "60" } });
+    fireEvent.press(screen.getByText("Discard"));
+    expect(getIntervalSelect().props.value).toBe(15);
+  });
+
   // ── Per-day opening hours (#175) ─────────────────────────────────────────
 
   const uniformWeek = [1, 2, 3, 4, 5, 6, 7].map((day) => ({
@@ -513,6 +591,7 @@ describe("RestaurantInfoForm", () => {
     expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();
     expect(screen.getByPlaceholderText("e.g. 123 Main St")).toBeTruthy();
     expect(getDurationSelect().props.value).toBe(60);
+    expect(getIntervalSelect().props.value).toBe(30);
     expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
     expect(screen.getByText("All changes saved")).toBeTruthy();
   });

@@ -42,6 +42,8 @@ export interface RestaurantDto {
   /** Comma-separated ISO days (1=Monday … 7=Sunday) that are walk-in only ("" when none). */
   walkInDays?: string;
   defaultBookingDurationMinutes?: number;
+  /** Step (minutes) between selectable booking start times (15/30/60). */
+  bookingSlotIntervalMinutes?: number;
   sections: SectionDto[];
 }
 
@@ -135,6 +137,7 @@ export async function updateRestaurant(
     timezone?: string;
     tags?: string | null;
     defaultBookingDurationMinutes?: number;
+    bookingSlotIntervalMinutes?: number;
     walkInOnly?: boolean;
     walkInDays?: string;
     description?: string | null;
