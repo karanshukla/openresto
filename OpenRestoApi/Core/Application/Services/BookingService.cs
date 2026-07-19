@@ -14,6 +14,7 @@ public class BookingService(
     IRestaurantRepository restaurantRepository,
     IHoldService holdService,
     BookingMapper mapper,
+    TableAutoAssigner autoAssigner,
     IBookingConfirmationService? confirmationService = null,
     INotificationQueue? notificationQueue = null)
 {
@@ -23,6 +24,7 @@ public class BookingService(
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IHoldService _holdService = holdService;
     private readonly BookingMapper _mapper = mapper;
+    private readonly TableAutoAssigner _autoAssigner = autoAssigner;
     private readonly IBookingConfirmationService? _confirmationService = confirmationService;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
 
@@ -66,11 +68,25 @@ public class BookingService(
         }
 
         if (bookingDto.TableId is null || bookingDto.SectionId is null)
-            throw new ValidationException("TableId and SectionId are required.");
+        {
+            // Exactly one of the two is null — that's ambiguous; reject. Both null means
+            // "Any section" auto-assign, which we resolve below before the rest of the
+            // method (which assumes concrete ids).
+            if (bookingDto.TableId is null ^ bookingDto.SectionId is null)
+            {
+                throw new ValidationException("Specify both TableId and SectionId, or neither for auto-assign.");
+            }
+
+            await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
+        }
+
+        // After auto-assign resolution (or an explicit selection) both ids are guaranteed set.
+        int tableId = bookingDto.TableId!.Value;
+        int sectionId = bookingDto.SectionId!.Value;
 
         // 1. Check DB for an existing confirmed booking on the same table+date
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            bookingDto.TableId.Value, bookingDate, restaurant.DefaultBookingDurationMinutes);
+            tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
 
         if (alreadyBooked)
         {
@@ -79,7 +95,7 @@ public class BookingService(
 
         // 2. Check for an active hold by someone else
         bool heldByOther = _holdService.IsTableHeld(
-            bookingDto.TableId.Value, bookingDate, excludeHoldId: bookingDto.HoldId,
+            tableId, bookingDate, excludeHoldId: bookingDto.HoldId,
             durationMinutes: restaurant.DefaultBookingDurationMinutes);
 
         if (heldByOther)
@@ -88,7 +104,7 @@ public class BookingService(
         }
 
         // 3. Check for seat capacity
-        Table? table = await _tableRepository.GetByIdAsync(bookingDto.TableId.Value);
+        Table? table = await _tableRepository.GetByIdAsync(tableId);
         if (table != null && bookingDto.Seats > table.Seats)
         {
             throw new ConflictException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
@@ -100,7 +116,7 @@ public class BookingService(
         booking.BookingRef = BookingRefGenerator.Generate();
         booking.EndTime = bookingDate.AddMinutes(restaurant.DefaultBookingDurationMinutes);
         booking.Table = table!;
-        booking.Section = (await _sectionRepository.GetByIdAsync(bookingDto.SectionId.Value))!;
+        booking.Section = (await _sectionRepository.GetByIdAsync(sectionId))!;
         booking.Restaurant = restaurant;
 
         Booking newBooking = await _bookingRepository.AddAsync(booking);
@@ -127,6 +143,67 @@ public class BookingService(
         }
 
         return _mapper.ToDto(newBooking);
+    }
+
+    /// <summary>
+    /// Resolves a "Any section" auto-assign booking request: populates
+    /// <paramref name="bookingDto"/>.TableId/SectionId (and HoldId when a fresh hold is placed)
+    /// so the caller's downstream checks and persistence work unchanged. If a valid
+    /// <see cref="BookingDto.HoldId"/> was provided, the held table/section are adopted
+    /// directly; otherwise the candidate pool is built and a new hold is placed atomically
+    /// via <see cref="IHoldService.PlaceAutoHold"/>. Throws <see cref="ConflictException"/>
+    /// when no candidate is free.
+    /// </summary>
+    private async Task ResolveAutoAssignAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
+    {
+        // 1. If the caller already holds an auto-assigned table, adopt it. This avoids a
+        //    second race: the hold was placed atomically, so the held table is "ours" until
+        //    the booking lands or the hold expires.
+        if (!string.IsNullOrEmpty(bookingDto.HoldId))
+        {
+            HoldEntry? held = _holdService.GetHold(bookingDto.HoldId);
+            if (held is not null && held.RestaurantId == restaurant.Id)
+            {
+                // The hold is on a specific table — verify it still fits and isn't double-booked
+                // in the DB (the hold only guards against other in-memory holds). If something
+                // changed under us, fall through to the candidate search.
+                bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
+                    held.TableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+                if (!booked)
+                {
+                    bookingDto.TableId = held.TableId;
+                    bookingDto.SectionId = held.SectionId;
+                    return;
+                }
+            }
+        }
+
+        // 2. No usable hold — build candidates and place a fresh hold atomically. The new
+        //    hold id is stashed on the DTO so the existing "release hold after persist" step
+        //    at the end of CreateBookingAsync cleans it up.
+        IReadOnlyList<TableCandidate> candidates = await _autoAssigner.BuildCandidatesAsync(
+            restaurant, bookingDto.Seats, bookingDate);
+
+        if (candidates.Count == 0)
+        {
+            throw new ConflictException("No tables are available for the requested time and party size.");
+        }
+
+        AutoAssignResult? assigned = _holdService.PlaceAutoHold(
+            restaurant.Id,
+            candidates,
+            bookingDate,
+            currentHoldId: bookingDto.HoldId,
+            restaurant.DefaultBookingDurationMinutes);
+
+        if (assigned is null)
+        {
+            throw new ConflictException("All suitable tables are currently being held by other users. Please try again shortly.");
+        }
+
+        bookingDto.TableId = assigned.TableId;
+        bookingDto.SectionId = assigned.SectionId;
+        bookingDto.HoldId = assigned.HoldId; // ensure the release-at-end step tears it down
     }
 
     public virtual async Task<BookingDto?> GetBookingByIdAsync(int id)

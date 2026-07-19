@@ -3,6 +3,7 @@ using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Tests.Controllers;
@@ -17,15 +18,42 @@ public class HoldsControllerUnitTests
     {
         _mockHoldService = new Mock<IHoldService>();
         _mockPolicy = new Mock<IHoldPolicyService>();
-        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object);
+        // TableAutoAssigner is sealed, so we instantiate it directly. The explicit-table path
+        // under test never invokes it; the auto-assign tests below substitute via the policy mock.
+        TableAutoAssigner autoAssigner = new(new Mock<IBookingRepository>().Object);
+        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object, autoAssigner);
     }
+
+    private static PlaceHoldRequest ExplicitRequest(DateTime date) => new()
+    {
+        RestaurantId = 1,
+        TableId = 1,
+        SectionId = 1,
+        Date = date
+    };
 
     [Fact]
     public async Task PlaceHold_ReturnsBadRequest_WhenModelStateInvalid()
     {
         _controller.ModelState.AddModelError("Error", "Message");
-        var result = await _controller.PlaceHold(new PlaceHoldRequest());
+        var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task PlaceHold_ReturnsBadRequest_WhenOnlyOneOfTableOrSectionProvided()
+    {
+        var result = await _controller.PlaceHold(new PlaceHoldRequest
+        {
+            RestaurantId = 1,
+            TableId = 1,
+            // SectionId omitted
+            Date = DateTime.UtcNow.AddDays(1)
+        });
+
+        BadRequestObjectResult bad = Assert.IsType<BadRequestObjectResult>(result);
+        MessageResponse msg = Assert.IsType<MessageResponse>(bad.Value);
+        Assert.Contains("Specify both TableId and SectionId", msg.Message);
     }
 
     [Fact]
@@ -34,7 +62,7 @@ public class HoldsControllerUnitTests
         _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
             .ReturnsAsync(HoldPolicyResult.NotFound());
 
-        var result = await _controller.PlaceHold(new PlaceHoldRequest { Date = DateTime.UtcNow.AddDays(1) });
+        var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
 
         NotFoundObjectResult notFound = Assert.IsType<NotFoundObjectResult>(result);
         MessageResponse msg = Assert.IsType<MessageResponse>(notFound.Value);
@@ -47,7 +75,7 @@ public class HoldsControllerUnitTests
         _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
             .ReturnsAsync(HoldPolicyResult.Rejected("no."));
 
-        var result = await _controller.PlaceHold(new PlaceHoldRequest { Date = DateTime.UtcNow.AddDays(1) });
+        var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
 
         BadRequestObjectResult bad = Assert.IsType<BadRequestObjectResult>(result);
         MessageResponse msg = Assert.IsType<MessageResponse>(bad.Value);
@@ -60,7 +88,7 @@ public class HoldsControllerUnitTests
         _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
             .ReturnsAsync(HoldPolicyResult.Booked("taken."));
 
-        var result = await _controller.PlaceHold(new PlaceHoldRequest { Date = DateTime.UtcNow.AddDays(1) });
+        var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
 
         ConflictObjectResult conflict = Assert.IsType<ConflictObjectResult>(result);
         MessageResponse msg = Assert.IsType<MessageResponse>(conflict.Value);
@@ -81,7 +109,7 @@ public class HoldsControllerUnitTests
         _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
             .Returns((HoldResult?)null);
 
-        var result = await _controller.PlaceHold(new PlaceHoldRequest { Date = date });
+        var result = await _controller.PlaceHold(ExplicitRequest(date));
 
         Assert.IsType<ConflictObjectResult>(result);
     }
@@ -99,7 +127,7 @@ public class HoldsControllerUnitTests
         _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), normalizedDate, It.IsAny<string?>(), 75))
             .Returns(new HoldResult("hold-1", DateTime.UtcNow.AddMinutes(5)));
 
-        var result = await _controller.PlaceHold(new PlaceHoldRequest { Date = rawDate });
+        var result = await _controller.PlaceHold(ExplicitRequest(rawDate));
 
         OkObjectResult ok = Assert.IsType<OkObjectResult>(result);
         HoldResponse response = Assert.IsType<HoldResponse>(ok.Value);

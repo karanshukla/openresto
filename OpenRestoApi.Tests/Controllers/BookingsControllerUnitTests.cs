@@ -18,7 +18,10 @@ public class BookingsControllerUnitTests
 
     public BookingsControllerUnitTests()
     {
-        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!);
+        // BookingService has 7 required ctor params (the last being TableAutoAssigner, added
+        // for "Any section" auto-assign) + 2 optional. Moq needs a value per param to create
+        // the proxy; null! skips real initialization since these tests mock the methods directly.
+        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!, null!);
 
         var mockProvider = new Mock<IDataProtectionProvider>();
         mockProvider.Setup(p => p.CreateProtector(It.IsAny<string>())).Returns(new Mock<IDataProtector>().Object);

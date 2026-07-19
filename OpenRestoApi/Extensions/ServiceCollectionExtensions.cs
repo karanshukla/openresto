@@ -158,6 +158,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISystemClock, SystemClock>();
         services.AddSingleton<IHoldService, HoldService>();
         services.AddScoped<IHoldPolicyService, HoldPolicyService>();
+        services.AddScoped<TableAutoAssigner>();
 
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IBookingFilterRepository, BookingFilterRepository>();

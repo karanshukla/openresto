@@ -272,4 +272,68 @@ describe("useTableHold", () => {
     expect(result.current.holdStatus).toBe("unavailable");
     expect(result.current.hold).toBeNull();
   });
+
+  // ── Auto-assign ("Any section") mode ───────────────────────────────────────
+
+  it("auto-assign mode fires hold without a tableId and adopts the server-resolved table", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "auto-hold-1",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+        tableId: 42, // server-resolved
+        sectionId: 7,
+      },
+    });
+
+    // autoAssign + seats; tableId left undefined.
+    const params: UseTableHoldParams = {
+      ...defaultParams,
+      autoAssign: true,
+      seats: 2,
+    };
+    const { result } = renderHook(() => useTableHold(params));
+
+    expect(result.current.holdStatus).toBe("pending");
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    // Must send null table/section + seats so the server picks the table.
+    expect(mockCreateHold).toHaveBeenCalledWith(
+      expect.objectContaining({
+        restaurantId: 1,
+        tableId: null,
+        sectionId: null,
+        seats: 2,
+      })
+    );
+    expect(result.current.holdStatus).toBe("held");
+    expect(result.current.resolvedTableId).toBe(42);
+    expect(result.current.resolvedSectionId).toBe(7);
+  });
+
+  it("auto-assign mode surfaces unavailable when server rejects", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: false,
+      message: "No tables are available for the requested time and party size.",
+    });
+
+    const params: UseTableHoldParams = {
+      ...defaultParams,
+      autoAssign: true,
+      seats: 99,
+    };
+    const { result } = renderHook(() => useTableHold(params));
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("unavailable");
+    expect(result.current.resolvedTableId).toBeNull();
+    expect(result.current.resolvedSectionId).toBeNull();
+  });
 });

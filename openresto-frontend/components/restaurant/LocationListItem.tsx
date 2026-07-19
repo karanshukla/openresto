@@ -188,6 +188,13 @@ export default function LocationListItem({
   const handleSubmit = async (data: BookingFormData) => {
     setSubmitError(null);
     const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
+    // For "Any section" (null tableId/sectionId), the server auto-assigns the best table.
+    // For explicit selection, fall back to the table's owning section if sectionId wasn't set.
+    const resolvedSectionId =
+      data.sectionId ??
+      (data.tableId !== null
+        ? (restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ?? null)
+        : null);
     const bookingData = {
       customerEmail: data.customerEmail,
       customerName: data.customerName,
@@ -195,10 +202,7 @@ export default function LocationListItem({
       tableId: data.tableId,
       holdId: data.holdId,
       restaurantId: restaurant.id,
-      sectionId:
-        data.sectionId ||
-        restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ||
-        0,
+      sectionId: resolvedSectionId,
       date: dateTime,
       specialRequests: data.specialRequests || null,
     };

@@ -178,4 +178,89 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new { restaurantId = "invalid" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    // ── Auto-assign ("Any section") ───────────────────────────────────────────
+
+    private (int restaurantId, int t1Id, int t2Id, int p1Id, int t1SectionId, int p1SectionId) GetPastaPlaceTableIds()
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Restaurant pasta = db.Restaurants.First(r => r.Name == "Pasta Place");
+        Table t1 = db.Tables.First(t => t.Name == "T1");
+        Table t2 = db.Tables.First(t => t.Name == "T2");
+        Table p1 = db.Tables.First(t => t.Name == "P1");
+        return (pasta.Id, t1.Id, t2.Id, p1.Id, t1.SectionId, p1.SectionId);
+    }
+
+    [Fact]
+    public async Task PlaceHold_AutoAssign_ReturnsHoldWithResolvedTable()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int t1Id, int t2Id, int p1Id, _, _) = GetPastaPlaceTableIds();
+        // 2 seats → smallest fitting free table is T2 (2 seats).
+        var date = DateTime.UtcNow.AddDays(120).ToString("yyyy-MM-ddT12:00:00");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            seats = 2,
+            date
+            // tableId/sectionId omitted → auto-assign
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("holdId").GetString()));
+        Assert.Equal(t2Id, body.GetProperty("tableId").GetInt32()); // resolved to T2
+    }
+
+    [Fact]
+    public async Task PlaceHold_AutoAssign_Returns400_WhenSeatsMissing()
+    {
+        HttpClient client = _factory.CreateClient();
+        int restaurantId = GetPastaPlaceTableIds().restaurantId;
+        var date = DateTime.UtcNow.AddDays(121).ToString("yyyy-MM-ddT12:00:00");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            date
+            // no seats, no tableId/sectionId
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlaceHold_AutoAssign_Returns409_WhenAllEligibleTablesHeld()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, int t1Id, int t2Id, int p1Id, int t1SectionId, int p1SectionId) = GetPastaPlaceTableIds();
+        string date = DateTime.UtcNow.AddDays(122).ToString("yyyy-MM-ddT12:00:00");
+
+        // Hold all 2-seat-fitting tables (T1, T2, P1 all fit 2 seats) via explicit holds.
+        // T1 and T2 share the Indoor section; P1 is in Patio.
+        foreach ((int tid, int sid) in new[] { (t1Id, t1SectionId), (t2Id, t1SectionId), (p1Id, p1SectionId) })
+        {
+            HttpResponseMessage holdResp = await client.PostAsJsonAsync("/api/holds", new
+            {
+                restaurantId,
+                tableId = tid,
+                sectionId = sid,
+                date
+            });
+            Assert.Equal(HttpStatusCode.OK, holdResp.StatusCode);
+        }
+
+        // Now an auto-assign for 2 seats should find no free candidate.
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            seats = 2,
+            date
+        });
+
+        Assert.True(response.StatusCode == HttpStatusCode.Conflict,
+            $"Expected Conflict but got {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+    }
 }

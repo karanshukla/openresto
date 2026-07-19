@@ -18,7 +18,11 @@ public class BookingServiceTests
         IHoldService? holdService = null,
         IBookingConfirmationService? confirmationService = null)
     {
-        holdService ??= new Mock<IHoldService>().Object;
+        // Auto-assign tests need a real in-memory HoldService so PlaceAutoHold actually places
+        // holds (a loose Mock<IHoldService> returns null from PlaceAutoHold, which the service
+        // interprets as "all candidates held"). Tests that don't exercise auto-assign can pass
+        // their own mock.
+        holdService ??= new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
         return new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
@@ -26,7 +30,40 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdService,
             new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)),
             confirmationService);
+    }
+
+    private sealed class UtcClock : ISystemClock
+    {
+        public DateTime UtcNow => DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Seeds a restaurant with two sections and a spread of table sizes, for auto-assign
+    /// tests that need to assert "smallest fitting free table across sections".
+    ///
+    /// Section 1 "Main":  T1 (2 seats), T2 (4 seats), T3 (6 seats)
+    /// Section 2 "Patio": P1 (2 seats), P2 (4 seats)
+    /// </summary>
+    private static void SeedMultiTableRestaurant(AppDbContext db)
+    {
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Auto-Assign Bistro",
+            OpenTime = "00:00",
+            CloseTime = "23:59",
+            Timezone = "UTC"
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Sections.Add(new Section { Id = 2, Name = "Patio", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 6, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 4, Name = "P1", Seats = 2, SectionId = 2 });
+        db.Tables.Add(new Table { Id = 5, Name = "P2", Seats = 4, SectionId = 2 });
+        db.SaveChanges();
     }
 
     // ── CreateBookingAsync ────────────────────────────────────────────────────
@@ -809,5 +846,213 @@ public class BookingServiceTests
         });
 
         Assert.NotEmpty(result.BookingRef!);
+    }
+
+    // ── CreateBookingAsync — auto-assign ("Any section") ──────────────────────
+    //
+    // When TableId/SectionId are both null, the service picks the smallest fitting free
+    // table across all sections, atomically places a hold, and persists the booking against
+    // the resolved table. These tests cover each branch of that path.
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_PicksSmallestFittingFreeTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_PicksSmallestFittingFreeTable));
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        // 3 seats — fits T2(4)/T3(6)/P2(4) but not T1(2)/P1(2). Smallest fitting is T2.
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 3,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        Assert.Equal(2, result.TableId); // T2 — smallest fitting free
+        Assert.Equal(1, result.SectionId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_TiebreaksByTableId()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_TiebreaksByTableId));
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        // 2 seats — both T1(2) and P1(2) fit. Tie-break by TableId: T1 (id 1) < P1 (id 4).
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(8)
+        });
+
+        Assert.Equal(1, result.TableId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_FallsThroughToNextTable_WhenFirstTaken()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_FallsThroughToNextTable_WhenFirstTaken));
+        SeedMultiTableRestaurant(db);
+        // Pre-book T1 (the smallest 2-seater) for the target date.
+        DateTime date = DateTime.UtcNow.AddDays(9);
+        db.Bookings.Add(new Booking
+        {
+            RestaurantId = 1, TableId = 1, SectionId = 1, Date = date,
+            BookingRef = "PREBOOK", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date
+        });
+
+        // T1 is taken; next smallest 2-seater is P1 (id 4).
+        Assert.Equal(4, result.TableId);
+        Assert.Equal(2, result.SectionId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_CrossesSections_WhenSectionFull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_CrossesSections_WhenSectionFull));
+        SeedMultiTableRestaurant(db);
+        DateTime date = DateTime.UtcNow.AddDays(10);
+        // Fill every Main-section table that fits 2 seats.
+        foreach (int tid in new[] { 1, 2, 3 })
+        {
+            db.Bookings.Add(new Booking
+            {
+                RestaurantId = 1, TableId = tid, SectionId = 1, Date = date,
+                BookingRef = $"PRE{tid}", EndTime = date.AddMinutes(60)
+            });
+        }
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date
+        });
+
+        // All Main tables booked → auto-assign should land in Patio (section 2).
+        Assert.Equal(2, result.SectionId);
+        Assert.Equal(4, result.TableId); // P1, smallest Patio 2-seater
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_Throws_WhenNoEligibleTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_Throws_WhenNoEligibleTable));
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        // 100 seats — no table fits.
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 100,
+            Date = DateTime.UtcNow.AddDays(11)
+        }));
+
+        Assert.Contains("No tables are available", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(null, 1)]   // TableId null, SectionId set
+    [InlineData(1, null)]   // TableId set, SectionId null
+    public async Task CreateBookingAsync_AutoAssign_Throws_WhenExactlyOneIdNull(int? tableId, int? sectionId)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_Throws_WhenExactlyOneIdNull) + $"_{tableId}_{sectionId}");
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            TableId = tableId,
+            SectionId = sectionId,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(12)
+        }));
+
+        Assert.Contains("Specify both TableId and SectionId", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_AdoptsTableFromValidHold()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_AdoptsTableFromValidHold));
+        SeedMultiTableRestaurant(db);
+        DateTime date = DateTime.UtcNow.AddDays(13);
+
+        // Simulate a pre-existing auto-assigned hold on T2 via a mocked IHoldService.
+        // The service's ResolveAutoAssignAsync should adopt the held table/section without
+        // running the candidate search.
+        var holdMock = new Mock<IHoldService>();
+        holdMock
+            .Setup(h => h.GetHold("hold-T2"))
+            .Returns(new HoldEntry("hold-T2", TableId: 2, SectionId: 1, RestaurantId: 1, Date: date, ExpiresAt: DateTime.UtcNow.AddMinutes(5)));
+        holdMock.Setup(h => h.IsTableHeld(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>())).Returns(false);
+        holdMock.Setup(h => h.ReleaseHold(It.IsAny<string>()));
+        BookingService svc = new BookingService(
+            new BookingRepository(db),
+            new TableRepository(db),
+            new SectionRepository(db),
+            new RestaurantRepository(db),
+            holdMock.Object,
+            new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)));
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 4,
+            Date = date,
+            HoldId = "hold-T2"
+        });
+
+        Assert.Equal(2, result.TableId); // adopted from the hold
+        Assert.Equal(1, result.SectionId);
+        // The candidate path must not have been invoked.
+        holdMock.Verify(h => h.PlaceAutoHold(It.IsAny<int>(), It.IsAny<IReadOnlyList<TableCandidate>>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_PersistsResolvedTableOnBookingRow()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_PersistsResolvedTableOnBookingRow));
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddDays(14);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "persist@example.com",
+            Seats = 2,
+            Date = date
+        });
+
+        // Reload from DB to confirm the resolved table/section were persisted.
+        Booking? persisted = await db.Bookings.FirstOrDefaultAsync(b => b.BookingRef == result.BookingRef);
+        Assert.NotNull(persisted);
+        Assert.Equal(result.TableId, persisted!.TableId);
+        Assert.Equal(result.SectionId, persisted.SectionId);
     }
 }

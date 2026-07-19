@@ -297,4 +297,102 @@ public class HoldPolicyServiceTests
         mockBookingRepo.Verify(
             b => b.IsTableBookedOnDateAsync(It.IsAny<int>(), It.IsAny<DateTime>(), 90), Times.Once);
     }
+
+    // ── ValidateAnyTableAsync ────────────────────────────────────────────────
+    //
+    // Mirrors ValidateAsync's restaurant-level policy gates but skips the per-table booking
+    // check (the candidate builder handles that). The tests below confirm the restaurant-level
+    // gates still fire and that a confirmed booking does NOT block auto-assign upfront.
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsNotFound_WhenRestaurantMissing()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsNotFound_WhenRestaurantMissing));
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(999, DateTime.UtcNow.AddDays(1));
+
+        Assert.Equal(HoldPolicyStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsRejected_WhenPastDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsRejected_WhenPastDate));
+        SeedRestaurant(db);
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(-1));
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Contains("past", result.FailureMessage);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsRejected_WhenPaused()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsRejected_WhenPaused));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddDays(1)
+        });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(2));
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Contains("paused", result.FailureMessage);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsEligible_AndSkipsPerTableBookingCheck()
+    {
+        // Key difference vs ValidateAsync: a confirmed booking on a specific table does NOT
+        // block the auto-assign policy gate. The candidate builder will simply exclude that
+        // table from the pool; another free table can still win.
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsEligible_AndSkipsPerTableBookingCheck));
+        SeedRestaurant(db);
+        var date = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = date, BookingRef = "B1"
+        });
+        db.SaveChanges();
+
+        // Use a mock booking repo to assert the per-table check is NOT called for auto-assign.
+        var mockBookingRepo = new Mock<IBookingRepository>();
+        mockBookingRepo
+            .Setup(b => b.IsTableBookedOnDateAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
+            .ReturnsAsync(true); // would block if called
+        var svc = new HoldPolicyService(new RestaurantRepository(db), mockBookingRepo.Object);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, date);
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
+        Assert.NotNull(result.Restaurant);
+        mockBookingRepo.Verify(
+            b => b.IsTableBookedOnDateAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsRejected_WhenClosed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsRejected_WhenClosed));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "17:00", CloseTime = "22:00", Timezone = "UTC"
+        });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        // 10:00 UTC is before opening — should be rejected.
+        var closedTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, closedTime);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Contains("closed", result.FailureMessage);
+    }
 }

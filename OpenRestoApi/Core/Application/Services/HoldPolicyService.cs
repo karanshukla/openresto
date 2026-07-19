@@ -20,6 +20,42 @@ public sealed class HoldPolicyService(
 
     public async Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate)
     {
+        HoldPolicyResult restaurantPolicy = await ValidateRestaurantPolicyAsync(restaurantId, requestedDate);
+        if (restaurantPolicy.Status != HoldPolicyStatus.Eligible)
+        {
+            return restaurantPolicy;
+        }
+
+        // Existing confirmed booking on the same table.
+        DateTime bookingDate = restaurantPolicy.BookingDate;
+        Restaurant restaurant = restaurantPolicy.Restaurant!;
+        bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
+            tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+        if (alreadyBooked)
+        {
+            return HoldPolicyResult.Booked("This table is already booked for that time.");
+        }
+
+        return restaurantPolicy;
+    }
+
+    public async Task<HoldPolicyResult> ValidateAnyTableAsync(int restaurantId, DateTime requestedDate)
+    {
+        // Same restaurant-level policy gates as ValidateAsync, but no per-table booking
+        // check — the caller will compute the candidate pool and HoldService.PlaceAutoHold
+        // will atomically pick the first free table under its lock.
+        return await ValidateRestaurantPolicyAsync(restaurantId, requestedDate);
+    }
+
+    /// <summary>
+    /// Shared restaurant-level policy checks (1–6 of the original ValidateAsync): fetch +
+    /// timezone-normalize + past-date + pause + walk-in + operating hours. Returns
+    /// <see cref="HoldPolicyStatus.Eligible"/> with the resolved restaurant and UTC booking
+    /// date, or the appropriate rejection status. The per-table booking check is left to
+    /// the callers because auto-assign needs to evaluate it per-candidate, not upfront.
+    /// </summary>
+    private async Task<HoldPolicyResult> ValidateRestaurantPolicyAsync(int restaurantId, DateTime requestedDate)
+    {
         // 1. Fetch restaurant first to get its timezone.
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
         if (restaurant == null)
@@ -54,14 +90,6 @@ public sealed class HoldPolicyService(
         if (!restaurant.IsOpenAt(bookingDate))
         {
             return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.");
-        }
-
-        // 7. Existing confirmed booking on the same table.
-        bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
-        if (alreadyBooked)
-        {
-            return HoldPolicyResult.Booked("This table is already booked for that time.");
         }
 
         return HoldPolicyResult.Eligible(restaurant, bookingDate);
