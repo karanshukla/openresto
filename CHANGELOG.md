@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-07-20
+
+Hello! This release includes the Booking page rework with lots of new features! As always, let me know if you run into any issues!
+
+### Added
+
+- **Navigation redesign** (#196, #205, #211, #240) — merged Locations list + detail/booking page (replacing the standalone `/book/:id` page), full weekly opening hours shown on the customer restaurant view, a burger/overflow menu replacing the light/dark toggle, and a static Help popup with a visible entry point for keyboard shortcuts and the restaurant's social links.
+- **"Any section" auto-assign** (#243, #248) — "Any section" is now the default choice in the booking form; the server picks the best available table across all sections at submit time instead of the client pre-selecting one, closing a race where two concurrent "any" submissions could grab the same table.
+- **Decoupled booking slot interval** (#245, #247) — a new restaurant-level start-time interval setting (15/30/60 min, default 30) independent of `DefaultBookingDurationMinutes`, so e.g. 90-minute bookings can still start on a 15-minute grid instead of being locked to the half hour.
+- **MaxTableOversizeSeats setting** (#244, #249) — restaurants can cap how much larger than the party size an auto-assigned table is allowed to be, so a party of 2 no longer gets seated at an idle 6-top by default.
+- **Menu PDF upload** (#246, #250) — admins can upload and host a PDF menu directly from location settings instead of only linking to an externally hosted one.
+
+### Fixed
+
+- **Admin routes unreachable at `/locations`** — the new customer-facing Locations page silently collided with the existing admin sections/tables manager at the same URL; admin routes now live under `/admin/*`.
+- **Locations list card polish** (#241) — consistent expand/collapse chevron, tapping "Book / details" now scrolls to the form even when the card was already open, and the blurb/menu link show while the card is collapsed.
+- **Overflow menu position on wide viewports** — the menu panel now anchors to the trigger button's real on-screen position instead of a fixed offset from the window edge.
+
+### Changed
+
+- Added a CODEOWNERS file so PRs automatically request review.
+
 ## [1.3.1] - 2026-07-17
 
 A couple minor tweaks that I neede to fix after yesterday's release!
