@@ -47,7 +47,8 @@ server {
     proxy_cache_bypass $http_upgrade;
     proxy_redirect off;
 
-    client_max_body_size 10M;
+    # Large enough for a 10 MB PDF menu upload plus multipart framing
+    client_max_body_size 12M;
 
     # Block dotfiles
     location ~ /\.(?!well-known).* {

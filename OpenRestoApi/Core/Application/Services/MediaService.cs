@@ -93,6 +93,46 @@ public class MediaService(
         return true;
     }
 
+    public virtual async Task<string?> UploadMenuAsync(int id, Stream fileStream)
+    {
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
+        if (restaurant == null) return null;
+
+        EnsureMediaDir();
+        // Only the instance-served menu file occupies the menu-<id>.* slot, so any
+        // previous upload (regardless of extension) is cleared before writing the
+        // new one. External links live in the same MenuUrl column; if the previous
+        // value was a link rather than a served file, TryDeleteFile below is a no-op
+        // (the path won't resolve under _mediaDir) and the link is simply replaced.
+        foreach (string old in Directory.GetFiles(_mediaDir, $"menu-{id}.*"))
+            System.IO.File.Delete(old);
+
+        string filename = $"menu-{id}.pdf";
+        await using (FileStream dest = System.IO.File.Create(Path.Combine(_mediaDir, filename)))
+            await fileStream.CopyToAsync(dest);
+
+        string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        restaurant.MenuUrl = url;
+        await _restaurantRepository.SaveChangesAsync();
+        return url;
+    }
+
+    public virtual async Task<bool> DeleteMenuAsync(int id)
+    {
+        Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
+        if (restaurant == null) return false;
+        if (restaurant.MenuUrl != null)
+        {
+            // Clear the persisted reference first so a missing/invalid physical file
+            // never blocks removal. Best-effort deletion of the file on disk.
+            string url = restaurant.MenuUrl;
+            restaurant.MenuUrl = null;
+            await _restaurantRepository.SaveChangesAsync();
+            TryDeleteFile(url);
+        }
+        return true;
+    }
+
     private void EnsureMediaDir() => Directory.CreateDirectory(_mediaDir);
 
     /// <summary>

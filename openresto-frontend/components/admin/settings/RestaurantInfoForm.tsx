@@ -3,10 +3,17 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { DayHoursDto, RestaurantDto, updateRestaurant } from "@/api/restaurants";
+import {
+  DayHoursDto,
+  RestaurantDto,
+  deleteMenuFile,
+  updateRestaurant,
+  uploadMenuFile,
+} from "@/api/restaurants";
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { Ionicons } from "@expo/vector-icons";
+import { theme } from "@/theme/theme";
 import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
@@ -78,6 +85,16 @@ const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
 // Max spare-seats options for MaxTableOversizeSeats. null = "Off" (unrestricted); the cap
 // rejects a table when (table.seats - partySize) exceeds the selected value.
 const OVERSIZE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+// Mirrors the backend MediaController._maxMenuBytes cap. A file picker pre-check keeps the
+// UX instantaneous for oversize uploads instead of waiting on the server's 400 response.
+const MAX_MENU_BYTES = 10 * 1024 * 1024;
+
+// A MenuUrl pointing at this instance's own /media/menu-<id>.pdf path means it's a file
+// the admin uploaded through OpenResto (vs. an external link they pasted). Used to decide
+// which affordance to show: "Remove uploaded file" for served files, or the link input only.
+const isServedMenuFile = (url: string | null | undefined): boolean =>
+  !!url && /^\/media\/menu-\d+\.pdf(\?|$)/.test(url);
 
 function formatDurationLabel(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -152,6 +169,8 @@ export function RestaurantInfoForm({
   );
   const [tags, setTags] = useState<string[]>(restaurant.tags ?? []);
   const [tagInput, setTagInput] = useState("");
+  const [menuUploading, setMenuUploading] = useState(false);
+  const [menuMsg, setMenuMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const addTag = (raw: string) => {
@@ -201,6 +220,48 @@ export function RestaurantInfoForm({
     restaurant.closeTime ?? "22:00"
   );
   const hoursDirty = JSON.stringify(openHoursPayload) !== JSON.stringify(initialOpenHours);
+
+  const menuUrlIsServedFile = isServedMenuFile(restaurant.menuUrl);
+
+  const handlePickMenu = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > MAX_MENU_BYTES) {
+        setMenuMsg({ text: "Menu file must be under 10 MB.", ok: false });
+        return;
+      }
+      setMenuUploading(true);
+      setMenuMsg(null);
+      const url = await uploadMenuFile(restaurant.id, file);
+      setMenuUploading(false);
+      if (url) {
+        // A served file supersedes any typed link; clear it locally so the link input
+        // doesn't read as stale text next to the newly-uploaded file indicator.
+        setMenuUrl("");
+        onSaved({ menuUrl: url });
+        setMenuMsg({ text: "Menu uploaded.", ok: true });
+      } else {
+        setMenuMsg({ text: "Failed to upload menu.", ok: false });
+      }
+    };
+    input.click();
+  };
+
+  const handleDeleteMenu = async () => {
+    setMenuUploading(true);
+    const ok = await deleteMenuFile(restaurant.id);
+    setMenuUploading(false);
+    if (ok) {
+      onSaved({ menuUrl: null });
+      setMenuMsg({ text: "Menu removed.", ok: true });
+    } else {
+      setMenuMsg({ text: "Failed to remove menu.", ok: false });
+    }
+  };
 
   const dirty =
     name !== restaurant.name ||
@@ -342,20 +403,84 @@ export function RestaurantInfoForm({
         </View>
 
         <View style={{ gap: 6 }}>
-          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-            Menu link (optional)
-          </ThemedText>
-          <Input
-            value={menuUrl}
-            onChangeText={setMenuUrl}
-            placeholder="https://your-menu-url.com/menu.pdf"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>Menu</ThemedText>
+            <ThemedText
+              style={{
+                fontSize: 10,
+                fontWeight: "600",
+                textTransform: "uppercase" as const,
+                letterSpacing: 1,
+                color: mutedColor,
+              }}
+            >
+              optional
+            </ThemedText>
+          </View>
+          {menuUrlIsServedFile ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderWidth: 1,
+                borderColor,
+                borderRadius: 10,
+                backgroundColor: surface2,
+              }}
+            >
+              <Ionicons name="document-text-outline" size={18} color={primaryColor} />
+              <ThemedText style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
+                Uploaded menu PDF
+              </ThemedText>
+              <Pressable
+                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+                onPress={handleDeleteMenu}
+                disabled={menuUploading}
+              >
+                <ThemedText style={[sharedStyles.secBtnText, { color: theme.colors.error }]}>
+                  {menuUploading ? "Removing…" : "Remove file"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : (
+            <Input
+              value={menuUrl}
+              onChangeText={setMenuUrl}
+              placeholder="https://your-menu-url.com/menu.pdf"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          )}
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {!menuUrlIsServedFile && (
+              <Pressable
+                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+                onPress={handlePickMenu}
+                disabled={menuUploading}
+              >
+                <ThemedText style={[sharedStyles.secBtnText, { color: primaryColor }]}>
+                  {menuUploading ? "Uploading…" : "Upload PDF"}
+                </ThemedText>
+              </Pressable>
+            )}
+            {menuMsg && (
+              <ThemedText
+                style={{
+                  fontSize: 12,
+                  color: menuMsg.ok ? theme.colors.success : theme.colors.error,
+                }}
+              >
+                {menuMsg.text}
+              </ThemedText>
+            )}
+          </View>
           <ThemedText style={{ fontSize: 11, color: mutedColor }}>
-            Link to your menu — a PDF, a page on your site, wherever it lives. Shown as a &quot;View
-            menu&quot; button on the location page.
+            Upload a PDF (max 10 MB) or paste a link to your menu. Shown as a &quot;View menu&quot;
+            button on the location page.
           </ThemedText>
         </View>
 
@@ -388,6 +513,10 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
+            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+              If this value differs from the customer's device timezone, a note will appear on the
+              booking page.
+            </ThemedText>
           </View>
           <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>

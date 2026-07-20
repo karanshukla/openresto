@@ -12,6 +12,8 @@ import {
   deleteTable,
   uploadLocationImage,
   deleteLocationImage,
+  uploadMenuFile,
+  deleteMenuFile,
 } from "@/api/restaurants";
 
 // Restaurants API now uses credentials: "include" for cookie-based auth
@@ -342,5 +344,70 @@ describe("deleteLocationImage", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await deleteLocationImage(1)).toBe(false);
+  });
+});
+
+// ---------- uploadMenuFile ----------
+
+describe("uploadMenuFile", () => {
+  it("posts form data and returns url on success", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ url: "/media/menu-1.pdf?v=1" }),
+    });
+
+    const file = new File(["content"], "menu.pdf", { type: "application/pdf" });
+    const result = await uploadMenuFile(1, file);
+
+    expect(result).toBe("/media/menu-1.pdf?v=1");
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/media/menu/1");
+    expect(opts.method).toBe("POST");
+    expect(opts.credentials).toBe("include");
+    expect(opts.body).toBeInstanceOf(FormData);
+  });
+
+  it("returns null when response is not ok", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const file = new File(["x"], "menu.pdf", { type: "application/pdf" });
+    expect(await uploadMenuFile(1, file)).toBeNull();
+  });
+
+  it("returns null when url missing from response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    const file = new File(["x"], "menu.pdf", { type: "application/pdf" });
+    expect(await uploadMenuFile(1, file)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const file = new File(["x"], "menu.pdf", { type: "application/pdf" });
+    expect(await uploadMenuFile(1, file)).toBeNull();
+  });
+});
+
+// ---------- deleteMenuFile ----------
+
+describe("deleteMenuFile", () => {
+  it("sends DELETE to menu media endpoint and returns true on success", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true });
+
+    const result = await deleteMenuFile(1);
+
+    expect(result).toBe(true);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/media/menu/1");
+    expect(opts.method).toBe("DELETE");
+    expect(opts.credentials).toBe("include");
+  });
+
+  it("returns false on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await deleteMenuFile(1)).toBe(false);
+  });
+
+  it("returns false on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await deleteMenuFile(1)).toBe(false);
   });
 });

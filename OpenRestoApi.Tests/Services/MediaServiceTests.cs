@@ -269,4 +269,133 @@ public class MediaServiceTests : IDisposable
         BrandSettings brand = await db.Set<BrandSettings>().SingleAsync();
         Assert.Null(brand.HeaderImageUrl);
     }
+
+    [Fact]
+    public async Task UploadMenuAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UploadMenuAsync_ReturnsNull_WhenRestaurantNotFound));
+        MediaService svc = CreateService(db);
+        using var stream = new MemoryStream([1]);
+
+        string? url = await svc.UploadMenuAsync(999, stream);
+
+        Assert.Null(url);
+    }
+
+    [Fact]
+    public async Task UploadMenuAsync_WritesFileAndUpdatesRestaurant()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UploadMenuAsync_WritesFileAndUpdatesRestaurant));
+        var restaurant = new Restaurant { Name = "R", Address = "A", Timezone = "UTC" };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+        MediaService svc = CreateService(db);
+        using var stream = new MemoryStream([1, 2]);
+
+        string? url = await svc.UploadMenuAsync(restaurant.Id, stream);
+
+        Assert.NotNull(url);
+        Assert.StartsWith($"/media/menu-{restaurant.Id}.pdf?v=", url);
+        Assert.True(File.Exists(Path.Combine(MediaDir, $"menu-{restaurant.Id}.pdf")));
+        Restaurant reloaded = await db.Restaurants.SingleAsync(r => r.Id == restaurant.Id);
+        Assert.Equal(url, reloaded.MenuUrl);
+    }
+
+    [Fact]
+    public async Task UploadMenuAsync_OverwritesPreviousUploadAndExternalLink()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UploadMenuAsync_OverwritesPreviousUploadAndExternalLink));
+        var restaurant = new Restaurant
+        {
+            Name = "R",
+            Address = "A",
+            Timezone = "UTC",
+            MenuUrl = "https://example.com/external-menu.pdf",
+        };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+        MediaService svc = CreateService(db);
+
+        using var first = new MemoryStream([1]);
+        await svc.UploadMenuAsync(restaurant.Id, first);
+        Assert.True(File.Exists(Path.Combine(MediaDir, $"menu-{restaurant.Id}.pdf")));
+
+        // A second upload replaces the first file on disk and the MenuUrl column.
+        using var second = new MemoryStream([2]);
+        string? url = await svc.UploadMenuAsync(restaurant.Id, second);
+
+        Assert.NotNull(url);
+        Assert.True(File.Exists(Path.Combine(MediaDir, $"menu-{restaurant.Id}.pdf")));
+        Restaurant reloaded = await db.Restaurants.SingleAsync(r => r.Id == restaurant.Id);
+        Assert.Equal(url, reloaded.MenuUrl);
+    }
+
+    [Fact]
+    public async Task DeleteMenuAsync_ReturnsFalse_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteMenuAsync_ReturnsFalse_WhenRestaurantNotFound));
+        MediaService svc = CreateService(db);
+
+        bool result = await svc.DeleteMenuAsync(999);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task DeleteMenuAsync_ReturnsTrue_WhenMenuUrlAlreadyNull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteMenuAsync_ReturnsTrue_WhenMenuUrlAlreadyNull));
+        var restaurant = new Restaurant { Name = "R", Address = "A", Timezone = "UTC", MenuUrl = null };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+        MediaService svc = CreateService(db);
+
+        bool result = await svc.DeleteMenuAsync(restaurant.Id);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task DeleteMenuAsync_ClearsReferenceAndDeletesFile()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteMenuAsync_ClearsReferenceAndDeletesFile));
+        var restaurant = new Restaurant { Name = "R", Address = "A", Timezone = "UTC" };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+        MediaService svc = CreateService(db);
+        using (var stream = new MemoryStream([1]))
+            await svc.UploadMenuAsync(restaurant.Id, stream);
+        Assert.True(File.Exists(Path.Combine(MediaDir, $"menu-{restaurant.Id}.pdf")));
+
+        bool result = await svc.DeleteMenuAsync(restaurant.Id);
+
+        Assert.True(result);
+        Restaurant reloaded = await db.Restaurants.SingleAsync(r => r.Id == restaurant.Id);
+        Assert.Null(reloaded.MenuUrl);
+        Assert.False(File.Exists(Path.Combine(MediaDir, $"menu-{restaurant.Id}.pdf")));
+    }
+
+    [Fact]
+    public async Task DeleteMenuAsync_ClearsExternalLinkWithoutTouchingDisk()
+    {
+        // An external link isn't backed by a file under _mediaDir; DeleteMenuAsync must
+        // still clear the column (no-op disk delete) and not throw.
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteMenuAsync_ClearsExternalLinkWithoutTouchingDisk));
+        var restaurant = new Restaurant
+        {
+            Name = "R",
+            Address = "A",
+            Timezone = "UTC",
+            MenuUrl = "https://example.com/external-menu.pdf",
+        };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+        MediaService svc = CreateService(db);
+
+        bool result = await svc.DeleteMenuAsync(restaurant.Id);
+
+        Assert.True(result);
+        Restaurant reloaded = await db.Restaurants.SingleAsync(r => r.Id == restaurant.Id);
+        Assert.Null(reloaded.MenuUrl);
+    }
 }
