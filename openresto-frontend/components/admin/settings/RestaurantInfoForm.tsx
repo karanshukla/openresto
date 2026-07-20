@@ -404,17 +404,8 @@ export function RestaurantInfoForm({
 
         <View style={{ gap: 6 }}>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>Menu</ThemedText>
-            <ThemedText
-              style={{
-                fontSize: 10,
-                fontWeight: "600",
-                textTransform: "uppercase" as const,
-                letterSpacing: 1,
-                color: mutedColor,
-              }}
-            >
-              optional
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Menu (optional)
             </ThemedText>
           </View>
           {menuUrlIsServedFile ? (
