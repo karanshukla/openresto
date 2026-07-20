@@ -126,4 +126,63 @@ public class MediaControllerUnitTests
 
         Assert.IsType<NoContentResult>(result);
     }
+
+    [Fact]
+    public async Task UploadMenu_ReturnsBadRequest_ForDisallowedContentType()
+    {
+        IActionResult result = await _controller.UploadMenu(1, CreateFile("image/png", 100));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UploadMenu_ReturnsBadRequest_WhenOverSizeLimit()
+    {
+        IActionResult result = await _controller.UploadMenu(1, CreateFile("application/pdf", 11 * 1024 * 1024));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UploadMenu_ReturnsNotFound_WhenServiceReturnsNull()
+    {
+        _mockService.Setup(s => s.UploadMenuAsync(1, It.IsAny<Stream>()))
+            .ReturnsAsync((string?)null);
+
+        IActionResult result = await _controller.UploadMenu(1, CreateFile("application/pdf", 100));
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task UploadMenu_ReturnsOkWithUrl_OnSuccess()
+    {
+        _mockService.Setup(s => s.UploadMenuAsync(1, It.IsAny<Stream>()))
+            .ReturnsAsync("/media/menu-1.pdf?v=1");
+
+        IActionResult result = await _controller.UploadMenu(1, CreateFile("application/pdf", 100));
+
+        OkObjectResult ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("/media/menu-1.pdf?v=1", ok.Value!.GetType().GetProperty("url")!.GetValue(ok.Value));
+    }
+
+    [Fact]
+    public async Task DeleteMenu_ReturnsNotFound_WhenServiceReturnsFalse()
+    {
+        _mockService.Setup(s => s.DeleteMenuAsync(1)).ReturnsAsync(false);
+
+        IActionResult result = await _controller.DeleteMenu(1);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteMenu_ReturnsNoContent_WhenServiceReturnsTrue()
+    {
+        _mockService.Setup(s => s.DeleteMenuAsync(1)).ReturnsAsync(true);
+
+        IActionResult result = await _controller.DeleteMenu(1);
+
+        Assert.IsType<NoContentResult>(result);
+    }
 }

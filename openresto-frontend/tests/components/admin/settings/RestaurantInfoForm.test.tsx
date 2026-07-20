@@ -1,5 +1,8 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react-native";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react-native";
 import { RestaurantInfoForm } from "@/components/admin/settings/RestaurantInfoForm";
 import * as restaurantsApi from "@/api/restaurants";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -10,6 +13,8 @@ jest.mock("@expo/vector-icons", () => ({
 
 jest.mock("@/api/restaurants", () => ({
   updateRestaurant: jest.fn(),
+  uploadMenuFile: jest.fn(),
+  deleteMenuFile: jest.fn(),
 }));
 
 jest.mock("@/context/BrandContext", () => {
@@ -807,5 +812,198 @@ describe("RestaurantInfoForm", () => {
     fireEvent.press(screen.getByText("Discard"));
     expect(screen.getByDisplayValue("Saved blurb")).toBeTruthy();
     expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+
+  // ── Menu file upload (#246) ──────────────────────────────────────────────
+  // Admins can either paste an external link OR upload a PDF — both reuse
+  // Restaurant.MenuUrl. A served file is recognized by its /media/menu-<id>.pdf
+  // shape, which swaps the link input for a "Remove file" affordance.
+
+  it("shows the Upload PDF button and the link input when no menu is set", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(screen.getByText("Upload PDF")).toBeTruthy();
+    expect(screen.getByPlaceholderText("https://your-menu-url.com/menu.pdf")).toBeTruthy();
+  });
+
+  it("pre-fills the link input when the restaurant has an external menu URL", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "https://example.com/menu.pdf" }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByDisplayValue("https://example.com/menu.pdf")).toBeTruthy();
+  });
+
+  it("shows Remove file instead of the link input when a PDF is uploaded", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByText("Uploaded menu PDF")).toBeTruthy();
+    expect(screen.getByText("Remove file")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("https://your-menu-url.com/menu.pdf")).toBeNull();
+    expect(screen.queryByText("Upload PDF")).toBeNull();
+  });
+
+  it("calls uploadMenuFile and onSaved when a PDF is selected", async () => {
+    (restaurantsApi.uploadMenuFile as jest.Mock).mockResolvedValue("/media/menu-1.pdf?v=1");
+    const mockInput = {
+      type: "",
+      accept: "",
+      onchange: null as ((e: Event) => void) | null,
+      click: jest.fn(),
+      files: [new File(["pdf-bytes"], "menu.pdf", { type: "application/pdf" })],
+    };
+    jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    act(() => {
+      fireEvent.press(screen.getByText("Upload PDF"));
+    });
+    await act(async () => {
+      mockInput.onchange?.({} as Event);
+    });
+    expect(restaurantsApi.uploadMenuFile).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ type: "application/pdf" })
+    );
+    expect(onSaved).toHaveBeenCalledWith({ menuUrl: "/media/menu-1.pdf?v=1" });
+  });
+
+  it("shows Menu uploaded message after successful upload", async () => {
+    (restaurantsApi.uploadMenuFile as jest.Mock).mockResolvedValue("/media/menu-1.pdf?v=1");
+    const mockInput = {
+      type: "",
+      accept: "",
+      onchange: null as ((e: Event) => void) | null,
+      click: jest.fn(),
+      files: [new File(["pdf-bytes"], "menu.pdf", { type: "application/pdf" })],
+    };
+    jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    act(() => {
+      fireEvent.press(screen.getByText("Upload PDF"));
+    });
+    await act(async () => {
+      mockInput.onchange?.({} as Event);
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Menu uploaded.")).toBeTruthy();
+    });
+  });
+
+  it("shows an error message when upload fails", async () => {
+    (restaurantsApi.uploadMenuFile as jest.Mock).mockResolvedValue(null);
+    const mockInput = {
+      type: "",
+      accept: "",
+      onchange: null as ((e: Event) => void) | null,
+      click: jest.fn(),
+      files: [new File(["pdf-bytes"], "menu.pdf", { type: "application/pdf" })],
+    };
+    jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    act(() => {
+      fireEvent.press(screen.getByText("Upload PDF"));
+    });
+    await act(async () => {
+      mockInput.onchange?.({} as Event);
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Failed to upload menu.")).toBeTruthy();
+    });
+  });
+
+  it("shows a size error when the selected file exceeds 10 MB", async () => {
+    const largeFile = new File(["x".repeat(11 * 1024 * 1024)], "big.pdf", {
+      type: "application/pdf",
+    });
+    const mockInput = {
+      type: "",
+      accept: "",
+      onchange: null as ((e: Event) => void) | null,
+      click: jest.fn(),
+      files: [largeFile],
+    };
+    jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    act(() => {
+      fireEvent.press(screen.getByText("Upload PDF"));
+    });
+    await act(async () => {
+      mockInput.onchange?.({} as Event);
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Menu file must be under 10 MB.")).toBeTruthy();
+    });
+    expect(restaurantsApi.uploadMenuFile).not.toHaveBeenCalled();
+  });
+
+  it("calls deleteMenuFile and onSaved with null menuUrl when Remove file is pressed", async () => {
+    (restaurantsApi.deleteMenuFile as jest.Mock).mockResolvedValue(true);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Remove file"));
+    });
+    expect(restaurantsApi.deleteMenuFile).toHaveBeenCalledWith(1);
+    expect(onSaved).toHaveBeenCalledWith({ menuUrl: null });
+  });
+
+  it("shows Menu removed message after successful delete", async () => {
+    (restaurantsApi.deleteMenuFile as jest.Mock).mockResolvedValue(true);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Remove file"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Menu removed.")).toBeTruthy();
+    });
+  });
+
+  it("shows an error when delete fails", async () => {
+    (restaurantsApi.deleteMenuFile as jest.Mock).mockResolvedValue(false);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Remove file"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Failed to remove menu.")).toBeTruthy();
+    });
+  });
+
+  it("does nothing when no file is selected in the picker", async () => {
+    const mockInput = {
+      type: "",
+      accept: "",
+      onchange: null as ((e: Event) => void) | null,
+      click: jest.fn(),
+      files: [],
+    };
+    jest.spyOn(document, "createElement").mockReturnValueOnce(mockInput as unknown as HTMLElement);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    act(() => {
+      fireEvent.press(screen.getByText("Upload PDF"));
+    });
+    await act(async () => {
+      mockInput.onchange?.({} as Event);
+    });
+    expect(restaurantsApi.uploadMenuFile).not.toHaveBeenCalled();
   });
 });

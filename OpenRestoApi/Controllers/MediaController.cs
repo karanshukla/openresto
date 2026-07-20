@@ -16,6 +16,8 @@ public class MediaController(MediaService mediaService) : ControllerBase
     private static readonly string[] _allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     private const long _maxHeroBytes = 5 * 1024 * 1024;
     private const long _maxLocationBytes = 2 * 1024 * 1024;
+    private const long _maxMenuBytes = 10 * 1024 * 1024;
+    private const string _menuContentType = "application/pdf";
 
     [HttpPost("hero")]
     [RequestSizeLimit(5 * 1024 * 1024 + 8192)]
@@ -59,6 +61,30 @@ public class MediaController(MediaService mediaService) : ControllerBase
     public async Task<IActionResult> DeleteLocation(int id)
     {
         bool found = await _mediaService.DeleteLocationAsync(id);
+        if (!found) return NotFound();
+        return NoContent();
+    }
+
+    [HttpPost("menu/{id:int}")]
+    [RequestSizeLimit(10 * 1024 * 1024 + 8192)]
+    public async Task<IActionResult> UploadMenu(int id, IFormFile file)
+    {
+        if (file.ContentType != _menuContentType)
+            return BadRequest(new { message = "Only PDF menu files are accepted." });
+
+        if (file.Length > _maxMenuBytes)
+            return BadRequest(new { message = "Menu file must be under 10 MB." });
+
+        await using Stream stream = file.OpenReadStream();
+        string? url = await _mediaService.UploadMenuAsync(id, stream);
+        if (url == null) return NotFound();
+        return Ok(new { url });
+    }
+
+    [HttpDelete("menu/{id:int}")]
+    public async Task<IActionResult> DeleteMenu(int id)
+    {
+        bool found = await _mediaService.DeleteMenuAsync(id);
         if (!found) return NotFound();
         return NoContent();
     }

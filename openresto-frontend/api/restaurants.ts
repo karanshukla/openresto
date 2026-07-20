@@ -272,3 +272,32 @@ export async function deleteLocationImage(restaurantId: number): Promise<boolean
     return false;
   }
 }
+
+export async function uploadMenuFile(restaurantId: number, file: File): Promise<string | null> {
+  try {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(buildUrl(`/media/menu/${restaurantId}`), {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteMenuFile(restaurantId: number): Promise<boolean> {
+  try {
+    const res = await fetch(buildUrl(`/media/menu/${restaurantId}`), {
+      method: "DELETE",
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
