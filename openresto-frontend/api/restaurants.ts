@@ -44,6 +44,8 @@ export interface RestaurantDto {
   defaultBookingDurationMinutes?: number;
   /** Step (minutes) between selectable booking start times (15/30/60). */
   bookingSlotIntervalMinutes?: number;
+  /** Max allowed spare seats over party size, or null for unrestricted (off). */
+  maxTableOversizeSeats?: number | null;
   sections: SectionDto[];
 }
 
@@ -138,6 +140,7 @@ export async function updateRestaurant(
     tags?: string | null;
     defaultBookingDurationMinutes?: number;
     bookingSlotIntervalMinutes?: number;
+    maxTableOversizeSeats?: number | null;
     walkInOnly?: boolean;
     walkInDays?: string;
     description?: string | null;

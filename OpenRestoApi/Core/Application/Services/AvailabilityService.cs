@@ -95,10 +95,16 @@ public sealed class AvailabilityService(
         var slots = new List<TimeSlotDto>();
         DateTime current = localStart;
 
-        // Fetch all tables for the restaurant to check capacity
+        // Fetch all tables for the restaurant to check capacity. The lower bound keeps a
+        // party off a too-small table; the optional upper bound (Restaurant.MaxTableOversizeSeats)
+        // keeps a small party off a much larger table a restaurant would rather hold for a
+        // bigger group. Mirrored in BookingService and TableAutoAssigner so the customer-facing
+        // options always match what the server will accept.
         var eligibleTables = restaurant.Sections
             ?.SelectMany(s => s.Tables ?? new List<Table>())
-            .Where(t => t != null && t.Seats >= seats)
+            .Where(t => t != null && t.Seats >= seats
+                && (restaurant.MaxTableOversizeSeats == null
+                    || t.Seats - seats <= restaurant.MaxTableOversizeSeats.Value))
             .ToList() ?? new List<Table>();
 
         // Optimize: Group bookings by table ID for faster lookup in the loop

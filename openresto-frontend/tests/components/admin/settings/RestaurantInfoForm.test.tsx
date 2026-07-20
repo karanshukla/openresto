@@ -368,6 +368,89 @@ describe("RestaurantInfoForm", () => {
     expect(getIntervalSelect().props.value).toBe(15);
   });
 
+  // ── Max table oversize (#244) ───────────────────────────────────────────
+  // Same raw-<select>/data-testid caveat as the duration control above. The "Off" option
+  // maps to "" in the DOM and null in state; selecting a number sends that integer.
+  const getOversizeSelect = () =>
+    screen.UNSAFE_getByProps({ "data-testid": "max-table-oversize-select" });
+
+  it("renders the oversize select at Off when the restaurant has none set", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(getOversizeSelect().props.value).toBe("");
+  });
+
+  it("renders the oversize select at the restaurant's saved value", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, maxTableOversizeSeats: 2 }}
+        onSaved={onSaved}
+      />
+    );
+    expect(getOversizeSelect().props.value).toBe(2);
+  });
+
+  it("marks the form dirty and updates the selection when the oversize changes", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const select = getOversizeSelect();
+    fireEvent(select, "change", { target: { value: "1" } });
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    expect(getOversizeSelect().props.value).toBe(1);
+  });
+
+  it("saves the newly selected oversize cap", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      maxTableOversizeSeats: 1,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const select = getOversizeSelect();
+    fireEvent(select, "change", { target: { value: "1" } });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxTableOversizeSeats: 1 })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ maxTableOversizeSeats: 1 }));
+  });
+
+  it("saves null (Off) when the Off option is re-selected on a capped restaurant", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      maxTableOversizeSeats: null,
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, maxTableOversizeSeats: 2 }}
+        onSaved={onSaved}
+      />
+    );
+    const select = getOversizeSelect();
+    fireEvent(select, "change", { target: { value: "" } });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxTableOversizeSeats: null })
+    );
+  });
+
+  it("reverts the oversize select to the saved value when Discard is pressed", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, maxTableOversizeSeats: 1 }}
+        onSaved={onSaved}
+      />
+    );
+    const select = getOversizeSelect();
+    fireEvent(select, "change", { target: { value: "3" } });
+    expect(getOversizeSelect().props.value).toBe(3);
+    fireEvent.press(screen.getByText("Discard"));
+    expect(getOversizeSelect().props.value).toBe(1);
+  });
+
   // ── Per-day opening hours (#175) ─────────────────────────────────────────
 
   const uniformWeek = [1, 2, 3, 4, 5, 6, 7].map((day) => ({
