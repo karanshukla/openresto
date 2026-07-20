@@ -389,6 +389,46 @@ public class AvailabilityServiceTests
     }
 
     [Fact]
+    public async Task GetAvailabilityAsync_ExcludesOversizedTables_WhenMaxTableOversizeSeatsSet()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(GetAvailabilityAsync_ExcludesOversizedTables_WhenMaxTableOversizeSeatsSet));
+        // RestaurantWithHours: Table 1 (2 seats), Table 2 (4 seats). Cap spare seats at 1,
+        // so a 2-top party may use Table 1 (0 spare) or Table 2 (2 spare) — Table 2 is excluded.
+        TestSeed.RestaurantWithHours(db);
+        db.Restaurants.Single().MaxTableOversizeSeats = 1;
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(
+            new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var date = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, date, 2);
+
+        // The oversized 4-seat Table 2 must never appear in any slot's available ids.
+        Assert.All(result.Slots, s => Assert.DoesNotContain(2, s.AvailableTableIds));
+        // The well-sized 2-seat Table 1 still appears on an open slot.
+        Assert.Contains(result.Slots, s => s.AvailableTableIds.Contains(1));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_IncludesOversizedTables_WhenMaxTableOversizeSeatsUnset()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(GetAvailabilityAsync_IncludesOversizedTables_WhenMaxTableOversizeSeatsUnset));
+        TestSeed.RestaurantWithHours(db); // Table 1 (2 seats), Table 2 (4 seats), cap unset.
+
+        var svc = new AvailabilityService(
+            new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var date = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, date, 2);
+
+        // No cap → both tables are eligible for a 2-top party on an open slot.
+        Assert.Contains(result.Slots, s => s.AvailableTableIds.Contains(1) && s.AvailableTableIds.Contains(2));
+    }
+
+    [Fact]
     public void GetCategory_ReturnsCorrectValues()
     {
         // GetCategory is private static, but we can test it via public method results

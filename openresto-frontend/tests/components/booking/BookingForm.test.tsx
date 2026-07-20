@@ -522,4 +522,49 @@ describe("BookingForm", () => {
       expect.objectContaining({ tableId: null, sectionId: null })
     );
   });
+
+  // ── Max table oversize (#244) ──────────────────────────────────────────────
+  // The section-select mock fires onSelect(20) -> Patio, so this variant puts an
+  // oversized table in Patio to exercise the frontend oversize filter. With a 2-top
+  // party (the default) and a cap of 1 spare seat, a 6-seat table is excluded and the
+  // section shows "No tables available" instead of the dropdown.
+  const mockRestaurantOversizedPatio = {
+    ...mockRestaurantAllDays,
+    maxTableOversizeSeats: 1,
+    sections: [
+      {
+        id: 10,
+        name: "Main",
+        restaurantId: 1,
+        tables: [{ id: 100, name: "T1", seats: 2, sectionId: 10 }],
+      },
+      {
+        id: 20,
+        name: "Patio",
+        restaurantId: 1,
+        tables: [{ id: 200, name: "Big", seats: 6, sectionId: 20 }],
+      },
+    ],
+  };
+
+  it("hides oversized tables from the dropdown when maxTableOversizeSeats is set", async () => {
+    render(<BookingForm restaurant={mockRestaurantOversizedPatio} onSubmit={jest.fn()} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select")); // -> Patio (6-seat table)
+    });
+    // 6 seats - 2 guests = 4 spare > cap of 1 -> excluded -> no eligible tables.
+    expect(screen.getByText(/No tables available for 2 guests/)).toBeTruthy();
+    expect(screen.queryByTestId("table-select")).toBeNull();
+  });
+
+  it("still offers the oversized table when maxTableOversizeSeats is unset", async () => {
+    const unrestricted = { ...mockRestaurantOversizedPatio, maxTableOversizeSeats: undefined };
+    render(<BookingForm restaurant={unrestricted} onSubmit={jest.fn()} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select")); // -> Patio (6-seat table)
+    });
+    // No cap -> the 6-seat table is eligible and the dropdown renders.
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    expect(screen.queryByText(/No tables available/)).toBeNull();
+  });
 });

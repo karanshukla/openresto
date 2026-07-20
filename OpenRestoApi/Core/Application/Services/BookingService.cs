@@ -110,6 +110,17 @@ public class BookingService(
             throw new ConflictException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
         }
 
+        // 3b. Reject oversized tables when the restaurant caps spare seats. Mirrors the
+        // lower bound above and the AvailabilityService eligible-table filter, so a direct
+        // POST (or an auto-assigned pick that slipped past the candidate filter) can't seat
+        // a small party at a table the restaurant wants held for larger groups.
+        if (table != null && restaurant.MaxTableOversizeSeats.HasValue
+            && table.Seats - bookingDto.Seats > restaurant.MaxTableOversizeSeats.Value)
+        {
+            throw new ConflictException(
+                $"This table has {table.Seats} seats, which is too large for a party of {bookingDto.Seats}.");
+        }
+
         // 4. Persist the booking
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.Date = bookingDate; // Use normalized date
@@ -228,6 +239,7 @@ public class BookingService(
     {
         _ = id; // Required by REST convention (PUT /bookings/{id}) but entity ID comes from DTO
         Booking booking = _mapper.ToEntity(bookingDto);
+        Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(booking.RestaurantId);
 
         // Check for seat capacity if seats are being updated
         if (bookingDto.Seats > 0)
@@ -237,12 +249,20 @@ public class BookingService(
             {
                 throw new ConflictException($"This table only has {table.Seats} seats, but {bookingDto.Seats} guests were requested.");
             }
+
+            // Oversize check — mirrors CreateBookingAsync and the availability feed so an edit
+            // can't move a small party onto a table the restaurant caps for larger groups.
+            if (table != null && restaurant?.MaxTableOversizeSeats.HasValue == true
+                && table.Seats - bookingDto.Seats > restaurant.MaxTableOversizeSeats.Value)
+            {
+                throw new ConflictException(
+                    $"This table has {table.Seats} seats, which is too large for a party of {bookingDto.Seats}.");
+            }
         }
 
         // Ensure EndTime is valid if it's being updated or if Date changed
         if (!booking.EndTime.HasValue || booking.EndTime.Value < booking.Date)
         {
-            Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(booking.RestaurantId);
             booking.EndTime = booking.Date.AddMinutes(restaurant?.DefaultBookingDurationMinutes ?? 60);
         }
 

@@ -108,6 +108,90 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_CopiesMaxTableOversizeSeats_FromDto()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_CopiesMaxTableOversizeSeats_FromDto));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto { Name = "New", MaxTableOversizeSeats = 2 };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        Assert.Equal(2, result.MaxTableOversizeSeats);
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.Equal(2, entity!.MaxTableOversizeSeats);
+    }
+
+    [Fact]
+    public async Task CreateAsync_LeavesMaxTableOversizeSeatsNull_WhenDtoOmitsIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateAsync_LeavesMaxTableOversizeSeatsNull_WhenDtoOmitsIt));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto { Name = "New" };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        // Null means "off/unrestricted" — the default for new and existing restaurants.
+        Assert.Null(result.MaxTableOversizeSeats);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PersistsMaxTableOversizeSeats()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_PersistsMaxTableOversizeSeats));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MaxTableOversizeSeats = 1
+        });
+
+        Assert.Equal(1, result!.MaxTableOversizeSeats);
+        Restaurant entity = await db.Restaurants.SingleAsync();
+        Assert.Equal(1, entity.MaxTableOversizeSeats);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsMaxTableOversizeSeats_WhenRequestIsNull()
+    {
+        // The settings form always sends the field (number or null); null must clear a
+        // previously-set cap so the admin can toggle the setting "Off".
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(UpdateAsync_ClearsMaxTableOversizeSeats_WhenRequestIsNull));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", MaxTableOversizeSeats = 2 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MaxTableOversizeSeats = null
+        });
+
+        Assert.Null(result!.MaxTableOversizeSeats);
+        Restaurant entity = await db.Restaurants.SingleAsync();
+        Assert.Null(entity.MaxTableOversizeSeats);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsNegativeMaxTableOversizeSeats()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsNegativeMaxTableOversizeSeats));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MaxTableOversizeSeats = -1
+        }));
+    }
+
+    [Fact]
     public async Task UpdateAsync_ReturnsNull_WhenNotFound()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ReturnsNull_WhenNotFound));

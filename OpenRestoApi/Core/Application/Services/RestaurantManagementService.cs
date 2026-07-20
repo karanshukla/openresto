@@ -45,6 +45,7 @@ public class RestaurantManagementService(
             Address = dto.Address,
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
+            MaxTableOversizeSeats = dto.MaxTableOversizeSeats,
             Sections = dto.Sections.Select((s, index) => new Section
             {
                 Name = s.Name,
@@ -127,6 +128,17 @@ public class RestaurantManagementService(
             r.BookingSlotIntervalMinutes = req.BookingSlotIntervalMinutes.Value;
         }
 
+        // MaxTableOversizeSeats is nullable where null means "off/unrestricted". The settings
+        // form always sends the field (number or null), so it's assigned unconditionally —
+        // like Name/Address above — which is the only way selecting "Off" can clear a
+        // previously-set cap. Validate the non-null case is non-negative.
+        if (req.MaxTableOversizeSeats.HasValue && req.MaxTableOversizeSeats.Value < 0)
+        {
+            throw new ValidationException("MaxTableOversizeSeats must be zero or greater, or null to disable.");
+        }
+
+        r.MaxTableOversizeSeats = req.MaxTableOversizeSeats;
+
         if (req.WalkInOnly.HasValue)
         {
             r.WalkInOnly = req.WalkInOnly.Value;
@@ -159,6 +171,7 @@ public class RestaurantManagementService(
             WalkInDays = r.WalkInDays ?? "",
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
+            MaxTableOversizeSeats = r.MaxTableOversizeSeats,
             Sections = []
         };
     }
@@ -293,6 +306,7 @@ public class RestaurantManagementService(
         WalkInDays = r.WalkInDays ?? "",
         DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
         BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
+        MaxTableOversizeSeats = r.MaxTableOversizeSeats,
         Sections = r.Sections
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new SectionDto

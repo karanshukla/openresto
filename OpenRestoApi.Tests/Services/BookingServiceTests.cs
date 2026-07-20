@@ -558,6 +558,57 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_Throws_WhenTableExceedsConfiguredOversize()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_Throws_WhenTableExceedsConfiguredOversize));
+        TestSeed.BasicRestaurant(db); // Table 1 has 4 seats.
+        db.Restaurants.Single().MaxTableOversizeSeats = 1; // max 1 spare seat
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2, // 4-seat table for a party of 2 → 2 spare seats, over the cap of 1
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() =>
+            svc.CreateBookingAsync(dto));
+
+        Assert.Contains("too large", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AllowsTableAtOversizeBoundary()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_AllowsTableAtOversizeBoundary));
+        TestSeed.BasicRestaurant(db); // Table 1 has 4 seats.
+        db.Restaurants.Single().MaxTableOversizeSeats = 1; // max 1 spare seat
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 3, // 4-seat table for a party of 3 → 1 spare seat, at the cap
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        BookingDto result = await svc.CreateBookingAsync(dto);
+
+        Assert.Equal(3, result.Seats);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_Throws_WhenBookingInPast()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenBookingInPast));
@@ -581,6 +632,39 @@ public class BookingServiceTests
         await svc.UpdateBookingAsync(created.Id, dto);
         Booking inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
         Assert.Equal(date.AddHours(1), inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task UpdateBookingAsync_Throws_WhenTableExceedsConfiguredOversize()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(UpdateBookingAsync_Throws_WhenTableExceedsConfiguredOversize));
+        TestSeed.BasicRestaurant(db); // Table 1 has 4 seats.
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        BookingDto created = await svc.CreateBookingAsync(
+            new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 4 });
+        db.Entry((await db.Bookings.FindAsync(created.Id))!).State = EntityState.Detached;
+
+        // Now cap spare seats at 1 and shrink the party to 2 → the 4-seat table is too large.
+        db.Restaurants.Single().MaxTableOversizeSeats = 1;
+        db.SaveChanges();
+
+        var dto = new BookingDto
+        {
+            Id = created.Id,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            Date = date,
+            Seats = 2,
+            EndTime = date.AddHours(1)
+        };
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() =>
+            svc.UpdateBookingAsync(created.Id, dto));
+
+        Assert.Contains("too large", ex.Message);
     }
 
     [Fact]
@@ -872,6 +956,52 @@ public class BookingServiceTests
 
         Assert.Equal(2, result.TableId); // T2 — smallest fitting free
         Assert.Equal(1, result.SectionId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_RespectsMaxTableOversizeSeats()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_AutoAssign_RespectsMaxTableOversizeSeats));
+        SeedMultiTableRestaurant(db); // T1(2), T2(4), T3(6), P1(2), P2(4)
+        db.Restaurants.Single().MaxTableOversizeSeats = 1; // max 1 spare seat
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        // 2 seats — every table fits, but a 2-top may only take 1 spare seat, so only
+        // T1(2)/P1(2) qualify (0 spare). T2/T3/P2 are excluded by the oversize cap.
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        // Smallest fitting free table among the qualifying set — T1 (id 1, tiebreak over P1).
+        Assert.Equal(1, result.TableId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_ThrowsWhenOversizeExcludesAllCandidates()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_AutoAssign_ThrowsWhenOversizeExcludesAllCandidates));
+        SeedMultiTableRestaurant(db); // T1(2), T2(4), T3(6), P1(2), P2(4)
+        db.Restaurants.Single().MaxTableOversizeSeats = 0; // tables must seat the party exactly
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        // 3 seats — no 3-seat table exists, and an exact-fit is required (0 spare). No
+        // candidate qualifies, so auto-assign reports no availability rather than seating
+        // the party at an oversized table.
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 3,
+            Date = DateTime.UtcNow.AddDays(7)
+        }));
     }
 
     [Fact]

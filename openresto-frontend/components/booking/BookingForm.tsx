@@ -137,7 +137,15 @@ export default function BookingForm({
     candidateTables?: typeof allTables
   ) {
     const pool = candidateTables ?? allTables;
-    let eligible = pool.filter((t) => t.seats >= seatCount);
+    // Lower bound: table must seat the party. Upper bound: when the restaurant caps spare
+    // seats, drop tables too large for the group. Mirrors the server-side eligible-table
+    // filter (AvailabilityService) so the auto-suggested pick is always one the API accepts.
+    let eligible = pool.filter(
+      (t) =>
+        t.seats >= seatCount &&
+        (restaurant.maxTableOversizeSeats == null ||
+          t.seats <= seatCount + restaurant.maxTableOversizeSeats)
+    );
     if (availableIds && availableIds.length > 0) {
       eligible = eligible.filter((t) => availableIds.includes(t.id));
     }
@@ -250,7 +258,12 @@ export default function BookingForm({
   }));
 
   const eligibleTables = tablesInSection
-    .filter((t) => t.seats >= seats)
+    .filter(
+      (t) =>
+        t.seats >= seats &&
+        (restaurant.maxTableOversizeSeats == null ||
+          t.seats <= seats + restaurant.maxTableOversizeSeats)
+    )
     .filter((t) => {
       // Strictly filter only if we have availability data for the selected time
       if (currentSlot) {

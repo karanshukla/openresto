@@ -39,6 +39,13 @@ public class UpdateRestaurantRequest
     /// </summary>
     public int? BookingSlotIntervalMinutes { get; set; }
 
+    /// <summary>
+    /// Max allowed <c>table.Seats - partySize</c> before a table is considered too large to
+    /// offer/book. Null clears the setting (unrestricted). Always assigned from the settings
+    /// form so "Off" can be re-saved; validated server-side as non-negative.
+    /// </summary>
+    public int? MaxTableOversizeSeats { get; set; }
+
     /// <summary>When true the whole location becomes walk-in only (no online bookings).</summary>
     public bool? WalkInOnly { get; set; }
 
@@ -146,6 +153,9 @@ public class RestaurantDto
 
     /// <summary>Step (minutes) between selectable booking start times (default 30).</summary>
     public int BookingSlotIntervalMinutes { get; set; } = 30;
+
+    /// <summary>Max allowed spare seats over party size, or null for unrestricted (off).</summary>
+    public int? MaxTableOversizeSeats { get; set; }
 
     public List<SectionDto> Sections { get; set; } = new();
 }

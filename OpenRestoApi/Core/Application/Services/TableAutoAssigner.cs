@@ -31,11 +31,14 @@ public sealed class TableAutoAssigner(IBookingRepository bookingRepository)
 
         // Capacity filter first — same predicate as AvailabilityService.GetAvailabilityAsync's
         // restaurant-wide eligible-table set, so the auto-assign pool matches what the
-        // availability feed advertises per slot.
+        // availability feed advertises per slot. The optional upper bound
+        // (Restaurant.MaxTableOversizeSeats) keeps a small party off a much larger table.
         var eligible = restaurant.Sections
             .Where(s => s.Tables != null)
             .SelectMany(s => s.Tables!.Where(t => t != null).Select(t => (table: t!, sectionId: s.Id)))
-            .Where(x => x.table.Seats >= seats)
+            .Where(x => x.table.Seats >= seats
+                && (restaurant.MaxTableOversizeSeats == null
+                    || x.table.Seats - seats <= restaurant.MaxTableOversizeSeats.Value))
             .ToList();
 
         if (eligible.Count == 0)

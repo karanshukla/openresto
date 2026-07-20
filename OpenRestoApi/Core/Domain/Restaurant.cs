@@ -89,6 +89,17 @@ public class Restaurant
     public int BookingSlotIntervalMinutes { get; set; } = 30;
 
     /// <summary>
+    /// When set, the largest number of "spare" seats a table may have over the party size
+    /// and still be offered/booked — i.e. a table may be selected when
+    /// <c>table.Seats - partySize &lt;= MaxTableOversizeSeats</c>. Null means unrestricted
+    /// (a 2-top can be seated at a 10-top), preserving the pre-setting behaviour. Applied
+    /// symmetrically in availability, booking creation/update, and auto-assign so the
+    /// customer-facing options always match what the server will accept. Admin-recorded
+    /// walk-in bookings are intentionally exempt.
+    /// </summary>
+    public int? MaxTableOversizeSeats { get; set; }
+
+    /// <summary>
     /// True when online bookings are paused: a future <see cref="BookingsPausedUntil"/>
     /// is set. Consolidates the previously-inlined
     /// <c>BookingsPausedUntil.HasValue &amp;&amp; BookingsPausedUntil.Value &gt; DateTime.UtcNow</c>

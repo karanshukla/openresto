@@ -75,6 +75,10 @@ const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
 // availability slot generation can't be sent into a degenerate spin.
 const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
 
+// Max spare-seats options for MaxTableOversizeSeats. null = "Off" (unrestricted); the cap
+// rejects a table when (table.seats - partySize) exceeds the selected value.
+const OVERSIZE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+
 function formatDurationLabel(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -143,6 +147,9 @@ export function RestaurantInfoForm({
   const [bookingSlotIntervalMinutes, setBookingSlotIntervalMinutes] = useState(
     restaurant.bookingSlotIntervalMinutes ?? 30
   );
+  const [maxTableOversizeSeats, setMaxTableOversizeSeats] = useState<number | null>(
+    restaurant.maxTableOversizeSeats ?? null
+  );
   const [tags, setTags] = useState<string[]>(restaurant.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -207,6 +214,7 @@ export function RestaurantInfoForm({
     timezone !== (restaurant.timezone ?? "UTC") ||
     defaultBookingDurationMinutes !== (restaurant.defaultBookingDurationMinutes ?? 60) ||
     bookingSlotIntervalMinutes !== (restaurant.bookingSlotIntervalMinutes ?? 30) ||
+    maxTableOversizeSeats !== (restaurant.maxTableOversizeSeats ?? null) ||
     tags.join(",") !== (restaurant.tags ?? []).join(",");
 
   const discard = () => {
@@ -224,6 +232,7 @@ export function RestaurantInfoForm({
     setTimezone(restaurant.timezone ?? "UTC");
     setDefaultBookingDurationMinutes(restaurant.defaultBookingDurationMinutes ?? 60);
     setBookingSlotIntervalMinutes(restaurant.bookingSlotIntervalMinutes ?? 30);
+    setMaxTableOversizeSeats(restaurant.maxTableOversizeSeats ?? null);
     setTags(restaurant.tags ?? []);
     setTagInput("");
   };
@@ -248,6 +257,7 @@ export function RestaurantInfoForm({
       timezone,
       defaultBookingDurationMinutes,
       bookingSlotIntervalMinutes,
+      maxTableOversizeSeats,
       tags: finalTags.join(","),
     });
     setSaving(false);
@@ -266,6 +276,7 @@ export function RestaurantInfoForm({
         timezone: result.timezone,
         defaultBookingDurationMinutes: result.defaultBookingDurationMinutes,
         bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
+        maxTableOversizeSeats: result.maxTableOversizeSeats,
         tags: result.tags,
       });
     }
@@ -448,6 +459,43 @@ export function RestaurantInfoForm({
             </select>
             <ThemedText style={{ fontSize: 11, color: mutedColor }}>
               How far apart selectable start times are (independent of booking duration)
+            </ThemedText>
+          </View>
+          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Max table oversize
+            </ThemedText>
+            <select
+              data-testid="max-table-oversize-select"
+              value={maxTableOversizeSeats ?? ""}
+              onChange={
+                /* istanbul ignore next */ (e) =>
+                  setMaxTableOversizeSeats(e.target.value === "" ? null : Number(e.target.value))
+              }
+              style={{
+                width: "100%",
+                height: 44,
+                borderWidth: 1,
+                borderStyle: "solid" as const,
+                borderColor: colors.border,
+                borderRadius: 8,
+                paddingLeft: 12,
+                paddingRight: 12,
+                fontSize: 14,
+                backgroundColor: colors.input,
+                color: colors.text,
+                cursor: "pointer",
+              }}
+            >
+              <option value="">Off</option>
+              {OVERSIZE_OPTIONS.map((seats) => (
+                <option key={seats} value={seats}>
+                  +{seats} seat{seats === 1 ? "" : "s"}
+                </option>
+              ))}
+            </select>
+            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+              Don&apos;t offer tables more than this many seats larger than the party size
             </ThemedText>
           </View>
         </View>
