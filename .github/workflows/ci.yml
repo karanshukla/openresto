@@ -24,10 +24,10 @@ jobs:
         working-directory: openresto-frontend
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload Frontend Coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: openresto-frontend/coverage/
@@ -68,10 +68,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
@@ -106,14 +106,14 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: "TestResults/*.trx"
 
       - name: Upload Backend Coverage Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: "CoverageReport/"
@@ -129,7 +129,7 @@ jobs:
 
       - name: Add Coverage to PR
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           path: code-coverage-results.md
 
@@ -150,7 +150,7 @@ jobs:
     needs: [frontend, backend]
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Patch backend env file for CI
         run: |
@@ -218,7 +218,7 @@ jobs:
           [ "$STATUS" = "200" ] || exit 1
 
       - name: OWASP ZAP API Scan
-        uses: zaproxy/action-api-scan@v0.9.0
+        uses: zaproxy/action-api-scan@v0.10.0
         with:
           target: http://localhost:5062/openapi/v1.json
           rules_file_name: .zap-rules.tsv
@@ -245,7 +245,7 @@ jobs:
 
       - name: Upload ZAP Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-report
           path: |
@@ -273,7 +273,7 @@ jobs:
       COMPOSE_FILE: docker-compose.yml:docker-compose.e2e.yml
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Patch backend env file for CI
         run: |
@@ -316,7 +316,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -339,7 +339,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: openresto-frontend/playwright-report/
