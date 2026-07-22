@@ -98,5 +98,8 @@
     "shell-quote": ">=1.8.4",
     "js-yaml": ">=4.2.0"
   },
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "private": true
 }
