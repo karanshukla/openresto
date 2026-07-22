@@ -50,7 +50,6 @@ coverage/
 **/coverage*.xml
 **/TestResults/
 **/coverage-report*/
-.claude/settings.json
 docs/superpowers/plans/2026-05-24-highlights-tags.md
 # Uploaded media files
 OpenRestoApi/wwwroot/media/

@@ -1,7 +1,7 @@
 # Build stage — always runs on the native host platform so Metro bundling
 # doesn't run under QEMU emulation (which hangs on arm64 cross-builds).
 # The expo export output is pure HTML/JS/CSS and is platform-independent.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS build
+FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /app
 
 # Accept build arguments
@@ -17,7 +17,7 @@ COPY . .
 RUN npx expo export --platform web
 
 # Production stage — serve static files
-FROM node:20-alpine
+FROM node:24-alpine
 RUN apk add --no-cache curl && npm install -g serve
 WORKDIR /app
 COPY --from=build /app/dist ./dist

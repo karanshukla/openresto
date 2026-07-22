@@ -36,9 +36,10 @@
     "expo-symbols": "~56.0.6",
     "expo-system-ui": "~56.0.5",
     "expo-web-browser": "~56.0.5",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-gesture-handler": "~3.0.0",
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.8.0",
     "react-native-web": "~0.21.2",
@@ -93,10 +94,13 @@
     ]
   },
   "overrides": {
-    "react-test-renderer": "19.2.7",
+    "react-test-renderer": "19.2.3",
     "uuid": ">=14.0.0",
     "shell-quote": ">=1.8.4",
     "js-yaml": ">=4.2.0"
+  },
+  "engines": {
+    "node": ">=24.15.0"
   },
   "private": true
 }

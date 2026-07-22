@@ -16,6 +16,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "bugs": {
     "url": "https://github.com/karanshukla/openresto/issues"
   },
