@@ -228,6 +228,15 @@ public class BrandServiceTests
             () => svc.SaveAsync(null, null, null, highlightsHeading: new string('a', 61)));
     }
 
+    [Fact]
+    public async Task SaveAsync_Throws_WhenHighlightsSubheadingTooLong()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Throws_WhenHighlightsSubheadingTooLong));
+        var svc = CreateService(db);
+        await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, highlightsSubheading: new string('a', 61)));
+    }
+
     // ── Header image fit (#187) ───────────────────────────────────────────────
 
     [Theory]

@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Tests.Integration;
 
@@ -220,5 +223,50 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         byte[] bytes = await response.Content.ReadAsByteArrayAsync();
         Assert.NotEmpty(bytes);
         Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
+    }
+
+    // BrandService.SaveAsync rejects unknown icon names via the PATCH endpoint, so an
+    // unrecognized-but-non-empty FaviconIcon can only occur from stale/out-of-band data
+    // (e.g. a value from before the allow-list changed). Seed it directly via the DB,
+    // bypassing the service, to exercise that fallback.
+    private static async Task SeedUnrecognizedFaviconIconAsync(TestWebAppFactory factory)
+    {
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        BrandSettings? brand = db.Set<BrandSettings>().FirstOrDefault();
+        if (brand == null)
+        {
+            brand = new BrandSettings { FaviconIcon = "no-longer-a-valid-icon" };
+            db.Set<BrandSettings>().Add(brand);
+        }
+        else
+        {
+            brand.FaviconIcon = "no-longer-a-valid-icon";
+        }
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task GetPwaIcon_ReturnsNotFound_WhenFaviconIconIsUnrecognized()
+    {
+        using var factory = new TestWebAppFactory();
+        await SeedUnrecognizedFaviconIconAsync(factory);
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/brand/pwa-icon.svg");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPwaIconPng_ReturnsNotFound_WhenFaviconIconIsUnrecognized()
+    {
+        using var factory = new TestWebAppFactory();
+        await SeedUnrecognizedFaviconIconAsync(factory);
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/brand/pwa-icon-192.png");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

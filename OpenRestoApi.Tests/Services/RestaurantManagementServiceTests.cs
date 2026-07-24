@@ -257,6 +257,42 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_Persists_MenuUrl_Trimmed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Persists_MenuUrl_Trimmed));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MenuUrl = "  https://example.com/menu.pdf  "
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("https://example.com/menu.pdf", result.MenuUrl);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Clears_MenuUrl_WhenBlank()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Clears_MenuUrl_WhenBlank));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", MenuUrl = "https://old.example.com/menu.pdf" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MenuUrl = "   "
+        });
+
+        Assert.NotNull(result);
+        Assert.Null(result.MenuUrl);
+    }
+
+    [Fact]
     public async Task UpdateAsync_Keeps_Description_WhenNull()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Keeps_Description_WhenNull));
