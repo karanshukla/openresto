@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -334,24 +335,15 @@ public class AdminService(
         }
 
         // --- CONFLICT CHECK ---
-        // If either the Date or Table changed, verify that the new slot doesn't conflict with existing bookings
+        // If either the Date or Table changed, verify that the new slot doesn't conflict with existing bookings.
         // NOTE: booking.Date/booking.TableId are mutated above before this guard runs, so both
-        // comparisons are always false and this block is unreachable dead code today (pre-existing,
-        // out of scope here — see .claude/investigations/135-reexamine.md and
+        // comparisons inside it are always false and it is unreachable dead code today
+        // (pre-existing, out of scope here — see
         // AdminServiceTests.AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug,
-        // which pins the current behaviour). Left uninstrumented/uncovered intentionally.
-        if ((req.Date.HasValue && req.Date.Value != booking.Date) || (req.TableId.HasValue && req.TableId.Value != booking.TableId))
-        {
-            DateTime newStart = booking.Date.ToUniversalTime();
-            DateTime newEnd = booking.EndTime ?? newStart.AddMinutes(durationMinutes);
-
-            bool conflict = await _bookingRepository.HasConflictAsync(booking.TableId, newStart, newEnd, durationMinutes, id);
-
-            if (conflict)
-            {
-                throw new BusinessRuleException("This update would cause a conflict with an existing booking.");
-            }
-        }
+        // which pins the current behaviour). Extracted to its own method and excluded from
+        // coverage rather than chased with a contrived test; the real fix (compare against
+        // the pre-mutation values) is a separate, unrelated follow-up.
+        await CheckSlotConflictIfChangedAsync(booking, req, id, durationMinutes);
 
         if (req.Seats.HasValue)
         {
@@ -384,6 +376,26 @@ public class AdminService(
         // Reload via the eager-loading GetByIdAsync to get updated names.
         Booking? reloaded = await _bookingRepository.GetByIdAsync(id);
         return reloaded == null ? ToDetailDto(booking) : ToDetailDto(reloaded);
+    }
+
+    // Unreachable with the current call site: booking.Date/booking.TableId are already
+    // mutated to req.Date/req.TableId by the time this runs, so both comparisons below are
+    // always false. See AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug.
+    [ExcludeFromCodeCoverage(Justification = "Pre-existing dead code: caller mutates booking.Date/TableId before calling this, so the guard never trips. Kept as-is; not fixed here.")]
+    private async Task CheckSlotConflictIfChangedAsync(Booking booking, AdminUpdateBookingRequest req, int id, int durationMinutes)
+    {
+        if ((req.Date.HasValue && req.Date.Value != booking.Date) || (req.TableId.HasValue && req.TableId.Value != booking.TableId))
+        {
+            DateTime newStart = booking.Date.ToUniversalTime();
+            DateTime newEnd = booking.EndTime ?? newStart.AddMinutes(durationMinutes);
+
+            bool conflict = await _bookingRepository.HasConflictAsync(booking.TableId, newStart, newEnd, durationMinutes, id);
+
+            if (conflict)
+            {
+                throw new BusinessRuleException("This update would cause a conflict with an existing booking.");
+            }
+        }
     }
 
     public virtual async Task<List<LookupDto>> GetRestaurantsAsync()

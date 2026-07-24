@@ -668,6 +668,34 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_Throws_WhenSeatsExceedTableCapacity));
+        TestSeed.BasicRestaurant(db); // Table 1 has 4 seats.
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        BookingDto created = await svc.CreateBookingAsync(
+            new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        db.Entry((await db.Bookings.FindAsync(created.Id))!).State = EntityState.Detached;
+
+        var dto = new BookingDto
+        {
+            Id = created.Id,
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            Date = date,
+            Seats = 99,
+            EndTime = date.AddHours(1)
+        };
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() =>
+            svc.UpdateBookingAsync(created.Id, dto));
+
+        Assert.Contains("only has", ex.Message);
+    }
+
+    [Fact]
     public async Task UpdateBookingAsync_FixesInvalidEndTime()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_FixesInvalidEndTime));
@@ -1161,6 +1189,31 @@ public class BookingServiceTests
         Assert.Equal(1, result.SectionId);
         // The candidate path must not have been invoked.
         holdMock.Verify(h => h.PlaceAutoHold(It.IsAny<int>(), It.IsAny<IReadOnlyList<TableCandidate>>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_Throws_WhenAllCandidatesAreHeldByOthers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_Throws_WhenAllCandidatesAreHeldByOthers));
+        TestSeed.BasicRestaurant(db); // single table, 4 seats
+        DateTime date = DateTime.UtcNow.AddDays(15);
+
+        var holdService = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
+        // Someone else already holds the only eligible table for this slot.
+        HoldResult? otherHold = holdService.PlaceHold(restaurantId: 1, tableId: 1, sectionId: 1, bookingDate: date);
+        Assert.NotNull(otherHold);
+
+        BookingService svc = CreateService(db, holdService);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date
+        }));
+
+        Assert.Contains("currently being held", ex.Message);
     }
 
     [Fact]

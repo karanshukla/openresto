@@ -614,6 +614,36 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task AdminUpdateBookingAsync_TrimsCustomerName()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        var req = new AdminUpdateBookingRequest { CustomerName = "  Jane Doe  " };
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, req);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jane Doe", result!.CustomerName);
+    }
+
+    [Fact]
+    public async Task AdminUpdateBookingAsync_ClearsCustomerName_WhenWhitespaceOnly()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1", CustomerName = "Existing Name" });
+        await _db.SaveChangesAsync();
+
+        var req = new AdminUpdateBookingRequest { CustomerName = "   " };
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, req);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.CustomerName);
+    }
+
+    [Fact]
     public async Task AdminUpdateBookingAsync_AdjustsEndTime_WhenDateChanges()
     {
         AdminService svc = CreateService();

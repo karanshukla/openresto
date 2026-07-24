@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -444,15 +445,26 @@ public static partial class DatabaseExtensions
                 }
             }
 
-            if (!success)
-            {
-                throw new InvalidOperationException("Failed to initialize database after multiple retries.");
-            }
+            ThrowIfRetriesExhausted(success);
         }
         catch (Exception ex)
         {
             LogFatalError(logger, ex);
             throw;
+        }
+    }
+
+    // The loop above can only fall through to here with success == true: every matched
+    // SqliteException either sleeps and continues (i < maxRetries) or rethrows (i ==
+    // maxRetries), and any unmatched exception propagates immediately. This guard can
+    // never actually fire — kept as a defensive invariant check rather than a silent
+    // assumption, so it's excluded from coverage rather than chased with a contrived test.
+    [ExcludeFromCodeCoverage(Justification = "Unreachable: the retry loop above always either sets success=true or throws before falling through.")]
+    private static void ThrowIfRetriesExhausted(bool success)
+    {
+        if (!success)
+        {
+            throw new InvalidOperationException("Failed to initialize database after multiple retries.");
         }
     }
 }

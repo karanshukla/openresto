@@ -263,4 +263,25 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         Assert.True(response.StatusCode == HttpStatusCode.Conflict,
             $"Expected Conflict but got {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
+
+    [Fact]
+    public async Task PlaceHold_AutoAssign_Returns409_WhenNoTableFitsPartySize()
+    {
+        HttpClient client = _factory.CreateClient();
+        int restaurantId = GetPastaPlaceTableIds().restaurantId;
+        var date = DateTime.UtcNow.AddDays(123).ToString("yyyy-MM-ddT12:00:00");
+
+        // No seeded table fits a party of 100, so BuildCandidatesAsync returns zero
+        // candidates before any hold is ever attempted.
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            seats = 100,
+            date
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("No tables are available", body.GetProperty("message").GetString());
+    }
 }
