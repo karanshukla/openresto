@@ -24,11 +24,11 @@ public static class TimeZoneHelper
         {
             return TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
         }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.Utc;
-        }
-        catch (InvalidTimeZoneException)
+        // InvalidTimeZoneException is only thrown when the host's tzdata for an id
+        // FindSystemTimeZoneById already recognized is itself corrupt — not reproducible by
+        // crafting an id string, so it shares TimeZoneNotFoundException's fallback rather
+        // than carrying its own untestable branch.
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
         {
             return TimeZoneInfo.Utc;
         }

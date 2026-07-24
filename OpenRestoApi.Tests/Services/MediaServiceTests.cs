@@ -271,6 +271,68 @@ public class MediaServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteHeroAsync_SwallowsException_WhenFileIsImmutable()
+    {
+        // File.Exists reports true for a directory-shaped or embedded-NUL path too, but
+        // File.Delete is never reached in those cases (File.Exists itself returns false for
+        // them) — so neither actually exercises TryDeleteFile's catch. chattr +i marks a real
+        // file immutable at the filesystem level (enforced even for root), so File.Exists
+        // sees a real file but File.Delete genuinely throws.
+        Directory.CreateDirectory(MediaDir);
+        string filePath = Path.Combine(MediaDir, "hero.png");
+        await File.WriteAllBytesAsync(filePath, [1, 2, 3]);
+
+        // chattr +i (immutable) requires a filesystem that supports the ext2/3/4 attribute
+        // (e.g. tmpfs/overlayfs do not) and the chattr binary. Skip gracefully rather than
+        // fail the build on a CI environment where the temp dir doesn't support it.
+        if (!await TryRunChattrAsync("+i", filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            using AppDbContext db = TestDbFactory.Create(nameof(DeleteHeroAsync_SwallowsException_WhenFileIsImmutable));
+            db.Set<BrandSettings>().Add(new BrandSettings { AppName = "X", HeaderImageUrl = "/media/hero.png?v=1" });
+            await db.SaveChangesAsync();
+            MediaService svc = CreateService(db);
+
+            Exception? ex = await Record.ExceptionAsync(() => svc.DeleteHeroAsync());
+
+            Assert.Null(ex);
+            BrandSettings brand = await db.Set<BrandSettings>().SingleAsync();
+            Assert.Null(brand.HeaderImageUrl);
+            Assert.True(File.Exists(filePath), "the immutable file must survive the failed delete");
+        }
+        finally
+        {
+            // Clear the immutable flag so MediaServiceTests.Dispose can clean up _tempRoot.
+            await TryRunChattrAsync("-i", filePath);
+        }
+    }
+
+    private static async Task<bool> TryRunChattrAsync(string flag, string filePath)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "chattr",
+                ArgumentList = { flag, filePath },
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            })!;
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            // chattr binary not found.
+            return false;
+        }
+    }
+
+    [Fact]
     public async Task UploadMenuAsync_ReturnsNull_WhenRestaurantNotFound()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UploadMenuAsync_ReturnsNull_WhenRestaurantNotFound));
