@@ -566,4 +566,83 @@ public class AvailabilityServiceTests
             1, new DateTime(2026, 10, 11, 0, 0, 0, DateTimeKind.Utc), 2);
         Assert.Equal(4, sunday.Slots.Count);
     }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_WrapsPastMidnight_WhenCloseTimeIsBeforeOpenTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_WrapsPastMidnight_WhenCloseTimeIsBeforeOpenTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Late Bar", OpenTime = "22:00", CloseTime = "02:00", Timezone = "UTC",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        // 22:00 -> next day 02:00 in 30-min steps = 8 slots, wrapping past midnight.
+        Assert.Equal(8, result.Slots.Count);
+        Assert.Equal("22:00", result.Slots.First().Time);
+        Assert.Equal("01:30", result.Slots.Last().Time);
+        Assert.Contains(result.Slots, s => s.Time == "00:00");
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ParsesOpenDays_GivenSundayAsTextRatherThanIsoNumber()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ParsesOpenDays_GivenSundayAsTextRatherThanIsoNumber));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
+            OpenDays = "sunday",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // 2026-10-11 is a Sunday — "sunday" should parse to ISO day 7 and be treated as open.
+        AvailabilityResponseDto sunday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 11, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(sunday.Slots);
+
+        // 2026-10-10 is a Saturday — not in OpenDays, so no slots.
+        AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.Empty(saturday.Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_IgnoresUnrecognizedOpenDaysEntry_ButKeepsValidOnes()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_IgnoresUnrecognizedOpenDaysEntry_ButKeepsValidOnes));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
+            // "notaday" doesn't match any ParseDayOfWeek case and parses to 0, which gets
+            // filtered out by the `d > 0` guard — it should be silently ignored rather than
+            // corrupting the rest of the OpenDays list.
+            OpenDays = "monday,notaday",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // 2026-10-12 is a Monday — the valid entry keeps it open.
+        AvailabilityResponseDto monday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 12, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(monday.Slots);
+
+        // 2026-10-13 is a Tuesday — not in OpenDays, so no slots.
+        AvailabilityResponseDto tuesday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 13, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.Empty(tuesday.Slots);
+    }
 }
