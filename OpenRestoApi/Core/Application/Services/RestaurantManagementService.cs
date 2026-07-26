@@ -43,6 +43,14 @@ public class RestaurantManagementService(
         {
             Name = dto.Name,
             Address = dto.Address,
+            // Honor the hours/days/timezone the client sent (previously dropped here, which
+            // silently reverted every new restaurant to the entity's old 00:00 default and is
+            // what surfaced as "00:00" in the booking time picker). Guard the empty case so a
+            // create call that omits them still lands on the sensible 09:00–22:00 default.
+            OpenTime = string.IsNullOrWhiteSpace(dto.OpenTime) ? "09:00" : dto.OpenTime,
+            CloseTime = string.IsNullOrWhiteSpace(dto.CloseTime) ? "22:00" : dto.CloseTime,
+            OpenDays = string.IsNullOrWhiteSpace(dto.OpenDays) ? "1,2,3,4,5,6,7" : dto.OpenDays,
+            Timezone = string.IsNullOrWhiteSpace(dto.Timezone) ? "UTC" : dto.Timezone,
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = dto.MaxTableOversizeSeats,
@@ -53,6 +61,14 @@ public class RestaurantManagementService(
                 Tables = s.Tables.Select(t => new Table { Name = t.Name, Seats = t.Seats }).ToList()
             }).ToList()
         };
+
+        // Apply per-day overrides (same helper UpdateAsync uses) so create supports non-uniform
+        // hours too. Runs after the entity is populated so ApplyOpenHours can collapse identical
+        // days back into OpenTime/CloseTime or store the JSON otherwise.
+        if (dto.OpenHours is { Count: > 0 })
+        {
+            OpeningHoursHelper.ApplyOpenHours(entity, dto.OpenHours);
+        }
 
         await _restaurantRepository.AddAsync(entity);
         return ToDto(entity);
