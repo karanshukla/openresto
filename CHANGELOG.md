@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-07-26
+
+Hello! OpenResto is in a really good state right now, so no major changes today, but I'm upgrading from Node 20 to Node 24 (which is in LTS).
+
+As always please let me know if there's any other cool features you'd like to see!
+
+- Upgraded the build/runtime toolchain from Node 20 to Node 24 (#252).
+- Dependency security patches (#253, #254) — bumped `shell-quote`, React/`react-native-gesture-handler`, and GitHub Actions to their latest stable versions.
+- Backend unit test coverage improved from 97.6% to 98.8% line coverage (#255, #256).
+
 ## [1.4.0] - 2026-07-20
 
 Hello! This release includes the Booking page rework with lots of new features! As always, let me know if you run into any issues!

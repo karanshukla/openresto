@@ -113,6 +113,8 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+Also bump `"version"` in `package.json` (root) and `openresto-frontend/package.json` to match the tag (without the `v` prefix), then run `npm install --package-lock-only` in each directory (root and `openresto-frontend/`) so the corresponding `package-lock.json`'s top-level `version` field stays in sync — don't hand-edit the lockfiles.
+
 This triggers `.github/workflows/release.yml`, which builds `linux/amd64` + `linux/arm64` images for backend, frontend, and nginx; pushes them to GHCR (`ghcr.io/karanshukla/openresto-{backend,frontend,nginx}:<tag>`); and creates a GitHub Release with the per-version CHANGELOG section as notes and a pinned `docker-compose.yml` as a downloadable asset.
 
 `docker-compose.release.yml` in the repo is the self-hoster install template. It references `${OPENRESTO_VERSION:-latest}` — the release workflow substitutes the actual tag before attaching it to the release. Self-hosters can also run any version directly:
