@@ -9,8 +9,13 @@ public class Restaurant
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
-    public string OpenTime { get; set; } = "00:00";
-    public string CloseTime { get; set; } = "23:59";
+    // Defaults mirror RestaurantDto / DayHoursDto / UpdateRestaurantRequest so a restaurant
+    // constructed without explicit hours lands on a sensible 09:00–22:00 service window rather
+    // than 00:00, which previously leaked into the booking time picker (00:00 was the lone
+    // outlier default — every sibling used 09:00). "00:00"/"23:59" remain valid *values* for
+    // a 24h venue; only the default changes.
+    public string OpenTime { get; set; } = "09:00";
+    public string CloseTime { get; set; } = "22:00";
 
     /// <summary>
     /// Comma-separated day numbers (ISO 8601: 1=Monday, 7=Sunday).

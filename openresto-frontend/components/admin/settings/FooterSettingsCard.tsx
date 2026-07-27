@@ -199,25 +199,6 @@ export function FooterSettingsCard({
           <View style={{ gap: 12 }}>
             <ThemedText style={styles.fieldLabel}>Social Links</ThemedText>
 
-            <Pressable
-              onPress={startNew}
-              style={{
-                backgroundColor: primaryColor,
-                borderRadius: 10,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                alignSelf: "flex-start",
-              }}
-            >
-              <Ionicons name="add" size={16} color="#fff" />
-              <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
-                Add
-              </ThemedText>
-            </Pressable>
-
             {loading ? (
               <ActivityIndicator color={primaryColor} />
             ) : (
@@ -283,6 +264,27 @@ export function FooterSettingsCard({
                     mutedColor={mutedColor}
                     colors={colors}
                   />
+                )}
+
+                {editingId !== "new" && (
+                  <Pressable
+                    onPress={startNew}
+                    style={{
+                      backgroundColor: primaryColor,
+                      borderRadius: 10,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <Ionicons name="add" size={16} color="#fff" />
+                    <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
+                      Add
+                    </ThemedText>
+                  </Pressable>
                 )}
               </View>
             )}

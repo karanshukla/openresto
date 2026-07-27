@@ -176,10 +176,10 @@ describe("HighlightsCard", () => {
     (adminApi.adminDeleteHighlight as jest.Mock).mockResolvedValue(true);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], Add[2,3], GreatFood-edit[4,5], GreatFood-delete[6,7], LiveMusic-edit[8,9], LiveMusic-delete[10,11]
+    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], LiveMusic-edit[6,7], LiveMusic-delete[8,9], Add[10,11]
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[6]);
+      fireEvent.press(accessible[4]);
     });
     expect(adminApi.adminDeleteHighlight).toHaveBeenCalledWith(1);
   });
@@ -189,10 +189,10 @@ describe("HighlightsCard", () => {
     (adminApi.adminDeleteHighlight as jest.Mock).mockResolvedValue(false);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], Add[2,3], GreatFood-edit[4,5], GreatFood-delete[6,7]
+    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], Add[6,7]
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[6]);
+      fireEvent.press(accessible[4]);
     });
     expect(screen.getByText("Great Food")).toBeTruthy();
   });
@@ -201,9 +201,9 @@ describe("HighlightsCard", () => {
     (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], Add[2,3], GreatFood-edit[4,5], GreatFood-delete[6,7]
+    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], Add[6,7]
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[4]);
+    fireEvent.press(accessible[2]);
     await waitFor(() => {
       expect(screen.getByDisplayValue("Great Food")).toBeTruthy();
     });
@@ -216,7 +216,7 @@ describe("HighlightsCard", () => {
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[4]);
+    fireEvent.press(accessible[2]);
     await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Great Food"), "Amazing Food");
     await act(async () => {
@@ -234,7 +234,7 @@ describe("HighlightsCard", () => {
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[4]);
+    fireEvent.press(accessible[2]);
     await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Great Food"), "New Title");
     await act(async () => {
@@ -344,7 +344,7 @@ describe("HighlightsCard", () => {
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[4]);
+    fireEvent.press(accessible[2]);
     await waitFor(() => {
       expect(screen.getByDisplayValue("https://example.com/book")).toBeTruthy();
     });
