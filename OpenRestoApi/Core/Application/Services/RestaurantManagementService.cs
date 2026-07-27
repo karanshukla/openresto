@@ -1,6 +1,7 @@
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -90,7 +91,26 @@ public class RestaurantManagementService(
         }
         if (req.MenuUrl != null)
         {
-            r.MenuUrl = string.IsNullOrWhiteSpace(req.MenuUrl) ? null : req.MenuUrl.Trim();
+            // Blank clears (matching the brand-text whitespace-to-null convention); a non-blank
+            // value must be either an absolute http(s) URL (an externally hosted menu) or the
+            // instance-served "/media/menu-<id>.pdf" path written by MediaService.UploadMenuAsync.
+            // The served path is relative and intentionally bypasses UrlValidator (which only
+            // accepts absolute URLs); rejecting it would break the upload flow.
+            if (string.IsNullOrWhiteSpace(req.MenuUrl))
+            {
+                r.MenuUrl = null;
+            }
+            else
+            {
+                string trimmed = req.MenuUrl.Trim();
+                bool isServedMenuFile = trimmed.StartsWith("/media/", StringComparison.OrdinalIgnoreCase);
+                if (!isServedMenuFile && !UrlValidator.IsValid(trimmed, UrlValidator.WebSchemes))
+                {
+                    throw new ValidationException(
+                        "Menu URL must be a valid absolute http(s) URL.");
+                }
+                r.MenuUrl = trimmed;
+            }
         }
         if (req.OpenTime != null)
         {

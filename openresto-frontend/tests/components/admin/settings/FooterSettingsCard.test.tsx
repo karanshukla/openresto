@@ -188,7 +188,7 @@ describe("FooterSettingsCard", () => {
       iconKey: "link-outline",
       sortOrder: 0,
     };
-    (adminApi.adminCreateSocialLink as jest.Mock).mockResolvedValue(created);
+    (adminApi.adminCreateSocialLink as jest.Mock).mockResolvedValue({ ok: true, data: created });
     render(<FooterSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
     fireEvent.press(screen.getByText("Add"));
@@ -249,7 +249,7 @@ describe("FooterSettingsCard", () => {
   it("calls adminUpdateSocialLink when saving an edited link", async () => {
     const updated = { ...mockLinks[0], label: "Instagram Official" };
     (adminApi.adminGetSocialLinks as jest.Mock).mockResolvedValue([mockLinks[0]]);
-    (adminApi.adminUpdateSocialLink as jest.Mock).mockResolvedValue(updated);
+    (adminApi.adminUpdateSocialLink as jest.Mock).mockResolvedValue({ ok: true, data: updated });
     render(<FooterSettingsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Instagram")).toBeTruthy());
     fireEvent.press(screen.getByLabelText("Edit Instagram"));
@@ -284,6 +284,53 @@ describe("FooterSettingsCard", () => {
     });
     expect(adminApi.adminCreateSocialLink).toHaveBeenCalled();
     expect(screen.queryByText("New Link")).toBeNull();
+  });
+
+  it("shows an inline error and keeps the form open when create fails", async () => {
+    (adminApi.adminCreateSocialLink as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: "Social link URL must be a valid absolute URL (http, https, mailto, tel, or sms).",
+    });
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF")).toBeTruthy()
+    );
+    // A valid-looking URL so the client pre-flight passes and the server-side rejection is hit.
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF"), "Bad");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("https://instagram.com/yourresto"),
+      "https://valid-url.example.com"
+    );
+    await act(async () => {
+      const saveButtons = screen.getAllByText("Save");
+      fireEvent.press(saveButtons[saveButtons.length - 1]);
+    });
+    await waitFor(() => expect(screen.getByText(/valid absolute URL/)).toBeTruthy());
+    // Form stays open so the admin can fix the field.
+    expect(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF")).toBeTruthy();
+  });
+
+  it("blocks save with an inline error on an obviously invalid URL (client pre-flight)", async () => {
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF"), "Oops");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("https://instagram.com/yourresto"),
+      "javascript:alert(1)"
+    );
+    await act(async () => {
+      const saveButtons = screen.getAllByText("Save");
+      fireEvent.press(saveButtons[saveButtons.length - 1]);
+    });
+    await waitFor(() => expect(screen.getByText(/valid URL/)).toBeTruthy());
+    // Pre-flight means the API was never called.
+    expect(adminApi.adminCreateSocialLink).not.toHaveBeenCalled();
   });
 
   it("changes icon when an icon option is pressed", async () => {

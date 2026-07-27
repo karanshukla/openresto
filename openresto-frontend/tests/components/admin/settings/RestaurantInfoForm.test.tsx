@@ -1006,4 +1006,16 @@ describe("RestaurantInfoForm", () => {
     });
     expect(restaurantsApi.uploadMenuFile).not.toHaveBeenCalled();
   });
+
+  it("blocks save with an inline error when menuUrl is an invalid link (pre-flight)", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    const menuInput = screen.getByPlaceholderText("https://your-menu-url.com/menu.pdf");
+    fireEvent.changeText(menuInput, "javascript:alert(1)");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    await waitFor(() => expect(screen.getByText(/valid http\(s\) link/)).toBeTruthy());
+    // Pre-flight means the API was never called.
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
 });

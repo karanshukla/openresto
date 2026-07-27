@@ -144,7 +144,7 @@ describe("HighlightsCard", () => {
 
   it("calls adminCreateHighlight when Save is pressed with a title", async () => {
     const created = { id: 3, title: "New", body: "", iconKey: "star-outline", sortOrder: 0 };
-    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue(created);
+    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue({ ok: true, data: created });
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
     fireEvent.press(screen.getByText("Add"));
@@ -212,7 +212,7 @@ describe("HighlightsCard", () => {
   it("calls adminUpdateHighlight when saving an edited highlight", async () => {
     const updated = { ...mockHighlights[0], title: "Amazing Food" };
     (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
-    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(updated);
+    (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue({ ok: true, data: updated });
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
@@ -348,5 +348,45 @@ describe("HighlightsCard", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("https://example.com/book")).toBeTruthy();
     });
+  });
+
+  it("blocks save with an inline error when the link is an invalid URL (pre-flight)", async () => {
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Award");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("https://example.com/menu"),
+      "javascript:alert(1)"
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    await waitFor(() => expect(screen.getByText(/valid link URL/)).toBeTruthy());
+    // Pre-flight means the API was never called.
+    expect(adminApi.adminCreateHighlight).not.toHaveBeenCalled();
+  });
+
+  it("shows an inline error and keeps the form open when create fails", async () => {
+    (adminApi.adminCreateHighlight as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: "Highlight title cannot exceed 60 characters.",
+    });
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
+    fireEvent.press(screen.getByText("Add"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("e.g. Wood-fired kitchen")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Too long");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+    await waitFor(() => expect(screen.getByText(/cannot exceed 60/)).toBeTruthy());
+    // Form stays open so the admin can fix the field.
+    expect(screen.getByDisplayValue("Too long")).toBeTruthy();
   });
 });

@@ -14,6 +14,7 @@ import {
   adminDeleteSocialLink,
   AdminSocialLinkDto,
 } from "@/api/admin";
+import { isValidUrl } from "@/utils/validation";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 import { SocialLinkEditForm, emptyEdit, type EditState, type IconKey } from "./SocialLinkEditForm";
@@ -40,6 +41,7 @@ export function FooterSettingsCard({
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
   const [editState, setEditState] = useState<EditState>(emptyEdit());
   const [saving, setSaving] = useState(false);
+  const [linkMsg, setLinkMsg] = useState<string | null>(null);
   const [expanded, setExpanded] = usePersistedState("settings:footer:expanded", false);
 
   const copyrightIsDirty = copyrightText.trim() !== (brand.copyrightText ?? "");
@@ -70,6 +72,7 @@ export function FooterSettingsCard({
 
   const startEdit = (link: AdminSocialLinkDto) => {
     setEditingId(link.id);
+    setLinkMsg(null);
     setEditState({
       label: link.label,
       url: link.url,
@@ -80,38 +83,73 @@ export function FooterSettingsCard({
 
   const startNew = () => {
     setEditingId("new");
+    setLinkMsg(null);
     setEditState(emptyEdit(links.length));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
+    setLinkMsg(null);
     setEditState(emptyEdit());
+  };
+
+  // Clear any shown error as soon as the admin edits a field, so stale messages don't linger.
+  const handleChange = (s: EditState) => {
+    setLinkMsg(null);
+    setEditState(s);
   };
 
   const save = async () => {
     if (!editState.label.trim() || !editState.url.trim()) return;
+    // Client-side URL pre-flight (mirrors backend UrlValidator) — catches obvious typos and
+    // dangerous schemes like javascript: without a round-trip. The server remains source of truth.
+    if (!isValidUrl(editState.url.trim())) {
+      setLinkMsg("Enter a valid URL (e.g. https://example.com).");
+      return;
+    }
+    setLinkMsg(null);
     setSaving(true);
+    let ok = true;
+    let message: string | null = null;
     if (editingId === "new") {
-      const created = await adminCreateSocialLink({
+      const result = await adminCreateSocialLink({
         label: editState.label.trim(),
         url: editState.url.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
       });
-      if (created) setLinks((prev) => [...prev, created]);
+      if (result && result.ok) {
+        setLinks((prev) => [...prev, result.data]);
+      } else if (result && !result.ok) {
+        ok = false;
+        message = result.message;
+      } else {
+        ok = false;
+        message = "Couldn't reach the server. Please try again.";
+      }
     } else if (editingId != null) {
-      const updated = await adminUpdateSocialLink(editingId, {
+      const result = await adminUpdateSocialLink(editingId, {
         label: editState.label.trim(),
         url: editState.url.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
       });
-      if (updated) {
-        setLinks((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
+      if (result && result.ok) {
+        setLinks((prev) => prev.map((l) => (l.id === editingId ? result.data : l)));
+      } else if (result && !result.ok) {
+        ok = false;
+        message = result.message;
+      } else {
+        ok = false;
+        message = "Couldn't reach the server. Please try again.";
       }
     }
     setSaving(false);
-    cancelEdit();
+    if (ok) {
+      cancelEdit();
+    } else if (message) {
+      setLinkMsg(message);
+    }
   };
 
   const remove = async (id: number) => {
@@ -226,7 +264,7 @@ export function FooterSettingsCard({
                     {editingId === link.id ? (
                       <SocialLinkEditForm
                         state={editState}
-                        onChange={setEditState}
+                        onChange={handleChange}
                         onSave={save}
                         onCancel={cancelEdit}
                         saving={saving}
@@ -235,6 +273,7 @@ export function FooterSettingsCard({
                         borderColor={borderColor}
                         mutedColor={mutedColor}
                         colors={colors}
+                        error={editingId === link.id ? linkMsg : null}
                       />
                     ) : (
                       <SocialLinkRow
@@ -254,7 +293,7 @@ export function FooterSettingsCard({
                 {editingId === "new" && (
                   <SocialLinkEditForm
                     state={editState}
-                    onChange={setEditState}
+                    onChange={handleChange}
                     onSave={save}
                     onCancel={cancelEdit}
                     saving={saving}
@@ -263,6 +302,7 @@ export function FooterSettingsCard({
                     borderColor={borderColor}
                     mutedColor={mutedColor}
                     colors={colors}
+                    error={editingId === "new" ? linkMsg : null}
                   />
                 )}
 

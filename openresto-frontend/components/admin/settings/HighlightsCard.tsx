@@ -14,6 +14,7 @@ import {
   AdminHighlightDto,
 } from "@/api/admin";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
+import { isValidUrl } from "@/utils/validation";
 import { styles } from "./settings.styles";
 
 const ICON_OPTIONS = [
@@ -80,6 +81,7 @@ export function HighlightsCard({
   const [editingId, setEditingId] = useState<number | "new" | null>(null);
   const [editState, setEditState] = useState<EditState>(emptyEdit());
   const [saving, setSaving] = useState(false);
+  const [highlightMsg, setHighlightMsg] = useState<string | null>(null);
   const [expanded, setExpanded] = usePersistedState("settings:highlights:expanded", true);
 
   useEffect(() => {
@@ -91,6 +93,7 @@ export function HighlightsCard({
 
   const startEdit = (h: AdminHighlightDto) => {
     setEditingId(h.id);
+    setHighlightMsg(null);
     setEditState({
       title: h.title,
       body: h.body,
@@ -102,40 +105,76 @@ export function HighlightsCard({
 
   const startNew = () => {
     setEditingId("new");
+    setHighlightMsg(null);
     setEditState(emptyEdit(highlights.length));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
+    setHighlightMsg(null);
     setEditState(emptyEdit());
+  };
+
+  // Clear any shown error as soon as the admin edits a field, so stale messages don't linger.
+  const handleChange = (s: EditState) => {
+    setHighlightMsg(null);
+    setEditState(s);
   };
 
   const save = async () => {
     if (!editState.title.trim()) return;
+    // Client-side URL pre-flight on the optional link (mirrors backend UrlValidator). The link
+    // is optional, so only validate when the admin actually entered something.
+    const trimmedLink = editState.link.trim();
+    if (trimmedLink && !isValidUrl(trimmedLink)) {
+      setHighlightMsg("Enter a valid link URL (e.g. https://example.com).");
+      return;
+    }
+    setHighlightMsg(null);
     setSaving(true);
+    let ok = true;
+    let message: string | null = null;
     if (editingId === "new") {
-      const created = await adminCreateHighlight({
+      const result = await adminCreateHighlight({
         title: editState.title.trim(),
         body: editState.body.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
-        link: editState.link.trim() || null,
+        link: trimmedLink || null,
       });
-      if (created) setHighlights((prev) => [...prev, created]);
+      if (result && result.ok) {
+        setHighlights((prev) => [...prev, result.data]);
+      } else if (result && !result.ok) {
+        ok = false;
+        message = result.message;
+      } else {
+        ok = false;
+        message = "Couldn't reach the server. Please try again.";
+      }
     } else if (editingId != null) {
-      const updated = await adminUpdateHighlight(editingId, {
+      const result = await adminUpdateHighlight(editingId, {
         title: editState.title.trim(),
         body: editState.body.trim(),
         iconKey: editState.iconKey,
         sortOrder: editState.sortOrder,
-        link: editState.link.trim() || null,
+        link: trimmedLink || null,
       });
-      if (updated) {
-        setHighlights((prev) => prev.map((h) => (h.id === editingId ? updated : h)));
+      if (result && result.ok) {
+        setHighlights((prev) => prev.map((h) => (h.id === editingId ? result.data : h)));
+      } else if (result && !result.ok) {
+        ok = false;
+        message = result.message;
+      } else {
+        ok = false;
+        message = "Couldn't reach the server. Please try again.";
       }
     }
     setSaving(false);
-    cancelEdit();
+    if (ok) {
+      cancelEdit();
+    } else if (message) {
+      setHighlightMsg(message);
+    }
   };
 
   const remove = async (id: number) => {
@@ -191,7 +230,7 @@ export function HighlightsCard({
                   {editingId === h.id ? (
                     <HighlightEditForm
                       state={editState}
-                      onChange={setEditState}
+                      onChange={handleChange}
                       onSave={save}
                       onCancel={cancelEdit}
                       saving={saving}
@@ -200,6 +239,7 @@ export function HighlightsCard({
                       borderColor={borderColor}
                       mutedColor={mutedColor}
                       colors={colors}
+                      error={editingId === h.id ? highlightMsg : null}
                     />
                   ) : (
                     <View
@@ -275,7 +315,7 @@ export function HighlightsCard({
               {editingId === "new" && (
                 <HighlightEditForm
                   state={editState}
-                  onChange={setEditState}
+                  onChange={handleChange}
                   onSave={save}
                   onCancel={cancelEdit}
                   saving={saving}
@@ -284,6 +324,7 @@ export function HighlightsCard({
                   borderColor={borderColor}
                   mutedColor={mutedColor}
                   colors={colors}
+                  error={editingId === "new" ? highlightMsg : null}
                 />
               )}
 
@@ -326,6 +367,7 @@ function HighlightEditForm({
   borderColor,
   mutedColor,
   colors,
+  error,
 }: {
   state: EditState;
   onChange: (s: EditState) => void;
@@ -337,6 +379,8 @@ function HighlightEditForm({
   borderColor: string;
   mutedColor: string;
   colors: ThemeColors;
+  /** Inline validation/server error shown above the action row. Null/undefined hides it. */
+  error?: string | null;
 }) {
   return (
     <View
@@ -415,6 +459,8 @@ function HighlightEditForm({
           Makes the whole card clickable. Leave blank for a static highlight.
         </ThemedText>
       </View>
+
+      {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
 
       {/* Actions */}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using OpenRestoApi.Core.Application.DTOs;
 
 namespace OpenRestoApi.Tests.Integration;
@@ -137,5 +138,91 @@ public class SocialLinksControllerTests(TestWebAppFactory factory) : IClassFixtu
         HttpClient client = _factory.CreateAuthenticatedClient();
         HttpResponseMessage response = await client.DeleteAsync("/api/social-links/99999");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── Validation (Create) ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Create_EmptyLabel_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/social-links", new
+        {
+            label = "   ",
+            url = "https://example.com",
+            iconKey = "link-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("label cannot be empty", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_OversizedLabel_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/social-links", new
+        {
+            label = new string('A', 61),
+            url = "https://example.com",
+            iconKey = "link-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("asdf")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/media/menu-1.pdf")]
+    public async Task Create_InvalidUrl_Returns400(string url)
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/social-links", new
+        {
+            label = "Ok",
+            url = url,
+            iconKey = "link-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("valid absolute URL", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_UnknownIconKey_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/social-links", new
+        {
+            label = "Ok",
+            url = "https://example.com",
+            iconKey = "not-a-real-icon",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Icon key", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_TelUrl_Returns201()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/social-links", new
+        {
+            label = "Call us",
+            url = "tel:+15551234567",
+            iconKey = "call-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 }
