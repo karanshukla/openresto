@@ -29,7 +29,7 @@ export default function LargePartyNotice({
 
   return (
     <Pressable
-      style={({ hovered }) => [
+      style={({ hovered }: any) => [
         styles.card,
         { backgroundColor: accentSoft, borderColor: accentBorder },
         hovered && { opacity: 0.85 },
