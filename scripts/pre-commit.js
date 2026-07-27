@@ -74,9 +74,17 @@ const frontendFiles = stagedFiles.filter(
   (f) => f.startsWith("openresto-frontend/") && /\.(js|jsx|ts|tsx)$/.test(f),
 );
 if (frontendFiles.length > 0) {
-  console.log("Running Frontend Linter (Full Project)...");
+  console.log("Running Frontend Linter (staged files)...");
+  // Scope oxlint to the staged files only. Previously this ran `oxlint --fix`
+  // across the whole project, which rewrote (and sometimes mangled) files the
+  // developer never staged — the changes leaked into the working tree because
+  // the re-add step below only re-stages originally-staged files. oxlint runs
+  // with cwd=openresto-frontend, so strip that prefix from each path.
+  const relFiles = frontendFiles.map(
+    (f) => `"${f.slice("openresto-frontend/".length)}"`,
+  );
   try {
-    execSync(`npm run lint:staged`, {
+    execSync(`npx oxlint --fix ${relFiles.join(" ")}`, {
       cwd: "openresto-frontend",
       stdio: "inherit",
     });
