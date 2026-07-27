@@ -389,7 +389,7 @@ export default function BookingForm({
           />
           {partyTooLarge && (
             <Pressable onPress={() => setLargePartyNoticeOpen(true)} hitSlop={6}>
-              <ThemedText style={[styles.largePartyHint, { color: colors.error }]}>
+              <ThemedText style={[styles.largePartyHint, { color: PRIMARY }]}>
                 Our largest table seats {maxTableCapacity}. Please contact us to arrange a larger
                 party.
               </ThemedText>
@@ -451,7 +451,7 @@ export default function BookingForm({
               {resolvedTableId ? "" : " across all sections"}.
             </ThemedText>
           ) : eligibleTables.length === 0 ? (
-            <ThemedText style={[styles.noTables, { color: colors.error }]}>
+            <ThemedText style={[styles.noTables, { color: PRIMARY }]}>
               No tables available for {seats} guests.
             </ThemedText>
           ) : (
@@ -577,8 +577,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   noTables: {
-    color: "#e53e3e",
     fontSize: 13,
+    textDecorationLine: "underline",
   },
   largePartyHint: {
     fontSize: 13,
