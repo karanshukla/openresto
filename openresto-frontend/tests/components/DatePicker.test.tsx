@@ -11,6 +11,9 @@ jest.mock("@/context/BrandContext", () => ({
 }));
 
 // Local YYYY-MM-DD (matches how the component formats option values).
+// NB: must use local date parts (not `toISOString`, which is UTC) so the test
+// agrees with the component's local `getDate()`/`getMonth()` formatting even
+// when run in a timezone behind UTC near midnight.
 function localDateValue(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -18,13 +21,25 @@ function localDateValue(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-describe("DatePicker (native)", () => {
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-  const todayLabel = today.toLocaleDateString(undefined, {
+// Local short label (weekday, month, day) — same formatter the component uses.
+function localDateLabel(d: Date): string {
+  return d.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
+  });
+}
+
+describe("DatePicker (native)", () => {
+  // Snapshot today once per test (not once per module load) so a long-running
+  // file never drifts past midnight between capture and render.
+  let today: Date;
+  let todayStr: string;
+  let todayLabel: string;
+  beforeEach(() => {
+    today = new Date();
+    todayStr = localDateValue(today);
+    todayLabel = localDateLabel(today);
   });
 
   it("renders trigger with placeholder when no date selected", () => {
