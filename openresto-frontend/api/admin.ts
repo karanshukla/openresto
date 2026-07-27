@@ -582,13 +582,24 @@ export async function adminGetHighlights(): Promise<AdminHighlightDto[]> {
   }
 }
 
+/**
+ * Result of a create/update admin mutation. Success carries the saved DTO; failure carries the
+ * server's message (or a generic fallback). Network failures (no response) return `null`, which
+ * callers treat as "couldn't reach the server" — the same convention as {@link saveBrandSettings}.
+ * The error body shape mirrors the backend `MessageResponse { message }` (never RFC 7807).
+ */
+export type AdminMutationResult<T> = { ok: true; data: T } | { ok: false; message: string };
+
 export async function adminCreateHighlight(
   req: CreateHighlightRequest
-): Promise<AdminHighlightDto | null> {
+): Promise<AdminMutationResult<AdminHighlightDto> | null> {
   try {
     const res = await post("/highlights", req);
-    if (!res.ok) throw new Error("Failed to create highlight");
-    return await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { ok: false, message: err?.message ?? "Failed to create highlight." };
+    }
+    return { ok: true, data: await res.json() };
   } catch (err) {
     console.error("adminCreateHighlight error:", err);
     return null;
@@ -598,11 +609,14 @@ export async function adminCreateHighlight(
 export async function adminUpdateHighlight(
   id: number,
   req: UpdateHighlightRequest
-): Promise<AdminHighlightDto | null> {
+): Promise<AdminMutationResult<AdminHighlightDto> | null> {
   try {
     const res = await put(`/highlights/${id}`, req);
-    if (!res.ok) throw new Error("Failed to update highlight");
-    return await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { ok: false, message: err?.message ?? "Failed to update highlight." };
+    }
+    return { ok: true, data: await res.json() };
   } catch (err) {
     console.error("adminUpdateHighlight error:", err);
     return null;
@@ -656,11 +670,14 @@ export async function adminGetSocialLinks(): Promise<AdminSocialLinkDto[]> {
 
 export async function adminCreateSocialLink(
   req: CreateSocialLinkRequest
-): Promise<AdminSocialLinkDto | null> {
+): Promise<AdminMutationResult<AdminSocialLinkDto> | null> {
   try {
     const res = await post("/social-links", req);
-    if (!res.ok) throw new Error("Failed to create social link");
-    return await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { ok: false, message: err?.message ?? "Failed to create social link." };
+    }
+    return { ok: true, data: await res.json() };
   } catch (err) {
     console.error("adminCreateSocialLink error:", err);
     return null;
@@ -670,11 +687,14 @@ export async function adminCreateSocialLink(
 export async function adminUpdateSocialLink(
   id: number,
   req: UpdateSocialLinkRequest
-): Promise<AdminSocialLinkDto | null> {
+): Promise<AdminMutationResult<AdminSocialLinkDto> | null> {
   try {
     const res = await put(`/social-links/${id}`, req);
-    if (!res.ok) throw new Error("Failed to update social link");
-    return await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { ok: false, message: err?.message ?? "Failed to update social link." };
+    }
+    return { ok: true, data: await res.json() };
   } catch (err) {
     console.error("adminUpdateSocialLink error:", err);
     return null;

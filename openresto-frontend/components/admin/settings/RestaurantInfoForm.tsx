@@ -11,6 +11,7 @@ import {
   uploadMenuFile,
 } from "@/api/restaurants";
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
+import { isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
@@ -300,6 +301,18 @@ export function RestaurantInfoForm({
 
   const save = async () => {
     if (!name.trim()) return;
+    // MenuUrl pre-flight (mirrors backend UrlValidator): an external link must be a valid
+    // absolute http(s) URL. The instance's own served-menu path (/media/...) is exempt and
+    // never reaches here as a typed value (it's set by the upload flow), but guard anyway.
+    const trimmedMenuUrl = menuUrl.trim();
+    if (
+      trimmedMenuUrl &&
+      !isServedMenuFile(trimmedMenuUrl) &&
+      !isValidUrl(trimmedMenuUrl, WEB_SCHEMES)
+    ) {
+      setMenuMsg({ text: "Menu URL must be a valid http(s) link.", ok: false });
+      return;
+    }
     // Flush any pending tag the user typed but didn't press Enter on
     const finalTags = tagInput.trim() ? [...new Set([...tags, tagInput.trim()])] : tags;
     if (tagInput.trim()) setTagInput("");
@@ -439,7 +452,10 @@ export function RestaurantInfoForm({
           ) : (
             <Input
               value={menuUrl}
-              onChangeText={setMenuUrl}
+              onChangeText={(v) => {
+                setMenuUrl(v);
+                if (menuMsg && !menuMsg.ok) setMenuMsg(null);
+              }}
               placeholder="https://your-menu-url.com/menu.pdf"
               autoCapitalize="none"
               autoCorrect={false}

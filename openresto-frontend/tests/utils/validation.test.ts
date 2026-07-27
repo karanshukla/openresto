@@ -1,4 +1,10 @@
-import { isValidEmail, validatePasswordChange } from "@/utils/validation";
+import {
+  isValidEmail,
+  isValidUrl,
+  validatePasswordChange,
+  WEB_AND_CONTACT_SCHEMES,
+  WEB_SCHEMES,
+} from "@/utils/validation";
 
 describe("validation utility - isValidEmail", () => {
   it.each([
@@ -21,6 +27,44 @@ describe("validation utility - isValidEmail", () => {
     "nouser@.com",
   ])("rejects %p", (email) => {
     expect(isValidEmail(email)).toBe(false);
+  });
+});
+
+describe("validation utility - isValidUrl", () => {
+  it.each([
+    "https://example.com",
+    "http://localhost:8081/menu.pdf",
+    "https://instagram.com/yourresto",
+    "mailto:hello@example.com",
+    "tel:+15551234567",
+    "sms:+15551234567",
+    "  https://example.com  ",
+  ])("accepts %p (default web+contact schemes)", (url) => {
+    expect(isValidUrl(url)).toBe(true);
+  });
+
+  it.each([
+    "",
+    "   ",
+    "asdf",
+    "javascript:alert(1)",
+    "data:text/html,<script>",
+    "/media/menu-1.pdf",
+    "//example.com/menu",
+    "ftp://example.com",
+  ])("rejects %p", (url) => {
+    expect(isValidUrl(url)).toBe(false);
+  });
+
+  it("respects a custom allow-list (web-only)", () => {
+    expect(isValidUrl("https://example.com", WEB_SCHEMES)).toBe(true);
+    expect(isValidUrl("mailto:hello@example.com", WEB_SCHEMES)).toBe(false);
+    expect(isValidUrl("tel:+15551234567", WEB_SCHEMES)).toBe(false);
+  });
+
+  it("exports the scheme constants", () => {
+    expect(WEB_AND_CONTACT_SCHEMES).toEqual(["http:", "https:", "mailto:", "tel:", "sms:"]);
+    expect(WEB_SCHEMES).toEqual(["http:", "https:"]);
   });
 });
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -148,5 +149,191 @@ public class SocialLinkServiceTests
         bool result = await svc.DeleteAsync(9999);
 
         Assert.False(result);
+    }
+
+    // ── Validation (CreateAsync) ────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task CreateAsync_RejectsEmptyLabel(string? label)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(CreateAsync_RejectsEmptyLabel)}_{label}");
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = label!,
+            Url = "https://example.com",
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+        Assert.Contains("label cannot be empty", ex.Message);
+        Assert.Equal(0, await db.SocialLinks.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateAsync_RejectsOversizedLabel()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_RejectsOversizedLabel));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = new string('A', 61),
+            Url = "https://example.com",
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+        Assert.Contains("cannot exceed 60", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task CreateAsync_RejectsEmptyUrl(string? url)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(CreateAsync_RejectsEmptyUrl)}_{url}");
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = "Ok",
+            Url = url!,
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+    }
+
+    [Theory]
+    [InlineData("asdf")]                    // bare string, not a URL
+    [InlineData("javascript:alert(1)")]     // dangerous scheme
+    [InlineData("/media/menu-1.pdf")]       // relative path (social links need absolute)
+    [InlineData("ftp://example.com")]       // disallowed scheme
+    public async Task CreateAsync_RejectsInvalidUrl(string url)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(CreateAsync_RejectsInvalidUrl)}_{url}");
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = "Ok",
+            Url = url,
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+        Assert.Contains("valid absolute URL", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("not-a-real-icon")]
+    [InlineData("")]
+    public async Task CreateAsync_RejectsUnknownIconKey(string iconKey)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(CreateAsync_RejectsUnknownIconKey)}_{iconKey}");
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = "Ok",
+            Url = "https://example.com",
+            IconKey = iconKey,
+            SortOrder = 0,
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+        Assert.Contains("Icon key", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("mailto:hello@example.com")]
+    [InlineData("tel:+15551234567")]
+    [InlineData("sms:+15551234567")]
+    public async Task CreateAsync_AcceptsValidUrlSchemes(string url)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(CreateAsync_AcceptsValidUrlSchemes)}_{url}");
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = "Ok",
+            Url = url,
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        SocialLinkDto result = await svc.CreateAsync(req);
+
+        Assert.Equal(url, result.Url);
+    }
+
+    [Fact]
+    public async Task CreateAsync_TrimsLabelAndUrl()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_TrimsLabelAndUrl));
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new CreateSocialLinkRequest
+        {
+            Label = "  Instagram  ",
+            Url = "  https://instagram.com/resto  ",
+            IconKey = "logo-instagram",
+            SortOrder = 0,
+        };
+
+        SocialLinkDto result = await svc.CreateAsync(req);
+
+        Assert.Equal("Instagram", result.Label);
+        Assert.Equal("https://instagram.com/resto", result.Url);
+    }
+
+    // ── Validation (UpdateAsync) ────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_RejectsInvalidUrl()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsInvalidUrl));
+        db.SocialLinks.Add(new SocialLink { Label = "Old", Url = "https://old.example.com", SortOrder = 0 });
+        await db.SaveChangesAsync();
+        int id = db.SocialLinks.First().Id;
+
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new UpdateSocialLinkRequest
+        {
+            Label = "New",
+            Url = "javascript:alert(1)",
+            IconKey = "link-outline",
+            SortOrder = 0,
+        };
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(id, req));
+
+        // Entity is unchanged — the validation throws before any assignment.
+        SocialLink stored = await db.SocialLinks.FirstAsync();
+        Assert.Equal("https://old.example.com", stored.Url);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsUnknownIconKey()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsUnknownIconKey));
+        db.SocialLinks.Add(new SocialLink { Label = "Old", Url = "https://old.example.com", SortOrder = 0 });
+        await db.SaveChangesAsync();
+        int id = db.SocialLinks.First().Id;
+
+        var svc = new SocialLinkService(new SocialLinkRepository(db));
+        var req = new UpdateSocialLinkRequest
+        {
+            Label = "New",
+            Url = "https://new.example.com",
+            IconKey = "not-a-real-icon",
+            SortOrder = 0,
+        };
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(id, req));
     }
 }

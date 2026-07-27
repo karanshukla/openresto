@@ -854,13 +854,16 @@ describe("adminCreateHighlight", () => {
     const created = { id: 5, ...req };
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => created });
     const result = await adminCreateHighlight(req);
-    expect(result).toEqual(created);
+    expect(result).toEqual({ ok: true, data: created });
   });
 
-  it("returns null on non-ok response", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
+  it("returns the server error message on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Highlight title cannot exceed 60 characters." }),
+    });
     const result = await adminCreateHighlight(req);
-    expect(result).toBeNull();
+    expect(result).toEqual({ ok: false, message: "Highlight title cannot exceed 60 characters." });
   });
 
   it("returns null on network error", async () => {
@@ -877,13 +880,16 @@ describe("adminUpdateHighlight", () => {
     const updated = { id: 3, ...req };
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
     const result = await adminUpdateHighlight(3, req);
-    expect(result).toEqual(updated);
+    expect(result).toEqual({ ok: true, data: updated });
   });
 
-  it("returns null on non-ok response", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
+  it("returns the server error message on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Icon key must be one of the supported icons." }),
+    });
     const result = await adminUpdateHighlight(3, req);
-    expect(result).toBeNull();
+    expect(result).toEqual({ ok: false, message: "Icon key must be one of the supported icons." });
   });
 
   it("returns null on network error", async () => {
@@ -1200,16 +1206,22 @@ describe("adminCreateSocialLink", () => {
 
     const result = await adminCreateSocialLink(req);
 
-    expect(result).toEqual(created);
+    expect(result).toEqual({ ok: true, data: created });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/social-links");
     expect(opts.method).toBe("POST");
     expect(JSON.parse(opts.body)).toEqual(req);
   });
 
-  it("returns null on non-ok response", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await adminCreateSocialLink(req)).toBeNull();
+  it("returns the server error message on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Social link URL must be a valid absolute URL." }),
+    });
+    expect(await adminCreateSocialLink(req)).toEqual({
+      ok: false,
+      message: "Social link URL must be a valid absolute URL.",
+    });
   });
 
   it("returns null on network error", async () => {
@@ -1232,16 +1244,22 @@ describe("adminUpdateSocialLink", () => {
 
     const result = await adminUpdateSocialLink(3, req);
 
-    expect(result).toEqual(updated);
+    expect(result).toEqual({ ok: true, data: updated });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/social-links/3");
     expect(opts.method).toBe("PUT");
     expect(JSON.parse(opts.body)).toEqual(req);
   });
 
-  it("returns null on non-ok response", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await adminUpdateSocialLink(3, req)).toBeNull();
+  it("returns the server error message on non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Social link label cannot be empty." }),
+    });
+    expect(await adminUpdateSocialLink(3, req)).toEqual({
+      ok: false,
+      message: "Social link label cannot be empty.",
+    });
   });
 
   it("returns null on network error", async () => {

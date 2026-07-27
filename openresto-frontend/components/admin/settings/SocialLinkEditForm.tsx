@@ -65,6 +65,7 @@ export function SocialLinkEditForm({
   borderColor,
   mutedColor,
   colors,
+  error,
 }: {
   state: EditState;
   onChange: (s: EditState) => void;
@@ -76,6 +77,8 @@ export function SocialLinkEditForm({
   borderColor: string;
   mutedColor: string;
   colors: ThemeColors;
+  /** Inline validation/server error shown above the action row. Null/undefined hides it. */
+  error?: string | null;
 }) {
   return (
     <View
@@ -138,6 +141,8 @@ export function SocialLinkEditForm({
           keyboardType="url"
         />
       </View>
+
+      {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
 
       {/* Actions */}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>

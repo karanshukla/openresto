@@ -292,6 +292,66 @@ public class RestaurantManagementServiceTests
         Assert.Null(result.MenuUrl);
     }
 
+    [Theory]
+    [InlineData("asdf")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("ftp://example.com/menu.pdf")]
+    [InlineData("mailto:hello@example.com")]
+    public async Task UpdateAsync_RejectsInvalidMenuUrl(string menuUrl)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_RejectsInvalidMenuUrl)}_{menuUrl}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MenuUrl = menuUrl,
+        }));
+
+        // Unchanged — validation throws before assignment.
+        Assert.Null((await db.Restaurants.FindAsync(1))!.MenuUrl);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AcceptsServedMenuPath()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_AcceptsServedMenuPath));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        // The /media/menu-<id>.pdf path is written by MediaService.UploadMenuAsync and must
+        // not be rejected by URL validation (it's a relative served-file path, not absolute).
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MenuUrl = "/media/menu-1.pdf?v=123",
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("/media/menu-1.pdf?v=123", result.MenuUrl);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AcceptsExternalHttpsMenuUrl()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_AcceptsExternalHttpsMenuUrl));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            MenuUrl = "https://example.com/menu.pdf",
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("https://example.com/menu.pdf", result.MenuUrl);
+    }
+
     [Fact]
     public async Task UpdateAsync_Keeps_Description_WhenNull()
     {

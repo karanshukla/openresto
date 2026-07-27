@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using OpenRestoApi.Core.Application.DTOs;
 
 namespace OpenRestoApi.Tests.Integration;
@@ -139,5 +140,110 @@ public class HighlightsControllerTests(TestWebAppFactory factory) : IClassFixtur
         HttpClient client = _factory.CreateAuthenticatedClient();
         HttpResponseMessage response = await client.DeleteAsync("/api/highlights/99999");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── Validation (Create) ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Create_EmptyTitle_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = "   ",
+            body = "Body",
+            iconKey = "star-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("title cannot be empty", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_OversizedTitle_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = new string('A', 61),
+            body = "Body",
+            iconKey = "star-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_OversizedBody_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = "Ok",
+            body = new string('B', 501),
+            iconKey = "star-outline",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("asdf")]
+    public async Task Create_InvalidLink_Returns400(string link)
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = "Ok",
+            body = "Body",
+            iconKey = "star-outline",
+            sortOrder = 0,
+            link = link,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("valid absolute URL", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_UnknownIconKey_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = "Ok",
+            body = "Body",
+            iconKey = "not-a-real-icon",
+            sortOrder = 0,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Icon key", body.GetProperty("message").GetString()!);
+    }
+
+    [Fact]
+    public async Task Create_ValidHighlightWithLink_Returns201()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/highlights", new
+        {
+            title = "Award Winner",
+            body = "We won!",
+            iconKey = "trophy-outline",
+            sortOrder = 0,
+            link = "https://example.com/awards",
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        HighlightDto? dto = await response.Content.ReadFromJsonAsync<HighlightDto>();
+        Assert.NotNull(dto);
+        Assert.Equal("https://example.com/awards", dto.Link);
     }
 }
