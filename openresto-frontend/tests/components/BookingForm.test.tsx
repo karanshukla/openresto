@@ -31,6 +31,13 @@ jest.mock("react-native", () => {
   return rn;
 });
 
+// Stub social-links fetch so the large-party notice modal renders without a
+// network call. Returns no contact links by default; individual tests override.
+jest.mock("@/api/restaurants", () => ({
+  ...jest.requireActual("@/api/restaurants"),
+  fetchSocialLinks: jest.fn(() => Promise.resolve([])),
+}));
+
 describe("BookingForm", () => {
   const mockRestaurant = {
     id: 1,
@@ -98,28 +105,28 @@ describe("BookingForm", () => {
     );
   });
 
-  it("shows warning when seats exceed table capacity", async () => {
+  it("shows warning when the selected table can't seat the party", async () => {
+    // This section has only a 2-seat table while the location's largest (in
+    // Main) seats 4, so booking 3 guests here lands the auto-select on an
+    // undersized table — the per-table confirm path, distinct from the global
+    // large-party guard (3 <= 4 max capacity).
     const onSubmit = jest.fn();
-    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+    const restaurant = {
+      ...mockRestaurant,
+      sections: [
+        mockRestaurant.sections[0],
+        { id: 11, name: "Patio", tables: [{ id: 102, name: "P1", seats: 2, sectionId: 11 }] },
+      ],
+    };
+    renderWithProviders(<BookingForm restaurant={restaurant} onSubmit={onSubmit} />);
 
-    // Switch out of "Any section" so the explicit table dropdown is visible.
-    selectMainSection();
+    // Open the section list and pick the Patio (2-seat-only) section.
+    fireEvent.press(screen.getByText("Any section"));
+    fireEvent.press(screen.getByText("Patio"));
 
-    // Select 4 guests (Table T1 has 2, T2 has 4).
-    // The component defaults to best fitting table.
-    // Let's force a smaller table if we can.
-    // Actually, it auto-selects. Let's change guests to 4, it should pick T2.
-    // Then change guests back to 2, it should pick T1.
-
-    // Manual selection of table:
-    fireEvent.press(screen.getByText("T1 (2 seats)")); // Opens Select
-    // In our Select mock/impl, we just need to find the option.
-    fireEvent.press(screen.getByText("T2 (4 seats)"));
-
-    // Now change guests to 5 (more than T2)
-    // We need to mock seat options or just find the one.
+    // 3 guests > Patio's 2-seat table, but <= the location's 4-seat max.
     fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("5 seats"));
+    fireEvent.press(screen.getByText("3 seats"));
 
     fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
@@ -132,16 +139,20 @@ describe("BookingForm", () => {
   it("does not submit when the seats-exceed-capacity confirmation is declined", async () => {
     (window as any).confirm = jest.fn(() => false);
     const onSubmit = jest.fn();
-    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+    const restaurant = {
+      ...mockRestaurant,
+      sections: [
+        mockRestaurant.sections[0],
+        { id: 11, name: "Patio", tables: [{ id: 102, name: "P1", seats: 2, sectionId: 11 }] },
+      ],
+    };
+    renderWithProviders(<BookingForm restaurant={restaurant} onSubmit={onSubmit} />);
 
-    // Switch out of "Any section" so the explicit table dropdown is visible.
-    selectMainSection();
+    fireEvent.press(screen.getByText("Any section"));
+    fireEvent.press(screen.getByText("Patio"));
 
-    // Bumping guests to 5 (above every table's capacity) re-runs
-    // auto-selection, which falls back to the first table (T1, 2 seats),
-    // so submitting triggers the capacity-warning confirm().
     fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("5 seats"));
+    fireEvent.press(screen.getByText("3 seats"));
 
     fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
@@ -149,6 +160,77 @@ describe("BookingForm", () => {
 
     expect(window.confirm).toHaveBeenCalled();
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  // ── Large-party guard (interim: block parties bigger than any single table) ─
+
+  it("blocks submission and shows the large-party notice when the party exceeds the largest table", async () => {
+    const onSubmit = jest.fn();
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
+
+    // mockRestaurant's largest table seats 4. Bump to 5 to trip the global guard.
+    fireEvent.press(screen.getByText("2 seats"));
+    fireEvent.press(screen.getByText("5 seats"));
+
+    // The inline bubble renders with the cap copy…
+    expect(screen.getAllByText(/Our largest table seats 4/).length).toBeGreaterThan(0);
+    // …and the modal auto-opens on the over-capacity change.
+    await waitFor(() => expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy());
+
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
+    fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
+    fireEvent.press(screen.getByText("Confirm Booking"));
+
+    // Guard short-circuits isValid, so the submit handler never runs.
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("reopens the large-party modal when tapping the inline bubble", async () => {
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+
+    fireEvent.press(screen.getByText("2 seats"));
+    fireEvent.press(screen.getByText("5 seats"));
+
+    await waitFor(() => expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy());
+    // Dismiss, then re-open via the bubble's Contact us affordance.
+    fireEvent.press(screen.getByText("Got it"));
+    expect(screen.queryByText(/needs to be arranged directly/)).toBeNull();
+
+    fireEvent.press(screen.getByText(/Contact us/));
+    expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy();
+  });
+
+  it("lists every configured social link as a contact option in the modal", async () => {
+    const { fetchSocialLinks } = require("@/api/restaurants");
+    (fetchSocialLinks as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 1,
+        label: "Call us",
+        url: "tel:+15551234567",
+        iconKey: "call-outline",
+        sortOrder: 2,
+      },
+      {
+        id: 2,
+        label: "Email",
+        url: "mailto:hi@resto.com",
+        iconKey: "mail-outline",
+        sortOrder: 1,
+      },
+    ]);
+
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+
+    fireEvent.press(screen.getByText("2 seats"));
+    fireEvent.press(screen.getByText("5 seats"));
+
+    // Both configured links render (sorted by sortOrder), regardless of icon
+    // key — the restaurant controls what shows up. ("Email" alone collides
+    // with the email input field, so assert via a more specific text.)
+    await waitFor(() => expect(screen.getByText("Call us")).toBeTruthy());
+    expect(screen.getAllByText("Email").length).toBeGreaterThan(0);
+    // The empty-state fallback must NOT render.
+    expect(screen.queryByText(/No contact details are listed/)).toBeNull();
   });
 
   it("disables submit when invalid", () => {

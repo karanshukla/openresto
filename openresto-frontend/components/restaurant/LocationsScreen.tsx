@@ -127,7 +127,8 @@ export default function LocationsScreen({
                 <LocationListItem
                   key={r.id}
                   restaurant={r}
-                  defaultExpanded={highlightId === r.id}
+                  defaultExpanded={highlightId === r.id || restaurants.length === 1}
+                  scrollToFormOnMount={highlightId === r.id}
                   initialTime={highlightId === r.id ? initialTime : undefined}
                   initialSeats={highlightId === r.id ? initialSeats : undefined}
                   registerRef={registerRef}
