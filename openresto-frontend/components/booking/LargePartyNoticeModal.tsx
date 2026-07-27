@@ -6,17 +6,6 @@ import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 
-/**
- * Icon keys that represent a direct contact channel (vs. social/promo links).
- * Surfaced as tappable CTAs so large parties can reach the restaurant directly.
- */
-const CONTACT_ICON_KEYS = new Set([
-  "call-outline",
-  "mail-outline",
-  "logo-whatsapp",
-  "chatbubble-outline",
-]);
-
 interface LargePartyNoticeModalProps {
   visible: boolean;
   /** Largest single-table capacity at the location, for the message copy. */
@@ -27,9 +16,9 @@ interface LargePartyNoticeModalProps {
 /**
  * Notice shown when a party is too large for any single table at the location.
  * Matches the AlertModal card pattern, with the addition of contact CTAs pulled
- * from the restaurant's social links (phone/email/etc.). Contact links are
- * fetched lazily on first show so a booking form that never triggers the guard
- * pays nothing.
+ * from the restaurant's social links (whatever the restaurant has configured —
+ * phone, email, WhatsApp, Instagram, etc.). Fetched lazily on first show so a
+ * booking form that never triggers the guard pays nothing.
  */
 export default function LargePartyNoticeModal({
   visible,
@@ -37,14 +26,16 @@ export default function LargePartyNoticeModal({
   onClose,
 }: LargePartyNoticeModalProps) {
   const { colors, primaryColor } = useAppTheme();
-  const [contactLinks, setContactLinks] = useState<SocialLinkDto[]>([]);
+  const [contactLinks, setContactLinks] = useState<SocialLinkDto[] | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     let cancelled = false;
     fetchSocialLinks().then((links) => {
       if (cancelled) return;
-      setContactLinks(links.filter((l) => CONTACT_ICON_KEYS.has(l.iconKey)));
+      // Surface every configured link; the restaurant controls what shows up.
+      // Sorted by the admin-set order, same as the footer.
+      setContactLinks([...links].sort((a, b) => a.sortOrder - b.sortOrder));
     });
     return () => {
       cancelled = true;
@@ -64,29 +55,34 @@ export default function LargePartyNoticeModal({
             arranged directly. Please get in touch and we&apos;ll happily sort something out.
           </ThemedText>
 
-          {contactLinks.length > 0 && (
-            <View style={styles.contacts}>
-              {contactLinks.map((link) => (
-                <Pressable
-                  key={link.id}
-                  style={[styles.contactBtn, { borderColor: colors.border }]}
-                  onPress={() => Linking.openURL(link.url)}
-                  accessibilityRole="link"
-                  accessibilityLabel={link.label}
-                  hitSlop={6}
-                >
-                  <Ionicons
-                    name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                    size={16}
-                    color={primaryColor}
-                  />
-                  <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
-                    {link.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          {contactLinks !== null &&
+            (contactLinks.length > 0 ? (
+              <View style={styles.contacts}>
+                {contactLinks.map((link) => (
+                  <Pressable
+                    key={link.id}
+                    style={[styles.contactBtn, { borderColor: colors.border }]}
+                    onPress={() => Linking.openURL(link.url)}
+                    accessibilityRole="link"
+                    accessibilityLabel={link.label}
+                    hitSlop={6}
+                  >
+                    <Ionicons
+                      name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
+                      size={16}
+                      color={primaryColor}
+                    />
+                    <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                      {link.label}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
+                No contact details are listed yet — please reach out to us directly.
+              </ThemedText>
+            ))}
 
           <Pressable style={[styles.btn, { backgroundColor: primaryColor }]} onPress={onClose}>
             <ThemedText style={styles.btnText}>Got it</ThemedText>
@@ -121,6 +117,11 @@ const styles = StyleSheet.create({
   },
   contacts: {
     gap: theme.spacing.sm,
+  },
+  noContacts: {
+    fontSize: 13,
+    fontStyle: "italic",
+    lineHeight: 18,
   },
   contactBtn: {
     flexDirection: "row",

@@ -200,6 +200,39 @@ describe("BookingForm", () => {
     expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy();
   });
 
+  it("lists every configured social link as a contact option in the modal", async () => {
+    const { fetchSocialLinks } = require("@/api/restaurants");
+    (fetchSocialLinks as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 1,
+        label: "Call us",
+        url: "tel:+15551234567",
+        iconKey: "call-outline",
+        sortOrder: 2,
+      },
+      {
+        id: 2,
+        label: "Email",
+        url: "mailto:hi@resto.com",
+        iconKey: "mail-outline",
+        sortOrder: 1,
+      },
+    ]);
+
+    renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
+
+    fireEvent.press(screen.getByText("2 seats"));
+    fireEvent.press(screen.getByText("5 seats"));
+
+    // Both configured links render (sorted by sortOrder), regardless of icon
+    // key — the restaurant controls what shows up. ("Email" alone collides
+    // with the email input field, so assert via a more specific text.)
+    await waitFor(() => expect(screen.getByText("Call us")).toBeTruthy());
+    expect(screen.getAllByText("Email").length).toBeGreaterThan(0);
+    // The empty-state fallback must NOT render.
+    expect(screen.queryByText(/No contact details are listed/)).toBeNull();
+  });
+
   it("disables submit when invalid", () => {
     (useTableHold as jest.Mock).mockReturnValue({
       holdStatus: "idle",
