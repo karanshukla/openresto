@@ -6,7 +6,7 @@ import Select from "../common/Select";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
-import { Platform, Pressable, StyleSheet, View, ActivityIndicator } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
@@ -18,6 +18,7 @@ import { getHoursForDate, HoursSource } from "@/utils/openingHours";
 import { isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
 import WalkInDaysBanner from "./WalkInDaysBanner";
+import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
 
 const isWeb = Platform.OS === "web";
@@ -387,14 +388,6 @@ export default function BookingForm({
             onSelect={(v) => setSeats(v as number)}
             options={seatOptions}
           />
-          {partyTooLarge && (
-            <Pressable onPress={() => setLargePartyNoticeOpen(true)} hitSlop={6}>
-              <ThemedText style={[styles.largePartyHint, { color: PRIMARY }]}>
-                Our largest table seats {maxTableCapacity}. Please contact us to arrange a larger
-                party.
-              </ThemedText>
-            </Pressable>
-          )}
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
@@ -407,6 +400,13 @@ export default function BookingForm({
           />
         </View>
       </View>
+
+      {partyTooLarge && (
+        <LargePartyNotice
+          maxCapacity={maxTableCapacity}
+          onContact={() => setLargePartyNoticeOpen(true)}
+        />
+      )}
 
       {/* Row 2: Time + Section */}
       <View style={isWeb ? styles.fieldRow : undefined}>
@@ -451,7 +451,7 @@ export default function BookingForm({
               {resolvedTableId ? "" : " across all sections"}.
             </ThemedText>
           ) : eligibleTables.length === 0 ? (
-            <ThemedText style={[styles.noTables, { color: PRIMARY }]}>
+            <ThemedText style={[styles.noTables, { color: colors.muted }]}>
               No tables available for {seats} guests.
             </ThemedText>
           ) : (
@@ -578,12 +578,6 @@ const styles = StyleSheet.create({
   },
   noTables: {
     fontSize: 13,
-    textDecorationLine: "underline",
-  },
-  largePartyHint: {
-    fontSize: 13,
-    lineHeight: 18,
-    textDecorationLine: "underline",
   },
   autoAssignHint: {
     fontSize: 13,

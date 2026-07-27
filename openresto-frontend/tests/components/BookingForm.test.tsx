@@ -172,12 +172,10 @@ describe("BookingForm", () => {
     fireEvent.press(screen.getByText("2 seats"));
     fireEvent.press(screen.getByText("5 seats"));
 
-    await waitFor(() => {
-      // Both the inline hint and the auto-opened modal render the cap copy.
-      expect(screen.getAllByText(/Our largest table seats 4/).length).toBeGreaterThan(0);
-    });
-    // The modal auto-opens on the over-capacity change.
-    expect(screen.getByText("Large party")).toBeTruthy();
+    // The inline bubble renders with the cap copy…
+    expect(screen.getAllByText(/Our largest table seats 4/).length).toBeGreaterThan(0);
+    // …and the modal auto-opens on the over-capacity change.
+    await waitFor(() => expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy());
 
     fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
@@ -187,19 +185,19 @@ describe("BookingForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("reopens the large-party modal when tapping the inline notice", async () => {
+  it("reopens the large-party modal when tapping the inline bubble", async () => {
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
 
     fireEvent.press(screen.getByText("2 seats"));
     fireEvent.press(screen.getByText("5 seats"));
 
-    await waitFor(() => expect(screen.getByText("Large party")).toBeTruthy());
-    // Dismiss, then re-open via the inline hint.
+    await waitFor(() => expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy());
+    // Dismiss, then re-open via the bubble's Contact us affordance.
     fireEvent.press(screen.getByText("Got it"));
-    expect(screen.queryByText("Large party")).toBeNull();
+    expect(screen.queryByText(/needs to be arranged directly/)).toBeNull();
 
-    fireEvent.press(screen.getByText(/Please contact us to arrange a larger party/));
-    expect(screen.getByText("Large party")).toBeTruthy();
+    fireEvent.press(screen.getByText(/Contact us/));
+    expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy();
   });
 
   it("disables submit when invalid", () => {
