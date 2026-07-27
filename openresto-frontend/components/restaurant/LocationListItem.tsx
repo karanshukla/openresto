@@ -31,6 +31,7 @@ import { convertLocalToUtc } from "@/utils/date";
 export default function LocationListItem({
   restaurant,
   defaultExpanded = false,
+  scrollToFormOnMount = false,
   initialTime,
   initialSeats,
   registerRef,
@@ -40,6 +41,12 @@ export default function LocationListItem({
 }: {
   restaurant: RestaurantDto;
   defaultExpanded?: boolean;
+  /**
+   * Auto-scroll the booking form into view on mount. Distinct from
+   * `defaultExpanded`: a single-location list is expanded by default for
+   * browsing, but shouldn't force-scroll the user down to the form on load.
+   */
+  scrollToFormOnMount?: boolean;
   initialTime?: string;
   initialSeats?: number;
   registerRef: (id: number, ref: View | null) => void;
@@ -78,7 +85,7 @@ export default function LocationListItem({
   const registerAndMaybeScrollForm = (ref: View | null) => {
     formAreaRef.current = ref;
     registerFormRef?.(restaurant.id, ref);
-    if (defaultExpanded && ref && !didInitialScroll.current && onScrollToForm) {
+    if (scrollToFormOnMount && ref && !didInitialScroll.current && onScrollToForm) {
       didInitialScroll.current = true;
       onScrollToForm(restaurant.id);
     }

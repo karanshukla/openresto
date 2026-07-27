@@ -117,6 +117,7 @@ describe("LocationListItem", () => {
       <LocationListItem
         restaurant={mockRestaurant as any}
         defaultExpanded
+        scrollToFormOnMount
         registerRef={registerRef}
         registerFormRef={registerFormRef}
         onExpand={onExpand}

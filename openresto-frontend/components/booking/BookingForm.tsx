@@ -6,7 +6,7 @@ import Select from "../common/Select";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
-import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
+import { Platform, Pressable, StyleSheet, View, ActivityIndicator } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
@@ -18,6 +18,7 @@ import { getHoursForDate, HoursSource } from "@/utils/openingHours";
 import { isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
 import WalkInDaysBanner from "./WalkInDaysBanner";
+import LargePartyNoticeModal from "./LargePartyNoticeModal";
 
 const isWeb = Platform.OS === "web";
 
@@ -98,6 +99,13 @@ export default function BookingForm({
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
+  // Largest single-table capacity at this location. Parties above this can't be
+  // seated at one table and must be arranged directly (table merging isn't yet
+  // supported). Computed client-side from the nested restaurant payload — no
+  // extra fetch needed.
+  const maxTableCapacity = allTables.length > 0 ? Math.max(...allTables.map((t) => t.seats)) : 0;
+  const partyTooLarge = maxTableCapacity > 0 && seats > maxTableCapacity;
+  const [largePartyNoticeOpen, setLargePartyNoticeOpen] = useState(false);
   // "Any section" is the default option (value 0); concrete sections follow. When selected,
   // the form hides the table dropdown and lets the server pick the best available table.
   const sectionOptions = [
@@ -250,6 +258,14 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seats]);
 
+  // When the party size exceeds the largest table, surface the contact-restaurant
+  // notice so the user knows why booking is blocked. Re-opens on each over-capacity
+  // change (e.g. bumping from one too-big value to another).
+  useEffect(() => {
+    if (partyTooLarge) setLargePartyNoticeOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partyTooLarge, maxTableCapacity]);
+
   // ── Options ──────────────────────────────────────────────────────────────────
 
   const seatOptions = [...Array(10).keys()].map((i) => ({
@@ -294,6 +310,7 @@ export default function BookingForm({
     selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
 
   const isValid =
+    !partyTooLarge && // block large parties — no single table can seat them
     (isAutoAssign || !!tableId) && // table dropdown hidden for "Any section" — auto-hold still gates
     !!date &&
     !!time &&
@@ -370,6 +387,14 @@ export default function BookingForm({
             onSelect={(v) => setSeats(v as number)}
             options={seatOptions}
           />
+          {partyTooLarge && (
+            <Pressable onPress={() => setLargePartyNoticeOpen(true)} hitSlop={6}>
+              <ThemedText style={[styles.largePartyHint, { color: colors.error }]}>
+                Our largest table seats {maxTableCapacity}. Please contact us to arrange a larger
+                party.
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
         <View style={[styles.field, isWeb && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
@@ -513,6 +538,12 @@ export default function BookingForm({
       {!submitting && holdStatus !== "held" && (isAutoAssign || tableId) && date && time && (
         <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
       )}
+
+      <LargePartyNoticeModal
+        visible={largePartyNoticeOpen}
+        maxCapacity={maxTableCapacity}
+        onClose={() => setLargePartyNoticeOpen(false)}
+      />
     </View>
   );
 }
@@ -548,6 +579,11 @@ const styles = StyleSheet.create({
   noTables: {
     color: "#e53e3e",
     fontSize: 13,
+  },
+  largePartyHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    textDecorationLine: "underline",
   },
   autoAssignHint: {
     fontSize: 13,
