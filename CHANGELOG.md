@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-30
+
+Hello! This release includes an Expo upgrade, routine upgrades, as well as a couple new features below.
+
+### Added
+
+- **Large-party guard & single-location auto-expand** (#261) — booking submission is now blocked when the party size exceeds the largest table at the location, with an inline hint and a modal directing guests to contact the restaurant directly (table merging isn't supported yet). Single-location instances now auto-expand the location card instead of requiring an extra tap.
+- **Social links, highlights, and menu URL validation** (#264) — server-side validation for Social Links, Highlights, and the restaurant `MenuUrl` field, following the existing `ValidationException` pattern; blocks unsafe schemes like `javascript:`.
+
+### Fixed
+
+- **Booking time defaulted to midnight** (#257) — `AvailabilityService` and the time picker both leaked a `00:00` default; restaurants now default to a sensible 09:00 open time.
+- **Pre-commit linter scope** (#260) — `oxlint --fix` ran against the whole frontend project instead of just staged files, occasionally rewriting unrelated source files during unrelated commits.
+
+### Changed
+
+- **Upgraded Expo SDK 56 → 57** (#267) — `expo`, `react-native`, `typescript`, and related packages bumped to their SDK 57-compatible versions.
+- Dependency security patches (#259) — `brace-expansion` and `js-yaml` overrides to close two high-severity Dependabot alerts.
+- Routine low-risk dependency bumps across backend (NuGet) and frontend/root (npm) (#266).
+
 ## [1.4.1] - 2026-07-26
 
 Hello! OpenResto is in a really good state right now, so no major changes today, but I'm upgrading from Node 20 to Node 24 (which is in LTS).
