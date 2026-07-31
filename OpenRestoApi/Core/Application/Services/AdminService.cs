@@ -87,7 +87,7 @@ public class AdminService(
             occupancyDates.Add(dayStart.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         }
 
-        int maxCount = rawCounts.Count > 0 ? rawCounts.Max() : 0;
+        int maxCount = MaxOrZero(rawCounts);
         List<int> occupancyData = rawCounts
             .Select(count => maxCount > 0 ? (int)Math.Round((double)count / maxCount * 100) : 0)
             .ToList();
@@ -106,6 +106,13 @@ public class AdminService(
             TodayBookingsList = [.. todayBookingsList.OrderBy(b => b.Date)],
         };
     }
+
+    // The loop that builds rawCounts always runs exactly 7 times (i = 6..0), so it can never
+    // be empty here — the `Count > 0` guard is unreachable defensive coding for a scenario
+    // (an empty rawCounts) that this call site can't produce. Isolated into its own method so
+    // the exclusion doesn't hide coverage on GetOverviewAsync's other, genuinely-tested branches.
+    [ExcludeFromCodeCoverage(Justification = "Unreachable: the 7-iteration loop above always populates rawCounts, so Count is never 0 at this call site.")]
+    private static int MaxOrZero(List<int> counts) => counts.Count > 0 ? counts.Max() : 0;
 
     public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null)
     {

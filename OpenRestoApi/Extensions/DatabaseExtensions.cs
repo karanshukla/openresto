@@ -56,6 +56,15 @@ public static partial class DatabaseExtensions
 
     private const string ConsolidatedMigrationId = "20260530173531_InitialCreate";
 
+    // COUNT(*) always returns exactly one row and SQLite's COUNT aggregate never yields SQL
+    // NULL, so ExecuteScalar() here can never itself return null — the `?? 0L` is unreachable
+    // ADO.NET-defensive boilerplate that no real SQLite connection can exercise. Isolated into
+    // its own method (rather than excluding the callers wholesale) so the surrounding,
+    // genuinely-tested branch logic in RemapLegacyMigrationHistory/AddColumnIfMissing keeps
+    // full coverage visibility.
+    [ExcludeFromCodeCoverage(Justification = "Unreachable: ExecuteScalar on a COUNT(*) query always returns a non-null boxed long, so the ?? 0L fallback can never run against a real SQLite connection.")]
+    private static long ExecuteScalarCount(System.Data.Common.DbCommand command) => (long)(command.ExecuteScalar() ?? 0L);
+
     private static void RemapLegacyMigrationHistory(AppDbContext db, ILogger logger)
     {
         // Only attempt this if the DB already exists (i.e. we can connect).
@@ -80,12 +89,12 @@ public static partial class DatabaseExtensions
                 // Check whether the migrations history table exists at all.
                 using var historyExistsCmd = connection.CreateCommand();
                 historyExistsCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
-                var historyTableExists = (long)(historyExistsCmd.ExecuteScalar() ?? 0L) > 0;
+                var historyTableExists = ExecuteScalarCount(historyExistsCmd) > 0;
 
                 // Check whether the schema is already in place (tables exist from a previous deployment).
                 using var schemaExistsCmd = connection.CreateCommand();
                 schemaExistsCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='AdminCredentials'";
-                var schemaExists = (long)(schemaExistsCmd.ExecuteScalar() ?? 0L) > 0;
+                var schemaExists = ExecuteScalarCount(schemaExistsCmd) > 0;
 
                 if (!schemaExists)
                 {
@@ -102,7 +111,7 @@ public static partial class DatabaseExtensions
                     p.ParameterName = "@id";
                     p.Value = ConsolidatedMigrationId;
                     checkCmd.Parameters.Add(p);
-                    initialCreateRecorded = (long)(checkCmd.ExecuteScalar() ?? 0L) > 0;
+                    initialCreateRecorded = ExecuteScalarCount(checkCmd) > 0;
                 }
 
                 if (initialCreateRecorded)
@@ -121,7 +130,7 @@ public static partial class DatabaseExtensions
                 {
                     using var countCmd = connection.CreateCommand();
                     countCmd.CommandText = "SELECT COUNT(*) FROM __EFMigrationsHistory";
-                    legacyCount = (int)(long)(countCmd.ExecuteScalar() ?? 0L);
+                    legacyCount = (int)ExecuteScalarCount(countCmd);
                 }
 
                 LogMigrationRemap(logger, legacyCount);
@@ -199,7 +208,7 @@ public static partial class DatabaseExtensions
     {
         using var checkCmd = connection.CreateCommand();
         checkCmd.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'";
-        var exists = (long)(checkCmd.ExecuteScalar() ?? 0L) > 0;
+        var exists = ExecuteScalarCount(checkCmd) > 0;
         if (!exists)
         {
             using var alterCmd = connection.CreateCommand();

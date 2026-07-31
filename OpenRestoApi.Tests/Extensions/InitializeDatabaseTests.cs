@@ -451,6 +451,70 @@ public sealed class InitializeDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void DiagnoseDbState_SkipsFileSizeProbing_WhenDbFileIsNullOrEmpty()
+    {
+        // The connection string parsing in InitializeDatabase can hand DiagnoseDbState a null
+        // or empty dbFile (e.g. a malformed "Data Source=" segment) — it must skip the
+        // main/-wal/-shm FileInfo probing entirely rather than throwing on Path.GetFullPath(null).
+        using AppDbContext db = new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite("Data Source=:memory:").Options);
+        db.Database.OpenConnection();
+
+        Exception? exWithNull = Record.Exception(() => InvokeDiagnoseDbState(db, null, NullLogger.Instance));
+        Exception? exWithEmpty = Record.Exception(() => InvokeDiagnoseDbState(db, string.Empty, NullLogger.Instance));
+
+        Assert.Null(exWithNull);
+        Assert.Null(exWithEmpty);
+    }
+
+    [Fact]
+    public void DiagnoseDbState_LogsOk_WhenIntegrityCheckReportsHealthyDatabase()
+    {
+        Directory.CreateDirectory(_tempDir);
+        string dbFile = Path.Combine(_tempDir, "healthy.db");
+
+        using (SqliteConnection seed = new($"Data Source={dbFile}"))
+        {
+            seed.Open();
+            using SqliteCommand create = seed.CreateCommand();
+            create.CommandText = "CREATE TABLE Healthy (Id INTEGER PRIMARY KEY)";
+            create.ExecuteNonQuery();
+        }
+
+        using AppDbContext db = new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={dbFile}").Options);
+
+        Exception? ex = Record.Exception(() => InvokeDiagnoseDbState(db, dbFile, NullLogger.Instance));
+
+        Assert.Null(ex);
+    }
+
+    // ── ApplicationStopping WAL checkpoint ───────────────────────────────────────
+
+    [Fact]
+    public async Task ApplicationStopping_ChecksPointsWal_WithoutThrowing()
+    {
+        Directory.CreateDirectory(_tempDir);
+        string dbFile = Path.Combine(_tempDir, "openresto.db");
+        string connectionString = $"Data Source={dbFile}";
+        using WebApplication app = BuildApp(connectionString, new Dictionary<string, string?>
+        {
+            ["Admin:Email"] = "admin@openresto.com",
+            ["Admin:Password"] = "password123",
+        });
+
+        app.InitializeDatabase(connectionString, app.Configuration);
+
+        // Fires the ApplicationStopping.Register callback registered inside InitializeDatabase,
+        // which opens its own scope and issues a best-effort WAL checkpoint on shutdown.
+        Exception? ex = Record.Exception(() => app.Lifetime.StopApplication());
+
+        Assert.Null(ex);
+
+        using var scope = app.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.True(await db.AdminCredentials.AnyAsync());
+    }
+
+    [Fact]
     public void DiagnoseDbState_LogsFailure_WhenIntegrityCheckReportsCorruption()
     {
         Directory.CreateDirectory(_tempDir);
