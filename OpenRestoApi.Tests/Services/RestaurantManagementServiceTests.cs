@@ -51,6 +51,64 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_HonorsCallerSuppliedOpenTimeCloseTimeOpenDaysAndTimezone()
+    {
+        // Regression test (see the comment above the mapping in CreateAsync): hours/days/
+        // timezone the client sends must be persisted, not silently reverted to the
+        // "OpenTime omitted" defaults — those defaults should only kick in when the caller
+        // truly omits the field (see CreateAsync_HandlesNestedEntities and friends, which all
+        // omit these fields and so only exercise the "use default" branch).
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_HonorsCallerSuppliedOpenTimeCloseTimeOpenDaysAndTimezone));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto
+        {
+            Name = "New",
+            OpenTime = "08:00",
+            CloseTime = "20:00",
+            OpenDays = "1,3,5",
+            Timezone = "America/New_York",
+        };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        Assert.Equal("08:00", result.OpenTime);
+        Assert.Equal("20:00", result.CloseTime);
+        Assert.Equal("1,3,5", result.OpenDays);
+        Assert.Equal("America/New_York", result.Timezone);
+
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.Equal("08:00", entity!.OpenTime);
+        Assert.Equal("20:00", entity.CloseTime);
+        Assert.Equal("1,3,5", entity.OpenDays);
+        Assert.Equal("America/New_York", entity.Timezone);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AppliesPerDayOpenHours_FromDto()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_AppliesPerDayOpenHours_FromDto));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto
+        {
+            Name = "New",
+            OpenHours =
+            [
+                new DayHoursDto { Day = 6, Open = "12:00", Close = "16:00" },
+                new DayHoursDto { Day = 7, Open = "12:00", Close = "16:00" },
+            ],
+        };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        DayHoursDto saturday = result.OpenHours!.Single(h => h.Day == 6);
+        Assert.Equal("12:00", saturday.Open);
+        Assert.Equal("16:00", saturday.Close);
+
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.NotNull(entity!.OpenHoursJson);
+    }
+
+    [Fact]
     public async Task CreateAsync_AssignsSequentialSortOrder_ToBulkCreatedSections()
     {
         // Regression test (#178 review): CreateAsync previously omitted SortOrder from the
@@ -738,6 +796,21 @@ public class RestaurantManagementServiceTests
         RestaurantDto? result = await svc.GetByIdAsync(1);
         Assert.NotNull(result);
         Assert.Equal("Found", result.Name);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsConfiguredWalkInDays_WhenSet()
+    {
+        // WalkInDays defaults to null on the entity — ToDto's `r.WalkInDays ?? ""` fallback is
+        // otherwise only ever exercised via the null branch across this file's other tests.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_ReturnsConfiguredWalkInDays_WhenSet));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Found", Timezone = "UTC", WalkInDays = "6,7" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.Equal("6,7", result!.WalkInDays);
     }
 
     [Fact]

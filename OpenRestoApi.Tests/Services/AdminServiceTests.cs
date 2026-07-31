@@ -50,6 +50,20 @@ public class AdminServiceTests : IDisposable
             _emailServiceMock.Object);
     }
 
+    private AdminService CreateServiceWithNotifications(INotificationQueue notificationQueue)
+    {
+        return new AdminService(
+            new BookingRepository(_db),
+            new BookingFilterRepository(_db),
+            new RestaurantRepository(_db),
+            new SectionRepository(_db),
+            new TableRepository(_db),
+            _holdServiceMock.Object,
+            _emailServiceMock.Object,
+            brandService: null,
+            notificationQueue: notificationQueue);
+    }
+
     private void SeedBase(int restaurantId = 1)
     {
         _db.Restaurants.Add(new Restaurant { Id = restaurantId, Name = "Test", Timezone = "UTC" });
@@ -561,6 +575,79 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ExtendBookingAsync_UsesStoredEndTime_WhenAlreadyValid()
+    {
+        // Covers the "no fallback needed" branch: EndTime is present and after Date, so it
+        // must be used as-is rather than recomputed from the restaurant's configured duration.
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime date = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = date.AddMinutes(30), BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        DateTime? newEnd = await svc.ExtendBookingAsync(1, 15);
+
+        Assert.Equal(date.AddMinutes(45), newEnd);
+    }
+
+    [Fact]
+    public async Task ExtendBookingAsync_FallsBackToSixtyMinutes_WhenRestaurantNoLongerExists()
+    {
+        // ExtendBookingAsync fetches the booking via FindByIdAsync (no eager-loaded Restaurant
+        // navigation) and then looks up the restaurant separately — an orphaned RestaurantId
+        // legitimately returns null here, exercising the `?? 60` default duration fallback. FK
+        // enforcement (on by default for this connection) is disabled so the dangling
+        // RestaurantId can be inserted at all.
+        AdminService svc = CreateService();
+        DateTime date = DateTime.UtcNow;
+        await _db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 999, SectionId = null, TableId = null, Date = date, EndTime = date.AddHours(-1), BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        DateTime? newEnd = await svc.ExtendBookingAsync(1, 30);
+
+        Assert.Equal(date.AddMinutes(60).AddMinutes(30), newEnd);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_NotifiesQueue_WithRestaurantName_WhenRestaurantExists()
+    {
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        var notificationQueue = new Mock<INotificationQueue>();
+        AdminService svc = CreateServiceWithNotifications(notificationQueue.Object);
+
+        Assert.True(await svc.CancelBookingAsync(1));
+
+        notificationQueue.Verify(n => n.EnqueueBookingCancelled(It.IsAny<Booking>(), "Test"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_UsesEmptyRestaurantName_WhenRestaurantNoLongerExists()
+    {
+        // The re-fetch inside the notification branch (GetByIdAsync) Include()s the required
+        // Restaurant navigation, which EF Core compiles to an inner join — deleting the
+        // restaurant row directly makes that re-fetch return null entirely, driving both the
+        // `withRestaurant ?? booking` and `?.Restaurant?.Name ?? ""` fallbacks. FK enforcement
+        // (on by default for this connection) is turned off first so the raw DELETE doesn't
+        // cascade-remove the booking along with its restaurant.
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(1), BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+        await _db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
+        await _db.Database.ExecuteSqlRawAsync("DELETE FROM Restaurants WHERE Id = 1");
+
+        var notificationQueue = new Mock<INotificationQueue>();
+        AdminService svc = CreateServiceWithNotifications(notificationQueue.Object);
+
+        Assert.True(await svc.CancelBookingAsync(1));
+
+        notificationQueue.Verify(n => n.EnqueueBookingCancelled(It.IsAny<Booking>(), ""), Times.Once);
+    }
+
+    [Fact]
     public async Task AdminUpdateBookingAsync_Throws_WhenSeatsExceedCapacity()
     {
         AdminService svc = CreateService();
@@ -862,6 +949,18 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PurgeBookingAsync_DeletesBooking_AndReturnsTrue()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        Assert.True(await svc.PurgeBookingAsync(1));
+        Assert.Null(await _db.Bookings.FindAsync(1));
+    }
+
+    [Fact]
     public async Task RestoreBookingAsync_ReturnsNull_WhenNotFound()
     {
         AdminService svc = CreateService();
@@ -876,6 +975,60 @@ public class AdminServiceTests : IDisposable
         _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, IsCancelled = false, BookingRef = "B1" });
         await _db.SaveChangesAsync();
         await Assert.ThrowsAsync<BusinessRuleException>(() => svc.RestoreBookingAsync(1));
+    }
+
+    [Fact]
+    public async Task RestoreBookingAsync_ReactivatesCancelledBooking()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow,
+            IsCancelled = true, CancelledAt = DateTime.UtcNow, BookingRef = "B1",
+        });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.RestoreBookingAsync(1);
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsCancelled);
+        Booking inDb = await _db.Bookings.SingleAsync(b => b.Id == 1);
+        Assert.False(inDb.IsCancelled);
+        Assert.Null(inDb.CancelledAt);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ReturnsTrue_WhenAlreadyCancelled()
+    {
+        // Idempotent re-cancel: IsCancelled short-circuits the "already passed" guard so a
+        // second cancel attempt on the same booking succeeds instead of throwing.
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddDays(-3),
+            IsCancelled = true, CancelledAt = DateTime.UtcNow.AddDays(-2), BookingRef = "B1",
+        });
+        await _db.SaveChangesAsync();
+
+        Assert.True(await svc.CancelBookingAsync(1));
+    }
+
+    [Fact]
+    public async Task ExtendBookingAsync_FallsBackToRestaurantConfiguredDuration_WhenEndTimeMissing()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", DefaultBookingDurationMinutes = 90 });
+        _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        DateTime date = DateTime.UtcNow;
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, EndTime = null, BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        DateTime? newEnd = await svc.ExtendBookingAsync(1, 30);
+
+        Assert.Equal(date.AddMinutes(90).AddMinutes(30), newEnd);
     }
 
     [Fact]
@@ -928,6 +1081,28 @@ public class AdminServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         await Assert.ThrowsAsync<BusinessRuleException>(() => svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { TableId = 2, Seats = 3 }));
+    }
+
+    [Fact]
+    public async Task AdminUpdateBookingAsync_SkipsSeatsCapacityCheck_WhenResolvedTableNoLongerExists()
+    {
+        // booking.TableId points at a table row that no longer exists (removed directly here,
+        // bypassing the normal DeleteTableAsync FK-null flow) — resolvedTableId still carries a
+        // value, but FindByIdAsync(999) returns null, so the capacity guard must be skipped
+        // instead of throwing a NullReferenceException on currentTable.Seats. FK enforcement
+        // (on by default for this connection) is disabled so the dangling TableId can be
+        // inserted at all.
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 999, Date = DateTime.UtcNow, BookingRef = "B1", Seats = 2 });
+        await _db.SaveChangesAsync();
+
+        var req = new AdminUpdateBookingRequest { Seats = 6 };
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, req);
+
+        Assert.NotNull(result);
+        Assert.Equal(6, result!.Seats);
     }
 
     [Fact]
@@ -1234,6 +1409,14 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateRestaurantAsync_AllowsNullAddress()
+    {
+        AdminService svc = CreateService();
+        RestaurantDto r = await svc.CreateRestaurantAsync("New", null);
+        Assert.Null(r.Address);
+    }
+
+    [Fact]
     public async Task DeleteRestaurantAsync_ReturnsFalse_WhenNotFound()
     {
         AdminService svc = CreateService();
@@ -1306,6 +1489,76 @@ public class AdminServiceTests : IDisposable
         BookingDetailDto? result = await svc.GetBookingAsync(1);
         Assert.Equal(DateTimeKind.Utc, result!.Date.Kind);
         Assert.Equal(DateTimeKind.Utc, result.EndTime!.Value.Kind);
+    }
+
+    [Fact]
+    public async Task ToDetailDto_HandlesUtcKind_ForCancelledAt()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(-2),
+            BookingRef = "B1", IsCancelled = true, CancelledAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.GetBookingAsync(1);
+
+        Assert.NotNull(result!.CancelledAt);
+        Assert.Equal(DateTimeKind.Utc, result.CancelledAt!.Value.Kind);
+    }
+
+    [Fact]
+    public async Task ToDetailDto_SpecifiesUtcKind_ForCancelledAt_WhenStoredAsUnspecified()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        DateTime unspecifiedCancelledAt = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Unspecified);
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow.AddHours(-2),
+            BookingRef = "B1", IsCancelled = true, CancelledAt = unspecifiedCancelledAt,
+        });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.GetBookingAsync(1);
+
+        Assert.NotNull(result!.CancelledAt);
+        Assert.Equal(DateTimeKind.Utc, result.CancelledAt!.Value.Kind);
+    }
+
+    [Fact]
+    public async Task ToDetailDto_UsesGenericFallbackNames_WhenTableAndSectionUnassigned()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = null, TableId = null, Date = DateTime.UtcNow, BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.GetBookingAsync(1);
+
+        Assert.Equal("Section", result!.SectionName);
+        Assert.Equal("Table", result.TableName);
+    }
+
+    [Fact]
+    public async Task ToDetailDto_UsesIdQualifiedFallbackNames_WhenTableAndSectionRowsAreMissing()
+    {
+        // SectionId/TableId are set but no matching row exists (e.g. removed independently of
+        // the normal delete flow) — the fallback must include the numeric id for identifiability.
+        // FK enforcement (on by default for this connection) is disabled so the dangling ids
+        // can be inserted at all.
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC" });
+        await _db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 42, TableId = 99, Date = DateTime.UtcNow, BookingRef = "B1" });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.GetBookingAsync(1);
+
+        Assert.Equal("Section 42", result!.SectionName);
+        Assert.Equal("Table 99", result.TableName);
     }
 
     [Fact]

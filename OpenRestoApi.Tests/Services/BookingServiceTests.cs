@@ -609,6 +609,119 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_SkipsCapacityChecks_WhenTableIdNoLongerExists()
+    {
+        // TableId/SectionId were explicitly supplied (skipping auto-assign), but the table row
+        // has since vanished (e.g. deleted between page load and submit) — GetByIdAsync returns
+        // null, so both the lower-bound and oversize capacity guards must short-circuit false
+        // rather than throwing, and the booking still lands with the caller-supplied TableId.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_SkipsCapacityChecks_WhenTableIdNoLongerExists));
+        TestSeed.BasicRestaurant(db);
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 999, // does not exist
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        BookingDto result = await svc.CreateBookingAsync(dto);
+
+        Assert.Equal(999, result.TableId);
+        Assert.NotEmpty(result.BookingRef!);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_FallsBackToCandidateSearch_WhenHeldTableWasBookedElsewhere()
+    {
+        // The caller's hold points at a specific table, but the DB says it's already booked
+        // (e.g. an admin recorded a walk-in on it after the hold was placed) — ResolveAutoAssignAsync
+        // must fall through past the "adopt the held table" shortcut into a fresh candidate search
+        // rather than persisting a doomed booking or throwing.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_FallsBackToCandidateSearch_WhenHeldTableWasBookedElsewhere));
+        SeedMultiTableRestaurant(db);
+        DateTime date = DateTime.UtcNow.AddDays(13);
+
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 2, SectionId = 1, Date = date, BookingRef = "TAKEN" });
+        db.SaveChanges();
+
+        var holdMock = new Mock<IHoldService>();
+        holdMock
+            .Setup(h => h.GetHold("hold-T2"))
+            .Returns(new HoldEntry("hold-T2", TableId: 2, SectionId: 1, RestaurantId: 1, Date: date, ExpiresAt: DateTime.UtcNow.AddMinutes(5)));
+        holdMock.Setup(h => h.IsTableHeld(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>())).Returns(false);
+        holdMock
+            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>()))
+            .Returns(new AutoAssignResult("hold-fresh", DateTime.UtcNow.AddMinutes(5), 1, 1));
+        holdMock.Setup(h => h.ReleaseHold(It.IsAny<string>()));
+
+        BookingService svc = new BookingService(
+            new BookingRepository(db),
+            new TableRepository(db),
+            new SectionRepository(db),
+            new RestaurantRepository(db),
+            holdMock.Object,
+            new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)));
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date,
+            HoldId = "hold-T2"
+        });
+
+        // The candidate search ran and assigned Table 1 (fresh hold), not the already-booked Table 2.
+        Assert.Equal(1, result.TableId);
+        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_FallsBackToCandidateSearch_WhenHoldIdIsStaleOrExpired()
+    {
+        // The caller sends a HoldId, but the in-memory hold store no longer has an entry for it
+        // (it expired or was never valid) — GetHold returns null, so ResolveAutoAssignAsync must
+        // skip the "adopt held table" shortcut entirely and run the normal candidate search.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_FallsBackToCandidateSearch_WhenHoldIdIsStaleOrExpired));
+        SeedMultiTableRestaurant(db);
+        DateTime date = DateTime.UtcNow.AddDays(13);
+
+        var holdMock = new Mock<IHoldService>();
+        holdMock.Setup(h => h.GetHold("stale-hold")).Returns((HoldEntry?)null);
+        holdMock.Setup(h => h.IsTableHeld(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>())).Returns(false);
+        holdMock
+            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>()))
+            .Returns(new AutoAssignResult("hold-fresh", DateTime.UtcNow.AddMinutes(5), 1, 1));
+        holdMock.Setup(h => h.ReleaseHold(It.IsAny<string>()));
+
+        BookingService svc = new BookingService(
+            new BookingRepository(db),
+            new TableRepository(db),
+            new SectionRepository(db),
+            new RestaurantRepository(db),
+            holdMock.Object,
+            new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)));
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date,
+            HoldId = "stale-hold"
+        });
+
+        Assert.Equal(1, result.TableId);
+        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>()), Times.Once);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_Throws_WhenBookingInPast()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenBookingInPast));
@@ -749,6 +862,178 @@ public class BookingServiceTests
         await svc.UpdateBookingAsync(created.Id, dto);
         Booking inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
         Assert.Equal(date.AddMinutes(90), inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task UpdateBookingAsync_SkipsCapacityCheck_WhenNoTableAssigned()
+    {
+        // booking.TableId is null (an unassigned/auto-assign-pending booking) — the ternary
+        // that resolves `table` must short-circuit to null without calling the table repository,
+        // and the capacity guard below it must be skipped entirely rather than throwing.
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_SkipsCapacityCheck_WhenNoTableAssigned));
+        TestSeed.BasicRestaurant(db);
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = null, SectionId = null, Date = DateTime.UtcNow.AddHours(1), BookingRef = "B1" });
+        db.SaveChanges();
+        db.Entry((await db.Bookings.FindAsync(1))!).State = EntityState.Detached;
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto { Id = 1, RestaurantId = 1, Date = DateTime.UtcNow.AddHours(1), Seats = 99, EndTime = null };
+
+        await svc.UpdateBookingAsync(1, dto);
+
+        Booking inDb = await db.Bookings.FirstAsync(b => b.Id == 1);
+        Assert.Equal(99, inDb.Seats);
+        Assert.NotNull(inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task UpdateBookingAsync_UsesSixtyMinuteDefault_WhenRestaurantNoLongerExists()
+    {
+        // booking.RestaurantId points at a restaurant row that no longer exists (orphaned after
+        // a restaurant deletion) — GetByIdAsync returns null, so both the oversize guard and the
+        // EndTime default must fall back to the hardcoded 60-minute default instead of throwing
+        // a NullReferenceException on `restaurant.DefaultBookingDurationMinutes`.
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_UsesSixtyMinuteDefault_WhenRestaurantNoLongerExists));
+        TestSeed.BasicRestaurant(db); // seeds Table 1 (4 seats) under RestaurantId 1
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 999, TableId = 1, SectionId = 1, Date = date, Seats = 2, BookingRef = "B1" });
+        db.SaveChanges();
+        db.Entry((await db.Bookings.FindAsync(1))!).State = EntityState.Detached;
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto { Id = 1, RestaurantId = 999, TableId = 1, SectionId = 1, Date = date, Seats = 2, EndTime = null };
+
+        await svc.UpdateBookingAsync(1, dto);
+
+        Booking inDb = await db.Bookings.FirstAsync(b => b.Id == 1);
+        Assert.Equal(date.AddMinutes(60), inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task GetRestaurantNameAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetRestaurantNameAsync_ReturnsNull_WhenRestaurantNotFound));
+        BookingService svc = CreateService(db);
+
+        Assert.Null(await svc.GetRestaurantNameAsync(999));
+    }
+
+    [Fact]
+    public async Task GetRestaurantNameAsync_ReturnsName_WhenRestaurantFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetRestaurantNameAsync_ReturnsName_WhenRestaurantFound));
+        TestSeed.BasicRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        Assert.Equal("Test Restaurant", await svc.GetRestaurantNameAsync(1));
+    }
+
+    [Fact]
+    public async Task UpdateBookingAsync_AlwaysRecomputesEndTime_EvenWhenCallerSuppliesAnAlreadyValidOne()
+    {
+        // BookingMapper.ToEntity ignores BookingDto.EndTime entirely (both as source and as a
+        // Booking.EndTime target) for updates, so `booking.EndTime` is always null immediately
+        // after mapping — the "!booking.EndTime.HasValue" guard is therefore always true and
+        // EndTime is unconditionally recomputed from the restaurant's configured duration,
+        // regardless of whatever (even a perfectly valid) EndTime the caller supplied.
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_AlwaysRecomputesEndTime_EvenWhenCallerSuppliesAnAlreadyValidOne));
+        TestSeed.BasicRestaurant(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 });
+        db.Entry((await db.Bookings.FindAsync(created.Id))!).State = EntityState.Detached;
+
+        DateTime explicitValidEndTime = date.AddMinutes(45);
+        var dto = new BookingDto { Id = created.Id, RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, EndTime = explicitValidEndTime };
+        await svc.UpdateBookingAsync(created.Id, dto);
+
+        Booking inDb = await db.Bookings.FirstAsync(b => b.Id == created.Id);
+        // Recomputed from BasicRestaurant's default 60-minute duration, not the 45-minute value supplied.
+        Assert.Equal(date.AddMinutes(60), inDb.EndTime);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_ReturnsFalse_WhenBookingHasNoStoredEmail()
+    {
+        // booking.CustomerEmail is null (e.g. an admin-recorded walk-in) — the `?.Trim()`
+        // null-conditional must short-circuit to null, which never string-equals a real
+        // customer-supplied email, so the lookup correctly reports "not found" instead of
+        // throwing a NullReferenceException.
+        using AppDbContext db = TestDbFactory.Create(nameof(CancelBookingAsync_ReturnsFalse_WhenBookingHasNoStoredEmail));
+        TestSeed.BasicRestaurant(db);
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = DateTime.UtcNow.AddHours(1), CustomerEmail = null, BookingRef = "B1" });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+
+        Assert.False(await svc.CancelBookingAsync("B1", "someone@test.com"));
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_NotifiesQueue_WithRestaurantName_WhenRestaurantExists()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CancelBookingAsync_NotifiesQueue_WithRestaurantName_WhenRestaurantExists));
+        TestSeed.BasicRestaurant(db);
+        BookingService svcForCreate = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        BookingDto created = await svcForCreate.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, CustomerEmail = "guest@example.com"
+        });
+
+        var notificationQueue = new Mock<INotificationQueue>();
+        BookingService svc = new BookingService(
+            new BookingRepository(db),
+            new TableRepository(db),
+            new SectionRepository(db),
+            new RestaurantRepository(db),
+            new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock()),
+            new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)),
+            notificationQueue: notificationQueue.Object);
+
+        bool result = await svc.CancelBookingAsync(created.BookingRef!, "guest@example.com");
+
+        Assert.True(result);
+        notificationQueue.Verify(n => n.EnqueueBookingCancelled(It.IsAny<Booking>(), "Test Restaurant"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelBookingAsync_UsesEmptyRestaurantName_WhenRestaurantIsArchived()
+    {
+        // RestaurantRepository.GetByIdAsync (used here purely to name the cancellation
+        // notification) filters out archived restaurants, so a booking whose restaurant has
+        // since been archived must fall back to "" instead of the queue call throwing on a
+        // null Name. Note this is a different repository call than the one that loaded the
+        // booking itself (which still Include()s the live Restaurant row regardless of archive
+        // status), so the booking is found and cancelled normally.
+        using AppDbContext db = TestDbFactory.Create(nameof(CancelBookingAsync_UsesEmptyRestaurantName_WhenRestaurantIsArchived));
+        TestSeed.BasicRestaurant(db);
+        BookingService svcForCreate = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddHours(1);
+        BookingDto created = await svcForCreate.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2, CustomerEmail = "guest@example.com"
+        });
+
+        db.Restaurants.Single().IsArchived = true;
+        db.SaveChanges();
+
+        var notificationQueue = new Mock<INotificationQueue>();
+        BookingService svc = new BookingService(
+            new BookingRepository(db),
+            new TableRepository(db),
+            new SectionRepository(db),
+            new RestaurantRepository(db),
+            new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock()),
+            new BookingMapper(),
+            new TableAutoAssigner(new BookingRepository(db)),
+            notificationQueue: notificationQueue.Object);
+
+        bool result = await svc.CancelBookingAsync(created.BookingRef!, "guest@example.com");
+
+        Assert.True(result);
+        notificationQueue.Verify(n => n.EnqueueBookingCancelled(It.IsAny<Booking>(), ""), Times.Once);
     }
 
     [Fact]

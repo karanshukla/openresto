@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
@@ -615,6 +616,179 @@ public class AvailabilityServiceTests
         AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(
             1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
         Assert.Empty(saturday.Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_TreatsEveryDayAsOpen_WhenOpenDaysHasNoRecognizableEntries()
+    {
+        // If every OpenDays entry fails to parse, openDaysList ends up empty after the `d > 0`
+        // filter — the `openDaysList.Count > 0 && ...` guard short-circuits false in that case,
+        // so the day-of-week check is skipped entirely rather than wrongly closing every day.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_TreatsEveryDayAsOpen_WhenOpenDaysHasNoRecognizableEntries));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
+            OpenDays = "notaday,alsobogus",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto monday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 12, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(monday.Slots);
+
+        AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(saturday.Slots);
+    }
+
+    [Theory]
+    [InlineData("tue", 2026, 10, 13)]
+    [InlineData("tues", 2026, 10, 13)]
+    [InlineData("tuesday", 2026, 10, 13)]
+    [InlineData("wed", 2026, 10, 14)]
+    [InlineData("wednesday", 2026, 10, 14)]
+    [InlineData("thu", 2026, 10, 15)]
+    [InlineData("thurs", 2026, 10, 15)]
+    [InlineData("thursday", 2026, 10, 15)]
+    [InlineData("fri", 2026, 10, 16)]
+    [InlineData("friday", 2026, 10, 16)]
+    [InlineData("sat", 2026, 10, 17)]
+    [InlineData("saturday", 2026, 10, 17)]
+    public async Task GetAvailabilityAsync_ParsesOpenDays_GivenEachAbbreviatedDayName(string abbreviation, int year, int month, int day)
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(GetAvailabilityAsync_ParsesOpenDays_GivenEachAbbreviatedDayName) + "_" + abbreviation);
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
+            OpenDays = abbreviation,
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto matchingDay = await svc.GetAvailabilityAsync(
+            1, new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc), 2);
+        Assert.NotEmpty(matchingDay.Slots);
+
+        // The day before is not in OpenDays, so it must report no slots.
+        AvailabilityResponseDto dayBefore = await svc.GetAvailabilityAsync(
+            1, new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc).AddDays(-1), 2);
+        Assert.Empty(dayBefore.Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_FallsBackTo30MinuteInterval_WhenConfiguredIntervalIsZeroOrNegative()
+    {
+        // Defends against stale/corrupt rows where BookingSlotIntervalMinutes somehow ended up
+        // 0 or negative — using it verbatim would spin the slot-generation while-loop forever.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_FallsBackTo30MinuteInterval_WhenConfiguredIntervalIsZeroOrNegative));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "12:00", Timezone = "UTC",
+            BookingSlotIntervalMinutes = -15,
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal(["11:00", "11:30"], result.Slots.Select(s => s.Time).ToList());
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoAvailableTables_WhenRestaurantHasNoSectionsLoaded()
+    {
+        // Defensive guard: Sections defaults to an empty collection everywhere in production
+        // (repository eager-load, entity default initializer), but the null-conditional chain
+        // in the eligible-tables filter exists in case that invariant is ever violated — verify
+        // it degrades to "no tables available" instead of throwing a NullReferenceException.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoAvailableTables_WhenRestaurantHasNoSectionsLoaded));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "12:00", Timezone = "UTC" });
+        db.SaveChanges();
+
+        var restRepoMock = new Mock<IRestaurantRepository>();
+        Restaurant restaurant = await db.Restaurants.FirstAsync();
+        restaurant.Sections = null!;
+        restRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(restaurant);
+
+        var svc = new AvailabilityService(new BookingRepository(db), restRepoMock.Object, new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.NotEmpty(result.Slots);
+        Assert.All(result.Slots, s => Assert.False(s.IsAvailable));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ExcludesTablesFromSectionWithNoTablesLoaded()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ExcludesTablesFromSectionWithNoTablesLoaded));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "12:00", Timezone = "UTC" });
+        db.Sections.Add(new Section { Id = 1, Name = "Empty", RestaurantId = 1 });
+        db.SaveChanges();
+
+        var restRepoMock = new Mock<IRestaurantRepository>();
+        Restaurant restaurant = await db.Restaurants.Include(r => r.Sections).FirstAsync();
+        restaurant.Sections.First().Tables = null!;
+        restRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(restaurant);
+
+        var svc = new AvailabilityService(new BookingRepository(db), restRepoMock.Object, new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.NotEmpty(result.Slots);
+        Assert.All(result.Slots, s => Assert.False(s.IsAvailable));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_HonorsExplicitEndTime_OverDefaultDurationConflictWindow()
+    {
+        // Mirrors GetAvailabilityAsync_UsesRestaurantConfiguredDuration_ForConflictWindow but for
+        // the opposite branch of `b.EndTime ?? b.Date.AddMinutes(...)`: an explicit EndTime that
+        // is SHORTER than the restaurant's default duration must govern the conflict window, not
+        // the default-duration fallback.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_HonorsExplicitEndTime_OverDefaultDurationConflictWindow));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC",
+            DefaultBookingDurationMinutes = 90,
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        // Booking has an explicit 30-minute EndTime, far shorter than the restaurant's
+        // 90-minute default — the 12:30 slot must be free since the explicit window ends there.
+        var bookingStart = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = bookingStart,
+            EndTime = bookingStart.AddMinutes(30), BookingRef = "B1",
+        });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, bookingStart, 2);
+
+        TimeSlotDto slot1200 = result.Slots.First(s => s.Time == "12:00");
+        Assert.False(slot1200.IsAvailable);
+
+        TimeSlotDto slot1230 = result.Slots.First(s => s.Time == "12:30");
+        Assert.True(slot1230.IsAvailable);
     }
 
     [Fact]
