@@ -495,7 +495,9 @@ export default function LocationListItem({
                 ]}
                 onPress={() =>
                   Linking.openURL(
-                    `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
+                    // The `|| ""` fallback is unreachable: this whole block only renders inside
+                    // `restaurant.address && (...)`, so address is always truthy here.
+                    `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || /* istanbul ignore next */ "")}`
                   )
                 }
                 accessibilityLabel="Open in Google Maps"
@@ -515,7 +517,7 @@ export default function LocationListItem({
                 ]}
                 onPress={() =>
                   Linking.openURL(
-                    `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
+                    `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || /* istanbul ignore next */ "")}`
                   )
                 }
                 accessibilityLabel="Open in Apple Maps"

@@ -245,6 +245,8 @@ export default function NotificationsScreen() {
   };
 
   const handleConfirmedDelete = async () => {
+    // istanbul ignore next -- defensive guard: this is only ever wired to the confirm
+    // modal's onConfirm, which is rendered exclusively while confirmDeleteId is non-null.
     if (confirmDeleteId == null) return;
     const id = confirmDeleteId;
     setConfirmDeleteId(null);
@@ -283,6 +285,8 @@ export default function NotificationsScreen() {
   const handleClearRead = async () => {
     // Pinned items are immune to bulk clear
     const readIds = items.filter((x) => x.isRead && !pinnedIds.has(x.id)).map((x) => x.id);
+    // istanbul ignore next -- defensive guard: the "Clear read" button is disabled
+    // under this exact condition (see `!hasRead` below), so it can't be pressed empty.
     if (readIds.length === 0) return;
     setClearingRead(true);
     await deleteNotifications(readIds);
