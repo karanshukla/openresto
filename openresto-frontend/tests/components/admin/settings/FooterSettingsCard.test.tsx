@@ -2,6 +2,8 @@ import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { FooterSettingsCard } from "@/components/admin/settings/FooterSettingsCard";
 import * as adminApi from "@/api/admin";
+import * as useAppThemeModule from "@/hooks/use-app-theme";
+import { getThemeColors } from "@/theme/theme";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -331,6 +333,115 @@ describe("FooterSettingsCard", () => {
     await waitFor(() => expect(screen.getByText(/valid URL/)).toBeTruthy());
     // Pre-flight means the API was never called.
     expect(adminApi.adminCreateSocialLink).not.toHaveBeenCalled();
+  });
+
+  it("applies dark-theme surface styling to the expanded form", async () => {
+    const spy = jest.spyOn(useAppThemeModule, "useAppTheme").mockReturnValue({
+      colors: getThemeColors(true),
+      isDark: true,
+      brand: mockBrandData,
+      primaryColor: "#0a7ea4",
+    } as ReturnType<typeof useAppThemeModule.useAppTheme>);
+    try {
+      render(<FooterSettingsCard {...baseProps} />);
+      expect(screen.getByText("Copyright Text")).toBeTruthy();
+      await waitFor(() => expect(screen.getByText("Social Links")).toBeTruthy());
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("turns the copyright counter red past the 200-character limit", async () => {
+    render(<FooterSettingsCard {...baseProps} />);
+    const longText = "a".repeat(205);
+    fireEvent.changeText(
+      screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
+      longText
+    );
+    await waitFor(() => expect(screen.getByText("205/200")).toBeTruthy());
+  });
+
+  it("shows a 'Saving…' label on the copyright button while the save is in flight", async () => {
+    let resolveSave: (value: { message: string }) => void = () => {};
+    (adminApi.saveBrandSettings as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      })
+    );
+    render(<FooterSettingsCard {...baseProps} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
+      "© 2026 In Flight"
+    );
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() => expect(screen.getByText("Saving…")).toBeTruthy());
+    await act(async () => {
+      resolveSave({ message: "Brand settings saved." });
+    });
+    await waitFor(() => expect(screen.getByText("Brand settings saved.")).toBeTruthy());
+  });
+
+  it("keeps other links untouched when editing one of several succeeds", async () => {
+    const updated = { ...mockLinks[0], label: "Instagram Official" };
+    (adminApi.adminGetSocialLinks as jest.Mock).mockResolvedValue(mockLinks);
+    (adminApi.adminUpdateSocialLink as jest.Mock).mockResolvedValue({ ok: true, data: updated });
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Instagram")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Edit Instagram"));
+    await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
+    fireEvent.changeText(screen.getByDisplayValue("Instagram"), "Instagram Official");
+    await act(async () => {
+      const saveButtons = screen.getAllByText("Save");
+      fireEvent.press(saveButtons[saveButtons.length - 1]);
+    });
+    await waitFor(() => expect(screen.getByText("Instagram Official")).toBeTruthy());
+    expect(screen.getByText("Yelp")).toBeTruthy();
+  });
+
+  it("shows an inline error and keeps the form open when updating a link fails", async () => {
+    (adminApi.adminGetSocialLinks as jest.Mock).mockResolvedValue([mockLinks[0]]);
+    (adminApi.adminUpdateSocialLink as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: "That URL is already in use.",
+    });
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Instagram")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Edit Instagram"));
+    await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
+    await act(async () => {
+      const saveButtons = screen.getAllByText("Save");
+      fireEvent.press(saveButtons[saveButtons.length - 1]);
+    });
+    await waitFor(() => expect(screen.getByText("That URL is already in use.")).toBeTruthy());
+    expect(screen.getByDisplayValue("Instagram")).toBeTruthy();
+  });
+
+  it("shows a generic network error when updating a link returns null", async () => {
+    (adminApi.adminGetSocialLinks as jest.Mock).mockResolvedValue([mockLinks[0]]);
+    (adminApi.adminUpdateSocialLink as jest.Mock).mockResolvedValue(null);
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Instagram")).toBeTruthy());
+    fireEvent.press(screen.getByLabelText("Edit Instagram"));
+    await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
+    await act(async () => {
+      const saveButtons = screen.getAllByText("Save");
+      fireEvent.press(saveButtons[saveButtons.length - 1]);
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Couldn't reach the server. Please try again.")).toBeTruthy()
+    );
+  });
+
+  it("keeps a link visible when deleting it fails", async () => {
+    (adminApi.adminGetSocialLinks as jest.Mock).mockResolvedValue([mockLinks[0]]);
+    (adminApi.adminDeleteSocialLink as jest.Mock).mockResolvedValue(false);
+    render(<FooterSettingsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Instagram")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText("Delete Instagram"));
+    });
+    expect(adminApi.adminDeleteSocialLink).toHaveBeenCalledWith(1);
+    expect(screen.getByText("Instagram")).toBeTruthy();
   });
 
   it("changes icon when an icon option is pressed", async () => {

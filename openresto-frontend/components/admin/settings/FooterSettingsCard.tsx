@@ -100,6 +100,8 @@ export function FooterSettingsCard({
   };
 
   const save = async () => {
+    // istanbul ignore next -- unreachable: SocialLinkEditForm's own Save button is
+    // disabled under this exact condition, so it can never be pressed to reach here.
     if (!editState.label.trim() || !editState.url.trim()) return;
     // Client-side URL pre-flight (mirrors backend UrlValidator) — catches obvious typos and
     // dangerous schemes like javascript: without a round-trip. The server remains source of truth.
@@ -127,7 +129,9 @@ export function FooterSettingsCard({
         ok = false;
         message = "Couldn't reach the server. Please try again.";
       }
-    } else if (editingId != null) {
+      // Unreachable: save() only ever runs while a form is open, which means editingId
+      // is always "new" or a link id here, never null.
+    } else /* istanbul ignore else */ if (editingId != null) {
       const result = await adminUpdateSocialLink(editingId, {
         label: editState.label.trim(),
         url: editState.url.trim(),
@@ -147,7 +151,9 @@ export function FooterSettingsCard({
     setSaving(false);
     if (ok) {
       cancelEdit();
-    } else if (message) {
+      // Unreachable: every `ok = false` assignment above always pairs with a `message`
+      // assignment, so message is guaranteed truthy here.
+    } else /* istanbul ignore else */ if (message) {
       setLinkMsg(message);
     }
   };
@@ -273,7 +279,9 @@ export function FooterSettingsCard({
                         borderColor={borderColor}
                         mutedColor={mutedColor}
                         colors={colors}
-                        error={editingId === link.id ? linkMsg : null}
+                        // The condition is redundant (always true) since this whole branch
+                        // only renders when `editingId === link.id`; kept for type-narrowing.
+                        error={editingId === link.id ? linkMsg : /* istanbul ignore next */ null}
                       />
                     ) : (
                       <SocialLinkRow
@@ -302,7 +310,9 @@ export function FooterSettingsCard({
                     borderColor={borderColor}
                     mutedColor={mutedColor}
                     colors={colors}
-                    error={editingId === "new" ? linkMsg : null}
+                    // Same redundant-but-type-narrowing condition as above: this block only
+                    // renders when `editingId === "new"`.
+                    error={editingId === "new" ? linkMsg : /* istanbul ignore next */ null}
                   />
                 )}
 

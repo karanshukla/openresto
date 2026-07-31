@@ -63,6 +63,17 @@ describe("walkInDaysLabel", () => {
   it("sorts and deduplicates", () => {
     expect(walkInDaysLabel({ walkInDays: "7,6,6" })).toBe("Saturdays and Sundays");
   });
+
+  it("collapses a run of consecutive days into a first–last range", () => {
+    // Mon,Tue,Wed is a single consecutive run of 3 -> "M–W" rather than named days.
+    expect(walkInDaysLabel({ walkInDays: "1,2,3" })).toBe("M–W");
+  });
+
+  it("groups mixed consecutive and standalone days into a comma-separated label", () => {
+    // 4+ days always route through the grouped-label path, consecutive or not:
+    // [1,2] groups into a range, [4] and [6] stay standalone single-letter days.
+    expect(walkInDaysLabel({ walkInDays: "1,2,4,6" })).toBe("M–T, T, Sat");
+  });
 });
 
 describe("walkInBadgeLabel", () => {
