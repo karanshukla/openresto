@@ -60,7 +60,8 @@ describe("TableRow", () => {
       fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByDisplayValue("T1")).toBeTruthy();
-    expect(screen.getByDisplayValue("4")).toBeTruthy();
+    // SEATS is now a dropdown; its trigger shows the selected label.
+    expect(screen.getByText("4 seats")).toBeTruthy();
   });
 
   it("shows Cancel and Save buttons in edit mode", () => {
@@ -80,7 +81,13 @@ describe("TableRow", () => {
       fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.changeText(screen.getByDisplayValue("T1"), "T1-Updated");
-    fireEvent.changeText(screen.getByDisplayValue("4"), "2");
+    // Open the seats dropdown and pick "2 seats".
+    act(() => {
+      fireEvent.press(screen.getByText("4 seats"));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("2 seats"));
+    });
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });
@@ -91,28 +98,22 @@ describe("TableRow", () => {
     expect(baseProps.onUpdated).toHaveBeenCalledWith(updatedTable);
   });
 
-  it("does not save when seats is not a valid number", async () => {
+  it("saves with the unchanged seats when the dropdown is not touched", async () => {
+    // The dropdown can no longer produce an invalid seats value (options are constrained), so the
+    // relevant invariant is that the seeded value persists through save when untouched.
+    const updatedTable = { id: 5, name: "T1", seats: 4 };
+    (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
     render(<TableRow {...baseProps} />);
     act(() => {
       fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
-    fireEvent.changeText(screen.getByDisplayValue("4"), "abc");
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });
-    expect(restaurantsApi.updateTable).not.toHaveBeenCalled();
-  });
-
-  it("does not save when seats is 0", async () => {
-    render(<TableRow {...baseProps} />);
-    act(() => {
-      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
+    expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
+      name: "T1",
+      seats: 4,
     });
-    fireEvent.changeText(screen.getByDisplayValue("4"), "0");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
-    });
-    expect(restaurantsApi.updateTable).not.toHaveBeenCalled();
   });
 
   it("cancels edit mode when Cancel is pressed", () => {

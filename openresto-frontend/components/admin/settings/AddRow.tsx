@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Select, { type SelectOption } from "@/components/common/Select";
 import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -12,11 +13,18 @@ export function AddRow({
   placeholder,
   onAdd,
   extraPlaceholder,
+  extraOptions,
 }: {
   label: string;
   placeholder?: string;
   onAdd: (name: string, extra?: string) => Promise<void>;
   extraPlaceholder?: string;
+  /**
+   * When provided, the extra field renders as a dropdown (Select) constrained to these options
+   * rather than a free-text numeric input. Used for the add-table "Seats" field so a value can't be
+   * typed that the server would reject.
+   */
+  extraOptions?: SelectOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -66,12 +74,21 @@ export function AddRow({
         </View>
         {extraPlaceholder && (
           <View style={{ flex: 1 }}>
-            <Input
-              value={extra}
-              onChangeText={setExtra}
-              placeholder={extraPlaceholder}
-              keyboardType="numeric"
-            />
+            {extraOptions ? (
+              <Select
+                selectedValue={extra || undefined}
+                onSelect={(v) => setExtra(String(v))}
+                options={extraOptions}
+                placeholder={extraPlaceholder}
+              />
+            ) : (
+              <Input
+                value={extra}
+                onChangeText={setExtra}
+                placeholder={extraPlaceholder}
+                keyboardType="numeric"
+              />
+            )}
           </View>
         )}
       </View>

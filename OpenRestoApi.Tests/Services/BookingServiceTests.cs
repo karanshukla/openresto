@@ -5,6 +5,7 @@ using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -1411,12 +1412,12 @@ public class BookingServiceTests
         SeedMultiTableRestaurant(db);
         BookingService svc = CreateService(db);
 
-        // 100 seats — no table fits.
+        // 8 seats — no table fits (largest in SeedMultiTableRestaurant is 6).
         ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
         {
             RestaurantId = 1,
             CustomerEmail = "guest@example.com",
-            Seats = 100,
+            Seats = 8,
             Date = DateTime.UtcNow.AddDays(11)
         }));
 
@@ -1840,5 +1841,28 @@ public class BookingServiceTests
         Assert.Equal(8, fetched.TableSeats);
         Assert.Contains("T2", fetched.TableName);
         Assert.Contains("T3", fetched.TableName);
+    }
+
+    // ── Party-size validation (defense in depth behind the DTO [Range]) ──────────
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    [InlineData(BookingLimits.MaxSeats + 1)]
+    public async Task CreateBookingAsync_RejectsSeatsOutOfRange(int seats)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsSeatsOutOfRange) + seats);
+        TestSeed.BasicRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "x@example.com",
+            Seats = seats,
+            Date = DateTime.UtcNow.AddDays(40),
+            TableId = 1,
+            SectionId = 1
+        }));
     }
 }

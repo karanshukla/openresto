@@ -280,6 +280,8 @@ public class RestaurantManagementService(
             return null;
         }
 
+        ValidateSeats(seats);
+
         var table = new Table { Name = name, Seats = seats, SectionId = sectionId };
         await _tableRepository.AddAsync(table);
 
@@ -295,11 +297,42 @@ public class RestaurantManagementService(
             return null;
         }
 
+        ValidateSeats(seats);
+
         table.Name = name;
         table.Seats = seats;
         await _tableRepository.SaveChangesAsync();
 
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
+    }
+
+    /// <summary>
+    /// Validates a table/group seating capacity. Defense in depth behind the DTO [Range] annotation
+    /// — a direct service call (e.g. from a seeder or test) bypasses model binding, so this catches
+    /// 0/negative/oversized values at the service boundary too.
+    /// </summary>
+    private static void ValidateSeats(int seats)
+    {
+        if (seats < BookingLimits.MinSeats || seats > BookingLimits.MaxSeats)
+        {
+            throw new ValidationException(
+                $"Seats must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.");
+        }
+    }
+
+    /// <summary>
+    /// Validates a combinable group's CombinedSeats: absolute bounds first, then the contextual
+    /// floor (sum of member seats). Split from <see cref="ValidateSeats"/> because the group floor
+    /// depends on the resolved member set.
+    /// </summary>
+    private static void ValidateCombinedSeats(int combinedSeats, int memberSeatsSum)
+    {
+        ValidateSeats(combinedSeats);
+        if (combinedSeats < memberSeatsSum)
+        {
+            throw new ValidationException(
+                $"CombinedSeats ({combinedSeats}) must be at least the sum of member seats ({memberSeatsSum}).");
+        }
     }
 
     public async Task<bool> DeleteTableAsync(int restaurantId, int sectionId, int tableId)
@@ -373,13 +406,9 @@ public class RestaurantManagementService(
 
         List<Table> members = await ResolveAndValidateMembersAsync(restaurantId, req.Members, excludeGroupId: null);
 
-        // CombinedSeats must be at least the sum of member seats — pushing tables together can lose a
-        // seat, so the admin may set it higher, but never lower (catches obvious mistakes).
-        if (req.CombinedSeats < members.Sum(t => t.Seats))
-        {
-            throw new ValidationException(
-                $"CombinedSeats ({req.CombinedSeats}) must be at least the sum of member seats ({members.Sum(t => t.Seats)}).");
-        }
+        // CombinedSeats must be within bounds and at least the sum of member seats — pushing tables
+        // together can lose a seat, so the admin may set it higher, but never lower (catches mistakes).
+        ValidateCombinedSeats(req.CombinedSeats, members.Sum(t => t.Seats));
 
         var group = new TableGroup
         {
@@ -408,11 +437,7 @@ public class RestaurantManagementService(
         List<Table> members = await ResolveAndValidateMembersAsync(
             restaurantId, req.Members, excludeGroupId: groupId, currentMemberIds: currentMemberIds);
 
-        if (req.CombinedSeats < members.Sum(t => t.Seats))
-        {
-            throw new ValidationException(
-                $"CombinedSeats ({req.CombinedSeats}) must be at least the sum of member seats ({members.Sum(t => t.Seats)}).");
-        }
+        ValidateCombinedSeats(req.CombinedSeats, members.Sum(t => t.Seats));
 
         group.Name = req.Name;
         group.CombinedSeats = req.CombinedSeats;

@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using OpenRestoApi.Core.Application.Utilities;
+
 namespace OpenRestoApi.Core.Application.DTOs;
 
 public class CancelBookingByRefRequest
@@ -25,6 +28,8 @@ public class BookingDto
     public DateTime Date { get; set; }
     public string? CustomerEmail { get; set; }
     public string? CustomerName { get; set; }
+    /// <summary>Party size. Bounded to [<see cref="BookingLimits.MinSeats"/>, <see cref="BookingLimits.MaxSeats"/>] on create.</summary>
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
     public bool isHeld { get; set; }
     public string? SpecialRequests { get; set; }
