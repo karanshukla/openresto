@@ -4,7 +4,6 @@ import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Ionicons } from "@expo/vector-icons";
-import ConfirmModal from "@/components/common/ConfirmModal";
 import { theme } from "@/theme/theme";
 import { fetchRestaurants, createRestaurant, RestaurantDto } from "@/api/restaurants";
 import {
@@ -16,7 +15,6 @@ import {
 } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { useConfirm } from "@/hooks/use-confirm";
 
 import { LocationCard } from "@/components/admin/settings/LocationCard";
 import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
@@ -47,7 +45,6 @@ export default function AdminLocationsScreen() {
   const [extending, setExtending] = useState(false);
   const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
   const [extendNoActive, setExtendNoActive] = useState(false);
-  const { state: confirmState, confirm: confirmAction, handleConfirm, handleCancel } = useConfirm();
 
   const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
@@ -386,7 +383,6 @@ export default function AdminLocationsScreen() {
             isDark={isDark}
             borderColor={borderColor}
             mutedColor={mutedColor}
-            confirmAction={confirmAction}
           />
         </View>
       ) : null}
@@ -428,17 +424,6 @@ export default function AdminLocationsScreen() {
             return remaining;
           });
         }}
-      />
-
-      <ConfirmModal
-        visible={!!confirmState}
-        title="Confirm"
-        message={confirmState?.message ?? ""}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        destructive
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
       />
     </ScrollView>
   );

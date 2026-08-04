@@ -65,6 +65,18 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     public async Task<IActionResult> DeleteSection(int id, int sectionId)
         => await _service.DeleteSectionAsync(id, sectionId) ? NoContent() : NotFound();
 
+    // Best-effort "what would this delete orphan?" preview for the two-step delete UI (#270).
+    // Counts non-cancelled future bookings that would lose their section reference. Falls back to
+    // 404 when the section doesn't exist / doesn't belong to the restaurant, so the UI can degrade
+    // to generic copy rather than blocking the delete.
+    [HttpGet("{id}/sections/{sectionId}/impact")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetSectionDeleteImpact(int id, int sectionId)
+    {
+        DeleteImpactDto? result = await _service.GetSectionDeleteImpactAsync(id, sectionId);
+        return result == null ? NotFound() : Ok(result);
+    }
+
     // ── Tables ──────────────────────────────────────────────────────────────
 
     [HttpPost("{id}/sections/{sectionId}/tables")]
@@ -87,4 +99,42 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
         => await _service.DeleteTableAsync(id, sectionId, tableId) ? NoContent() : NotFound();
+
+    // Best-effort "what would this delete orphan?" preview for the two-step delete UI (#270).
+    // Counts non-cancelled future bookings that would lose their table reference. 404 when the table
+    // doesn't exist / doesn't belong to the restaurant+section, so the UI can fall back to generic copy.
+    [HttpGet("{id}/sections/{sectionId}/tables/{tableId}/impact")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetTableDeleteImpact(int id, int sectionId, int tableId)
+    {
+        DeleteImpactDto? result = await _service.GetTableDeleteImpactAsync(id, sectionId, tableId);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    // ── Combinable table groups (#271) ──────────────────────────────────────
+    //
+    // Schema + CRUD only here. Wiring groups into availability/auto-assign/holds is the next issue
+    // (#272); the admin/diner UIs land after that. ValidationException (member rules, CombinedSeats
+    // floor) is mapped to 400 by GlobalExceptionHandler; null result → 404.
+
+    [HttpPost("{id}/groups")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AddTableGroup(int id, CreateTableGroupRequest req)
+    {
+        TableGroupDto? result = await _service.AddTableGroupAsync(id, req);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpPut("{id}/groups/{groupId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateTableGroup(int id, int groupId, UpdateTableGroupRequest req)
+    {
+        TableGroupDto? result = await _service.UpdateTableGroupAsync(id, groupId, req);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("{id}/groups/{groupId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteTableGroup(int id, int groupId)
+        => await _service.DeleteTableGroupAsync(id, groupId) ? NoContent() : NotFound();
 }

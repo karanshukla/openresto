@@ -1132,7 +1132,9 @@ public class BookingServiceTests
         {
             RestaurantId = 1, SectionId = 1, TableId = 1,
             CustomerEmail = "guest@example.com", Seats = 2,
-            Date = new DateTime(2026, 8, 1, 19, 0, 0, DateTimeKind.Utc),
+            // Relative future date — the rest of this file uses AddDays(7); a hardcoded date rots
+            // once it passes (these two tests failed once 2026-08-01 elapsed).
+            Date = DateTime.UtcNow.AddDays(7),
         });
 
         Assert.NotEmpty(result.BookingRef!);
@@ -1154,7 +1156,7 @@ public class BookingServiceTests
         {
             RestaurantId = 1, SectionId = 1, TableId = 1,
             CustomerEmail = "guest@example.com", Seats = 2,
-            Date = new DateTime(2026, 8, 1, 19, 0, 0, DateTimeKind.Utc),
+            Date = DateTime.UtcNow.AddDays(7),
         });
 
         Assert.NotEmpty(result.BookingRef!);

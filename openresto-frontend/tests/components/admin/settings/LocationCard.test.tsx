@@ -162,13 +162,11 @@ const baseProps = {
   borderColor: "#ddd",
   mutedColor: "#888",
   cardBg: "#fff",
-  confirmAction: jest.fn().mockResolvedValue(true),
 };
 
 describe("LocationCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    baseProps.confirmAction = jest.fn().mockResolvedValue(true);
   });
 
   it("renders restaurant name", () => {

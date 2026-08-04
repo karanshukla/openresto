@@ -71,14 +71,12 @@ export function LocationCard({
   isDark,
   borderColor,
   mutedColor,
-  confirmAction,
 }: {
   restaurant: RestaurantDto;
   onSaved: (patch: Partial<RestaurantDto>) => void;
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
-  confirmAction: (msg: string) => Promise<boolean>;
 }) {
   const { primaryColor } = useAppTheme();
   const accentSoft = `${primaryColor}18`;
@@ -369,7 +367,6 @@ export function LocationCard({
               isDark={isDark}
               borderColor={borderColor}
               mutedColor={mutedColor}
-              confirmAction={confirmAction}
               isFirst={index === 0}
               isLast={index === restaurant.sections.length - 1}
               moveDisabled={reordering}

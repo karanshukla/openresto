@@ -30,6 +30,9 @@ internal class RestaurantRepository(AppDbContext db) : IRestaurantRepository
         return await _db.Restaurants
             .Include(r => r.Sections)
             .ThenInclude(s => s.Tables)
+            .Include(r => r.Groups)
+                .ThenInclude(g => g.Members)
+                    .ThenInclude(m => m.Table)
             .FirstOrDefaultAsync(r => r.Id == id && !r.IsArchived);
     }
 
@@ -51,6 +54,9 @@ internal class RestaurantRepository(AppDbContext db) : IRestaurantRepository
             .Where(r => !r.IsArchived)
             .Include(r => r.Sections)
                 .ThenInclude(s => s.Tables)
+            .Include(r => r.Groups)
+                .ThenInclude(g => g.Members)
+                    .ThenInclude(m => m.Table)
             .ToListAsync();
     }
 

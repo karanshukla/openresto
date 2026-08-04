@@ -25,6 +25,14 @@ public class Booking
     public int? TableId { get; set; }
     public Section? Section { get; set; }
     public int? SectionId { get; set; }
+    /// <summary>
+    /// When set, this booking reserves a <see cref="TableGroup"/> (combinable tables) instead of a
+    /// single <see cref="Table"/>. Single-table/walk-in bookings leave it null and are entirely
+    /// unchanged. Kept 1:1 with whatever the booking reserves so holds/availability/cancellation
+    /// don't need a many-to-many from Booking→Table.
+    /// </summary>
+    public TableGroup? TableGroup { get; set; }
+    public int? TableGroupId { get; set; }
     public Restaurant Restaurant { get; set; } = null!;
     public int RestaurantId { get; set; }
     public DateTime Date { get; set; }

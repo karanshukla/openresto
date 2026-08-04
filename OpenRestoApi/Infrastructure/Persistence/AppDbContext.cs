@@ -9,6 +9,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Restaurant> Restaurants { get; set; } = null!;
     public DbSet<Section> Sections { get; set; } = null!;
     public DbSet<Table> Tables { get; set; } = null!;
+    public DbSet<TableGroup> TableGroups { get; set; } = null!;
+    public DbSet<TableGroupMembership> TableGroupMemberships { get; set; } = null!;
     public DbSet<Booking> Bookings { get; set; } = null!;
     public DbSet<AdminCredential> AdminCredentials { get; set; } = null!;
     public DbSet<EmailSettings> EmailSettings { get; set; } = null!;
@@ -55,6 +57,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
               .WithOne(s => s.Restaurant)
               .HasForeignKey(s => s.RestaurantId)
               .OnDelete(DeleteBehavior.Cascade);
+            rb.HasMany(r => r.Groups)
+              .WithOne(g => g.Restaurant!)
+              .HasForeignKey(g => g.RestaurantId)
+              .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Section>(sb =>
@@ -80,6 +86,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             bb.HasOne(b => b.Table).WithMany().HasForeignKey(b => b.TableId).OnDelete(DeleteBehavior.SetNull);
             bb.HasOne(b => b.Section).WithMany().HasForeignKey(b => b.SectionId).OnDelete(DeleteBehavior.SetNull);
             bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey(b => b.RestaurantId);
+            bb.HasOne(b => b.TableGroup).WithMany().HasForeignKey(b => b.TableGroupId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<TableGroup>(gb =>
+        {
+            gb.HasKey(g => g.Id);
+            gb.Property(g => g.CombinedSeats).IsRequired();
+            gb.HasMany(g => g.Members)
+              .WithOne(m => m.Group!)
+              .HasForeignKey(m => m.TableGroupId)
+              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TableGroupMembership>(mb =>
+        {
+            // Composite PK — a (group, table) pair is unique by definition; the unique index on
+            // TableId below enforces "a table belongs to at most one group" at the DB level (also
+            // enforced in service code, since the in-memory provider used by tests ignores constraints).
+            mb.HasKey(m => new { m.TableGroupId, m.TableId });
+            mb.HasOne(m => m.Table).WithMany().HasForeignKey(m => m.TableId).OnDelete(DeleteBehavior.Cascade);
+            mb.HasIndex(m => m.TableId).IsUnique();
         });
 
         modelBuilder.Entity<AdminCredential>(a =>

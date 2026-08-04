@@ -29,13 +29,10 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/components/admin/settings/LocationCard", () => ({
-  LocationCard: ({ confirmAction, onSaved }: any) => {
+  LocationCard: ({ onSaved }: any) => {
     const { View, Pressable, Text } = require("react-native");
     return (
       <View>
-        <Pressable testID="trigger-confirm" onPress={() => confirmAction("Test Message")}>
-          <Text>Confirm</Text>
-        </Pressable>
         <Pressable testID="trigger-save" onPress={() => onSaved?.({ name: "Patched Name" })}>
           <Text>Save</Text>
         </Pressable>
@@ -125,21 +122,6 @@ describe("AdminLocationsScreen", () => {
     await waitFor(() =>
       expect(screen.queryByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeNull()
     );
-  });
-
-  it("handles confirm flow through useConfirmLocal", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => screen.getByTestId("trigger-confirm"));
-
-    fireEvent.press(screen.getByTestId("trigger-confirm"));
-    expect(screen.getByText("Test Message")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("Cancel"));
-    await waitFor(() => expect(screen.queryByText("Test Message")).toBeNull());
-
-    fireEvent.press(screen.getByTestId("trigger-confirm"));
-    fireEvent.press(screen.getByText("Delete"));
-    await waitFor(() => expect(screen.queryByText("Test Message")).toBeNull());
   });
 
   it("shows location pills without requiring any toggle", async () => {

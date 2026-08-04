@@ -10,12 +10,14 @@ public class RestaurantManagementService(
     IRestaurantRepository restaurantRepository,
     ISectionRepository sectionRepository,
     ITableRepository tableRepository,
-    IBookingRepository bookingRepository)
+    IBookingRepository bookingRepository,
+    ITableGroupRepository tableGroupRepository)
 {
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly ISectionRepository _sectionRepository = sectionRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
+    private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
 
     private static readonly HashSet<int> _allowedBookingDurationsMinutes =
         [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
@@ -319,6 +321,195 @@ public class RestaurantManagementService(
         return true;
     }
 
+    // ── Delete-impact reads (two-step delete friction, #270) ────────────────
+    //
+    // Cheap, best-effort previews of what a delete would orphan — used by the admin UI to show the
+    // consequence ("N future bookings will lose their table reference") inside the inline confirm step.
+    // Counts non-cancelled bookings starting at/after now; past + cancelled bookings are irrelevant to
+    // the decision. Mirrors the ownership scoping of the deletes themselves so the count matches the
+    // FK-null set the delete will actually touch. Returns null when the table/section doesn't exist
+    // (or doesn't belong to the restaurant), so the UI can fall back to generic copy.
+
+    public async Task<DeleteImpactDto?> GetTableDeleteImpactAsync(int restaurantId, int sectionId, int tableId)
+    {
+        Table? table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurantId);
+        if (table == null)
+        {
+            return null;
+        }
+
+        int bookings = await _bookingRepository.CountFutureByTableAsync(tableId, DateTime.UtcNow);
+        return new DeleteImpactDto { Bookings = bookings };
+    }
+
+    public async Task<DeleteImpactDto?> GetSectionDeleteImpactAsync(int restaurantId, int sectionId)
+    {
+        Section? section = await _sectionRepository.GetWithTablesForRestaurantAsync(sectionId, restaurantId);
+        if (section == null)
+        {
+            return null;
+        }
+
+        var tableIds = section.Tables.Select(t => t.Id).ToList();
+        int bookings = await _bookingRepository.CountFutureBySectionOrTablesAsync(sectionId, tableIds, DateTime.UtcNow);
+        return new DeleteImpactDto { Bookings = bookings };
+    }
+
+    // ── Combinable table groups (#271) ─────────────────────────────────────
+    //
+    // A group is a first-class bookable unit made of physical tables pushed together. Members must
+    // all belong to the same restaurant, no member may already be in another group, and the stored
+    // CombinedSeats must be >= the sum of member seats (restaurants often lose a seat when combining).
+    // All rules are enforced here in-service because the in-memory provider used by tests ignores
+    // SQL constraints; the unique index on TableId is the production backstop.
+
+    public async Task<TableGroupDto?> AddTableGroupAsync(int restaurantId, CreateTableGroupRequest req)
+    {
+        bool exists = await _restaurantRepository.ExistsAsync(restaurantId);
+        if (!exists)
+        {
+            return null;
+        }
+
+        List<Table> members = await ResolveAndValidateMembersAsync(restaurantId, req.Members, excludeGroupId: null);
+
+        // CombinedSeats must be at least the sum of member seats — pushing tables together can lose a
+        // seat, so the admin may set it higher, but never lower (catches obvious mistakes).
+        if (req.CombinedSeats < members.Sum(t => t.Seats))
+        {
+            throw new ValidationException(
+                $"CombinedSeats ({req.CombinedSeats}) must be at least the sum of member seats ({members.Sum(t => t.Seats)}).");
+        }
+
+        var group = new TableGroup
+        {
+            Name = req.Name,
+            RestaurantId = restaurantId,
+            CombinedSeats = req.CombinedSeats,
+            Members = members.Select(t => new TableGroupMembership { TableId = t.Id }).ToList()
+        };
+
+        await _tableGroupRepository.AddAsync(group);
+        await _tableGroupRepository.SaveChangesAsync();
+
+        return ToGroupDto(group);
+    }
+
+    public async Task<TableGroupDto?> UpdateTableGroupAsync(int restaurantId, int groupId, UpdateTableGroupRequest req)
+    {
+        TableGroup? group = await _tableGroupRepository.GetByIdWithMembersAsync(groupId, restaurantId);
+        if (group == null)
+        {
+            return null;
+        }
+
+        // Re-validate the new member set, allowing the group's own current members to stay.
+        var currentMemberIds = group.Members.Select(m => m.TableId).ToHashSet();
+        List<Table> members = await ResolveAndValidateMembersAsync(
+            restaurantId, req.Members, excludeGroupId: groupId, currentMemberIds: currentMemberIds);
+
+        if (req.CombinedSeats < members.Sum(t => t.Seats))
+        {
+            throw new ValidationException(
+                $"CombinedSeats ({req.CombinedSeats}) must be at least the sum of member seats ({members.Sum(t => t.Seats)}).");
+        }
+
+        group.Name = req.Name;
+        group.CombinedSeats = req.CombinedSeats;
+        // Replace the member set in place so EF tracks the add/remove diff and cascades correctly.
+        group.Members = members.Select(t => new TableGroupMembership { TableGroupId = group.Id, TableId = t.Id }).ToList();
+
+        await _tableGroupRepository.SaveChangesAsync();
+        return ToGroupDto(group);
+    }
+
+    public async Task<bool> DeleteTableGroupAsync(int restaurantId, int groupId)
+    {
+        TableGroup? group = await _tableGroupRepository.GetByIdWithMembersAsync(groupId, restaurantId);
+        if (group == null)
+        {
+            return false;
+        }
+
+        // FK-null bookings referencing this group before removing it (same single-save pattern as
+        // DeleteSectionAsync/DeleteTableAsync). Bookings keep their other details; only the group
+        // reference is cleared.
+        List<Booking> affected = await _bookingRepository.GetByTableGroupAsync(groupId);
+        foreach (Booking b in affected)
+        {
+            b.TableGroupId = null;
+        }
+
+        _tableGroupRepository.Remove(group);
+        await _tableGroupRepository.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Loads the requested member tables, scoped to the restaurant, and enforces every data-integrity
+    /// rule: distinct ids, &gt;= 2 members, all exist + belong to this restaurant, and none already in
+    /// another group (allowing a table to remain in the group being edited). Throws
+    /// <see cref="ValidationException"/> on the first violation.
+    /// </summary>
+    private async Task<List<Table>> ResolveAndValidateMembersAsync(
+        int restaurantId,
+        IReadOnlyList<int> memberIds,
+        int? excludeGroupId,
+        HashSet<int>? currentMemberIds = null)
+    {
+        if (memberIds == null || memberIds.Count < 2)
+        {
+            throw new ValidationException("A combinable table group must have at least two members.");
+        }
+
+        if (memberIds.Distinct().Count() != memberIds.Count)
+        {
+            throw new ValidationException("A combinable table group cannot list the same table twice.");
+        }
+
+        // Load candidate members scoped to the restaurant via the section→restaurant chain.
+        List<Table> tables = await _tableRepository.GetManyForRestaurantAsync(memberIds, restaurantId);
+        if (tables.Count != memberIds.Count)
+        {
+            throw new ValidationException("All member tables must exist and belong to this restaurant.");
+        }
+
+        // Reject any member already claimed by a *different* group. A table in the group being edited
+        // (currentMemberIds) is allowed to stay; everything else must be ungrouped.
+        var grouped = await _tableGroupRepository.GetAllWithMembersByRestaurantAsync(restaurantId);
+        var tableIdToGroup = new Dictionary<int, int>();
+        foreach (TableGroup g in grouped)
+        {
+            if (excludeGroupId.HasValue && g.Id == excludeGroupId.Value) continue;
+            foreach (TableGroupMembership m in g.Members)
+            {
+                tableIdToGroup[m.TableId] = g.Id;
+            }
+        }
+
+        foreach (Table t in tables)
+        {
+            if (tableIdToGroup.TryGetValue(t.Id, out int ownerGroupId))
+            {
+                throw new ValidationException(
+                    $"Table {t.Id} already belongs to another combinable group ({ownerGroupId}).");
+            }
+        }
+
+        return tables;
+    }
+
+    private static TableGroupDto ToGroupDto(TableGroup g) => new()
+    {
+        Id = g.Id,
+        Name = g.Name,
+        CombinedSeats = g.CombinedSeats,
+        Members = g.Members
+            .OrderBy(m => m.TableId)
+            .Select(m => new TableDto { Id = m.Table!.Id, Name = m.Table.Name, Seats = m.Table.Seats })
+            .ToList()
+    };
+
     // ── Mapping ─────────────────────────────────────────────────────────────
 
     private static RestaurantDto ToDto(Restaurant r) => new()
@@ -351,6 +542,18 @@ public class RestaurantManagementService(
                 Name = s.Name,
                 SortOrder = s.SortOrder,
                 Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
+            }).ToList(),
+        Groups = (r.Groups ?? Enumerable.Empty<TableGroup>())
+            .OrderBy(g => g.Id)
+            .Select(g => new TableGroupDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                CombinedSeats = g.CombinedSeats,
+                Members = (g.Members ?? Enumerable.Empty<TableGroupMembership>())
+                    .OrderBy(m => m.TableId)
+                    .Select(m => new TableDto { Id = m.Table!.Id, Name = m.Table.Name, Seats = m.Table.Seats })
+                    .ToList()
             }).ToList()
     };
 }

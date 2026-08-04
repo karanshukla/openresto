@@ -1,12 +1,20 @@
 import { useState } from "react";
-import { View, Pressable } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
-import { SectionDto, TableDto, updateSection, deleteSection, addTable } from "@/api/restaurants";
+import {
+  SectionDto,
+  TableDto,
+  updateSection,
+  deleteSection,
+  addTable,
+  fetchSectionDeleteImpact,
+} from "@/api/restaurants";
 import { TableRow } from "./TableRow";
 import { AddRow } from "./AddRow";
 import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hexToRgba } from "@/utils/colors";
 import { styles } from "./settings.styles";
 import Input from "@/components/common/Input";
 
@@ -21,7 +29,6 @@ export function SectionBlock({
   onTableAdded,
   onTableUpdated,
   onTableDeleted,
-  confirmAction,
   isFirst,
   isLast,
   moveDisabled,
@@ -33,7 +40,6 @@ export function SectionBlock({
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
-  confirmAction: (msg: string) => Promise<boolean>;
   onSectionRenamed: (name: string) => void;
   onSectionDeleted: () => void;
   onTableAdded: (t: TableDto) => void;
@@ -54,6 +60,35 @@ export function SectionBlock({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(section.name);
   const [saving, setSaving] = useState(false);
+  // Two-step delete friction (#270) — same inline pattern as TableRow/DangerZone. `Delete…` reveals
+  // an inline confirmation naming the consequence (incl. the count of future bookings that would lose
+  // their section/table reference); a second explicit tap destroys. `impact` is best-effort.
+  const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
+  const [impact, setImpact] = useState<number | null>(null);
+  const [impactLoading, setImpactLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const startSectionDelete = async () => {
+    setDeleteStep("confirm");
+    setImpact(null);
+    setImpactLoading(true);
+    const result = await fetchSectionDeleteImpact(restaurantId, section.id);
+    setImpact(result?.bookings ?? null);
+    setImpactLoading(false);
+  };
+
+  const cancelSectionDelete = () => {
+    setDeleteStep("idle");
+    setImpact(null);
+    setImpactLoading(false);
+  };
+
+  const confirmSectionDelete = async () => {
+    setDeleting(true);
+    const success = await deleteSection(restaurantId, section.id);
+    setDeleting(false);
+    if (success) onSectionDeleted();
+  };
 
   return (
     <View
@@ -174,23 +209,84 @@ export function SectionBlock({
               <Pressable
                 testID="section-delete-btn"
                 style={styles.smallBtn}
-                onPress={async () => {
-                  const ok = await confirmAction(
-                    `Delete section "${section.name}" and all its tables?`
-                  );
-                  if (!ok) return;
-                  const success = await deleteSection(restaurantId, section.id);
-                  if (success) onSectionDeleted();
-                }}
+                disabled={deleteStep === "confirm"}
+                onPress={startSectionDelete}
               >
                 <ThemedText style={[styles.smallBtnText, { color: theme.colors.error }]}>
-                  Delete
+                  Delete…
                 </ThemedText>
               </Pressable>
             </>
           )}
         </View>
       </View>
+
+      {/* Inline two-step delete confirmation (#270) — sits between the header and the table list so
+          the consequence is visible in context. Cancel returns to the header without destroying. */}
+      {deleteStep === "confirm" && (
+        <View
+          style={{
+            paddingHorizontal: 14,
+            paddingVertical: 11,
+            borderBottomWidth: 1,
+            borderBottomColor: borderColor,
+            gap: 10,
+            backgroundColor: isDark
+              ? hexToRgba(theme.colors.error, 0.08)
+              : hexToRgba(theme.colors.error, 0.04),
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+            <Ionicons
+              name="warning-outline"
+              size={15}
+              color={theme.colors.error}
+              style={{ marginTop: 1 }}
+            />
+            <ThemedText style={{ flex: 1, fontSize: 12, lineHeight: 17 }}>
+              <ThemedText style={{ fontWeight: "700" }}>
+                Delete section &ldquo;{section.name}&rdquo; and all its tables?
+              </ThemedText>{" "}
+              {impactLoading
+                ? ""
+                : impact && impact > 0
+                  ? `${impact} future ${impact === 1 ? "booking" : "bookings"} affected.`
+                  : "Future bookings in this section will lose their reference."}{" "}
+              This cannot be undone.
+            </ThemedText>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
+            <Pressable
+              testID="section-delete-cancel-btn"
+              style={[styles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
+              onPress={cancelSectionDelete}
+              disabled={deleting}
+            >
+              <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+            </Pressable>
+            <Pressable
+              testID="section-delete-confirm-btn"
+              disabled={deleting}
+              onPress={confirmSectionDelete}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: theme.borderRadius.md,
+                backgroundColor: theme.colors.error,
+                opacity: deleting ? 0.7 : 1,
+              }}
+            >
+              {deleting && <ActivityIndicator size="small" color="#fff" />}
+              <ThemedText style={[styles.smallBtnText, { color: "#fff", fontWeight: "700" }]}>
+                {deleting ? "Deleting…" : "Yes, delete"}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* Table list */}
       <View>
@@ -204,7 +300,6 @@ export function SectionBlock({
             borderColor={borderColor}
             onUpdated={onTableUpdated}
             onDeleted={() => onTableDeleted(t.id)}
-            confirmAction={confirmAction}
           />
         ))}
         {section.tables.length === 0 && (

@@ -73,6 +73,14 @@ internal class TableRepository(AppDbContext db) : ITableRepository
             .FirstOrDefaultAsync(t => t.Id == tableId && t.SectionId == sectionId && t.Section!.RestaurantId == restaurantId);
     }
 
+    public async Task<List<Table>> GetManyForRestaurantAsync(IReadOnlyList<int> tableIds, int restaurantId)
+    {
+        return await _db.Tables
+            .Include(t => t.Section)
+            .Where(t => tableIds.Contains(t.Id) && t.Section!.RestaurantId == restaurantId)
+            .ToListAsync();
+    }
+
     public async Task SaveChangesAsync()
     {
         await _db.SaveChangesAsync();

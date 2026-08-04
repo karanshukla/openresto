@@ -19,7 +19,8 @@ public class WalkInTests
         new RestaurantRepository(db),
         new SectionRepository(db),
         new TableRepository(db),
-        new BookingRepository(db));
+        new BookingRepository(db),
+        new TableGroupRepository(db));
 
     // ── WalkInHelper ──────────────────────────────────────────────────────────
 

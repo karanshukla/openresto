@@ -165,6 +165,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<ISectionRepository, SectionRepository>();
         services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+        services.AddScoped<ITableGroupRepository, TableGroupRepository>();
         services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
         services.AddScoped<IAdminPushSubscriptionRepository, AdminPushSubscriptionRepository>();
         services.AddScoped<IAdminCredentialRepository, AdminCredentialRepository>();
