@@ -16,6 +16,7 @@ import {
 } from "@/api/restaurants";
 import { TableRow, TableRowGroupContext } from "./TableRow";
 import { AddRow } from "./AddRow";
+import { RowIconButton } from "./RowIconButton";
 import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -226,7 +227,9 @@ export function SectionBlock({
         },
       ]}
     >
-      {/* Section header — surface background with border-bottom */}
+      {/* Section header — surface background with border-bottom. Name + count subtitle on the
+          left, a tidy cluster of icon actions on the right (consistent with the table tiles and
+          the rest of the settings cards). Editing state swaps to a name Input + text Save/Cancel. */}
       <View
         style={{
           flexDirection: "row",
@@ -239,8 +242,8 @@ export function SectionBlock({
           borderBottomColor: borderColor,
         }}
       >
-        {/* Left: name / edit input */}
-        <View style={{ flex: 1 }}>
+        {/* Left: name / edit input + count subtitle */}
+        <View style={{ flex: 1, gap: 2 }}>
           {editing ? (
             <Input
               value={draft}
@@ -249,20 +252,20 @@ export function SectionBlock({
               autoFocus
             />
           ) : (
-            <ThemedText style={styles.editableValue}>{section.name}</ThemedText>
+            <>
+              <ThemedText style={styles.editableValue}>{section.name}</ThemedText>
+              <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+                {section.tables.length} tables · {totalSeats} seats
+                {sectionGroups.length > 0
+                  ? ` · ${sectionGroups.length} combinable group${sectionGroups.length > 1 ? "s" : ""}`
+                  : ""}
+              </ThemedText>
+            </>
           )}
         </View>
 
-        {/* Right: tables count + edit/save/delete actions */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {!editing && (
-            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
-              {section.tables.length} tables · {totalSeats} seats
-              {sectionGroups.length > 0
-                ? ` · ${sectionGroups.length} combinable group${sectionGroups.length > 1 ? "s" : ""}`
-                : ""}
-            </ThemedText>
-          )}
+        {/* Right: edit/save/delete actions */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           {editing ? (
             <>
               <Pressable
@@ -289,58 +292,46 @@ export function SectionBlock({
             </>
           ) : (
             <>
-              <Pressable
+              <RowIconButton
                 testID="section-move-up-btn"
-                accessibilityLabel={`Move ${section.name} section up`}
-                accessibilityHint="Moves this section earlier in the display order"
-                style={{ padding: 6 }}
+                name="arrow-up-outline"
+                color={isFirst ? mutedColor : primaryColor}
                 disabled={isFirst || moveDisabled}
                 onPress={() => {
                   if (!isFirst) onMoveUp();
                 }}
-              >
-                <Ionicons
-                  name="arrow-up-outline"
-                  size={16}
-                  color={isFirst ? mutedColor : primaryColor}
-                />
-              </Pressable>
-              <Pressable
+                accessibilityLabel={`Move ${section.name} section up`}
+                accessibilityHint="Moves this section earlier in the display order"
+              />
+              <RowIconButton
                 testID="section-move-down-btn"
-                accessibilityLabel={`Move ${section.name} section down`}
-                accessibilityHint="Moves this section later in the display order"
-                style={{ padding: 6 }}
+                name="arrow-down-outline"
+                color={isLast ? mutedColor : primaryColor}
                 disabled={isLast || moveDisabled}
                 onPress={() => {
                   if (!isLast) onMoveDown();
                 }}
-              >
-                <Ionicons
-                  name="arrow-down-outline"
-                  size={16}
-                  color={isLast ? mutedColor : primaryColor}
-                />
-              </Pressable>
-              <Pressable
+                accessibilityLabel={`Move ${section.name} section down`}
+                accessibilityHint="Moves this section later in the display order"
+              />
+              <RowIconButton
                 testID="section-edit-btn"
-                style={styles.smallBtn}
+                name="pencil-outline"
+                color={primaryColor}
                 onPress={() => {
                   setDraft(section.name);
                   setEditing(true);
                 }}
-              >
-                <ThemedText style={[styles.smallBtnText, { color: primaryColor }]}>Edit</ThemedText>
-              </Pressable>
-              <Pressable
+                accessibilityLabel={`Rename ${section.name} section`}
+              />
+              <RowIconButton
                 testID="section-delete-btn"
-                style={styles.smallBtn}
+                name="trash-outline"
+                color={theme.colors.error}
                 disabled={deleteStep === "confirm"}
                 onPress={startSectionDelete}
-              >
-                <ThemedText style={[styles.smallBtnText, { color: theme.colors.error }]}>
-                  Delete…
-                </ThemedText>
-              </Pressable>
+                accessibilityLabel={`Delete ${section.name} section`}
+              />
             </>
           )}
         </View>
@@ -505,8 +496,9 @@ export function SectionBlock({
           );
         })()}
 
-      {/* Table list */}
-      <View>
+      {/* Table list — tiles with breathing room (rows are now rounded surface tiles, not
+          divider-separated). */}
+      <View style={{ padding: 12, gap: 8 }}>
         {section.tables.map((t) => (
           <TableRow
             key={t.id}
@@ -527,24 +519,50 @@ export function SectionBlock({
           />
         ))}
         {section.tables.length === 0 && (
-          <ThemedText style={[styles.emptyNote, { color: mutedColor, padding: 12 }]}>
-            No tables yet.
-          </ThemedText>
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+              gap: 6,
+              borderWidth: 1,
+              borderColor,
+              borderRadius: 10,
+              borderStyle: "dashed" as const,
+            }}
+          >
+            <Ionicons name="grid-outline" size={22} color={mutedColor} />
+            <ThemedText style={{ fontSize: 13, color: mutedColor }}>No tables yet.</ThemedText>
+          </View>
         )}
       </View>
 
-      {/* Per-group combined-seats edit trigger (#273) — a small affordance under each group's rows.
-          Rendered after the table list so it doesn't interfere with row mapping. */}
+      {/* Per-group combined-seats edit trigger (#273) — a compact bordered chip under each group. */}
       {sectionGroups.map((g) => (
         <Pressable
           key={`group-edit-${g.id}`}
           testID={`group-edit-btn-${g.id}`}
-          style={{ paddingHorizontal: 14, paddingVertical: 6 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${groupLabel(g)} combined seats`}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            alignSelf: "flex-start",
+            marginHorizontal: 12,
+            marginBottom: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: theme.borderRadius.md,
+            borderWidth: 1,
+            borderColor: hexToRgba(primaryColor, 0.4),
+            backgroundColor: hexToRgba(primaryColor, 0.06),
+          }}
           onPress={() => {
             setEditingGroupId(g.id);
             setDraftCombinedSeats(String(g.combinedSeats));
           }}
         >
+          <Ionicons name="create-outline" size={13} color={primaryColor} />
           <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
             Edit &ldquo;{groupLabel(g)}&rdquo; combined seats
           </ThemedText>
@@ -552,7 +570,7 @@ export function SectionBlock({
       ))}
 
       {/* Add table */}
-      <View style={{ padding: 12 }}>
+      <View style={{ padding: 12, paddingTop: 0 }}>
         <AddRow
           label="Add Table"
           placeholder="Table name (e.g. T1, Booth 1)"

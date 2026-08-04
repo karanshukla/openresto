@@ -25,21 +25,34 @@ export function AddRow({
 
   const { primaryColor } = useAppTheme();
 
+  // Collapsed — a self-sized filled-primary pill, aligned right (matches the Add CTA pattern in
+  // HighlightsCard: `alignSelf: flex-start` there is left; here we right-align per the settings
+  // table/section layout). Keeps the verbatim label so callers' tests keep resolving it.
   if (!open) {
     return (
       <Pressable
-        style={[
-          styles.addBtn,
-          { backgroundColor: "transparent", borderWidth: 1, borderColor: primaryColor },
-        ]}
+        style={{
+          backgroundColor: primaryColor,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 8,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          alignSelf: "flex-end",
+        }}
         onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
       >
-        <Ionicons name="add-circle-outline" size={16} color={primaryColor} />
-        <ThemedText style={[styles.addBtnText, { color: primaryColor }]}>{label}</ThemedText>
+        <Ionicons name="add" size={16} color="#fff" />
+        <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>{label}</ThemedText>
       </Pressable>
     );
   }
 
+  // Expanded — inputs + a right-aligned footer: filled-primary text Add and a bordered close (X)
+  // icon so the dismiss affordance is consistent with the rest of the row actions.
   return (
     <View style={styles.addForm}>
       <View style={{ flexDirection: "row", gap: 12 }}>
@@ -62,7 +75,9 @@ export function AddRow({
           </View>
         )}
       </View>
-      <View style={styles.rowActions}>
+      <View
+        style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", alignItems: "center" }}
+      >
         <Pressable
           onPress={async () => {
             if (!name.trim()) return;
@@ -74,21 +89,29 @@ export function AddRow({
             setOpen(false);
           }}
           disabled={saving || !name.trim()}
-          style={[styles.actionBtn, { backgroundColor: primaryColor }]}
+          style={[styles.actionBtn, { backgroundColor: primaryColor, opacity: saving ? 0.6 : 1 }]}
         >
           <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
             {saving ? "Adding…" : "Add"}
           </ThemedText>
         </Pressable>
         <Pressable
-          style={styles.smallBtn}
+          style={{
+            padding: 6,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: theme.colors.border.light,
+          }}
           onPress={() => {
             setOpen(false);
             setName("");
             setExtra("");
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel add"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="close-outline" size={20} color={theme.colors.muted.light} />
+          <Ionicons name="close" size={16} color={theme.colors.muted.light} />
         </Pressable>
       </View>
     </View>

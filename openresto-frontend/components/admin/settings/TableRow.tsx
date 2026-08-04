@@ -8,10 +8,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { styles } from "./settings.styles";
+import { RowIconButton } from "./RowIconButton";
 
 /**
  * Group membership context for a table row (#273). When present, the row renders inside a
- * combinable group: a ⛓ chip with the group label and an Unlink button instead of Link.
+ * combinable group: a ⛓ chip with the group label and a remove (unlink) affordance.
  */
 export interface TableRowGroupContext {
   id: number;
@@ -75,6 +76,10 @@ export function TableRow({
   const { primaryColor } = useAppTheme();
 
   const tableName = table.name ?? `Table ${table.id}`;
+  // Surface tokens shared with SocialLinkRow / HighlightsCard so the table tiles are visually
+  // indistinguishable from the rest of the settings cards.
+  const surface2 = isDark ? "#252729" : "#f9fafb";
+  const cardBg = isDark ? "#1e2022" : "#ffffff";
 
   const startDelete = async () => {
     setDeleteStep("confirm");
@@ -100,8 +105,8 @@ export function TableRow({
     if (success) onDeleted();
   };
 
-  // Selection mode (#273): render a checkable row for combining tables into a group. Already-grouped
-  // tables (disabledInSelection) are shown disabled with their chip; standalone tables are selectable.
+  // Selection mode (#273): render a checkable tile for combining tables into a group. Already-grouped
+  // tables (disabledInSelection) are shown disabled with their chip; standalone tiles are selectable.
   if (selectionMode) {
     const isGrouped = !!group || disabledInSelection;
     return (
@@ -112,13 +117,13 @@ export function TableRow({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
-          gap: 10,
+          gap: 12,
+          padding: 12,
+          borderWidth: 1,
+          borderColor,
+          borderRadius: 10,
           opacity: isGrouped ? 0.45 : 1,
-          backgroundColor: selected ? hexToRgba(primaryColor, 0.08) : "transparent",
+          backgroundColor: selected ? hexToRgba(primaryColor, 0.08) : surface2,
         }}
       >
         <Ionicons
@@ -126,47 +131,55 @@ export function TableRow({
           size={16}
           color={isGrouped ? mutedColor : primaryColor}
         />
-        <ThemedText style={{ flex: 1, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>
-          {table.name ?? `T${table.id}`}
-        </ThemedText>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 36 }}>
-          <Ionicons name="people-outline" size={11} color={mutedColor} />
-          <ThemedText style={{ fontSize: 12, color: mutedColor }}>{table.seats}</ThemedText>
-        </View>
-        {isGrouped && group && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-              backgroundColor: hexToRgba(primaryColor, 0.12),
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: theme.borderRadius.full,
-            }}
-          >
-            <Ionicons name="link" size={11} color={primaryColor} />
-            <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
-              {group.label}
+        <View style={{ flex: 1 }}>
+          <ThemedText style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
+            {table.name ?? `T${table.id}`}
+          </ThemedText>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+            <Ionicons name="people-outline" size={12} color={mutedColor} />
+            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+              {table.seats} seat{table.seats === 1 ? "" : "s"}
             </ThemedText>
+            {isGrouped && group && (
+              <View
+                testID={`table-group-chip-${table.id}`}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  marginLeft: 6,
+                  backgroundColor: hexToRgba(primaryColor, 0.12),
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: theme.borderRadius.full,
+                }}
+              >
+                <Ionicons name="link" size={11} color={primaryColor} />
+                <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+                  {group.label}
+                </ThemedText>
+              </View>
+            )}
           </View>
-        )}
+        </View>
       </Pressable>
     );
   }
 
+  // Inline two-step delete confirmation (#270) — a tinted tile that replaces the row so the
+  // consequence is visible in context. Cancel returns to the row without destroying.
   if (!editing && deleteStep === "confirm") {
     return (
       <View
         style={{
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
+          padding: 12,
+          borderWidth: 1,
+          borderColor: hexToRgba(theme.colors.error, 0.4),
+          borderRadius: 10,
           gap: 10,
           backgroundColor: isDark
-            ? hexToRgba(theme.colors.error, 0.08)
-            : hexToRgba(theme.colors.error, 0.04),
+            ? hexToRgba(theme.colors.error, 0.1)
+            : hexToRgba(theme.colors.error, 0.05),
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
@@ -220,83 +233,119 @@ export function TableRow({
     );
   }
 
+  // Default row — a surface tile (matches SocialLinkRow / HighlightsCard): leading icon square,
+  // name + seats subtitle, trailing cluster of icon actions. Grouped rows append a remove-on-the-chip
+  // and skip the combine action.
   if (!editing) {
     return (
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: group ? 12 : 14,
-          paddingVertical: 11,
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
-          gap: 10,
-          backgroundColor: group
-            ? isDark
-              ? hexToRgba(primaryColor, 0.1)
-              : hexToRgba(primaryColor, 0.06)
-            : "transparent",
+          gap: 12,
+          padding: 12,
+          backgroundColor: surface2,
+          borderWidth: 1,
+          borderColor,
+          borderRadius: 10,
         }}
       >
-        <ThemedText style={{ flex: 1, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>
-          {table.name ?? `T${table.id}`}
-        </ThemedText>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 36 }}>
-          <Ionicons name="people-outline" size={11} color={mutedColor} />
-          <ThemedText style={{ fontSize: 12, color: mutedColor }}>{table.seats}</ThemedText>
-        </View>
-        {group ? (
-          <>
-            <View
-              testID={`table-group-chip-${table.id}`}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                backgroundColor: hexToRgba(primaryColor, 0.14),
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: theme.borderRadius.full,
-              }}
-            >
-              <Ionicons name="link" size={11} color={primaryColor} />
-              <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
-                {group.label}
-              </ThemedText>
-            </View>
-            <Pressable
-              testID={`table-unlink-btn-${table.id}`}
-              style={styles.smallBtn}
-              onPress={onUnlink}
-            >
-              <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Unlink</ThemedText>
-            </Pressable>
-          </>
-        ) : (
-          <Pressable testID={`table-link-btn-${table.id}`} style={styles.smallBtn} onPress={onLink}>
-            <ThemedText style={[styles.smallBtnText, { color: primaryColor }]}>Link</ThemedText>
-          </Pressable>
-        )}
-        <Pressable
-          style={styles.smallBtn}
-          onPress={() => {
-            setDraftName(table.name ?? "");
-            setDraftSeats(String(table.seats));
-            setEditing(true);
+        {/* Leading icon square */}
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: cardBg,
+            borderWidth: 1,
+            borderColor,
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Edit</ThemedText>
-        </Pressable>
-        <Pressable style={styles.smallBtn} onPress={startDelete}>
-          <ThemedText style={[styles.smallBtnText, { color: theme.colors.error }]}>
-            Delete…
+          <Ionicons name={group ? "link" : "grid-outline"} size={18} color={primaryColor} />
+        </View>
+
+        {/* Title + subtitle (seats, and the group chip when grouped) */}
+        <View style={{ flex: 1 }}>
+          <ThemedText style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
+            {table.name ?? `T${table.id}`}
           </ThemedText>
-        </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <Ionicons name="people-outline" size={12} color={mutedColor} />
+            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+              {table.seats} seat{table.seats === 1 ? "" : "s"}
+            </ThemedText>
+            {group && (
+              <View
+                testID={`table-group-chip-${table.id}`}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  marginLeft: 4,
+                  backgroundColor: hexToRgba(primaryColor, 0.14),
+                  paddingLeft: 8,
+                  paddingRight: 2,
+                  paddingVertical: 2,
+                  borderRadius: theme.borderRadius.full,
+                }}
+              >
+                <Ionicons name="link" size={11} color={primaryColor} />
+                <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+                  {group.label}
+                </ThemedText>
+                <Pressable
+                  testID={`table-unlink-btn-${table.id}`}
+                  onPress={onUnlink}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${tableName} from group`}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={{ padding: 2 }}
+                >
+                  <Ionicons name="close" size={12} color={primaryColor} />
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Trailing icon actions */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {!group && (
+            <RowIconButton
+              testID={`table-link-btn-${table.id}`}
+              name="link-outline"
+              color={primaryColor}
+              onPress={onLink}
+              accessibilityLabel={`Combine ${tableName} into a group`}
+            />
+          )}
+          <RowIconButton
+            testID={`table-edit-btn-${table.id}`}
+            name="pencil-outline"
+            color={mutedColor}
+            onPress={() => {
+              setDraftName(table.name ?? "");
+              setDraftSeats(String(table.seats));
+              setEditing(true);
+            }}
+            accessibilityLabel={`Edit ${tableName}`}
+          />
+          <RowIconButton
+            testID={`table-delete-btn-${table.id}`}
+            name="trash-outline"
+            color={theme.colors.error}
+            onPress={startDelete}
+            accessibilityLabel={`Delete ${tableName}`}
+          />
+        </View>
       </View>
     );
   }
 
-  // Edit mode — full-width inline form
+  // Edit mode — full-width inline form (kept intact; Save/Cancel are text buttons by design).
   return (
     <View
       style={{

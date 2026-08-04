@@ -46,7 +46,7 @@ describe("TableRow", () => {
   it("renders table name and seats in view mode", () => {
     render(<TableRow {...baseProps} />);
     expect(screen.getByText("T1")).toBeTruthy();
-    expect(screen.getByText("4")).toBeTruthy();
+    expect(screen.getByText("4 seats")).toBeTruthy();
   });
 
   it("renders table id fallback when name is null", () => {
@@ -57,7 +57,7 @@ describe("TableRow", () => {
   it("enters edit mode when pencil button is pressed", () => {
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByDisplayValue("T1")).toBeTruthy();
     expect(screen.getByDisplayValue("4")).toBeTruthy();
@@ -66,7 +66,7 @@ describe("TableRow", () => {
   it("shows Cancel and Save buttons in edit mode", () => {
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByText("Cancel")).toBeTruthy();
     expect(screen.getByText("Save")).toBeTruthy();
@@ -77,7 +77,7 @@ describe("TableRow", () => {
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.changeText(screen.getByDisplayValue("T1"), "T1-Updated");
     fireEvent.changeText(screen.getByDisplayValue("4"), "2");
@@ -94,7 +94,7 @@ describe("TableRow", () => {
   it("does not save when seats is not a valid number", async () => {
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.changeText(screen.getByDisplayValue("4"), "abc");
     await act(async () => {
@@ -106,7 +106,7 @@ describe("TableRow", () => {
   it("does not save when seats is 0", async () => {
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.changeText(screen.getByDisplayValue("4"), "0");
     await act(async () => {
@@ -118,7 +118,7 @@ describe("TableRow", () => {
   it("cancels edit mode when Cancel is pressed", () => {
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.press(screen.getByText("Cancel"));
     expect(screen.getByText("T1")).toBeTruthy();
@@ -134,7 +134,7 @@ describe("TableRow", () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 3 });
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     expect(restaurantsApi.fetchTableDeleteImpact).toHaveBeenCalledWith(1, 2, 5);
     // The confirm copy names the table and the concrete consequence.
@@ -151,7 +151,7 @@ describe("TableRow", () => {
     (restaurantsApi.deleteTable as jest.Mock).mockResolvedValue(true);
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     // The actual delete call is NOT made by the first tap — only by the confirm tap.
     expect(restaurantsApi.deleteTable).not.toHaveBeenCalled();
@@ -166,21 +166,21 @@ describe("TableRow", () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     fireEvent.press(screen.getByTestId("table-delete-cancel-btn"));
     expect(restaurantsApi.deleteTable).not.toHaveBeenCalled();
     expect(baseProps.onDeleted).not.toHaveBeenCalled();
     // Back to the idle row — the destructive confirm copy is gone.
     expect(screen.queryByText("Yes, delete")).toBeNull();
-    expect(screen.getByText("Delete…")).toBeTruthy();
+    expect(screen.getByTestId("table-delete-btn-5")).toBeTruthy();
   });
 
   it("falls back to generic copy when the impact read fails or is unavailable", async () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue(null);
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     expect(
       await screen.findByText(/Future bookings on this table will lose their reference/)
@@ -191,7 +191,7 @@ describe("TableRow", () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     expect(await screen.findByText(/1 future booking will lose its table reference/)).toBeTruthy();
   });
@@ -201,26 +201,26 @@ describe("TableRow", () => {
     expect(screen.getByText("T1")).toBeTruthy();
   });
 
-  it("renders tableIcon with seats=1 (person-outline branch)", () => {
+  it("renders the seats count for seats=1 (singular)", () => {
     render(<TableRow {...baseProps} table={{ ...baseTable, seats: 1 }} />);
-    expect(screen.getByText("1")).toBeTruthy();
+    expect(screen.getByText("1 seat")).toBeTruthy();
   });
 
-  it("renders tableIcon with seats=8 (apps-outline branch)", () => {
+  it("renders the seats count for seats=8 (plural)", () => {
     render(<TableRow {...baseProps} table={{ ...baseTable, seats: 8 }} />);
-    expect(screen.getByText("8")).toBeTruthy();
+    expect(screen.getByText("8 seats")).toBeTruthy();
   });
 
-  it("renders tableIcon with seats=10 (albums-outline branch)", () => {
+  it("renders the seats count for seats=10 (plural)", () => {
     render(<TableRow {...baseProps} table={{ ...baseTable, seats: 10 }} />);
-    expect(screen.getByText("10")).toBeTruthy();
+    expect(screen.getByText("10 seats")).toBeTruthy();
   });
 
   it("falls back to the default primary color when the brand has none", () => {
     (useBrand as jest.Mock).mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByText("Save")).toBeTruthy();
   });
@@ -229,14 +229,14 @@ describe("TableRow", () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     render(<TableRow {...baseProps} table={{ ...baseTable, name: null }} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByDisplayValue("")).toBeTruthy();
     expect(screen.getByText("EDITING · Table 5")).toBeTruthy();
     fireEvent.press(screen.getByText("Cancel"));
 
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     // The confirm copy falls back to the "Table {id}" label when the name is null.
     expect(await screen.findByText(/Delete “Table 5”\?/)).toBeTruthy();
@@ -247,7 +247,7 @@ describe("TableRow", () => {
     (restaurantsApi.deleteTable as jest.Mock).mockResolvedValue(false);
     render(<TableRow {...baseProps} />);
     await act(async () => {
-      fireEvent.press(screen.getByText("Delete…"));
+      fireEvent.press(screen.getByTestId("table-delete-btn-5"));
     });
     await act(async () => {
       fireEvent.press(screen.getByText("Yes, delete"));
@@ -259,7 +259,7 @@ describe("TableRow", () => {
   it("renders the edit-mode background in dark mode", () => {
     render(<TableRow {...baseProps} isDark />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     expect(screen.getByText("Save")).toBeTruthy();
   });
@@ -269,7 +269,7 @@ describe("TableRow", () => {
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     fireEvent.changeText(screen.getByDisplayValue("T1"), "   ");
     await act(async () => {
@@ -285,7 +285,7 @@ describe("TableRow", () => {
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(null);
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
@@ -303,7 +303,7 @@ describe("TableRow", () => {
     );
     render(<TableRow {...baseProps} />);
     act(() => {
-      fireEvent.press(screen.getByText("Edit"));
+      fireEvent.press(screen.getByTestId("table-edit-btn-5"));
     });
     act(() => {
       fireEvent.press(screen.getByText("Save"));
@@ -316,13 +316,12 @@ describe("TableRow", () => {
 
   // ── Combinable table groups (#273) ────────────────────────────────────────
 
-  it("renders a Link button on standalone (ungrouped) tables", () => {
+  it("renders a combine (link) action on standalone (ungrouped) tables", () => {
     render(<TableRow {...baseProps} />);
     expect(screen.getByTestId("table-link-btn-5")).toBeTruthy();
-    expect(screen.getByText("Link")).toBeTruthy();
   });
 
-  it("renders the group chip and Unlink button when the table is a group member", () => {
+  it("renders the group chip and a remove (unlink) affordance when the table is a group member", () => {
     render(
       <TableRow
         {...baseProps}
@@ -333,8 +332,7 @@ describe("TableRow", () => {
     expect(screen.getByTestId("table-group-chip-5")).toBeTruthy();
     expect(screen.getByText("Tables 5 + 6 (8 combined)")).toBeTruthy();
     expect(screen.getByTestId("table-unlink-btn-5")).toBeTruthy();
-    expect(screen.getByText("Unlink")).toBeTruthy();
-    // No Link button on a grouped table.
+    // No combine action on a grouped table.
     expect(screen.queryByTestId("table-link-btn-5")).toBeNull();
   });
 

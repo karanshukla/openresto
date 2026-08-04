@@ -116,19 +116,7 @@ export const styles = StyleSheet.create({
     ...theme.buttonSizes.small,
   },
   smallBtnText: { ...theme.typography.label, fontWeight: "600" },
-  deleteText: { ...theme.typography.label, color: theme.colors.error },
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.sm,
-    ...theme.buttonSizes.secondary, // Changed from primary for better hierarchy
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.primary,
-  },
-  addBtnText: { ...theme.typography.bodyBold, color: "#fff", fontSize: 14 },
   addForm: { gap: theme.spacing.sm, paddingTop: theme.spacing.sm },
-  addSaveBtn: { flex: 1 },
   cancelBtn: { ...theme.buttonSizes.secondary, borderRadius: theme.borderRadius.md },
   cancelBtnText: { ...theme.typography.label },
   actionBtn: {
@@ -141,28 +129,6 @@ export const styles = StyleSheet.create({
   sectionBlock: {
     paddingBottom: theme.spacing.md,
   },
-  tableList: {
-    paddingLeft: theme.spacing.md,
-    borderLeftWidth: 2,
-    marginLeft: 4,
-    gap: 2,
-  },
-  emptyNote: {
-    ...theme.typography.label,
-    fontStyle: "italic",
-    paddingVertical: theme.spacing.sm,
-    opacity: 0.5,
-  },
-  tableItemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.spacing.sm,
-    gap: theme.spacing.sm,
-  },
-  tableInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
-  tableName: { ...theme.typography.bodyBold, fontWeight: "500" },
-  tableSeats: { ...theme.typography.caption },
-  tableEditFields: { flex: 1, flexDirection: "row", gap: theme.spacing.sm },
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   infoForm: { gap: theme.spacing.md },
