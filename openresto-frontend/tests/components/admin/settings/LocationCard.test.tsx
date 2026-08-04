@@ -167,7 +167,6 @@ const baseProps = {
 describe("LocationCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    baseProps.confirmAction = jest.fn().mockResolvedValue(true);
   });
 
   it("renders restaurant name", () => {
