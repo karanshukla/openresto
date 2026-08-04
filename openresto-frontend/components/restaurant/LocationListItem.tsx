@@ -207,6 +207,7 @@ export default function LocationListItem({
       customerName: data.customerName,
       seats: data.seats,
       tableId: data.tableId,
+      tableGroupId: data.tableGroupId,
       holdId: data.holdId,
       restaurantId: restaurant.id,
       sectionId: resolvedSectionId,

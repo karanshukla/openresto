@@ -31,6 +31,11 @@ export interface BookingFormData {
   tableId: number | null;
   /** null when "Any section" is selected. */
   sectionId: number | null;
+  /**
+   * Combinable-table group id (#274) when the diner selected a combined group; null otherwise.
+   * Mutually exclusive with tableId.
+   */
+  tableGroupId: number | null;
   date: string;
   time: string;
   holdId: string | null;
@@ -78,6 +83,20 @@ function suggestTime(restaurant: HoursSource, timezone: string): string {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * Dropdown label for a combinable-table group (#274): uses the admin-assigned name when present,
+ * else falls back to the member table names joined with " + ". Mirrors the issue's L1/L2 decision.
+ */
+function groupLabel(g: {
+  name?: string | null;
+  combinedSeats: number;
+  members: { id: number; name?: string | null }[];
+}): string {
+  return g.name
+    ? `${g.name} (${g.combinedSeats} seats)`
+    : `Tables ${g.members.map((m) => m.name ?? m.id).join(" + ")} (${g.combinedSeats} seats combined)`;
+}
+
 export default function BookingForm({
   restaurant,
   onSubmit,
@@ -100,11 +119,14 @@ export default function BookingForm({
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
-  // Largest single-table capacity at this location. Parties above this can't be
-  // seated at one table and must be arranged directly (table merging isn't yet
-  // supported). Computed client-side from the nested restaurant payload — no
-  // extra fetch needed.
-  const maxTableCapacity = allTables.length > 0 ? Math.max(...allTables.map((t) => t.seats)) : 0;
+  const allGroups = restaurant.groups ?? [];
+  // Largest capacity at this location — the best single table OR the best combinable group (#274).
+  // Parties above this can't be seated even with pushed-together tables and must contact the
+  // restaurant directly. Computed client-side from the nested restaurant payload — no extra fetch.
+  const maxSingleTableSeats = allTables.length > 0 ? Math.max(...allTables.map((t) => t.seats)) : 0;
+  const maxGroupSeats =
+    allGroups.length > 0 ? Math.max(...allGroups.map((g) => g.combinedSeats)) : 0;
+  const maxTableCapacity = Math.max(maxSingleTableSeats, maxGroupSeats);
   const partyTooLarge = maxTableCapacity > 0 && seats > maxTableCapacity;
   const [largePartyNoticeOpen, setLargePartyNoticeOpen] = useState(false);
   // "Any section" is the default option (value 0); concrete sections follow. When selected,
@@ -119,6 +141,9 @@ export default function BookingForm({
   const timezone = restaurant.timezone || "UTC";
 
   const [tableId, setTableId] = useState<number | undefined>();
+  // Combinable-group selection (#274): when set, the diner picked a combined-table group from the
+  // dropdown instead of a single table. Mutually exclusive with tableId in the submit payload.
+  const [tableGroupId, setTableGroupId] = useState<number | undefined>();
   const [date, setDate] = useState<string>(() => suggestDate(restaurant, timezone));
   const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
@@ -139,6 +164,7 @@ export default function BookingForm({
 
   const currentSlot = availabilitySlots.find((s) => s.time === time);
   const availableTableIds = currentSlot?.availableTableIds ?? [];
+  const availableGroupIds = currentSlot?.availableGroupIds ?? [];
 
   function bestTableFor(
     seatCount: number,
@@ -179,6 +205,7 @@ export default function BookingForm({
     email: customerEmail,
     autoAssign: isAutoAssign,
     seats,
+    tableGroupId,
   });
 
   // Fetch availability when date/seats change
@@ -222,6 +249,7 @@ export default function BookingForm({
   useEffect(() => {
     if (isAutoAssign) {
       if (tableId !== undefined) setTableId(undefined);
+      if (tableGroupId !== undefined) setTableGroupId(undefined);
       return;
     }
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
@@ -243,6 +271,7 @@ export default function BookingForm({
     if (isAutoAssign) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTableId(undefined);
+      setTableGroupId(undefined);
       return;
     }
     const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
@@ -250,6 +279,7 @@ export default function BookingForm({
     setTableId(
       bestTableFor(seats, availableTableIds.length > 0 ? availableTableIds : undefined, candidates)
     );
+    setTableGroupId(undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
@@ -290,10 +320,27 @@ export default function BookingForm({
     })
     .sort((a, b) => a.seats - b.seats);
 
-  const tableOptions = eligibleTables.map((table) => ({
-    label: `${table.name ?? `Table ${table.id}`} (${table.seats} seats)`,
-    value: table.id,
-  }));
+  // Combinable groups (#274): a group is selectable when its combined capacity fits the party,
+  // respects the optional oversize cap, and (when availability data is present) the group's id is
+  // in the slot's availableGroupIds. Groups use negative Select values (-groupId) so they're
+  // distinguishable from positive table ids.
+  const eligibleGroups = allGroups
+    .filter(
+      (g) =>
+        g.combinedSeats >= seats &&
+        (restaurant.maxTableOversizeSeats == null ||
+          g.combinedSeats <= seats + restaurant.maxTableOversizeSeats)
+    )
+    .filter((g) => (currentSlot ? availableGroupIds.includes(g.id) : true))
+    .sort((a, b) => a.combinedSeats - b.combinedSeats);
+
+  const tableOptions = [
+    ...eligibleTables.map((table) => ({
+      label: `${table.name ?? `Table ${table.id}`} (${table.seats} seats)`,
+      value: table.id,
+    })),
+    ...eligibleGroups.map((g) => ({ label: groupLabel(g), value: -g.id })),
+  ];
 
   // ── Submit ───────────────────────────────────────────────────────────────────
 
@@ -311,8 +358,8 @@ export default function BookingForm({
     selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
 
   const isValid =
-    !partyTooLarge && // block large parties — no single table can seat them
-    (isAutoAssign || !!tableId) && // table dropdown hidden for "Any section" — auto-hold still gates
+    !partyTooLarge && // block large parties — no single table or group can seat them
+    (isAutoAssign || !!tableId || !!tableGroupId) && // auto-assign, a table, or a group is selected
     !!date &&
     !!time &&
     customerName.trim().length > 0 &&
@@ -340,8 +387,11 @@ export default function BookingForm({
         seats,
         // For "Any section", defer table selection to the server (null ids trigger auto-assign
         // on the booking create path; the server will adopt the held table from the hold id).
-        tableId: isAutoAssign ? null : (tableId ?? null),
-        sectionId: isAutoAssign ? null : sectionId,
+        // For a combinable group selection, send the group id + null table so the booking-create
+        // path routes into the group-booking branch.
+        tableId: isAutoAssign || tableGroupId ? null : (tableId ?? null),
+        sectionId: isAutoAssign || tableGroupId ? null : sectionId,
+        tableGroupId: tableGroupId ?? null,
         date,
         time,
         holdId,
@@ -450,18 +500,28 @@ export default function BookingForm({
               We'll seat you at the best available table
               {resolvedTableId ? "" : " across all sections"}.
             </ThemedText>
-          ) : eligibleTables.length === 0 ? (
+          ) : tableOptions.length === 0 ? (
             <ThemedText style={[styles.noTables, { color: colors.muted }]}>
               No tables available for {seats} guests.
             </ThemedText>
           ) : (
             <Select
-              selectedValue={tableId}
+              // A group selection is encoded as a negative value (-groupId); a table as its id.
+              selectedValue={tableGroupId ? -tableGroupId : tableId}
               onSelect={(val) => {
                 if (holdStatus === "held" || holdStatus === "expired") {
                   setHoldStatus("idle");
                 }
-                setTableId(val as number | undefined);
+                const v = val as number;
+                if (v < 0) {
+                  // Group selected — clear any single-table selection.
+                  setTableGroupId(-v);
+                  setTableId(undefined);
+                } else {
+                  // Single table selected — clear any group selection.
+                  setTableGroupId(undefined);
+                  setTableId(v);
+                }
               }}
               options={tableOptions}
               placeholder="Select a table"

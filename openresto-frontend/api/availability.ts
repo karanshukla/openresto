@@ -4,6 +4,8 @@ export interface TimeSlotDto {
   time: string;
   isAvailable: boolean;
   availableTableIds: number[];
+  /** Combinable-table group ids (#272/#274) bookable for this slot — parallel to availableTableIds. */
+  availableGroupIds?: number[];
   category: "Lunch" | "Dinner" | "Off-Peak";
 }
 

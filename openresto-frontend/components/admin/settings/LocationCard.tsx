@@ -367,6 +367,7 @@ export function LocationCard({
               isDark={isDark}
               borderColor={borderColor}
               mutedColor={mutedColor}
+              groups={restaurant.groups ?? []}
               isFirst={index === 0}
               isLast={index === restaurant.sections.length - 1}
               moveDisabled={reordering}
@@ -407,6 +408,7 @@ export function LocationCard({
                   ),
                 })
               }
+              onGroupsChanged={(updatedGroups) => onSaved({ groups: updatedGroups })}
             />
           ))}
           {restaurant.sections.length === 0 && (

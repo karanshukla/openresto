@@ -419,4 +419,120 @@ public class HoldServiceTests
         Assert.Equal(3, successes);                         // one winner per table
         Assert.Equal(3, winners.Distinct().Count());        // no two winners share a table
     }
+
+    // ── Combinable group holds (#272) ────────────────────────────────────────
+
+    [Fact]
+    public void PlaceGroupHold_PlacesOneHoldMarkingAllMembersBusy()
+    {
+        var memberIds = new[] { 8, 9 };
+        HoldResult? result = _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, memberIds, _sectionId, _bookingDate);
+
+        Assert.NotNull(result);
+        // Every member table is now held.
+        Assert.True(_svc.IsTableHeld(8, _bookingDate));
+        Assert.True(_svc.IsTableHeld(9, _bookingDate));
+    }
+
+    [Fact]
+    public void PlaceGroupHold_ReturnsNull_WhenAnyMemberAlreadyHeld()
+    {
+        // Someone else already holds member 8 individually.
+        _svc.PlaceHold(_restaurantId, tableId: 8, sectionId: _sectionId, _bookingDate);
+
+        HoldResult? result = _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, new[] { 8, 9 }, _sectionId, _bookingDate);
+
+        Assert.Null(result);
+        // Member 9 must not have been locked out by the failed attempt (nothing placed).
+        Assert.False(_svc.IsTableHeld(9, _bookingDate));
+    }
+
+    [Fact]
+    public void ReleaseHold_OnGroupHold_FreesAllMembers()
+    {
+        HoldResult hold = _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, new[] { 8, 9 }, _sectionId, _bookingDate)!;
+
+        _svc.ReleaseHold(hold.HoldId);
+
+        Assert.False(_svc.IsTableHeld(8, _bookingDate));
+        Assert.False(_svc.IsTableHeld(9, _bookingDate));
+    }
+
+    [Fact]
+    public void PlaceGroupHold_AtomicallyReplacesCurrentHold()
+    {
+        HoldResult first = _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, new[] { 8, 9 }, _sectionId, _bookingDate)!;
+
+        // Same members, overlapping time — passes currentHoldId so the caller's own group hold is replaced.
+        HoldResult? second = _svc.PlaceGroupHold(
+            _restaurantId, tableGroupId: 1, new[] { 8, 9 }, _sectionId, _bookingDate, currentHoldId: first.HoldId);
+
+        Assert.NotNull(second);
+        Assert.NotEqual(first.HoldId, second!.HoldId);
+        Assert.Null(_svc.GetHold(first.HoldId)); // old group hold gone
+        // Members still held by the new hold.
+        Assert.True(_svc.IsTableHeld(8, _bookingDate));
+    }
+
+    [Fact]
+    public void PlaceGroupHold_BlocksIndividualHoldOnMember_AfterPlacement()
+    {
+        // Group hold placed → an individual hold on a member must fail (mutual exclusion).
+        _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, new[] { 8, 9 }, _sectionId, _bookingDate);
+
+        HoldResult? individual = _svc.PlaceHold(_restaurantId, tableId: 8, sectionId: _sectionId, _bookingDate);
+
+        Assert.Null(individual);
+    }
+
+    [Fact]
+    public async Task PlaceGroupHold_NeverDoubleBooksGroup_WhenContended()
+    {
+        // 20 concurrent group-hold requests for the same 2-member group: exactly one wins.
+        var memberIds = new[] { 8, 9 };
+        int successes = 0;
+
+        var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
+        {
+            HoldResult? r = _svc.PlaceGroupHold(_restaurantId, tableGroupId: 1, memberIds, _sectionId, _bookingDate);
+            if (r is not null) System.Threading.Interlocked.Increment(ref successes);
+        })).ToArray();
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(1, successes);
+    }
+
+    [Fact]
+    public void PlaceAutoHold_WithGroupCandidate_PlacesMultiMemberHold()
+    {
+        var groupCandidate = new TableCandidate(8, _sectionId, Seats: 8, IsGroup: true, TableGroupId: 1, MemberTableIds: new[] { 8, 9 });
+        var candidates = new TableCandidate[] { groupCandidate };
+
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, candidates, _bookingDate);
+
+        Assert.NotNull(result);
+        Assert.True(result!.IsGroup);
+        Assert.Equal(1, result.TableGroupId);
+        // All members busy under the single hold.
+        Assert.True(_svc.IsTableHeld(8, _bookingDate));
+        Assert.True(_svc.IsTableHeld(9, _bookingDate));
+    }
+
+    [Fact]
+    public void PlaceAutoHold_FallsPastGroupToStandalone_WhenGroupMemberHeld()
+    {
+        // Member 8 held individually → the group candidate is skipped, the standalone wins.
+        _svc.PlaceHold(_restaurantId, tableId: 8, sectionId: _sectionId, _bookingDate);
+        var candidates = new TableCandidate[]
+        {
+            new(8, _sectionId, 8, IsGroup: true, TableGroupId: 1, MemberTableIds: new[] { 8, 9 }),
+            new(10, _sectionId, 4)
+        };
+
+        AutoAssignResult? result = _svc.PlaceAutoHold(_restaurantId, candidates, _bookingDate);
+
+        Assert.NotNull(result);
+        Assert.False(result!.IsGroup);
+        Assert.Equal(10, result.TableId);
+    }
 }

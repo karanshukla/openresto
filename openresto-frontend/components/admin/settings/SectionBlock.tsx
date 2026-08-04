@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import {
   SectionDto,
   TableDto,
+  TableGroupDto,
   updateSection,
   deleteSection,
   addTable,
   fetchSectionDeleteImpact,
+  createTableGroup,
+  updateTableGroup,
+  deleteTableGroup,
 } from "@/api/restaurants";
-import { TableRow } from "./TableRow";
+import { TableRow, TableRowGroupContext } from "./TableRow";
 import { AddRow } from "./AddRow";
 import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -24,11 +28,13 @@ export function SectionBlock({
   isDark,
   borderColor,
   mutedColor,
+  groups,
   onSectionRenamed,
   onSectionDeleted,
   onTableAdded,
   onTableUpdated,
   onTableDeleted,
+  onGroupsChanged,
   isFirst,
   isLast,
   moveDisabled,
@@ -40,11 +46,15 @@ export function SectionBlock({
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
+  /** Restaurant-level combinable groups (#273); SectionBlock renders the ones touching this section. */
+  groups: TableGroupDto[];
   onSectionRenamed: (name: string) => void;
   onSectionDeleted: () => void;
   onTableAdded: (t: TableDto) => void;
   onTableUpdated: (t: TableDto) => void;
   onTableDeleted: (id: number) => void;
+  /** Replace the restaurant's full group list after a create/update/delete/dissolve. */
+  onGroupsChanged: (groups: TableGroupDto[]) => void;
   isFirst: boolean;
   isLast: boolean;
   moveDisabled?: boolean;
@@ -68,6 +78,116 @@ export function SectionBlock({
   const [impactLoading, setImpactLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // ── Combinable groups (#273) ──────────────────────────────────────────────
+  // Selection mode: the admin taps Link on a standalone table, then picks other standalone tables
+  // to combine into a new group. `linkingFromId` is the source table; `selectedIds` the checked set.
+  const [linkingFromId, setLinkingFromId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [combining, setCombining] = useState(false);
+  // Inline edit for a group's combined seats.
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [draftCombinedSeats, setDraftCombinedSeats] = useState("");
+
+  const sectionTableIds = useMemo(() => new Set(section.tables.map((t) => t.id)), [section.tables]);
+
+  // Groups that have at least one member in this section. A group is rendered inside every section
+  // it touches (selection is within one section, so in practice all members are same-section).
+  const sectionGroups = useMemo(
+    () => groups.filter((g) => g.members.some((m) => sectionTableIds.has(m.id))),
+    [groups, sectionTableIds]
+  );
+
+  // tableId → its group, for quick chip rendering on rows.
+  const tableIdToGroup = useMemo(() => {
+    const map = new Map<number, TableGroupDto>();
+    for (const g of groups) for (const m of g.members) map.set(m.id, g);
+    return map;
+  }, [groups]);
+
+  function groupLabel(g: TableGroupDto): string {
+    return g.name
+      ? `${g.name} (${g.combinedSeats} seats)`
+      : `Tables ${g.members.map((m) => m.name ?? m.id).join(" + ")} (${g.combinedSeats} combined)`;
+  }
+
+  function groupContextFor(tableId: number): TableRowGroupContext | undefined {
+    const g = tableIdToGroup.get(tableId);
+    return g ? { id: g.id, label: groupLabel(g), combinedSeats: g.combinedSeats } : undefined;
+  }
+
+  const startLink = (tableId: number) => {
+    setLinkingFromId(tableId);
+    setSelectedIds(new Set([tableId]));
+  };
+
+  const cancelLink = () => {
+    setLinkingFromId(null);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (tableId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(tableId)) next.delete(tableId);
+      else next.add(tableId);
+      return next;
+    });
+  };
+
+  const confirmCombine = async () => {
+    const memberIds = Array.from(selectedIds);
+    if (memberIds.length < 2) return;
+    setCombining(true);
+    const sumSeats = memberIds.reduce(
+      (sum, id) => sum + (section.tables.find((t) => t.id === id)?.seats ?? 0),
+      0
+    );
+    const created = await createTableGroup(restaurantId, {
+      members: memberIds,
+      combinedSeats: sumSeats,
+    });
+    setCombining(false);
+    if (created) {
+      onGroupsChanged([...groups, created]);
+      cancelLink();
+    }
+  };
+
+  const handleUnlink = async (tableId: number) => {
+    const g = tableIdToGroup.get(tableId);
+    if (!g) return;
+    const remaining = g.members.filter((m) => m.id !== tableId).map((m) => m.id);
+    if (remaining.length < 2) {
+      // Dissolve — a one-table group is meaningless. Delete the group entirely.
+      const ok = await deleteTableGroup(restaurantId, g.id);
+      if (ok) onGroupsChanged(groups.filter((x) => x.id !== g.id));
+    } else {
+      const sumSeats = remaining.reduce(
+        (sum, id) => sum + (section.tables.find((t) => t.id === id)?.seats ?? 0),
+        0
+      );
+      const updated = await updateTableGroup(restaurantId, g.id, {
+        name: g.name ?? null,
+        members: remaining,
+        combinedSeats: Math.max(sumSeats, g.combinedSeats),
+      });
+      if (updated) onGroupsChanged(groups.map((x) => (x.id === g.id ? updated : x)));
+    }
+  };
+
+  const saveCombinedSeats = async (groupId: number) => {
+    const seats = parseInt(draftCombinedSeats, 10);
+    const g = groups.find((x) => x.id === groupId);
+    if (isNaN(seats) || seats < 1 || !g) return;
+    const updated = await updateTableGroup(restaurantId, groupId, {
+      name: g.name ?? null,
+      members: g.members.map((m) => m.id),
+      combinedSeats: seats,
+    });
+    if (updated) onGroupsChanged(groups.map((x) => (x.id === groupId ? updated : x)));
+    setEditingGroupId(null);
+  };
+
   const startSectionDelete = async () => {
     setDeleteStep("confirm");
     setImpact(null);
@@ -89,6 +209,8 @@ export function SectionBlock({
     setDeleting(false);
     if (success) onSectionDeleted();
   };
+
+  const inSelectionMode = linkingFromId !== null;
 
   return (
     <View
@@ -136,6 +258,9 @@ export function SectionBlock({
           {!editing && (
             <ThemedText style={{ fontSize: 12, color: mutedColor }}>
               {section.tables.length} tables · {totalSeats} seats
+              {sectionGroups.length > 0
+                ? ` · ${sectionGroups.length} combinable group${sectionGroups.length > 1 ? "s" : ""}`
+                : ""}
             </ThemedText>
           )}
           {editing ? (
@@ -288,6 +413,98 @@ export function SectionBlock({
         </View>
       )}
 
+      {/* Combine-selection header (#273) — shown while the admin is building a new group. Lists the
+          source table and offers Cancel / Combine. The table rows below become checkboxes. */}
+      {inSelectionMode && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: borderColor,
+            backgroundColor: isDark ? hexToRgba(primaryColor, 0.1) : hexToRgba(primaryColor, 0.06),
+            gap: 8,
+          }}
+        >
+          <ThemedText style={{ flex: 1, fontSize: 12, color: primaryColor, fontWeight: "600" }}>
+            Select tables to combine with &ldquo;
+            {section.tables.find((t) => t.id === linkingFromId)?.name ?? `T${linkingFromId}`}
+            &rdquo; ({selectedIds.size} selected)
+          </ThemedText>
+          <Pressable style={styles.smallBtn} onPress={cancelLink} disabled={combining}>
+            <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+          </Pressable>
+          <Pressable
+            testID="section-combine-btn"
+            style={[
+              styles.actionBtn,
+              {
+                backgroundColor: primaryColor,
+                opacity: selectedIds.size < 2 || combining ? 0.5 : 1,
+              },
+            ]}
+            disabled={selectedIds.size < 2 || combining}
+            onPress={confirmCombine}
+          >
+            {combining ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>Combine</ThemedText>
+            )}
+          </Pressable>
+        </View>
+      )}
+
+      {/* Group combined-seats edit affordance (#273) */}
+      {editingGroupId !== null &&
+        (() => {
+          const g = groups.find((x) => x.id === editingGroupId);
+          if (!g) return null;
+          return (
+            <View
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: borderColor,
+                gap: 8,
+                backgroundColor: isDark
+                  ? hexToRgba(primaryColor, 0.1)
+                  : hexToRgba(primaryColor, 0.06),
+              }}
+            >
+              <ThemedText style={{ fontSize: 12, fontWeight: "600", color: primaryColor }}>
+                Edit combined seats · {groupLabel(g)}
+              </ThemedText>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <View style={{ flex: 1 }}>
+                  <Input
+                    value={draftCombinedSeats}
+                    onChangeText={setDraftCombinedSeats}
+                    placeholder={String(g.combinedSeats)}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <Pressable style={styles.smallBtn} onPress={() => setEditingGroupId(null)}>
+                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
+                    Cancel
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  testID="group-save-combined-btn"
+                  style={[styles.actionBtn, { backgroundColor: primaryColor }]}
+                  onPress={() => saveCombinedSeats(g.id)}
+                >
+                  <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>Save</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })()}
+
       {/* Table list */}
       <View>
         {section.tables.map((t) => (
@@ -300,6 +517,13 @@ export function SectionBlock({
             borderColor={borderColor}
             onUpdated={onTableUpdated}
             onDeleted={() => onTableDeleted(t.id)}
+            group={groupContextFor(t.id)}
+            onLink={() => startLink(t.id)}
+            onUnlink={() => handleUnlink(t.id)}
+            selectionMode={inSelectionMode}
+            selected={selectedIds.has(t.id)}
+            onToggleSelect={() => toggleSelect(t.id)}
+            disabledInSelection={!!tableIdToGroup.get(t.id)}
           />
         ))}
         {section.tables.length === 0 && (
@@ -308,6 +532,24 @@ export function SectionBlock({
           </ThemedText>
         )}
       </View>
+
+      {/* Per-group combined-seats edit trigger (#273) — a small affordance under each group's rows.
+          Rendered after the table list so it doesn't interfere with row mapping. */}
+      {sectionGroups.map((g) => (
+        <Pressable
+          key={`group-edit-${g.id}`}
+          testID={`group-edit-btn-${g.id}`}
+          style={{ paddingHorizontal: 14, paddingVertical: 6 }}
+          onPress={() => {
+            setEditingGroupId(g.id);
+            setDraftCombinedSeats(String(g.combinedSeats));
+          }}
+        >
+          <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+            Edit &ldquo;{groupLabel(g)}&rdquo; combined seats
+          </ThemedText>
+        </Pressable>
+      ))}
 
       {/* Add table */}
       <View style={{ padding: 12 }}>

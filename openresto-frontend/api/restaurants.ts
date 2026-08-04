@@ -14,6 +14,18 @@ export interface SectionDto {
 }
 
 /**
+ * A combinable-table group (#271/#273): physical tables an admin flagged as combinable, bookable
+ * as one unit for larger parties. `combinedSeats` is the stored capacity; `members` are the
+ * physical tables pushed together.
+ */
+export interface TableGroupDto {
+  id: number;
+  name?: string | null;
+  combinedSeats: number;
+  members: TableDto[];
+}
+
+/**
  * Best-effort preview of what a table/section delete would orphan. `bookings` is the count of
  * non-cancelled *future* bookings that would lose their table/section reference (the FK-null the
  * delete already performs). Null/undefined when the impact read failed or is unavailable — callers
@@ -57,6 +69,8 @@ export interface RestaurantDto {
   /** Max allowed spare seats over party size, or null for unrestricted (off). */
   maxTableOversizeSeats?: number | null;
   sections: SectionDto[];
+  /** Combinable-table groups defined for this restaurant (#271/#273). Empty/undefined when none. */
+  groups?: TableGroupDto[];
 }
 
 export async function createRestaurant(name: string): Promise<RestaurantDto | null> {
@@ -247,6 +261,47 @@ export async function deleteTable(
     return res.ok;
   } catch (err) {
     console.error("deleteTable error:", err);
+    return false;
+  }
+}
+
+// ── Combinable table groups (#273) ─────────────────────────────────────────
+
+export async function createTableGroup(
+  restaurantId: number,
+  data: { name?: string | null; members: number[]; combinedSeats: number }
+): Promise<TableGroupDto | null> {
+  try {
+    const res = await post(`/restaurants/${restaurantId}/groups`, data);
+    if (!res.ok) throw new Error("Failed to create table group");
+    return await res.json();
+  } catch (err) {
+    console.error("createTableGroup error:", err);
+    return null;
+  }
+}
+
+export async function updateTableGroup(
+  restaurantId: number,
+  groupId: number,
+  data: { name?: string | null; members: number[]; combinedSeats: number }
+): Promise<TableGroupDto | null> {
+  try {
+    const res = await put(`/restaurants/${restaurantId}/groups/${groupId}`, data);
+    if (!res.ok) throw new Error("Failed to update table group");
+    return await res.json();
+  } catch (err) {
+    console.error("updateTableGroup error:", err);
+    return null;
+  }
+}
+
+export async function deleteTableGroup(restaurantId: number, groupId: number): Promise<boolean> {
+  try {
+    const res = await del(`/restaurants/${restaurantId}/groups/${groupId}`);
+    return res.ok;
+  } catch (err) {
+    console.error("deleteTableGroup error:", err);
     return false;
   }
 }

@@ -819,4 +819,127 @@ public class AvailabilityServiceTests
             1, new DateTime(2026, 10, 13, 0, 0, 0, DateTimeKind.Utc), 2);
         Assert.Empty(tuesday.Slots);
     }
+
+    // ── Combinable table groups (#272) ──────────────────────────────────────
+
+    /// <summary>
+    /// Seeds a restaurant with one 2-seat standalone table (T1) and a combinable group of two
+    /// 4-seat tables (T2, T3) with CombinedSeats 8. Hours 11:00–13:00 UTC, 30-min slots.
+    /// </summary>
+    private static void SeedRestaurantWithGroup(AppDbContext db)
+    {
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Group Test", OpenTime = "11:00", CloseTime = "13:00", Timezone = "UTC"
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 4, SectionId = 1 });
+        db.TableGroups.Add(new TableGroup
+        {
+            Id = 1, RestaurantId = 1, CombinedSeats = 8,
+            Members = new List<TableGroupMembership>
+            {
+                new() { TableGroupId = 1, TableId = 2 },
+                new() { TableGroupId = 1, TableId = 3 }
+            }
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_AdvertisesGroup_WhenPartyLargerThanAnySingleTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_AdvertisesGroup_WhenPartyLargerThanAnySingleTable));
+        SeedRestaurantWithGroup(db);
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // Party of 6: no single table fits (max 4), but the group (CombinedSeats 8) does.
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
+
+        Assert.NotEmpty(result.Slots);
+        // Every available slot must list the group; no standalone table ids (T1 too small, T2/T3 grouped).
+        Assert.All(result.Slots.Where(s => s.IsAvailable), s =>
+        {
+            Assert.Contains(1, s.AvailableGroupIds);
+            Assert.DoesNotContain(2, s.AvailableTableIds);
+            Assert.DoesNotContain(3, s.AvailableTableIds);
+        });
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_RemovesGroup_WhenMemberBooked()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RemovesGroup_WhenMemberBooked));
+        SeedRestaurantWithGroup(db);
+
+        var date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        // Book one member of the group at 12:00 → group can't be offered at overlapping slots.
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 2, SectionId = 1, Date = date,
+            BookingRef = "B1", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
+
+        // The 12:00 slot (overlaps the booking) must not advertise the group.
+        TimeSlotDto slot1200 = result.Slots.First(s => s.Time == "12:00");
+        Assert.DoesNotContain(1, slot1200.AvailableGroupIds);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_RemovesGroup_WhenMemberHeld()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RemovesGroup_WhenMemberHeld));
+        SeedRestaurantWithGroup(db);
+
+        var holdMock = new Mock<IHoldService>();
+        // Member T3 is held at 12:00 → group not offered at overlapping slots.
+        holdMock.Setup(h => h.IsTableHeld(3, It.Is<DateTime>(d => d == new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc)), It.IsAny<string?>(), It.IsAny<int>()))
+            .Returns(true);
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), holdMock.Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
+
+        TimeSlotDto slot1200 = result.Slots.First(s => s.Time == "12:00");
+        Assert.DoesNotContain(1, slot1200.AvailableGroupIds);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_AppliesOversizeCap_ToGroups()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_AppliesOversizeCap_ToGroups));
+        SeedRestaurantWithGroup(db);
+        var r = db.Restaurants.First();
+        r.MaxTableOversizeSeats = 2; // party of 2 at an 8-seat group: 8 - 2 = 6 > 2 → excluded
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.All(result.Slots, s => Assert.DoesNotContain(1, s.AvailableGroupIds));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_SlotAvailable_WhenOnlyGroupFits()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_SlotAvailable_WhenOnlyGroupFits));
+        SeedRestaurantWithGroup(db);
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // Party of 6: T1 (2) too small; T2/T3 grouped. The slot must still be available via the group.
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
+
+        Assert.Contains(result.Slots, s => s.IsAvailable);
+    }
 }
