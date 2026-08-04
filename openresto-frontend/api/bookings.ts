@@ -4,6 +4,12 @@ export interface BookingDto {
   id: number;
   tableId: number | null;
   sectionId: number | null;
+  /**
+   * Combinable-table group id when this booking reserves a merged group of tables (#272); null for
+   * a single-table booking. Mutually exclusive with tableId. When set, tableName carries the group
+   * label (e.g. "Tables 8 + 9") and tableSeats carries the group's combined capacity.
+   */
+  tableGroupId?: number | null;
   restaurantId: number;
   date: string;
   endTime?: string;
@@ -44,6 +50,7 @@ function normalizeBooking(raw: Record<string, unknown>): BookingDto {
     id: (raw.id ?? raw.Id) as number,
     tableId: (raw.tableId ?? raw.TableId ?? null) as number | null,
     sectionId: (raw.sectionId ?? raw.SectionId ?? null) as number | null,
+    tableGroupId: (raw.tableGroupId ?? raw.TableGroupId ?? null) as number | null,
     restaurantId: (raw.restaurantId ?? raw.RestaurantId) as number,
     date: (raw.date ?? raw.Date) as string,
     endTime: (raw.endTime ?? raw.EndTime) as string | undefined,

@@ -86,4 +86,33 @@ describe("BookingDetailRows", () => {
     );
     expect(screen.getByText("Table 5")).toBeTruthy();
   });
+
+  it("renders a 'Tables' row with the group label for a group booking", () => {
+    // A group booking (combinable tables) has tableGroupId set and tableId null. The backend
+    // populates tableName with the group label and tableSeats with the combined capacity. The row
+    // must surface as "Tables" (not "Table") so the diner sees they reserved a merged group.
+    const groupBooking: BookingDto = {
+      ...mockBooking,
+      tableId: null,
+      tableGroupId: 7,
+      seats: 6,
+      tableSeats: 8,
+      tableName: "Tables T2 + T3",
+    };
+    render(
+      <BookingDetailRows
+        booking={groupBooking}
+        restaurant={null}
+        mutedColor="gray"
+        borderColor="black"
+      />
+    );
+
+    expect(screen.getByText("Tables")).toBeTruthy();
+    expect(screen.getByText("Tables T2 + T3")).toBeTruthy();
+    // A group booking must not also render the single-table "Table" row.
+    expect(screen.queryByText("Table")).toBeNull();
+    // The combined capacity is shown in the Guests row.
+    expect(screen.getByText(/Table for 8/)).toBeTruthy();
+  });
 });

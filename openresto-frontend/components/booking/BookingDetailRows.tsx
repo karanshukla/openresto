@@ -62,7 +62,15 @@ function buildRows(booking: BookingDto, restaurant: RestaurantDto | null): RowDa
     rows.push({ icon: "layers-outline", label: "Section", value: booking.sectionName });
   }
 
-  if (booking.tableName) {
+  // A group booking (combinable tables) reserves a merged group, not a single table — render a
+  // "Tables" row with a link icon and the group label so the diner sees what they actually booked.
+  if (booking.tableGroupId) {
+    rows.push({
+      icon: "link-outline",
+      label: "Tables",
+      value: booking.tableName ?? "Combined tables",
+    });
+  } else if (booking.tableName) {
     rows.push({ icon: "grid-outline", label: "Table", value: booking.tableName });
   }
 

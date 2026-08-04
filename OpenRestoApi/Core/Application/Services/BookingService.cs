@@ -101,9 +101,13 @@ public class BookingService(
         int tableId = bookingDto.TableId!.Value;
         int sectionId = bookingDto.SectionId!.Value;
 
-        // 1. Check DB for an existing confirmed booking on the same table+date
-        bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+        // 1. Check DB for an existing confirmed booking on the same table+date. Group-aware: a table
+        //    is also "booked" when its combinable group (or any sibling member) has a booking for the
+        //    window, since those bookings reserve the same physical tables. A persisted group booking
+        //    stores TableId = null, so the table-only check would miss it — IsUnitBookedOnDateAsync
+        //    resolves the membership and matches it.
+        bool alreadyBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
+            tableId, tableGroupId: null, bookingDate, restaurant.DefaultBookingDurationMinutes);
 
         if (alreadyBooked)
         {
@@ -170,7 +174,7 @@ public class BookingService(
             await _confirmationService.SendConfirmationAsync(newBooking, restaurant);
         }
 
-        return _mapper.ToDto(newBooking);
+        return _mapper.ToDtoWithGroup(newBooking);
     }
 
     /// <summary>
@@ -194,19 +198,16 @@ public class BookingService(
             {
                 if (held.IsGroup)
                 {
-                    // Group hold — verify every member is still free of a confirmed booking, then adopt.
-                    bool anyMemberBooked = false;
-                    foreach (int memberId in held.Members)
-                    {
-                        if (await _bookingRepository.IsTableBookedOnDateAsync(
-                                memberId, bookingDate, restaurant.DefaultBookingDurationMinutes))
-                        {
-                            anyMemberBooked = true;
-                            break;
-                        }
-                    }
+                    // Group hold — verify the group is still free of a confirmed booking (group-aware:
+                    // catches the group itself, a member booked individually, or a member reserved by a
+                    // sibling group booking), then adopt.
+                    bool groupBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
+                        tableId: null,
+                        tableGroupId: held.TableGroupId,
+                        bookingDate,
+                        restaurant.DefaultBookingDurationMinutes);
 
-                    if (!anyMemberBooked)
+                    if (!groupBooked)
                     {
                         bookingDto.TableGroupId = held.TableGroupId;
                         bookingDto.MemberTableIds = held.Members;
@@ -218,10 +219,11 @@ public class BookingService(
                 else
                 {
                     // The hold is on a specific table — verify it still fits and isn't double-booked
-                    // in the DB (the hold only guards against other in-memory holds). If something
-                    // changed under us, fall through to the candidate search.
-                    bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
-                        held.TableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+                    // in the DB (the hold only guards against other in-memory holds). Group-aware: a
+                    // group booking on this table's group would reserve it too. If something changed
+                    // under us, fall through to the candidate search.
+                    bool booked = await _bookingRepository.IsUnitBookedOnDateAsync(
+                        held.TableId, tableGroupId: null, bookingDate, restaurant.DefaultBookingDurationMinutes);
                     if (!booked)
                     {
                         bookingDto.TableId = held.TableId;
@@ -307,14 +309,20 @@ public class BookingService(
         // user's hold. This is the mutual-exclusion invariant for confirmed bookings.
         var memberIds = (bookingDto.MemberTableIds ?? group.Members.Select(m => m.TableId)).ToList();
         int durationMinutes = restaurant.DefaultBookingDurationMinutes;
+
+        // Group-aware conflict check: a single query covers (a) any member already booked on its own,
+        // (b) the group already booked, and (c) a member reserved by a sibling/other group booking
+        // (those bookings store TableId = null, so the old table-only check could not see them and
+        // allowed the same physical table to be double-booked).
+        bool groupConflict = await _bookingRepository.IsUnitBookedOnDateAsync(
+            tableId: null, tableGroupId: group.Id, bookingDate, durationMinutes);
+        if (groupConflict)
+        {
+            throw new ConflictException("One of the combined tables is already booked for that time.");
+        }
+
         foreach (int memberId in memberIds)
         {
-            bool booked = await _bookingRepository.IsTableBookedOnDateAsync(memberId, bookingDate, durationMinutes);
-            if (booked)
-            {
-                throw new ConflictException("One of the combined tables is already booked for that time.");
-            }
-
             bool heldByOther = _holdService.IsTableHeld(
                 memberId, bookingDate, excludeHoldId: bookingDto.HoldId, durationMinutes: durationMinutes);
             if (heldByOther)
@@ -334,6 +342,7 @@ public class BookingService(
         booking.EndTime = bookingDate.AddMinutes(durationMinutes);
         booking.TableId = null;
         booking.TableGroupId = group.Id;
+        booking.TableGroup = group; // Attach the loaded group so the DTO/email display enrichment works.
         booking.SectionId = sectionId;
         booking.Restaurant = restaurant;
 
@@ -356,25 +365,25 @@ public class BookingService(
             await _confirmationService.SendConfirmationAsync(newBooking, restaurant);
         }
 
-        return _mapper.ToDto(newBooking);
+        return _mapper.ToDtoWithGroup(newBooking);
     }
 
     public virtual async Task<BookingDto?> GetBookingByIdAsync(int id)
     {
         Booking? booking = await _bookingRepository.GetByIdAsync(id);
-        return booking == null ? null : _mapper.ToDto(booking);
+        return booking == null ? null : _mapper.ToDtoWithGroup(booking);
     }
 
     public virtual async Task<BookingDto?> GetBookingByRefAsync(string bookingRef)
     {
         Booking? booking = await _bookingRepository.GetByRefAsync(bookingRef);
-        return booking == null ? null : _mapper.ToDto(booking);
+        return booking == null ? null : _mapper.ToDtoWithGroup(booking);
     }
 
     public virtual async Task<IEnumerable<BookingDto>> GetBookingsByRestaurantAsync(int restaurantId)
     {
         IEnumerable<Booking> bookings = await _bookingRepository.GetBookingsByRestaurantIdAsync(restaurantId);
-        return _mapper.ToDtoList(bookings);
+        return _mapper.ToDtoWithGroupList(bookings);
     }
 
     public virtual async Task UpdateBookingAsync(int id, BookingDto bookingDto)
