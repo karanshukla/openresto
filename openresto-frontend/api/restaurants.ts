@@ -13,6 +13,16 @@ export interface SectionDto {
   tables: TableDto[];
 }
 
+/**
+ * Best-effort preview of what a table/section delete would orphan. `bookings` is the count of
+ * non-cancelled *future* bookings that would lose their table/section reference (the FK-null the
+ * delete already performs). Null/undefined when the impact read failed or is unavailable — callers
+ * fall back to generic copy rather than blocking the delete.
+ */
+export interface DeleteImpactDto {
+  bookings: number;
+}
+
 export interface DayHoursDto {
   /** ISO 8601 day number: 1=Monday … 7=Sunday. */
   day: number;
@@ -238,6 +248,47 @@ export async function deleteTable(
   } catch (err) {
     console.error("deleteTable error:", err);
     return false;
+  }
+}
+
+/**
+ * Non-cancelled future bookings that would lose their table reference if this table were deleted.
+ * Returns null on any failure (network, 404, non-OK) so the two-step delete UI can degrade to
+ * generic copy instead of blocking the destructive action — the count is best-effort friction, not
+ * a gate (#270).
+ */
+export async function fetchTableDeleteImpact(
+  restaurantId: number,
+  sectionId: number,
+  tableId: number
+): Promise<DeleteImpactDto | null> {
+  try {
+    const res = await get(
+      `/restaurants/${restaurantId}/sections/${sectionId}/tables/${tableId}/impact`
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("fetchTableDeleteImpact error:", err);
+    return null;
+  }
+}
+
+/**
+ * Non-cancelled future bookings that would lose their section reference if this section (and all its
+ * tables) were deleted. Same best-effort/null-on-failure contract as {@link fetchTableDeleteImpact}.
+ */
+export async function fetchSectionDeleteImpact(
+  restaurantId: number,
+  sectionId: number
+): Promise<DeleteImpactDto | null> {
+  try {
+    const res = await get(`/restaurants/${restaurantId}/sections/${sectionId}/impact`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("fetchSectionDeleteImpact error:", err);
+    return null;
   }
 }
 

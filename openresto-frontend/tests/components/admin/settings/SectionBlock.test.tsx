@@ -11,6 +11,7 @@ jest.mock("@/api/restaurants", () => ({
   updateSection: jest.fn(),
   deleteSection: jest.fn(),
   addTable: jest.fn(),
+  fetchSectionDeleteImpact: jest.fn(),
 }));
 
 jest.mock("@/context/BrandContext", () => ({
@@ -36,7 +37,6 @@ const baseProps = {
   isDark: false,
   borderColor: "#ddd",
   mutedColor: "#888",
-  confirmAction: jest.fn(),
   onSectionRenamed: jest.fn(),
   onSectionDeleted: jest.fn(),
   onTableAdded: jest.fn(),
@@ -116,28 +116,69 @@ describe("SectionBlock", () => {
     expect(screen.getByText("Indoor")).toBeTruthy();
   });
 
-  it("calls deleteSection and onSectionDeleted when confirmed", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(true);
+  // ── Two-step delete friction (#270) ───────────────────────────────────────
+  //
+  // `Delete…` reveals an inline confirmation naming the section and the consequence (incl. the count
+  // of future bookings that would lose their reference); a second explicit tap destroys. Cancel
+  // returns to the header.
+
+  it("reveals an inline confirmation and fetches the impact count when Delete… is pressed", async () => {
+    (restaurantsApi.fetchSectionDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 2 });
+    render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-delete-btn"));
+    });
+    expect(restaurantsApi.fetchSectionDeleteImpact).toHaveBeenCalledWith(42, 1);
+    expect(await screen.findByText(/Delete section “Indoor” and all its tables\?/)).toBeTruthy();
+    expect(screen.getByText(/2 future bookings affected/)).toBeTruthy();
+    expect(screen.getByText("Yes, delete")).toBeTruthy();
+  });
+
+  it("deletes only after the second explicit tap (Yes, delete)", async () => {
+    (restaurantsApi.fetchSectionDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     (restaurantsApi.deleteSection as jest.Mock).mockResolvedValue(true);
     render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
     await act(async () => {
       fireEvent.press(screen.getByTestId("section-delete-btn"));
     });
-    expect(baseProps.confirmAction).toHaveBeenCalledWith(
-      'Delete section "Indoor" and all its tables?'
-    );
+    expect(restaurantsApi.deleteSection).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.press(screen.getByText("Yes, delete"));
+    });
     expect(restaurantsApi.deleteSection).toHaveBeenCalledWith(42, 1);
     expect(baseProps.onSectionDeleted).toHaveBeenCalled();
   });
 
-  it("does not delete when confirmAction returns false", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(false);
+  it("does not delete when Cancel is pressed in the confirm step", async () => {
+    (restaurantsApi.fetchSectionDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
     render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
     await act(async () => {
       fireEvent.press(screen.getByTestId("section-delete-btn"));
     });
+    fireEvent.press(screen.getByTestId("section-delete-cancel-btn"));
     expect(restaurantsApi.deleteSection).not.toHaveBeenCalled();
     expect(baseProps.onSectionDeleted).not.toHaveBeenCalled();
+    expect(screen.queryByText("Yes, delete")).toBeNull();
+  });
+
+  it("falls back to generic copy when the impact read fails or is unavailable", async () => {
+    (restaurantsApi.fetchSectionDeleteImpact as jest.Mock).mockResolvedValue(null);
+    render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-delete-btn"));
+    });
+    expect(
+      await screen.findByText(/Future bookings in this section will lose their reference/)
+    ).toBeTruthy();
+  });
+
+  it("uses singular copy when exactly one future booking is affected", async () => {
+    (restaurantsApi.fetchSectionDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
+    render(<SectionBlock {...baseProps} section={{ ...mockSection, tables: [] }} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-delete-btn"));
+    });
+    expect(await screen.findByText(/1 future booking affected/)).toBeTruthy();
   });
 
   it("renders Add Table button", () => {

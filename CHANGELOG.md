@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Two-step delete friction for tables & sections** (#270) — deleting a table or section now requires a deliberate two-step inline confirmation (Delete… → Yes, delete / Cancel), matching the locations `DangerZone` pattern, instead of a single center-screen modal. The confirmation surfaces the concrete consequence — how many non-cancelled future bookings will lose their table/section reference — via a new best-effort `GET /api/restaurants/{id}/sections/{sectionId}/tables/{tableId}/impact` and `…/sections/{sectionId}/impact` read; if the count is unavailable the UI falls back to generic copy. No change to what the backend deletes or FK-nulls.
+- **Combinable table groups — schema + CRUD API** (#271) — introduces a `TableGroup` entity so an admin can flag physical tables (e.g. 8 & 9) as combinable and book them as one unit for larger parties. Backend-only foundation (schema, service, API); availability/auto-assign/holds wiring and UIs land in follow-ups. Adds `POST`/`PUT`/`DELETE /api/restaurants/{id}/groups` with server-enforced data-integrity rules (members belong to the same restaurant, aren't already grouped, ≥ 2 members, `CombinedSeats ≥ sum of member seats`), a `Booking.TableGroupId` nullable column, a unique index so a table joins at most one group, and `Groups` on the restaurant DTO. Deleting a group clears the reference on affected bookings in a single save.
+
 ## [1.5.0] - 2026-07-30
 
 Hello! This release includes an Expo upgrade, routine upgrades, as well as a couple new features below.

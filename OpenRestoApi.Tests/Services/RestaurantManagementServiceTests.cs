@@ -14,7 +14,8 @@ public class RestaurantManagementServiceTests
         new RestaurantRepository(db),
         new SectionRepository(db),
         new TableRepository(db),
-        new BookingRepository(db));
+        new BookingRepository(db),
+        new TableGroupRepository(db));
 
     [Fact]
     public async Task GetAllAsync_ReturnsAll()
@@ -942,6 +943,102 @@ public class RestaurantManagementServiceTests
         Assert.False(await db.Tables.AnyAsync(t => t.Id == 1));
     }
 
+    // ── Delete-impact reads (two-step delete friction, #270) ─────────────────
+    //
+    // The impact count is the number shown to the admin in the inline confirm step — it must count
+    // only non-cancelled future bookings (those a live restaurant cares about losing the reference
+    // for), and null out when the table/section doesn't exist or belongs to another restaurant.
+
+    [Fact]
+    public async Task GetTableDeleteImpactAsync_ReturnsNull_WhenTableNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetTableDeleteImpactAsync_ReturnsNull_WhenTableNotFound));
+        var svc = CreateService(db);
+        Assert.Null(await svc.GetTableDeleteImpactAsync(1, 1, 1));
+    }
+
+    [Fact]
+    public async Task GetTableDeleteImpactAsync_CountsFutureNonCancelledBookings()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetTableDeleteImpactAsync_CountsFutureNonCancelledBookings));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Seats = 4, SectionId = 1 });
+        DateTime now = DateTime.UtcNow;
+        // 2 future + active on this table → counted.
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(1), BookingRef = "F1" });
+        db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddDays(2), BookingRef = "F2" });
+        // 1 future but cancelled → excluded.
+        db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(3), BookingRef = "C1", IsCancelled = true });
+        // 1 past + active → excluded (the booking already happened; losing the ref is moot).
+        db.Bookings.Add(new Booking { Id = 4, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(-2), BookingRef = "P1" });
+        // 1 future on a different table → excluded.
+        db.Tables.Add(new Table { Id = 2, Seats = 4, SectionId = 1 });
+        db.Bookings.Add(new Booking { Id = 5, RestaurantId = 1, TableId = 2, SectionId = 1, Date = now.AddHours(4), BookingRef = "OTHER" });
+        await db.SaveChangesAsync();
+
+        var svc = CreateService(db);
+        DeleteImpactDto? result = await svc.GetTableDeleteImpactAsync(1, 1, 1);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result!.Bookings);
+    }
+
+    [Fact]
+    public async Task GetTableDeleteImpactAsync_ReturnsZero_WhenNoFutureBookings()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetTableDeleteImpactAsync_ReturnsZero_WhenNoFutureBookings));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Seats = 4, SectionId = 1 });
+        await db.SaveChangesAsync();
+
+        var svc = CreateService(db);
+        DeleteImpactDto? result = await svc.GetTableDeleteImpactAsync(1, 1, 1);
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result!.Bookings);
+    }
+
+    [Fact]
+    public async Task GetSectionDeleteImpactAsync_ReturnsNull_WhenSectionNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSectionDeleteImpactAsync_ReturnsNull_WhenSectionNotFound));
+        var svc = CreateService(db);
+        Assert.Null(await svc.GetSectionDeleteImpactAsync(1, 1));
+    }
+
+    [Fact]
+    public async Task GetSectionDeleteImpactAsync_CountsFutureNonCancelledAcrossSectionAndItsTables()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSectionDeleteImpactAsync_CountsFutureNonCancelledAcrossSectionAndItsTables));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Seats = 4, SectionId = 1 });
+        DateTime now = DateTime.UtcNow;
+        // Future booking matched by TableId (table 1) → counted.
+        db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(1), BookingRef = "BT" });
+        // Future booking matched by SectionId only (table ref already null, e.g. walk-in assigned to section) → counted.
+        db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, TableId = null, SectionId = 1, Date = now.AddHours(2), BookingRef = "BS" });
+        // Future booking on table 2 → counted.
+        db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, TableId = 2, SectionId = 1, Date = now.AddHours(3), BookingRef = "BT2" });
+        // Cancelled future on table 1 → excluded.
+        db.Bookings.Add(new Booking { Id = 4, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(4), BookingRef = "CX", IsCancelled = true });
+        // Past active on table 1 → excluded.
+        db.Bookings.Add(new Booking { Id = 5, RestaurantId = 1, TableId = 1, SectionId = 1, Date = now.AddHours(-1), BookingRef = "PAST" });
+        // Future on a different section → excluded.
+        db.Sections.Add(new Section { Id = 2, Name = "Other", RestaurantId = 1 });
+        db.Bookings.Add(new Booking { Id = 6, RestaurantId = 1, TableId = null, SectionId = 2, Date = now.AddHours(5), BookingRef = "OTHERSEC" });
+        await db.SaveChangesAsync();
+
+        var svc = CreateService(db);
+        DeleteImpactDto? result = await svc.GetSectionDeleteImpactAsync(1, 1);
+
+        Assert.NotNull(result);
+        Assert.Equal(3, result!.Bookings);
+    }
+
     // ── SortOrder / reorderable sections (#178) ──────────────────────────────
 
     [Fact]
@@ -1037,5 +1134,297 @@ public class RestaurantManagementServiceTests
 
         Assert.NotNull(result);
         Assert.Equal(["Only"], result!.Sections.Select(s => s.Name));
+    }
+
+    // ── Combinable table groups (#271) ──────────────────────────────────────
+    //
+    // A group is a bookable unit of physical tables pushed together. Service enforces every data-
+    // integrity rule (in-memory provider used here ignores SQL constraints, so the unique index on
+    // TableId is the production backstop): members exist + belong to the same restaurant, aren't
+    // already grouped, >= 2 members, and CombinedSeats >= sum(member seats).
+
+    private static async Task SeedTwoRestaurantsWithTablesAsync(AppDbContext db)
+    {
+        // Restaurant 1 — section 1 with tables 1, 2, 3.
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R1" });
+        db.Sections.Add(new Section { Id = 1, Name = "S1", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 3, Seats = 2, SectionId = 1 });
+        // Restaurant 2 — section 2 with table 4.
+        db.Restaurants.Add(new Restaurant { Id = 2, Name = "R2" });
+        db.Sections.Add(new Section { Id = 2, Name = "S2", RestaurantId = 2 });
+        db.Tables.Add(new Table { Id = 4, Seats = 6, SectionId = 2 });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_ReturnsNull_WhenRestaurantNotFound));
+        var svc = CreateService(db);
+        TableGroupDto? result = await svc.AddTableGroupAsync(999, new CreateTableGroupRequest { Members = [1, 2], CombinedSeats = 8 });
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_CreatesGroup_FromTwoTables()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_CreatesGroup_FromTwoTables));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        TableGroupDto? result = await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Name = "Window booths",
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("Window booths", result!.Name);
+        Assert.Equal(8, result.CombinedSeats);
+        Assert.Equal([1, 2], result.Members.Select(m => m.Id));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsFewerThanTwoMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsFewerThanTwoMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1], CombinedSeats = 4 }));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsDuplicateMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsDuplicateMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 1], CombinedSeats = 4 }));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsMemberFromDifferentRestaurant()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsMemberFromDifferentRestaurant));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        // Table 4 belongs to restaurant 2 — must be rejected when grouping under restaurant 1.
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 4], CombinedSeats = 10 }));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsTableAlreadyInAnotherGroup()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsTableAlreadyInAnotherGroup));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        await svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 2], CombinedSeats = 8 });
+
+        // Table 1 is now grouped — a second group including it must be rejected.
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 3], CombinedSeats = 6 }));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsCombinedSeatsBelowSumOfMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsCombinedSeatsBelowSumOfMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        // Tables 1+2 seat 4+4 = 8; 7 is below the floor.
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 2], CombinedSeats = 7 }));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_AllowsCombinedSeatsAboveSumOfMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_AllowsCombinedSeatsAboveSumOfMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        // Admin may bump it higher than the sum (e.g. adding a leaf).
+        TableGroupDto? result = await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Members = [1, 2],
+            CombinedSeats = 10
+        });
+        Assert.NotNull(result);
+        Assert.Equal(10, result!.CombinedSeats);
+    }
+
+    [Fact]
+    public async Task UpdateTableGroupAsync_RenamesAndSwapsMembersAndCombinedSeats()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableGroupAsync_RenamesAndSwapsMembersAndCombinedSeats));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        TableGroupDto? created = await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Name = "Old",
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+
+        // Swap table 2 out for table 3, rename, set combined seats to the new sum (4+2).
+        TableGroupDto? updated = await svc.UpdateTableGroupAsync(1, created!.Id, new UpdateTableGroupRequest
+        {
+            Name = "New",
+            Members = [1, 3],
+            CombinedSeats = 6
+        });
+
+        Assert.NotNull(updated);
+        Assert.Equal("New", updated!.Name);
+        Assert.Equal(6, updated.CombinedSeats);
+        Assert.Equal([1, 3], updated.Members.Select(m => m.Id));
+
+        // The removed table (2) is now ungrouped, so it can form a new group with another free table.
+        // Table 3 is taken by the group just updated, so this must instead reject.
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [2, 3], CombinedSeats = 6 }));
+    }
+
+    [Fact]
+    public async Task UpdateTableGroupAsync_ReturnsNull_WhenGroupNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableGroupAsync_ReturnsNull_WhenGroupNotFound));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        TableGroupDto? result = await svc.UpdateTableGroupAsync(1, 999, new UpdateTableGroupRequest
+        {
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateTableGroupAsync_AllowsKeepingOwnMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableGroupAsync_AllowsKeepingOwnMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        TableGroupDto? created = await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+
+        // Re-submitting the same members (a rename-only update) must not trip the "already grouped" rule.
+        TableGroupDto? updated = await svc.UpdateTableGroupAsync(1, created!.Id, new UpdateTableGroupRequest
+        {
+            Name = "Renamed",
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+
+        Assert.NotNull(updated);
+        Assert.Equal("Renamed", updated!.Name);
+    }
+
+    [Fact]
+    public async Task DeleteTableGroupAsync_ReturnsFalse_WhenGroupNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteTableGroupAsync_ReturnsFalse_WhenGroupNotFound));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+        Assert.False(await svc.DeleteTableGroupAsync(1, 999));
+    }
+
+    [Fact]
+    public async Task DeleteTableGroupAsync_RemovesGroupAndClearsBookingReferences()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(DeleteTableGroupAsync_RemovesGroupAndClearsBookingReferences));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        TableGroupDto? group = await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+        // A booking referencing the group.
+        db.Bookings.Add(new Booking
+        {
+            Id = 1,
+            RestaurantId = 1,
+            TableGroupId = group!.Id,
+            Date = DateTime.UtcNow.AddDays(1),
+            BookingRef = "G1"
+        });
+        await db.SaveChangesAsync();
+
+        bool result = await svc.DeleteTableGroupAsync(1, group.Id);
+
+        Assert.True(result);
+        Booking? booking = await db.Bookings.FindAsync(1);
+        Assert.Null(booking!.TableGroupId); // FK-null equivalent
+        Assert.False(await db.TableGroups.AnyAsync(g => g.Id == group.Id));
+        Assert.False(await db.TableGroupMemberships.AnyAsync(m => m.TableGroupId == group.Id));
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_IncludesGroupsWithMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_IncludesGroupsWithMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+        await svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+        {
+            Name = "Booths",
+            Members = [1, 2],
+            CombinedSeats = 8
+        });
+
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        TableGroupDto group = Assert.Single(result!.Groups);
+        Assert.Equal("Booths", group.Name);
+        Assert.Equal(8, group.CombinedSeats);
+        Assert.Equal([1, 2], group.Members.Select(m => m.Id));
+    }
+
+    [Fact]
+    public async Task GetAllAsync_IncludesGroupsWithMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_IncludesGroupsWithMembers));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+        await svc.AddTableGroupAsync(1, new CreateTableGroupRequest { Members = [1, 3], CombinedSeats = 6 });
+
+        List<RestaurantDto> result = await svc.GetAllAsync();
+
+        RestaurantDto r1 = result.Single(r => r.Id == 1);
+        TableGroupDto group = Assert.Single(r1.Groups);
+        Assert.Equal([1, 3], group.Members.Select(m => m.Id));
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ReturnsEmptyGroups_WhenNoneDefined()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_ReturnsEmptyGroups_WhenNoneDefined));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Empty(result!.Groups);
     }
 }

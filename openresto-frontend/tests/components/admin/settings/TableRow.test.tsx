@@ -11,6 +11,7 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("@/api/restaurants", () => ({
   updateTable: jest.fn(),
   deleteTable: jest.fn(),
+  fetchTableDeleteImpact: jest.fn(),
 }));
 
 jest.mock("@/utils/colors", () => ({
@@ -35,7 +36,6 @@ const baseProps = {
   borderColor: "#ddd",
   onUpdated: jest.fn(),
   onDeleted: jest.fn(),
-  confirmAction: jest.fn(),
 };
 
 describe("TableRow", () => {
@@ -131,29 +131,76 @@ describe("TableRow", () => {
     expect(screen.getByText("T1")).toBeTruthy();
   });
 
-  it("calls confirmAction and deleteTable when delete is confirmed", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(true);
+  // ── Two-step delete friction (#270) ───────────────────────────────────────
+  //
+  // `Delete…` reveals an inline confirmation that names the consequence (incl. the count of future
+  // bookings that lose their table reference) and requires a second explicit tap to destroy. Cancel
+  // returns to the row. Mirrors DangerZone's deleteStep pattern.
+
+  it("reveals an inline confirmation and fetches the impact count when Delete… is pressed", async () => {
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 3 });
+    render(<TableRow {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    expect(restaurantsApi.fetchTableDeleteImpact).toHaveBeenCalledWith(1, 2, 5);
+    // The confirm copy names the table and the concrete consequence.
+    expect(screen.getByText(/Delete “T1”\?/)).toBeTruthy();
+    expect(
+      await screen.findByText(/3 future bookings will lose their table reference/)
+    ).toBeTruthy();
+    expect(screen.getByText("Yes, delete")).toBeTruthy();
+    expect(screen.getByText("Cancel")).toBeTruthy();
+  });
+
+  it("deletes only after the second explicit tap (Yes, delete)", async () => {
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     (restaurantsApi.deleteTable as jest.Mock).mockResolvedValue(true);
     render(<TableRow {...baseProps} />);
-    // Each Pressable generates 2 accessible fiber nodes; edit=0,1 delete=2,3
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[2]);
+      fireEvent.press(screen.getByText("Delete…"));
     });
-    expect(baseProps.confirmAction).toHaveBeenCalledWith('Delete table "T1"?');
+    // The actual delete call is NOT made by the first tap — only by the confirm tap.
+    expect(restaurantsApi.deleteTable).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.press(screen.getByText("Yes, delete"));
+    });
     expect(restaurantsApi.deleteTable).toHaveBeenCalledWith(1, 2, 5);
     expect(baseProps.onDeleted).toHaveBeenCalled();
   });
 
-  it("does not delete when confirmAction returns false", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(false);
+  it("does not delete when Cancel is pressed in the confirm step", async () => {
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[2]);
+      fireEvent.press(screen.getByText("Delete…"));
     });
+    fireEvent.press(screen.getByTestId("table-delete-cancel-btn"));
     expect(restaurantsApi.deleteTable).not.toHaveBeenCalled();
     expect(baseProps.onDeleted).not.toHaveBeenCalled();
+    // Back to the idle row — the destructive confirm copy is gone.
+    expect(screen.queryByText("Yes, delete")).toBeNull();
+    expect(screen.getByText("Delete…")).toBeTruthy();
+  });
+
+  it("falls back to generic copy when the impact read fails or is unavailable", async () => {
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue(null);
+    render(<TableRow {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    expect(
+      await screen.findByText(/Future bookings on this table will lose their reference/)
+    ).toBeTruthy();
+  });
+
+  it("uses singular copy when exactly one future booking is affected", async () => {
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 1 });
+    render(<TableRow {...baseProps} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    expect(await screen.findByText(/1 future booking will lose its table reference/)).toBeTruthy();
   });
 
   it("renders in dark mode", () => {
@@ -187,7 +234,7 @@ describe("TableRow", () => {
   });
 
   it("seeds the edit form and delete confirmation with the table id when name is null", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(false);
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     render(<TableRow {...baseProps} table={{ ...baseTable, name: null }} />);
     const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
@@ -197,20 +244,22 @@ describe("TableRow", () => {
     expect(screen.getByText("EDITING · Table 5")).toBeTruthy();
     fireEvent.press(screen.getByText("Cancel"));
 
-    const accessibleAfterCancel = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessibleAfterCancel[2]);
+      fireEvent.press(screen.getByText("Delete…"));
     });
-    expect(baseProps.confirmAction).toHaveBeenCalledWith('Delete table "Table 5"?');
+    // The confirm copy falls back to the "Table {id}" label when the name is null.
+    expect(await screen.findByText(/Delete “Table 5”\?/)).toBeTruthy();
   });
 
   it("does not call onDeleted when deleteTable resolves falsy", async () => {
-    (baseProps.confirmAction as jest.Mock).mockResolvedValue(true);
+    (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     (restaurantsApi.deleteTable as jest.Mock).mockResolvedValue(false);
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[2]);
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Yes, delete"));
     });
     expect(restaurantsApi.deleteTable).toHaveBeenCalledWith(1, 2, 5);
     expect(baseProps.onDeleted).not.toHaveBeenCalled();

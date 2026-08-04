@@ -162,7 +162,6 @@ const baseProps = {
   borderColor: "#ddd",
   mutedColor: "#888",
   cardBg: "#fff",
-  confirmAction: jest.fn().mockResolvedValue(true),
 };
 
 describe("LocationCard", () => {

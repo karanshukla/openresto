@@ -80,4 +80,22 @@ public interface IBookingRepository
 
     /// <summary>All bookings assigned to a table — used by RestaurantManagementService.DeleteTableAsync to FK-null them.</summary>
     Task<List<Booking>> GetByTableAsync(int tableId);
+
+    /// <summary>
+    /// Count of non-cancelled <b>future</b> bookings (start &gt;= <paramref name="nowUtc"/>) assigned to a specific
+    /// table — used by the table-delete impact read to show the admin how many upcoming bookings would lose their
+    /// table reference. Distinct from <see cref="GetByTableAsync"/>, which returns the full set (incl. past/cancelled)
+    /// for the actual FK-nulling on delete.
+    /// </summary>
+    Task<int> CountFutureByTableAsync(int tableId, DateTime nowUtc);
+
+    /// <summary>
+    /// Count of non-cancelled <b>future</b> bookings (start &gt;= <paramref name="nowUtc"/>) whose SectionId matches
+    /// OR whose TableId is in <paramref name="tableIds"/> — used by the section-delete impact read (same membership
+    /// rule as <see cref="GetBySectionOrTablesAsync"/>, restricted to upcoming + non-cancelled).
+    /// </summary>
+    Task<int> CountFutureBySectionOrTablesAsync(int sectionId, IReadOnlyList<int> tableIds, DateTime nowUtc);
+
+    /// <summary>All bookings whose TableGroupId matches — used by RestaurantManagementService.DeleteTableGroupAsync to FK-null them.</summary>
+    Task<List<Booking>> GetByTableGroupAsync(int tableGroupId);
 }

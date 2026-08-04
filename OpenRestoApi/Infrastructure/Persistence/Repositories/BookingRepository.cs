@@ -197,5 +197,23 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
         {
             return await _db.Bookings.Where(b => b.TableId == tableId).ToListAsync();
         }
+
+        public async Task<int> CountFutureByTableAsync(int tableId, DateTime nowUtc)
+        {
+            return await _db.Bookings.CountAsync(b => b.TableId == tableId && !b.IsCancelled && b.Date >= nowUtc);
+        }
+
+        public async Task<int> CountFutureBySectionOrTablesAsync(int sectionId, IReadOnlyList<int> tableIds, DateTime nowUtc)
+        {
+            return await _db.Bookings.CountAsync(b =>
+                !b.IsCancelled
+                && b.Date >= nowUtc
+                && (b.SectionId == sectionId || (b.TableId != null && tableIds.Contains(b.TableId.Value))));
+        }
+
+        public async Task<List<Booking>> GetByTableGroupAsync(int tableGroupId)
+        {
+            return await _db.Bookings.Where(b => b.TableGroupId == tableGroupId).ToListAsync();
+        }
     }
 }

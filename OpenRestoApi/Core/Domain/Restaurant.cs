@@ -39,6 +39,9 @@ public class Restaurant
     // A restaurant can have multiple sections (e.g., indoor, patio)
     public ICollection<Section> Sections { get; set; } = new List<Section>();
 
+    /// <summary>Combinable-table groups defined for this restaurant (see <see cref="TableGroup"/>).</summary>
+    public ICollection<TableGroup> Groups { get; set; } = new List<TableGroup>();
+
     /// <summary>
     /// If set, new bookings are disabled until this time (UTC).
     /// </summary>

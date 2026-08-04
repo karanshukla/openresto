@@ -85,6 +85,38 @@ public class UpdateTableRequest
     public int Seats { get; set; }
 }
 
+/// <summary>
+/// Best-effort preview of what a table/section delete would orphan — shown in the admin UI's two-step
+/// delete confirmation so the owner sees the consequence in concrete terms before destroying the row.
+/// <c>Bookings</c> counts non-cancelled <b>future</b> bookings that would lose their table/section
+/// reference (the FK-null the delete itself already performs); past/cancelled bookings don't matter.
+/// </summary>
+public class DeleteImpactDto
+{
+    /// <summary>Non-cancelled future bookings that lose their table/section reference.</summary>
+    public int Bookings { get; set; }
+}
+
+// ── Combinable table groups (#271) ────────────────────────────────────────
+
+public class CreateTableGroupRequest
+{
+    public string? Name { get; set; }
+
+    /// <summary>Ids of the member tables to combine. Must be &gt;= 2, all owned by the restaurant, none already grouped.</summary>
+    public List<int> Members { get; set; } = new();
+
+    /// <summary>Stored combined seating capacity; validated &gt;= sum of member seats.</summary>
+    public int CombinedSeats { get; set; }
+}
+
+public class UpdateTableGroupRequest
+{
+    public string? Name { get; set; }
+    public List<int> Members { get; set; } = new();
+    public int CombinedSeats { get; set; }
+}
+
 // ── Response DTOs ──────────────────────────────────────────────────────────
 
 public class TableDto
@@ -100,6 +132,19 @@ public class SectionDto
     public string Name { get; set; } = null!;
     public int SortOrder { get; set; }
     public List<TableDto> Tables { get; set; } = new();
+}
+
+/// <summary>
+/// A combinable-table group (#271): physical tables an admin flagged as combinable, bookable as one
+/// unit for larger parties. <c>CombinedSeats</c> is the stored capacity; <c>Members</c> are the
+/// physical tables pushed together.
+/// </summary>
+public class TableGroupDto
+{
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public int CombinedSeats { get; set; }
+    public List<TableDto> Members { get; set; } = new();
 }
 
 public class ReorderSectionsRequest
@@ -158,4 +203,7 @@ public class RestaurantDto
     public int? MaxTableOversizeSeats { get; set; }
 
     public List<SectionDto> Sections { get; set; } = new();
+
+    /// <summary>Combinable-table groups defined for this restaurant (#271). Empty when none.</summary>
+    public List<TableGroupDto> Groups { get; set; } = new();
 }

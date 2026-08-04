@@ -39,6 +39,14 @@ public interface ITableRepository
     /// </summary>
     Task<Table?> GetForRestaurantAsync(int tableId, int sectionId, int restaurantId);
 
+    /// <summary>
+    /// Loads the tables whose ids are in <paramref name="tableIds"/>, scoped to a restaurant via the
+    /// section→restaurant chain — used by RestaurantManagementService to resolve + validate combinable
+    /// group members. Returns at most one row per id; callers compare counts to detect unknown/cross-
+    /// restaurant ids.
+    /// </summary>
+    Task<List<Table>> GetManyForRestaurantAsync(IReadOnlyList<int> tableIds, int restaurantId);
+
     /// <summary>Flushes pending changes on the underlying DbContext.</summary>
     Task SaveChangesAsync();
 }
