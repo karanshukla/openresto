@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useState } from "react";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -45,39 +45,46 @@ export default function Select({
           onPress={() => setModalVisible(false)}
         >
           <ThemedView style={[styles.modalView, { borderColor }]}>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.value.toString()}
-              style={styles.list}
-              ItemSeparatorComponent={() => (
-                <ThemedView style={[styles.separator, { backgroundColor: dividerColor }]} />
-              )}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onSelect(item.value);
-                    setModalVisible(false);
-                  }}
-                >
-                  <ThemedText
-                    style={[
-                      styles.optionText,
-                      item.value === selectedValue && { color: primaryColor, fontWeight: "600" },
+            {/*
+              Plain ScrollView over FlatList: option counts are small (max ~50 for seat pickers),
+              so virtualization buys nothing, and react-native-web's FlatList scroll container
+              intercepts the touch-start of a tap (treating it as a potential drag) so the option's
+              onPress never fires — the modal just dismisses on pointer-up. A ScrollView with
+              nestedScrollEnabled + direct Pressable rows is reliable cross-platform.
+            */}
+            <ScrollView style={styles.list} nestedScrollEnabled>
+              {options.map((item, i) => (
+                <View key={item.value.toString()}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.option,
+                      item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
+                      pressed && { opacity: 0.6 },
                     ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      onSelect(item.value);
+                      setModalVisible(false);
+                    }}
                   >
-                    {item.label}
-                  </ThemedText>
-                  {item.value === selectedValue && (
-                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.optionText,
+                        item.value === selectedValue && { color: primaryColor, fontWeight: "600" },
+                      ]}
+                    >
+                      {item.label}
+                    </ThemedText>
+                    {item.value === selectedValue && (
+                      <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                    )}
+                  </Pressable>
+                  {i < options.length - 1 && (
+                    <ThemedView style={[styles.separator, { backgroundColor: dividerColor }]} />
                   )}
-                </TouchableOpacity>
-              )}
-            />
+                </View>
+              ))}
+            </ScrollView>
           </ThemedView>
         </Pressable>
       </Modal>
