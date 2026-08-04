@@ -17,6 +17,7 @@ import {
 import { TableRow, TableRowGroupContext } from "./TableRow";
 import { AddRow } from "./AddRow";
 import { RowIconButton } from "./RowIconButton";
+import { RowTextButton } from "./RowTextButton";
 import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -266,8 +267,8 @@ export function SectionBlock({
           )}
         </View>
 
-        {/* Right: edit/save/delete actions */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {/* Right: edit/save/delete actions — gap 8 to match the table-row trailing cluster. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {editing ? (
             <>
               <Pressable
@@ -316,9 +317,10 @@ export function SectionBlock({
                 accessibilityLabel={`Move ${section.name} section down`}
                 accessibilityHint="Moves this section later in the display order"
               />
-              <RowIconButton
+              <RowTextButton
                 testID="section-edit-btn"
-                name="pencil-outline"
+                label="Edit"
+                icon="pencil-outline"
                 color={primaryColor}
                 onPress={() => {
                   setDraft(section.name);

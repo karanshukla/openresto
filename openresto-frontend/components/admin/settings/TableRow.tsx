@@ -11,6 +11,7 @@ import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles } from "./settings.styles";
 import { RowIconButton } from "./RowIconButton";
+import { RowTextButton } from "./RowTextButton";
 
 /**
  * Group membership context for a table row (#273). When present, the row renders inside a
@@ -313,8 +314,9 @@ export function TableRow({
           </View>
         </View>
 
-        {/* Trailing icon actions */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {/* Trailing actions — mix of text pill (Edit) and icon buttons (combine/delete); gap 8 keeps
+            the cluster tight and visually balanced across the two button types. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {!group && (
             <RowIconButton
               testID={`table-link-btn-${table.id}`}
@@ -324,9 +326,10 @@ export function TableRow({
               accessibilityLabel={`Combine ${tableName} into a group`}
             />
           )}
-          <RowIconButton
+          <RowTextButton
             testID={`table-edit-btn-${table.id}`}
-            name="pencil-outline"
+            label="Edit"
+            icon="pencil-outline"
             color={mutedColor}
             onPress={() => {
               setDraftName(table.name ?? "");
