@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using OpenRestoApi.Core.Application.Utilities;
+
 namespace OpenRestoApi.Core.Application.DTOs;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -70,6 +73,8 @@ public class AdminCreateBookingRequest
     public DateTime Date { get; set; }
     public string CustomerEmail { get; set; } = null!;
     public string? CustomerName { get; set; }
+
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
 }
 
@@ -81,6 +86,8 @@ public class AdminUpdateBookingRequest
     public int? SectionId { get; set; }
     public int? TableId { get; set; }
     public DateTime? Date { get; set; }
+
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int? Seats { get; set; }
     public string? CustomerEmail { get; set; }
     public string? CustomerName { get; set; }

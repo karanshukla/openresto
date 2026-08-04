@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using OpenRestoApi.Core.Application.Utilities;
+
 namespace OpenRestoApi.Core.Application.DTOs;
 
 // ── Request types ──────────────────────────────────────────────────────────
@@ -76,12 +79,16 @@ public class UpdateSectionRequest
 public class CreateTableRequest
 {
     public string? Name { get; set; }
+
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
 }
 
 public class UpdateTableRequest
 {
     public string? Name { get; set; }
+
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
 }
 
@@ -106,7 +113,8 @@ public class CreateTableGroupRequest
     /// <summary>Ids of the member tables to combine. Must be &gt;= 2, all owned by the restaurant, none already grouped.</summary>
     public List<int> Members { get; set; } = new();
 
-    /// <summary>Stored combined seating capacity; validated &gt;= sum of member seats.</summary>
+    /// <summary>Stored combined seating capacity; validated &gt;= sum of member seats and &lt;= <see cref="BookingLimits.MaxSeats"/>.</summary>
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int CombinedSeats { get; set; }
 }
 
@@ -114,6 +122,8 @@ public class UpdateTableGroupRequest
 {
     public string? Name { get; set; }
     public List<int> Members { get; set; } = new();
+
+    [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int CombinedSeats { get; set; }
 }
 

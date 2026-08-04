@@ -2,11 +2,13 @@ import { useState } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Select from "@/components/common/Select";
 import { theme, getThemeColors } from "@/theme/theme";
 import { TableDto, deleteTable, updateTable, fetchTableDeleteImpact } from "@/api/restaurants";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
+import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles } from "./settings.styles";
 import { RowIconButton } from "./RowIconButton";
 
@@ -61,7 +63,7 @@ export function TableRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(table.name ?? "");
-  const [draftSeats, setDraftSeats] = useState(String(table.seats));
+  const [draftSeats, setDraftSeats] = useState(table.seats);
   const [saving, setSaving] = useState(false);
   // Two-step delete friction (#270) — mirrors DangerZone's deleteStep pattern. `Delete…` reveals
   // an inline confirmation (not a center-screen modal) that names the consequence and requires a
@@ -328,7 +330,7 @@ export function TableRow({
             color={mutedColor}
             onPress={() => {
               setDraftName(table.name ?? "");
-              setDraftSeats(String(table.seats));
+              setDraftSeats(table.seats);
               setEditing(true);
             }}
             accessibilityLabel={`Edit ${tableName}`}
@@ -374,11 +376,11 @@ export function TableRow({
           <ThemedText style={{ fontSize: 11, fontWeight: "600", color: mutedColor }}>
             SEATS
           </ThemedText>
-          <Input
-            value={draftSeats}
-            onChangeText={setDraftSeats}
-            placeholder="4"
-            keyboardType="numeric"
+          <Select
+            selectedValue={draftSeats}
+            onSelect={(v) => setDraftSeats(v as number)}
+            options={buildSeatOptions()}
+            placeholder="Seats"
           />
         </View>
       </View>
@@ -392,12 +394,10 @@ export function TableRow({
           style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 16 }]}
           disabled={saving}
           onPress={async () => {
-            const seats = parseInt(draftSeats, 10);
-            if (isNaN(seats) || seats < 1) return;
             setSaving(true);
             const result = await updateTable(restaurantId, sectionId, table.id, {
               name: draftName.trim() || undefined,
-              seats,
+              seats: draftSeats,
             });
             setSaving(false);
             if (result) {

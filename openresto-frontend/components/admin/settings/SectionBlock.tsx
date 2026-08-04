@@ -20,8 +20,10 @@ import { RowIconButton } from "./RowIconButton";
 import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
+import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles } from "./settings.styles";
 import Input from "@/components/common/Input";
+import Select from "@/components/common/Select";
 
 export function SectionBlock({
   section,
@@ -472,11 +474,11 @@ export function SectionBlock({
               </ThemedText>
               <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
                 <View style={{ flex: 1 }}>
-                  <Input
-                    value={draftCombinedSeats}
-                    onChangeText={setDraftCombinedSeats}
+                  <Select
+                    selectedValue={parseInt(draftCombinedSeats, 10) || undefined}
+                    onSelect={(v) => setDraftCombinedSeats(String(v))}
+                    options={buildSeatOptions()}
                     placeholder={String(g.combinedSeats)}
-                    keyboardType="numeric"
                   />
                 </View>
                 <Pressable style={styles.smallBtn} onPress={() => setEditingGroupId(null)}>
@@ -575,6 +577,7 @@ export function SectionBlock({
           label="Add Table"
           placeholder="Table name (e.g. T1, Booth 1)"
           extraPlaceholder="Seats"
+          extraOptions={buildSeatOptions()}
           onAdd={async (name, extra) => {
             const seats = parseInt(extra ?? "2", 10);
             const result = await addTable(restaurantId, section.id, {

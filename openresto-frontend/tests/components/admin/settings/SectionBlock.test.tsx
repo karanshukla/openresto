@@ -199,7 +199,13 @@ describe("SectionBlock", () => {
     fireEvent.press(screen.getByText("Add Table"));
 
     fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T3");
-    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "4");
+    // Seats is now a dropdown — open it (placeholder "Seats") and pick "4 seats". The option list
+    // renders inside the modal; a table tile subtitle may also show "4 seats", so pick the modal
+    // option (the last match, since the modal appends after the tiles).
+    fireEvent.press(screen.getByText("Seats"));
+    await act(async () => {
+      fireEvent.press(screen.getAllByText("4 seats").pop()!);
+    });
 
     await act(async () => {
       fireEvent.press(screen.getByText("Add"));
@@ -209,7 +215,7 @@ describe("SectionBlock", () => {
     expect(baseProps.onTableAdded).toHaveBeenCalledWith(newTable);
   });
 
-  it("uses default seats 2 when extra is non-numeric", async () => {
+  it("uses default seats 2 when the seats dropdown is left untouched", async () => {
     const newTable = { id: 21, name: "T4", seats: 2 };
     (restaurantsApi.addTable as jest.Mock).mockResolvedValue(newTable);
 
@@ -252,7 +258,11 @@ describe("SectionBlock", () => {
     render(<SectionBlock {...baseProps} />);
     fireEvent.press(screen.getByText("Add Table"));
     fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T3");
-    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "4");
+    // Seats dropdown — pick "4 seats" (last match = the modal option; a table tile may also show it).
+    fireEvent.press(screen.getByText("Seats"));
+    await act(async () => {
+      fireEvent.press(screen.getAllByText("4 seats").pop()!);
+    });
     await act(async () => {
       fireEvent.press(screen.getByText("Add"));
     });
@@ -269,7 +279,7 @@ describe("SectionBlock", () => {
     render(<SectionBlock {...baseProps} />);
     fireEvent.press(screen.getByText("Add Table"));
     fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T4");
-    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "2");
+    // Seats left at default (2) — no selection needed.
     await act(async () => {
       fireEvent.press(screen.getByText("Add"));
     });
@@ -277,13 +287,12 @@ describe("SectionBlock", () => {
     expect(baseProps.onTableAdded).not.toHaveBeenCalled();
   });
 
-  it("uses default seats of 2 when extra is NaN", async () => {
+  it("uses default seats of 2 when the seats dropdown is left untouched", async () => {
     const newTable = { id: 21, name: "T5", seats: 2 };
     (restaurantsApi.addTable as jest.Mock).mockResolvedValue(newTable);
     render(<SectionBlock {...baseProps} />);
     fireEvent.press(screen.getByText("Add Table"));
     fireEvent.changeText(screen.getByPlaceholderText("Table name (e.g. T1, Booth 1)"), "T5");
-    fireEvent.changeText(screen.getByPlaceholderText("Seats"), "abc");
     await act(async () => {
       fireEvent.press(screen.getByText("Add"));
     });
@@ -431,7 +440,11 @@ describe("SectionBlock", () => {
     await act(async () => {
       fireEvent.press(screen.getByTestId("group-edit-btn-1"));
     });
-    fireEvent.changeText(screen.getByDisplayValue("6"), "8");
+    // Combined-seats is now a dropdown seeded with the current value (6). Open it and pick "8 seats".
+    fireEvent.press(screen.getByText("6 seats"));
+    await act(async () => {
+      fireEvent.press(screen.getByText("8 seats"));
+    });
     await act(async () => {
       fireEvent.press(screen.getByTestId("group-save-combined-btn"));
     });

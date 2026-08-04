@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -1426,5 +1427,53 @@ public class RestaurantManagementServiceTests
 
         Assert.NotNull(result);
         Assert.Empty(result!.Groups);
+    }
+
+    // ── Seats validation (defense in depth behind the DTO [Range] annotations) ──────────
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(BookingLimits.MaxSeats + 1)]
+    public async Task AddTableAsync_RejectsSeatsOutOfRange(int seats)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableAsync_RejectsSeatsOutOfRange) + seats);
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.AddTableAsync(1, 1, "T1", seats));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    [InlineData(BookingLimits.MaxSeats + 1)]
+    public async Task UpdateTableAsync_RejectsSeatsOutOfRange(int seats)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableAsync_RejectsSeatsOutOfRange) + seats);
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateTableAsync(1, 1, 1, "T1", seats));
+    }
+
+    [Fact]
+    public async Task AddTableGroupAsync_RejectsCombinedSeatsAboveMax()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(AddTableGroupAsync_RejectsCombinedSeatsAboveMax));
+        await SeedTwoRestaurantsWithTablesAsync(db);
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.AddTableGroupAsync(1, new CreateTableGroupRequest
+            {
+                Members = [1, 2],
+                CombinedSeats = BookingLimits.MaxSeats + 1
+            }));
     }
 }

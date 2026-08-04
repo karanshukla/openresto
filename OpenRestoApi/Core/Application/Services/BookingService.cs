@@ -69,6 +69,15 @@ public class BookingService(
                 : "This location accepts walk-ins only on the selected day. Please choose another day or just come in.");
         }
 
+        // Party size guard — defense in depth behind the DTO [Range] annotation. Rejects 0/negative
+        // or absurdly large parties with a clear message; without this, a 0-seat booking on a concrete
+        // table would pass the upper-bound capacity check and persist.
+        if (bookingDto.Seats < BookingLimits.MinSeats || bookingDto.Seats > BookingLimits.MaxSeats)
+        {
+            throw new ValidationException(
+                $"Party size must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.");
+        }
+
         // A combinable-table group booking (#272) selected explicitly takes precedence: route it
         // before the TableId/SectionId + auto-assign logic, which assumes a single table. (Auto-assign
         // that resolves to a group sets TableGroupId too and re-enters this branch below.)
