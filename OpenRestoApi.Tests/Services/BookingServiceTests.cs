@@ -1712,4 +1712,133 @@ public class BookingServiceTests
         Assert.NotNull(persisted);
         Assert.Equal(1, persisted!.TableGroupId);
     }
+
+    // ── Double-booking regressions (group-aware conflict checks) ────────────
+    //
+    // These cover the gap that a persisted group booking stores TableId = null, so the original
+    // table-only IsTableBookedOnDateAsync could not see it and allowed the same physical tables to
+    // be booked again. IsUnitBookedOnDateAsync resolves the membership and blocks all three cases.
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsWhenGroupAlreadyBooked()
+    {
+        // The same group is already booked for an overlapping slot — booking it again must conflict.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsWhenGroupAlreadyBooked));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(30);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableGroupId = 1, SectionId = 1, Date = date,
+            BookingRef = "GRP1", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group2@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        }));
+
+        Assert.Contains("already booked", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_SingleTable_RejectsWhenItsGroupAlreadyBooked()
+    {
+        // The group (T2+T3) is booked; booking member T2 individually must conflict because the
+        // group booking reserves T2 too (it persists TableId = null, invisible to a table-only check).
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_SingleTable_RejectsWhenItsGroupAlreadyBooked));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(31);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableGroupId = 1, SectionId = 1, Date = date,
+            BookingRef = "GRP1", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "member@example.com",
+            Seats = 3,
+            Date = date,
+            TableId = 2,
+            SectionId = 1
+        }));
+
+        Assert.Contains("already booked", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsWhenMemberReservedByAnotherGroup()
+    {
+        // A second group (G2) shares member T2 with G1. Booking G1 must conflict because T2 is
+        // reserved by the G2 booking (which stores TableId = null). Seeds a second group manually.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsWhenMemberReservedByAnotherGroup));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(32);
+        db.TableGroups.Add(new TableGroup
+        {
+            Id = 2, RestaurantId = 1, CombinedSeats = 6,
+            Members = new List<TableGroupMembership>
+            {
+                new() { TableGroupId = 2, TableId = 2 },
+                new() { TableGroupId = 2, TableId = 1 }
+            }
+        });
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableGroupId = 2, SectionId = 1, Date = date,
+            BookingRef = "GRP2", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group1@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        }));
+
+        Assert.Contains("already booked", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetBookingByIdAsync_GroupBooking_PopulatesGroupLabelAndSeats()
+    {
+        // Display regression: a group booking must surface a readable table label + combined seats
+        // on the read path (diner confirmation / lookup), not null fields that hide the table row.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetBookingByIdAsync_GroupBooking_PopulatesGroupLabelAndSeats));
+        SeedRestaurantWithGroup(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddDays(33);
+
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "display@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        });
+
+        BookingDto? fetched = await svc.GetBookingByIdAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal(1, fetched!.TableGroupId);
+        Assert.Equal(8, fetched.TableSeats);
+        Assert.Contains("T2", fetched.TableName);
+        Assert.Contains("T3", fetched.TableName);
+    }
 }

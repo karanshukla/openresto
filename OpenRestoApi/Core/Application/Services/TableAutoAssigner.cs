@@ -66,8 +66,10 @@ public sealed class TableAutoAssigner(
         {
             if (groupedTableIds.Contains(table.Id)) continue;
 
-            bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
-                table.Id, bookingDateUtc, durationMinutes);
+            // Group-aware: also blocks when the table is reserved by a group booking (which stores
+            // TableId = null and so is invisible to the table-only check).
+            bool booked = await _bookingRepository.IsUnitBookedOnDateAsync(
+                table.Id, tableGroupId: null, bookingDateUtc, durationMinutes);
             if (!booked && !_holdService.IsTableHeld(table.Id, bookingDateUtc, durationMinutes: durationMinutes))
             {
                 free.Add(new TableCandidate(table.Id, sectionId, table.Seats));
@@ -91,19 +93,25 @@ public sealed class TableAutoAssigner(
                 var memberIds = group.Members.Select(m => m.TableId).ToList();
                 if (memberIds.Count == 0) continue;
 
-                bool allMembersFree = true;
-                foreach (int memberId in memberIds)
+                // Group-aware: a single check catches the group already booked, a member booked
+                // individually, or a member reserved by a sibling group booking.
+                bool groupBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
+                    tableId: null, tableGroupId: group.Id, bookingDateUtc, durationMinutes);
+
+                bool allMembersFreeOfHolds = !groupBooked;
+                if (allMembersFreeOfHolds)
                 {
-                    bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
-                        memberId, bookingDateUtc, durationMinutes);
-                    if (booked || _holdService.IsTableHeld(memberId, bookingDateUtc, durationMinutes: durationMinutes))
+                    foreach (int memberId in memberIds)
                     {
-                        allMembersFree = false;
-                        break;
+                        if (_holdService.IsTableHeld(memberId, bookingDateUtc, durationMinutes: durationMinutes))
+                        {
+                            allMembersFreeOfHolds = false;
+                            break;
+                        }
                     }
                 }
 
-                if (!allMembersFree) continue;
+                if (!allMembersFreeOfHolds) continue;
 
                 // Anchor to the first member's id/section so existing callers that read TableId/SectionId
                 // still get a concrete value; the group identity rides on TableGroupId + MemberTableIds.

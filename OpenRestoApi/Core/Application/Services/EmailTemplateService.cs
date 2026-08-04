@@ -1,5 +1,6 @@
 using System.Net;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
@@ -68,6 +69,9 @@ public sealed class EmailTemplateService : IEmailTemplateService
             : "";
 
         string? tableLabel = booking.Table?.Name ?? (booking.TableId.HasValue ? $"Table #{booking.TableId}" : null);
+        // Combinable-table group booking: Table is null, so fall back to a readable group label so
+        // the confirmation email still tells the diner what they reserved.
+        tableLabel ??= booking.TableGroup is not null ? BookingMapper.GroupLabel(booking.TableGroup) : null;
         string tableHtml = tableLabel != null
             ? $"""
                <tr>

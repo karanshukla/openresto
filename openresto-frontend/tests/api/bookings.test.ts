@@ -41,7 +41,9 @@ describe("createBooking", () => {
     expect(url).toContain("/api/bookings");
     expect(opts.method).toBe("POST");
     expect(JSON.parse(opts.body)).toEqual(validBooking);
-    expect(result).toEqual(created);
+    // toMatchObject (not toEqual) because normalizeBooking fills optional keys (tableGroupId,
+    // endTime, isCancelled) that the minimal mock doesn't carry.
+    expect(result).toMatchObject(created);
   });
 
   it("throws with server message on 409 conflict", async () => {
@@ -219,6 +221,7 @@ describe("normalizeBooking (PascalCase fields)", () => {
       Id: 99,
       TableId: 3,
       SectionId: 4,
+      TableGroupId: null,
       RestaurantId: 5,
       Date: "2026-06-15T19:00:00Z",
       EndTime: "2026-06-15T20:30:00Z",
@@ -244,6 +247,7 @@ describe("normalizeBooking (PascalCase fields)", () => {
       id: 99,
       tableId: 3,
       sectionId: 4,
+      tableGroupId: null,
       restaurantId: 5,
       endTime: "2026-06-15T20:30:00Z",
       customerEmail: "pascal@test.com",
@@ -253,6 +257,37 @@ describe("normalizeBooking (PascalCase fields)", () => {
       bookingRef: "sunny-tarragon",
       tableName: "T3",
       sectionName: "Patio",
+    });
+  });
+
+  it("normalizes a group booking (TableGroupId set, TableId null)", async () => {
+    const groupBooking = {
+      Id: 50,
+      TableId: null,
+      SectionId: 1,
+      TableGroupId: 7,
+      RestaurantId: 5,
+      Date: "2026-06-15T19:00:00Z",
+      CustomerEmail: "group@test.com",
+      Seats: 6,
+      IsHeld: false,
+      BookingRef: "merged-bay",
+      TableName: "Tables T2 + T3",
+      TableSeats: 8,
+    };
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => groupBooking,
+    });
+
+    const result = await getBookingById(50);
+
+    expect(result).toMatchObject({
+      id: 50,
+      tableId: null,
+      tableGroupId: 7,
+      tableName: "Tables T2 + T3",
+      tableSeats: 8,
     });
   });
 });

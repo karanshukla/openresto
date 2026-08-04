@@ -38,6 +38,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             return await _db.Bookings
                 .Include(b => b.Table)
                 .Include(b => b.Section)
+                .Include(b => b.TableGroup)!
+                    .ThenInclude(g => g.Members)
+                        .ThenInclude(m => m.Table)
                 .Include(b => b.Restaurant)
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
@@ -47,6 +50,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             return await _db.Bookings
                 .Include(b => b.Table)
                 .Include(b => b.Section)
+                .Include(b => b.TableGroup)!
+                    .ThenInclude(g => g.Members)
+                        .ThenInclude(m => m.Table)
                 .Include(b => b.Restaurant)
                 .FirstOrDefaultAsync(b => b.BookingRef == bookingRef);
         }
@@ -56,6 +62,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             return await _db.Bookings
                 .Include(b => b.Table)
                 .Include(b => b.Section)
+                .Include(b => b.TableGroup)!
+                    .ThenInclude(g => g.Members)
+                        .ThenInclude(m => m.Table)
                 .Include(b => b.Restaurant)
                 .Where(b => b.Restaurant.Id == restaurantId)
                 .ToListAsync();
@@ -91,6 +100,70 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 !b.IsCancelled &&
                 b.Date < newEnd &&
                 (b.EndTime != null ? b.EndTime > newStart : b.Date > thresholdStart));
+        }
+
+        /// <summary>
+        /// Group-aware conflict check. Resolves the set of physical table ids and group ids that count
+        /// as "the unit being booked", then returns true if any non-cancelled booking overlapping the
+        /// window reserves one of those tables (directly or via a group), or one of those groups.
+        /// See <see cref="IBookingRepository.IsUnitBookedOnDateAsync"/> for the contract.
+        /// </summary>
+        public async Task<bool> IsUnitBookedOnDateAsync(
+            int? tableId,
+            int? tableGroupId,
+            DateTime bookingDate,
+            int durationMinutes = 60)
+        {
+            DateTime newStart = bookingDate.ToUniversalTime();
+            DateTime newEnd = newStart.AddMinutes(durationMinutes);
+            DateTime thresholdStart = newStart.AddMinutes(-durationMinutes);
+
+            // Resolve every table id that counts as reserved by this unit. Booking a table also
+            // reserves its group's other members (they can't be pushed together while one is taken);
+            // booking a group reserves all of its members.
+            var reservedTableIds = new HashSet<int>();
+
+            if (tableGroupId.HasValue)
+            {
+                foreach (TableGroupMembership m in await _db.TableGroupMemberships
+                    .Where(m => m.TableGroupId == tableGroupId.Value).ToListAsync())
+                {
+                    reservedTableIds.Add(m.TableId);
+                }
+            }
+
+            if (tableId.HasValue)
+            {
+                reservedTableIds.Add(tableId.Value);
+            }
+
+            if (reservedTableIds.Count == 0)
+            {
+                return false;
+            }
+
+            // Expand to every group that contains ANY reserved table — booking a table that shares a
+            // group with another table (even via a different group) conflicts with that group's
+            // bookings too, because those bookings reserve the shared physical table. This is what
+            // makes a group booking (TableId = null) visible: it's matched on its TableGroupId here.
+            var reservedGroupIds = new HashSet<int>(
+                await _db.TableGroupMemberships
+                    .Where(m => reservedTableIds.Contains(m.TableId))
+                    .Select(m => m.TableGroupId)
+                    .Distinct()
+                    .ToListAsync());
+
+            if (tableGroupId.HasValue)
+            {
+                reservedGroupIds.Add(tableGroupId.Value);
+            }
+
+            return await _db.Bookings.AnyAsync(b =>
+                !b.IsCancelled &&
+                b.Date < newEnd &&
+                (b.EndTime != null ? b.EndTime > newStart : b.Date > thresholdStart) &&
+                ((b.TableId.HasValue && reservedTableIds.Contains(b.TableId.Value)) ||
+                 (b.TableGroupId.HasValue && reservedGroupIds.Contains(b.TableGroupId.Value))));
         }
 
         public async Task<IEnumerable<Booking>> GetActiveBookingsForDateAsync(int restaurantId, DateTime bookingDate)
@@ -133,6 +206,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 .Include(b => b.Restaurant)
                 .Include(b => b.Section)
                 .Include(b => b.Table)
+                .Include(b => b.TableGroup)!
+                    .ThenInclude(g => g.Members)
+                        .ThenInclude(m => m.Table)
                 .Where(b => b.RestaurantId == restaurantId &&
                             !b.IsCancelled &&
                             b.Date <= nowUtc &&
@@ -146,6 +222,9 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                 .Include(b => b.Restaurant)
                 .Include(b => b.Section)
                 .Include(b => b.Table)
+                .Include(b => b.TableGroup)!
+                    .ThenInclude(g => g.Members)
+                        .ThenInclude(m => m.Table)
                 .Where(b => b.RestaurantId == restaurantId &&
                             b.Date >= startUtc && b.Date < endUtc &&
                             !b.IsCancelled)

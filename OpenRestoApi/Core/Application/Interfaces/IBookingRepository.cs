@@ -17,6 +17,26 @@ public interface IBookingRepository
     /// also used as the fallback occupancy window.
     /// </summary>
     Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate, int durationMinutes = 60);
+
+    /// <summary>
+    /// Group-aware conflict check used wherever a table OR a combinable-table group is being booked.
+    /// A physical <paramref name="tableId"/> is considered reserved for the window when ANY of these
+    /// overlap it:
+    /// <list type="bullet">
+    /// <item>a single-table booking on that table (<c>Booking.TableId == tableId</c>);</item>
+    /// <item>a group booking on the group that the table belongs to — because booking the group
+    /// reserves every member. The membership is resolved from <c>TableGroupMemberships</c>.</item>
+    /// </list>
+    /// A <paramref name="tableGroupId"/> (the unit being booked) is considered reserved when ANY
+    /// booking overlaps that targets the same group <em>or</em> any of its member tables individually.
+    /// This closes the double-booking gap: a persisted group booking stores <c>TableId = null</c>, so
+    /// the table-only <see cref="IsTableBookedOnDateAsync"/> cannot see it; this method can.
+    /// </summary>
+    Task<bool> IsUnitBookedOnDateAsync(
+        int? tableId,
+        int? tableGroupId,
+        DateTime bookingDate,
+        int durationMinutes = 60);
     /// <summary>Returns all non-cancelled bookings for a specific restaurant and local date.</summary>
     Task<IEnumerable<Booking>> GetActiveBookingsForDateAsync(int restaurantId, DateTime bookingDate);
 

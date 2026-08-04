@@ -121,11 +121,64 @@ public sealed class AvailabilityService(
                     || g.CombinedSeats - seats <= restaurant.MaxTableOversizeSeats.Value))
             .ToList();
 
-        // Optimize: Group bookings by table ID for faster lookup in the loop
+        // Optimize: index single-table bookings by table id and group bookings by group id. A group
+        // booking stores TableId = null, so it would be invisible to a table-only lookup — index it by
+        // its group id and resolve member table ids from the restaurant's loaded groups so the per-slot
+        // loops can detect it (otherwise a group/member reserved by a group booking would be advertised
+        // as available).
         var bookingsByTable = activeBookings
             .Where(b => b.TableId.HasValue)
             .GroupBy(b => b.TableId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
+
+        var groupBookings = activeBookings.Where(b => b.TableGroupId.HasValue).ToList();
+
+        // groupId → set of member table ids, from the restaurant's loaded combinable groups.
+        var groupMemberTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+            .ToDictionary(g => g.Id, g => g.Members.Select(m => m.TableId).ToHashSet());
+
+        // All physical table ids reserved by any group booking (the booked group's members). A standalone
+        // table in this set is effectively taken for the relevant slots even though no row sets its TableId.
+        var groupBookedTableIdsByGroup = groupBookings
+            .Where(b => b.TableGroupId.HasValue && groupMemberTableIds.ContainsKey(b.TableGroupId!.Value))
+            .SelectMany(b => groupMemberTableIds[b.TableGroupId!.Value].Select(id => (id, b)))
+            .ToList();
+
+        bool Overlaps(Booking b, DateTime slotUtc, DateTime slotEndUtc) =>
+            b.Date < slotEndUtc &&
+            (b.EndTime ?? b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes)) > slotUtc;
+
+        bool IsTableReserved(int tableId, DateTime slotUtc, DateTime slotEndUtc)
+        {
+            if (bookingsByTable.TryGetValue(tableId, out List<Booking>? tableBookings)
+                && tableBookings.Any(b => Overlaps(b, slotUtc, slotEndUtc)))
+            {
+                return true;
+            }
+
+            // Reserved by a group booking whose group counts this table as a member.
+            return groupBookedTableIdsByGroup.Any(x => x.id == tableId && Overlaps(x.b, slotUtc, slotEndUtc));
+        }
+
+        bool IsGroupReserved(TableGroup group, DateTime slotUtc, DateTime slotEndUtc)
+        {
+            // The group itself already booked for this slot.
+            if (groupBookings.Any(b => b.TableGroupId == group.Id && Overlaps(b, slotUtc, slotEndUtc)))
+            {
+                return true;
+            }
+
+            // Any member reserved individually, or by a sibling group booking, makes the group unavailable.
+            foreach (TableGroupMembership member in group.Members)
+            {
+                if (IsTableReserved(member.TableId, slotUtc, slotEndUtc))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         while (current < localEnd)
         {
@@ -140,17 +193,10 @@ public sealed class AvailabilityService(
 
                 foreach (Table? table in eligibleTablesUngrouped)
                 {
-                    // Check bookings
-                    if (bookingsByTable.TryGetValue(table.Id, out List<Booking>? tableBookings))
+                    // Group-aware booking check (catches single-table + group bookings reserving it).
+                    if (IsTableReserved(table.Id, slotUtc, slotEndUtc))
                     {
-                        bool hasBookingConflict = tableBookings.Any(b =>
-                            b.Date < slotEndUtc &&
-                            (b.EndTime ?? b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes)) > slotUtc);
-
-                        if (hasBookingConflict)
-                        {
-                            continue;
-                        }
+                        continue;
                     }
 
                     // Check holds
@@ -162,33 +208,26 @@ public sealed class AvailabilityService(
                     availableTableIds.Add(table.Id);
                 }
 
-                // Combinable groups: a group is free iff ALL members are free for the slot.
+                // Combinable groups: a group is free iff it isn't already booked and ALL members are free.
                 var availableGroupIds = new List<int>();
                 foreach (TableGroup group in eligibleGroups)
                 {
-                    bool allMembersFree = true;
+                    if (IsGroupReserved(group, slotUtc, slotEndUtc))
+                    {
+                        continue;
+                    }
+
+                    bool allMembersFreeOfHolds = true;
                     foreach (TableGroupMembership member in group.Members)
                     {
-                        if (bookingsByTable.TryGetValue(member.TableId, out List<Booking>? memberBookings))
-                        {
-                            bool memberConflict = memberBookings.Any(b =>
-                                b.Date < slotEndUtc &&
-                                (b.EndTime ?? b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes)) > slotUtc);
-                            if (memberConflict)
-                            {
-                                allMembersFree = false;
-                                break;
-                            }
-                        }
-
                         if (_holdService.IsTableHeld(member.TableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes))
                         {
-                            allMembersFree = false;
+                            allMembersFreeOfHolds = false;
                             break;
                         }
                     }
 
-                    if (allMembersFree)
+                    if (allMembersFreeOfHolds)
                     {
                         availableGroupIds.Add(group.Id);
                     }

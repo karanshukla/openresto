@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
@@ -609,6 +610,17 @@ public class AdminService(
                 : b.CancelledAt.Value.ToUniversalTime();
         }
 
+        // Group booking: Table/TableId are null (the booking reserves a combinable group). Show a
+        // readable group label + the group id so the admin grid doesn't render the row as "Table".
+        string? tableName = b.Table?.Name ?? (b.TableId.HasValue ? $"Table {b.TableId}" : null);
+        int? tableId = b.TableId;
+        if (tableName is null && b.TableGroup is not null)
+        {
+            tableName = BookingMapper.GroupLabel(b.TableGroup);
+            tableId = null;
+        }
+        tableName ??= "Table";
+
         return new BookingDetailDto
         {
             Id = b.Id,
@@ -616,8 +628,8 @@ public class AdminService(
             RestaurantName = b.Restaurant?.Name,
             SectionId = b.SectionId,
             SectionName = b.Section?.Name ?? (b.SectionId.HasValue ? $"Section {b.SectionId}" : "Section"),
-            TableId = b.TableId,
-            TableName = b.Table?.Name ?? (b.TableId.HasValue ? $"Table {b.TableId}" : "Table"),
+            TableId = tableId,
+            TableName = tableName,
             Date = dateUtc,
             EndTime = endTimeUtc,
             CustomerEmail = b.CustomerEmail,
