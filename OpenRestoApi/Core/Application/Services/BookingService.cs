@@ -15,6 +15,7 @@ public class BookingService(
     IHoldService holdService,
     BookingMapper mapper,
     TableAutoAssigner autoAssigner,
+    ITableGroupRepository tableGroupRepository,
     IBookingConfirmationService? confirmationService = null,
     INotificationQueue? notificationQueue = null)
 {
@@ -25,6 +26,7 @@ public class BookingService(
     private readonly IHoldService _holdService = holdService;
     private readonly BookingMapper _mapper = mapper;
     private readonly TableAutoAssigner _autoAssigner = autoAssigner;
+    private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
     private readonly IBookingConfirmationService? _confirmationService = confirmationService;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
 
@@ -67,6 +69,14 @@ public class BookingService(
                 : "This location accepts walk-ins only on the selected day. Please choose another day or just come in.");
         }
 
+        // A combinable-table group booking (#272) selected explicitly takes precedence: route it
+        // before the TableId/SectionId + auto-assign logic, which assumes a single table. (Auto-assign
+        // that resolves to a group sets TableGroupId too and re-enters this branch below.)
+        if (bookingDto.TableGroupId.HasValue && bookingDto.TableId is null)
+        {
+            return await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
+        }
+
         if (bookingDto.TableId is null || bookingDto.SectionId is null)
         {
             // Exactly one of the two is null — that's ambiguous; reject. Both null means
@@ -78,6 +88,13 @@ public class BookingService(
             }
 
             await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
+        }
+
+        // Auto-assign may have resolved to a group (TableGroupId set, TableId null). Route into the
+        // group path here; the explicit-group case above already returned.
+        if (bookingDto.TableGroupId.HasValue)
+        {
+            return await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
         }
 
         // After auto-assign resolution (or an explicit selection) both ids are guaranteed set.
@@ -167,31 +184,57 @@ public class BookingService(
     /// </summary>
     private async Task ResolveAutoAssignAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
     {
-        // 1. If the caller already holds an auto-assigned table, adopt it. This avoids a
-        //    second race: the hold was placed atomically, so the held table is "ours" until
-        //    the booking lands or the hold expires.
+        // 1. If the caller already holds an auto-assigned table (or group), adopt it. This avoids a
+        //    second race: the hold was placed atomically, so the held unit is "ours" until the booking
+        //    lands or the hold expires.
         if (!string.IsNullOrEmpty(bookingDto.HoldId))
         {
             HoldEntry? held = _holdService.GetHold(bookingDto.HoldId);
             if (held is not null && held.RestaurantId == restaurant.Id)
             {
-                // The hold is on a specific table — verify it still fits and isn't double-booked
-                // in the DB (the hold only guards against other in-memory holds). If something
-                // changed under us, fall through to the candidate search.
-                bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
-                    held.TableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
-                if (!booked)
+                if (held.IsGroup)
                 {
-                    bookingDto.TableId = held.TableId;
-                    bookingDto.SectionId = held.SectionId;
-                    return;
+                    // Group hold — verify every member is still free of a confirmed booking, then adopt.
+                    bool anyMemberBooked = false;
+                    foreach (int memberId in held.Members)
+                    {
+                        if (await _bookingRepository.IsTableBookedOnDateAsync(
+                                memberId, bookingDate, restaurant.DefaultBookingDurationMinutes))
+                        {
+                            anyMemberBooked = true;
+                            break;
+                        }
+                    }
+
+                    if (!anyMemberBooked)
+                    {
+                        bookingDto.TableGroupId = held.TableGroupId;
+                        bookingDto.MemberTableIds = held.Members;
+                        bookingDto.SectionId = held.SectionId;
+                        bookingDto.TableId = null;
+                        return;
+                    }
+                }
+                else
+                {
+                    // The hold is on a specific table — verify it still fits and isn't double-booked
+                    // in the DB (the hold only guards against other in-memory holds). If something
+                    // changed under us, fall through to the candidate search.
+                    bool booked = await _bookingRepository.IsTableBookedOnDateAsync(
+                        held.TableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+                    if (!booked)
+                    {
+                        bookingDto.TableId = held.TableId;
+                        bookingDto.SectionId = held.SectionId;
+                        return;
+                    }
                 }
             }
         }
 
         // 2. No usable hold — build candidates and place a fresh hold atomically. The new
-        //    hold id is stashed on the DTO so the existing "release hold after persist" step
-        //    at the end of CreateBookingAsync cleans it up.
+        // hold id is stashed on the DTO so the existing "release hold after persist" step
+        // at the end of CreateBookingAsync cleans it up.
         IReadOnlyList<TableCandidate> candidates = await _autoAssigner.BuildCandidatesAsync(
             restaurant, bookingDto.Seats, bookingDate);
 
@@ -212,9 +255,108 @@ public class BookingService(
             throw new ConflictException("All suitable tables are currently being held by other users. Please try again shortly.");
         }
 
-        bookingDto.TableId = assigned.TableId;
-        bookingDto.SectionId = assigned.SectionId;
+        if (assigned.IsGroup)
+        {
+            // Auto-assign resolved to a combinable group — record the group identity (and clear any
+            // stale TableId) so CreateBookingAsync routes into the group-booking path.
+            bookingDto.TableGroupId = assigned.TableGroupId;
+            bookingDto.MemberTableIds = assigned.Members;
+            bookingDto.SectionId = assigned.SectionId;
+            bookingDto.TableId = null;
+        }
+        else
+        {
+            bookingDto.TableId = assigned.TableId;
+            bookingDto.SectionId = assigned.SectionId;
+        }
         bookingDto.HoldId = assigned.HoldId; // ensure the release-at-end step tears it down
+    }
+
+    /// <summary>
+    /// Persists a combinable-table group booking (#272). Validates the group exists and belongs to the
+    /// restaurant, the party fits within <see cref="TableGroup.CombinedSeats"/> (and the restaurant's
+    /// optional oversize cap), and that <b>every member table</b> is free of a conflicting confirmed
+    /// booking or another user's hold for the slot. The booking is written with <see cref="Booking.TableGroupId"/>
+    /// set and <see cref="Booking.TableId"/> null — a group booking reserves the group, not one table.
+    /// </summary>
+    private async Task<BookingDto> CreateGroupBookingAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
+    {
+        TableGroup? group = await _tableGroupRepository.GetByIdWithMembersAsync(bookingDto.TableGroupId!.Value, restaurant.Id);
+        if (group == null)
+        {
+            throw new NotFoundException("The selected table group no longer exists.");
+        }
+
+        // Capacity: party must fit within the group's stored combined capacity.
+        if (bookingDto.Seats > group.CombinedSeats)
+        {
+            throw new ConflictException(
+                $"This group only has {group.CombinedSeats} combined seats, but {bookingDto.Seats} guests were requested.");
+        }
+
+        // Oversize cap applies to groups too — don't seat a small party at a much larger combined group.
+        if (restaurant.MaxTableOversizeSeats.HasValue
+            && group.CombinedSeats - bookingDto.Seats > restaurant.MaxTableOversizeSeats.Value)
+        {
+            throw new ConflictException(
+                $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {bookingDto.Seats}.");
+        }
+
+        // Member tables: resolve ids (prefer the caller's MemberTableIds, else fall back to the group's
+        // loaded members) and ensure every one is free — both of a confirmed booking and of another
+        // user's hold. This is the mutual-exclusion invariant for confirmed bookings.
+        var memberIds = (bookingDto.MemberTableIds ?? group.Members.Select(m => m.TableId)).ToList();
+        int durationMinutes = restaurant.DefaultBookingDurationMinutes;
+        foreach (int memberId in memberIds)
+        {
+            bool booked = await _bookingRepository.IsTableBookedOnDateAsync(memberId, bookingDate, durationMinutes);
+            if (booked)
+            {
+                throw new ConflictException("One of the combined tables is already booked for that time.");
+            }
+
+            bool heldByOther = _holdService.IsTableHeld(
+                memberId, bookingDate, excludeHoldId: bookingDto.HoldId, durationMinutes: durationMinutes);
+            if (heldByOther)
+            {
+                throw new ConflictException("One of the combined tables is currently being held by another user. Please try again shortly.");
+            }
+        }
+
+        // Persist the booking against the group. TableId stays null (1:1 with the group); SectionId is
+        // set from the first member so the admin grid can still group by section.
+        int? sectionId = bookingDto.SectionId
+            ?? group.Members.OrderBy(m => m.TableId).FirstOrDefault()?.Table?.SectionId;
+
+        Booking booking = _mapper.ToEntity(bookingDto);
+        booking.Date = bookingDate;
+        booking.BookingRef = BookingRefGenerator.Generate();
+        booking.EndTime = bookingDate.AddMinutes(durationMinutes);
+        booking.TableId = null;
+        booking.TableGroupId = group.Id;
+        booking.SectionId = sectionId;
+        booking.Restaurant = restaurant;
+
+        Booking newBooking = await _bookingRepository.AddAsync(booking);
+
+        // Release the hold now that the booking is confirmed.
+        if (!string.IsNullOrEmpty(bookingDto.HoldId))
+        {
+            _holdService.ReleaseHold(bookingDto.HoldId);
+        }
+
+        if (_notificationQueue != null)
+        {
+            _notificationQueue.EnqueueBookingCreated(newBooking, restaurant.Name);
+            _notificationQueue.EnqueueCapacityCheck(restaurant.Id, restaurant.Name, newBooking.Date);
+        }
+
+        if (_confirmationService != null)
+        {
+            await _confirmationService.SendConfirmationAsync(newBooking, restaurant);
+        }
+
+        return _mapper.ToDto(newBooking);
     }
 
     public virtual async Task<BookingDto?> GetBookingByIdAsync(int id)

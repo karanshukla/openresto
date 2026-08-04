@@ -30,7 +30,8 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdService,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)),
+            new TableAutoAssigner(new BookingRepository(db), holdService),
+            new TableGroupRepository(db),
             confirmationService);
     }
 
@@ -665,7 +666,8 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)));
+            new TableAutoAssigner(new BookingRepository(db), holdMock.Object),
+            new TableGroupRepository(db));
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
         {
@@ -706,7 +708,8 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)));
+            new TableAutoAssigner(new BookingRepository(db), holdMock.Object),
+            new TableGroupRepository(db));
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
         {
@@ -982,14 +985,16 @@ public class BookingServiceTests
         });
 
         var notificationQueue = new Mock<INotificationQueue>();
+        var holdSvc = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
             new SectionRepository(db),
             new RestaurantRepository(db),
-            new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock()),
+            holdSvc,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)),
+            new TableAutoAssigner(new BookingRepository(db), holdSvc),
+            new TableGroupRepository(db),
             notificationQueue: notificationQueue.Object);
 
         bool result = await svc.CancelBookingAsync(created.BookingRef!, "guest@example.com");
@@ -1020,14 +1025,16 @@ public class BookingServiceTests
         db.SaveChanges();
 
         var notificationQueue = new Mock<INotificationQueue>();
+        var holdSvc = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
             new SectionRepository(db),
             new RestaurantRepository(db),
-            new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock()),
+            holdSvc,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)),
+            new TableAutoAssigner(new BookingRepository(db), holdSvc),
+            new TableGroupRepository(db),
             notificationQueue: notificationQueue.Object);
 
         bool result = await svc.CancelBookingAsync(created.BookingRef!, "guest@example.com");
@@ -1461,7 +1468,8 @@ public class BookingServiceTests
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db)));
+            new TableAutoAssigner(new BookingRepository(db), holdMock.Object),
+            new TableGroupRepository(db));
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
         {
@@ -1500,7 +1508,11 @@ public class BookingServiceTests
             Date = date
         }));
 
-        Assert.Contains("currently being held", ex.Message);
+        // The held table is excluded at candidate-building (TableAutoAssigner checks IsTableHeld),
+        // so there are no eligible candidates — the "no tables available" message fires. The
+        // "currently being held by other users" path now only triggers when candidates exist but
+        // lose a placement-time race.
+        Assert.Contains("No tables are available", ex.Message);
     }
 
     [Fact]
@@ -1524,5 +1536,180 @@ public class BookingServiceTests
         Assert.NotNull(persisted);
         Assert.Equal(result.TableId, persisted!.TableId);
         Assert.Equal(result.SectionId, persisted.SectionId);
+    }
+
+    // ── Combinable table group bookings (#272) ──────────────────────────────
+
+    /// <summary>
+    /// Seeds a restaurant with one 2-seat standalone table (T1) and a combinable group of two
+    /// 4-seat tables (T2, T3) with CombinedSeats 8. Used for group-booking tests.
+    /// </summary>
+    private static void SeedRestaurantWithGroup(AppDbContext db)
+    {
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Group Bistro", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC"
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 4, SectionId = 1 });
+        db.TableGroups.Add(new TableGroup
+        {
+            Id = 1, RestaurantId = 1, CombinedSeats = 8,
+            Members = new List<TableGroupMembership>
+            {
+                new() { TableGroupId = 1, TableId = 2 },
+                new() { TableGroupId = 1, TableId = 3 }
+            }
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_PersistsTableGroupId_WithNullTableId()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_PersistsTableGroupId_WithNullTableId));
+        SeedRestaurantWithGroup(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddDays(20);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        });
+
+        Assert.Equal(1, result.TableGroupId);
+        Assert.Null(result.TableId);
+
+        Booking? persisted = await db.Bookings.FirstOrDefaultAsync(b => b.BookingRef == result.BookingRef);
+        Assert.NotNull(persisted);
+        Assert.Equal(1, persisted!.TableGroupId);
+        Assert.Null(persisted.TableId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsWhenMemberIsBooked()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsWhenMemberIsBooked));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(21);
+        // Book member T2 for an overlapping slot.
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 2, SectionId = 1, Date = date,
+            BookingRef = "X1", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        }));
+
+        Assert.Contains("already booked", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsWhenMemberHeldByOther()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsWhenMemberHeldByOther));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(22);
+        var holdService = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
+        // Someone else holds member T3.
+        Assert.NotNull(holdService.PlaceHold(restaurantId: 1, tableId: 3, sectionId: 1, bookingDate: date));
+        BookingService svc = CreateService(db, holdService);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        }));
+
+        Assert.Contains("held by another user", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsOversizeCap()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsOversizeCap));
+        SeedRestaurantWithGroup(db);
+        var r = db.Restaurants.First();
+        r.MaxTableOversizeSeats = 2; // party of 2 at 8-seat group: 8 - 2 = 6 > 2
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(23),
+            TableGroupId = 1,
+            MemberTableIds = new[] { 2, 3 }
+        }));
+
+        Assert.Contains("too large", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_ThrowsNotFound_WhenGroupMissing()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_ThrowsNotFound_WhenGroupMissing));
+        SeedRestaurantWithGroup(db);
+        BookingService svc = CreateService(db);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 6,
+            Date = DateTime.UtcNow.AddDays(24),
+            TableGroupId = 999, // nonexistent
+            MemberTableIds = new[] { 2, 3 }
+        }));
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_ResolvesToGroup_WhenOnlyGroupsFit()
+    {
+        // No standalone table fits a party of 6 (T1 is 2 seats, T2/T3 are grouped), so auto-assign
+        // must resolve to the group and persist TableGroupId.
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_ResolvesToGroup_WhenOnlyGroupsFit));
+        SeedRestaurantWithGroup(db);
+        BookingService svc = CreateService(db);
+        DateTime date = DateTime.UtcNow.AddDays(25);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "auto-group@example.com",
+            Seats = 6,
+            Date = date
+            // No TableId/SectionId → auto-assign
+        });
+
+        Assert.Equal(1, result.TableGroupId);
+        Assert.Null(result.TableId);
+
+        Booking? persisted = await db.Bookings.FirstOrDefaultAsync(b => b.BookingRef == result.BookingRef);
+        Assert.NotNull(persisted);
+        Assert.Equal(1, persisted!.TableGroupId);
     }
 }

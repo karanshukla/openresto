@@ -20,9 +20,12 @@ public class HoldsControllerUnitTests
         _mockPolicy = new Mock<IHoldPolicyService>();
         // TableAutoAssigner is sealed, so we instantiate it directly. The explicit-table path
         // under test never invokes it; the auto-assign tests below substitute via the policy mock.
-        TableAutoAssigner autoAssigner = new(new Mock<IBookingRepository>().Object);
-        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object, autoAssigner);
+        TableAutoAssigner autoAssigner = new(new Mock<IBookingRepository>().Object, _mockHoldService.Object);
+        _mockTableGroupRepository = new Mock<ITableGroupRepository>();
+        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object, autoAssigner, _mockTableGroupRepository.Object);
     }
+
+    private readonly Mock<ITableGroupRepository> _mockTableGroupRepository;
 
     private static PlaceHoldRequest ExplicitRequest(DateTime date) => new()
     {

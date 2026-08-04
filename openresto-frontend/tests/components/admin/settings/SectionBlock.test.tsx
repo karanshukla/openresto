@@ -12,6 +12,9 @@ jest.mock("@/api/restaurants", () => ({
   deleteSection: jest.fn(),
   addTable: jest.fn(),
   fetchSectionDeleteImpact: jest.fn(),
+  createTableGroup: jest.fn(),
+  updateTableGroup: jest.fn(),
+  deleteTableGroup: jest.fn(),
 }));
 
 jest.mock("@/context/BrandContext", () => ({
@@ -37,11 +40,13 @@ const baseProps = {
   isDark: false,
   borderColor: "#ddd",
   mutedColor: "#888",
+  groups: [] as restaurantsApi.TableGroupDto[],
   onSectionRenamed: jest.fn(),
   onSectionDeleted: jest.fn(),
   onTableAdded: jest.fn(),
   onTableUpdated: jest.fn(),
   onTableDeleted: jest.fn(),
+  onGroupsChanged: jest.fn(),
   isFirst: false,
   isLast: false,
   onMoveUp: jest.fn(),
@@ -327,5 +332,115 @@ describe("SectionBlock", () => {
     render(<SectionBlock {...baseProps} isLast />);
     fireEvent.press(screen.getByTestId("section-move-down-btn"));
     expect(baseProps.onMoveDown).not.toHaveBeenCalled();
+  });
+
+  // ── Combinable table groups (#273) ────────────────────────────────────────
+
+  it("renders a group count in the section header when groups exist", () => {
+    const groups: restaurantsApi.TableGroupDto[] = [
+      {
+        id: 1,
+        name: null,
+        combinedSeats: 6,
+        members: [
+          { id: 10, name: "T1", seats: 4 },
+          { id: 11, name: "T2", seats: 2 },
+        ],
+      },
+    ];
+    render(<SectionBlock {...baseProps} groups={groups} />);
+    expect(screen.getByText(/2 tables · 6 seats · 1 combinable group/)).toBeTruthy();
+  });
+
+  it("enters selection mode and creates a group when Combine is pressed", async () => {
+    const created: restaurantsApi.TableGroupDto = {
+      id: 1,
+      name: null,
+      combinedSeats: 6,
+      members: [
+        { id: 10, name: "T1", seats: 4 },
+        { id: 11, name: "T2", seats: 2 },
+      ],
+    };
+    (restaurantsApi.createTableGroup as jest.Mock).mockResolvedValue(created);
+    const onGroupsChanged = jest.fn();
+    render(<SectionBlock {...baseProps} groups={[]} onGroupsChanged={onGroupsChanged} />);
+
+    // Tap Link on T1 to enter selection mode.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-link-btn-10"));
+    });
+    // Select T2.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-select-row-11"));
+    });
+    // Combine.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-combine-btn"));
+    });
+
+    expect(restaurantsApi.createTableGroup).toHaveBeenCalledWith(42, {
+      members: expect.arrayContaining([10, 11]),
+      combinedSeats: 6,
+    });
+    expect(onGroupsChanged).toHaveBeenCalledWith([created]);
+  });
+
+  it("dissolves a group via Unlink when down to one member", async () => {
+    const groups: restaurantsApi.TableGroupDto[] = [
+      {
+        id: 1,
+        name: null,
+        combinedSeats: 6,
+        members: [
+          { id: 10, name: "T1", seats: 4 },
+          { id: 11, name: "T2", seats: 2 },
+        ],
+      },
+    ];
+    (restaurantsApi.deleteTableGroup as jest.Mock).mockResolvedValue(true);
+    const onGroupsChanged = jest.fn();
+    render(<SectionBlock {...baseProps} groups={groups} onGroupsChanged={onGroupsChanged} />);
+
+    // Unlink T10 → group drops to one member → dissolve.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("table-unlink-btn-10"));
+    });
+
+    expect(restaurantsApi.deleteTableGroup).toHaveBeenCalledWith(42, 1);
+    expect(onGroupsChanged).toHaveBeenCalledWith([]);
+  });
+
+  it("edits combined seats via the group edit affordance", async () => {
+    const groups: restaurantsApi.TableGroupDto[] = [
+      {
+        id: 1,
+        name: null,
+        combinedSeats: 6,
+        members: [
+          { id: 10, name: "T1", seats: 4 },
+          { id: 11, name: "T2", seats: 2 },
+        ],
+      },
+    ];
+    const updated: restaurantsApi.TableGroupDto = { ...groups[0], combinedSeats: 8 };
+    (restaurantsApi.updateTableGroup as jest.Mock).mockResolvedValue(updated);
+    const onGroupsChanged = jest.fn();
+    render(<SectionBlock {...baseProps} groups={groups} onGroupsChanged={onGroupsChanged} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("group-edit-btn-1"));
+    });
+    fireEvent.changeText(screen.getByDisplayValue("6"), "8");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("group-save-combined-btn"));
+    });
+
+    expect(restaurantsApi.updateTableGroup).toHaveBeenCalledWith(42, 1, {
+      name: null,
+      members: [10, 11],
+      combinedSeats: 8,
+    });
+    expect(onGroupsChanged).toHaveBeenCalledWith([updated]);
   });
 });

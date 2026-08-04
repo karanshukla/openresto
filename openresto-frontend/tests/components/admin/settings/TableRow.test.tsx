@@ -56,10 +56,8 @@ describe("TableRow", () => {
 
   it("enters edit mode when pencil button is pressed", () => {
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    // First accessible is the edit (pencil) button
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     expect(screen.getByDisplayValue("T1")).toBeTruthy();
     expect(screen.getByDisplayValue("4")).toBeTruthy();
@@ -67,9 +65,8 @@ describe("TableRow", () => {
 
   it("shows Cancel and Save buttons in edit mode", () => {
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     expect(screen.getByText("Cancel")).toBeTruthy();
     expect(screen.getByText("Save")).toBeTruthy();
@@ -79,9 +76,8 @@ describe("TableRow", () => {
     const updatedTable = { id: 5, name: "T1-Updated", seats: 2 };
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     fireEvent.changeText(screen.getByDisplayValue("T1"), "T1-Updated");
     fireEvent.changeText(screen.getByDisplayValue("4"), "2");
@@ -97,9 +93,8 @@ describe("TableRow", () => {
 
   it("does not save when seats is not a valid number", async () => {
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     fireEvent.changeText(screen.getByDisplayValue("4"), "abc");
     await act(async () => {
@@ -110,9 +105,8 @@ describe("TableRow", () => {
 
   it("does not save when seats is 0", async () => {
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     fireEvent.changeText(screen.getByDisplayValue("4"), "0");
     await act(async () => {
@@ -123,9 +117,8 @@ describe("TableRow", () => {
 
   it("cancels edit mode when Cancel is pressed", () => {
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     fireEvent.press(screen.getByText("Cancel"));
     expect(screen.getByText("T1")).toBeTruthy();
@@ -226,9 +219,8 @@ describe("TableRow", () => {
   it("falls back to the default primary color when the brand has none", () => {
     (useBrand as jest.Mock).mockReturnValueOnce({ primaryColor: "", appName: "Open Resto" });
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     expect(screen.getByText("Save")).toBeTruthy();
   });
@@ -236,9 +228,8 @@ describe("TableRow", () => {
   it("seeds the edit form and delete confirmation with the table id when name is null", async () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 0 });
     render(<TableRow {...baseProps} table={{ ...baseTable, name: null }} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     expect(screen.getByDisplayValue("")).toBeTruthy();
     expect(screen.getByText("EDITING · Table 5")).toBeTruthy();
@@ -267,9 +258,8 @@ describe("TableRow", () => {
 
   it("renders the edit-mode background in dark mode", () => {
     render(<TableRow {...baseProps} isDark />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     expect(screen.getByText("Save")).toBeTruthy();
   });
@@ -278,9 +268,8 @@ describe("TableRow", () => {
     const updatedTable = { id: 5, name: null, seats: 4 };
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(updatedTable);
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     fireEvent.changeText(screen.getByDisplayValue("T1"), "   ");
     await act(async () => {
@@ -295,9 +284,8 @@ describe("TableRow", () => {
   it("stays in edit mode when updateTable resolves falsy", async () => {
     (restaurantsApi.updateTable as jest.Mock).mockResolvedValue(null);
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
@@ -314,9 +302,8 @@ describe("TableRow", () => {
       })
     );
     render(<TableRow {...baseProps} />);
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     act(() => {
-      fireEvent.press(accessible[0]);
+      fireEvent.press(screen.getByText("Edit"));
     });
     act(() => {
       fireEvent.press(screen.getByText("Save"));
@@ -325,5 +312,80 @@ describe("TableRow", () => {
     await act(async () => {
       resolve!(baseTable);
     });
+  });
+
+  // ── Combinable table groups (#273) ────────────────────────────────────────
+
+  it("renders a Link button on standalone (ungrouped) tables", () => {
+    render(<TableRow {...baseProps} />);
+    expect(screen.getByTestId("table-link-btn-5")).toBeTruthy();
+    expect(screen.getByText("Link")).toBeTruthy();
+  });
+
+  it("renders the group chip and Unlink button when the table is a group member", () => {
+    render(
+      <TableRow
+        {...baseProps}
+        group={{ id: 9, label: "Tables 5 + 6 (8 combined)", combinedSeats: 8 }}
+        onUnlink={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId("table-group-chip-5")).toBeTruthy();
+    expect(screen.getByText("Tables 5 + 6 (8 combined)")).toBeTruthy();
+    expect(screen.getByTestId("table-unlink-btn-5")).toBeTruthy();
+    expect(screen.getByText("Unlink")).toBeTruthy();
+    // No Link button on a grouped table.
+    expect(screen.queryByTestId("table-link-btn-5")).toBeNull();
+  });
+
+  it("calls onUnlink when the Unlink button is pressed", () => {
+    const onUnlink = jest.fn();
+    render(
+      <TableRow
+        {...baseProps}
+        group={{ id: 9, label: "Tables 5 + 6 (8 combined)", combinedSeats: 8 }}
+        onUnlink={onUnlink}
+      />
+    );
+    act(() => {
+      fireEvent.press(screen.getByTestId("table-unlink-btn-5"));
+    });
+    expect(onUnlink).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onLink when the Link button is pressed", () => {
+    const onLink = jest.fn();
+    render(<TableRow {...baseProps} onLink={onLink} />);
+    act(() => {
+      fireEvent.press(screen.getByTestId("table-link-btn-5"));
+    });
+    expect(onLink).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a selectable row in selection mode", () => {
+    const onToggleSelect = jest.fn();
+    render(
+      <TableRow {...baseProps} selectionMode selected={false} onToggleSelect={onToggleSelect} />
+    );
+    expect(screen.getByTestId("table-select-row-5")).toBeTruthy();
+    act(() => {
+      fireEvent.press(screen.getByTestId("table-select-row-5"));
+    });
+    expect(onToggleSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables selection for already-grouped tables in selection mode", () => {
+    const onToggleSelect = jest.fn();
+    render(
+      <TableRow
+        {...baseProps}
+        group={{ id: 9, label: "Tables 5 + 6 (8 combined)", combinedSeats: 8 }}
+        selectionMode
+        disabledInSelection
+        onToggleSelect={onToggleSelect}
+      />
+    );
+    // A grouped row is non-interactive in selection mode.
+    expect(screen.queryByTestId("table-link-btn-5")).toBeNull();
   });
 });

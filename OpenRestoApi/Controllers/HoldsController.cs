@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
 
@@ -12,17 +13,21 @@ namespace OpenRestoApi.Controllers;
 public class HoldsController(
     IHoldService holdService,
     IHoldPolicyService holdPolicyService,
-    TableAutoAssigner autoAssigner) : ControllerBase
+    TableAutoAssigner autoAssigner,
+    ITableGroupRepository tableGroupRepository) : ControllerBase
 {
     private readonly IHoldService _holdService = holdService;
     private readonly IHoldPolicyService _holdPolicyService = holdPolicyService;
     private readonly TableAutoAssigner _autoAssigner = autoAssigner;
+    private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
 
     /// <summary>
     /// Places a temporary hold on a table for a given date.
     /// Returns 409 Conflict if the table is already held by someone else.
     /// When <see cref="PlaceHoldRequest.TableId"/>/<see cref="PlaceHoldRequest.SectionId"/>
     /// are omitted, the server auto-assigns the best available table across all sections.
+    /// When <see cref="PlaceHoldRequest.TableGroupId"/> is set, the server reserves all member
+    /// tables of that combinable group as one hold (#272).
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> PlaceHold([FromBody] PlaceHoldRequest request)
@@ -30,6 +35,21 @@ public class HoldsController(
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
+        }
+
+        // A combinable-group hold takes precedence and resolves its own members.
+        if (request.TableGroupId.HasValue)
+        {
+            // A group hold must not also specify a concrete table — that's ambiguous.
+            if (request.TableId.HasValue)
+            {
+                return BadRequest(new MessageResponse
+                {
+                    Message = "Specify either TableId or TableGroupId, not both."
+                });
+            }
+
+            return await PlaceGroupHold(request);
         }
 
         bool autoAssign = request.TableId is null && request.SectionId is null;
@@ -54,6 +74,91 @@ public class HoldsController(
                 ? await PlaceAutoAssignedHold(request, policy)
                 : PlaceEligibleHold(request, policy)
         };
+    }
+
+    /// <summary>
+    /// Resolves a combinable group's members and places a single multi-table hold on all of them
+    /// (#272). Validates restaurant-level policy, that the group exists + belongs to the restaurant,
+    /// and that the party fits within the group's CombinedSeats (and the oversize cap). The actual
+    /// all-members-free check + place happens atomically inside HoldService.PlaceGroupHold's lock.
+    /// </summary>
+    private async Task<IActionResult> PlaceGroupHold(PlaceHoldRequest request)
+    {
+        HoldPolicyResult policy = await _holdPolicyService.ValidateAnyTableAsync(request.RestaurantId, request.Date);
+        if (policy.Status != HoldPolicyStatus.Eligible)
+        {
+            return policy.Status switch
+            {
+                HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found." }),
+                HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage! }),
+                HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage! }),
+                _ => BadRequest(new MessageResponse { Message = "Hold not available." })
+            };
+        }
+
+        TableGroup? group = await _tableGroupRepository.GetByIdWithMembersAsync(request.TableGroupId!.Value, request.RestaurantId);
+        if (group == null)
+        {
+            return NotFound(new MessageResponse { Message = "Table group not found." });
+        }
+
+        if (request.Seats <= 0)
+        {
+            return BadRequest(new MessageResponse
+            {
+                Message = "Seats is required for a group hold so the server can validate combined capacity."
+            });
+        }
+
+        if (request.Seats > group.CombinedSeats)
+        {
+            return Conflict(new MessageResponse
+            {
+                Message = $"This group only has {group.CombinedSeats} combined seats, but {request.Seats} guests were requested."
+            });
+        }
+
+        Restaurant restaurant = policy.Restaurant!;
+        if (restaurant.MaxTableOversizeSeats.HasValue
+            && group.CombinedSeats - request.Seats > restaurant.MaxTableOversizeSeats.Value)
+        {
+            return Conflict(new MessageResponse
+            {
+                Message = $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {request.Seats}."
+            });
+        }
+
+        var memberIds = group.Members.Select(m => m.TableId).ToList();
+        if (memberIds.Count == 0)
+        {
+            return Conflict(new MessageResponse { Message = "This table group has no members." });
+        }
+
+        int sectionId = group.Members.OrderBy(m => m.TableId).First().Table?.SectionId ?? 0;
+
+        HoldResult? result = _holdService.PlaceGroupHold(
+            request.RestaurantId,
+            group.Id,
+            memberIds,
+            sectionId,
+            policy.BookingDate,
+            request.CurrentHoldId,
+            restaurant.DefaultBookingDurationMinutes);
+
+        if (result == null)
+        {
+            return Conflict(new MessageResponse
+            {
+                Message = "One of the combined tables is already held by another user. Please try again shortly."
+            });
+        }
+
+        return Ok(new HoldResponse
+        {
+            HoldId = result.HoldId,
+            ExpiresAt = result.ExpiresAt,
+            TableGroupId = group.Id
+        });
     }
 
     private IActionResult PlaceEligibleHold(PlaceHoldRequest request, HoldPolicyResult policy)

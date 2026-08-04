@@ -57,6 +57,11 @@ jest.mock("@/components/booking/HoldStatusBanner", () => ({
   default: () => null,
 }));
 
+jest.mock("@/components/booking/LargePartyNoticeModal", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock("@/components/booking/PopularTimesPicker", () => ({
   __esModule: true,
   default: () => {
@@ -566,5 +571,105 @@ describe("BookingForm", () => {
     // No cap -> the 6-seat table is eligible and the dropdown renders.
     await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
     expect(screen.queryByText(/No tables available/)).toBeNull();
+  });
+
+  // ── Combinable table groups (#274) ────────────────────────────────────────
+  //
+  // A restaurant whose largest single table is 4 seats but which has a combinable group of 8.
+  // A party of 6 is seatable only via the group — the large-party modal must NOT fire.
+
+  const mockRestaurantWithGroup = {
+    ...mockRestaurantAllDays,
+    sections: [
+      {
+        id: 10,
+        name: "Main",
+        restaurantId: 1,
+        tables: [
+          { id: 100, name: "T1", seats: 4, sectionId: 10 },
+          { id: 101, name: "T2", seats: 4, sectionId: 10 },
+        ],
+      },
+    ],
+    groups: [
+      {
+        id: 1,
+        name: null,
+        combinedSeats: 8,
+        members: [
+          { id: 100, name: "T1", seats: 4 },
+          { id: 101, name: "T2", seats: 4 },
+        ],
+      },
+    ],
+  };
+
+  it("does not show the large-party notice when a combinable group can seat the party", async () => {
+    // Party of 6 exceeds the largest single table (4) but fits the group (8).
+    render(
+      <BookingForm restaurant={mockRestaurantWithGroup} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // No large-party notice/modal since the group can seat the party.
+    expect(screen.queryByText("Large party")).toBeNull();
+  });
+
+  it("still shows the large-party notice when even the group cannot seat the party", async () => {
+    // Party of 10 exceeds both the largest single table (4) and the group (8).
+    render(
+      <BookingForm restaurant={mockRestaurantWithGroup} onSubmit={jest.fn()} initialSeats={10} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // The large-party notice (and auto-opened modal) both render — assert at least one.
+    expect(screen.getAllByText("Large party").length).toBeGreaterThan(0);
+  });
+
+  it("offers the group as a dropdown option when availableGroupIds includes it", async () => {
+    mockFetchAvailability.mockResolvedValue({
+      slots: [
+        {
+          time: "19:00",
+          isAvailable: true,
+          availableTableIds: [],
+          availableGroupIds: [1],
+          category: "Dinner",
+        },
+      ],
+    });
+    render(
+      <BookingForm restaurant={mockRestaurantWithGroup} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // Switch out of "Any section" so the explicit table dropdown is visible.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    // The dropdown renders (a group is selectable) even though no single table is available.
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    expect(screen.queryByText(/No tables available/)).toBeNull();
+  });
+
+  it("does not offer the group when availableGroupIds excludes it", async () => {
+    mockFetchAvailability.mockResolvedValue({
+      slots: [
+        {
+          time: "19:00",
+          isAvailable: true,
+          availableTableIds: [],
+          availableGroupIds: [], // group not bookable for this slot
+          category: "Dinner",
+        },
+      ],
+    });
+    render(
+      <BookingForm restaurant={mockRestaurantWithGroup} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // Switch out of "Any section" so the explicit table dropdown would be visible if eligible.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    // No standalone tables (empty availableTableIds) and the group excluded → no dropdown.
+    expect(screen.getByText(/No tables available for 6 guests/)).toBeTruthy();
   });
 });

@@ -25,6 +25,11 @@ export interface BookingCreationDto {
   tableId: number | null;
   /** Omit (or null) for "Any section" auto-assign. */
   sectionId: number | null;
+  /**
+   * Combinable-table group id (#274) when booking a combined group; null otherwise. Mutually
+   * exclusive with tableId.
+   */
+  tableGroupId?: number | null;
   customerEmail: string;
   customerName: string;
   seats: number;

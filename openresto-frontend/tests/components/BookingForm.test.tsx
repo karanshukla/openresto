@@ -327,4 +327,106 @@ describe("BookingForm", () => {
       expect(screen.getByText("T2 (4 seats)")).toBeTruthy();
     });
   });
+
+  // ── Combinable table groups (#274) ────────────────────────────────────────
+
+  it("renders combinable groups in the dropdown with the expected label", async () => {
+    const { fetchAvailability } = require("@/api/availability");
+    (fetchAvailability as jest.Mock).mockResolvedValueOnce({
+      slots: [
+        {
+          time: "09:00",
+          isAvailable: true,
+          category: "Lunch" as const,
+          availableTableIds: [],
+          availableGroupIds: [7],
+        },
+      ],
+    });
+
+    const restaurantWithNamedGroup = {
+      ...mockRestaurant,
+      groups: [
+        {
+          id: 7,
+          name: "Window booths",
+          combinedSeats: 6,
+          members: [
+            { id: 100, name: "T1", seats: 2 },
+            { id: 101, name: "T2", seats: 4 },
+          ],
+        },
+      ],
+    } as any;
+
+    renderWithProviders(
+      <BookingForm
+        restaurant={restaurantWithNamedGroup}
+        onSubmit={jest.fn()}
+        initialTime="09:00"
+        initialSeats={5}
+      />
+    );
+    selectMainSection();
+
+    // No single table fits a party of 5, so the trigger shows the placeholder. Open the dropdown
+    // to reveal the group option.
+    await waitFor(() => expect(screen.getByText("Select a table")).toBeTruthy());
+    fireEvent.press(screen.getByText("Select a table"));
+
+    // A named group uses its name in the label.
+    await waitFor(() => {
+      expect(screen.getByText("Window booths (6 seats)")).toBeTruthy();
+    });
+  });
+
+  it("uses the member-names fallback label for an unnamed group", async () => {
+    const { fetchAvailability } = require("@/api/availability");
+    (fetchAvailability as jest.Mock).mockResolvedValueOnce({
+      slots: [
+        {
+          time: "09:00",
+          isAvailable: true,
+          category: "Lunch" as const,
+          availableTableIds: [],
+          availableGroupIds: [7],
+        },
+      ],
+    });
+
+    const restaurantWithUnnamedGroup = {
+      ...mockRestaurant,
+      groups: [
+        {
+          id: 7,
+          name: null,
+          combinedSeats: 6,
+          members: [
+            { id: 100, name: "T1", seats: 2 },
+            { id: 101, name: "T2", seats: 4 },
+          ],
+        },
+      ],
+    } as any;
+
+    renderWithProviders(
+      <BookingForm
+        restaurant={restaurantWithUnnamedGroup}
+        onSubmit={jest.fn()}
+        initialTime="09:00"
+        initialSeats={5}
+      />
+    );
+    selectMainSection();
+
+    // No single table fits a party of 5, so the trigger shows the placeholder. Open the dropdown
+    // to reveal the group option.
+    await waitFor(() => expect(screen.getByText("Select a table")).toBeTruthy());
+    fireEvent.press(screen.getByText("Select a table"));
+
+    // An unnamed group falls back to "Tables T1 + T2 (6 seats combined)".
+    await waitFor(() => {
+      expect(screen.getByText("Tables T1 + T2 (6 seats combined)")).toBeTruthy();
+    });
+  });
 });

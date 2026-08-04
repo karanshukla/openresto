@@ -107,6 +107,20 @@ public sealed class AvailabilityService(
                     || t.Seats - seats <= restaurant.MaxTableOversizeSeats.Value))
             .ToList() ?? new List<Table>();
 
+        // Combinable-table groups (#272): a group is bookable when its CombinedSeats fits the party
+        // and the same optional oversize cap is satisfied. Per slot, a group is free iff ALL of its
+        // members are free. Members are also excluded from AvailableTableIds when grouped so a table
+        // is never offered individually AND as part of a group for the same slot.
+        var groupedTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+            .SelectMany(g => g.Members).Select(m => m.TableId).ToHashSet();
+        var eligibleTablesUngrouped = eligibleTables.Where(t => !groupedTableIds.Contains(t.Id)).ToList();
+
+        var eligibleGroups = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+            .Where(g => g.CombinedSeats >= seats
+                && (restaurant.MaxTableOversizeSeats == null
+                    || g.CombinedSeats - seats <= restaurant.MaxTableOversizeSeats.Value))
+            .ToList();
+
         // Optimize: Group bookings by table ID for faster lookup in the loop
         var bookingsByTable = activeBookings
             .Where(b => b.TableId.HasValue)
@@ -124,7 +138,7 @@ public sealed class AvailabilityService(
                 // restaurant's configured booking duration.
                 DateTime slotEndUtc = slotUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes);
 
-                foreach (Table? table in eligibleTables)
+                foreach (Table? table in eligibleTablesUngrouped)
                 {
                     // Check bookings
                     if (bookingsByTable.TryGetValue(table.Id, out List<Booking>? tableBookings))
@@ -147,15 +161,58 @@ public sealed class AvailabilityService(
 
                     availableTableIds.Add(table.Id);
                 }
-            }
 
-            slots.Add(new TimeSlotDto
+                // Combinable groups: a group is free iff ALL members are free for the slot.
+                var availableGroupIds = new List<int>();
+                foreach (TableGroup group in eligibleGroups)
+                {
+                    bool allMembersFree = true;
+                    foreach (TableGroupMembership member in group.Members)
+                    {
+                        if (bookingsByTable.TryGetValue(member.TableId, out List<Booking>? memberBookings))
+                        {
+                            bool memberConflict = memberBookings.Any(b =>
+                                b.Date < slotEndUtc &&
+                                (b.EndTime ?? b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes)) > slotUtc);
+                            if (memberConflict)
+                            {
+                                allMembersFree = false;
+                                break;
+                            }
+                        }
+
+                        if (_holdService.IsTableHeld(member.TableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes))
+                        {
+                            allMembersFree = false;
+                            break;
+                        }
+                    }
+
+                    if (allMembersFree)
+                    {
+                        availableGroupIds.Add(group.Id);
+                    }
+                }
+
+                slots.Add(new TimeSlotDto
+                {
+                    Time = current.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                    IsAvailable = availableTableIds.Count > 0 || availableGroupIds.Count > 0,
+                    AvailableTableIds = availableTableIds,
+                    AvailableGroupIds = availableGroupIds,
+                    Category = GetCategory(current)
+                });
+            }
+            else
             {
-                Time = current.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
-                IsAvailable = availableTableIds.Count > 0,
-                AvailableTableIds = availableTableIds,
-                Category = GetCategory(current)
-            });
+                slots.Add(new TimeSlotDto
+                {
+                    Time = current.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                    IsAvailable = false,
+                    AvailableTableIds = availableTableIds,
+                    Category = GetCategory(current)
+                });
+            }
 
             current = current.AddMinutes(slotIntervalMinutes);
         }

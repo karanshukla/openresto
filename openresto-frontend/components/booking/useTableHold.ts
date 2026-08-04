@@ -18,6 +18,11 @@ export interface UseTableHoldParams {
   autoAssign?: boolean;
   /** Required when autoAssign is true — sent so the server can pick a fitting table. */
   seats?: number;
+  /**
+   * Combinable-table group id (#272/#274). When set, the server reserves all the group's member
+   * tables as one hold. Takes precedence over tableId (mutually exclusive in the UI).
+   */
+  tableGroupId?: number;
 }
 
 export interface UseTableHoldResult {
@@ -30,6 +35,8 @@ export interface UseTableHoldResult {
   resolvedTableId: number | null;
   /** Section id the server resolved for an auto-assigned hold (null for explicit holds). */
   resolvedSectionId: number | null;
+  /** Combinable-table group the server resolved for a group hold (null otherwise). */
+  resolvedGroupId: number | null;
   setHoldStatus: (status: HoldStatus) => void;
   releaseCurrentHold: () => void;
 }
@@ -43,6 +50,7 @@ export function useTableHold({
   email,
   autoAssign = false,
   seats,
+  tableGroupId,
 }: UseTableHoldParams): UseTableHoldResult {
   const [hold, setHold] = useState<HoldResponse | null>(null);
   const [holdStatus, setHoldStatus] = useState<HoldStatus>("idle");
@@ -51,6 +59,7 @@ export function useTableHold({
   const [holdId, setHoldId] = useState<string | null>(null);
   const [resolvedTableId, setResolvedTableId] = useState<number | null>(null);
   const [resolvedSectionId, setResolvedSectionId] = useState<number | null>(null);
+  const [resolvedGroupId, setResolvedGroupId] = useState<number | null>(null);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentHoldId = useRef<string | null>(null);
@@ -93,13 +102,15 @@ export function useTableHold({
     setHoldMessage(null);
     setResolvedTableId(null);
     setResolvedSectionId(null);
+    setResolvedGroupId(null);
     clearCountdown();
   }
 
   // Debounced hold trigger
   useEffect(() => {
-    // Auto-assign mode fires without a tableId; explicit mode still requires one.
-    const hasTableForHold = autoAssign || (!!tableId && tableId > 0);
+    // Auto-assign fires without a table; explicit mode requires a tableId; a group hold requires a
+    // tableGroupId.
+    const hasTableForHold = autoAssign || (!!tableId && tableId > 0) || !!tableGroupId;
     if (!hasTableForHold || !date || !time || !isValidEmail(email)) {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
@@ -110,7 +121,7 @@ export function useTableHold({
       return;
     }
 
-    const paramsKey = `${restaurantId}-${autoAssign ? "auto" : tableId}-${date}-${time}-${seats ?? ""}`;
+    const paramsKey = `${restaurantId}-${tableGroupId ? `g${tableGroupId}` : autoAssign ? "auto" : tableId}-${date}-${time}-${seats ?? ""}`;
     if (hold && holdStatus === "held" && lastAppliedParams.current === paramsKey) {
       return;
     }
@@ -124,19 +135,21 @@ export function useTableHold({
       const previousHoldId = currentHoldId.current;
       lastAppliedParams.current = paramsKey;
 
-      // For auto-assign, send null table/section + seats so the server picks the best table.
-      // For explicit selection, resolve the section from the tableId as before.
-      const sectionId = autoAssign
-        ? null
-        : (sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0);
       // Send naive ISO string (no 'Z' or offset) so backend can interpret as restaurant-local
       const naiveIsoDate = `${date}T${time}:00`;
 
       const result = await createHold({
         restaurantId,
-        tableId: autoAssign ? null : tableId!,
-        sectionId,
-        seats: autoAssign ? seats : undefined,
+        // A group hold sends tableGroupId + seats (null table/section); auto-assign sends null
+        // table/section + seats; explicit selection resolves the section from the tableId.
+        tableId: tableGroupId ? null : autoAssign ? null : tableId!,
+        sectionId: tableGroupId
+          ? null
+          : autoAssign
+            ? null
+            : (sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0),
+        tableGroupId: tableGroupId ?? undefined,
+        seats: autoAssign || tableGroupId ? seats : undefined,
         date: naiveIsoDate,
         currentHoldId: previousHoldId ?? undefined,
       });
@@ -147,10 +160,11 @@ export function useTableHold({
         setHoldId(result.hold.holdId);
         setHold(result.hold);
         setHoldMessage(null);
-        // For auto-assigned holds, capture the server-resolved table/section so the form
-        // can submit them with the booking (the booking create then "adopts" the held table).
+        // For auto-assigned/group holds, capture the server-resolved ids so the form can submit
+        // them with the booking (the booking create then "adopts" the held unit).
         setResolvedTableId(result.hold.tableId ?? null);
         setResolvedSectionId(result.hold.sectionId ?? null);
+        setResolvedGroupId(result.hold.tableGroupId ?? null);
         setHoldStatus("held");
         startCountdown(result.hold.expiresAt);
       } else {
@@ -162,6 +176,7 @@ export function useTableHold({
         setHold(null);
         setResolvedTableId(null);
         setResolvedSectionId(null);
+        setResolvedGroupId(null);
         clearCountdown();
         setHoldMessage(result.message);
         setHoldStatus("unavailable");
@@ -174,7 +189,7 @@ export function useTableHold({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableId, date, time, email, autoAssign, seats]);
+  }, [tableId, date, time, email, autoAssign, seats, tableGroupId]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -197,6 +212,7 @@ export function useTableHold({
     holdId,
     resolvedTableId,
     resolvedSectionId,
+    resolvedGroupId,
     setHoldStatus,
     releaseCurrentHold,
   };

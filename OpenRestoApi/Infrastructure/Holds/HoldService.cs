@@ -13,6 +13,8 @@ namespace OpenRestoApi.Infrastructure.Holds;
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Holds.HoldServiceTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingServiceTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.AvailabilityServiceTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.TableAutoAssignerTests")]
 [ExternalAccessAllowed]
 internal class HoldService(ISystemClock clock) : IHoldService
 {
@@ -52,6 +54,57 @@ internal class HoldService(ISystemClock clock) : IHoldService
         }
     }
 
+    /// <inheritdoc/>
+    public HoldResult? PlaceGroupHold(
+        int restaurantId,
+        int tableGroupId,
+        IReadOnlyList<int> memberTableIds,
+        int sectionId,
+        DateTime bookingDate,
+        string? currentHoldId = null,
+        int durationMinutes = 60)
+    {
+        // The all-members-free check + the place must share the placement lock so two concurrent
+        // group/individual submissions can't both observe a member as free and grab it (TOCTOU).
+        lock (_placeLock)
+        {
+            Cleanup();
+
+            // A group hold requires every member table free (no overlapping hold other than the
+            // caller's own current hold). Any member already held → reject.
+            foreach (int memberId in memberTableIds)
+            {
+                if (IsTableHeld(memberId, bookingDate, excludeHoldId: currentHoldId, durationMinutes: durationMinutes))
+                {
+                    return null;
+                }
+            }
+
+            // Atomically release the caller's previous hold before placing the new one.
+            if (currentHoldId != null)
+            {
+                _holds.TryRemove(currentHoldId, out _);
+            }
+
+            string holdId = Guid.NewGuid().ToString("N");
+            DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
+            var entry = new HoldEntry(
+                holdId,
+                // Anchor table id (first member) so callers that only read TableId still see one.
+                memberTableIds.Count > 0 ? memberTableIds[0] : 0,
+                sectionId,
+                restaurantId,
+                bookingDate,
+                expiresAt,
+                TableGroupId: tableGroupId,
+                MemberTableIds: memberTableIds);
+
+            _holds[holdId] = entry;
+
+            return new HoldResult(holdId, expiresAt);
+        }
+    }
+
     public AutoAssignResult? PlaceAutoHold(
         int restaurantId,
         IReadOnlyList<TableCandidate> candidates,
@@ -69,6 +122,55 @@ internal class HoldService(ISystemClock clock) : IHoldService
 
             foreach (TableCandidate candidate in candidates)
             {
+                // Group candidate → every member must be free; place one multi-member hold.
+                if (candidate.IsGroup)
+                {
+                    bool allFree = true;
+                    foreach (int memberId in candidate.Members)
+                    {
+                        if (IsTableHeld(memberId, bookingDate, excludeHoldId: currentHoldId, durationMinutes: durationMinutes))
+                        {
+                            allFree = false;
+                            break;
+                        }
+                    }
+
+                    if (!allFree)
+                    {
+                        continue;
+                    }
+
+                    // Atomically release the caller's previous hold before placing the new one.
+                    if (currentHoldId != null)
+                    {
+                        _holds.TryRemove(currentHoldId, out _);
+                    }
+
+                    string groupHoldId = Guid.NewGuid().ToString("N");
+                    DateTime groupExpiresAt = _clock.UtcNow.Add(HoldDuration);
+                    var groupEntry = new HoldEntry(
+                        groupHoldId,
+                        candidate.TableId,
+                        candidate.SectionId,
+                        restaurantId,
+                        bookingDate,
+                        groupExpiresAt,
+                        TableGroupId: candidate.TableGroupId,
+                        MemberTableIds: candidate.Members);
+
+                    _holds[groupHoldId] = groupEntry;
+
+                    return new AutoAssignResult(
+                        groupHoldId,
+                        groupExpiresAt,
+                        candidate.TableId,
+                        candidate.SectionId,
+                        IsGroup: true,
+                        TableGroupId: candidate.TableGroupId,
+                        MemberTableIds: candidate.Members);
+                }
+
+                // Single-table candidate → existing path.
                 if (IsTableHeld(candidate.TableId, bookingDate, excludeHoldId: currentHoldId, durationMinutes: durationMinutes))
                 {
                     continue;
@@ -80,13 +182,13 @@ internal class HoldService(ISystemClock clock) : IHoldService
                     _holds.TryRemove(currentHoldId, out _);
                 }
 
-                string holdId = Guid.NewGuid().ToString("N");
-                DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
-                var entry = new HoldEntry(holdId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, expiresAt);
+                string singleHoldId = Guid.NewGuid().ToString("N");
+                DateTime singleExpiresAt = _clock.UtcNow.Add(HoldDuration);
+                var entry = new HoldEntry(singleHoldId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, singleExpiresAt);
 
-                _holds[holdId] = entry;
+                _holds[singleHoldId] = entry;
 
-                return new AutoAssignResult(holdId, expiresAt, candidate.TableId, candidate.SectionId);
+                return new AutoAssignResult(singleHoldId, singleExpiresAt, candidate.TableId, candidate.SectionId);
             }
 
             return null;
@@ -113,7 +215,9 @@ internal class HoldService(ISystemClock clock) : IHoldService
             {
                 continue;
             }
-            if (entry.TableId != tableId)
+            // A table is busy when this hold is on it directly OR on a group that includes it (#272).
+            bool touchesTable = entry.TableId == tableId || entry.Members.Contains(tableId);
+            if (!touchesTable)
             {
                 continue;
             }

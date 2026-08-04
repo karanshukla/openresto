@@ -10,6 +10,17 @@ public class BookingDto
     public int Id { get; set; }
     public int? TableId { get; set; }
     public int? SectionId { get; set; }
+
+    /// <summary>
+    /// When set, this booking reserves a combinable-table group (#272) instead of a single table.
+    /// <see cref="MemberTableIds"/> carries the group's member ids for the conflict check; both are
+    /// resolved server-side. Only <see cref="TableGroupId"/> is persisted on the booking entity.
+    /// </summary>
+    public int? TableGroupId { get; set; }
+
+    /// <summary>Member table ids of the group being booked (input only; ignored on read/mapping).</summary>
+    public IReadOnlyList<int>? MemberTableIds { get; set; }
+
     public int RestaurantId { get; set; }
     public DateTime Date { get; set; }
     public string? CustomerEmail { get; set; }

@@ -6,7 +6,12 @@ export interface HoldRequest {
   tableId: number | null;
   /** Omit (or null) for "Any section" auto-assign. */
   sectionId: number | null;
-  /** Required for auto-assign so the server can pick a table that fits the party. */
+  /**
+   * Combinable-table group to hold (#272). When set, the server reserves all the group's member
+   * tables as one hold. Mutually exclusive with tableId.
+   */
+  tableGroupId?: number | null;
+  /** Required for auto-assign and group holds so the server can validate capacity. */
   seats?: number;
   date: string; // ISO 8601
   currentHoldId?: string;
@@ -20,6 +25,8 @@ export interface HoldResponse {
   tableId?: number | null;
   /** Resolved section id for auto-assigned holds; null for explicit-table holds. */
   sectionId?: number | null;
+  /** Resolved combinable-table group for group holds (#272); null otherwise. */
+  tableGroupId?: number | null;
 }
 
 /** Successful hold. */

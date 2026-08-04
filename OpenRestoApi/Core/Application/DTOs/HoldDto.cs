@@ -17,7 +17,13 @@ public class PlaceHoldRequest
     public int? SectionId { get; set; }
 
     /// <summary>
-    /// Party size. Required for auto-assign (so the server can pick a table with enough seats);
+    /// Combinable-table group to hold (#272). When set, the server resolves the group's members and
+    /// places a single hold reserving all of them. Mutually exclusive with <see cref="TableId"/>.
+    /// </summary>
+    public int? TableGroupId { get; set; }
+
+    /// <summary>
+    /// Party size. Required for auto-assign and group holds (so the server can validate capacity);
     /// ignored for explicit-table holds (the capacity check happens at booking time).
     /// </summary>
     public int Seats { get; set; }
@@ -44,6 +50,11 @@ public class HoldResponse
     /// Resolved section for auto-assigned holds ("Any section"). Null for explicit-table holds.
     /// </summary>
     public int? SectionId { get; set; }
+
+    /// <summary>
+    /// Resolved combinable-table group for group holds (#272). Null for single-table/auto holds.
+    /// </summary>
+    public int? TableGroupId { get; set; }
 
     /// <summary>Seconds until the hold expires, for countdown display.</summary>
     public int SecondsRemaining => Math.Max(0, (int)(ExpiresAt - DateTime.UtcNow).TotalSeconds);
