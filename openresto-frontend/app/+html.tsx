@@ -1,11 +1,22 @@
 /* istanbul ignore file */
+// `web.output` is "static", so Expo Router renders every route in Node at
+// export time. That pass loads route modules directly and never evaluates the
+// `main` entry (index.ts), so Unistyles has to be configured here as well or
+// `StyleSheet.create` throws "no theme has been selected yet" during export.
+import "@/theme/unistyles";
 import { ScrollViewStyleReset } from "expo-router/html";
+import { useServerUnistyles } from "react-native-unistyles/server";
 import type { PropsWithChildren } from "react";
 
 export default function Root({ children }: PropsWithChildren) {
+  // Emits the stylesheet Unistyles generated during this static render into
+  // <head>, and hydrates from it on the client, so the first paint isn't unstyled.
+  const unistylesStyles = useServerUnistyles();
+
   return (
     <html lang="en">
       <head>
+        {unistylesStyles}
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta

@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
+import { useUnistylesBridge } from "@/hooks/use-unistyles-bridge";
 
 // Synchronous theme init — runs at module load, before React mounts.
 // This is the earliest possible moment to set the correct background.
@@ -35,6 +36,8 @@ function AppWithTheme() {
   const brand = useBrand();
   const pathname = usePathname();
   const segments = useSegments();
+
+  useUnistylesBridge();
 
   useEffect(() => {
     if (Platform.OS !== "web") return;

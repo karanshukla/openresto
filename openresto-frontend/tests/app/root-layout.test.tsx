@@ -71,6 +71,13 @@ jest.mock("@/context/BrandContext", () => ({
 
 jest.mock("@/context/ThemeContext", () => ({
   AppThemeProvider: ({ children }: any) => children,
+  // Consumed by useUnistylesBridge, which RootLayout mounts.
+  useTheme: () => ({
+    colorScheme: "light",
+    preference: "system",
+    setPreference: jest.fn(),
+    toggle: jest.fn(),
+  }),
 }));
 
 jest.mock("react-native-safe-area-context", () => ({

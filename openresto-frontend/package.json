@@ -1,6 +1,6 @@
 {
   "name": "openresto-frontend",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "version": "1.5.0",
   "scripts": {
     "start": "expo start",
@@ -40,9 +40,12 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-edge-to-edge": "^1.8.1",
     "react-native-gesture-handler": "~2.32.0",
+    "react-native-nitro-modules": "^0.36.5",
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
+    "react-native-unistyles": "^3.3.0",
     "react-native-web": "~0.21.2",
     "react-native-worklets": "0.10.0"
   },
@@ -66,7 +69,7 @@
       "<rootDir>/jest.setup.ts"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-unistyles|react-native-nitro-modules|react-native-edge-to-edge)"
     ],
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/jest-mocks/styleMock.js",

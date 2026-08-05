@@ -8,6 +8,13 @@
  * shape for a specific module can still override it locally.
  */
 
+// Unistyles spike (issue #219). The Babel plugin no-ops under NODE_ENV=test, so
+// the real (Nitro-backed) module can never work in Jest — these mocks stand in
+// for it. `theme/unistyles` must be required afterwards so `StyleSheet.configure`
+// populates the mock registry with real theme data.
+require("react-native-unistyles/mocks");
+require("@/theme/unistyles");
+
 // Theme hook — every screen/component reads color scheme via this. Pinned to
 // "light" so snapshot/text assertions are deterministic across the suite.
 jest.mock("@/hooks/use-color-scheme", () => ({

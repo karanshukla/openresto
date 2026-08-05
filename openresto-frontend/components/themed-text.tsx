@@ -1,5 +1,8 @@
-import { StyleSheet, Text, type TextProps } from "react-native";
-import { useAppTheme } from "@/hooks/use-app-theme";
+// Side-effect import — see components/common/Button.tsx for why.
+import "@/theme/unistyles";
+import { Text, type TextProps } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { theme } from "@/theme/theme";
 
 export type ThemedTextType =
@@ -34,31 +37,15 @@ export function ThemedText({
   type = "default",
   ...rest
 }: ThemedTextProps) {
-  const { isDark, colors, primaryColor } = useAppTheme();
+  const isDark = useColorScheme() === "dark";
 
-  let color = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : colors.text;
+  const explicitColor = lightColor && !isDark ? lightColor : darkColor && isDark ? darkColor : "";
 
-  if (type === "link" && !lightColor && !darkColor) {
-    color = primaryColor;
-  }
-
-  const flattenedStyle = StyleSheet.flatten([{ color }, styles[type], style]);
-
-  return <Text style={flattenedStyle} {...rest} />;
+  return <Text style={[styles.text(type, explicitColor), style]} {...rest} />;
 }
 
-const styles = StyleSheet.create({
-  // theme.typography scale variants
-  pageTitle: theme.typography.pageTitle,
-  h1: theme.typography.h1,
-  h2: theme.typography.h2,
-  h3: theme.typography.h3,
-  body: theme.typography.body,
-  bodyBold: theme.typography.bodyBold,
-  label: theme.typography.label,
-  labelSmall: theme.typography.labelSmall,
-  caption: theme.typography.caption,
-  captionSmall: theme.typography.captionSmall,
+const TYPE_STYLES = {
+  ...theme.typography,
 
   // Legacy Expo template variants
   default: {
@@ -68,19 +55,30 @@ const styles = StyleSheet.create({
   defaultSemiBold: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   title: {
     fontSize: 32,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
     lineHeight: 32,
   },
   subtitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "bold" as const,
   },
   link: {
     lineHeight: 30,
     fontSize: 16,
   },
-});
+} satisfies Record<ThemedTextType, object>;
+
+/**
+ * A dynamic function rather than variants: `type` includes a member literally
+ * named "default", which Unistyles treats as a variant group's fallback key.
+ */
+const styles = StyleSheet.create((t) => ({
+  text: (type: ThemedTextType, explicitColor: string) => ({
+    ...TYPE_STYLES[type],
+    color: explicitColor || (type === "link" ? t.colors.primary : t.colors.text),
+  }),
+}));

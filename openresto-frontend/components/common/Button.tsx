@@ -1,7 +1,10 @@
+// Side-effect import: guarantees StyleSheet.configure() has run before the
+// StyleSheet.create() call below. See docs/unistyles-spike.md — the static web
+// export loads modules without ever evaluating the app entry point.
+import "@/theme/unistyles";
 import { ThemedText } from "@/components/themed-text";
-import { Pressable, PressableProps, StyleSheet, ViewStyle } from "react-native";
-import { theme } from "@/theme/theme";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import { Pressable, PressableProps, ViewStyle } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import * as Haptics from "expo-haptics";
 
 interface ButtonProps extends Omit<PressableProps, "style"> {
@@ -19,8 +22,7 @@ export default function Button({
   onPress,
   ...props
 }: ButtonProps) {
-  const { colors, primaryColor } = useAppTheme();
-  const sizeStyles = theme.buttonSizes[size];
+  styles.useVariants({ size, disabled: Boolean(disabled) });
 
   const handlePress: PressableProps["onPress"] = (e) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -28,35 +30,43 @@ export default function Button({
   };
 
   return (
-    <Pressable
-      style={(state) => [
-        styles.button,
-        { backgroundColor: primaryColor },
-        sizeStyles,
-        /* istanbul ignore next */
-        (state as { hovered?: boolean }).hovered && !disabled && { opacity: 0.85 },
-        disabled && { backgroundColor: colors.disabled },
-        style,
-      ]}
-      disabled={disabled}
-      onPress={handlePress}
-      {...props}
-    >
-      <ThemedText style={[styles.buttonText, disabled && { color: colors.muted }]}>
-        {children}
-      </ThemedText>
+    <Pressable style={[styles.button, style]} disabled={disabled} onPress={handlePress} {...props}>
+      <ThemedText style={styles.buttonText}>{children}</ThemedText>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
   button: {
     borderRadius: theme.borderRadius.md,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: theme.colors.primary,
+    variants: {
+      size: {
+        primary: theme.buttonSizes.primary,
+        secondary: theme.buttonSizes.secondary,
+        small: theme.buttonSizes.small,
+        icon: theme.buttonSizes.icon,
+      },
+      disabled: {
+        true: { backgroundColor: theme.colors.disabled },
+        false: {
+          _web: {
+            _hover: { opacity: 0.85 },
+          },
+        },
+      },
+    },
   },
   buttonText: {
     color: theme.colors.white,
     ...theme.typography.bodyBold,
+    variants: {
+      disabled: {
+        true: { color: theme.colors.muted },
+        false: {},
+      },
+    },
   },
-});
+}));
