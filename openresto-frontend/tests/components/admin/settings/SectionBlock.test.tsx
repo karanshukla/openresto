@@ -432,7 +432,7 @@ describe("SectionBlock", () => {
         ],
       },
     ];
-    const updated: restaurantsApi.TableGroupDto = { ...groups[0], combinedSeats: 8 };
+    const updated: restaurantsApi.TableGroupDto = { ...groups[0], combinedSeats: 5 };
     (restaurantsApi.updateTableGroup as jest.Mock).mockResolvedValue(updated);
     const onGroupsChanged = jest.fn();
     render(<SectionBlock {...baseProps} groups={groups} onGroupsChanged={onGroupsChanged} />);
@@ -440,10 +440,12 @@ describe("SectionBlock", () => {
     await act(async () => {
       fireEvent.press(screen.getByTestId("group-edit-btn-1"));
     });
-    // Combined-seats is now a dropdown seeded with the current value (6). Open it and pick "8 seats".
+    // Combined-seats is a dropdown seeded with the current value (6), offering only the window the
+    // server accepts for a 4-seat + 2-seat pair: more than the largest member (4) up to their sum (6).
     fireEvent.press(screen.getByText("6 seats"));
+    expect(screen.queryByText("8 seats")).toBeNull();
     await act(async () => {
-      fireEvent.press(screen.getByText("8 seats"));
+      fireEvent.press(screen.getByText("5 seats"));
     });
     await act(async () => {
       fireEvent.press(screen.getByTestId("group-save-combined-btn"));
@@ -452,7 +454,7 @@ describe("SectionBlock", () => {
     expect(restaurantsApi.updateTableGroup).toHaveBeenCalledWith(42, 1, {
       name: null,
       members: [10, 11],
-      combinedSeats: 8,
+      combinedSeats: 5,
     });
     expect(onGroupsChanged).toHaveBeenCalledWith([updated]);
   });

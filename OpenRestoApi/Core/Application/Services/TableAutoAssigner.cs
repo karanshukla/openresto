@@ -7,8 +7,8 @@ namespace OpenRestoApi.Core.Application.Services;
 /// Computes the ordered candidate list for "Any section" auto-assignment, shared by the holds
 /// controller (hold placement) and <see cref="BookingService"/> (booking creation). The actual
 /// atomic pick happens inside <see cref="IHoldService.PlaceAutoHold"/>'s lock — this class only
-/// builds the pre-sorted pool (smallest fitting free standalone table first; combinable groups
-/// deprioritized so they're only chosen when no standalone table fits).
+/// builds the pre-sorted pool (smallest fitting free table first, with combinable tables
+/// deprioritized within each size so they stay free for the larger parties that need them merged).
 /// </summary>
 public sealed class TableAutoAssigner(
     IBookingRepository bookingRepository,
@@ -18,14 +18,15 @@ public sealed class TableAutoAssigner(
     private readonly IHoldService _holdService = holdService;
 
     /// <summary>
-    /// Returns the restaurant's bookable units — standalone tables and combinable groups — that (a)
+    /// Returns the restaurant's bookable units — individual tables and combinable groups — that (a)
     /// have at least <paramref name="seats"/> seats, (b) respect the optional
     /// <see cref="Restaurant.MaxTableOversizeSeats"/> cap, and (c) have no overlapping confirmed
-    /// booking or active hold at <paramref name="bookingDateUtc"/>. Ordered so the smallest fitting
-    /// standalone table wins; groups of equal capacity sort after standalone tables (the
-    /// deprioritization requested in #272 — combinable tables fill last, giving larger groups more
-    /// time to book). <see cref="Table.TableId"/> within each tier ties-breaks deterministically.
-    /// Empty when nothing fits.
+    /// booking or active hold at <paramref name="bookingDateUtc"/>. Ordered smallest-fitting-first,
+    /// then by the deprioritization tier requested in #242 — an ungrouped table wins over a
+    /// combinable table of the same size, which in turn wins over a group of that size, so
+    /// combinable tables stay free as long as possible for the larger parties that need them pushed
+    /// together. Table id ties-breaks within a tier for deterministic ordering. Empty when nothing
+    /// fits.
     /// </summary>
     public async Task<IReadOnlyList<TableCandidate>> BuildCandidatesAsync(
         Restaurant restaurant,
@@ -53,9 +54,11 @@ public sealed class TableAutoAssigner(
 
         var free = new List<TableCandidate>();
 
-        // Standalone tables that are ungrouped AND free (no booking, no hold). A table that belongs
-        // to a combinable group is bookable only as part of its group below — it must not also be
-        // offered individually, or the mutual-exclusion invariant can't hold.
+        // Membership of a combinable group does NOT remove a table from the individual pool: tables 8
+        // and 9 seat 4 each on their own and must keep taking parties of 4 (#242). It only pushes them
+        // down the ordering below, so they're the last of their size to fill. Mutual exclusion between
+        // a member booking and its group's booking is enforced by IsUnitBookedOnDateAsync/IsTableHeld,
+        // not by hiding the table.
         var groupedTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
             .SelectMany(g => g.Members).Select(m => m.TableId).ToHashSet();
 
@@ -64,8 +67,6 @@ public sealed class TableAutoAssigner(
         // restaurant's tables) and this runs once per auto-assign request before the lock.
         foreach ((Table table, int sectionId) in eligible)
         {
-            if (groupedTableIds.Contains(table.Id)) continue;
-
             // Group-aware: also blocks when the table is reserved by a group booking (which stores
             // TableId = null and so is invisible to the table-only check).
             bool booked = await _bookingRepository.IsUnitBookedOnDateAsync(
@@ -126,11 +127,13 @@ public sealed class TableAutoAssigner(
             }
         }
 
-        // Smallest fitting free table first; standalone tables precede groups of equal capacity
-        // (deprioritization — combinable tables fill last); tie-break by id for deterministic ordering.
+        // Smallest fitting free unit first, then the deprioritization tier (ungrouped table → grouped
+        // table → group), then id for deterministic ordering.
+        int Tier(TableCandidate c) => c.IsGroup ? 2 : groupedTableIds.Contains(c.TableId) ? 1 : 0;
+
         return free
             .OrderBy(c => c.Seats)
-            .ThenBy(c => c.IsGroup)
+            .ThenBy(Tier)
             .ThenBy(c => c.TableId)
             .ToList();
     }

@@ -21,7 +21,11 @@ public class BookingDto
     /// </summary>
     public int? TableGroupId { get; set; }
 
-    /// <summary>Member table ids of the group being booked (input only; ignored on read/mapping).</summary>
+    /// <summary>
+    /// Member table ids the server resolved for <see cref="TableGroupId"/> while auto-assigning.
+    /// Never read back from a client request — the booking path always re-resolves the members from
+    /// the persisted group, so a caller can't shrink this list to dodge a conflict check.
+    /// </summary>
     public IReadOnlyList<int>? MemberTableIds { get; set; }
 
     public int RestaurantId { get; set; }

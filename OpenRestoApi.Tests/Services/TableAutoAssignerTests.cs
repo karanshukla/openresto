@@ -143,20 +143,21 @@ public class TableAutoAssignerTests
     }
 
     [Fact]
-    public async Task BuildCandidates_ExcludesGroupedTables_FromStandaloneCandidates()
+    public async Task BuildCandidates_OffersGroupedTablesIndividually_AfterUngroupedOnesOfTheSameSize()
     {
-        // Member tables (T3, T4) must not also appear as standalone candidates — they're bookable
-        // only via their group, otherwise the mutual-exclusion invariant can't hold.
-        var (restaurant, db) = SeedWithGroup(nameof(BuildCandidates_ExcludesGroupedTables_FromStandaloneCandidates));
+        // T3/T4 seat 4 each on their own, so a party of 4 must still be able to take one (#242) —
+        // combining them only deprioritizes them, so they fill after the ungrouped T1/T2 and keep the
+        // merged 8-seat option open as long as possible.
+        var (restaurant, db) = SeedWithGroup(nameof(BuildCandidates_OffersGroupedTablesIndividually_AfterUngroupedOnesOfTheSameSize));
         TableAutoAssigner assigner = CreateAssigner(db);
 
         IReadOnlyList<TableCandidate> candidates = await assigner.BuildCandidatesAsync(restaurant, seats: 4, DateTime.UtcNow.AddDays(15));
 
-        var standaloneIds = candidates.Where(c => !c.IsGroup).Select(c => c.TableId).ToList();
-        Assert.DoesNotContain(3, standaloneIds);
-        Assert.DoesNotContain(4, standaloneIds);
-        Assert.Contains(1, standaloneIds);
-        Assert.Contains(2, standaloneIds);
+        var singleTableIds = candidates.Where(c => !c.IsGroup).Select(c => c.TableId).ToList();
+        Assert.Equal(new[] { 1, 2, 3, 4 }, singleTableIds);
+        Assert.Contains(candidates, c => c.IsGroup && c.TableGroupId == 1);
+        // …and the group itself still sorts last of all.
+        Assert.True(candidates[^1].IsGroup);
     }
 
     [Fact]

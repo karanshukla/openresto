@@ -116,6 +116,15 @@ public interface IBookingRepository
     /// </summary>
     Task<int> CountFutureBySectionOrTablesAsync(int sectionId, IReadOnlyList<int> tableIds, DateTime nowUtc);
 
+    /// <summary>
+    /// Count of non-cancelled <b>future</b> bookings (start &gt;= <paramref name="nowUtc"/>) reserving any of
+    /// <paramref name="tableGroupIds"/>. A group booking stores TableId = null, so it is invisible to
+    /// <see cref="CountFutureByTableAsync"/>/<see cref="CountFutureBySectionOrTablesAsync"/> — the delete-impact
+    /// reads add this in so deleting a combinable table doesn't report "0 bookings affected" while a merged-table
+    /// party is on the books for it.
+    /// </summary>
+    Task<int> CountFutureByTableGroupsAsync(IReadOnlyList<int> tableGroupIds, DateTime nowUtc);
+
     /// <summary>All bookings whose TableGroupId matches — used by RestaurantManagementService.DeleteTableGroupAsync to FK-null them.</summary>
     Task<List<Booking>> GetByTableGroupAsync(int tableGroupId);
 }

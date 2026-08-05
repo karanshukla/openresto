@@ -120,6 +120,9 @@ export default function BookingForm({
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
   const allGroups = restaurant.groups ?? [];
+  // Tables flagged combinable. They stay individually bookable (#242) — this only deprioritizes
+  // them in the suggested-table pick below.
+  const groupedTableIds = new Set(allGroups.flatMap((g) => g.members.map((m) => m.id)));
   // Largest capacity at this location — the best single table OR the best combinable group (#274).
   // Parties above this can't be seated even with pushed-together tables and must contact the
   // restaurant directly. Computed client-side from the nested restaurant payload — no extra fetch.
@@ -184,7 +187,13 @@ export default function BookingForm({
     if (availableIds && availableIds.length > 0) {
       eligible = eligible.filter((t) => availableIds.includes(t.id));
     }
-    eligible.sort((a, b) => a.seats - b.seats);
+    // Smallest fitting table, but a combinable table loses to an ungrouped one of the same size —
+    // the same deprioritization the server applies when auto-assigning, so the suggested default
+    // leaves the mergeable tables free for the parties that need them pushed together.
+    eligible.sort((a, b) => {
+      if (a.seats !== b.seats) return a.seats - b.seats;
+      return Number(groupedTableIds.has(a.id)) - Number(groupedTableIds.has(b.id));
+    });
     return eligible[0]?.id ?? pool[0]?.id;
   }
 
