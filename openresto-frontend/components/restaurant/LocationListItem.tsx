@@ -11,6 +11,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
+import { groupDisplayName, groupedTableIds } from "@/utils/tableGroups";
 import { getOpenDaysList, getRestaurantDate, getRestaurantNow } from "@/utils/restaurantTime";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { LinkedText } from "@/components/common/LinkedText";
@@ -58,6 +59,16 @@ export default function LocationListItem({
   const { colors, isDark, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
   const borderColor = colors.border;
+
+  // Combinable-table groups (#271-#274). Members stay individually bookable, so the seating
+  // minimap marks them rather than hiding them, and lists each group as its own bookable unit.
+  const tableGroups = restaurant.groups ?? [];
+  // Keyed off restaurant.groups, not tableGroups — the `?? []` fallback is a fresh array each
+  // render, which would defeat the memo on locations that have no groups.
+  const groupMemberIds = useMemo(
+    () => groupedTableIds(restaurant.groups ?? []),
+    [restaurant.groups]
+  );
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [slots, setSlots] = useState<TimeSlotDto[]>([]);
@@ -594,9 +605,14 @@ export default function LocationListItem({
                             },
                           ]}
                         >
-                          <ThemedText style={styles.tableName}>
-                            {table.name ?? `Table ${table.id}`}
-                          </ThemedText>
+                          <View style={styles.tableNameRow}>
+                            <ThemedText style={styles.tableName}>
+                              {table.name ?? `Table ${table.id}`}
+                            </ThemedText>
+                            {groupMemberIds.has(table.id) && (
+                              <Ionicons name="link" size={11} color={primaryColor} />
+                            )}
+                          </View>
                           <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
                             {table.seats} seats
                           </ThemedText>
@@ -606,6 +622,31 @@ export default function LocationListItem({
                   </ThemedView>
                 ))}
               </View>
+
+              {tableGroups.length > 0 && (
+                <View style={styles.groupBlock}>
+                  <ThemedText style={[styles.groupBlockHeading, { color: mutedColor }]}>
+                    Tables we can combine
+                  </ThemedText>
+                  {tableGroups.map((group) => (
+                    <View
+                      key={group.id}
+                      style={[
+                        styles.groupRow,
+                        { borderColor: `${primaryColor}55`, backgroundColor: `${primaryColor}12` },
+                      ]}
+                    >
+                      <Ionicons name="link" size={15} color={primaryColor} />
+                      <View style={styles.groupTextCol}>
+                        <ThemedText style={styles.groupName}>{groupDisplayName(group)}</ThemedText>
+                        <ThemedText style={[styles.groupSeats, { color: mutedColor }]}>
+                          Seats up to {group.combinedSeats} pushed together
+                        </ThemedText>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -907,6 +948,39 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   tableSeats: {
+    fontSize: 11.5,
+  },
+  tableNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  groupBlock: {
+    gap: 8,
+  },
+  groupBlockHeading: {
+    fontSize: 11.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  groupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  groupTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  groupName: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  groupSeats: {
     fontSize: 11.5,
   },
 });
