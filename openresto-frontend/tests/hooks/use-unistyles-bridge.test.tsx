@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { render } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import { UnistylesRuntime } from "react-native-unistyles";
 import { useUnistylesBridge } from "@/hooks/use-unistyles-bridge";
 import { theme } from "@/theme/theme";
@@ -71,5 +72,45 @@ describe("useUnistylesBridge", () => {
       colors: Record<string, string>;
     };
     expect(updater({ colors: { primary: "#000000" } }).colors.primary).toBe(theme.colors.primary);
+  });
+
+  describe("stylesheet ordering on web", () => {
+    const asWeb = (fn: () => void) => {
+      const original = Platform.OS;
+      Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
+      try {
+        fn();
+      } finally {
+        Object.defineProperty(Platform, "OS", { value: original, configurable: true });
+      }
+    };
+
+    const styleIds = () => Array.from(document.head.querySelectorAll("style")).map((tag) => tag.id);
+
+    afterEach(() => {
+      document.head.querySelectorAll("style").forEach((tag) => tag.remove());
+    });
+
+    it("moves the Unistyles tag after react-native-web's reset", () => {
+      for (const id of ["unistyles-web", "react-native-stylesheet"]) {
+        const tag = document.createElement("style");
+        tag.id = id;
+        document.head.appendChild(tag);
+      }
+
+      asWeb(() => render(<Probe />));
+
+      expect(styleIds()).toEqual(["react-native-stylesheet", "unistyles-web"]);
+    });
+
+    it("is a no-op when there is no Unistyles tag to move", () => {
+      const tag = document.createElement("style");
+      tag.id = "react-native-stylesheet";
+      document.head.appendChild(tag);
+
+      asWeb(() => render(<Probe />));
+
+      expect(styleIds()).toEqual(["react-native-stylesheet"]);
+    });
   });
 });
