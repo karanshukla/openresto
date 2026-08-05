@@ -11,7 +11,7 @@ import {
   uploadMenuFile,
 } from "@/api/restaurants";
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
-import { isValidUrl, WEB_SCHEMES } from "@/utils/validation";
+import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
@@ -87,6 +87,10 @@ const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
 // rejects a table when (table.seats - partySize) exceeds the selected value.
 const OVERSIZE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
 
+// Mirrors the backend ContactLimits caps so the admin sees the ceiling before the round-trip.
+const MAX_PHONE_LENGTH = 32;
+const MAX_EMAIL_LENGTH = 254;
+
 // Mirrors the backend MediaController._maxMenuBytes cap. A file picker pre-check keeps the
 // UX instantaneous for oversize uploads instead of waiting on the server's 400 response.
 const MAX_MENU_BYTES = 10 * 1024 * 1024;
@@ -149,6 +153,8 @@ export function RestaurantInfoForm({
   const [address, setAddress] = useState(restaurant.address ?? "");
   const [description, setDescription] = useState(restaurant.description ?? "");
   const [menuUrl, setMenuUrl] = useState(restaurant.menuUrl ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(restaurant.phoneNumber ?? "");
+  const [emailAddress, setEmailAddress] = useState(restaurant.emailAddress ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
   const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
   const [customHours, setCustomHours] = useState(() => hasCustomHours(restaurant));
@@ -172,6 +178,7 @@ export function RestaurantInfoForm({
   const [tagInput, setTagInput] = useState("");
   const [menuUploading, setMenuUploading] = useState(false);
   const [menuMsg, setMenuMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [contactMsg, setContactMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const addTag = (raw: string) => {
@@ -269,6 +276,8 @@ export function RestaurantInfoForm({
     address !== (restaurant.address ?? "") ||
     description !== (restaurant.description ?? "") ||
     menuUrl !== (restaurant.menuUrl ?? "") ||
+    phoneNumber !== (restaurant.phoneNumber ?? "") ||
+    emailAddress !== (restaurant.emailAddress ?? "") ||
     hoursDirty ||
     openDays.join(",") !== parseOpenDays(restaurant.openDays).join(",") ||
     walkInOnly !== !!restaurant.walkInOnly ||
@@ -284,6 +293,8 @@ export function RestaurantInfoForm({
     setAddress(restaurant.address ?? "");
     setDescription(restaurant.description ?? "");
     setMenuUrl(restaurant.menuUrl ?? "");
+    setPhoneNumber(restaurant.phoneNumber ?? "");
+    setEmailAddress(restaurant.emailAddress ?? "");
     setOpenTime(restaurant.openTime ?? "09:00");
     setCloseTime(restaurant.closeTime ?? "22:00");
     setCustomHours(hasCustomHours(restaurant));
@@ -297,6 +308,7 @@ export function RestaurantInfoForm({
     setMaxTableOversizeSeats(restaurant.maxTableOversizeSeats ?? null);
     setTags(restaurant.tags ?? []);
     setTagInput("");
+    setContactMsg(null);
   };
 
   const save = async () => {
@@ -313,6 +325,19 @@ export function RestaurantInfoForm({
       setMenuMsg({ text: "Menu URL must be a valid http(s) link.", ok: false });
       return;
     }
+    // Contact pre-flight (mirrors backend ContactFields): a blank field clears, a filled one
+    // must be within the shared caps and — for email — a plausible address.
+    const trimmedPhone = phoneNumber.trim();
+    const trimmedEmail = emailAddress.trim();
+    if (trimmedPhone.length > MAX_PHONE_LENGTH) {
+      setContactMsg(`Phone number cannot exceed ${MAX_PHONE_LENGTH} characters.`);
+      return;
+    }
+    if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+      setContactMsg("Contact email must be a valid email address.");
+      return;
+    }
+    setContactMsg(null);
     // Flush any pending tag the user typed but didn't press Enter on
     const finalTags = tagInput.trim() ? [...new Set([...tags, tagInput.trim()])] : tags;
     if (tagInput.trim()) setTagInput("");
@@ -322,6 +347,8 @@ export function RestaurantInfoForm({
       address: address.trim() || null,
       description: description.trim() || null,
       menuUrl: menuUrl.trim() || null,
+      phoneNumber: phoneNumber.trim() || "",
+      emailAddress: emailAddress.trim() || "",
       openTime: customHours ? undefined : openTime,
       closeTime: customHours ? undefined : closeTime,
       openHours: openHoursPayload,
@@ -341,6 +368,8 @@ export function RestaurantInfoForm({
         address: result.address,
         description: result.description,
         menuUrl: result.menuUrl,
+        phoneNumber: result.phoneNumber,
+        emailAddress: result.emailAddress,
         openTime: result.openTime,
         closeTime: result.closeTime,
         openHours: result.openHours,
@@ -490,6 +519,50 @@ export function RestaurantInfoForm({
             button on the location page.
           </ThemedText>
         </View>
+
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Contact phone (optional)
+            </ThemedText>
+            <Input
+              value={phoneNumber}
+              onChangeText={(v) => {
+                setPhoneNumber(v);
+                setContactMsg(null);
+              }}
+              placeholder="e.g. +44 20 7946 0958"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="phone-pad"
+              maxLength={MAX_PHONE_LENGTH}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Contact email (optional)
+            </ThemedText>
+            <Input
+              value={emailAddress}
+              onChangeText={(v) => {
+                setEmailAddress(v);
+                setContactMsg(null);
+              }}
+              placeholder="e.g. bookings@example.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              maxLength={MAX_EMAIL_LENGTH}
+            />
+          </View>
+        </View>
+        {contactMsg && (
+          <ThemedText style={{ fontSize: 12, color: theme.colors.error }}>{contactMsg}</ThemedText>
+        )}
+        <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: -8 }}>
+          Shown to diners who need to arrange a booking directly (e.g. a large party). Leave blank
+          to use the brand-wide contact details from Settings.
+        </ThemedText>
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
           <View style={{ flex: 1, minWidth: 220, gap: 6 }}>

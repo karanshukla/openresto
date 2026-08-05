@@ -1018,4 +1018,103 @@ describe("RestaurantInfoForm", () => {
     // Pre-flight means the API was never called.
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
   });
+  // ── Contact info (#262) ───────────────────────────────────────────────
+
+  it("renders stored contact fields", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{
+          ...mockRestaurant,
+          phoneNumber: "+44 20 7946 0958",
+          emailAddress: "hello@example.com",
+        }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByDisplayValue("+44 20 7946 0958")).toBeTruthy();
+    expect(screen.getByDisplayValue("hello@example.com")).toBeTruthy();
+  });
+
+  it("saves trimmed contact fields", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      phoneNumber: "+1 555 0100",
+      emailAddress: "hi@example.com",
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), " +1 555 0100 ");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("e.g. bookings@example.com"),
+      " hi@example.com "
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ phoneNumber: "+1 555 0100", emailAddress: "hi@example.com" })
+    );
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({ phoneNumber: "+1 555 0100", emailAddress: "hi@example.com" })
+      )
+    );
+  });
+
+  it("sends an empty string to clear a contact field (PATCH convention)", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, phoneNumber: "+1 555 0100" }}
+        onSaved={onSaved}
+      />
+    );
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ phoneNumber: "" })
+    );
+  });
+
+  it("blocks save with an inline error when the contact email is malformed (pre-flight)", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. bookings@example.com"), "not-an-email");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    await waitFor(() => expect(screen.getByText(/valid email address/)).toBeTruthy());
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+
+  it("discards edited contact fields back to the stored values", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, phoneNumber: "+1 555 0100" }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "+1 555 9999");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Discard"));
+
+    expect(screen.getByDisplayValue("+1 555 0100")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+  it("blocks save with an inline error when the contact phone exceeds the cap", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "9".repeat(33));
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    await waitFor(() => expect(screen.getByText(/cannot exceed 32 characters/)).toBeTruthy());
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
 });

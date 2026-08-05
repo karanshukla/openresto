@@ -11,6 +11,10 @@ export interface Brand {
   headerImageUrl?: string;
   faviconIcon?: string;
   websiteUrl?: string;
+  /** Default contact phone, used when a location has none of its own. */
+  phoneNumber?: string;
+  /** Default contact email, used when a location has none of its own. */
+  emailAddress?: string;
   copyrightText?: string;
   /** Tagline shown under the app name on the home page hero. */
   subtitle?: string;

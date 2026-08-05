@@ -27,6 +27,8 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             headerImageUrl: data.headerImageUrl || undefined,
             faviconIcon: data.faviconIcon || undefined,
             websiteUrl: data.websiteUrl || undefined,
+            phoneNumber: data.phoneNumber || undefined,
+            emailAddress: data.emailAddress || undefined,
             copyrightText: data.copyrightText || undefined,
             subtitle: data.subtitle || undefined,
             highlightsHeading: data.highlightsHeading || undefined,

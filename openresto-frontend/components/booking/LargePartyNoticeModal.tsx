@@ -5,31 +5,42 @@ import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
+import { useBrand } from "@/context/BrandContext";
+import { ContactSource, hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 
 interface LargePartyNoticeModalProps {
   visible: boolean;
   /** Largest single-table capacity at the location, for the message copy. */
   maxCapacity: number;
+  /** This location's own contact fields, which take precedence over the brand defaults. */
+  restaurant?: ContactSource | null;
   onClose: () => void;
 }
 
 /**
  * Notice shown when a party is too large for any single table at the location.
- * Matches the AlertModal card pattern, with the addition of contact CTAs pulled
- * from the restaurant's social links (whatever the restaurant has configured —
- * phone, email, WhatsApp, Instagram, etc.). Fetched lazily on first show so a
- * booking form that never triggers the guard pays nothing.
+ * Matches the AlertModal card pattern, with the addition of contact CTAs.
+ *
+ * Contact resolution runs per-field, location-first then brand-wide (see
+ * {@link resolveContact}). Social links are the last resort, for deployments that
+ * configured a footer link ("Message us on WhatsApp") but no typed contact — they're
+ * fetched lazily and only when no typed contact exists, so the common path costs no request.
  */
 export default function LargePartyNoticeModal({
   visible,
   maxCapacity,
+  restaurant,
   onClose,
 }: LargePartyNoticeModalProps) {
   const { colors, primaryColor } = useAppTheme();
+  const brand = useBrand();
   const [contactLinks, setContactLinks] = useState<SocialLinkDto[] | null>(null);
 
+  const contact = resolveContact(restaurant, brand);
+  const hasTypedContact = hasContact(contact);
+
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || hasTypedContact) return;
     let cancelled = false;
     fetchSocialLinks().then((links) => {
       if (cancelled) return;
@@ -40,7 +51,7 @@ export default function LargePartyNoticeModal({
     return () => {
       cancelled = true;
     };
-  }, [visible]);
+  }, [visible, hasTypedContact]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -55,7 +66,39 @@ export default function LargePartyNoticeModal({
             arranged directly. Please get in touch and we&apos;ll happily sort something out.
           </ThemedText>
 
-          {contactLinks !== null &&
+          {hasTypedContact ? (
+            <View style={styles.contacts}>
+              {contact.phone && (
+                <Pressable
+                  style={[styles.contactBtn, { borderColor: colors.border }]}
+                  onPress={() => Linking.openURL(telHref(contact.phone!))}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Call ${contact.phone}`}
+                  hitSlop={6}
+                >
+                  <Ionicons name="call-outline" size={16} color={primaryColor} />
+                  <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                    {contact.phone}
+                  </ThemedText>
+                </Pressable>
+              )}
+              {contact.email && (
+                <Pressable
+                  style={[styles.contactBtn, { borderColor: colors.border }]}
+                  onPress={() => Linking.openURL(mailtoHref(contact.email!))}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Email ${contact.email}`}
+                  hitSlop={6}
+                >
+                  <Ionicons name="mail-outline" size={16} color={primaryColor} />
+                  <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                    {contact.email}
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            contactLinks !== null &&
             (contactLinks.length > 0 ? (
               <View style={styles.contacts}>
                 {contactLinks.map((link) => (
@@ -82,7 +125,8 @@ export default function LargePartyNoticeModal({
               <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
                 No contact details are listed yet — please reach out to us directly.
               </ThemedText>
-            ))}
+            ))
+          )}
 
           <Pressable style={[styles.btn, { backgroundColor: primaryColor }]} onPress={onClose}>
             <ThemedText style={styles.btnText}>Got it</ThemedText>

@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -62,6 +63,8 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
         string? accentColor,
         string? faviconIcon = null,
         string? websiteUrl = null,
+        string? phoneNumber = null,
+        string? emailAddress = null,
         string? copyrightText = null,
         string? subtitle = null,
         string? highlightsHeading = null,
@@ -136,6 +139,14 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
         if (websiteUrl != null)
         {
             brand.WebsiteUrl = string.IsNullOrWhiteSpace(websiteUrl) ? null : websiteUrl.Trim();
+        }
+        if (phoneNumber != null)
+        {
+            brand.PhoneNumber = ContactFields.NormalizePhone(phoneNumber);
+        }
+        if (emailAddress != null)
+        {
+            brand.EmailAddress = ContactFields.NormalizeEmail(emailAddress);
         }
         if (copyrightText != null)
         {

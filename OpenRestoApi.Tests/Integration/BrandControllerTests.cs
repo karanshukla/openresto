@@ -145,6 +145,102 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    // ── Global contact info (#262) ─────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveBrand_WithAuth_UpdatesContactFields()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            phoneNumber = "  +44 20 7946 0958  ",
+            emailAddress = "  hello@example.com  ",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        HttpResponseMessage getResponse = await client.GetAsync("/api/brand");
+        JsonElement body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("+44 20 7946 0958", body.GetProperty("phoneNumber").GetString());
+        Assert.Equal("hello@example.com", body.GetProperty("emailAddress").GetString());
+    }
+
+    [Fact]
+    public async Task SaveBrand_EmptyContactFields_ClearsThem()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        await client.PatchAsJsonAsync("/api/brand", new
+        {
+            phoneNumber = "+1 555 0100",
+            emailAddress = "clear-me@example.com",
+        });
+
+        HttpResponseMessage clearResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            phoneNumber = "",
+            emailAddress = "",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
+
+        HttpResponseMessage getResponse = await client.GetAsync("/api/brand");
+        JsonElement body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("phoneNumber").ValueKind);
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("emailAddress").ValueKind);
+    }
+
+    [Fact]
+    public async Task SaveBrand_OmittedContactFields_LeaveThemUntouched()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        await client.PatchAsJsonAsync("/api/brand", new
+        {
+            phoneNumber = "+1 555 0111",
+            emailAddress = "keep@example.com",
+        });
+
+        // A PATCH that only touches the app name must not wipe the contact fields.
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            appName = "Untouched Resto",
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        HttpResponseMessage getResponse = await client.GetAsync("/api/brand");
+        JsonElement body = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("+1 555 0111", body.GetProperty("phoneNumber").GetString());
+        Assert.Equal("keep@example.com", body.GetProperty("emailAddress").GetString());
+    }
+
+    [Fact]
+    public async Task SaveBrand_OversizedPhoneNumber_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            phoneNumber = new string('9', 33)
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SaveBrand_MalformedEmailAddress_Returns400()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        HttpResponseMessage response = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            emailAddress = "not-an-email"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("valid email address", body.GetProperty("message").GetString()!);
+    }
+
     [Fact]
     public async Task GetPwaIcon_ReturnsNotFound_WhenNoFaviconIconConfigured()
     {

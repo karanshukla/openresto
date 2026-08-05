@@ -23,6 +23,8 @@ let mockBrandData: {
   headerImageUrl: string | null;
   faviconIcon?: string;
   websiteUrl?: string;
+  phoneNumber?: string;
+  emailAddress?: string;
   subtitle?: string;
   highlightsHeading?: string;
   highlightsSubheading?: string;
@@ -504,6 +506,62 @@ describe("BrandSettingsCard", () => {
     });
     expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
       expect.objectContaining({ headerImageFit: "Contain" })
+    );
+  });
+
+  // ── Global contact info (#262) ────────────────────────────────────────
+
+  it("renders the contact fields", () => {
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByText("Contact Phone")).toBeTruthy();
+    expect(screen.getByText("Contact Email")).toBeTruthy();
+  });
+
+  it("pre-fills the contact fields from brand context", () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: null,
+      phoneNumber: "+44 20 7946 0958",
+      emailAddress: "hello@example.com",
+    };
+    render(<BrandSettingsCard {...baseProps} />);
+    expect(screen.getByDisplayValue("+44 20 7946 0958")).toBeTruthy();
+    expect(screen.getByDisplayValue("hello@example.com")).toBeTruthy();
+  });
+
+  it("passes trimmed contact fields to saveBrandSettings", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<BrandSettingsCard {...baseProps} />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("+44 20 7946 0958"), " +1 555 0100 ");
+    fireEvent.changeText(screen.getByPlaceholderText("bookings@example.com"), " hi@example.com ");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ phoneNumber: "+1 555 0100", emailAddress: "hi@example.com" })
+    );
+  });
+
+  it("sends an empty string to clear a stored contact field", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      headerImageUrl: null,
+      phoneNumber: "+1 555 0100",
+    };
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<BrandSettingsCard {...baseProps} />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("+44 20 7946 0958"), "");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ phoneNumber: "" })
     );
   });
 });

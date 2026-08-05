@@ -15,6 +15,10 @@ import { styles } from "./settings.styles";
 
 const MAX_HERO_MB = 5;
 
+// Mirrors the backend ContactLimits caps.
+const MAX_CONTACT_PHONE_LENGTH = 32;
+const MAX_CONTACT_EMAIL_LENGTH = 254;
+
 export function BrandSettingsCard({
   borderColor,
   mutedColor,
@@ -30,6 +34,8 @@ export function BrandSettingsCard({
   const [brandPrimaryColor, setBrandPrimaryColor] = useState(brand.primaryColor);
   const [faviconIcon, setFaviconIcon] = useState<string | undefined>(brand.faviconIcon);
   const [websiteUrl, setWebsiteUrl] = useState(brand.websiteUrl ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(brand.phoneNumber ?? "");
+  const [emailAddress, setEmailAddress] = useState(brand.emailAddress ?? "");
   const [subtitle, setSubtitle] = useState(brand.subtitle ?? "");
   const [highlightsHeading, setHighlightsHeading] = useState(brand.highlightsHeading ?? "");
   const [highlightsSubheading, setHighlightsSubheading] = useState(
@@ -47,6 +53,8 @@ export function BrandSettingsCard({
     brandPrimaryColor !== brand.primaryColor ||
     faviconIcon !== brand.faviconIcon ||
     websiteUrl.trim() !== (brand.websiteUrl ?? "") ||
+    phoneNumber.trim() !== (brand.phoneNumber ?? "") ||
+    emailAddress.trim() !== (brand.emailAddress ?? "") ||
     subtitle.trim() !== (brand.subtitle ?? "") ||
     highlightsHeading.trim() !== (brand.highlightsHeading ?? "") ||
     highlightsSubheading.trim() !== (brand.highlightsSubheading ?? "") ||
@@ -59,6 +67,8 @@ export function BrandSettingsCard({
     setBrandPrimaryColor(brand.primaryColor);
     setFaviconIcon(brand.faviconIcon);
     setWebsiteUrl(brand.websiteUrl ?? "");
+    setPhoneNumber(brand.phoneNumber ?? "");
+    setEmailAddress(brand.emailAddress ?? "");
     setSubtitle(brand.subtitle ?? "");
     setHighlightsHeading(brand.highlightsHeading ?? "");
     setHighlightsSubheading(brand.highlightsSubheading ?? "");
@@ -108,6 +118,8 @@ export function BrandSettingsCard({
       primaryColor: brandPrimaryColor,
       faviconIcon,
       websiteUrl: websiteUrl.trim() || undefined,
+      phoneNumber: phoneNumber.trim(),
+      emailAddress: emailAddress.trim(),
       subtitle: subtitle.trim() || "",
       highlightsHeading: highlightsHeading.trim() || "",
       highlightsSubheading: highlightsSubheading.trim() || "",
@@ -283,6 +295,36 @@ export function BrandSettingsCard({
             />
             <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
               Used in confirmation email links and images. Must be the public URL of this app.
+            </ThemedText>
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Contact Phone</ThemedText>
+            <Input
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              placeholder="+44 20 7946 0958"
+              autoCapitalize="none"
+              keyboardType="phone-pad"
+              maxLength={MAX_CONTACT_PHONE_LENGTH}
+            />
+            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+              Fallback contact shown when a location has no phone number of its own.
+            </ThemedText>
+          </View>
+
+          <View style={styles.field}>
+            <ThemedText style={styles.fieldLabel}>Contact Email</ThemedText>
+            <Input
+              value={emailAddress}
+              onChangeText={setEmailAddress}
+              placeholder="bookings@example.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              maxLength={MAX_CONTACT_EMAIL_LENGTH}
+            />
+            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+              Fallback contact shown when a location has no email of its own.
             </ThemedText>
           </View>
 
