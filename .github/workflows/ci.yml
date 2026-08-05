@@ -86,9 +86,8 @@ jobs:
           dotnet test --no-build --configuration Release --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage"
+          --settings coverlet.runsettings
           --results-directory TestResults
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[OpenRestoApi]*"
 
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool

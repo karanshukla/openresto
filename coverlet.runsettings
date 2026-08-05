@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mirrors the <Exclude> in OpenRestoApi.Tests/OpenRestoApi.Tests.csproj so that CI's
+  "XPlat Code Coverage" collector reports the same figure as a local
+  `dotnet test /p:CollectCoverage=true` run. The collector reads its config from
+  runsettings/CLI only — it ignores the csproj's coverlet.msbuild <Exclude> — so without this
+  file CI counts EF migrations (generated code, ~6 points of coverage) that the csproj
+  deliberately strips. Keep the <Exclude> value in sync with the csproj if either changes.
+  See https://github.com/karanshukla/openresto/issues/290.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[OpenRestoApi]*</Include>
+          <Exclude>[OpenRestoApi]OpenRestoApi.Migrations.*,[*]Microsoft.AspNetCore.OpenApi.*,[*]System.Runtime.CompilerServices.*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
