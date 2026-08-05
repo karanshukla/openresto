@@ -157,13 +157,15 @@ exec 3>"$SQL_FILE"
   echo "DELETE FROM Bookings;"
   echo "DELETE FROM Highlights;"
   echo "DELETE FROM SocialLinks;"
+  echo "DELETE FROM TableGroupMemberships;"
+  echo "DELETE FROM TableGroups;"
   echo "DELETE FROM Tables;"
   echo "DELETE FROM Sections;"
   echo "DELETE FROM Restaurants;"
   echo "DELETE FROM BrandSettings;"
   echo "DELETE FROM EmailSettings;"
   echo "DELETE FROM AdminCredentials;"
-  echo "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','Highlights','SocialLinks','Tables','Sections','Restaurants','BrandSettings','EmailSettings','AdminCredentials','AdminNotifications','EmailFailures');"
+  echo "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','Highlights','SocialLinks','TableGroups','Tables','Sections','Restaurants','BrandSettings','EmailSettings','AdminCredentials','AdminNotifications','EmailFailures');"
 
   # Brand (EmailSettings intentionally left empty — no SMTP creds in source control)
   # HeaderImageFit left NULL → defaults to Cover (today's behaviour).
@@ -197,6 +199,17 @@ exec 3>"$SQL_FILE"
   echo "INSERT INTO Tables(Id,Name,Seats,SectionId) VALUES(6,'Bar Table',2,4);"
   echo "INSERT INTO Tables(Id,Name,Seats,SectionId) VALUES(7,'B3',1,3);"
   echo "INSERT INTO Tables(Id,Name,Seats,SectionId) VALUES(8,'Table 1',4,5);"
+
+  # Combinable table groups — tables an admin flagged as pushable together, bookable as one unit
+  # for a larger party. CombinedSeats must sit in (largest member seats, sum of members]: group 1
+  # loses a cover where the corners meet (T1's 4 + T2's 2 seating 5), group 2 keeps all four.
+  # Members stay individually bookable; grouping only deprioritizes them in auto-assign.
+  echo "INSERT INTO TableGroups(Id,Name,RestaurantId,CombinedSeats) VALUES(1,'Window booths',1,5);"
+  echo "INSERT INTO TableGroupMemberships(TableGroupId,TableId) VALUES(1,1);"
+  echo "INSERT INTO TableGroupMemberships(TableGroupId,TableId) VALUES(1,2);"
+  echo "INSERT INTO TableGroups(Id,Name,RestaurantId,CombinedSeats) VALUES(2,NULL,2,4);"
+  echo "INSERT INTO TableGroupMemberships(TableGroupId,TableId) VALUES(2,4);"
+  echo "INSERT INTO TableGroupMemberships(TableGroupId,TableId) VALUES(2,5);"
 
   # Highlights (Link=NULL → static card; set a Link to make the whole card clickable)
   echo "INSERT INTO Highlights(Id,Title,Body,IconKey,SortOrder,Link) VALUES(1,'Dayman Live Every Friday','Fighter of the Nightman. No cover charge. Cash only. Residency secured after a lengthy legal dispute.','star-outline',0,'https://paddyspub.example/dayman');"
@@ -279,7 +292,7 @@ sqlite3 "$DB" < "$SQL_FILE"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log "Done. Row counts:"
-for t in Restaurants Sections Tables Highlights SocialLinks BrandSettings Bookings AdminCredentials; do
+for t in Restaurants Sections Tables TableGroups Highlights SocialLinks BrandSettings Bookings AdminCredentials; do
   log "  $t: $(sqlite3 "$DB" "SELECT COUNT(*) FROM $t;")"
 done
 log "Seeded $booking_count bookings."
