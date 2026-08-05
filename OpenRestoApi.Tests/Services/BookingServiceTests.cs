@@ -12,12 +12,17 @@ using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
-public class BookingServiceTests
+// Partial so the group-hold cases can live in their own file (BookingServiceGroupHoldTests.cs)
+// while still compiling as this type. The concrete repositories and HoldService that CreateService
+// builds are internal and gated by [OnlyAccessibleBy]; sharing this type's identity keeps those
+// tests inside the existing grant instead of widening it for a new class name.
+public partial class BookingServiceTests
 {
     private static BookingService CreateService(
         AppDbContext db,
         IHoldService? holdService = null,
-        IBookingConfirmationService? confirmationService = null)
+        IBookingConfirmationService? confirmationService = null,
+        INotificationQueue? notificationQueue = null)
     {
         // Auto-assign tests need a real in-memory HoldService so PlaceAutoHold actually places
         // holds (a loose Mock<IHoldService> returns null from PlaceAutoHold, which the service
@@ -33,7 +38,8 @@ public class BookingServiceTests
             new BookingMapper(),
             new TableAutoAssigner(new BookingRepository(db), holdService),
             new TableGroupRepository(db),
-            confirmationService);
+            confirmationService,
+            notificationQueue);
     }
 
     private sealed class UtcClock : ISystemClock
