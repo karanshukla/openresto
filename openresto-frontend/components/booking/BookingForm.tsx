@@ -140,6 +140,15 @@ export default function BookingForm({
   ];
   const isAutoAssign = sectionId === 0;
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+  // Groups belong to the picked section only when *every* member sits in it — booking a group is
+  // booking all its tables, so one member elsewhere means the party would be split across sections.
+  // TableDto carries no sectionId, so membership is resolved through the section's own table ids.
+  const sectionTableIds = new Set(tablesInSection.map((t) => t.id));
+  const groupsInSection = isAutoAssign
+    ? allGroups
+    : allGroups.filter(
+        (g) => g.members.length > 0 && g.members.every((m) => sectionTableIds.has(m.id))
+      );
 
   const timezone = restaurant.timezone || "UTC";
 
@@ -329,11 +338,11 @@ export default function BookingForm({
     })
     .sort((a, b) => a.seats - b.seats);
 
-  // Combinable groups (#274): a group is selectable when its combined capacity fits the party,
-  // respects the optional oversize cap, and (when availability data is present) the group's id is
-  // in the slot's availableGroupIds. Groups use negative Select values (-groupId) so they're
-  // distinguishable from positive table ids.
-  const eligibleGroups = allGroups
+  // Combinable groups (#274): a group is selectable when it sits in the picked section, its combined
+  // capacity fits the party, it respects the optional oversize cap, and (when availability data is
+  // present) the group's id is in the slot's availableGroupIds. Groups use negative Select values
+  // (-groupId) so they're distinguishable from positive table ids.
+  const eligibleGroups = groupsInSection
     .filter(
       (g) =>
         g.combinedSeats >= seats &&

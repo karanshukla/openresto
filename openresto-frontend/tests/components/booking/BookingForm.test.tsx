@@ -672,4 +672,115 @@ describe("BookingForm", () => {
     // No standalone tables (empty availableTableIds) and the group excluded → no dropdown.
     expect(screen.getByText(/No tables available for 6 guests/)).toBeTruthy();
   });
+
+  // ── Groups are scoped to the picked section ───────────────────────────────
+  //
+  // The Select mock always resolves the section field to id 20 ("Patio"), so these two fixtures
+  // differ only in which section owns the group's member tables.
+
+  const groupOfEights = [
+    {
+      id: 1,
+      name: null,
+      combinedSeats: 8,
+      members: [
+        { id: 100, name: "T1", seats: 4 },
+        { id: 101, name: "T2", seats: 4 },
+      ],
+    },
+  ];
+
+  const mockRestaurantGroupInMain = {
+    ...mockRestaurantAllDays,
+    sections: [
+      {
+        id: 10,
+        name: "Main",
+        restaurantId: 1,
+        tables: [
+          { id: 100, name: "T1", seats: 4, sectionId: 10 },
+          { id: 101, name: "T2", seats: 4, sectionId: 10 },
+        ],
+      },
+      {
+        id: 20,
+        name: "Patio",
+        restaurantId: 1,
+        tables: [{ id: 200, name: "P1", seats: 2, sectionId: 20 }],
+      },
+    ],
+    groups: groupOfEights,
+  };
+
+  const mockRestaurantGroupInPatio = {
+    ...mockRestaurantAllDays,
+    sections: [
+      {
+        id: 10,
+        name: "Main",
+        restaurantId: 1,
+        tables: [{ id: 200, name: "P1", seats: 2, sectionId: 10 }],
+      },
+      {
+        id: 20,
+        name: "Patio",
+        restaurantId: 1,
+        tables: [
+          { id: 100, name: "T1", seats: 4, sectionId: 20 },
+          { id: 101, name: "T2", seats: 4, sectionId: 20 },
+        ],
+      },
+    ],
+    groups: groupOfEights,
+  };
+
+  const groupOnlySlot = {
+    slots: [
+      {
+        time: "19:00",
+        isAvailable: true,
+        availableTableIds: [],
+        availableGroupIds: [1],
+        category: "Dinner",
+      },
+    ],
+  };
+
+  it("does not offer a group whose tables live in another section", async () => {
+    mockFetchAvailability.mockResolvedValue(groupOnlySlot);
+    render(
+      <BookingForm restaurant={mockRestaurantGroupInMain} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // Select "Patio" — the group's tables are both in "Main".
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    expect(screen.getByText(/No tables available for 6 guests/)).toBeTruthy();
+  });
+
+  it("offers a group whose tables all live in the picked section", async () => {
+    mockFetchAvailability.mockResolvedValue(groupOnlySlot);
+    render(
+      <BookingForm restaurant={mockRestaurantGroupInPatio} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // Select "Patio" — this time it owns both of the group's tables.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    await waitFor(() => expect(screen.getByTestId("table-select")).toBeTruthy());
+    expect(screen.queryByText(/No tables available/)).toBeNull();
+  });
+
+  it("still offers every group under 'Any section'", async () => {
+    mockFetchAvailability.mockResolvedValue(groupOnlySlot);
+    render(
+      <BookingForm restaurant={mockRestaurantGroupInMain} onSubmit={jest.fn()} initialSeats={6} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    // Auto-assign is the default; the group still counts toward capacity, so no large-party notice.
+    expect(screen.queryByText("Large party")).toBeNull();
+    expect(screen.getByText(/best available table/)).toBeTruthy();
+  });
 });

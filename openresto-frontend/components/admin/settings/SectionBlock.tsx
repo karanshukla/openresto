@@ -175,8 +175,10 @@ export function SectionBlock({
       const ok = await deleteTableGroup(restaurantId, g.id);
       if (ok) onGroupsChanged(groups.filter((x) => x.id !== g.id));
     } else {
+      // Seats come off the group's own members, not this section's tables — a group rendered here
+      // may still reach into another section, and a missing lookup would silently score it 0 seats.
       const { min, max } = combinedSeatsRange(
-        remaining.map((id) => section.tables.find((t) => t.id === id)?.seats ?? 0)
+        g.members.filter((m) => remaining.includes(m.id)).map((m) => m.seats)
       );
       const updated = await updateTableGroup(restaurantId, g.id, {
         name: g.name ?? null,
