@@ -105,6 +105,19 @@ the login form. Specs that hit rate-limited endpoints still use
 `postWithRetry`/`getWithRetry` (helpers.ts) and `expectVisibleWithReload`
 as belt-and-suspenders for the rare in-Testing-window collision.
 
+**Smoke vs. extensive split**: a handful of `test.describe` blocks covering
+the golden paths (home browse, the full booking journey, booking
+confirmation, customer lookup, admin login/logout, admin dashboard) are
+tagged `{ tag: "@smoke" }`. `npm run test:e2e:smoke` (`--grep @smoke`) runs
+just that subset; `npm run test:e2e:extensive` (`--grep-invert @smoke`) runs
+everything else; `npm run test:e2e` still runs the full suite for local
+debugging. In CI (`.github/workflows/ci.yml`), `e2e-smoke` runs on every PR
+and push; `e2e-extensive` is gated to `push` on `main` only, so PRs get fast
+feedback on the golden paths and the full-depth run happens once per merge.
+When adding a new spec, tag its `describe` block `@smoke` only if it covers
+a path a broken deploy can't ship without — most new coverage belongs in the
+extensive set by default (i.e., untagged).
+
 ### Release (tag-triggered)
 
 ```bash
@@ -227,6 +240,7 @@ Booking history is intentionally **GDPR-purgeable** via the existing `PurgeBooki
 ### Testing
 
 - **Backend**: xUnit + Moq. Tests live in `OpenRestoApi.Tests/`. Services are tested in isolation with mocked repos and a mock `ISystemClock` (inject `MockSystemClock` to control time-dependent hold/availability logic).
+- **Backend coverage numbers**: the reported figure (CI badge, Coveralls, PR comment) excludes EF migrations, matching a local `dotnet test /p:CollectCoverage=true` run — both read the same exclusion list, just from different places. `OpenRestoApi.Tests.csproj`'s `<Exclude>` governs the MSBuild integration (`coverlet.msbuild`, used for local runs); CI's `--collect:"XPlat Code Coverage"` reads exclusions from `coverlet.runsettings` (repo root, via `--settings`) instead, since the VSTest collector doesn't read the csproj property. Keep the two `<Exclude>` values in sync — see `coverlet.runsettings` for why.
 - **Frontend**: Jest + React Native Testing Library. 100% coverage target. E2E with Playwright (`tests/e2e/`).
 - **Testing async effects with delays**: for `useEffect` code that fires inside a `setTimeout`, use `waitFor` with a custom `timeout` (e.g. `{ timeout: 1000 }`) rather than fake timers — the real timer fires within the `waitFor` polling window. Example: `await waitFor(() => expect(mockFn).toHaveBeenCalled(), { timeout: 1000 })`.
 - **Testing cross-platform scroll**: In the jsdom + RN test renderer environment, `View` refs are RN component instances (NOT DOM elements), so `HTMLElement.prototype.scrollIntoView` is never reachable. Test the web scroll path by waiting past the timeout delay and asserting no crash (the `scrollIntoView?.()` optional chain is a no-op but the line is still covered). For the native path, spy on `findNodeHandle` via `jest.spyOn(require("react-native"), "findNodeHandle")`.

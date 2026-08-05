@@ -16,6 +16,8 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:extensive": "playwright test --grep-invert @smoke",
     "test:e2e:ui": "playwright test --ui",
     "check": "npm run format:check && npm run lint"
   },

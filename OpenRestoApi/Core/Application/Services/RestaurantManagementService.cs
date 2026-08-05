@@ -530,7 +530,7 @@ public class RestaurantManagementService(
             Name = req.Name,
             RestaurantId = restaurantId,
             CombinedSeats = req.CombinedSeats,
-            Members = members.Select(t => new TableGroupMembership { TableId = t.Id }).ToList()
+            Members = members.Select(t => new TableGroupMembership { TableId = t.Id, Table = t }).ToList()
         };
 
         await _tableGroupRepository.AddAsync(group);
@@ -557,7 +557,7 @@ public class RestaurantManagementService(
         group.Name = req.Name;
         group.CombinedSeats = req.CombinedSeats;
         // Replace the member set in place so EF tracks the add/remove diff and cascades correctly.
-        group.Members = members.Select(t => new TableGroupMembership { TableGroupId = group.Id, TableId = t.Id }).ToList();
+        group.Members = members.Select(t => new TableGroupMembership { TableGroupId = group.Id, TableId = t.Id, Table = t }).ToList();
 
         await _tableGroupRepository.SaveChangesAsync();
         return ToGroupDto(group);
@@ -646,7 +646,9 @@ public class RestaurantManagementService(
         CombinedSeats = g.CombinedSeats,
         Members = g.Members
             .OrderBy(m => m.TableId)
-            .Select(m => new TableDto { Id = m.Table!.Id, Name = m.Table.Name, Seats = m.Table.Seats })
+            .Select(m => m.Table ?? throw new InvalidOperationException(
+                $"TableGroupMembership {m.TableGroupId}/{m.TableId} has no Table loaded."))
+            .Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats })
             .ToList()
     };
 

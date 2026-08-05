@@ -26,31 +26,13 @@ public class RestaurantsControllerUnitTests
     private readonly Mock<ITableGroupRepository> _groups = new();
     private readonly RestaurantsController _controller;
 
-    /// <summary>
-    /// Groups the fake repository is "tracking". <see cref="RestaurantManagementService"/> builds
-    /// its membership rows as <c>new TableGroupMembership { TableId = ... }</c> and then reads
-    /// <c>m.Table!</c> back out in <c>ToGroupDto</c> — with a real DbContext EF's navigation fixup
-    /// fills that in on save, so the fake has to do the same or the mapper NREs.
-    /// </summary>
-    private readonly List<TableGroup> _tracked = [];
-
     public RestaurantsControllerUnitTests()
     {
-        _groups.Setup(g => g.AddAsync(It.IsAny<TableGroup>()))
-            .Callback<TableGroup>(_tracked.Add)
-            .Returns(Task.CompletedTask);
-        _groups.Setup(g => g.SaveChangesAsync()).Callback(FixUpMemberNavigations).Returns(Task.CompletedTask);
+        _groups.Setup(g => g.AddAsync(It.IsAny<TableGroup>())).Returns(Task.CompletedTask);
+        _groups.Setup(g => g.SaveChangesAsync()).Returns(Task.CompletedTask);
 
         _controller = new RestaurantsController(new RestaurantManagementService(
             _restaurants.Object, _sections.Object, _tables.Object, _bookings.Object, _groups.Object));
-    }
-
-    private void FixUpMemberNavigations()
-    {
-        foreach (TableGroupMembership member in _tracked.SelectMany(g => g.Members))
-        {
-            member.Table ??= TableOf(member.TableId);
-        }
     }
 
     private static Table TableOf(int id, int seats = 4, int sectionId = 1) =>
@@ -137,7 +119,6 @@ public class RestaurantsControllerUnitTests
     {
         SeedRestaurantWithTwoTables();
         TableGroup existing = GroupOf(memberIds: [1, 2]);
-        _tracked.Add(existing);
         _groups.Setup(g => g.GetByIdWithMembersAsync(3, 1)).ReturnsAsync(existing);
 
         var result = await _controller.UpdateTableGroup(1, 3, new UpdateTableGroupRequest

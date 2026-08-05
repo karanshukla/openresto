@@ -21,7 +21,7 @@ interface OverviewDto {
  *
  * Runs under chromium-admin (storageState cookie pre-loaded).
  */
-test.describe("Admin dashboard", () => {
+test.describe("Admin dashboard", { tag: "@smoke" }, () => {
   test("renders all metric cards with values matching the overview API", async ({ page }) => {
     await gotoAdminDashboard(page);
 

@@ -29,7 +29,7 @@ async function purgeTestBookings(browser: Browser) {
  * availability loads to pick a predictable non-midnight time, and we clean up
  * test bookings before/after the suite to prevent slot saturation.
  */
-test.describe("Customer booking end to end", () => {
+test.describe("Customer booking end to end", { tag: "@smoke" }, () => {
   test.describe.configure({ mode: "serial" });
 
   test.beforeAll(async ({ browser }) => {
