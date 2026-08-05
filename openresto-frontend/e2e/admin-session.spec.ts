@@ -18,7 +18,7 @@ import { ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
  * afterAll re-seeds the cookie by logging in again so the order-independent
  * storageState shared with the rest of the suite is valid for later specs.
  */
-test.describe("Admin session lifecycle", () => {
+test.describe("Admin session lifecycle", { tag: "@smoke" }, () => {
   test.describe.configure({ mode: "serial" });
 
   test.afterAll(async ({ request }) => {

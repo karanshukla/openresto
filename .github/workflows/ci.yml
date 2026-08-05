@@ -264,8 +264,8 @@ jobs:
         if: failure()
         run: docker compose logs --tail=100
 
-  e2e:
-    name: Playwright E2E
+  e2e-smoke:
+    name: Playwright E2E (Smoke)
     runs-on: ubuntu-latest
     needs: [frontend, backend]
     env:
@@ -329,18 +329,105 @@ jobs:
         working-directory: openresto-frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright Tests
+      - name: Run Playwright Smoke Tests
         working-directory: openresto-frontend
         env:
           ADMIN_EMAIL: admin@openresto.com
           ADMIN_PASSWORD: change-me-before-use
-        run: npm run test:e2e
+        run: npm run test:e2e:smoke
 
       - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-smoke
+          path: openresto-frontend/playwright-report/
+          if-no-files-found: ignore
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+  e2e-extensive:
+    name: Playwright E2E (Extensive)
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    # Runs the rest of the suite beyond the @smoke subset (see e2e-smoke) — deliberately
+    # main-only so PRs get fast feedback and the full-depth run happens once per merge.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      COMPOSE_FILE: docker-compose.yml:docker-compose.e2e.yml
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Patch backend env file for CI
+        run: |
+          sed -i 's|CONNECTION_STRING=.*|CONNECTION_STRING=Data Source=/tmp/openresto.db|' \
+            ./OpenRestoApi/.env.docker
+
+      - name: Build all containers
+        run: docker compose build
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          for i in $(seq 1 90); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5062/api/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend is ready (HTTP 200)!"
+              exit 0
+            fi
+
+            EXITED=$(docker compose ps --status exited --quiet)
+            if [ -n "$EXITED" ]; then
+              echo "Error: One or more containers have exited!"
+              docker compose ps
+              docker compose logs
+              exit 1
+            fi
+
+            echo "Attempt $i/90: Backend not ready yet (HTTP $STATUS)..."
+            if [ $((i % 5)) -eq 0 ]; then
+              docker compose ps
+            fi
+            sleep 2
+          done
+          echo "Error: Services failed to become ready after 180 seconds."
+          docker compose ps
+          docker compose logs
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: openresto-frontend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: openresto-frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Extensive Tests
+        working-directory: openresto-frontend
+        env:
+          ADMIN_EMAIL: admin@openresto.com
+          ADMIN_PASSWORD: change-me-before-use
+        run: npm run test:e2e:extensive
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-extensive
           path: openresto-frontend/playwright-report/
           if-no-files-found: ignore
 
@@ -350,7 +437,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs: [frontend, backend, docker, e2e]
+    needs: [frontend, backend, docker, e2e-smoke, e2e-extensive]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit

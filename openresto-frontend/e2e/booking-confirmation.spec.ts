@@ -36,7 +36,7 @@ async function purgeConfirmBookings(browser: Browser) {
   await ctx.close();
 }
 
-test.describe("Booking confirmation page", () => {
+test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
   test.beforeAll(async ({ browser }) => {
     await purgeConfirmBookings(browser);
   });

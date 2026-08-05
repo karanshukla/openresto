@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Home Page", () => {
+test.describe("Home Page", { tag: "@smoke" }, () => {
   test("should load the home page and show restaurants", async ({ page }) => {
     await page.goto("/");
 

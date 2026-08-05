@@ -105,6 +105,19 @@ the login form. Specs that hit rate-limited endpoints still use
 `postWithRetry`/`getWithRetry` (helpers.ts) and `expectVisibleWithReload`
 as belt-and-suspenders for the rare in-Testing-window collision.
 
+**Smoke vs. extensive split**: a handful of `test.describe` blocks covering
+the golden paths (home browse, the full booking journey, booking
+confirmation, customer lookup, admin login/logout, admin dashboard) are
+tagged `{ tag: "@smoke" }`. `npm run test:e2e:smoke` (`--grep @smoke`) runs
+just that subset; `npm run test:e2e:extensive` (`--grep-invert @smoke`) runs
+everything else; `npm run test:e2e` still runs the full suite for local
+debugging. In CI (`.github/workflows/ci.yml`), `e2e-smoke` runs on every PR
+and push; `e2e-extensive` is gated to `push` on `main` only, so PRs get fast
+feedback on the golden paths and the full-depth run happens once per merge.
+When adding a new spec, tag its `describe` block `@smoke` only if it covers
+a path a broken deploy can't ship without — most new coverage belongs in the
+extensive set by default (i.e., untagged).
+
 ### Release (tag-triggered)
 
 ```bash

@@ -10,7 +10,7 @@ import { ADMIN_STATE_FILE } from "./global-setup";
  * The test booking is created via API (no UI) to avoid competing for tables with
  * the booking-flow spec running in parallel.
  */
-test.describe("Booking lookup", () => {
+test.describe("Booking lookup", { tag: "@smoke" }, () => {
   test.describe.configure({ mode: "serial" });
 
   const lookupEmail = "e2e-lookup@example.com";
