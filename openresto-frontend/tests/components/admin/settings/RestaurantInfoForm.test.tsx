@@ -779,7 +779,7 @@ describe("RestaurantInfoForm", () => {
     );
   });
 
-  it("saves description as null when cleared to blank", async () => {
+  it("saves description as an empty string when cleared to blank", async () => {
     (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
       ...mockRestaurant,
       description: null,
@@ -796,7 +796,8 @@ describe("RestaurantInfoForm", () => {
     });
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ description: null })
+      // "" clears server-side; null would be read as "leave untouched" and the blurb would stick.
+      expect.objectContaining({ description: "" })
     );
   });
 

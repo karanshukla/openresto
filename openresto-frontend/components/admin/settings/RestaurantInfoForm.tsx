@@ -345,7 +345,9 @@ export function RestaurantInfoForm({
     const result = await updateRestaurant(restaurant.id, {
       name: name.trim(),
       address: address.trim() || null,
-      description: description.trim() || null,
+      // Blank must go over the wire as "" — the backend's PATCH convention reads null as
+      // "leave untouched", so sending null here made clearing an existing blurb a no-op.
+      description: description.trim(),
       menuUrl: menuUrl.trim() || null,
       phoneNumber: phoneNumber.trim() || "",
       emailAddress: emailAddress.trim() || "",
