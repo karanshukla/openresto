@@ -264,6 +264,10 @@ public class RestaurantManagementService(
             b.SectionId = null;
         }
 
+        // Every table in the section goes with it, so any combinable group that spans one of them
+        // must be dissolved or shrunk first (see ReconcileTableGroupsAsync).
+        await ReconcileTableGroupsAsync(restaurantId, tableIds);
+
         _sectionRepository.Remove(section);
         await _sectionRepository.SaveChangesAsync();
         return true;
@@ -303,7 +307,62 @@ public class RestaurantManagementService(
         table.Seats = seats;
         await _tableRepository.SaveChangesAsync();
 
+        // Resizing a member table changes what its combinable group can actually hold, so bring the
+        // group's stored CombinedSeats back inside the bounds ValidateCombinedSeats enforces on write.
+        // Runs after the save so the reconcile reads the new capacity, not the pre-edit one.
+        await ReconcileTableGroupsAsync(restaurantId, Array.Empty<int>());
+        await _tableRepository.SaveChangesAsync();
+
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
+    }
+
+    /// <summary>
+    /// Restores the invariants a combinable group must satisfy after its member tables changed
+    /// underneath it — a member deleted (the DB cascade drops the membership row silently) or
+    /// resized. A group left with fewer than two members is dissolved, FK-nulling its bookings first
+    /// exactly like <see cref="DeleteTableGroupAsync"/>; a surviving group has its stored
+    /// <see cref="TableGroup.CombinedSeats"/> clamped back into the range
+    /// <see cref="ValidateCombinedSeats"/> enforces on write. Without this a group keeps advertising
+    /// combined capacity that no longer exists — tables 8+9 still offered as 8 seats after table 9 is
+    /// deleted or shrunk, and the booking engine would happily seat a party of 8 at one 4-top.
+    /// Does not save: the caller's SaveChangesAsync flushes this in the same unit of work.
+    /// </summary>
+    private async Task ReconcileTableGroupsAsync(int restaurantId, IReadOnlyCollection<int> removedTableIds)
+    {
+        List<TableGroup> groups = await _tableGroupRepository.GetAllWithMembersByRestaurantAsync(restaurantId);
+
+        foreach (TableGroup group in groups)
+        {
+            List<TableGroupMembership> remaining = group.Members
+                .Where(m => !removedTableIds.Contains(m.TableId))
+                .ToList();
+
+            if (remaining.Count < 2)
+            {
+                foreach (Booking booking in await _bookingRepository.GetByTableGroupAsync(group.Id))
+                {
+                    booking.TableGroupId = null;
+                }
+
+                _tableGroupRepository.Remove(group);
+                continue;
+            }
+
+            group.Members = remaining;
+
+            var memberSeats = remaining.Select(m => m.Table?.Seats ?? 0).ToList();
+            if (memberSeats.Any(s => s <= 0))
+            {
+                continue;
+            }
+
+            int floor = memberSeats.Max() + 1;
+            int ceiling = Math.Min(memberSeats.Sum(), BookingLimits.MaxSeats);
+            if (floor <= ceiling)
+            {
+                group.CombinedSeats = Math.Clamp(group.CombinedSeats, floor, ceiling);
+            }
+        }
     }
 
     /// <summary>
@@ -322,16 +381,29 @@ public class RestaurantManagementService(
 
     /// <summary>
     /// Validates a combinable group's CombinedSeats: absolute bounds first, then the contextual
-    /// floor (sum of member seats). Split from <see cref="ValidateSeats"/> because the group floor
-    /// depends on the resolved member set.
+    /// window the member set implies. Split from <see cref="ValidateSeats"/> because that window
+    /// depends on the resolved members. The ceiling is the sum of member seats — pushing tables
+    /// together can only lose covers (a shared corner disappears), never invent them. The floor is
+    /// one more than the largest member, since a group that seats no more than its biggest table on
+    /// its own is not worth combining and would shadow that table in the candidate ordering.
     /// </summary>
-    private static void ValidateCombinedSeats(int combinedSeats, int memberSeatsSum)
+    private static void ValidateCombinedSeats(int combinedSeats, IReadOnlyCollection<Table> members)
     {
         ValidateSeats(combinedSeats);
-        if (combinedSeats < memberSeatsSum)
+
+        int memberSeatsSum = members.Sum(t => t.Seats);
+        if (combinedSeats > memberSeatsSum)
         {
             throw new ValidationException(
-                $"CombinedSeats ({combinedSeats}) must be at least the sum of member seats ({memberSeatsSum}).");
+                $"CombinedSeats ({combinedSeats}) cannot exceed the sum of member seats ({memberSeatsSum}).");
+        }
+
+        int largestMemberSeats = members.Max(t => t.Seats);
+        if (combinedSeats <= largestMemberSeats)
+        {
+            throw new ValidationException(
+                $"CombinedSeats ({combinedSeats}) must be more than the largest member table ({largestMemberSeats}) — "
+                + "combining these tables would not seat a bigger party.");
         }
     }
 
@@ -348,6 +420,10 @@ public class RestaurantManagementService(
         List<Booking> affected = await _bookingRepository.GetByTableAsync(tableId);
         foreach (Booking b in affected)
             b.TableId = null;
+
+        // The membership row would be cascade-deleted silently, leaving a combinable group that
+        // advertises capacity it can no longer seat. Reconcile before the table goes.
+        await ReconcileTableGroupsAsync(restaurantId, new[] { tableId });
 
         _tableRepository.Remove(table);
         await _tableRepository.SaveChangesAsync();
@@ -371,7 +447,10 @@ public class RestaurantManagementService(
             return null;
         }
 
-        int bookings = await _bookingRepository.CountFutureByTableAsync(tableId, DateTime.UtcNow);
+        DateTime nowUtc = DateTime.UtcNow;
+        int bookings = await _bookingRepository.CountFutureByTableAsync(tableId, nowUtc)
+            + await CountFutureGroupBookingsForTablesAsync(restaurantId, new[] { tableId }, nowUtc);
+
         return new DeleteImpactDto { Bookings = bookings };
     }
 
@@ -383,18 +462,43 @@ public class RestaurantManagementService(
             return null;
         }
 
+        DateTime nowUtc = DateTime.UtcNow;
         var tableIds = section.Tables.Select(t => t.Id).ToList();
-        int bookings = await _bookingRepository.CountFutureBySectionOrTablesAsync(sectionId, tableIds, DateTime.UtcNow);
+        int bookings = await _bookingRepository.CountFutureBySectionOrTablesAsync(sectionId, tableIds, nowUtc)
+            + await CountFutureGroupBookingsForTablesAsync(restaurantId, tableIds, nowUtc);
+
         return new DeleteImpactDto { Bookings = bookings };
+    }
+
+    /// <summary>
+    /// Upcoming bookings that reserve <paramref name="tableIds"/> through a combinable group rather than
+    /// directly. Those rows carry TableId = null, so the table/section impact counts miss them entirely and
+    /// the admin's confirm step would claim a delete orphans nothing while a merged-table party is booked.
+    /// </summary>
+    private async Task<int> CountFutureGroupBookingsForTablesAsync(
+        int restaurantId,
+        IReadOnlyCollection<int> tableIds,
+        DateTime nowUtc)
+    {
+        List<TableGroup> groups = await _tableGroupRepository.GetAllWithMembersByRestaurantAsync(restaurantId);
+        var affectedGroupIds = groups
+            .Where(g => g.Members.Any(m => tableIds.Contains(m.TableId)))
+            .Select(g => g.Id)
+            .ToList();
+
+        return affectedGroupIds.Count == 0
+            ? 0
+            : await _bookingRepository.CountFutureByTableGroupsAsync(affectedGroupIds, nowUtc);
     }
 
     // ── Combinable table groups (#271) ─────────────────────────────────────
     //
     // A group is a first-class bookable unit made of physical tables pushed together. Members must
     // all belong to the same restaurant, no member may already be in another group, and the stored
-    // CombinedSeats must be >= the sum of member seats (restaurants often lose a seat when combining).
-    // All rules are enforced here in-service because the in-memory provider used by tests ignores
-    // SQL constraints; the unique index on TableId is the production backstop.
+    // CombinedSeats must sit between "more than the largest member" and "the sum of the members"
+    // (pushing tables together commonly loses a cover where the corners meet). All rules are enforced
+    // here in-service because the in-memory provider used by tests ignores SQL constraints; the
+    // unique index on TableId is the production backstop.
 
     public async Task<TableGroupDto?> AddTableGroupAsync(int restaurantId, CreateTableGroupRequest req)
     {
@@ -406,9 +510,8 @@ public class RestaurantManagementService(
 
         List<Table> members = await ResolveAndValidateMembersAsync(restaurantId, req.Members, excludeGroupId: null);
 
-        // CombinedSeats must be within bounds and at least the sum of member seats — pushing tables
-        // together can lose a seat, so the admin may set it higher, but never lower (catches mistakes).
-        ValidateCombinedSeats(req.CombinedSeats, members.Sum(t => t.Seats));
+        // CombinedSeats must be within bounds and inside the window the member set implies.
+        ValidateCombinedSeats(req.CombinedSeats, members);
 
         var group = new TableGroup
         {
@@ -437,7 +540,7 @@ public class RestaurantManagementService(
         List<Table> members = await ResolveAndValidateMembersAsync(
             restaurantId, req.Members, excludeGroupId: groupId, currentMemberIds: currentMemberIds);
 
-        ValidateCombinedSeats(req.CombinedSeats, members.Sum(t => t.Seats));
+        ValidateCombinedSeats(req.CombinedSeats, members);
 
         group.Name = req.Name;
         group.CombinedSeats = req.CombinedSeats;

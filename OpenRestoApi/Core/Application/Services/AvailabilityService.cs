@@ -109,12 +109,9 @@ public sealed class AvailabilityService(
 
         // Combinable-table groups (#272): a group is bookable when its CombinedSeats fits the party
         // and the same optional oversize cap is satisfied. Per slot, a group is free iff ALL of its
-        // members are free. Members are also excluded from AvailableTableIds when grouped so a table
-        // is never offered individually AND as part of a group for the same slot.
-        var groupedTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
-            .SelectMany(g => g.Members).Select(m => m.TableId).ToHashSet();
-        var eligibleTablesUngrouped = eligibleTables.Where(t => !groupedTableIds.Contains(t.Id)).ToList();
-
+        // members are free. Member tables stay in AvailableTableIds — tables 8 and 9 still seat 4
+        // each on their own (#242) — and the member/group mutual exclusion is enforced per slot by
+        // IsTableReserved/IsGroupReserved rather than by hiding the members.
         var eligibleGroups = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
             .Where(g => g.CombinedSeats >= seats
                 && (restaurant.MaxTableOversizeSeats == null
@@ -191,7 +188,7 @@ public sealed class AvailabilityService(
                 // restaurant's configured booking duration.
                 DateTime slotEndUtc = slotUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes);
 
-                foreach (Table? table in eligibleTablesUngrouped)
+                foreach (Table? table in eligibleTables)
                 {
                     // Group-aware booking check (catches single-table + group bookings reserving it).
                     if (IsTableReserved(table.Id, slotUtc, slotEndUtc))

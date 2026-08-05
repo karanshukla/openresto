@@ -861,7 +861,8 @@ public class AvailabilityServiceTests
             1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
 
         Assert.NotEmpty(result.Slots);
-        // Every available slot must list the group; no standalone table ids (T1 too small, T2/T3 grouped).
+        // Every available slot must list the group; no single-table ids, since all three tables
+        // (2, 4 and 4 seats) are too small for a party of 6 on their own.
         Assert.All(result.Slots.Where(s => s.IsAvailable), s =>
         {
             Assert.Contains(1, s.AvailableGroupIds);
@@ -937,9 +938,56 @@ public class AvailabilityServiceTests
 
         var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
 
-        // Party of 6: T1 (2) too small; T2/T3 grouped. The slot must still be available via the group.
+        // Party of 6: T1 (2) too small, T2/T3 (4 each) too small alone. The slot must still be
+        // available via the group.
         AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
 
         Assert.Contains(result.Slots, s => s.IsAvailable);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_StillOffersGroupMembers_Individually()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_StillOffersGroupMembers_Individually));
+        SeedRestaurantWithGroup(db);
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // Party of 4: T2 and T3 seat 4 each on their own and must stay bookable individually even
+        // though they're flagged combinable (#242) — grouping them only deprioritizes them.
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 4);
+
+        Assert.All(result.Slots.Where(s => s.IsAvailable), s =>
+        {
+            Assert.Contains(2, s.AvailableTableIds);
+            Assert.Contains(3, s.AvailableTableIds);
+        });
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking));
+        SeedRestaurantWithGroup(db);
+
+        var date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        // A group booking stores TableId = null — its member tables must still drop out of the
+        // per-slot single-table offer, or the same physical table gets sold twice.
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableGroupId = 1, SectionId = 1, Date = date,
+            BookingRef = "BG1", EndTime = date.AddMinutes(60)
+        });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 4);
+
+        TimeSlotDto slot1200 = result.Slots.First(s => s.Time == "12:00");
+        Assert.DoesNotContain(2, slot1200.AvailableTableIds);
+        Assert.DoesNotContain(3, slot1200.AvailableTableIds);
     }
 }

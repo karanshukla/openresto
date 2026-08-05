@@ -1647,6 +1647,53 @@ public class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_GroupBooking_IgnoresClientSuppliedMemberTableIds()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_IgnoresClientSuppliedMemberTableIds));
+        SeedRestaurantWithGroup(db);
+        DateTime date = DateTime.UtcNow.AddDays(23);
+        var holdService = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
+        Assert.NotNull(holdService.PlaceHold(restaurantId: 1, tableId: 3, sectionId: 1, bookingDate: date));
+        BookingService svc = CreateService(db, holdService);
+
+        // MemberTableIds is part of the public POST body: omitting the held member must not skip
+        // the hold check for it — members always come from the persisted group.
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "sneaky@example.com",
+            Seats = 6,
+            Date = date,
+            TableGroupId = 1,
+            MemberTableIds = Array.Empty<int>()
+        }));
+
+        Assert.Contains("held by another user", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_RejectsGroupLeftWithFewerThanTwoMembers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsGroupLeftWithFewerThanTwoMembers));
+        SeedRestaurantWithGroup(db);
+        // Simulate the DB cascade that fires when a member table is deleted out from under a group.
+        db.TableGroupMemberships.Remove(db.TableGroupMemberships.First(m => m.TableId == 3));
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group@example.com",
+            Seats = 6,
+            Date = DateTime.UtcNow.AddDays(24),
+            TableGroupId = 1
+        }));
+
+        Assert.Contains("no longer be combined", ex.Message);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_GroupBooking_RejectsOversizeCap()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsOversizeCap));

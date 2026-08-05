@@ -119,6 +119,15 @@ export function SectionBlock({
     return g ? { id: g.id, label: groupLabel(g), combinedSeats: g.combinedSeats } : undefined;
   }
 
+  /**
+   * Combined-seats window the server accepts for a member set: more than the largest member (else
+   * combining gains nothing) and no more than their sum (pushing tables together can lose a cover
+   * where the corners meet, never gain one). Mirrors ValidateCombinedSeats.
+   */
+  function combinedSeatsRange(memberSeats: number[]) {
+    return { min: Math.max(...memberSeats) + 1, max: memberSeats.reduce((a, b) => a + b, 0) };
+  }
+
   const startLink = (tableId: number) => {
     setLinkingFromId(tableId);
     setSelectedIds(new Set([tableId]));
@@ -166,14 +175,15 @@ export function SectionBlock({
       const ok = await deleteTableGroup(restaurantId, g.id);
       if (ok) onGroupsChanged(groups.filter((x) => x.id !== g.id));
     } else {
-      const sumSeats = remaining.reduce(
-        (sum, id) => sum + (section.tables.find((t) => t.id === id)?.seats ?? 0),
-        0
+      const { min, max } = combinedSeatsRange(
+        remaining.map((id) => section.tables.find((t) => t.id === id)?.seats ?? 0)
       );
       const updated = await updateTableGroup(restaurantId, g.id, {
         name: g.name ?? null,
         members: remaining,
-        combinedSeats: Math.max(sumSeats, g.combinedSeats),
+        // The removed table's covers are gone, so the old combined figure may now exceed what the
+        // remaining tables can seat — clamp it back into the accepted window.
+        combinedSeats: Math.min(Math.max(g.combinedSeats, min), max),
       });
       if (updated) onGroupsChanged(groups.map((x) => (x.id === g.id ? updated : x)));
     }
@@ -479,7 +489,10 @@ export function SectionBlock({
                   <Select
                     selectedValue={parseInt(draftCombinedSeats, 10) || undefined}
                     onSelect={(v) => setDraftCombinedSeats(String(v))}
-                    options={buildSeatOptions()}
+                    options={(() => {
+                      const { min, max } = combinedSeatsRange(g.members.map((m) => m.seats));
+                      return buildSeatOptions(min, max);
+                    })()}
                     placeholder={String(g.combinedSeats)}
                   />
                 </View>

@@ -298,6 +298,14 @@ public class BookingService(
             throw new NotFoundException("The selected table group no longer exists.");
         }
 
+        // A group that has lost members (e.g. a member table was deleted) is not a combinable unit
+        // any more and its CombinedSeats no longer describes anything real — refuse rather than seat
+        // a party against phantom capacity.
+        if (group.Members.Count < 2)
+        {
+            throw new ConflictException("These tables can no longer be combined. Please pick another time or table.");
+        }
+
         // Capacity: party must fit within the group's stored combined capacity.
         if (bookingDto.Seats > group.CombinedSeats)
         {
@@ -313,10 +321,10 @@ public class BookingService(
                 $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {bookingDto.Seats}.");
         }
 
-        // Member tables: resolve ids (prefer the caller's MemberTableIds, else fall back to the group's
-        // loaded members) and ensure every one is free — both of a confirmed booking and of another
-        // user's hold. This is the mutual-exclusion invariant for confirmed bookings.
-        var memberIds = (bookingDto.MemberTableIds ?? group.Members.Select(m => m.TableId)).ToList();
+        // Member tables always come from the persisted group, never from the request: MemberTableIds
+        // is part of the public POST body, so trusting it would let a caller submit an empty/partial
+        // list and skip the other-user hold check below for the members it omitted.
+        var memberIds = group.Members.Select(m => m.TableId).ToList();
         int durationMinutes = restaurant.DefaultBookingDurationMinutes;
 
         // Group-aware conflict check: a single query covers (a) any member already booked on its own,
