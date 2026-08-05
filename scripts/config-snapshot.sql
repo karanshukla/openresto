@@ -6,6 +6,10 @@ DELETE FROM Highlights;
 
 DELETE FROM SocialLinks;
 
+DELETE FROM TableGroupMemberships;
+
+DELETE FROM TableGroups;
+
 DELETE FROM Tables;
 
 DELETE FROM Sections;
@@ -21,6 +25,7 @@ WHERE
   name IN (
     'Highlights',
     'SocialLinks',
+    'TableGroups',
     'Tables',
     'Sections',
     'Restaurants',
@@ -39,6 +44,8 @@ INSERT INTO
     HeaderImageUrl,
     FaviconIcon,
     WebsiteUrl,
+    PhoneNumber,
+    EmailAddress,
     CopyrightText,
     Subtitle,
     HighlightsHeading,
@@ -53,6 +60,8 @@ VALUES
     '/media/hero.jpg?v=1780749336371',
     'pizza',
     'https://openres.to',
+    '+1 215 555 0100',
+    'bookings@paddyspub.example',
     NULL,
     'Philadelphia''s home of milk steak and jelly beans.',
     'What we''re known for',
@@ -78,6 +87,9 @@ VALUES
 -- OpenHoursJson is NULL so OpenTime/CloseTime apply to every day.
 -- WalkInOnly is 0 and WalkInDays is NULL so online bookings stay enabled.
 -- Description supports [label](url) inline links — see app/(user)/restaurant/[id].tsx.
+-- PhoneNumber/EmailAddress are the per-location contact override: 1 sets both, 2 sets neither
+--   (falls back to the BrandSettings pair above), 3 sets only a phone (its email still falls
+--   back) — the three states the large-party modal has to handle.
 INSERT INTO
   Restaurants (
     Id,
@@ -97,7 +109,9 @@ INSERT INTO
     WalkInOnly,
     WalkInDays,
     Description,
-    MenuUrl
+    MenuUrl,
+    PhoneNumber,
+    EmailAddress
   )
 VALUES
   (
@@ -118,7 +132,9 @@ VALUES
     0,
     NULL,
     'Philadelphia''s worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.',
-    'https://paddyspub.example/menu'
+    'https://paddyspub.example/menu',
+    '+1 215 555 0123',
+    'philly@paddyspub.example'
   );
 
 INSERT INTO
@@ -140,7 +156,9 @@ INSERT INTO
     WalkInOnly,
     WalkInDays,
     Description,
-    MenuUrl
+    MenuUrl,
+    PhoneNumber,
+    EmailAddress
   )
 VALUES
   (
@@ -161,6 +179,8 @@ VALUES
     0,
     NULL,
     'The Alley Behind the Alley. Walk-ins welcome, online bookings for the brave.',
+    NULL,
+    NULL,
     NULL
   );
 
@@ -183,7 +203,9 @@ INSERT INTO
     WalkInOnly,
     WalkInDays,
     Description,
-    MenuUrl
+    MenuUrl,
+    PhoneNumber,
+    EmailAddress
   )
 VALUES
   (
@@ -204,7 +226,9 @@ VALUES
     0,
     NULL,
     'Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).',
-    'https://paddyspub.example/vancouver-menu.pdf'
+    'https://paddyspub.example/vancouver-menu.pdf',
+    '+1 604 555 0177',
+    NULL
   );
 
 -- Sections
@@ -273,6 +297,40 @@ INSERT INTO
   Tables (Id, Name, Seats, SectionId)
 VALUES
   (8, 'Table 1', 4, 5);
+
+-- Combinable table groups — physical tables an admin flagged as pushable together, bookable as
+-- one unit for a larger party. CombinedSeats must sit in (largest member seats, sum of members]:
+-- group 1 loses a cover where the corners meet (4+2 tables seating 5), group 2 keeps all four.
+-- Member tables stay individually bookable; grouping only deprioritizes them in auto-assign.
+INSERT INTO
+  TableGroups (Id, Name, RestaurantId, CombinedSeats)
+VALUES
+  (1, 'Window booths', 1, 5);
+
+INSERT INTO
+  TableGroupMemberships (TableGroupId, TableId)
+VALUES
+  (1, 1);
+
+INSERT INTO
+  TableGroupMemberships (TableGroupId, TableId)
+VALUES
+  (1, 2);
+
+INSERT INTO
+  TableGroups (Id, Name, RestaurantId, CombinedSeats)
+VALUES
+  (2, NULL, 2, 4);
+
+INSERT INTO
+  TableGroupMemberships (TableGroupId, TableId)
+VALUES
+  (2, 4);
+
+INSERT INTO
+  TableGroupMemberships (TableGroupId, TableId)
+VALUES
+  (2, 5);
 
 -- Highlights (Link=NULL → static card; set a Link to make the whole card clickable)
 INSERT INTO
