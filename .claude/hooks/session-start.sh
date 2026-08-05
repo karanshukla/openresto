@@ -11,9 +11,19 @@
 # manage their own toolchain per the README's prerequisites.
 set -euo pipefail
 
+# The guard runs before the async declaration so a local machine produces no
+# output at all and the hook is a pure no-op there.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
+
+# Provision in the background so the session is usable immediately. The trade-off
+# is a startup window where the toolchain isn't ready yet: if `dotnet` or a
+# node_modules import is missing in the first moments of a session, this is why —
+# wait for it to finish rather than concluding the environment is broken.
+# A fully cold run takes ~45s with warm apt/npm caches; the timeout below is
+# generous headroom for a container that has to download everything.
+echo '{"async": true, "asyncTimeout": 600000}'
 
 cd "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}"
 
