@@ -611,6 +611,7 @@ export default function BookingForm({
       <LargePartyNoticeModal
         visible={largePartyNoticeOpen}
         maxCapacity={maxTableCapacity}
+        restaurant={restaurant}
         onClose={() => setLargePartyNoticeOpen(false)}
       />
     </View>

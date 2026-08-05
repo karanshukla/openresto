@@ -58,6 +58,10 @@ export interface RestaurantDto {
   description?: string | null;
   /** Optional link to this location's menu (PDF, page, etc.). */
   menuUrl?: string | null;
+  /** Optional contact phone for this location; falls back to the brand phone when absent. */
+  phoneNumber?: string | null;
+  /** Optional contact email for this location; falls back to the brand email when absent. */
+  emailAddress?: string | null;
   isArchived?: boolean;
   /** When true the whole location is walk-in only — the booking flow is disabled. */
   walkInOnly?: boolean;
@@ -169,6 +173,8 @@ export async function updateRestaurant(
     walkInDays?: string;
     description?: string | null;
     menuUrl?: string | null;
+    phoneNumber?: string | null;
+    emailAddress?: string | null;
   }
 ): Promise<RestaurantDto | null> {
   try {

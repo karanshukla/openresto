@@ -493,6 +493,8 @@ export interface BrandSettingsDto {
   accentColor?: string;
   faviconIcon?: string;
   websiteUrl?: string;
+  phoneNumber?: string;
+  emailAddress?: string;
   copyrightText?: string;
   subtitle?: string;
   highlightsHeading?: string;

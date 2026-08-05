@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
@@ -26,6 +27,8 @@ public class BrandController(BrandService brandService) : ControllerBase
             AccentColor = brand.AccentColor,
             HeaderImageUrl = brand.HeaderImageUrl,
             WebsiteUrl = _brand.GetWebsiteUrl(brand),
+            PhoneNumber = brand.PhoneNumber,
+            EmailAddress = brand.EmailAddress,
             FaviconIcon = brand.FaviconIcon,
             CopyrightText = brand.CopyrightText,
             Subtitle = brand.Subtitle,
@@ -101,6 +104,8 @@ public class BrandController(BrandService brandService) : ControllerBase
             req.AccentColor,
             req.FaviconIcon,
             req.WebsiteUrl,
+            req.PhoneNumber,
+            req.EmailAddress,
             req.CopyrightText,
             req.Subtitle,
             req.HighlightsHeading,
@@ -118,6 +123,14 @@ public class BrandRequest
     public string? AccentColor { get; set; }
     public string? FaviconIcon { get; set; }
     public string? WebsiteUrl { get; set; }
+
+    /// <summary>Default contact phone. Empty string clears it; null leaves the stored value unchanged.</summary>
+    [StringLength(ContactLimits.MaxPhoneLength, ErrorMessage = "Phone number cannot exceed 32 characters.")]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>Default contact email. Empty string clears it; null leaves the stored value unchanged.</summary>
+    [StringLength(ContactLimits.MaxEmailLength, ErrorMessage = "Email address cannot exceed 254 characters.")]
+    public string? EmailAddress { get; set; }
 
     [StringLength(200, ErrorMessage = "Copyright text cannot exceed 200 characters.")]
     public string? CopyrightText { get; set; }
@@ -142,6 +155,8 @@ public class BrandResponse
     public string? AccentColor { get; set; }
     public string? HeaderImageUrl { get; set; }
     public string? WebsiteUrl { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? EmailAddress { get; set; }
     public string? FaviconIcon { get; set; }
     public string? CopyrightText { get; set; }
     public string? Subtitle { get; set; }

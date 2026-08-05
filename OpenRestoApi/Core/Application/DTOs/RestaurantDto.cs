@@ -26,6 +26,18 @@ public class UpdateRestaurantRequest
     public string? MenuUrl { get; set; }
 
     /// <summary>
+    /// Optional contact phone number for this location, overriding the global brand phone.
+    /// Empty string clears the field; null leaves it untouched.
+    /// </summary>
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
+    /// Optional contact email address for this location, overriding the global brand email.
+    /// Empty string clears the field; null leaves it untouched.
+    /// </summary>
+    public string? EmailAddress { get; set; }
+
+    /// <summary>
     /// Per-day opening hours (ISO day 1=Monday … 7=Sunday). When provided, takes
     /// precedence over OpenTime/CloseTime; identical hours for all 7 days collapse
     /// back into the uniform OpenTime/CloseTime pair.
@@ -195,6 +207,12 @@ public class RestaurantDto
 
     /// <summary>Optional link to this location's menu (null when none).</summary>
     public string? MenuUrl { get; set; }
+
+    /// <summary>Optional contact phone for this location (null when none — callers fall back to the brand phone).</summary>
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>Optional contact email for this location (null when none — callers fall back to the brand email).</summary>
+    public string? EmailAddress { get; set; }
 
     public bool IsArchived { get; set; }
 

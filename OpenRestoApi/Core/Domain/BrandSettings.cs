@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Core.Domain;
 
@@ -17,6 +18,20 @@ public class BrandSettings
     public string? FaviconIcon { get; set; }
 
     public string? WebsiteUrl { get; set; }
+
+    /// <summary>
+    /// Default contact phone number, used wherever a location has no
+    /// <see cref="Restaurant.PhoneNumber"/> of its own.
+    /// </summary>
+    [StringLength(ContactLimits.MaxPhoneLength)]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
+    /// Default contact email address, used wherever a location has no
+    /// <see cref="Restaurant.EmailAddress"/> of its own.
+    /// </summary>
+    [StringLength(ContactLimits.MaxEmailLength)]
+    public string? EmailAddress { get; set; }
 
     [StringLength(200)]
     public string? CopyrightText { get; set; }

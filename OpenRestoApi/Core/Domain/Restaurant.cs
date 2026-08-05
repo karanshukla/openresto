@@ -64,6 +64,19 @@ public class Restaurant
     /// </summary>
     public string? MenuUrl { get; set; }
 
+    /// <summary>
+    /// Optional contact phone number for this location. Overrides
+    /// <see cref="BrandSettings.PhoneNumber"/> wherever a contact is surfaced.
+    /// Null/empty falls back to the global value.
+    /// </summary>
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
+    /// Optional contact email address for this location. Overrides
+    /// <see cref="BrandSettings.EmailAddress"/>. Null/empty falls back to the global value.
+    /// </summary>
+    public string? EmailAddress { get; set; }
+
     public bool IsArchived { get; set; }
 
     /// <summary>

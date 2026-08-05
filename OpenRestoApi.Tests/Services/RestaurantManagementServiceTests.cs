@@ -412,6 +412,156 @@ public class RestaurantManagementServiceTests
         Assert.Equal("https://example.com/menu.pdf", result.MenuUrl);
     }
 
+    // ── Per-restaurant contact info (#262) ─────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_Persists_ContactFields_Trimmed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Persists_ContactFields_Trimmed));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            PhoneNumber = "  +44 20 7946 0958  ",
+            EmailAddress = "  hello@example.com  ",
+        });
+
+        Assert.NotNull(result);
+        Assert.Equal("+44 20 7946 0958", result.PhoneNumber);
+        Assert.Equal("hello@example.com", result.EmailAddress);
+
+        Restaurant stored = (await db.Restaurants.FindAsync(1))!;
+        Assert.Equal("+44 20 7946 0958", stored.PhoneNumber);
+        Assert.Equal("hello@example.com", stored.EmailAddress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Clears_ContactFields_WhenBlank()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Clears_ContactFields_WhenBlank));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            Timezone = "UTC",
+            PhoneNumber = "+44 20 7946 0958",
+            EmailAddress = "old@example.com",
+        });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            PhoneNumber = "",
+            EmailAddress = "   ",
+        });
+
+        Assert.NotNull(result);
+        Assert.Null(result.PhoneNumber);
+        Assert.Null(result.EmailAddress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Keeps_ContactFields_WhenNull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Keeps_ContactFields_WhenNull));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            Timezone = "UTC",
+            PhoneNumber = "+44 20 7946 0958",
+            EmailAddress = "keep@example.com",
+        });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R" });
+
+        Assert.NotNull(result);
+        Assert.Equal("+44 20 7946 0958", result.PhoneNumber);
+        Assert.Equal("keep@example.com", result.EmailAddress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsOversizedPhoneNumber()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsOversizedPhoneNumber));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            PhoneNumber = new string('9', ContactLimits.MaxPhoneLength + 1),
+        }));
+
+        Assert.Null((await db.Restaurants.FindAsync(1))!.PhoneNumber);
+    }
+
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("missing@tld")]
+    public async Task UpdateAsync_RejectsMalformedEmailAddress(string email)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_RejectsMalformedEmailAddress)}_{email}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() => svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            EmailAddress = email,
+        }));
+
+        Assert.Null((await db.Restaurants.FindAsync(1))!.EmailAddress);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ExposesContactFields()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetByIdAsync_ExposesContactFields));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            Timezone = "UTC",
+            PhoneNumber = "+1 555 0100",
+            EmailAddress = "hi@example.com",
+        });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.GetByIdAsync(1);
+
+        Assert.NotNull(result);
+        Assert.Equal("+1 555 0100", result.PhoneNumber);
+        Assert.Equal("hi@example.com", result.EmailAddress);
+    }
+
+    [Fact]
+    public async Task CreateAsync_PersistsContactFields()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_PersistsContactFields));
+        var svc = CreateService(db);
+
+        RestaurantDto result = await svc.CreateAsync(new RestaurantDto
+        {
+            Name = "New",
+            PhoneNumber = " +1 555 0100 ",
+            EmailAddress = " new@example.com ",
+        });
+
+        Assert.Equal("+1 555 0100", result.PhoneNumber);
+        Assert.Equal("new@example.com", result.EmailAddress);
+    }
+
     [Fact]
     public async Task UpdateAsync_Keeps_Description_WhenNull()
     {

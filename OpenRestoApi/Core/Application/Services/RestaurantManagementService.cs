@@ -54,6 +54,8 @@ public class RestaurantManagementService(
             CloseTime = string.IsNullOrWhiteSpace(dto.CloseTime) ? "22:00" : dto.CloseTime,
             OpenDays = string.IsNullOrWhiteSpace(dto.OpenDays) ? "1,2,3,4,5,6,7" : dto.OpenDays,
             Timezone = string.IsNullOrWhiteSpace(dto.Timezone) ? "UTC" : dto.Timezone,
+            PhoneNumber = dto.PhoneNumber == null ? null : ContactFields.NormalizePhone(dto.PhoneNumber),
+            EmailAddress = dto.EmailAddress == null ? null : ContactFields.NormalizeEmail(dto.EmailAddress),
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = dto.MaxTableOversizeSeats,
@@ -113,6 +115,14 @@ public class RestaurantManagementService(
                 }
                 r.MenuUrl = trimmed;
             }
+        }
+        if (req.PhoneNumber != null)
+        {
+            r.PhoneNumber = ContactFields.NormalizePhone(req.PhoneNumber);
+        }
+        if (req.EmailAddress != null)
+        {
+            r.EmailAddress = ContactFields.NormalizeEmail(req.EmailAddress);
         }
         if (req.OpenTime != null)
         {
@@ -205,6 +215,8 @@ public class RestaurantManagementService(
             ImageUrl = r.ImageUrl,
             Description = r.Description,
             MenuUrl = r.MenuUrl,
+            PhoneNumber = r.PhoneNumber,
+            EmailAddress = r.EmailAddress,
             WalkInOnly = r.WalkInOnly,
             WalkInDays = r.WalkInDays ?? "",
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
@@ -656,6 +668,8 @@ public class RestaurantManagementService(
         ImageUrl = r.ImageUrl,
         Description = r.Description,
         MenuUrl = r.MenuUrl,
+        PhoneNumber = r.PhoneNumber,
+        EmailAddress = r.EmailAddress,
         IsArchived = r.IsArchived,
         WalkInOnly = r.WalkInOnly,
         WalkInDays = r.WalkInDays ?? "",

@@ -779,7 +779,7 @@ describe("RestaurantInfoForm", () => {
     );
   });
 
-  it("saves description as null when cleared to blank", async () => {
+  it("saves description as an empty string when cleared to blank", async () => {
     (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
       ...mockRestaurant,
       description: null,
@@ -796,7 +796,8 @@ describe("RestaurantInfoForm", () => {
     });
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ description: null })
+      // "" clears server-side; null would be read as "leave untouched" and the blurb would stick.
+      expect.objectContaining({ description: "" })
     );
   });
 
@@ -1017,5 +1018,149 @@ describe("RestaurantInfoForm", () => {
     await waitFor(() => expect(screen.getByText(/valid http\(s\) link/)).toBeTruthy());
     // Pre-flight means the API was never called.
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+  // ── Contact info (#262) ───────────────────────────────────────────────
+
+  it("renders stored contact fields", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{
+          ...mockRestaurant,
+          phoneNumber: "+44 20 7946 0958",
+          emailAddress: "hello@example.com",
+        }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByDisplayValue("+44 20 7946 0958")).toBeTruthy();
+    expect(screen.getByDisplayValue("hello@example.com")).toBeTruthy();
+  });
+
+  it("saves trimmed contact fields", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      phoneNumber: "+1 555 0100",
+      emailAddress: "hi@example.com",
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), " +1 555 0100 ");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("e.g. bookings@example.com"),
+      " hi@example.com "
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ phoneNumber: "+1 555 0100", emailAddress: "hi@example.com" })
+    );
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({ phoneNumber: "+1 555 0100", emailAddress: "hi@example.com" })
+      )
+    );
+  });
+
+  it("sends an empty string to clear a contact field (PATCH convention)", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, phoneNumber: "+1 555 0100" }}
+        onSaved={onSaved}
+      />
+    );
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ phoneNumber: "" })
+    );
+  });
+
+  it("blocks save with an inline error when the contact email is malformed (pre-flight)", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. bookings@example.com"), "not-an-email");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    await waitFor(() => expect(screen.getByText(/valid email address/)).toBeTruthy());
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+
+  it("discards edited contact fields back to the stored values", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, phoneNumber: "+1 555 0100" }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "+1 555 9999");
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Discard"));
+
+    expect(screen.getByDisplayValue("+1 555 0100")).toBeTruthy();
+    expect(screen.getByText("All changes saved")).toBeTruthy();
+  });
+  it("blocks save with an inline error when the contact phone exceeds the cap", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "9".repeat(33));
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    await waitFor(() => expect(screen.getByText(/cannot exceed 32 characters/)).toBeTruthy());
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+  it("sends an empty string to clear a pasted menu link", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      menuUrl: null,
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "https://example.com/menu.pdf" }}
+        onSaved={onSaved}
+      />
+    );
+
+    fireEvent.changeText(screen.getByDisplayValue("https://example.com/menu.pdf"), "");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      // "" clears; null would be read as "leave untouched" and the link would stick.
+      expect.objectContaining({ menuUrl: "" })
+    );
+  });
+
+  it("sends null for menuUrl while an uploaded file is the stored menu", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+
+    // The upload flow leaves local menuUrl blank while the served path is stored; sending ""
+    // here would wipe the freshly-uploaded file, so this save must leave the field untouched.
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Renamed Resto");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ menuUrl: null })
+    );
   });
 });
