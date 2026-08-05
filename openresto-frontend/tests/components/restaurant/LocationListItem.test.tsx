@@ -774,4 +774,99 @@ describe("LocationListItem", () => {
     );
     await waitFor(() => expect(screen.getByText("Table 202")).toBeTruthy());
   });
+  // ── Combinable table groups in the seating minimap (#271-#274) ──────────
+
+  const restaurantWithGroups = {
+    ...mockRestaurant,
+    sections: [
+      {
+        id: 1,
+        name: "Main",
+        restaurantId: 1,
+        tables: [
+          { id: 101, name: "T1", seats: 4, sectionId: 1 },
+          { id: 102, name: "T2", seats: 2, sectionId: 1 },
+          { id: 103, name: "T3", seats: 2, sectionId: 1 },
+        ],
+      },
+    ],
+    groups: [
+      {
+        id: 1,
+        name: "Window booths",
+        combinedSeats: 5,
+        members: [
+          { id: 101, name: "T1", seats: 4 },
+          { id: 102, name: "T2", seats: 2 },
+        ],
+      },
+    ],
+  };
+
+  it("lists combinable groups with their combined capacity in the seating block", async () => {
+    renderWithProviders(
+      <LocationListItem
+        restaurant={restaurantWithGroups as any}
+        defaultExpanded
+        registerRef={registerRef}
+        onExpand={onExpand}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("Tables we can combine")).toBeTruthy());
+    expect(screen.getByText("Window booths")).toBeTruthy();
+    expect(screen.getByText("Seats up to 5 pushed together")).toBeTruthy();
+  });
+
+  it("still lists member tables individually — grouping does not hide them (#242)", async () => {
+    renderWithProviders(
+      <LocationListItem
+        restaurant={restaurantWithGroups as any}
+        defaultExpanded
+        registerRef={registerRef}
+        onExpand={onExpand}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("T1")).toBeTruthy());
+    expect(screen.getByText("T2")).toBeTruthy();
+    expect(screen.getByText("T3")).toBeTruthy();
+  });
+
+  it("names an unnamed group after its member tables", async () => {
+    const unnamedGroup = {
+      ...restaurantWithGroups,
+      groups: [
+        {
+          id: 2,
+          name: null,
+          combinedSeats: 4,
+          members: [
+            { id: 102, name: "T2", seats: 2 },
+            { id: 103, name: "T3", seats: 2 },
+          ],
+        },
+      ],
+    };
+    renderWithProviders(
+      <LocationListItem
+        restaurant={unnamedGroup as any}
+        defaultExpanded
+        registerRef={registerRef}
+        onExpand={onExpand}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("Tables T2 + T3")).toBeTruthy());
+  });
+
+  it("omits the combinable block entirely for a location with no groups", async () => {
+    renderWithProviders(
+      <LocationListItem
+        restaurant={mockRestaurant as any}
+        defaultExpanded
+        registerRef={registerRef}
+        onExpand={onExpand}
+      />
+    );
+    await waitFor(() => expect(screen.getByText("Seating & tables")).toBeTruthy());
+    expect(screen.queryByText("Tables we can combine")).toBeNull();
+  });
 });
