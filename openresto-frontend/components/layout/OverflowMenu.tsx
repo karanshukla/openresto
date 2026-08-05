@@ -73,7 +73,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+        <Pressable testID="menu-backdrop" style={styles.backdrop} onPress={() => setOpen(false)}>
           <TouchableWithoutFeedback>
             <View
               style={[
