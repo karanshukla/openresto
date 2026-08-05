@@ -348,7 +348,11 @@ export function RestaurantInfoForm({
       // Blank must go over the wire as "" — the backend's PATCH convention reads null as
       // "leave untouched", so sending null here made clearing an existing blurb a no-op.
       description: description.trim(),
-      menuUrl: menuUrl.trim() || null,
+      // Same "" clears / null leaves untouched convention as description, with one carve-out:
+      // while a served file is the stored menu the text input isn't rendered and the local
+      // menuUrl is deliberately blank (the upload flow clears it), so null keeps this save from
+      // wiping the file. Otherwise blank must reach the server as "" to clear a pasted link.
+      menuUrl: menuUrlIsServedFile ? null : menuUrl.trim(),
       phoneNumber: phoneNumber.trim() || "",
       emailAddress: emailAddress.trim() || "",
       openTime: customHours ? undefined : openTime,

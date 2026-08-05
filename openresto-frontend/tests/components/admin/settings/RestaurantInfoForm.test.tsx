@@ -1118,4 +1118,49 @@ describe("RestaurantInfoForm", () => {
     await waitFor(() => expect(screen.getByText(/cannot exceed 32 characters/)).toBeTruthy());
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
   });
+  it("sends an empty string to clear a pasted menu link", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      menuUrl: null,
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "https://example.com/menu.pdf" }}
+        onSaved={onSaved}
+      />
+    );
+
+    fireEvent.changeText(screen.getByDisplayValue("https://example.com/menu.pdf"), "");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      // "" clears; null would be read as "leave untouched" and the link would stick.
+      expect.objectContaining({ menuUrl: "" })
+    );
+  });
+
+  it("sends null for menuUrl while an uploaded file is the stored menu", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, menuUrl: "/media/menu-1.pdf?v=123" }}
+        onSaved={onSaved}
+      />
+    );
+
+    // The upload flow leaves local menuUrl blank while the served path is stored; sending ""
+    // here would wipe the freshly-uploaded file, so this save must leave the field untouched.
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Renamed Resto");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ menuUrl: null })
+    );
+  });
 });
