@@ -3,81 +3,44 @@ using Moq;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence;
-using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
 /// <summary>
-/// Covers the hold-adoption branches of <c>BookingService.ResolveAutoAssignAsync</c> — in particular
-/// adopting an existing combinable-group hold (#272) instead of re-running the candidate search —
-/// and the group-capacity guards in <c>CreateGroupBookingAsync</c>.
+/// Hold-adoption branches of <c>BookingService.ResolveAutoAssignAsync</c> — in particular adopting
+/// an existing combinable-group hold (#272) instead of re-running the candidate search — and the
+/// group-capacity guards in <c>CreateGroupBookingAsync</c>.
+///
+/// Declared as a partial of <see cref="BookingServiceTests"/> rather than its own class so it
+/// reuses that type's <c>CreateService</c>/<c>SeedRestaurantWithGroup</c> helpers and, with them,
+/// the <c>[OnlyAccessibleBy]</c> grant those helpers need to construct the internal repositories
+/// and <c>HoldService</c>.
 /// </summary>
-public class BookingServiceGroupHoldTests
+public partial class BookingServiceTests
 {
-    private sealed class UtcClock : ISystemClock
-    {
-        public DateTime UtcNow => DateTime.UtcNow;
-    }
-
-    private static BookingService CreateService(
-        AppDbContext db,
-        IHoldService holdService,
-        IBookingConfirmationService? confirmationService = null,
-        INotificationQueue? notificationQueue = null) =>
-        new(
-            new BookingRepository(db),
-            new TableRepository(db),
-            new SectionRepository(db),
-            new RestaurantRepository(db),
-            holdService,
-            new BookingMapper(),
-            new TableAutoAssigner(new BookingRepository(db), holdService),
-            new TableGroupRepository(db),
-            confirmationService,
-            notificationQueue);
-
     /// <summary>
-    /// One 2-seat standalone table (T1) plus a combinable group of two 4-seat tables (T2, T3)
-    /// with CombinedSeats 8 — the same shape the group tests in <see cref="BookingServiceTests"/> use.
+    /// A real in-memory hold service, so <c>PlaceGroupHold</c>/<c>PlaceAutoHold</c> actually place
+    /// holds — a loose mock returns null, which the service reads as "everything is held".
+    /// Constructed through <see cref="CreateService"/>'s own default wherever possible; this
+    /// overload exists for the tests that need to place a hold before the booking call.
     /// </summary>
-    private static void SeedRestaurantWithGroup(AppDbContext db)
-    {
-        db.Restaurants.Add(new Restaurant
-        {
-            Id = 1, Name = "Group Bistro", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC"
-        });
-        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
-        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
-        db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
-        db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 4, SectionId = 1 });
-        db.TableGroups.Add(new TableGroup
-        {
-            Id = 1, RestaurantId = 1, CombinedSeats = 8,
-            Members = new List<TableGroupMembership>
-            {
-                new() { TableGroupId = 1, TableId = 2 },
-                new() { TableGroupId = 1, TableId = 3 }
-            }
-        });
-        db.SaveChanges();
-    }
+    private static IHoldService NewHoldService() =>
+        new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
 
     [Fact]
     public async Task CreateBookingAsync_AutoAssign_AdoptsGroupFromValidGroupHold()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_AdoptsGroupFromValidGroupHold));
         SeedRestaurantWithGroup(db);
-        var holdService = new HoldService(new UtcClock());
+        IHoldService holdService = NewHoldService();
         BookingService svc = CreateService(db, holdService);
         DateTime date = DateTime.UtcNow.AddDays(12);
 
         HoldResult? hold = holdService.PlaceGroupHold(
-            restaurantId: 1, tableGroupId: 1, memberTableIds: new[] { 2, 3 }, sectionId: 1, bookingDate: date);
+            restaurantId: 1, tableGroupId: 1, memberTableIds: [2, 3], sectionId: 1, bookingDate: date);
         Assert.NotNull(hold);
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
@@ -118,9 +81,9 @@ public class BookingServiceGroupHoldTests
         });
         db.SaveChanges();
 
-        var holdService = new HoldService(new UtcClock());
+        IHoldService holdService = NewHoldService();
         BookingService svc = CreateService(db, holdService);
-        HoldResult? hold = holdService.PlaceGroupHold(1, 1, new[] { 2, 3 }, 1, date);
+        HoldResult? hold = holdService.PlaceGroupHold(1, 1, [2, 3], 1, date);
         Assert.NotNull(hold);
 
         ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
@@ -142,7 +105,7 @@ public class BookingServiceGroupHoldTests
         // reuse a foreign hold id to skip this restaurant's own availability checks.
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_IgnoresHoldBelongingToAnotherRestaurant));
         SeedRestaurantWithGroup(db);
-        var holdService = new HoldService(new UtcClock());
+        IHoldService holdService = NewHoldService();
         BookingService svc = CreateService(db, holdService);
         DateTime date = DateTime.UtcNow.AddDays(14);
 
@@ -170,7 +133,7 @@ public class BookingServiceGroupHoldTests
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_RejectsPartyLargerThanCombinedSeats));
         SeedRestaurantWithGroup(db);
-        BookingService svc = CreateService(db, new HoldService(new UtcClock()));
+        BookingService svc = CreateService(db);
 
         ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
         {
@@ -189,7 +152,7 @@ public class BookingServiceGroupHoldTests
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_DerivesSectionFromLowestMember_WhenNotSupplied));
         SeedRestaurantWithGroup(db);
-        BookingService svc = CreateService(db, new HoldService(new UtcClock()));
+        BookingService svc = CreateService(db);
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
         {
@@ -215,7 +178,7 @@ public class BookingServiceGroupHoldTests
         SeedRestaurantWithGroup(db);
         var queue = new Mock<INotificationQueue>();
         var confirmations = new Mock<IBookingConfirmationService>();
-        BookingService svc = CreateService(db, new HoldService(new UtcClock()), confirmations.Object, queue.Object);
+        BookingService svc = CreateService(db, null, confirmations.Object, queue.Object);
         DateTime date = DateTime.UtcNow.AddDays(18);
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
@@ -243,7 +206,7 @@ public class BookingServiceGroupHoldTests
         // neither is wired up (the shape the unit tests and the seeder use).
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_SucceedsWithoutANotificationQueueOrConfirmationService));
         SeedRestaurantWithGroup(db);
-        BookingService svc = CreateService(db, new HoldService(new UtcClock()));
+        BookingService svc = CreateService(db);
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
         {
@@ -264,11 +227,11 @@ public class BookingServiceGroupHoldTests
         // otherwise the hold they were told to send would block their own booking.
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_GroupBooking_SucceedsWhenTheCallersOwnHoldCoversTheMembers));
         SeedRestaurantWithGroup(db);
-        var holdService = new HoldService(new UtcClock());
+        IHoldService holdService = NewHoldService();
         BookingService svc = CreateService(db, holdService);
         DateTime date = DateTime.UtcNow.AddDays(17);
 
-        HoldResult? hold = holdService.PlaceGroupHold(1, 1, new[] { 2, 3 }, 1, date);
+        HoldResult? hold = holdService.PlaceGroupHold(1, 1, [2, 3], 1, date);
         Assert.NotNull(hold);
 
         BookingDto result = await svc.CreateBookingAsync(new BookingDto
