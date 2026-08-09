@@ -51,10 +51,14 @@ export default function BookingConfirmationScreen() {
     if (!bookingRef) return;
     let cancelled = false;
     async function load() {
-      const numericId = /^\d+$/.test(bookingRef) ? parseInt(bookingRef, 10) : NaN;
-      const data = isNaN(numericId)
-        ? await getBookingByRef(bookingRef, email ?? "")
-        : await getBookingById(numericId);
+      // The path segment is a booking reference. Since references can be all-digits (#179),
+      // its shape no longer distinguishes a reference from a database id, so the reference
+      // lookup — the public, email-gated path every confirmation link and email uses — always
+      // runs first. The id lookup survives only as a fallback for legacy
+      // /booking-confirmation/<id> links, and is admin-only server-side.
+      const data =
+        (await getBookingByRef(bookingRef, email ?? "")) ??
+        (/^\d+$/.test(bookingRef) ? await getBookingById(parseInt(bookingRef, 10)) : null);
       if (cancelled) return;
       setBooking(data);
       if (data?.restaurantId) {

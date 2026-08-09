@@ -83,14 +83,42 @@ describe("BookingConfirmationScreen", () => {
     expect(screen.getAllByText(/Toronto Resto/).length).toBeGreaterThan(0);
   });
 
-  it("renders success state for numeric id", async () => {
+  it("resolves an all-digit segment as a booking reference, not a database id", async () => {
+    // Regression test for #179: numeric booking references are indistinguishable from a
+    // database id by shape. Treating them as an id sent every confirmation link (and every
+    // confirmation email) to the admin-only by-id endpoint, which 401s for the diner who
+    // owns the booking and rendered as "no booking found".
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "97977036", email: "test@test.com" });
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    expect(getBookingByRef).toHaveBeenCalledWith("97977036", "test@test.com");
+    expect(getBookingById).not.toHaveBeenCalled();
+    expect(screen.getByText("Booking Confirmed")).toBeTruthy();
+  });
+
+  it("falls back to the id lookup for a legacy numeric link with no matching reference", async () => {
     const { useLocalSearchParams } = require("expo-router");
     useLocalSearchParams.mockReturnValue({ bookingRef: "50" });
+    (getBookingByRef as jest.Mock).mockResolvedValue(null);
 
     renderWithProviders(<BookingConfirmationScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
     expect(getBookingById).toHaveBeenCalledWith(50);
+  });
+
+  it("does not attempt an id lookup for a word reference that is not found", async () => {
+    const { useLocalSearchParams } = require("expo-router");
+    useLocalSearchParams.mockReturnValue({ bookingRef: "no-such-ref", email: "test@test.com" });
+    (getBookingByRef as jest.Mock).mockResolvedValue(null);
+
+    renderWithProviders(<BookingConfirmationScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    expect(getBookingById).not.toHaveBeenCalled();
   });
 
   it("shows cancel button for an active booking", async () => {
