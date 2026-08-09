@@ -12,6 +12,7 @@ import LocationListItem from "@/components/restaurant/LocationListItem";
 import { createBooking } from "@/api/bookings";
 import { fetchAvailability } from "@/api/availability";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { getRestaurantNow } from "@/utils/restaurantTime";
 import * as useAppThemeModule from "@/hooks/use-app-theme";
 import { getThemeColors } from "@/theme/theme";
 
@@ -41,6 +42,15 @@ jest.mock("expo-router", () => ({
 jest.mock("@/api/availability", () => ({
   fetchAvailability: jest.fn().mockResolvedValue({ slots: [] }),
 }));
+
+// LocationListItem only renders slots later than the *restaurant-local* now, which it reads
+// from the wall clock via getRestaurantNow. Tests that assert on a fixed slot time therefore
+// have a daily window in which they fail for real (a "23:30" slot vanishes once Toronto passes
+// 23:30). Passthrough by default; individual tests pin the clock via mockReturnValue.
+jest.mock("@/utils/restaurantTime", () => {
+  const actual = jest.requireActual("@/utils/restaurantTime");
+  return { ...actual, getRestaurantNow: jest.fn(actual.getRestaurantNow) };
+});
 
 jest.mock("@/api/bookings", () => ({
   createBooking: jest.fn(),
@@ -100,6 +110,10 @@ const mockRestaurant = {
   ],
 };
 
+// jest.clearAllMocks() clears calls but not return values, so a test that pins the clock would
+// leak it into every test after it. beforeEach restores this passthrough explicitly.
+const actualGetRestaurantNow = jest.requireActual("@/utils/restaurantTime").getRestaurantNow;
+
 const registerRef = jest.fn();
 const registerFormRef = jest.fn();
 const onExpand = jest.fn();
@@ -109,6 +123,7 @@ jest.setTimeout(15000);
 describe("LocationListItem", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (getRestaurantNow as jest.Mock).mockImplementation(actualGetRestaurantNow);
     (createBooking as jest.Mock).mockResolvedValue({ id: 50, bookingRef: "REF123" });
   });
 
@@ -674,6 +689,9 @@ describe("LocationListItem", () => {
   });
 
   it("covers hover/press style states for the menu link, a slot chip, and both map links", async () => {
+    // Pin the restaurant-local clock to midday so the 23:30 slot is always in the future.
+    // Without this the assertion below fails for real between 23:30 and midnight in Toronto.
+    (getRestaurantNow as jest.Mock).mockReturnValue({ totalMins: 12 * 60, isoDay: 1 });
     (fetchAvailability as jest.Mock).mockResolvedValue({
       slots: [{ time: "23:30", isAvailable: true }],
     });

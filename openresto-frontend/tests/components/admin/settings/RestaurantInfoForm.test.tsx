@@ -456,6 +456,64 @@ describe("RestaurantInfoForm", () => {
     expect(getOversizeSelect().props.value).toBe(1);
   });
 
+  // ── Booking reference format (#179) ─────────────────────────────────────
+  // Same raw-<select>/data-testid caveat as the controls above. Values are the backend
+  // BookingRefFormat member names, sent verbatim.
+  const getRefFormatSelect = () =>
+    screen.UNSAFE_getByProps({ "data-testid": "booking-ref-format-select" });
+
+  it("renders the booking ref format select at AlphaNumeric when the restaurant has none set", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(getRefFormatSelect().props.value).toBe("AlphaNumeric");
+  });
+
+  it("renders the booking ref format select at the restaurant's saved value", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, bookingRefFormat: "Numeric" as const }}
+        onSaved={onSaved}
+      />
+    );
+    expect(getRefFormatSelect().props.value).toBe("Numeric");
+  });
+
+  it("marks the form dirty and updates the selection when the ref format changes", () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
+    expect(screen.getByText("Unsaved changes")).toBeTruthy();
+    expect(getRefFormatSelect().props.value).toBe("Numeric");
+  });
+
+  it("saves the newly selected ref format", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      bookingRefFormat: "Numeric",
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save changes"));
+    });
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ bookingRefFormat: "Numeric" })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ bookingRefFormat: "Numeric" }));
+  });
+
+  it("reverts the ref format select to the saved value when Discard is pressed", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, bookingRefFormat: "Numeric" as const }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent(getRefFormatSelect(), "change", { target: { value: "AlphaNumeric" } });
+    expect(getRefFormatSelect().props.value).toBe("AlphaNumeric");
+    fireEvent.press(screen.getByText("Discard"));
+    expect(getRefFormatSelect().props.value).toBe("Numeric");
+  });
+
   // ── Per-day opening hours (#175) ─────────────────────────────────────────
 
   const uniformWeek = [1, 2, 3, 4, 5, 6, 7].map((day) => ({

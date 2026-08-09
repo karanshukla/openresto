@@ -485,6 +485,32 @@ public class AdminServiceTests : IDisposable
         await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(req));
     }
 
+    [Theory]
+    [InlineData(BookingRefFormat.Numeric, true)]
+    [InlineData(BookingRefFormat.AlphaNumeric, false)]
+    public async Task CreateBookingAsync_UsesTheRestaurantsBookingRefFormat(
+        BookingRefFormat format, bool expectDigits)
+    {
+        // Admin-recorded walk-ins mint their reference on a third call site, independent of
+        // BookingService — a staff-entered booking must read the same way as a customer's.
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", BookingRefFormat = format });
+        _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto result = await svc.CreateBookingAsync(new AdminCreateBookingRequest
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            Date = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc),
+            Seats = 2
+        });
+
+        Assert.Equal(expectDigits, result.BookingRef!.All(char.IsAsciiDigit));
+    }
+
     // ── Configurable booking duration (#135) ────────────────────────────────
 
     [Theory]

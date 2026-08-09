@@ -26,6 +26,24 @@ public class RestaurantManagementService(
     // slot-generation loop can't be sent into a degenerate (e.g. 0 or negative) spin.
     private static readonly HashSet<int> _allowedBookingSlotIntervalsMinutes = [15, 30, 60];
 
+    /// <summary>
+    /// Resolves the wire-format string ("AlphaNumeric"/"Numeric", case-insensitive) to the enum.
+    /// Rejects the numeric spellings <see cref="Enum.TryParse{TEnum}(string, bool, out TEnum)"/>
+    /// accepts by default ("1", "7"), so the API contract stays the member names only.
+    /// </summary>
+    private static BookingRefFormat ParseBookingRefFormat(string value)
+    {
+        if (!Enum.TryParse(value, ignoreCase: true, out BookingRefFormat parsed)
+            || !Enum.IsDefined(parsed)
+            || char.IsDigit(value.Trim().FirstOrDefault()))
+        {
+            throw new ValidationException(
+                $"BookingRefFormat must be one of: {string.Join(", ", Enum.GetNames<BookingRefFormat>())}.");
+        }
+
+        return parsed;
+    }
+
     // ── Restaurants ─────────────────────────────────────────────────────────
 
     public async Task<List<RestaurantDto>> GetAllAsync()
@@ -59,6 +77,9 @@ public class RestaurantManagementService(
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = dto.MaxTableOversizeSeats,
+            BookingRefFormat = string.IsNullOrWhiteSpace(dto.BookingRefFormat)
+                ? BookingRefFormat.AlphaNumeric
+                : ParseBookingRefFormat(dto.BookingRefFormat),
             Sections = dto.Sections.Select((s, index) => new Section
             {
                 Name = s.Name,
@@ -187,6 +208,11 @@ public class RestaurantManagementService(
 
         r.MaxTableOversizeSeats = req.MaxTableOversizeSeats;
 
+        if (req.BookingRefFormat != null)
+        {
+            r.BookingRefFormat = ParseBookingRefFormat(req.BookingRefFormat);
+        }
+
         if (req.WalkInOnly.HasValue)
         {
             r.WalkInOnly = req.WalkInOnly.Value;
@@ -222,6 +248,7 @@ public class RestaurantManagementService(
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = r.MaxTableOversizeSeats,
+            BookingRefFormat = r.BookingRefFormat.ToString(),
             Sections = []
         };
     }
@@ -678,6 +705,7 @@ public class RestaurantManagementService(
         DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
         BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
         MaxTableOversizeSeats = r.MaxTableOversizeSeats,
+        BookingRefFormat = r.BookingRefFormat.ToString(),
         Sections = r.Sections
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new SectionDto

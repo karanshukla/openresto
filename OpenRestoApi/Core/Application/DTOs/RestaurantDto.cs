@@ -61,6 +61,14 @@ public class UpdateRestaurantRequest
     /// </summary>
     public int? MaxTableOversizeSeats { get; set; }
 
+    /// <summary>
+    /// Booking reference format for new bookings — "AlphaNumeric" (three words) or "Numeric"
+    /// (digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).
+    /// Sent as a string rather than the enum because the API has no string-enum converter
+    /// configured, and a bare int would be an opaque contract for the client.
+    /// </summary>
+    public string? BookingRefFormat { get; set; }
+
     /// <summary>When true the whole location becomes walk-in only (no online bookings).</summary>
     public bool? WalkInOnly { get; set; }
 
@@ -229,6 +237,9 @@ public class RestaurantDto
 
     /// <summary>Max allowed spare seats over party size, or null for unrestricted (off).</summary>
     public int? MaxTableOversizeSeats { get; set; }
+
+    /// <summary>Format of references minted for new bookings: "AlphaNumeric" or "Numeric".</summary>
+    public string BookingRefFormat { get; set; } = Domain.BookingRefFormat.AlphaNumeric.ToString();
 
     public List<SectionDto> Sections { get; set; } = new();
 

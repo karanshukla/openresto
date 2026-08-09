@@ -154,7 +154,7 @@ public class BookingService(
         // 4. Persist the booking
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.Date = bookingDate; // Use normalized date
-        booking.BookingRef = BookingRefGenerator.Generate();
+        booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
         booking.EndTime = bookingDate.AddMinutes(restaurant.DefaultBookingDurationMinutes);
         booking.Table = table!;
         booking.Section = (await _sectionRepository.GetByIdAsync(sectionId))!;
@@ -355,7 +355,7 @@ public class BookingService(
 
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.Date = bookingDate;
-        booking.BookingRef = BookingRefGenerator.Generate();
+        booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
         booking.EndTime = bookingDate.AddMinutes(durationMinutes);
         booking.TableId = null;
         booking.TableGroupId = group.Id;
