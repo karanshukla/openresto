@@ -84,3 +84,7 @@ docs/*
 
 # ZCode local session data
 .zcode/
+
+# Python bytecode (scripts/demo_data.py)
+__pycache__/
+*.pyc
