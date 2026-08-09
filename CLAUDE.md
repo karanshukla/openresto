@@ -121,12 +121,23 @@ extensive set by default (i.e., untagged).
 ### Release (tag-triggered)
 
 ```bash
-# Update CHANGELOG.md with a ## [x.y.z] - YYYY-MM-DD section first, then:
+# 1. Add a ## [x.y.z] - YYYY-MM-DD section to CHANGELOG.md
+# 2. Bump "version" in package.json (root) and openresto-frontend/package.json
+#    to the tag without the v prefix, then regenerate both lockfiles:
+npm install --package-lock-only && npm install --package-lock-only --prefix openresto-frontend
+# 3. Confirm everything agrees before tagging (CI runs this too):
+./scripts/check-release-version.sh v1.0.0
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Also bump `"version"` in `package.json` (root) and `openresto-frontend/package.json` to match the tag (without the `v` prefix), then run `npm install --package-lock-only` in each directory (root and `openresto-frontend/`) so the corresponding `package-lock.json`'s top-level `version` field stays in sync — don't hand-edit the lockfiles.
+Never hand-edit the lockfiles; `--package-lock-only` is what keeps their top-level `version` in sync.
+
+**Pick the number by semver, not by habit.** A release containing any new feature is a minor bump, even a small one. Patch is for fixes only.
+
+`scripts/check-release-version.sh` is the guard against a half-finished bump: it asserts the two `package.json`s, the two `package-lock.json`s, and a CHANGELOG section all agree with the tag. The `verify-version` job in `release.yml` gates all three image builds on it, so a mismatch fails the release before anything reaches GHCR. v1.6.0 shipped with all four version fields still reading `1.5.0`, which is what this exists to prevent.
+
+The frontend's Expo config takes its `version` from `openresto-frontend/package.json` (`app.config.ts` imports it), so there is nothing to bump there. `app.json` deliberately carries no `version` key: `app.config.ts` overrides everything it sets, so a value there is silently dead.
 
 This triggers `.github/workflows/release.yml`, which builds `linux/amd64` + `linux/arm64` images for backend, frontend, and nginx; pushes them to GHCR (`ghcr.io/karanshukla/openresto-{backend,frontend,nginx}:<tag>`); and creates a GitHub Release with the per-version CHANGELOG section as notes and a pinned `docker-compose.yml` as a downloadable asset.
 
