@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Numeric booking reference format** (#179) — a location can now hand out digits-only booking references (`48273910`) instead of the word-based default (`crispy-basil-saffron`), via a new "Booking reference format" selector on the admin Restaurant info card. Some restaurants would rather read a number down the phone. Backed by a `BookingRefFormat` column on `Restaurant` (defaults to `AlphaNumeric`, so nothing changes unless you switch it) exposed as a string on the restaurant DTO, and a `NumericBookingRefGenerator` sitting alongside the existing word generator; all three places that mint a reference — customer booking, combinable-group booking, and admin-recorded walk-in — route through a single `BookingRefFactory` that reads the location's setting. Numeric references are 8 digits with a non-zero leading digit, a ~90-million-wide space (three orders of magnitude larger than the word format's), so switching cannot make collisions more likely. Existing bookings keep whatever reference they were issued.
+
 ## [1.6.0] - 2026-08-07
 
 Hello! The headline of this release is **combinable table groups** — you can now flag physical tables as pushable-together (tables 8 & 9 become one 6-top for a party of 6) and the whole booking engine understands them: availability, auto-assign, holds, the diner dropdown, the seating minimap, and the large-party guard. Combinable tables stay individually bookable - grouping only makes them fill last, so they stay free for the larger parties that actually need them merged.

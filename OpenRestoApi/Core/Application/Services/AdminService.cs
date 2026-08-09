@@ -173,7 +173,7 @@ public class AdminService(
             CustomerEmail = req.CustomerEmail,
             CustomerName = req.CustomerName,
             Seats = req.Seats,
-            BookingRef = BookingRefGenerator.Generate(),
+            BookingRef = BookingRefFactory.GenerateFor(table.Section.Restaurant),
         };
 
         await _bookingRepository.AddAsync(booking);
@@ -496,6 +496,7 @@ public class AdminService(
             Name = restaurant.Name,
             Address = restaurant.Address,
             DefaultBookingDurationMinutes = restaurant.DefaultBookingDurationMinutes,
+            BookingRefFormat = restaurant.BookingRefFormat.ToString(),
             Sections = [],
         };
     }

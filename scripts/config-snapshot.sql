@@ -90,6 +90,8 @@ VALUES
 -- PhoneNumber/EmailAddress are the per-location contact override: 1 sets both, 2 sets neither
 --   (falls back to the BrandSettings pair above), 3 sets only a phone (its email still falls
 --   back) — the three states the large-party modal has to handle.
+-- BookingRefFormat: 0 = AlphaNumeric (words), 1 = Numeric. Location 2 is Numeric so both
+--   reference formats exist in a seeded database.
 INSERT INTO
   Restaurants (
     Id,
@@ -111,7 +113,8 @@ INSERT INTO
     Description,
     MenuUrl,
     PhoneNumber,
-    EmailAddress
+    EmailAddress,
+    BookingRefFormat
   )
 VALUES
   (
@@ -134,7 +137,8 @@ VALUES
     'Philadelphia''s worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.',
     'https://paddyspub.example/menu',
     '+1 215 555 0123',
-    'philly@paddyspub.example'
+    'philly@paddyspub.example',
+    0
   );
 
 INSERT INTO
@@ -158,7 +162,8 @@ INSERT INTO
     Description,
     MenuUrl,
     PhoneNumber,
-    EmailAddress
+    EmailAddress,
+    BookingRefFormat
   )
 VALUES
   (
@@ -181,7 +186,8 @@ VALUES
     'The Alley Behind the Alley. Walk-ins welcome, online bookings for the brave.',
     NULL,
     NULL,
-    NULL
+    NULL,
+    1
   );
 
 INSERT INTO
@@ -205,7 +211,8 @@ INSERT INTO
     Description,
     MenuUrl,
     PhoneNumber,
-    EmailAddress
+    EmailAddress,
+    BookingRefFormat
   )
 VALUES
   (
@@ -228,7 +235,8 @@ VALUES
     'Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).',
     'https://paddyspub.example/vancouver-menu.pdf',
     '+1 604 555 0177',
-    NULL
+    NULL,
+    0
   );
 
 -- Sections

@@ -42,6 +42,12 @@ export interface DayHoursDto {
   close: string;
 }
 
+/**
+ * Shape of the booking reference handed to customers. Mirrors the backend
+ * `BookingRefFormat` enum, which serialises as its member name.
+ */
+export type BookingRefFormat = "AlphaNumeric" | "Numeric";
+
 export interface RestaurantDto {
   id: number;
   name: string;
@@ -72,6 +78,8 @@ export interface RestaurantDto {
   bookingSlotIntervalMinutes?: number;
   /** Max allowed spare seats over party size, or null for unrestricted (off). */
   maxTableOversizeSeats?: number | null;
+  /** Format of references minted for new bookings; existing bookings keep theirs. */
+  bookingRefFormat?: BookingRefFormat;
   sections: SectionDto[];
   /** Combinable-table groups defined for this restaurant (#271/#273). Empty/undefined when none. */
   groups?: TableGroupDto[];
@@ -169,6 +177,7 @@ export async function updateRestaurant(
     defaultBookingDurationMinutes?: number;
     bookingSlotIntervalMinutes?: number;
     maxTableOversizeSeats?: number | null;
+    bookingRefFormat?: BookingRefFormat;
     walkInOnly?: boolean;
     walkInDays?: string;
     description?: string | null;

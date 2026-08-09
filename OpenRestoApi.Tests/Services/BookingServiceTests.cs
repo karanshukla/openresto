@@ -150,6 +150,54 @@ public partial class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_UsesNumericRef_WhenRestaurantIsConfiguredForIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_UsesNumericRef_WhenRestaurantIsConfiguredForIt));
+        TestSeed.BasicRestaurant(db);
+        Restaurant restaurant = await db.Restaurants.SingleAsync();
+        restaurant.BookingRefFormat = BookingRefFormat.Numeric;
+        await db.SaveChangesAsync();
+
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        Assert.All(result.BookingRef!, c => Assert.True(char.IsAsciiDigit(c)));
+        Assert.Equal(NumericBookingRefGenerator.Digits, result.BookingRef!.Length);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_UsesWordRef_WhenRestaurantUsesTheDefaultFormat()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_UsesWordRef_WhenRestaurantUsesTheDefaultFormat));
+        TestSeed.BasicRestaurant(db);
+
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        Assert.Equal(3, result.BookingRef!.Split('-').Length);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_Throws_WhenTableAlreadyBooked()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenTableAlreadyBooked));
@@ -1571,6 +1619,33 @@ public partial class BookingServiceTests
             }
         });
         db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_GroupBooking_UsesNumericRef_WhenRestaurantIsConfiguredForIt()
+    {
+        // The group path mints its own reference in CreateGroupBookingAsync — a separate call
+        // site from the single-table path, so it needs its own guard against being left behind.
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateBookingAsync_GroupBooking_UsesNumericRef_WhenRestaurantIsConfiguredForIt));
+        SeedRestaurantWithGroup(db);
+        Restaurant restaurant = await db.Restaurants.SingleAsync();
+        restaurant.BookingRefFormat = BookingRefFormat.Numeric;
+        await db.SaveChangesAsync();
+
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            CustomerEmail = "group-numeric@example.com",
+            Seats = 6,
+            Date = DateTime.UtcNow.AddDays(21),
+            TableGroupId = 1
+        });
+
+        Assert.Equal(1, result.TableGroupId);
+        Assert.All(result.BookingRef!, c => Assert.True(char.IsAsciiDigit(c)));
     }
 
     [Fact]

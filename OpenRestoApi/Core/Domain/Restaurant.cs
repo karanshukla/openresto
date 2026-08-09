@@ -121,6 +121,14 @@ public class Restaurant
     public int? MaxTableOversizeSeats { get; set; }
 
     /// <summary>
+    /// Shape of the booking references handed to this location's customers. Defaults to
+    /// <see cref="Domain.BookingRefFormat.AlphaNumeric"/> so existing locations keep the
+    /// word-based format. Only consulted when a reference is minted — changing it leaves
+    /// already-issued references alone.
+    /// </summary>
+    public BookingRefFormat BookingRefFormat { get; set; } = BookingRefFormat.AlphaNumeric;
+
+    /// <summary>
     /// True when online bookings are paused: a future <see cref="BookingsPausedUntil"/>
     /// is set. Consolidates the previously-inlined
     /// <c>BookingsPausedUntil.HasValue &amp;&amp; BookingsPausedUntil.Value &gt; DateTime.UtcNow</c>

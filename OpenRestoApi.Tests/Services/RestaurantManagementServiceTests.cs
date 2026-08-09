@@ -196,6 +196,105 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_CopiesBookingRefFormat_FromDto()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_CopiesBookingRefFormat_FromDto));
+        var svc = CreateService(db);
+        var dto = new RestaurantDto { Name = "New", BookingRefFormat = "Numeric" };
+
+        RestaurantDto result = await svc.CreateAsync(dto);
+
+        Assert.Equal("Numeric", result.BookingRefFormat);
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.Equal(BookingRefFormat.Numeric, entity!.BookingRefFormat);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DefaultsBookingRefFormatToAlphaNumeric_WhenDtoOmitsIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(CreateAsync_DefaultsBookingRefFormatToAlphaNumeric_WhenDtoOmitsIt));
+        var svc = CreateService(db);
+
+        RestaurantDto result = await svc.CreateAsync(new RestaurantDto { Name = "New" });
+
+        Assert.Equal("AlphaNumeric", result.BookingRefFormat);
+        Restaurant? entity = await db.Restaurants.FindAsync(result.Id);
+        Assert.Equal(BookingRefFormat.AlphaNumeric, entity!.BookingRefFormat);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RejectsUnknownBookingRefFormat()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_RejectsUnknownBookingRefFormat));
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.CreateAsync(new RestaurantDto { Name = "New", BookingRefFormat = "Roman" }));
+    }
+
+    [Theory]
+    [InlineData("Numeric", BookingRefFormat.Numeric)]
+    [InlineData("numeric", BookingRefFormat.Numeric)]
+    [InlineData("AlphaNumeric", BookingRefFormat.AlphaNumeric)]
+    public async Task UpdateAsync_PersistsBookingRefFormat(string sent, BookingRefFormat expected)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_PersistsBookingRefFormat)}_{sent}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "R",
+            BookingRefFormat = sent
+        });
+
+        Assert.Equal(expected.ToString(), result!.BookingRefFormat);
+        Restaurant entity = await db.Restaurants.SingleAsync();
+        Assert.Equal(expected, entity.BookingRefFormat);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LeavesBookingRefFormatUntouched_WhenRequestOmitsIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(UpdateAsync_LeavesBookingRefFormatUntouched_WhenRequestOmitsIt));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R",
+            Timezone = "UTC",
+            BookingRefFormat = BookingRefFormat.Numeric
+        });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        RestaurantDto? result = await svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R" });
+
+        Assert.Equal("Numeric", result!.BookingRefFormat);
+        Restaurant entity = await db.Restaurants.SingleAsync();
+        Assert.Equal(BookingRefFormat.Numeric, entity.BookingRefFormat);
+    }
+
+    [Theory]
+    [InlineData("Roman")]
+    [InlineData("")]
+    [InlineData("1")]
+    public async Task UpdateAsync_RejectsUnknownBookingRefFormat(string sent)
+    {
+        // "1" is rejected deliberately: Enum.TryParse would happily accept the underlying
+        // number, but the wire contract is the member names only.
+        using AppDbContext db = TestDbFactory.Create($"{nameof(UpdateAsync_RejectsUnknownBookingRefFormat)}_{sent}");
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            svc.UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", BookingRefFormat = sent }));
+    }
+
+    [Fact]
     public async Task UpdateAsync_PersistsMaxTableOversizeSeats()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_PersistsMaxTableOversizeSeats));

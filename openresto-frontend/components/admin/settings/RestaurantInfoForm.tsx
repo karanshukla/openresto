@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
+  BookingRefFormat,
   DayHoursDto,
   RestaurantDto,
   deleteMenuFile,
@@ -86,6 +87,13 @@ const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
 // Max spare-seats options for MaxTableOversizeSeats. null = "Off" (unrestricted); the cap
 // rejects a table when (table.seats - partySize) exceeds the selected value.
 const OVERSIZE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+// Booking reference formats — values must match the backend BookingRefFormat member names,
+// which is what the API accepts and returns.
+const BOOKING_REF_FORMAT_OPTIONS: { value: BookingRefFormat; label: string }[] = [
+  { value: "AlphaNumeric", label: "Words (crispy-basil-saffron)" },
+  { value: "Numeric", label: "Numbers (48273910)" },
+];
 
 // Mirrors the backend ContactLimits caps so the admin sees the ceiling before the round-trip.
 const MAX_PHONE_LENGTH = 32;
@@ -173,6 +181,9 @@ export function RestaurantInfoForm({
   );
   const [maxTableOversizeSeats, setMaxTableOversizeSeats] = useState<number | null>(
     restaurant.maxTableOversizeSeats ?? null
+  );
+  const [bookingRefFormat, setBookingRefFormat] = useState<BookingRefFormat>(
+    restaurant.bookingRefFormat ?? "AlphaNumeric"
   );
   const [tags, setTags] = useState<string[]>(restaurant.tags ?? []);
   const [tagInput, setTagInput] = useState("");
@@ -286,6 +297,7 @@ export function RestaurantInfoForm({
     defaultBookingDurationMinutes !== (restaurant.defaultBookingDurationMinutes ?? 60) ||
     bookingSlotIntervalMinutes !== (restaurant.bookingSlotIntervalMinutes ?? 30) ||
     maxTableOversizeSeats !== (restaurant.maxTableOversizeSeats ?? null) ||
+    bookingRefFormat !== (restaurant.bookingRefFormat ?? "AlphaNumeric") ||
     tags.join(",") !== (restaurant.tags ?? []).join(",");
 
   const discard = () => {
@@ -306,6 +318,7 @@ export function RestaurantInfoForm({
     setDefaultBookingDurationMinutes(restaurant.defaultBookingDurationMinutes ?? 60);
     setBookingSlotIntervalMinutes(restaurant.bookingSlotIntervalMinutes ?? 30);
     setMaxTableOversizeSeats(restaurant.maxTableOversizeSeats ?? null);
+    setBookingRefFormat(restaurant.bookingRefFormat ?? "AlphaNumeric");
     setTags(restaurant.tags ?? []);
     setTagInput("");
     setContactMsg(null);
@@ -365,6 +378,7 @@ export function RestaurantInfoForm({
       defaultBookingDurationMinutes,
       bookingSlotIntervalMinutes,
       maxTableOversizeSeats,
+      bookingRefFormat,
       tags: finalTags.join(","),
     });
     setSaving(false);
@@ -386,6 +400,7 @@ export function RestaurantInfoForm({
         defaultBookingDurationMinutes: result.defaultBookingDurationMinutes,
         bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
         maxTableOversizeSeats: result.maxTableOversizeSeats,
+        bookingRefFormat: result.bookingRefFormat,
         tags: result.tags,
       });
     }
@@ -711,6 +726,42 @@ export function RestaurantInfoForm({
             </select>
             <ThemedText style={{ fontSize: 11, color: mutedColor }}>
               Don&apos;t offer tables more than this many seats larger than the party size
+            </ThemedText>
+          </View>
+          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+              Booking reference format
+            </ThemedText>
+            <select
+              data-testid="booking-ref-format-select"
+              value={bookingRefFormat}
+              onChange={
+                /* istanbul ignore next */ (e) =>
+                  setBookingRefFormat(e.target.value as BookingRefFormat)
+              }
+              style={{
+                width: "100%",
+                height: 44,
+                borderWidth: 1,
+                borderStyle: "solid" as const,
+                borderColor: colors.border,
+                borderRadius: 8,
+                paddingLeft: 12,
+                paddingRight: 12,
+                fontSize: 14,
+                backgroundColor: colors.input,
+                color: colors.text,
+                cursor: "pointer",
+              }}
+            >
+              {BOOKING_REF_FORMAT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+              What new booking references look like — existing bookings keep theirs
             </ThemedText>
           </View>
         </View>
