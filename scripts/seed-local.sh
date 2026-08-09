@@ -17,7 +17,12 @@
 #   bash scripts/seed-local.sh --bookings-only      # leave config alone
 #   bash scripts/seed-local.sh --seed 42            # reproducible dataset
 #   bash scripts/seed-local.sh --keep-admin         # don't wipe AdminCredentials
+#   bash scripts/seed-local.sh --media-dir DIR      # where to look for artwork
 #   bash scripts/seed-local.sh --dry-run            # print the SQL, touch nothing
+#
+# Location images, the hero image and menu PDFs are linked from the files that
+# actually exist in the media directory (default OpenRestoApi/wwwroot/media),
+# so anything uploaded through the admin UI survives a reseed.
 #
 # Any other flags are forwarded to demo_data.py, e.g.:
 #   bash scripts/seed-local.sh --days-forward 30 --occupancy 0.8
@@ -37,6 +42,7 @@ DB_ARG=""
 SECTION="all"
 DRY_RUN=0
 KEEP_ADMIN=0
+MEDIA_DIR="$REPO_ROOT/OpenRestoApi/wwwroot/media"
 GEN_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -44,6 +50,7 @@ while [[ $# -gt 0 ]]; do
     --db)            DB_ARG="${2:-}"; shift 2 ;;
     --config-only)   SECTION="config"; shift ;;
     --bookings-only) SECTION="bookings"; shift ;;
+    --media-dir)     MEDIA_DIR="${2:-}"; shift 2 ;;
     --keep-admin)    KEEP_ADMIN=1; shift ;;
     --dry-run)       DRY_RUN=1; shift ;;
     -h|--help)       grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -113,7 +120,14 @@ find_db() {
 SQL_FILE="$(mktemp -t seed-local.XXXXXX.sql)"
 trap 'rm -f "$SQL_FILE"' EXIT
 
-python3 "$GENERATOR" "$SECTION" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
+# Location images and the hero are linked from whatever is actually in the
+# media directory, so an image uploaded through the admin UI survives a reseed.
+MEDIA_ARGS=()
+if [[ "$SECTION" != "bookings" && -d "$MEDIA_DIR" ]]; then
+  MEDIA_ARGS=(--media-dir "$MEDIA_DIR")
+fi
+
+python3 "$GENERATOR" "$SECTION" "${MEDIA_ARGS[@]+"${MEDIA_ARGS[@]}"}" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
 
 # The API re-bootstraps admin credentials from appsettings on the next login,
 # so wiping them keeps a reseeded database in sync with the configured login.

@@ -36,13 +36,17 @@ from zoneinfo import ZoneInfo
 # Every nullable brand field is populated: AccentColor, HeaderImageFit and
 # CopyrightText were previously always NULL, so the settings UI that renders
 # them had nothing to show on a seeded database.
+#
+# HeaderImageUrl is deliberately NOT set here — see the `media` section. Image
+# URLs are derived from the files that actually exist rather than hardcoded, so
+# a hardcoded path can never point at a missing file.
 
 BRAND = {
     "AppName": "Paddy's Pub",
     "PrimaryColor": "#059669",
     "AccentColor": "#f59e0b",
     "FaviconIcon": "pizza",
-    "HeaderImageUrl": "/media/hero.jpg",
+    "HeaderImageUrl": None,
     "HeaderImageFit": "Cover",
     "WebsiteUrl": "https://openres.to",
     "PhoneNumber": "+1 215 555 0100",
@@ -77,7 +81,6 @@ LOCATIONS = [
         "slot_interval": 30,
         "ref_format": 0,  # AlphaNumeric
         "tags": "mac and cheese,fight milk",
-        "image": "/media/location-1.jpg",
         "description": "Philadelphia's worst bar, now taking bookings. See our [menu](https://paddyspub.example/menu) — cash only.",
         "menu_url": "https://paddyspub.example/menu",
         "phone": "+1 215 555 0123",
@@ -117,7 +120,6 @@ LOCATIONS = [
         "slot_interval": 30,
         "ref_format": 1,  # Numeric
         "tags": "charlie work,mantis toboggan",
-        "image": "/media/location-2.webp",
         "description": "The Alley Behind the Alley. Late kitchen Friday and Saturday.",
         "menu_url": None,
         "phone": None,
@@ -143,7 +145,6 @@ LOCATIONS = [
         "slot_interval": 60,
         "ref_format": 0,
         "tags": "wolf cola,dennis system",
-        "image": "/media/location-3.jpg",
         "description": "Open 24 hours because we lost the keys to the lock. [Reviews](https://paddyspub.example/reviews).",
         "menu_url": "https://paddyspub.example/vancouver-menu.pdf",
         "phone": "+1 604 555 0177",
@@ -171,7 +172,6 @@ LOCATIONS = [
         "slot_interval": 15,
         "ref_format": 1,
         "tags": "quick service,rum ham to go",
-        "image": None,
         "description": "Concourse location. Weekends are walk-in only — queue forms by the pretzel cart.",
         "menu_url": "https://paddyspub.example/express",
         "phone": "+1 215 555 0188",
@@ -196,7 +196,6 @@ LOCATIONS = [
         "slot_interval": 30,
         "ref_format": 0,
         "tags": "seasonal,sand",
-        "image": None,
         "description": "Summer only. We don't take bookings — turn up and shout your name at Frank.",
         "menu_url": None,
         "phone": None,
@@ -222,7 +221,6 @@ LOCATIONS = [
         "slot_interval": 60,
         "ref_format": 0,
         "tags": "tasting menu,white tablecloth",
-        "image": None,
         "description": "Refurbishment in progress. Bookings reopen once Charlie finishes the ceiling.",
         "menu_url": "https://paddyspub.example/rittenhouse",
         "phone": "+1 215 555 0144",
@@ -246,7 +244,6 @@ LOCATIONS = [
         "slot_interval": 30,
         "ref_format": 0,
         "tags": "closed,lease dispute",
-        "image": None,
         "description": "Closed pending a lease dispute nobody wants to talk about.",
         "menu_url": None,
         "phone": None,
@@ -541,6 +538,66 @@ def emit_config(ds):
         )
 
     return out
+
+
+# ─── Media ───────────────────────────────────────────────────────────────────
+# MediaService writes uploads into deterministic slots — hero.<ext>,
+# location-<id>.<ext>, menu-<id>.pdf — so the seed can discover what artwork
+# actually exists instead of hardcoding paths. This is what lets an uploaded
+# image survive the demo reset: the config step leaves ImageUrl NULL, and this
+# step points it back at whatever file is on disk, whatever extension it has.
+#
+# It only ever SETS a URL, never nulls one out, so it composes safely on top of
+# the config step (which has already cleared the columns) and can also be run
+# on its own. A served menu file wins over an external menu link, because
+# uploading a PDF for a location is the more deliberate act.
+
+IMAGE_EXTENSIONS = ("jpg", "jpeg", "png", "webp")
+
+
+def _media_url(path):
+    """/media/<name>?v=<mtime-ms>, matching MediaService's cache-buster format."""
+    stamp = int(path.stat().st_mtime * 1000)
+    return f"/media/{path.name}?v={stamp}"
+
+
+def emit_media(ds, media_dir):
+    from pathlib import Path
+
+    root = Path(media_dir)
+    out = [f"-- ── Media: URLs derived from the files in {media_dir} ──"]
+    if not root.is_dir():
+        out.append(f"-- directory not found, nothing to link")
+        return out, 0
+
+    linked = 0
+
+    hero = next(
+        (p for ext in IMAGE_EXTENSIONS for p in sorted(root.glob(f"hero.{ext}"))),
+        None,
+    )
+    if hero:
+        out.append(f"UPDATE BrandSettings SET HeaderImageUrl={q(_media_url(hero))};")
+        linked += 1
+
+    for r in ds["restaurants"]:
+        rid = r["id"]
+        image = next(
+            (p for ext in IMAGE_EXTENSIONS for p in sorted(root.glob(f"location-{rid}.{ext}"))),
+            None,
+        )
+        if image:
+            out.append(f"UPDATE Restaurants SET ImageUrl={q(_media_url(image))} WHERE Id={rid};")
+            linked += 1
+
+        menu = root / f"menu-{rid}.pdf"
+        if menu.is_file():
+            out.append(f"UPDATE Restaurants SET MenuUrl={q(_media_url(menu))} WHERE Id={rid};")
+            linked += 1
+
+    if linked == 0:
+        out.append("-- no matching media files found")
+    return out, linked
 
 
 # ─── Booking generation ──────────────────────────────────────────────────────
@@ -862,7 +919,12 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
 
 def main():
     p = argparse.ArgumentParser(description="Emit OpenResto demo-data SQL on stdout.")
-    p.add_argument("section", choices=["config", "bookings", "all"], nargs="?", default="all")
+    p.add_argument("section", choices=["config", "bookings", "media", "all"], nargs="?", default="all")
+    p.add_argument(
+        "--media-dir",
+        default=None,
+        help="directory to scan for hero/location/menu files; required by the 'media' section",
+    )
     p.add_argument("--days-back", type=int, default=14, help="days of history to generate (default 14)")
     p.add_argument("--days-forward", type=int, default=14, help="days of upcoming bookings (default 14)")
     p.add_argument(
@@ -876,6 +938,8 @@ def main():
 
     if not 0 < args.occupancy <= 1:
         p.error("--occupancy must be greater than 0 and at most 1")
+    if args.section == "media" and not args.media_dir:
+        p.error("the 'media' section requires --media-dir")
 
     rng = random.Random(args.seed)
     now_utc = datetime.now(timezone.utc)
@@ -901,14 +965,22 @@ def main():
         lines += booking_lines
         lines.append("")
 
+    # Media runs last so it overwrites the NULLs the config step wrote.
+    media_count = 0
+    if args.section == "media" or (args.section == "all" and args.media_dir):
+        media_lines, media_count = emit_media(ds, args.media_dir)
+        lines += media_lines
+        lines.append("")
+
     lines += ["COMMIT;", "PRAGMA foreign_keys=ON;"]
 
     print("\n".join(lines))
-    print(
-        f"[demo_data] {len(ds['restaurants'])} locations, {len(ds['tables'])} tables, "
-        f"{booking_count} bookings",
-        file=sys.stderr,
-    )
+    summary = f"[demo_data] {len(ds['restaurants'])} locations, {len(ds['tables'])} tables"
+    if args.section in ("bookings", "all"):
+        summary += f", {booking_count} bookings"
+    if args.media_dir or args.section == "media":
+        summary += f", {media_count} media files linked"
+    print(summary, file=sys.stderr)
 
 
 if __name__ == "__main__":

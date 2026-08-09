@@ -8,6 +8,18 @@
 #   3. reseed bookings + notifications with fresh dates relative to now
 #   4. reset admin credentials from .env
 #   5. restore uploaded media from data/media-snapshot/
+#   6. point ImageUrl/HeaderImageUrl/MenuUrl at the files that now exist
+#
+# ADDING ARTWORK: drop files into data/media-snapshot/ using the same names
+# MediaService writes (hero.<ext>, location-<id>.<ext>, menu-<id>.pdf) and they
+# appear on the next reset. Equivalently, upload through the admin UI and then
+# re-snapshot so the upload becomes part of the curated set:
+#
+#   CONTAINER=$(docker compose -f docker-compose.vps.yml ps -q backend | head -1)
+#   docker cp "$CONTAINER:/app/wwwroot/media/." data/media-snapshot/
+#
+# Anything NOT in the snapshot is wiped on every run. That is deliberate: the
+# demo's admin credentials are public, so visitor uploads must not persist.
 #
 # The dataset lives in scripts/demo_data.py — the single source of truth shared
 # with seed-local.sh. Edit that file, not this one, to change what gets seeded.
@@ -118,8 +130,12 @@ PYEOF
 fi
 
 # --- 5. Restore media --------------------------------------------------------
-# Purge-then-restore so images uploaded by demo visitors don't accumulate.
+# data/media-snapshot/ is the curated demo artwork and the source of truth.
+# Purge-then-restore so images uploaded by demo visitors don't accumulate: the
+# whole point of the reset is to undo whatever visitors did, and admin
+# credentials are public on a demo site.
 MEDIA_SNAPSHOT="$SCRIPT_DIR/../data/media-snapshot"
+MEDIA_RESTORED=0
 if [[ $SKIP_MEDIA -eq 1 ]]; then
   log "Skipping media restore (--skip-media)."
 elif [[ -d "$MEDIA_SNAPSHOT" ]]; then
@@ -132,11 +148,27 @@ elif [[ -d "$MEDIA_SNAPSHOT" ]]; then
     docker cp "$f" "$CONTAINER:/app/wwwroot/media/"
     FILE_COUNT=$((FILE_COUNT + 1))
   done
+  MEDIA_RESTORED=1
   log "Media restored. Files copied: $FILE_COUNT"
 else
   # No snapshot means a purge would leave the demo with broken images and no
   # way back, so leave the uploaded media in place.
   log "WARNING: media-snapshot/ not found at $MEDIA_SNAPSHOT — leaving uploaded media untouched."
+fi
+
+# --- 6. Point the database at the artwork that now exists --------------------
+# The config step deliberately leaves ImageUrl/HeaderImageUrl NULL, so this is
+# what makes images show up at all. Deriving them from disk (rather than
+# hardcoding paths) means a file added to the snapshot appears on the next
+# reset with no code change, whatever extension it has.
+if [[ $MEDIA_RESTORED -eq 1 ]]; then
+  log "Linking media..."
+  MEDIA_SQL="$(python3 "$GENERATOR" media --media-dir "$MEDIA_SNAPSHOT" 2>/dev/null)" \
+    || die "media linking failed (config and bookings are already applied)."
+  printf '%s\n' "$MEDIA_SQL" | docker exec -i "$CONTAINER" sqlite3 "$DB"
+  LINKED="$(docker exec "$CONTAINER" sqlite3 "$DB" \
+    'SELECT COUNT(*) FROM Restaurants WHERE ImageUrl IS NOT NULL;')"
+  log "Linked. Locations with an image: $LINKED"
 fi
 
 log "Demo reset complete."
