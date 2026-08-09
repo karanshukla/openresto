@@ -2,7 +2,6 @@
   "expo": {
     "name": "Open Resto",
     "slug": "openresto-frontend",
-    "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "openrestofrontend",

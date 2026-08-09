@@ -1,10 +1,12 @@
 import { ExpoConfig, ConfigContext } from "expo/config";
 
+import { version } from "./package.json";
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: process.env.EXPO_PUBLIC_APP_NAME ?? "Open Resto",
   slug: "openresto-frontend",
-  version: "1.0.0",
+  version,
   orientation: "default",
   icon: "./assets/images/icon.png",
   scheme: "openrestofrontend",

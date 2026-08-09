@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **One source of truth for the release version** — v1.6.0 shipped with all four `version` fields still reading `1.5.0`, and the Expo app version had been stuck at `1.0.0` since the first commit, because nothing checked. `app.config.ts` now takes its version from `openresto-frontend/package.json` (and the dead duplicate in `app.json`, which `app.config.ts` overrides anyway, is gone), so the frontend can't drift. A new `scripts/check-release-version.sh` asserts both `package.json`s, both lockfiles, and a matching CHANGELOG section all agree with the tag; the release workflow runs it as a `verify-version` job gating all three image builds, so a half-finished bump fails before anything is published to GHCR. Run it yourself before tagging.
+
 ## [1.6.1] - 2026-08-09
 
 A small release on top of 1.6.0: one new option (digits-only booking references) and the fixes that shook out of it.
