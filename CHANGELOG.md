@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-08-09
+
+A small release on top of 1.6.0: one new option (digits-only booking references) and the fixes that shook out of it.
+
 ### Added
 
 - **Numeric booking reference format** (#179) — a location can now hand out digits-only booking references (`48273910`) instead of the word-based default (`crispy-basil-saffron`), via a new "Booking reference format" selector on the admin Restaurant info card. Some restaurants would rather read a number down the phone. Backed by a `BookingRefFormat` column on `Restaurant` (defaults to `AlphaNumeric`, so nothing changes unless you switch it) exposed as a string on the restaurant DTO, and a `NumericBookingRefGenerator` sitting alongside the existing word generator; all three places that mint a reference — customer booking, combinable-group booking, and admin-recorded walk-in — route through a single `BookingRefFactory` that reads the location's setting. Numeric references are 8 digits with a non-zero leading digit, a ~90-million-wide space (three orders of magnitude larger than the word format's), so switching cannot make collisions more likely. Existing bookings keep whatever reference they were issued.
+
+### Fixed
+
+- **Numeric references broke the booking confirmation page** — the confirmation route told a database id from a booking reference by shape, so an all-digit segment was looked up through the authenticated by-id endpoint. Every numeric reference took that branch, 401'd for the diner who owns the booking, and rendered as "no booking found": once on the redirect straight after booking, and again on the "view booking" link in the confirmation email. Shape can no longer separate the two, so the public reference lookup runs first and the id lookup stays as a fallback for legacy `/booking-confirmation/<id>` links.
+- **Confirmation screen options never applied on native** — `app/(user)/_layout.tsx` registered a `Stack.Screen` named `booking-confirmation/[bookingId]`, but the route file has always been `[bookingRef].tsx`. Expo Router matches on the filename, so the entry matched nothing and the screen silently lost its "Booking Confirmed" title and suppressed back button. Web looked fine because that title comes from the root layout, which is why it went unnoticed. A new test walks the registered screen names and asserts each resolves to a file on disk, so a route rename fails loudly next time.
+- **Demo artwork was wiped by the 2-hourly reset** — seed data hardcoded image URLs, so a reseed could point at files that no longer existed and uploaded images did not survive. `demo_data.py` now derives media URLs from what is actually on disk (`MediaService` writes into deterministic slots), leaving them NULL when the file is absent.
+- **Flaky `LocationListItem` slot-chip test** — the assertion depended on the wall clock and failed inside certain windows.
+
+### Changed
+
+- **Seed and demo data consolidated into `scripts/demo_data.py`** (#297) — three hand-maintained copies of the same dataset had drifted apart. There is now one generator that emits SQL, with `seed-local.sh` and the demo VPS's `purge-bookings.sh` as thin wrappers over it. The dataset deliberately exercises every feature flag the product has (per-day hours including a past-midnight wrap, both booking-ref formats, all contact-fallback states, walk-in-only global and per-day, an archived location, the oversize cap, named and unnamed combinable groups), and generates bookings against the same rules the server enforces so seeded rows never conflict. Dev tooling only, not part of the production image.
 
 ## [1.6.0] - 2026-08-07
 
