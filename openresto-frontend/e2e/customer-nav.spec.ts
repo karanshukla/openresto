@@ -6,7 +6,7 @@ import { test, expect } from "@playwright/test";
  *   - 404 fallback screen renders and links home
  *   - Navbar "My Bookings" link routes to /lookup
  *   - Brand wordmark on a non-home route navigates home
- *   - ScrollToTopFab appears on small viewports after scrolling, then hides
+ *   - ScrollToTopFab appears after scrolling on any viewport, then hides
  *     again at the top.
  *
  * These run under the default public "chromium" project — no auth needed.
@@ -58,63 +58,71 @@ test.describe("Customer navigation", () => {
     await page.waitForURL("**/", { timeout: 10_000 });
   });
 
-  test("ScrollToTopFab appears after scrolling on small viewports and disappears at top", async ({
-    page,
-  }) => {
-    // ScrollToTopFab only renders when width < 700 AND height > width (mobile portrait).
-    // Default desktop viewport would never show it.
-    await page.setViewportSize({ width: 390, height: 844 });
+  // The FAB used to be gated to portrait phones under 700px, so this only ever
+  // ran at 390x844. Nothing but scroll distance gates it now, which is the whole
+  // point of the change, so both ends of the range have to hold.
+  const FAB_VIEWPORTS = [
+    { label: "desktop", width: 1280, height: 720 },
+    { label: "phone", width: 390, height: 844 },
+  ];
 
-    // Fill the home page with content so scrolling has somewhere to go.
-    await page.route("**/api/restaurants**", async (route) => {
-      const fake = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 1,
-        name: `E2E Padding Restaurant ${i + 1}`,
-        address: "1 Test St",
-        openTime: "09:00",
-        closeTime: "22:00",
-        openHours: [],
-        openDays: "1,2,3,4,5,6,7",
-        timezone: "UTC",
-        tags: [],
-        walkInOnly: false,
-        walkInDays: "",
-        defaultBookingDurationMinutes: 60,
-        sections: [
-          {
-            id: i * 10 + 1,
-            name: "Main",
-            sortOrder: 0,
-            tables: [{ id: i * 10 + 2, name: "T1", seats: 2 }],
-          },
-        ],
-      }));
-      await route.fulfill({ json: fake });
+  for (const viewport of FAB_VIEWPORTS) {
+    test(`ScrollToTopFab appears after scrolling on ${viewport.label} and disappears at top`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+
+      // Fill the home page with content so scrolling has somewhere to go.
+      await page.route("**/api/restaurants**", async (route) => {
+        const fake = Array.from({ length: 12 }, (_, i) => ({
+          id: i + 1,
+          name: `E2E Padding Restaurant ${i + 1}`,
+          address: "1 Test St",
+          openTime: "09:00",
+          closeTime: "22:00",
+          openHours: [],
+          openDays: "1,2,3,4,5,6,7",
+          timezone: "UTC",
+          tags: [],
+          walkInOnly: false,
+          walkInDays: "",
+          defaultBookingDurationMinutes: 60,
+          sections: [
+            {
+              id: i * 10 + 1,
+              name: "Main",
+              sortOrder: 0,
+              tables: [{ id: i * 10 + 2, name: "T1", seats: 2 }],
+            },
+          ],
+        }));
+        await route.fulfill({ json: fake });
+      });
+      await page.route("**/api/highlights**", (route) => route.fulfill({ json: [] }));
+
+      await page.goto("/");
+      // Wait for restaurant cards to render so the page is tall enough to scroll.
+      // { exact: true } — otherwise "Restaurant 1" substring-matches 10/11/12.
+      await expect(page.getByText("E2E Padding Restaurant 1", { exact: true })).toBeVisible({
+        timeout: 15_000,
+      });
+
+      // FAB is hidden at the top.
+      const fab = page.getByLabel("Scroll to top");
+      await expect(fab).toHaveCount(0);
+
+      // The home screen uses a react-native-web ScrollView, not window scroll —
+      // mouse.wheel over the content fires the real onScroll that updates scrollY
+      // state the FAB reads. Scroll past the 300px threshold (ScrollToTopFab.tsx).
+      await page.mouse.move(200, 300);
+      await page.mouse.wheel(0, 800);
+      await expect(fab).toBeVisible({ timeout: 5_000 });
+
+      // Tap FAB → the RN ScrollView scrolls back up → scrollY drops ≤ 300 → FAB
+      // unmounts. The FAB disappearing IS the proof the press fired the scroll
+      // callback; we can't easily read RN's internal scroll offset from DOM.
+      await fab.click();
+      await expect(fab).toHaveCount(0);
     });
-    await page.route("**/api/highlights**", (route) => route.fulfill({ json: [] }));
-
-    await page.goto("/");
-    // Wait for restaurant cards to render so the page is tall enough to scroll.
-    // { exact: true } — otherwise "Restaurant 1" substring-matches 10/11/12.
-    await expect(page.getByText("E2E Padding Restaurant 1", { exact: true })).toBeVisible({
-      timeout: 15_000,
-    });
-
-    // FAB is hidden at the top.
-    const fab = page.getByLabel("Scroll to top");
-    await expect(fab).toHaveCount(0);
-
-    // The home screen uses a react-native-web ScrollView, not window scroll —
-    // mouse.wheel over the content fires the real onScroll that updates scrollY
-    // state the FAB reads. Scroll past the 300px threshold (ScrollToTopFab.tsx).
-    await page.mouse.move(200, 300);
-    await page.mouse.wheel(0, 800);
-    await expect(fab).toBeVisible({ timeout: 5_000 });
-
-    // Tap FAB → the RN ScrollView scrolls back up → scrollY drops ≤ 300 → FAB
-    // unmounts. The FAB disappearing IS the proof the press fired the scroll
-    // callback; we can't easily read RN's internal scroll offset from DOM.
-    await fab.click();
-    await expect(fab).toHaveCount(0);
-  });
+  }
 });

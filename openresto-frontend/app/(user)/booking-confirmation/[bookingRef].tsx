@@ -26,6 +26,7 @@ import Footer from "@/components/layout/Footer";
 import * as Haptics from "expo-haptics";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -40,7 +41,7 @@ export default function BookingConfirmationScreen() {
   const router = useRouter();
   const { colors, primaryColor, isDark } = useAppTheme();
   const { width } = useWindowDimensions();
-  const isWide = Platform.OS === "web" && width >= 768;
+  const isWide = Platform.OS === "web" && width >= MOBILE_BREAKPOINT;
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const scrollToTop = useCallback(() => {

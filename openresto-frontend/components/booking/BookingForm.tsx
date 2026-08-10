@@ -21,14 +21,9 @@ import WalkInNotice from "./WalkInNotice";
 import WalkInDaysBanner from "./WalkInDaysBanner";
 import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
+import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 
 const isWeb = Platform.OS === "web";
-/**
- * Below this the paired fields stack — a phone browser is still `Platform.OS === "web"`,
- * so width rather than platform decides the column count. Matches the breakpoint
- * PageContainer switches its padding at, so the form and its container agree.
- */
-const TWO_COLUMN_MIN_WIDTH = 768;
 
 export interface BookingFormData {
   customerEmail: string;
@@ -105,7 +100,7 @@ export default function BookingForm({
 }) {
   const { colors, primaryColor: PRIMARY } = useAppTheme();
   const { width } = useWindowDimensions();
-  const isTwoColumn = isWeb && width >= TWO_COLUMN_MIN_WIDTH;
+  const isTwoColumn = isWeb && width >= MOBILE_BREAKPOINT;
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
