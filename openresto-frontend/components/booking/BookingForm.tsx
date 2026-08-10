@@ -6,7 +6,16 @@ import Select from "../common/Select";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
-import { Platform, StyleSheet, View, ActivityIndicator, useWindowDimensions } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
@@ -85,27 +94,46 @@ function suggestTime(restaurant: HoursSource, timezone: string): string {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * `inline` is the full form: it owns party size and date and lays fields out in pairs.
+ * `drawer` is the booking-drawer variant, where party size and date have already been
+ * chosen on the page-level filter bar and are passed in — leaving the drawer to ask
+ * only what the list can't: which time, who, and how to reach them.
+ */
+export type BookingFormLayout = "inline" | "drawer";
+
 export default function BookingForm({
   restaurant,
   onSubmit,
   onRefresh,
   initialTime,
   initialSeats,
+  layout = "inline",
+  seats: controlledSeats,
+  date: controlledDate,
 }: {
   restaurant: RestaurantDto;
   onSubmit: (data: BookingFormData) => Promise<void> | void;
   onRefresh?: () => void;
   initialTime?: string;
   initialSeats?: number;
+  layout?: BookingFormLayout;
+  /** When set, party size is owned by the caller and its picker is not rendered. */
+  seats?: number;
+  /** When set, the date is owned by the caller and its picker is not rendered. */
+  date?: string;
 }) {
   const { colors, primaryColor: PRIMARY } = useAppTheme();
   const { width } = useWindowDimensions();
-  const isTwoColumn = isWeb && width >= MOBILE_BREAKPOINT;
+  const isDrawer = layout === "drawer";
+  const isTwoColumn = isWeb && width >= MOBILE_BREAKPOINT && !isDrawer;
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
-  const [seats, setSeats] = useState(initialSeats ?? 2);
+  const [seatsState, setSeats] = useState(initialSeats ?? 2);
+  const seats = controlledSeats ?? seatsState;
   const [submitting, setSubmitting] = useState(false);
+  const [seatingOpen, setSeatingOpen] = useState(false);
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
@@ -146,7 +174,8 @@ export default function BookingForm({
   // Combinable-group selection (#274): when set, the diner picked a combined-table group from the
   // dropdown instead of a single table. Mutually exclusive with tableId in the submit payload.
   const [tableGroupId, setTableGroupId] = useState<number | undefined>();
-  const [date, setDate] = useState<string>(() => suggestDate(restaurant, timezone));
+  const [dateState, setDate] = useState<string>(() => suggestDate(restaurant, timezone));
+  const date = controlledDate ?? dateState;
   const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
   const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
@@ -422,37 +451,293 @@ export default function BookingForm({
     />
   );
 
+  const timezoneHint =
+    restaurant.timezone && !isViewerInTimezone(timezone) ? (
+      <ThemedText
+        style={[
+          styles.timezoneHint,
+          isDrawer && styles.timezoneHintDrawer,
+          { color: colors.muted },
+        ]}
+      >
+        All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
+      </ThemedText>
+    ) : null;
+
+  const timePickerField = (label = "Time") => (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>{label}</ThemedText>
+      <TimePicker
+        selectedTime={time}
+        onSelect={setTime}
+        minTime={minPickerTime}
+        maxTime={maxPickerTime}
+      />
+    </View>
+  );
+
+  const sectionField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Section</ThemedText>
+      <Select
+        selectedValue={sectionId}
+        onSelect={(val) => {
+          if (holdStatus === "held" || holdStatus === "expired") {
+            setHoldStatus("idle");
+          }
+          setSectionId(val as number);
+        }}
+        options={sectionOptions}
+        placeholder="Select a section"
+      />
+    </View>
+  );
+
+  const tableField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Table</ThemedText>
+      {isAutoAssign ? (
+        <ThemedText style={[styles.autoAssignHint, { color: colors.muted }]}>
+          We'll seat you at the best available table
+          {resolvedTableId ? "" : " across all sections"}.
+        </ThemedText>
+      ) : tableOptions.length === 0 ? (
+        <ThemedText style={[styles.noTables, { color: colors.muted }]}>
+          No tables available for {seats} guests.
+        </ThemedText>
+      ) : (
+        <Select
+          // A group selection is encoded as a negative value (-groupId); a table as its id.
+          selectedValue={tableGroupId ? -tableGroupId : tableId}
+          onSelect={(val) => {
+            if (holdStatus === "held" || holdStatus === "expired") {
+              setHoldStatus("idle");
+            }
+            const v = val as number;
+            if (v < 0) {
+              // Group selected — clear any single-table selection.
+              setTableGroupId(-v);
+              setTableId(undefined);
+            } else {
+              // Single table selected — clear any group selection.
+              setTableGroupId(undefined);
+              setTableId(v);
+            }
+          }}
+          options={tableOptions}
+          placeholder="Select a table"
+        />
+      )}
+    </View>
+  );
+
+  const nameField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Full Name</ThemedText>
+      <Input
+        placeholder="Your full name"
+        value={customerName}
+        onChangeText={setCustomerName}
+        autoCapitalize="words"
+        returnKeyType="next"
+        blurOnSubmit={false}
+      />
+    </View>
+  );
+
+  const emailField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Email</ThemedText>
+      <Input
+        placeholder="your@email.com"
+        value={customerEmail}
+        onChangeText={setCustomerEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        returnKeyType="next"
+        blurOnSubmit={false}
+      />
+    </View>
+  );
+
+  const requestsField = (label: string) => (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>{label}</ThemedText>
+      <Input
+        placeholder="e.g. nut allergy, high chair needed… (optional)"
+        value={specialRequests}
+        onChangeText={setSpecialRequests}
+        multiline
+        numberOfLines={3}
+        style={styles.textarea}
+      />
+    </View>
+  );
+
+  const gdprText = `By confirming, you agree that your email and booking details will be stored to manage your reservation. We also use an essential cookie to remember your recent bookings on this device. We do not share your data with third parties. You can request deletion by contacting the restaurant.`;
+
+  const confirmButton = (
+    <Button onPress={handleSubmit} disabled={!isValid || submitting}>
+      {submitting ? (
+        <View style={styles.submitContent}>
+          <ActivityIndicator size="small" color="#fff" />
+          <ThemedText style={styles.submitText}>Confirming…</ThemedText>
+        </View>
+      ) : (
+        "Confirm Booking"
+      )}
+    </Button>
+  );
+
+  const holdRequiredHint = !submitting &&
+    holdStatus !== "held" &&
+    (isAutoAssign || tableId) &&
+    date &&
+    time && (
+      <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
+    );
+
+  const largePartyModal = (
+    <LargePartyNoticeModal
+      visible={largePartyNoticeOpen}
+      maxCapacity={maxTableCapacity}
+      restaurant={restaurant}
+      onClose={() => setLargePartyNoticeOpen(false)}
+    />
+  );
+
+  const timesContent = isClosedDay ? (
+    <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
+      The restaurant is closed on this day. Please select a different date.
+    </ThemedText>
+  ) : isWalkInDay ? (
+    <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
+  ) : (
+    <PopularTimesPicker
+      slots={availabilitySlots}
+      selectedTime={time}
+      onSelectTime={setTime}
+      selectedDate={date}
+      timezone={timezone}
+      wrap={isDrawer}
+    />
+  );
+
+  const timesBlock = (label: string) => (
+    <View style={styles.availabilityHeader}>
+      <View style={styles.availabilityLabelRow}>
+        <ThemedText style={styles.label}>{label}</ThemedText>
+        {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
+      </View>
+      {timesContent}
+    </View>
+  );
+
+  const sectionHeading = (label: string, busy = false) => (
+    <View style={styles.sectionHeadingRow}>
+      <ThemedText style={[styles.sectionHeading, { color: colors.muted }]}>{label}</ThemedText>
+      {busy && <ActivityIndicator size="small" color={PRIMARY} />}
+    </View>
+  );
+
+  const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
+
+  // ── Drawer layout ──
+  // Party size and date are already settled by the page-level bar, so the drawer asks
+  // only for the time, the diner, and (behind a disclosure) a specific seat.
+  if (isDrawer) {
+    return (
+      <View style={styles.drawerForm}>
+        <WalkInDaysBanner restaurant={restaurant} />
+
+        <View style={styles.drawerSection}>
+          {sectionHeading("Time", loadingAvailability)}
+          {timesContent}
+          {/* Right under the times it qualifies, not buried in the footer. */}
+          {timezoneHint}
+          {holdBanner}
+          {partyTooLarge && (
+            <LargePartyNotice
+              maxCapacity={maxTableCapacity}
+              onContact={() => setLargePartyNoticeOpen(true)}
+            />
+          )}
+        </View>
+
+        {divider}
+
+        <View style={styles.drawerSection}>
+          {sectionHeading("Your details")}
+          {nameField}
+          {emailField}
+          {requestsField("Special requests / allergies")}
+        </View>
+
+        {divider}
+
+        {/* Seating is the one optional step, so it reads as a single closed control rather
+            than a bare text link floating between the fields above and the footer below. */}
+        <View style={styles.drawerSection}>
+          <Pressable
+            testID="seating-disclosure-toggle"
+            onPress={() => {
+              Haptics.selectionAsync();
+              setSeatingOpen((o) => !o);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: seatingOpen }}
+            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+              styles.disclosureToggle,
+              {
+                backgroundColor: colors.input,
+                borderColor: hovered || pressed ? PRIMARY : colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="options-outline" size={16} color={colors.muted} />
+            <ThemedText style={styles.disclosureText}>Choose a section or table</ThemedText>
+            <Ionicons
+              name={seatingOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.muted}
+            />
+          </Pressable>
+          {seatingOpen && (
+            <View style={[styles.disclosureBody, { borderColor: colors.border }]}>
+              {/* Labelled "Exact time" because the chips above are already "Time" — this one
+                  reaches times the availability list doesn't offer. */}
+              {timePickerField("Exact time")}
+              {sectionField}
+              {tableField}
+            </View>
+          )}
+        </View>
+
+        {divider}
+
+        <View style={styles.drawerFooter}>
+          <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
+          {confirmButton}
+          {holdRequiredHint}
+        </View>
+        {largePartyModal}
+      </View>
+    );
+  }
+
+  const half = isTwoColumn ? styles.fieldHalf : undefined;
+
   return (
     <View style={styles.form}>
       <WalkInDaysBanner restaurant={restaurant} />
-      <View style={styles.availabilityHeader}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <ThemedText style={styles.label}>Popular Times</ThemedText>
-          {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
-        </View>
-        {isClosedDay ? (
-          <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
-            The restaurant is closed on this day. Please select a different date.
-          </ThemedText>
-        ) : isWalkInDay ? (
-          <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
-        ) : (
-          <PopularTimesPicker
-            slots={availabilitySlots}
-            selectedTime={time}
-            onSelectTime={setTime}
-            selectedDate={date}
-            timezone={timezone}
-          />
-        )}
-      </View>
+      {timesBlock("Popular Times")}
 
       {/* Row 1: Guests + Date */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
       >
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
+        <View style={[styles.field, half]}>
           <ThemedText style={styles.label}>Number of Guests</ThemedText>
           <Select
             selectedValue={seats}
@@ -460,7 +745,7 @@ export default function BookingForm({
             options={seatOptions}
           />
         </View>
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
+        <View style={[styles.field, half]}>
           <ThemedText style={styles.label}>Date</ThemedText>
           {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
               here — only the admin New Booking modal opts in to back-dating (#160). */}
@@ -484,88 +769,19 @@ export default function BookingForm({
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
       >
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Time</ThemedText>
-          <TimePicker
-            selectedTime={time}
-            onSelect={setTime}
-            minTime={minPickerTime}
-            maxTime={maxPickerTime}
-          />
-        </View>
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Section</ThemedText>
-          <Select
-            selectedValue={sectionId}
-            onSelect={(val) => {
-              if (holdStatus === "held" || holdStatus === "expired") {
-                setHoldStatus("idle");
-              }
-              setSectionId(val as number);
-            }}
-            options={sectionOptions}
-            placeholder="Select a section"
-          />
-        </View>
+        <View style={half}>{timePickerField()}</View>
+        <View style={half}>{sectionField}</View>
       </View>
 
-      {restaurant.timezone && !isViewerInTimezone(timezone) && (
-        <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
-          All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
-        </ThemedText>
-      )}
+      {timezoneHint}
 
       {/* Row 3: Table + Full Name */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
       >
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Table</ThemedText>
-          {isAutoAssign ? (
-            <ThemedText style={[styles.autoAssignHint, { color: colors.muted }]}>
-              We'll seat you at the best available table
-              {resolvedTableId ? "" : " across all sections"}.
-            </ThemedText>
-          ) : tableOptions.length === 0 ? (
-            <ThemedText style={[styles.noTables, { color: colors.muted }]}>
-              No tables available for {seats} guests.
-            </ThemedText>
-          ) : (
-            <Select
-              // A group selection is encoded as a negative value (-groupId); a table as its id.
-              selectedValue={tableGroupId ? -tableGroupId : tableId}
-              onSelect={(val) => {
-                if (holdStatus === "held" || holdStatus === "expired") {
-                  setHoldStatus("idle");
-                }
-                const v = val as number;
-                if (v < 0) {
-                  // Group selected — clear any single-table selection.
-                  setTableGroupId(-v);
-                  setTableId(undefined);
-                } else {
-                  // Single table selected — clear any group selection.
-                  setTableGroupId(undefined);
-                  setTableId(v);
-                }
-              }}
-              options={tableOptions}
-              placeholder="Select a table"
-            />
-          )}
-        </View>
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Full Name</ThemedText>
-          <Input
-            placeholder="Your full name"
-            value={customerName}
-            onChangeText={setCustomerName}
-            autoCapitalize="words"
-            returnKeyType="next"
-            blurOnSubmit={false}
-          />
-        </View>
+        <View style={half}>{tableField}</View>
+        <View style={half}>{nameField}</View>
       </View>
 
       {/* Row 4: Email + Special Requests. Stacked, each gets its own full-width row and the
@@ -574,62 +790,20 @@ export default function BookingForm({
         testID="booking-field-row"
         style={isTwoColumn ? [styles.fieldRow, styles.fieldRowStretch] : styles.fieldRowStacked}
       >
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Email</ThemedText>
-          <Input
-            placeholder="your@email.com"
-            value={customerEmail}
-            onChangeText={setCustomerEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            returnKeyType="next"
-            blurOnSubmit={false}
-          />
+        <View style={[styles.field, half]}>
+          {emailField}
           {isTwoColumn && <View style={styles.holdPush}>{holdBanner}</View>}
         </View>
-        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
-          <ThemedText style={styles.label}>Special Requests / Allergies</ThemedText>
-          <Input
-            placeholder="e.g. nut allergy, high chair needed… (optional)"
-            value={specialRequests}
-            onChangeText={setSpecialRequests}
-            multiline
-            numberOfLines={3}
-            style={styles.textarea}
-          />
-        </View>
+        <View style={half}>{requestsField("Special Requests / Allergies")}</View>
       </View>
 
       {!isTwoColumn && holdBanner}
 
-      <ThemedText style={styles.gdpr}>
-        By confirming, you agree that your email and booking details will be stored to manage your
-        reservation. We also use an essential cookie to remember your recent bookings on this
-        device. We do not share your data with third parties. You can request deletion by contacting
-        the restaurant.
-      </ThemedText>
+      <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
 
-      <Button onPress={handleSubmit} disabled={!isValid || submitting}>
-        {submitting ? (
-          <View style={styles.submitContent}>
-            <ActivityIndicator size="small" color="#fff" />
-            <ThemedText style={styles.submitText}>Confirming…</ThemedText>
-          </View>
-        ) : (
-          "Confirm Booking"
-        )}
-      </Button>
-
-      {!submitting && holdStatus !== "held" && (isAutoAssign || tableId) && date && time && (
-        <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
-      )}
-
-      <LargePartyNoticeModal
-        visible={largePartyNoticeOpen}
-        maxCapacity={maxTableCapacity}
-        restaurant={restaurant}
-        onClose={() => setLargePartyNoticeOpen(false)}
-      />
+      {confirmButton}
+      {holdRequiredHint}
+      {largePartyModal}
     </View>
   );
 }
@@ -641,6 +815,60 @@ const styles = StyleSheet.create({
   availabilityHeader: {
     width: "100%",
     overflow: "hidden",
+  },
+  availabilityLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  // ── Drawer layout ──
+  // Sections rather than one flat stack of fields: the drawer asks three separate
+  // things (when, who, and optionally where you sit) and they read as one long form
+  // without the headings and rules to separate them.
+  drawerForm: {
+    gap: 20,
+  },
+  drawerSection: {
+    gap: 12,
+  },
+  drawerFooter: {
+    gap: 12,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 2,
+  },
+  sectionHeadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  disclosureToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  disclosureText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  disclosureBody: {
+    gap: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderRadius: 8,
   },
   fieldRow: {
     flexDirection: "row",
@@ -681,6 +909,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
     marginTop: -10,
+  },
+  // The inline layout pulls the hint up against the row above it; inside a drawer
+  // section it is a normal sibling with the section's own gap.
+  timezoneHintDrawer: {
+    marginTop: 0,
   },
   submitContent: {
     flexDirection: "row",

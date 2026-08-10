@@ -34,21 +34,24 @@ test.describe("Admin pause bookings", () => {
     });
     expect(pauseRes.ok()).toBeTruthy();
 
-    // ── Customer navigates to the booking form ─────────────────────────────────
+    // ── Customer navigates to the locations list ───────────────────────────────
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
-    // The form hydrates from a rate-limited fetch; reload (cool-down first) if
+    // The list hydrates from a rate-limited fetch; reload (cool-down first) if
     // it hasn't rendered within the window — see expectVisibleWithReload.
-    await expectVisibleWithReload(page, page.getByText("Book a table"), { timeout: 20_000 });
+    await expectVisibleWithReload(page, page.getByTestId("locations-filter-bar"), {
+      timeout: 20_000,
+    });
 
     // Pick tomorrow via the calendar picker so we're not looking at today's
     // half-gone slot list for an unrelated reason
     await selectBookingDate(page, futureDateStr(1));
 
-    // When paused, every slot has isAvailable:false → PopularTimesPicker shows
-    // "No slots available for this period." on every category tab
-    await expect(page.getByText("No slots available for this period.").first()).toBeVisible({
-      timeout: 20_000,
-    });
+    // When paused, every slot has isAvailable:false → the card offers no times at
+    // all, so there is no way into the booking drawer.
+    await expect(
+      page.getByText("No times available — try another date or party size").first()
+    ).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });
 
   test("unpausing a restaurant restores available slots", async ({ page }) => {

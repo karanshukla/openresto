@@ -850,3 +850,130 @@ describe("BookingForm responsive layout", () => {
     expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
   });
 });
+
+// The drawer variant of the form: party size and date have already been settled by the
+// page-level filter bar, so those pickers are gone and seating moves behind a disclosure.
+describe("BookingForm drawer layout", () => {
+  beforeEach(() => {
+    mockViewportWidth = 1024;
+    mockHoldStatus = "idle";
+    mockFetchAvailability.mockResolvedValue({ slots: [] });
+  });
+
+  function renderDrawer(overrides: Record<string, unknown> = {}) {
+    return render(
+      <BookingForm
+        layout="drawer"
+        restaurant={mockRestaurantAllDays}
+        seats={4}
+        date="2026-06-24"
+        onSubmit={jest.fn()}
+        {...overrides}
+      />
+    );
+  }
+
+  it("drops the guests and date pickers — the page bar owns them", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.queryByText("Number of Guests")).toBeNull();
+    expect(screen.queryByText("Date")).toBeNull();
+    expect(screen.queryAllByTestId("booking-field-row")).toHaveLength(0);
+  });
+
+  it("fetches availability for the caller's party size and date", async () => {
+    renderDrawer();
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 4)
+    );
+  });
+
+  it("asks only for name, email and requests up front", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByPlaceholderText("Your full name")).toBeTruthy();
+    expect(screen.getByPlaceholderText("your@email.com")).toBeTruthy();
+    expect(screen.getByText("Special requests / allergies")).toBeTruthy();
+    // Section and table stay behind the disclosure until asked for.
+    expect(screen.queryByText("Section")).toBeNull();
+    expect(screen.queryByText("Table")).toBeNull();
+  });
+
+  it("reveals the time, section and table controls from the seating disclosure", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.getByText("Section")).toBeTruthy();
+    expect(screen.getByText("Table")).toBeTruthy();
+    expect(screen.getByTestId("time-picker")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.queryByText("Section")).toBeNull();
+    // The toggle keeps one stable label and flips its chevron, rather than renaming
+    // itself — the row is a section boundary, not a link that changes meaning.
+    expect(screen.getByText("Choose a section or table")).toBeTruthy();
+  });
+
+  it("groups the drawer into labelled sections and does not label two things 'Time'", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    expect(screen.getByText("Time")).toBeTruthy();
+    expect(screen.getByText("Your details")).toBeTruthy();
+
+    // Opening seating adds an exact-time picker, which must not collide with the
+    // "Time" section heading above it.
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.getByText("Exact time")).toBeTruthy();
+    expect(screen.getAllByText("Time")).toHaveLength(1);
+  });
+
+  it("shows the same privacy note as the inline form, in full and without a toggle", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByText(/essential cookie/)).toBeTruthy();
+    expect(screen.queryByTestId("privacy-note-toggle")).toBeNull();
+  });
+
+  it("puts the timezone note under the times it qualifies, not down in the footer", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    // Tree order: the note has to land inside the Time section, which ends where the
+    // "Your details" heading begins.
+    const tree = JSON.stringify(screen.toJSON());
+    const note = tree.indexOf("All times are in");
+    const details = tree.indexOf("Your details");
+    expect(note).toBeGreaterThan(-1);
+    expect(details).toBeGreaterThan(-1);
+    expect(note).toBeLessThan(details);
+  });
+
+  it("still shows the hold banner and confirm button exactly once", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
+    expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+  });
+
+  it("tracks a party size changed on the page bar without remounting", async () => {
+    const { rerender } = renderDrawer();
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 4)
+    );
+    rerender(
+      <BookingForm
+        layout="drawer"
+        restaurant={mockRestaurantAllDays}
+        seats={7}
+        date="2026-06-24"
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 7)
+    );
+  });
+});

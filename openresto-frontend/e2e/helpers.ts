@@ -126,6 +126,35 @@ export async function selectBookingDate(page: Page, dateStr: string): Promise<vo
   await dayCell.click();
 }
 
+/**
+ * Narrows the Locations list to one meal window using the page-level filter bar.
+ * Do this before opening the booking drawer — the drawer has its own Lunch/Dinner
+ * tabs, and both would match a bare text locator.
+ */
+export async function selectMealWindow(
+  page: Page,
+  label: "Lunch" | "Dinner" | "All times"
+): Promise<void> {
+  await page.getByLabel("Time of day").click();
+  await page.getByText(label, { exact: true }).click();
+}
+
+/**
+ * Opens the booking drawer the way a diner does: by clicking a bookable time on a
+ * location's card. Returns the time that was clicked.
+ *
+ * Slot chips carry an "Book <location> at <time>" accessible name, which keeps this
+ * from colliding with the time chips inside the drawer itself.
+ */
+export async function openBookingDrawer(page: Page): Promise<string> {
+  const slot = page.getByLabel(/^Book .+ at \d{2}:\d{2}$/).first();
+  await expect(slot).toBeVisible({ timeout: 20_000 });
+  const label = (await slot.getAttribute("aria-label")) ?? "";
+  await slot.click();
+  await expect(page.getByTestId("booking-drawer")).toBeVisible({ timeout: 10_000 });
+  return label.slice(-5);
+}
+
 /** Returns a UTC ISO timestamp for N minutes ago. */
 export function pastUtcISO(minutesAgo: number): string {
   return new Date(Date.now() - minutesAgo * 60_000).toISOString();

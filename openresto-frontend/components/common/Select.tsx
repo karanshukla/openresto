@@ -1,7 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import * as Haptics from "expo-haptics";
@@ -16,11 +17,16 @@ export default function Select({
   onSelect,
   selectedValue,
   placeholder = "Select an option",
+  icon,
+  accessibilityLabel,
 }: {
   options: SelectOption[];
   onSelect: (value: string | number) => void;
   selectedValue?: string | number;
   placeholder?: string;
+  /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
+  icon?: ComponentProps<typeof Ionicons>["name"];
+  accessibilityLabel?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const { colors, isDark, primaryColor } = useAppTheme();
@@ -96,10 +102,24 @@ export default function Select({
           (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
       >
-        <ThemedText style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}>
-          {selectedOption?.label ?? placeholder}
-        </ThemedText>
+        {icon ? (
+          <View style={styles.triggerLead}>
+            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <ThemedText
+              numberOfLines={1}
+              style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
+            >
+              {selectedOption?.label ?? placeholder}
+            </ThemedText>
+          </View>
+        ) : (
+          <ThemedText style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}>
+            {selectedOption?.label ?? placeholder}
+          </ThemedText>
+        )}
         <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
     </>
@@ -111,10 +131,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
     borderWidth: 1,
     borderRadius: theme.formSizes.inputBorderRadius,
     paddingHorizontal: theme.formSizes.inputPaddingH,
     height: theme.formSizes.inputHeight,
+  },
+  triggerLead: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    minWidth: 0,
   },
   triggerText: {
     fontSize: theme.formSizes.inputFontSize,

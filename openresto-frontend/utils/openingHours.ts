@@ -59,6 +59,36 @@ export function hasCustomHours(restaurant: HoursSource): boolean {
   return hours.some((h) => h.open !== hours[0].open || h.close !== hours[0].close);
 }
 
+const DAY_NAMES_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Short weekday name ("Wed") for an ISO day number. */
+export function isoDayShortName(isoDay: number): string {
+  return DAY_NAMES_SHORT[isoDay - 1] ?? "";
+}
+
+/**
+ * The next day the location opens, searching forward from (and excluding) `fromIsoDay`.
+ * Returns null when the location is closed every day.
+ *
+ * `openDays` is passed in rather than parsed from the restaurant because the two parsers
+ * in this codebase disagree on the empty string — {@link parseOpenDays} reads it as
+ * "every day", `getOpenDaysList` as "no days". Taking the caller's already-resolved list
+ * guarantees this answer agrees with whatever decided the location was closed.
+ */
+export function getNextOpening(
+  restaurant: HoursSource,
+  fromIsoDay: number,
+  openDays: number[]
+): { isoDay: number; open: string } | null {
+  for (let step = 1; step <= 7; step++) {
+    const isoDay = ((fromIsoDay - 1 + step) % 7) + 1;
+    if (openDays.includes(isoDay)) {
+      return { isoDay, open: getHoursForDay(restaurant, isoDay).open };
+    }
+  }
+  return null;
+}
+
 /**
  * Short human summary of a restaurant's hours: the single range when uniform,
  * or the hours for the requested day plus a "varies" hint otherwise.

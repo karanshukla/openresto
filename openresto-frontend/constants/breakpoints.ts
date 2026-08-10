@@ -19,6 +19,16 @@ export const BREAKPOINTS = {
 
 export const MOBILE_BREAKPOINT = BREAKPOINTS.mobile;
 
+/**
+ * Outer width of the app's content column, matching the navbar and footer, and the
+ * horizontal padding inside it. To line something up with the navbar's own contents
+ * (its logo, its overflow menu) rather than with the viewport edge, the target width is
+ * `Math.min(viewportWidth, CONTENT_MAX_WIDTH) - CONTENT_PADDING_H * 2` — the column
+ * tracks the viewport below its cap, and insets its contents either side.
+ */
+export const CONTENT_MAX_WIDTH = 1320;
+export const CONTENT_PADDING_H = 28;
+
 /** True when the viewport is narrower than the phone breakpoint. */
 export function isMobileWidth(width: number): boolean {
   return width < MOBILE_BREAKPOINT;

@@ -96,13 +96,13 @@ test.describe("Restaurant detail redirect", () => {
       await expect(page.getByText(address).first()).toBeVisible();
     }
 
-    // Pre-expanded via highlightId — the inline booking form is already
+    // Pre-expanded via highlightId — the location's own details are already
     // showing, not a separate CTA into a separate page.
     try {
-      await expect(page.getByText("Book a table")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText("Seating & tables")).toBeVisible({ timeout: 15_000 });
     } catch {
       await page.reload();
-      await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByText("Seating & tables")).toBeVisible({ timeout: 20_000 });
     }
   });
 
@@ -123,8 +123,9 @@ test.describe("Restaurant detail redirect", () => {
     await page.waitForURL(new RegExp(`.*/locations/${PASTA_PLACE_ID}`), { timeout: 15_000 });
     await expect(page.getByText("Walk-ins only").first()).toBeVisible({ timeout: 15_000 });
 
-    // The inline booking form must not be rendered at all when walk-in only.
-    await expect(page.getByText("Book a table")).toHaveCount(0);
+    // No bookable time is offered at all when walk-in only.
+    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+    await expect(page.getByTestId("booking-drawer")).toHaveCount(0);
   });
 
   test("an unknown restaurant id still redirects and renders the Locations list", async ({

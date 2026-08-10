@@ -10,6 +10,7 @@ import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
 import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/restaurantTime";
+import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 
 function opensLaterToday(restaurant: RestaurantDto): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -200,23 +201,23 @@ export default function RestaurantCard({
         <View style={styles.imageTopRow}>
           <View
             style={[
-              styles.badge,
+              cardStyles.badge,
               open
-                ? { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.88)` }
+                ? { backgroundColor: openBadgeColor(accentR, accentG, accentB) }
                 : opensLabel
                   ? { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.72)` }
-                  : styles.badgeClosed,
+                  : cardStyles.badgeMuted,
             ]}
           >
-            {open && <View style={styles.badgeDot} />}
-            <ThemedText style={styles.badgeText}>
+            {open && <View style={cardStyles.badgeDot} />}
+            <ThemedText style={cardStyles.badgeText}>
               {open ? `Open till ${todayHours.close}` : (opensLabel ?? "Closed")}
             </ThemedText>
           </View>
           {walkInBadgeText && (
-            <View style={[styles.badge, styles.badgeWalkIn]} testID="walk-in-badge">
+            <View style={[cardStyles.badge, cardStyles.badgeMuted]} testID="walk-in-badge">
               <Ionicons name="walk-outline" size={12} color="#fff" />
-              <ThemedText style={styles.badgeText}>{walkInBadgeText}</ThemedText>
+              <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
             </View>
           )}
         </View>
@@ -387,10 +388,10 @@ export default function RestaurantCard({
             )}
           </View>
           <Pressable
-            style={({ pressed }) => [styles.viewBtn, pressed && { backgroundColor: surface2 }]}
+            style={({ pressed }) => [cardStyles.viewBtn, pressed && { backgroundColor: surface2 }]}
             onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
           >
-            <ThemedText style={[styles.viewBtnText, { color: primaryColor }]}>
+            <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
               See details
             </ThemedText>
             <Ionicons name="arrow-forward" size={13} color={primaryColor} />
@@ -464,33 +465,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     zIndex: 1,
-  },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  badgeClosed: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  badgeWalkIn: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#fff",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11.5,
-    fontWeight: "500",
   },
   // Body
   body: {
@@ -645,17 +619,5 @@ const styles = StyleSheet.create({
   hoursTime: {
     fontSize: 13,
     fontWeight: "500",
-  },
-  viewBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 7,
-  },
-  viewBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
   },
 });
