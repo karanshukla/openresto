@@ -117,6 +117,8 @@ export function SmtpTestPanel({
 
       {/* Button */}
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Send a test email"
         onPress={() => {
           if (testState !== "testing" && host && username) onTest();
         }}

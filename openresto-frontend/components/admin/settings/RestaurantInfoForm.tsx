@@ -493,6 +493,9 @@ export function RestaurantInfoForm({
                 style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
                 onPress={handleDeleteMenu}
                 disabled={menuUploading}
+                accessibilityRole="button"
+                accessibilityLabel="Remove the uploaded menu PDF"
+                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
                 <ThemedText style={[sharedStyles.secBtnText, { color: theme.colors.error }]}>
                   {menuUploading ? "Removing…" : "Remove file"}
@@ -518,6 +521,9 @@ export function RestaurantInfoForm({
                 style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
                 onPress={handlePickMenu}
                 disabled={menuUploading}
+                accessibilityRole="button"
+                accessibilityLabel="Upload a menu PDF"
+                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
                 <ThemedText style={[sharedStyles.secBtnText, { color: primaryColor }]}>
                   {menuUploading ? "Uploading…" : "Upload PDF"}
@@ -851,6 +857,9 @@ export function RestaurantInfoForm({
           <Pressable
             onPress={discard}
             disabled={!dirty}
+            accessibilityRole="button"
+            accessibilityLabel="Discard unsaved changes"
+            accessibilityState={{ disabled: !dirty }}
             style={{
               opacity: dirty ? 1 : 0.4,
               paddingHorizontal: 14,
@@ -865,6 +874,9 @@ export function RestaurantInfoForm({
           <Pressable
             onPress={save}
             disabled={!dirty || saving || !name.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Save location details"
+            accessibilityState={{ disabled: !dirty || saving || !name.trim(), busy: saving }}
             style={{
               opacity: !dirty || saving || !name.trim() ? 0.5 : 1,
               backgroundColor: primaryColor,

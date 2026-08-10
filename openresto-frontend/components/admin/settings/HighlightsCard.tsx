@@ -184,7 +184,13 @@ export function HighlightsCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Highlights"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
           <Ionicons name="sparkles-outline" size={20} color={primaryColor} />
         </View>
@@ -300,10 +306,22 @@ export function HighlightsCard({
                         ) : null}
                       </View>
                       <View style={{ flexDirection: "row", gap: 6 }}>
-                        <Pressable onPress={() => startEdit(h)} style={{ padding: 6 }}>
+                        <Pressable
+                          onPress={() => startEdit(h)}
+                          style={{ padding: 6 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit highlight ${h.title}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
                           <Ionicons name="pencil-outline" size={16} color={mutedColor} />
                         </Pressable>
-                        <Pressable onPress={() => remove(h.id)} style={{ padding: 6 }}>
+                        <Pressable
+                          onPress={() => remove(h.id)}
+                          style={{ padding: 6 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete highlight ${h.title}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
                           <Ionicons name="trash-outline" size={16} color="#ef4444" />
                         </Pressable>
                       </View>
@@ -331,6 +349,8 @@ export function HighlightsCard({
               {editingId !== "new" && (
                 <Pressable
                   onPress={startNew}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add highlight"
                   style={{
                     backgroundColor: primaryColor,
                     borderRadius: 10,
@@ -401,6 +421,9 @@ function HighlightEditForm({
             <Pressable
               key={icon}
               onPress={() => onChange({ ...state, iconKey: icon })}
+              accessibilityRole="radio"
+              accessibilityLabel={`${icon} icon`}
+              accessibilityState={{ checked: state.iconKey === icon }}
               style={{
                 width: 36,
                 height: 36,
@@ -466,6 +489,8 @@ function HighlightEditForm({
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
         <Pressable
           onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel editing this highlight"
           style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 }}
         >
           <ThemedText style={{ fontSize: 14, color: mutedColor }}>Cancel</ThemedText>
@@ -473,6 +498,9 @@ function HighlightEditForm({
         <Pressable
           onPress={onSave}
           disabled={saving || !state.title.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Save this highlight"
+          accessibilityState={{ disabled: saving || !state.title.trim(), busy: saving }}
           style={{
             opacity: saving || !state.title.trim() ? 0.5 : 1,
             backgroundColor: primaryColor,

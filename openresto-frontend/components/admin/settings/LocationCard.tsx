@@ -308,6 +308,13 @@ export function LocationCard({
               style={[styles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
               onPress={handlePickImage}
               disabled={imgUploading}
+              accessibilityRole="button"
+              accessibilityLabel={
+                restaurant.imageUrl
+                  ? `Change image for ${restaurant.name}`
+                  : `Upload image for ${restaurant.name}`
+              }
+              accessibilityState={{ disabled: imgUploading, busy: imgUploading }}
             >
               <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
                 {imgUploading
@@ -322,6 +329,9 @@ export function LocationCard({
                 style={[styles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
                 onPress={handleDeleteImage}
                 disabled={imgUploading}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove image for ${restaurant.name}`}
+                accessibilityState={{ disabled: imgUploading }}
               >
                 <ThemedText style={[styles.secBtnText, { color: theme.colors.error }]}>
                   Remove

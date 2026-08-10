@@ -145,7 +145,13 @@ export function BrandSettingsCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Brand Identity"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
           <Ionicons name="brush-outline" size={20} color={primaryColor} />
         </View>
@@ -226,6 +232,9 @@ export function BrandSettingsCard({
                   key={c}
                   testID={`color-swatch-${c}`}
                   onPress={() => setBrandPrimaryColor(c)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Primary color ${c}`}
+                  accessibilityState={{ checked: brandPrimaryColor === c }}
                   style={{
                     width: 28,
                     height: 28,
@@ -260,6 +269,8 @@ export function BrandSettingsCard({
                     key={icon.id}
                     testID={`favicon-icon-${icon.id}`}
                     onPress={() => setFaviconIcon(isSelected ? undefined : icon.id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
                     style={{
                       width: 40,
                       height: 40,
@@ -426,6 +437,9 @@ export function BrandSettingsCard({
                   style={[styles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
                   onPress={handlePickHero}
                   disabled={heroUploading}
+                  accessibilityRole="button"
+                  accessibilityLabel={heroPreview ? "Change header image" : "Upload header image"}
+                  accessibilityState={{ disabled: heroUploading, busy: heroUploading }}
                 >
                   <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
                     {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
@@ -436,6 +450,9 @@ export function BrandSettingsCard({
                     style={[styles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
                     onPress={handleDeleteHero}
                     disabled={heroUploading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove header image"
+                    accessibilityState={{ disabled: heroUploading }}
                   >
                     <ThemedText style={[styles.secBtnText, { color: theme.colors.error }]}>
                       Remove

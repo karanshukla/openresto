@@ -54,6 +54,10 @@ export function BookingConfirmationToggle({
             if (confirmDisabled) return;
             onToggle(!sendConfirmations);
           }}
+          role="switch"
+          aria-checked={sendConfirmations}
+          accessibilityLabel="Send booking confirmation emails"
+          accessibilityState={{ checked: sendConfirmations, disabled: confirmDisabled }}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -104,6 +108,7 @@ export function BookingConfirmationToggle({
             disabled={confirmDisabled}
             primaryColor={primaryColor}
             borderColor={borderColor}
+            decorative
           />
         </Pressable>
         {confirmDisabled && (
