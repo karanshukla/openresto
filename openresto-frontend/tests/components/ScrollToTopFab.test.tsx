@@ -12,37 +12,34 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 describe("ScrollToTopFab", () => {
-  it("renders when mobile portrait and scrollY > 300", () => {
-    const onPress = jest.fn();
-    renderWithProviders(<ScrollToTopFab scrollY={350} onPress={onPress} />);
+  it("renders once scrollY is past the threshold", () => {
+    renderWithProviders(<ScrollToTopFab scrollY={350} onPress={jest.fn()} />);
     expect(screen.getByRole("button")).toBeTruthy();
   });
 
-  it("does not render when scrollY <= 300", () => {
-    const onPress = jest.fn();
-    renderWithProviders(<ScrollToTopFab scrollY={300} onPress={onPress} />);
+  it("does not render when scrollY is at the threshold", () => {
+    renderWithProviders(<ScrollToTopFab scrollY={300} onPress={jest.fn()} />);
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("does not render on wide screens (landscape/desktop)", () => {
-    const {
-      default: useWindowDimensions,
-    } = require("react-native/Libraries/Utilities/useWindowDimensions");
-    jest.spyOn({ useWindowDimensions }, "useWindowDimensions").mockReturnValueOnce({
-      width: 1024,
-      height: 768,
-    });
-
-    // Override mock for this test
+  // The FAB used to be gated to portrait phones under 700px wide, which hid it
+  // from exactly the wide layouts that scroll furthest. Viewport size must not
+  // affect it at all now, so drive a desktop landscape window and a phone
+  // portrait one through the same assertion.
+  it.each([
+    ["desktop landscape", { width: 1440, height: 900 }],
+    ["tablet landscape", { width: 1024, height: 768 }],
+    ["phone portrait", { width: 375, height: 812 }],
+  ])("renders on %s", (_label, dimensions) => {
     const wdModule = require("react-native/Libraries/Utilities/useWindowDimensions");
     const original = wdModule.default;
-    wdModule.default = () => ({ width: 1024, height: 768 });
-
-    const onPress = jest.fn();
-    renderWithProviders(<ScrollToTopFab scrollY={500} onPress={onPress} />);
-    expect(screen.queryByRole("button")).toBeNull();
-
-    wdModule.default = original;
+    wdModule.default = () => dimensions;
+    try {
+      renderWithProviders(<ScrollToTopFab scrollY={500} onPress={jest.fn()} />);
+      expect(screen.getByRole("button")).toBeTruthy();
+    } finally {
+      wdModule.default = original;
+    }
   });
 
   it("calls onPress when pressed", () => {

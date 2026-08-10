@@ -33,6 +33,7 @@ import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -67,7 +68,7 @@ export default function LookupScreen() {
   const { width } = useWindowDimensions();
   const { colors, primaryColor, isDark } = useAppTheme();
 
-  const isWide = Platform.OS === "web" && width >= 768;
+  const isWide = Platform.OS === "web" && width >= MOBILE_BREAKPOINT;
   const canSearch = refInput.trim() && emailInput.trim();
 
   useEffect(() => {

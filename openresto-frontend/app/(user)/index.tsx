@@ -18,6 +18,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
+import { isMobileWidth } from "@/constants/breakpoints";
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
@@ -37,7 +38,7 @@ export default function HomeScreen() {
   const { brand, colors, primaryColor, isDark } = useAppTheme();
   const scrollRef = useRef<ScrollView>(null);
 
-  const isMobile = width < 700;
+  const isMobile = isMobileWidth(width);
 
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });

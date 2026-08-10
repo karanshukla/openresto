@@ -3,10 +3,11 @@ import { View, StyleSheet, ScrollView, Platform, useWindowDimensions } from "rea
 import PageContainer from "@/components/layout/PageContainer";
 import Skeleton from "@/components/common/Skeleton";
 import { ThemedView } from "@/components/themed-view";
+import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 
 export default function BookingConfirmationSkeleton() {
   const { width } = useWindowDimensions();
-  const isWide = Platform.OS === "web" && width >= 768;
+  const isWide = Platform.OS === "web" && width >= MOBILE_BREAKPOINT;
 
   return (
     <ThemedView style={styles.root}>

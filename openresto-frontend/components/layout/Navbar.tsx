@@ -14,6 +14,7 @@ import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import OverflowMenu from "@/components/layout/OverflowMenu";
+import { isMobileWidth } from "@/constants/breakpoints";
 
 const NAV_LINKS = [
   {
@@ -42,7 +43,7 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  const isMobile = width < 768;
+  const isMobile = isMobileWidth(width);
   const isTiny = width < 380;
   const showBack = pathname !== "/";
 
