@@ -1,7 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { useState } from "react";
+import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity, View } from "react-native";
+import { useState, type ComponentProps } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -36,6 +37,8 @@ export default function DatePicker({
   onSelect,
   openDays,
   allowPast,
+  icon,
+  triggerLabel,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
@@ -46,6 +49,10 @@ export default function DatePicker({
    * customer flow restricted to today and later. Used by the admin New Booking modal.
    */
   allowPast?: boolean;
+  /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
+  icon?: ComponentProps<typeof Ionicons>["name"];
+  /** Overrides the trigger label, e.g. a filter bar that says "Today" instead of the date. */
+  triggerLabel?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const { colors, primaryColor } = useAppTheme();
@@ -120,9 +127,18 @@ export default function DatePicker({
         ]}
         onPress={() => setModalVisible(true)}
       >
-        <ThemedText style={!selected && { color: placeholderColor }}>
-          {selected?.label ?? "Select a date"}
-        </ThemedText>
+        {icon ? (
+          <View style={styles.triggerLead}>
+            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <ThemedText numberOfLines={1} style={!selected && { color: placeholderColor }}>
+              {triggerLabel ?? selected?.label ?? "Select a date"}
+            </ThemedText>
+          </View>
+        ) : (
+          <ThemedText style={!selected && { color: placeholderColor }}>
+            {triggerLabel ?? selected?.label ?? "Select a date"}
+          </ThemedText>
+        )}
         <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
     </>
@@ -138,6 +154,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: theme.formSizes.inputBorderRadius,
     paddingHorizontal: theme.formSizes.inputPaddingH,
+  },
+  triggerLead: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    minWidth: 0,
   },
   chevron: {
     fontSize: 14,

@@ -52,9 +52,10 @@ test.describe("Home Page", { tag: "@smoke" }, () => {
     if (!visible) throw new Error("Restaurant cards never appeared — rate limit did not recover");
 
     await restaurantCard.click({ force: true });
-    // Restaurant cards now route into the merged Locations page, which
-    // auto-expands the clicked location with its booking form inline.
+    // Restaurant cards route into the merged Locations page, which scrolls to the
+    // clicked location and expands its details. Booking starts from a slot on the
+    // card, so the page-level filter bar is what proves the list has hydrated.
     await page.waitForURL(/.*\/locations\/\d+/, { timeout: 10_000 });
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
   });
 });

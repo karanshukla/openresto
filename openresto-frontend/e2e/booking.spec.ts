@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { futureDateStr, selectBookingDate } from "./helpers";
+import { futureDateStr, openBookingDrawer, selectBookingDate, selectMealWindow } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 const PASTA_PLACE_ID = 1;
@@ -43,33 +43,27 @@ test.describe("Booking Flow", () => {
     await expect(restaurantCards.first()).toBeVisible({ timeout: 30_000 });
     await restaurantCards.first().click({ force: true });
 
-    // Wait for navigation and booking form to load. Clicking a card routes
-    // into the merged Locations page, which auto-expands with the booking
-    // form inline (the old standalone /book/:id page is now just a redirect).
-    // If the restaurant data is rate-limited after the preceding API-heavy tests,
-    // reload once — the client's 429 retry will then succeed.
+    // Wait for navigation and the locations list to hydrate. Clicking a card routes
+    // into the merged Locations page (the old standalone /book/:id page is now just
+    // a redirect). If the restaurant data is rate-limited after the preceding
+    // API-heavy tests, reload once — the client's 429 retry will then succeed.
     await page.waitForURL(/.*\/locations\/\d+/, { timeout: 10000 });
+    const filterBar = page.getByTestId("locations-filter-bar");
     try {
-      await expect(page.getByText("Book a table")).toBeVisible({ timeout: 15_000 });
+      await expect(filterBar).toBeVisible({ timeout: 15_000 });
     } catch {
       await page.reload();
-      await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+      await expect(filterBar).toBeVisible({ timeout: 20_000 });
     }
 
-    // 3. Set a far-out date via the calendar picker.
+    // 3. Set a far-out date via the page-level calendar picker.
     //    21 days out uses a different date than booking-flow.spec.ts (14 days) to avoid
     //    accumulating bookings on the same date across test files.
     await selectBookingDate(page, futureDateStr(21));
 
-    // 4. Wait for availability then click a lunchtime slot
-    await expect(page.getByText("Lunch").first()).toBeVisible({ timeout: 20_000 });
-    const slot = page.getByText(/^1[1-4]:\d{2}$/).first();
-    await slot.waitFor({ state: "attached", timeout: 10_000 });
-    // Slots live inside a horizontal ScrollView whose wrapper has overflow:hidden.
-    // Scroll the chip into view, then dispatch a native click so it bubbles to
-    // the Pressable's onClick regardless of Playwright's clip detection.
-    await slot.evaluate((el) => el.scrollIntoView({ block: "nearest", inline: "nearest" }));
-    await slot.dispatchEvent("click");
+    // 4. Narrow to lunch, then open the drawer from a time on the card
+    await selectMealWindow(page, "Lunch");
+    await openBookingDrawer(page);
 
     // 5. Fill out the form
     const nameInput = page.getByPlaceholder("Your full name");

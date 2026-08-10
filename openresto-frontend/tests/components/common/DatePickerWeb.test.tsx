@@ -157,3 +157,33 @@ describe("DatePicker (web)", () => {
     expect(screen.queryByTestId("date-picker-calendar")).toBeNull();
   });
 });
+
+// The Locations filter bar renders the picker as a compact chip: a leading glyph and a
+// caller-supplied label ("Today") in place of the formatted date.
+describe("DatePicker (web) as a filter chip", () => {
+  const onSelect = jest.fn();
+
+  it("shows the caller's label instead of the selected date", () => {
+    render(
+      <DatePickerWeb
+        onSelect={onSelect}
+        icon="calendar-outline"
+        triggerLabel="Today"
+        selectedDate="2026-04-16"
+      />
+    );
+    expect(screen.getByText("Today")).toBeTruthy();
+    expect(screen.queryByText(/Apr 16/)).toBeNull();
+  });
+
+  it("overrides the empty-state label too", () => {
+    render(<DatePickerWeb onSelect={onSelect} triggerLabel="Any day" />);
+    expect(screen.getByText("Any day")).toBeTruthy();
+    expect(screen.queryByText("Select a date")).toBeNull();
+  });
+
+  it("falls back to the formatted date when no label is supplied", () => {
+    render(<DatePickerWeb onSelect={onSelect} icon="calendar-outline" selectedDate="2026-04-16" />);
+    expect(screen.getByText(/Apr 16/)).toBeTruthy();
+  });
+});

@@ -318,3 +318,42 @@ describe("PopularTimesPicker", () => {
     expect(screen.getByText("12:00")).toBeTruthy();
   });
 });
+
+// The booking drawer is only 460px wide, so it wraps the chips instead of scrolling
+// them behind an overlay arrow that covers the last one.
+describe("PopularTimesPicker (wrapped)", () => {
+  const mockSlots: TimeSlotDto[] = [
+    { time: "12:00", isAvailable: true, availableTableIds: [1], category: "Lunch" },
+    { time: "18:00", isAvailable: true, availableTableIds: [2], category: "Dinner" },
+  ];
+
+  it("renders the chips without a horizontal scroller", () => {
+    render(<PopularTimesPicker wrap slots={mockSlots} selectedTime="" onSelectTime={jest.fn()} />);
+    const ScrollViewType = require("react-native").ScrollView;
+    expect(screen.UNSAFE_queryByType(ScrollViewType)).toBeNull();
+    expect(screen.getByText("12:00")).toBeTruthy();
+  });
+
+  it("never shows the scroll arrows, however much content there is", () => {
+    render(<PopularTimesPicker wrap slots={mockSlots} selectedTime="" onSelectTime={jest.fn()} />);
+    expect(screen.queryByTestId("scroll-left-arrow")).toBeNull();
+    expect(screen.queryByTestId("scroll-right-arrow")).toBeNull();
+  });
+
+  it("still filters by category and reports selections", () => {
+    const onSelectTime = jest.fn();
+    render(
+      <PopularTimesPicker wrap slots={mockSlots} selectedTime="" onSelectTime={onSelectTime} />
+    );
+    fireEvent.press(screen.getByText("Dinner"));
+    expect(screen.getByText("18:00")).toBeTruthy();
+    expect(screen.queryByText("12:00")).toBeNull();
+    fireEvent.press(screen.getByText("18:00"));
+    expect(onSelectTime).toHaveBeenCalledWith("18:00");
+  });
+
+  it("explains an empty period rather than rendering an empty row", () => {
+    render(<PopularTimesPicker wrap slots={[]} selectedTime="" onSelectTime={jest.fn()} />);
+    expect(screen.getByText("No slots available for this period.")).toBeTruthy();
+  });
+});

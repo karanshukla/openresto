@@ -69,29 +69,34 @@ test.describe("Walk-in-only day on the booking form", () => {
     page,
   }) => {
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
 
-    // Select tomorrow (a walk-in-only day) via the calendar-grid DatePicker
+    // Select tomorrow (a walk-in-only day) via the page-level calendar picker
     // (same helper as booking-flow.spec.ts).
     await selectBookingDate(page, tomorrowStr);
 
-    // The day-scoped notice renders in place of the slot list / booking form.
-    await expect(page.getByText("Walk-ins only on this day").first()).toBeVisible({
-      timeout: 15_000,
-    });
+    // The card's slot row is replaced by the walk-in line, so there is no time to
+    // tap and no way into the booking drawer for that day.
+    await expect(
+      page.getByText("No reservations required — first come, first served").first()
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });
 
-  test("a non-walk-in day still shows the normal booking form", async ({ page }) => {
+  test("a non-walk-in day still offers bookable times", async ({ page }) => {
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
 
     // Select a different day that isn't in walkInDays.
     await selectBookingDate(page, otherDayStr);
 
-    // The day-scoped notice must NOT appear; instead the slot picker hydrates.
-    await expect(page.getByText("Walk-ins only on this day")).toHaveCount(0);
-    // The Lunch/Dinner category tabs appear once availability loads — proves
-    // the booking flow is live for this day.
-    await expect(page.getByText("Lunch").first()).toBeVisible({ timeout: 20_000 });
+    // Bookable times appear on the card once availability loads — proves the
+    // booking flow is live for this day.
+    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/).first()).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText("No reservations required — first come, first served")).toHaveCount(
+      0
+    );
   });
 });

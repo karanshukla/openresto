@@ -850,3 +850,107 @@ describe("BookingForm responsive layout", () => {
     expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
   });
 });
+
+// The drawer variant of the form: party size and date have already been settled by the
+// page-level filter bar, so those pickers are gone and seating moves behind a disclosure.
+describe("BookingForm drawer layout", () => {
+  beforeEach(() => {
+    mockViewportWidth = 1024;
+    mockHoldStatus = "idle";
+    mockFetchAvailability.mockResolvedValue({ slots: [] });
+  });
+
+  function renderDrawer(overrides: Record<string, unknown> = {}) {
+    return render(
+      <BookingForm
+        layout="drawer"
+        restaurant={mockRestaurantAllDays}
+        seats={4}
+        date="2026-06-24"
+        onSubmit={jest.fn()}
+        {...overrides}
+      />
+    );
+  }
+
+  it("drops the guests and date pickers — the page bar owns them", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.queryByText("Number of Guests")).toBeNull();
+    expect(screen.queryByText("Date")).toBeNull();
+    expect(screen.queryAllByTestId("booking-field-row")).toHaveLength(0);
+  });
+
+  it("fetches availability for the caller's party size and date", async () => {
+    renderDrawer();
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 4)
+    );
+  });
+
+  it("asks only for name, email and requests up front", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByPlaceholderText("Your full name")).toBeTruthy();
+    expect(screen.getByPlaceholderText("your@email.com")).toBeTruthy();
+    expect(screen.getByText("Special requests / allergies")).toBeTruthy();
+    // Section and table stay behind the disclosure until asked for.
+    expect(screen.queryByText("Section")).toBeNull();
+    expect(screen.queryByText("Table")).toBeNull();
+  });
+
+  it("reveals the time, section and table controls from the seating disclosure", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.getByText("Section")).toBeTruthy();
+    expect(screen.getByText("Table")).toBeTruthy();
+    expect(screen.getByTestId("time-picker")).toBeTruthy();
+    expect(screen.getByText("Hide seating options")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.queryByText("Section")).toBeNull();
+    expect(screen.getByText("Choose a section or table instead")).toBeTruthy();
+  });
+
+  it("summarises the privacy terms and expands the full note on request", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByText(/stored only to manage this reservation/)).toBeTruthy();
+    expect(screen.queryByText(/essential cookie/)).toBeNull();
+
+    fireEvent.press(screen.getByTestId("privacy-note-toggle"));
+    expect(screen.getByText(/essential cookie/)).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("privacy-note-toggle"));
+    expect(screen.queryByText(/essential cookie/)).toBeNull();
+  });
+
+  it("still shows the hold banner and confirm button exactly once", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
+    expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
+    expect(screen.getByText("Confirm Booking")).toBeTruthy();
+  });
+
+  it("tracks a party size changed on the page bar without remounting", async () => {
+    const { rerender } = renderDrawer();
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 4)
+    );
+    rerender(
+      <BookingForm
+        layout="drawer"
+        restaurant={mockRestaurantAllDays}
+        seats={7}
+        date="2026-06-24"
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 7)
+    );
+  });
+});

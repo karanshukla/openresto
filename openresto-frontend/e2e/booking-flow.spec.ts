@@ -1,5 +1,5 @@
 import { test, expect, type Browser } from "@playwright/test";
-import { futureDateStr, selectBookingDate } from "./helpers";
+import { futureDateStr, openBookingDrawer, selectBookingDate, selectMealWindow } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 const PASTA_PLACE_ID = 1;
@@ -21,13 +21,14 @@ async function purgeTestBookings(browser: Browser) {
 }
 
 /**
- * Full customer journey: home → restaurant → fill form → hold acquired → confirm.
+ * Full customer journey: locations list → pick a time → drawer → hold acquired → confirm.
  *
- * Timezone note: futureDateStr uses UTC. The auto-suggested time is the current
- * UTC hour rounded to the next 15 min, which can accumulate bookings across CI
- * runs at the same UTC hour. We explicitly click a midday Lunch slot after
- * availability loads to pick a predictable non-midnight time, and we clean up
- * test bookings before/after the suite to prevent slot saturation.
+ * Party size, date and meal window are set on the page-level filter bar, then the booking
+ * drawer opens from a slot on the location's card carrying all three.
+ *
+ * Timezone note: futureDateStr uses UTC. We narrow to Lunch before picking a slot so the
+ * booked time is a predictable non-midnight one, and clean up test bookings before/after
+ * the suite to prevent slot saturation across CI runs at the same UTC hour.
  */
 test.describe("Customer booking end to end", { tag: "@smoke" }, () => {
   test.describe.configure({ mode: "serial" });
@@ -43,23 +44,17 @@ test.describe("Customer booking end to end", { tag: "@smoke" }, () => {
   });
 
   test("search → hold → confirm shows booking reference", async ({ page }) => {
-    // ── 1. Navigate directly to the booking page ─────────────────────────────
+    // ── 1. Navigate to the location ──────────────────────────────────────────
     await page.goto(`/book?restaurantId=${PASTA_PLACE_ID}`);
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
 
-    // ── 2. Set a date 14 days out via the calendar picker ────────────────────
+    // ── 2. Set a date 14 days out via the page-level calendar picker ─────────
     await selectBookingDate(page, futureDateStr(14));
 
-    // ── 3. Wait for availability to load, then pick a midday slot ────────────
-    // Waiting for the "Lunch" tab confirms availability has loaded.
-    await expect(page.getByText("Lunch").first()).toBeVisible({ timeout: 20_000 });
-    const slot = page.getByText(/^1[1-4]:\d{2}$/).first();
-    await slot.waitFor({ state: "attached", timeout: 10_000 });
-    // Slots live inside a horizontal ScrollView whose wrapper has overflow:hidden.
-    // Scroll the chip into view, then dispatch a native click so it bubbles to
-    // the Pressable's onClick regardless of Playwright's clip detection.
-    await slot.evaluate((el) => el.scrollIntoView({ block: "nearest", inline: "nearest" }));
-    await slot.dispatchEvent("click");
+    // ── 3. Narrow to lunch, then open the drawer on the first bookable time ──
+    await selectMealWindow(page, "Lunch");
+    const bookedTime = await openBookingDrawer(page);
+    expect(bookedTime).toMatch(/^\d{2}:\d{2}$/);
 
     // ── 4. Fill customer details to trigger the hold (debounce = 2 s) ────────
     await page.getByPlaceholder("Your full name").fill("E2E Booking Flow");

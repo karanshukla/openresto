@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { futureDateStr, selectBookingDate } from "./helpers";
+import { futureDateStr, openBookingDrawer, selectBookingDate, selectMealWindow } from "./helpers";
 
 /**
  * Guards the customer booking-funnel validation invariant: the Confirm Booking
@@ -16,17 +16,14 @@ test.describe("Booking form validation", () => {
     page,
   }) => {
     await page.goto(`/book?restaurantId=1`);
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
 
     // Pick a far-out date (28 days — distinct from other specs' offsets).
     await selectBookingDate(page, futureDateStr(28));
 
-    // Wait for availability, then pick a midday lunch slot.
-    await expect(page.getByText("Lunch").first()).toBeVisible({ timeout: 20_000 });
-    const slot = page.getByText(/^1[1-4]:\d{2}$/).first();
-    await slot.waitFor({ state: "attached", timeout: 10_000 });
-    await slot.evaluate((el) => el.scrollIntoView({ block: "nearest", inline: "nearest" }));
-    await slot.dispatchEvent("click");
+    // Narrow to lunch, then open the booking drawer from the card's slot row.
+    await selectMealWindow(page, "Lunch");
+    await openBookingDrawer(page);
 
     // With name/email still empty, the confirm Pressable is present but the
     // hold effect has short-circuited — give it well past the 2s debounce to

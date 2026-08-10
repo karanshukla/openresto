@@ -21,6 +21,12 @@ interface PopularTimesPickerProps {
   onSelectTime: (time: string) => void;
   selectedDate?: string;
   timezone?: string;
+  /**
+   * Wrap the chips onto multiple rows instead of scrolling them horizontally. The
+   * booking drawer is only 460px wide, where the scroller's overlay arrow lands on
+   * top of the last chip and hides half the times behind a swipe.
+   */
+  wrap?: boolean;
 }
 
 type Category = "Lunch" | "Dinner" | "All";
@@ -31,6 +37,7 @@ export default function PopularTimesPicker({
   onSelectTime,
   selectedDate,
   timezone,
+  wrap = false,
 }: PopularTimesPickerProps) {
   const { colors, isDark, primaryColor: PRIMARY } = useAppTheme();
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
@@ -155,46 +162,85 @@ export default function PopularTimesPicker({
     scrollRef.current?.scrollTo({ x: scrollPos + offset, animated: true });
   };
 
-  const showLeftArrow = scrollPos > 15;
+  const showLeftArrow = !wrap && scrollPos > 15;
   const showRightArrow =
-    contentWidth > containerWidth && scrollPos < contentWidth - containerWidth - 15;
+    !wrap && contentWidth > containerWidth && scrollPos < contentWidth - containerWidth - 15;
+
+  const categoryTabs = categories.map((cat) => {
+    const isActive = activeCategory === cat;
+    const disabled = isCategoryDisabled(cat);
+    return (
+      <Pressable
+        key={cat}
+        onPress={() => {
+          if (!disabled) {
+            Haptics.selectionAsync();
+            setActiveCategory(cat);
+          }
+        }}
+        disabled={disabled}
+        style={[
+          styles.tab,
+          { borderColor: colors.border },
+          isActive && { backgroundColor: PRIMARY, borderColor: PRIMARY },
+          disabled && styles.tabDisabled,
+        ]}
+      >
+        <ThemedText
+          style={[
+            styles.tabText,
+            isActive && { color: "#fff" },
+            disabled && styles.tabTextDisabled,
+          ]}
+        >
+          {cat}
+        </ThemedText>
+      </Pressable>
+    );
+  });
+
+  const slotChips =
+    filteredSlots.length === 0 ? (
+      <ThemedText style={styles.emptyText}>No slots available for this period.</ThemedText>
+    ) : (
+      filteredSlots.map((slot) => {
+        const isSelected = selectedTime === slot.time;
+        return (
+          <Pressable
+            key={slot.time}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onSelectTime(slot.time);
+            }}
+            style={[
+              styles.slotChip,
+              { borderColor: colors.border, backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+              isSelected && {
+                backgroundColor: PRIMARY,
+                borderColor: PRIMARY,
+              },
+            ]}
+          >
+            <ThemedText style={[styles.slotText, isSelected && { color: "#fff" }]}>
+              {slot.time}
+            </ThemedText>
+          </Pressable>
+        );
+      })
+    );
+
+  if (wrap) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.tabs}>{categoryTabs}</View>
+        <View style={styles.wrappedSlots}>{slotChips}</View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabs}>
-        {categories.map((cat) => {
-          const isActive = activeCategory === cat;
-          const disabled = isCategoryDisabled(cat);
-          return (
-            <Pressable
-              key={cat}
-              onPress={() => {
-                if (!disabled) {
-                  Haptics.selectionAsync();
-                  setActiveCategory(cat);
-                }
-              }}
-              disabled={disabled}
-              style={[
-                styles.tab,
-                { borderColor: colors.border },
-                isActive && { backgroundColor: PRIMARY, borderColor: PRIMARY },
-                disabled && styles.tabDisabled,
-              ]}
-            >
-              <ThemedText
-                style={[
-                  styles.tabText,
-                  isActive && { color: "#fff" },
-                  disabled && styles.tabTextDisabled,
-                ]}
-              >
-                {cat}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
+      <View style={styles.tabs}>{categoryTabs}</View>
 
       <View
         style={styles.scrollWrapper}
@@ -210,35 +256,7 @@ export default function PopularTimesPicker({
           scrollEventThrottle={16}
           onContentSizeChange={(w) => setContentWidth(w)}
         >
-          {filteredSlots.length === 0 ? (
-            <ThemedText style={styles.emptyText}>No slots available for this period.</ThemedText>
-          ) : (
-            filteredSlots.map((slot) => {
-              const isSelected = selectedTime === slot.time;
-
-              return (
-                <Pressable
-                  key={slot.time}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onSelectTime(slot.time);
-                  }}
-                  style={[
-                    styles.slotChip,
-                    { borderColor: colors.border, backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-                    isSelected && {
-                      backgroundColor: PRIMARY,
-                      borderColor: PRIMARY,
-                    },
-                  ]}
-                >
-                  <ThemedText style={[styles.slotText, isSelected && { color: "#fff" }]}>
-                    {slot.time}
-                  </ThemedText>
-                </Pressable>
-              );
-            })
-          )}
+          {slotChips}
         </ScrollView>
 
         {showLeftArrow && (
@@ -330,6 +348,11 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 10,
     paddingHorizontal: 10,
+  },
+  wrappedSlots: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   scrollIndicator: {
     position: "absolute",

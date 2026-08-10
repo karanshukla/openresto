@@ -2,7 +2,9 @@ import {
   getHoursForDay,
   getHoursForDate,
   getIsoDayFromDateString,
+  getNextOpening,
   hasCustomHours,
+  isoDayShortName,
   parseOpenDays,
   summarizeHours,
 } from "@/utils/openingHours";
@@ -118,5 +120,48 @@ describe("summarizeHours", () => {
 
   it("returns the day's hours when a day is given", () => {
     expect(summarizeHours(customRestaurant, 7)).toBe("12:00–16:00 today");
+  });
+});
+
+describe("isoDayShortName", () => {
+  it("names each ISO day", () => {
+    expect(isoDayShortName(1)).toBe("Mon");
+    expect(isoDayShortName(7)).toBe("Sun");
+  });
+
+  it("returns an empty string for a day outside 1-7", () => {
+    expect(isoDayShortName(0)).toBe("");
+    expect(isoDayShortName(8)).toBe("");
+  });
+});
+
+describe("getNextOpening", () => {
+  const hours = {
+    openTime: "09:00",
+    closeTime: "22:00",
+    openHours: [
+      { day: 1, open: "09:00", close: "22:00" },
+      { day: 5, open: "08:00", close: "23:00" },
+    ],
+  };
+
+  it("finds the next open day after the given one", () => {
+    expect(getNextOpening(hours, 4, [1, 5])).toEqual({ isoDay: 5, open: "08:00" });
+  });
+
+  it("wraps around the week rather than stopping at Sunday", () => {
+    expect(getNextOpening(hours, 6, [1, 5])).toEqual({ isoDay: 1, open: "09:00" });
+  });
+
+  it("skips the day it starts from, so a weekly-only opening points at next week", () => {
+    expect(getNextOpening(hours, 5, [5])).toEqual({ isoDay: 5, open: "08:00" });
+  });
+
+  it("returns null when the location never opens", () => {
+    expect(getNextOpening(hours, 3, [])).toBeNull();
+  });
+
+  it("falls back to the uniform hours for a day with no per-day entry", () => {
+    expect(getNextOpening(hours, 1, [3])).toEqual({ isoDay: 3, open: "09:00" });
   });
 });

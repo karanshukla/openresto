@@ -54,7 +54,7 @@ test.describe("End-user keyboard shortcuts", () => {
     page,
   }) => {
     await page.goto(`/book?restaurantId=${RESTAURANT_ID}`);
-    await expect(page.getByText("Book a table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
 
     await page.keyboard.press("l");
 

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { Modal, StyleSheet, View, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -44,11 +45,17 @@ export default function DatePicker({
   onSelect,
   openDays,
   allowPast,
+  icon,
+  triggerLabel,
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
   /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
+  /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
+  icon?: ComponentProps<typeof Ionicons>["name"];
+  /** Overrides the trigger label, e.g. a filter bar that says "Today" instead of the date. */
+  triggerLabel?: string;
   /**
    * Opt-in: also allow past dates (back to today-365). Default false keeps the
    * customer flow restricted to today and later (hard `min={today}`).
@@ -149,9 +156,21 @@ export default function DatePicker({
           },
         ]}
       >
-        <ThemedText style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}>
-          {selectedLabel ?? "Select a date"}
-        </ThemedText>
+        {icon ? (
+          <View style={styles.triggerLead}>
+            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <ThemedText
+              numberOfLines={1}
+              style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}
+            >
+              {triggerLabel ?? selectedLabel ?? "Select a date"}
+            </ThemedText>
+          </View>
+        ) : (
+          <ThemedText style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}>
+            {triggerLabel ?? selectedLabel ?? "Select a date"}
+          </ThemedText>
+        )}
         <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
       </Pressable>
 
@@ -286,6 +305,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
+  },
+  triggerLead: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    minWidth: 0,
   },
   chevron: {
     fontSize: 14,
