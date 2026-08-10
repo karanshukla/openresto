@@ -39,24 +39,55 @@ describe("Button", () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
-  it("renders with default primary size", () => {
-    render(<Button>Primary</Button>);
-    expect(screen.getByText("Primary")).toBeTruthy();
+  it.each(["lg", "md", "sm", "icon"] as const)("renders at %s size", (size) => {
+    render(<Button size={size}>Sized</Button>);
+    expect(screen.getByText("Sized")).toBeTruthy();
   });
 
-  it("renders with secondary size", () => {
-    render(<Button size="secondary">Secondary</Button>);
-    expect(screen.getByText("Secondary")).toBeTruthy();
+  it.each(["primary", "secondary", "ghost", "danger"] as const)(
+    "renders the %s variant",
+    (variant) => {
+      render(<Button variant={variant}>Variant</Button>);
+      expect(screen.getByText("Variant")).toBeTruthy();
+    }
+  );
+
+  it("names the button from its string children", () => {
+    render(<Button>Save changes</Button>);
+    expect(screen.getByLabelText("Save changes")).toBeTruthy();
   });
 
-  it("renders with small size", () => {
-    render(<Button size="small">Small</Button>);
-    expect(screen.getByText("Small")).toBeTruthy();
+  it("prefers an explicit accessibilityLabel over the children", () => {
+    render(<Button accessibilityLabel="Save your changes">Save</Button>);
+    expect(screen.getByLabelText("Save your changes")).toBeTruthy();
   });
 
-  it("renders with icon size", () => {
-    render(<Button size="icon">★</Button>);
-    expect(screen.getByText("★")).toBeTruthy();
+  it("exposes disabled state to assistive tech", () => {
+    render(<Button disabled>Blocked</Button>);
+    expect(screen.getByRole("button", { disabled: true })).toBeTruthy();
+  });
+
+  it("marks itself busy and blocks presses while loading", () => {
+    const onPress = jest.fn();
+    render(
+      <Button onPress={onPress} loading>
+        Saving
+      </Button>
+    );
+    expect(screen.getByRole("button").props.accessibilityState).toMatchObject({ busy: true });
+    fireEvent.press(screen.getByText("Saving"));
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it("renders leading and trailing icons", () => {
+    const { rerender } = render(<Button icon="add">Add</Button>);
+    expect(screen.getByText("Add")).toBeTruthy();
+    rerender(
+      <Button icon="arrow-forward" iconPosition="trailing">
+        Next
+      </Button>
+    );
+    expect(screen.getByText("Next")).toBeTruthy();
   });
 
   it("falls back to COLORS.primary when brand has no primaryColor", () => {

@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: theme.spacing.sm,
-    ...theme.buttonSizes.primary,
+    ...theme.buttonSizes.lg,
     borderRadius: theme.borderRadius.lg,
     marginTop: 4,
   },

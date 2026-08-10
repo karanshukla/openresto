@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import type { ViewStyle } from "react-native";
+import { StyleSheet, type ViewStyle } from "react-native";
 import { RowTextButton } from "@/components/admin/settings/RowTextButton";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -8,11 +8,14 @@ jest.mock("@expo/vector-icons", () => ({
     require("react").createElement("Text", { testID: `icon-${name}` }, name),
 }));
 
+const resolvedStyle = () => StyleSheet.flatten(screen.getByRole("button").props.style) as ViewStyle;
+
 /**
- * Pressable resolves its function-style prop before it reaches the host view, so the rendered
- * style is a two-slot array: the component's own base style, then whatever the caller passed.
+ * The leading glyph is decorative — <Icon> hides it from the accessibility tree on purpose —
+ * so it is only reachable with hidden elements included.
  */
-const resolvedStyle = () => screen.getByRole("button").props.style as [ViewStyle, ViewStyle | null];
+const queryIcon = (name: string) =>
+  screen.queryByTestId(`icon-${name}`, { includeHiddenElements: true });
 
 describe("RowTextButton", () => {
   const baseProps = { label: "Edit", color: "#0a7ea4" };
@@ -42,12 +45,17 @@ describe("RowTextButton", () => {
 
   it("renders a leading icon when one is supplied", () => {
     render(<RowTextButton {...baseProps} icon="pencil" />);
-    expect(screen.getByTestId("icon-pencil")).toBeTruthy();
+    expect(queryIcon("pencil")).toBeTruthy();
+  });
+
+  it("keeps the leading icon out of the accessibility tree", () => {
+    render(<RowTextButton {...baseProps} icon="pencil" />);
+    expect(screen.queryByTestId("icon-pencil")).toBeNull();
   });
 
   it("renders no icon by default", () => {
     render(<RowTextButton {...baseProps} />);
-    expect(screen.queryByTestId(/^icon-/)).toBeNull();
+    expect(screen.queryByTestId(/^icon-/, { includeHiddenElements: true })).toBeNull();
   });
 
   it("applies the passed testID", () => {
@@ -55,15 +63,15 @@ describe("RowTextButton", () => {
     expect(screen.getByTestId("edit-section")).toBeTruthy();
   });
 
-  it("is enabled and fully opaque at rest", () => {
+  it("is enabled and undimmed at rest", () => {
     render(<RowTextButton {...baseProps} />);
     expect(screen.getByRole("button").props.accessibilityState).toEqual({ disabled: false });
-    expect(resolvedStyle()[0].opacity).toBe(1);
+    expect(resolvedStyle().opacity).toBeUndefined();
   });
 
   it("dims to 0.5 when disabled", () => {
     render(<RowTextButton {...baseProps} disabled />);
-    expect(resolvedStyle()[0].opacity).toBe(0.5);
+    expect(resolvedStyle().opacity).toBe(0.5);
   });
 
   it("marks itself disabled for assistive tech and ignores presses", () => {
@@ -76,16 +84,21 @@ describe("RowTextButton", () => {
 
   it("borders with the supplied color", () => {
     render(<RowTextButton {...baseProps} color="#c00" />);
-    expect(resolvedStyle()[0].borderColor).toBe("#c00");
+    expect(resolvedStyle().borderColor).toBe("#c00");
   });
 
-  it("merges a caller-supplied style after its own", () => {
+  it("merges a caller-supplied style over its own", () => {
     render(<RowTextButton {...baseProps} style={{ marginLeft: 8 }} />);
-    expect(resolvedStyle()[1]).toEqual({ marginLeft: 8 });
+    expect(resolvedStyle().marginLeft).toBe(8);
   });
 
-  it("leaves the caller style slot empty when none is passed", () => {
+  it("reaches the 44px touch target through hitSlop", () => {
     render(<RowTextButton {...baseProps} />);
-    expect(resolvedStyle()[1]).toBeFalsy();
+    expect(screen.getByRole("button").props.hitSlop).toEqual({
+      top: 10,
+      bottom: 10,
+      left: 8,
+      right: 8,
+    });
   });
 });

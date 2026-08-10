@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   linkBtn: {
-    ...theme.buttonSizes.secondary,
+    ...theme.buttonSizes.md,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",

@@ -117,31 +117,45 @@ export const theme = {
     xxxl: 32,
   },
 
+  // Button dimensions, keyed by size only — visual treatment is the `variant` axis
+  // on <Button>, kept deliberately separate so "large" and "primary" can vary freely.
   buttonSizes: {
-    // Primary button (full-width, prominent)
-    primary: {
+    lg: {
       paddingVertical: 14,
       paddingHorizontal: 20,
       minHeight: 48,
     },
-    // Secondary button (medium, inline)
-    secondary: {
+    md: {
       paddingVertical: 12,
       paddingHorizontal: 16,
       minHeight: 44,
     },
-    // Small button (compact, inline)
-    small: {
+    sm: {
       paddingVertical: 8,
       paddingHorizontal: 14,
       minHeight: 36,
     },
-    // Icon button (square, minimal padding)
     icon: {
       padding: 10,
       minHeight: 44,
       minWidth: 44,
     },
+  },
+
+  iconSizes: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+  },
+
+  // WCAG 2.1 AA target sizes. 2.5.5 asks for 44x44; 2.5.8 (AA) sets the floor at 24x24.
+  // Visually small controls keep their compact chrome and reach 44 via hitSlop instead.
+  a11y: {
+    minTouchTarget: 44,
+    minTouchTargetCompact: 24,
   },
 
   borderRadius: {

@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
   },
-  refBadge: { ...theme.buttonSizes.secondary, borderRadius: theme.borderRadius.lg },
+  refBadge: { ...theme.buttonSizes.md, borderRadius: theme.borderRadius.lg },
   refValue: { ...theme.typography.h2, fontWeight: "800" },
   copyBtn: {
     flexDirection: "row",
