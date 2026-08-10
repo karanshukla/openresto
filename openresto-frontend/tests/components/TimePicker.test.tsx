@@ -52,7 +52,7 @@ describe("TimePicker Native", () => {
     render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
     fireEvent.press(screen.getByText("09:00"));
     // The selected option renders a checkmark
-    expect(screen.getByText("✓")).toBeTruthy();
+    expect(screen.getByText("✓", { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("closes the modal when the backdrop is pressed", () => {

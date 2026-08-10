@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useState, type ComponentProps } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Icon, type IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import * as Haptics from "expo-haptics";
@@ -25,7 +25,7 @@ export default function Select({
   selectedValue?: string | number;
   placeholder?: string;
   /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: IconName;
   accessibilityLabel?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -49,8 +49,16 @@ export default function Select({
           testID="select-backdrop"
           style={styles.backdrop}
           onPress={() => setModalVisible(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the options list"
         >
-          <ThemedView style={[styles.modalView, { borderColor }]}>
+          <ThemedView
+            style={[styles.modalView, { borderColor }]}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel={accessibilityLabel ?? placeholder}
+          >
             {/*
               Plain ScrollView over FlatList: option counts are small (max ~50 for seat pickers),
               so virtualization buys nothing, and react-native-web's FlatList scroll container
@@ -58,7 +66,7 @@ export default function Select({
               onPress never fires — the modal just dismisses on pointer-up. A ScrollView with
               nestedScrollEnabled + direct Pressable rows is reliable cross-platform.
             */}
-            <ScrollView style={styles.list} nestedScrollEnabled>
+            <ScrollView style={styles.list} nestedScrollEnabled role="menu">
               {options.map((item, i) => (
                 <View key={item.value.toString()}>
                   <Pressable
@@ -72,6 +80,9 @@ export default function Select({
                       onSelect(item.value);
                       setModalVisible(false);
                     }}
+                    role="menuitem"
+                    accessibilityLabel={item.label}
+                    accessibilityState={{ selected: item.value === selectedValue }}
                   >
                     <ThemedText
                       style={[
@@ -82,7 +93,13 @@ export default function Select({
                       {item.label}
                     </ThemedText>
                     {item.value === selectedValue && (
-                      <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                      <ThemedText
+                        style={[styles.checkmark, { color: primaryColor }]}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no"
+                      >
+                        ✓
+                      </ThemedText>
                     )}
                   </Pressable>
                   {i < options.length - 1 && (
@@ -103,11 +120,16 @@ export default function Select({
         ]}
         onPress={() => setModalVisible(true)}
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={
+          accessibilityLabel
+            ? `${accessibilityLabel}, ${selectedOption?.label ?? placeholder}`
+            : undefined
+        }
+        accessibilityState={{ expanded: modalVisible }}
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <Icon name={icon} size={15} color={placeholderColor} />
             <ThemedText
               numberOfLines={1}
               style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
@@ -120,7 +142,13 @@ export default function Select({
             {selectedOption?.label ?? placeholder}
           </ThemedText>
         )}
-        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
+        <ThemedText
+          style={[styles.chevron, { color: placeholderColor }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          ▾
+        </ThemedText>
       </Pressable>
     </>
   );

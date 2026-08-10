@@ -30,6 +30,11 @@ export default function TimePicker({
       <Pressable
         onPress={() => setOpen(true)}
         testID="time-picker-trigger"
+        accessibilityRole="button"
+        accessibilityLabel={
+          selectedTime ? `Change time, currently ${selectedTime}` : "Select a time"
+        }
+        accessibilityState={{ expanded: open }}
         style={[
           styles.trigger,
           { borderColor: open ? primaryColor : borderColor, backgroundColor: bg },
@@ -38,7 +43,13 @@ export default function TimePicker({
         <ThemedText style={{ color: selectedTime ? textColor : placeholderColor, fontSize: 15 }}>
           {selectedTime ?? "Select a time"}
         </ThemedText>
-        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
+        <ThemedText
+          style={[styles.chevron, { color: placeholderColor }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          ▾
+        </ThemedText>
       </Pressable>
 
       <Modal
@@ -51,6 +62,8 @@ export default function TimePicker({
           style={styles.backdrop}
           testID="time-picker-backdrop"
           onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the time picker"
         >
           <Pressable
             style={[
@@ -60,11 +73,15 @@ export default function TimePicker({
             ]}
             testID="time-picker-panel"
             onPress={(e) => e?.stopPropagation?.()}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel="Select a time"
           >
-            <ThemedText type="bodyBold" style={styles.panelTitle}>
+            <ThemedText type="bodyBold" style={styles.panelTitle} accessibilityRole="header">
               Select a time
             </ThemedText>
-            <ScrollView style={styles.list} testID="time-picker-list">
+            <ScrollView style={styles.list} testID="time-picker-list" role="menu">
               {options.map((option) => {
                 const isSelected = option.value === selectedTime;
                 return (
@@ -75,13 +92,22 @@ export default function TimePicker({
                       onSelect(option.value);
                       setOpen(false);
                     }}
+                    role="menuitem"
+                    accessibilityLabel={option.label}
+                    accessibilityState={{ selected: isSelected }}
                     style={[styles.option, isSelected && { backgroundColor: `${primaryColor}14` }]}
                   >
                     <ThemedText style={isSelected && { color: primaryColor, fontWeight: "600" }}>
                       {option.label}
                     </ThemedText>
                     {isSelected && (
-                      <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                      <ThemedText
+                        style={[styles.checkmark, { color: primaryColor }]}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no"
+                      >
+                        ✓
+                      </ThemedText>
                     )}
                   </Pressable>
                 );

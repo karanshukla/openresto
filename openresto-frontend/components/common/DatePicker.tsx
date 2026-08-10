@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, StyleSheet, FlatList, TouchableOpacity, View } from "react-native";
-import { useState, type ComponentProps } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Icon, type IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -50,7 +50,7 @@ export default function DatePicker({
    */
   allowPast?: boolean;
   /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: IconName;
   /** Overrides the trigger label, e.g. a filter bar that says "Today" instead of the date. */
   triggerLabel?: string;
 }) {
@@ -81,15 +81,24 @@ export default function DatePicker({
         <Pressable
           style={styles.backdrop}
           onPress={/* istanbul ignore next */ () => setModalVisible(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the date picker"
         >
-          <ThemedView style={[styles.modalView, { borderColor }]}>
-            <ThemedText type="bodyBold" style={styles.modalTitle}>
+          <ThemedView
+            style={[styles.modalView, { borderColor }]}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel="Select a date"
+          >
+            <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
               Select a date
             </ThemedText>
             <FlatList
               data={options}
               keyExtractor={(item) => item.value}
               style={styles.list}
+              role="menu"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
@@ -100,6 +109,9 @@ export default function DatePicker({
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
+                  role="menuitem"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: item.value === selectedDate }}
                 >
                   <ThemedText
                     style={
@@ -109,7 +121,13 @@ export default function DatePicker({
                     {item.label}
                   </ThemedText>
                   {item.value === selectedDate && (
-                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                    <ThemedText
+                      style={[styles.checkmark, { color: primaryColor }]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    >
+                      ✓
+                    </ThemedText>
                   )}
                 </TouchableOpacity>
               )}
@@ -126,10 +144,13 @@ export default function DatePicker({
           (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
+        accessibilityRole="button"
+        accessibilityLabel={selected ? `Change date, currently ${selected.label}` : "Select a date"}
+        accessibilityState={{ expanded: modalVisible }}
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <Icon name={icon} size={15} color={placeholderColor} />
             <ThemedText numberOfLines={1} style={!selected && { color: placeholderColor }}>
               {triggerLabel ?? selected?.label ?? "Select a date"}
             </ThemedText>
@@ -139,7 +160,13 @@ export default function DatePicker({
             {triggerLabel ?? selected?.label ?? "Select a date"}
           </ThemedText>
         )}
-        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
+        <ThemedText
+          style={[styles.chevron, { color: placeholderColor }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          ▾
+        </ThemedText>
       </Pressable>
     </>
   );

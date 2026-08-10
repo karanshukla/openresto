@@ -1,6 +1,6 @@
-import { useState, type ComponentProps } from "react";
+import { useState } from "react";
 import { Modal, StyleSheet, View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/common/Icon";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -53,7 +53,7 @@ export default function DatePicker({
   /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
   /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: IconName;
   /** Overrides the trigger label, e.g. a filter bar that says "Today" instead of the date. */
   triggerLabel?: string;
   /**
@@ -143,11 +143,24 @@ export default function DatePicker({
       })
     : null;
 
+  const describeDate = (d: Date) =>
+    d.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
   return (
     <View style={styles.wrapper} testID="date-picker-web">
       <Pressable
         onPress={openPicker}
         testID="date-picker-trigger"
+        accessibilityRole="button"
+        accessibilityLabel={
+          selectedLabel ? `Change date, currently ${selectedLabel}` : "Select a date"
+        }
+        accessibilityState={{ expanded: open }}
         style={[
           styles.trigger,
           {
@@ -158,7 +171,7 @@ export default function DatePicker({
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Ionicons name={icon} size={15} color={placeholderColor} />
+            <Icon name={icon} size={15} color={placeholderColor} />
             <ThemedText
               numberOfLines={1}
               style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}
@@ -171,11 +184,17 @@ export default function DatePicker({
             {triggerLabel ?? selectedLabel ?? "Select a date"}
           </ThemedText>
         )}
-        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
+        <ThemedText
+          style={[styles.chevron, { color: placeholderColor }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          ▾
+        </ThemedText>
       </Pressable>
 
       {isClosedDay && (
-        <ThemedText style={styles.closedWarning}>
+        <ThemedText style={styles.closedWarning} role="alert" accessibilityLiveRegion="polite">
           Note: This restaurant is normally closed on this day. Please double-check another date.
         </ThemedText>
       )}
@@ -190,6 +209,8 @@ export default function DatePicker({
           style={styles.backdrop}
           testID="date-picker-backdrop"
           onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the date picker"
         >
           <Pressable
             style={[
@@ -199,6 +220,10 @@ export default function DatePicker({
             ]}
             testID="date-picker-calendar"
             onPress={(e) => e?.stopPropagation?.()}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel="Choose a date"
           >
             <View style={styles.calendarHeader}>
               <Pressable
@@ -206,14 +231,20 @@ export default function DatePicker({
                 disabled={!canGoPrev}
                 testID="date-picker-prev-month"
                 style={styles.navButton}
+                accessibilityRole="button"
+                accessibilityLabel="Previous month"
+                accessibilityState={{ disabled: !canGoPrev }}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               >
                 <ThemedText
                   style={{ color: canGoPrev ? textColor : placeholderColor, fontSize: 16 }}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
                 >
                   ‹
                 </ThemedText>
               </Pressable>
-              <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>
+              <ThemedText style={{ fontSize: 14, fontWeight: "600" }} accessibilityRole="header">
                 {MONTH_LABELS[viewMonth]} {viewYear}
               </ThemedText>
               <Pressable
@@ -221,16 +252,26 @@ export default function DatePicker({
                 disabled={!canGoNext}
                 testID="date-picker-next-month"
                 style={styles.navButton}
+                accessibilityRole="button"
+                accessibilityLabel="Next month"
+                accessibilityState={{ disabled: !canGoNext }}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               >
                 <ThemedText
                   style={{ color: canGoNext ? textColor : placeholderColor, fontSize: 16 }}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
                 >
                   ›
                 </ThemedText>
               </Pressable>
             </View>
 
-            <View style={styles.weekdayRow}>
+            <View
+              style={styles.weekdayRow}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
               {WEEKDAY_LABELS.map((label) => (
                 <View key={label} style={styles.cell}>
                   <ThemedText style={{ fontSize: 11, color: placeholderColor, fontWeight: "600" }}>
@@ -259,6 +300,10 @@ export default function DatePicker({
                         onSelect(cellStr);
                         setOpen(false);
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={describeDate(cellDate)}
+                      accessibilityHint={closedWeekday ? "Normally closed" : undefined}
+                      accessibilityState={{ disabled, selected: isSelected }}
                       style={[
                         styles.cell,
                         styles.dayCell,
