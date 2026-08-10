@@ -14,7 +14,7 @@ import { theme } from "@/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import OverflowMenu from "@/components/layout/OverflowMenu";
-import { isMobileWidth } from "@/constants/breakpoints";
+import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 
 const NAV_LINKS = [
   {
@@ -158,10 +158,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    maxWidth: 1320,
+    maxWidth: CONTENT_MAX_WIDTH,
     width: "100%",
     alignSelf: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: CONTENT_PADDING_H,
     height: "100%",
     overflow: "hidden",
   },

@@ -17,7 +17,7 @@ import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
-import { isMobileWidth } from "@/constants/breakpoints";
+import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
@@ -147,10 +147,22 @@ export default function LocationsScreen({
   // Desktop keeps the drawer as a column beside the list so the comparison stays visible;
   // phones don't have the room, so it becomes a bottom sheet over the page.
   const sideDrawer = drawer && !isCompact;
+  // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
+  // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
+  // either side. Matching it is what puts the drawer's edge under the overflow menu.
+  const contentWidth = Math.min(width, CONTENT_MAX_WIDTH) - CONTENT_PADDING_H * 2;
 
   return (
     <ThemedView style={styles.root}>
-      <View style={styles.row}>
+      {/* With the drawer open the page becomes two panes, so it caps itself to the app's
+          inner content width — the drawer's right edge then lands on the same line as the
+          navbar's overflow menu. Left full-bleed it would sit against the far edge of a
+          wide monitor instead, detached from the chrome above and below it. Closed, the
+          list stays full-bleed exactly as every other screen is. */}
+      <View
+        testID="locations-row"
+        style={[styles.row, sideDrawer && [styles.rowWithDrawer, { maxWidth: contentWidth }]]}
+      >
         <View style={styles.listColumn}>
           <ScrollView
             ref={scrollRef}
@@ -250,9 +262,13 @@ const styles = StyleSheet.create({
   row: {
     flex: 1,
     flexDirection: "row",
+    width: "100%",
     // react-native-web needs the explicit min-height:0 for the list column to shrink
     // instead of overflowing once the drawer takes its 460px beside it.
     ...(Platform.OS === "web" ? ({ minHeight: 0 } as object) : null),
+  },
+  rowWithDrawer: {
+    alignSelf: "center",
   },
   listColumn: {
     flex: 1,

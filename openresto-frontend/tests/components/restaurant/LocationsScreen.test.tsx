@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { ScrollView } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import LocationsScreen, { availabilitySummary } from "@/components/restaurant/LocationsScreen";
 import { fetchRestaurants } from "@/api/restaurants";
 import { scrollIntoView } from "@/utils/scrollIntoView";
@@ -253,6 +253,49 @@ describe("LocationsScreen", () => {
 
       await waitFor(() =>
         expect(screen.getByTestId("drawer-variant").props.children).toBe("sheet")
+      );
+    });
+
+    // The drawer is a flex sibling of the whole viewport, so without this cap it sits
+    // against the far edge of a wide monitor instead of under the navbar's overflow menu.
+    it.each([
+      [2000, 1264],
+      [1440, 1264],
+      [1280, 1224],
+      [900, 844],
+    ])(
+      "at %ipx caps the two-pane row to the navbar's own content width (%ipx)",
+      async (viewport, expected) => {
+        dimensionsSpy.mockReturnValue({ width: viewport, height: 950, scale: 1, fontScale: 1 });
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+        // Closed, the list is full-bleed like every other screen.
+        expect(StyleSheet.flatten(screen.getByTestId("locations-row").props.style).maxWidth).toBe(
+          undefined
+        );
+
+        fireEvent.press(screen.getByTestId("book-1"));
+        await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+        expect(StyleSheet.flatten(screen.getByTestId("locations-row").props.style).maxWidth).toBe(
+          expected
+        );
+      }
+    );
+
+    it("leaves the row uncapped for the phone sheet, which overlays rather than sits beside", async () => {
+      dimensionsSpy.mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("book-1"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+      expect(StyleSheet.flatten(screen.getByTestId("locations-row").props.style).maxWidth).toBe(
+        undefined
       );
     });
 

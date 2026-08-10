@@ -7,6 +7,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
+import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H } from "@/constants/breakpoints";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 
 interface FooterProps {
@@ -95,11 +96,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     rowGap: theme.spacing.sm,
     columnGap: theme.spacing.md,
-    maxWidth: 1320,
+    maxWidth: CONTENT_MAX_WIDTH,
     width: "100%",
     minHeight: 56,
     alignSelf: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: CONTENT_PADDING_H,
     paddingVertical: theme.spacing.lg,
   },
   innerMobile: {
