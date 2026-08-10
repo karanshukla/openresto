@@ -63,6 +63,32 @@ jobs:
           name: frontend-coverage
           path: openresto-frontend/coverage/
 
+  routes:
+    name: Route Manifest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openresto-frontend
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Expo Router derives routes from the filesystem, so a non-route file under app/
+      # silently becomes one — and a name matching a routing convention can re-parent the
+      # tree. tsc, Jest and lint all stay green when that happens; only routing notices.
+      - name: Check Route Manifest
+        run: npm run routes:check
+
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
@@ -437,7 +463,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs: [frontend, backend, docker, e2e-smoke, e2e-extensive]
+    needs: [frontend, routes, backend, docker, e2e-smoke, e2e-extensive]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
