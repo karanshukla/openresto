@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
     height: theme.formSizes.inputHeight,
     borderWidth: 1,
     borderRadius: theme.formSizes.inputBorderRadius,

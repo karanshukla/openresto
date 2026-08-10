@@ -6,7 +6,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import BookingDrawer from "@/components/booking/BookingDrawer";
+import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingDrawer";
 import { createBooking } from "@/api/bookings";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -166,6 +166,15 @@ describe("BookingDrawer", () => {
       expect(screen.getByText("Toronto Resto")).toBeTruthy();
     });
 
+    it("offers a drag handle wired to the pan responder", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      const grabber = screen.getByTestId("booking-drawer-grabber");
+      // PanResponder spreads its handlers onto the view it is attached to; without them
+      // the handle is decorative and the sheet cannot be dragged away.
+      expect(grabber.props.onStartShouldSetResponder).toBeDefined();
+      expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
+    });
+
     it("closes when the backdrop is tapped", () => {
       const onClose = jest.fn();
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
@@ -272,5 +281,24 @@ describe("BookingDrawer", () => {
       expect(mockPush).not.toHaveBeenCalled();
       expect(screen.queryByText("Something went wrong. Please try again.")).toBeNull();
     });
+  });
+});
+
+describe("shouldDismissSheet", () => {
+  it("dismisses on a long drag regardless of speed", () => {
+    expect(shouldDismissSheet(121, 0)).toBe(true);
+  });
+
+  it("dismisses on a short but fast downward flick", () => {
+    expect(shouldDismissSheet(60, 0.9)).toBe(true);
+  });
+
+  it("springs back from a short slow drag", () => {
+    expect(shouldDismissSheet(60, 0.2)).toBe(false);
+    expect(shouldDismissSheet(10, 2)).toBe(false);
+  });
+
+  it("never dismisses on an upward drag", () => {
+    expect(shouldDismissSheet(-200, -3)).toBe(false);
   });
 });

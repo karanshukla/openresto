@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
@@ -679,7 +680,10 @@ export default function BookingForm({
         <View style={styles.drawerSection}>
           <Pressable
             testID="seating-disclosure-toggle"
-            onPress={() => setSeatingOpen((o) => !o)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setSeatingOpen((o) => !o);
+            }}
             accessibilityRole="button"
             accessibilityState={{ expanded: seatingOpen }}
             style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [

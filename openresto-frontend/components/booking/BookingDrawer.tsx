@@ -1,7 +1,16 @@
-import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Modal,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -12,6 +21,17 @@ import { convertLocalToUtc } from "@/utils/date";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 
 export const DRAWER_WIDTH = 460;
+
+/** How far the sheet animates before it is considered gone. */
+const SHEET_EXIT_DISTANCE = 800;
+
+/**
+ * Whether a drag on the sheet's handle should dismiss it: either dragged far enough to
+ * read as deliberate, or flicked down hard enough that a short drag still means "go away".
+ */
+export function shouldDismissSheet(dy: number, vy: number): boolean {
+  return dy > 120 || (dy > 40 && vy > 0.7);
+}
 
 function summaryLine(seats: number, date: string, time: string, today: string): string {
   const when =
@@ -55,6 +75,47 @@ export default function BookingDrawer({
   const { colors, isDark } = useAppTheme();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Drag-to-dismiss for the sheet. The responder is built once, so it reads onClose
+  // through a ref rather than closing over a stale prop.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const dragY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      // Only claim clearly-downward drags, so a horizontal swipe or a tap still reaches
+      // the controls underneath.
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_e, g) => {
+        // Downward only — dragging up must not lift the sheet off its own bottom edge.
+        if (g.dy > 0) dragY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_e, g) => {
+        if (shouldDismissSheet(g.dy, g.vy)) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Animated.timing(dragY, {
+            toValue: SHEET_EXIT_DISTANCE,
+            duration: 180,
+            useNativeDriver: false,
+          }).start(() => onCloseRef.current());
+        } else {
+          Animated.spring(dragY, {
+            toValue: 0,
+            bounciness: 0,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const closeWithHaptic = () => {
+    Haptics.selectionAsync();
+    onClose();
+  };
+
   const handleSubmit = async (data: BookingFormData) => {
     setSubmitError(null);
     const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
@@ -91,9 +152,9 @@ export default function BookingDrawer({
     }
   };
 
-  const body = (
+  const body = (headerHandlers: object = {}) => (
     <>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View {...headerHandlers} style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerText}>
           <ThemedText style={styles.title} numberOfLines={1}>
             {restaurant.name}
@@ -104,7 +165,7 @@ export default function BookingDrawer({
         </View>
         <Pressable
           testID="booking-drawer-close"
-          onPress={onClose}
+          onPress={closeWithHaptic}
           accessibilityRole="button"
           accessibilityLabel="Close booking panel"
           style={[styles.closeBtn, { backgroundColor: isDark ? "#1b1e23" : "#f3efe6" }]}
@@ -145,13 +206,23 @@ export default function BookingDrawer({
           <Pressable
             testID="booking-drawer-backdrop"
             style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-            onPress={onClose}
+            onPress={closeWithHaptic}
           />
-          <View
+          <Animated.View
             testID="booking-drawer"
-            style={[styles.sheet, { backgroundColor: colors.card, borderTopColor: colors.border }]}
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.card, borderTopColor: colors.border },
+              { transform: [{ translateY: dragY }] },
+            ]}
           >
-            <View style={styles.grabberArea}>
+            {/* The handle and the header drag the sheet; the body below them keeps its own
+                scrolling, which a whole-sheet responder would fight with. */}
+            <View
+              {...panResponder.panHandlers}
+              testID="booking-drawer-grabber"
+              style={styles.grabberArea}
+            >
               <View
                 style={[
                   styles.grabber,
@@ -159,8 +230,8 @@ export default function BookingDrawer({
                 ]}
               />
             </View>
-            {body}
-          </View>
+            {body(panResponder.panHandlers)}
+          </Animated.View>
         </View>
       </Modal>
     );
@@ -175,7 +246,7 @@ export default function BookingDrawer({
         theme.shadows.popup,
       ]}
     >
-      {body}
+      {body()}
     </View>
   );
 }
@@ -205,7 +276,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   grabberArea: {
-    paddingTop: theme.spacing.xsm,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
     alignItems: "center",
   },
   grabber: {

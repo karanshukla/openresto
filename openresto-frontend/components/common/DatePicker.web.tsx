@@ -301,6 +301,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
     height: 44,
     borderWidth: 1,
     borderRadius: 8,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -18,6 +19,7 @@ import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
 import { groupDisplayName, groupedTableIds } from "@/utils/tableGroups";
 import { getOpenDaysList, getRestaurantNow } from "@/utils/restaurantTime";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
+import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { LinkedText } from "@/components/common/LinkedText";
 import OpeningHoursTable from "@/components/restaurant/OpeningHoursTable";
 import WalkInNotice from "@/components/booking/WalkInNotice";
@@ -155,7 +157,6 @@ export default function LocationListItem({
   const accentSoft = `rgba(${accentR},${accentG},${accentB},${isDark ? 0.15 : 0.12})`;
   const accentBorder = `rgba(${accentR},${accentG},${accentB},0.3)`;
   const surface2 = isDark ? "#1b1e23" : "#f3efe6";
-  const neutralBadgeBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
 
   const tags = restaurant.tags ?? [];
   const thumbSize = compact ? 64 : 108;
@@ -165,6 +166,7 @@ export default function LocationListItem({
     : null;
 
   const toggleExpanded = () => {
+    Haptics.selectionAsync();
     setExpanded((prev) => {
       const next = !prev;
       if (next && onExpand) onExpand(restaurant.id);
@@ -173,24 +175,24 @@ export default function LocationListItem({
   };
 
   const statusBadge = closedOnDate ? (
-    <View style={[styles.badge, { backgroundColor: neutralBadgeBg, borderColor }]}>
-      <ThemedText style={[styles.badgeText, { color: mutedColor }]}>
+    <View style={[cardStyles.badge, cardStyles.badgeMuted]}>
+      <ThemedText style={cardStyles.badgeText}>
         {isToday ? "Closed today" : `Closed ${isoDayShortName(selectedIsoDay)}`}
       </ThemedText>
     </View>
   ) : (
-    <View style={[styles.badge, { backgroundColor: accentSoft, borderColor: accentBorder }]}>
-      <View style={[styles.badgeDot, { backgroundColor: primaryColor }]} />
-      <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
-        Open till {dayHours.close}
-      </ThemedText>
+    <View
+      style={[cardStyles.badge, { backgroundColor: openBadgeColor(accentR, accentG, accentB) }]}
+    >
+      <View style={cardStyles.badgeDot} />
+      <ThemedText style={cardStyles.badgeText}>Open till {dayHours.close}</ThemedText>
     </View>
   );
 
   const walkInBadge = walkInBadgeText ? (
-    <View style={[styles.badge, { backgroundColor: neutralBadgeBg, borderColor }]}>
-      <Ionicons name="walk-outline" size={11} color={mutedColor} />
-      <ThemedText style={[styles.badgeText, { color: mutedColor }]}>{walkInBadgeText}</ThemedText>
+    <View style={[cardStyles.badge, cardStyles.badgeMuted]}>
+      <Ionicons name="walk-outline" size={11} color="#fff" />
+      <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
     </View>
   ) : null;
 
@@ -199,10 +201,17 @@ export default function LocationListItem({
       testID={`location-details-toggle-${restaurant.id}`}
       onPress={toggleExpanded}
       accessibilityRole="button"
+      accessibilityState={{ expanded }}
       accessibilityLabel={expanded ? "Hide details" : "Show details"}
-      style={[styles.detailsBtn, { backgroundColor: surface2 }]}
+      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+        cardStyles.viewBtn,
+        styles.detailsBtn,
+        (hovered || pressed) && { backgroundColor: surface2 },
+      ]}
     >
-      <ThemedText style={[styles.detailsBtnText, { color: primaryColor }]}>Details</ThemedText>
+      <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>Details</ThemedText>
+      {/* A chevron, not the home card's forward arrow: this expands in place rather
+          than navigating somewhere. */}
       <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
     </Pressable>
   );
@@ -285,7 +294,10 @@ export default function LocationListItem({
         {shownSlots.map((s) => (
           <Pressable
             key={s.time}
-            onPress={() => onBook(restaurant, s.time)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onBook(restaurant, s.time);
+            }}
             accessibilityRole="button"
             accessibilityLabel={`Book ${restaurant.name} at ${s.time}`}
             style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -303,7 +315,10 @@ export default function LocationListItem({
         {overflowCount > 0 &&
           (compact ? (
             <Pressable
-              onPress={() => onBook(restaurant, shownSlots[0].time)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onBook(restaurant, shownSlots[0].time);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Show all times for ${restaurant.name}`}
               style={[styles.slot, styles.slotMoreCompact, { borderColor }]}
@@ -314,7 +329,10 @@ export default function LocationListItem({
             </Pressable>
           ) : (
             <Pressable
-              onPress={() => onBook(restaurant, shownSlots[0].time)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onBook(restaurant, shownSlots[0].time);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Show all times for ${restaurant.name}`}
             >
@@ -695,24 +713,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     flexWrap: "wrap",
   },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: 7,
-    borderWidth: 1,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  badgeText: {
-    fontSize: 11.5,
-    fontWeight: "500",
-  },
 
   metaRow: {
     flexDirection: "row",
@@ -735,17 +735,7 @@ const styles = StyleSheet.create({
 
   detailsBtn: {
     flexShrink: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-    paddingHorizontal: theme.spacing.xsm,
-    paddingVertical: theme.spacing.xxs,
-    borderRadius: 7,
     minHeight: 36,
-  },
-  detailsBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
   },
 
   slotRow: {
