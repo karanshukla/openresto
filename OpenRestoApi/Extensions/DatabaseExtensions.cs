@@ -277,7 +277,7 @@ public static partial class DatabaseExtensions
         string journalMode;
         try
         {
-            journalMode = db.Database.SqlQueryRaw<string>("PRAGMA journal_mode").FirstOrDefault() ?? "unknown";
+            journalMode = db.Database.SqlQueryRaw<string>("PRAGMA journal_mode").ToList().FirstOrDefault() ?? "unknown";
         }
         catch (Exception ex)
         {
