@@ -33,6 +33,9 @@ export function BookingActionButtons({
           style={[styles.uncancelBtn, uncancelling && { opacity: 0.6 }]}
           onPress={onUncancel}
           disabled={uncancelling}
+          accessibilityRole="button"
+          accessibilityLabel="Restore booking"
+          accessibilityState={{ disabled: uncancelling, busy: uncancelling }}
         >
           <Ionicons name="refresh-outline" size={16} color={theme.colors.success} />
           <ThemedText style={styles.uncancelBtnText}>
@@ -47,6 +50,9 @@ export function BookingActionButtons({
           style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
           onPress={onCancel}
           disabled={deleting}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel booking"
+          accessibilityState={{ disabled: deleting, busy: deleting }}
         >
           <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
           <ThemedText style={styles.cancelBtnText}>
@@ -64,6 +70,10 @@ export function BookingActionButtons({
         ]}
         onPress={onPurge}
         disabled={deleting}
+        accessibilityRole="button"
+        accessibilityLabel="Permanently delete booking for GDPR"
+        accessibilityHint="This cannot be undone"
+        accessibilityState={{ disabled: deleting, busy: deleting }}
       >
         <Ionicons name="nuclear-outline" size={15} color={mutedColor} />
         <ThemedText style={[styles.purgeBtnText, { color: mutedColor }]}>

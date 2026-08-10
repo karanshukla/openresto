@@ -20,10 +20,24 @@ export default function KeyboardShortcutsHelp({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable testID="keyboard-shortcuts-backdrop" style={styles.backdrop} onPress={onClose}>
+      <Pressable
+        testID="keyboard-shortcuts-backdrop"
+        style={styles.backdrop}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close keyboard shortcuts"
+      >
         <TouchableWithoutFeedback>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ThemedText type="h3">Keyboard shortcuts</ThemedText>
+          <View
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel="Keyboard shortcuts"
+          >
+            <ThemedText type="h3" accessibilityRole="header">
+              Keyboard shortcuts
+            </ThemedText>
             <View style={styles.list}>
               {shortcuts.map((s) => (
                 <View key={s.keys} style={styles.row}>
@@ -43,6 +57,8 @@ export default function KeyboardShortcutsHelp({
             </View>
             <Pressable
               testID="keyboard-shortcuts-close"
+              accessibilityRole="button"
+              accessibilityLabel="Close"
               style={[styles.closeBtn, { borderColor: colors.border }]}
               onPress={onClose}
             >

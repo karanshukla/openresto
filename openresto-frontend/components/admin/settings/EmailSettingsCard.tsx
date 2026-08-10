@@ -177,6 +177,9 @@ export function EmailSettingsCard({
             <Pressable
               key={p.id}
               onPress={() => handleSelectProvider(p)}
+              accessibilityRole="radio"
+              accessibilityLabel={p.name}
+              accessibilityState={{ checked: on }}
               style={[
                 {
                   flex: 1,
@@ -269,6 +272,9 @@ export function EmailSettingsCard({
                 <Pressable
                   key={p}
                   onPress={() => setPort(String(p))}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Use port ${p}`}
+                  accessibilityState={{ checked: port === String(p) }}
                   style={{
                     paddingHorizontal: 10,
                     paddingVertical: 8,
@@ -299,6 +305,9 @@ export function EmailSettingsCard({
           {/* SSL/TLS pill */}
           <Pressable
             onPress={() => setEnableSsl(true)}
+            accessibilityRole="radio"
+            accessibilityLabel="SSL/TLS encryption"
+            accessibilityState={{ checked: enableSsl }}
             style={{
               flex: 1,
               flexDirection: "row",
@@ -327,6 +336,9 @@ export function EmailSettingsCard({
           {/* None pill */}
           <Pressable
             onPress={() => setEnableSsl(false)}
+            accessibilityRole="radio"
+            accessibilityLabel="No encryption"
+            accessibilityState={{ checked: !enableSsl }}
             style={{
               flex: 1,
               alignItems: "center",
@@ -375,7 +387,13 @@ export function EmailSettingsCard({
               autoCapitalize="none"
             />
           </View>
-          <Pressable onPress={() => setShowPassword((v) => !v)} style={{ padding: 8 }}>
+          <Pressable
+            onPress={() => setShowPassword((v) => !v)}
+            style={{ padding: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+            accessibilityState={{ expanded: showPassword }}
+          >
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={20}
@@ -466,7 +484,13 @@ export function EmailSettingsCard({
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
       {/* Collapsible header */}
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Email (SMTP)"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: accentSoft }]}>
           <Ionicons name="mail-outline" size={20} color={primaryColor} />
         </View>

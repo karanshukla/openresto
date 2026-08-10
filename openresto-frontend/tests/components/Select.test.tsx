@@ -70,7 +70,7 @@ describe("Select", () => {
     render(<Select selectedValue="1" options={options} onSelect={onSelect} />);
     fireEvent.press(screen.getByText("Option 1"));
     // Inside the modal, the selected item shows a checkmark
-    expect(screen.getByText("✓")).toBeTruthy();
+    expect(screen.getByText("✓", { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("renders the item separator in dark mode when the modal is open", () => {

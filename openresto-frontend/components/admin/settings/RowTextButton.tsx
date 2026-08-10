@@ -1,7 +1,7 @@
-import { type ComponentProps } from "react";
-import { Pressable, type StyleProp, type ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import { Icon, type IconName } from "@/components/common/Icon";
+import { theme } from "@/theme/theme";
 
 export interface RowTextButtonProps {
   label: string;
@@ -10,17 +10,14 @@ export interface RowTextButtonProps {
   testID?: string;
   accessibilityLabel?: string;
   disabled?: boolean;
-  /** Optional leading Ionicons glyph rendered before the label. */
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }
 
 /**
- * Small bordered text-pill button that pairs visually with {@link RowIconButton} in a row's trailing
- * action cluster. Used for the primary, non-destructive "Edit" affordance so it reads as a real
- * button (the user asked for a proper Edit button instead of a bare pencil icon), while destructive
- * actions (delete) stay icon-only. Matches RowIconButton's tappable target and the shared 8px radius
- * so the cluster stays tight and consistent.
+ * Small bordered text-pill that pairs with {@link RowIconButton} in a row's trailing action
+ * cluster. Used for the primary, non-destructive "Edit" affordance so it reads as a real button,
+ * while destructive actions stay icon-only.
  */
 export function RowTextButton({
   label,
@@ -40,24 +37,34 @@ export function RowTextButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
-      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
       style={({ pressed }) => [
-        {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 4,
-          paddingVertical: 4,
-          paddingHorizontal: 8,
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: color,
-          opacity: disabled ? 0.5 : pressed ? 0.6 : 1,
-        },
+        styles.pill,
+        { borderColor: color },
+        disabled ? styles.disabled : pressed && styles.pressed,
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={13} color={color} /> : null}
-      <ThemedText style={{ fontSize: 12, fontWeight: "600", color }}>{label}</ThemedText>
+      {icon ? <Icon name={icon} size={13} color={color} /> : null}
+      <ThemedText style={[styles.label, { color }]}>{label}</ThemedText>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+  },
+  label: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+  },
+  pressed: { opacity: 0.6 },
+  disabled: { opacity: 0.5 },
+});

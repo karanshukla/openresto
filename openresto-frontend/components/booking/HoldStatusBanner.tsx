@@ -47,7 +47,7 @@ export default function HoldStatusBanner({
     }
     case "unavailable":
       return (
-        <ThemedView style={styles.holdRow}>
+        <ThemedView style={styles.holdRow} role="alert" accessibilityLiveRegion="assertive">
           <ThemedText style={[styles.holdUnavailable, { color: colors.error }]}>
             ✗ {holdMessage ?? "Table not available for this date. Please choose another."}
           </ThemedText>
@@ -55,13 +55,16 @@ export default function HoldStatusBanner({
       );
     case "expired":
       return (
-        <ThemedView style={styles.expiredBox}>
+        <ThemedView style={styles.expiredBox} role="alert" accessibilityLiveRegion="assertive">
           <ThemedText style={[styles.holdUnavailable, { color: colors.error }]}>
             Your table hold expired. Availability may have changed.
           </ThemedText>
           {onRefresh && (
             <Pressable
               onPress={onRefresh}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh page"
+              accessibilityHint="Reloads availability for this date"
               style={[
                 styles.refreshBtn,
                 { backgroundColor: isDark ? "rgba(220,38,38,0.15)" : "rgba(220,38,38,0.1)" },

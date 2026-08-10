@@ -34,12 +34,25 @@ describe("AlertModal", () => {
     expect(screen.getByText("Something happened")).toBeTruthy();
   });
 
-  it("calls onClose when backdrop pressed", () => {
+  it("calls onClose when the backdrop is pressed", () => {
     render(<AlertModal {...defaultProps} />);
-    // backdrop is the outer Pressable in AlertModal.tsx
-    const backdrop = screen.getByText("Something happened").parent?.parent;
-    fireEvent.press(backdrop as any);
+    // aria-modal hides the backdrop from assistive tech by design — it is a pointer-only
+    // affordance, and screen-reader users dismiss via the acknowledge button instead.
+    fireEvent.press(screen.getByLabelText("Close", { includeHiddenElements: true }));
     expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it("calls onClose from the acknowledge button", () => {
+    render(<AlertModal {...defaultProps} />);
+    fireEvent.press(screen.getByRole("button", { name: "OK" }));
+    expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it("exposes itself as a labelled alert dialog", () => {
+    render(<AlertModal {...defaultProps} title="Alert" />);
+    const dialog = screen.getByLabelText("Alert");
+    expect(dialog.props.role).toBe("alertdialog");
+    expect(dialog.props["aria-modal"]).toBe(true);
   });
 
   it("renders in dark mode", () => {

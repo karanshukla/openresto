@@ -107,6 +107,9 @@ export function DangerZone({
       <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
         <Pressable
           style={styles.secHeader}
+          accessibilityRole="button"
+          accessibilityLabel="Archive or delete a location"
+          accessibilityState={{ expanded }}
           onPress={() => {
             setExpanded((v) => !v);
             if (expanded) {
@@ -146,6 +149,9 @@ export function DangerZone({
                     <Pressable
                       key={r.id}
                       onPress={() => handleSelect(r.id)}
+                      accessibilityRole="radio"
+                      accessibilityLabel={archived ? `${r.name}, archived` : r.name}
+                      accessibilityState={{ checked: dangerSelectedId === r.id }}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -224,6 +230,9 @@ export function DangerZone({
                   <Pressable
                     disabled={archiving}
                     onPress={handleArchive}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Archive ${dangerSelectedRestaurant.name}`}
+                    accessibilityState={{ disabled: archiving, busy: archiving }}
                     style={[
                       styles.secBtn,
                       {
@@ -268,6 +277,9 @@ export function DangerZone({
                       </View>
                       <Pressable
                         onPress={() => setDeleteStep("confirm")}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Permanently delete ${dangerSelectedRestaurant.name}`}
+                        accessibilityHint="Asks for confirmation first"
                         style={[
                           styles.secBtn,
                           {
@@ -312,6 +324,9 @@ export function DangerZone({
                             setDeleteError(false);
                           }}
                           disabled={deleting}
+                          accessibilityRole="button"
+                          accessibilityLabel="Cancel deletion"
+                          accessibilityState={{ disabled: deleting }}
                           style={[styles.secBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
                         >
                           <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>
@@ -321,6 +336,9 @@ export function DangerZone({
                         <Pressable
                           onPress={handleDelete}
                           disabled={deleting}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Confirm permanent deletion of ${dangerSelectedRestaurant.name}`}
+                          accessibilityState={{ disabled: deleting, busy: deleting }}
                           style={{
                             flexDirection: "row",
                             alignItems: "center",

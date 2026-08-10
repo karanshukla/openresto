@@ -71,7 +71,7 @@ describe("TimePicker (web)", () => {
   it("marks the currently selected option with a checkmark", () => {
     render(<TimePicker selectedTime="09:00" onSelect={onSelect} />);
     fireEvent.press(screen.getByTestId("time-picker-trigger"));
-    expect(screen.getByText("✓")).toBeTruthy();
+    expect(screen.getByText("✓", { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("does not close the dropdown when pressing inside the panel", () => {

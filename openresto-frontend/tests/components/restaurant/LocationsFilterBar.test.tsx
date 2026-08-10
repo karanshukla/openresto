@@ -60,7 +60,7 @@ describe("LocationsFilterBar", () => {
   it("reports a new party size upward", () => {
     const onSeatsChange = jest.fn();
     renderWithProviders(<LocationsFilterBar {...baseProps} onSeatsChange={onSeatsChange} />);
-    fireEvent.press(screen.getByLabelText("Number of guests"));
+    fireEvent.press(screen.getByLabelText(/^Number of guests,/));
     fireEvent.press(screen.getByText("5 guests"));
     expect(onSeatsChange).toHaveBeenCalledWith(5);
   });
@@ -68,7 +68,7 @@ describe("LocationsFilterBar", () => {
   it("reports a new meal window upward", () => {
     const onMealChange = jest.fn();
     renderWithProviders(<LocationsFilterBar {...baseProps} onMealChange={onMealChange} />);
-    fireEvent.press(screen.getByLabelText("Time of day"));
+    fireEvent.press(screen.getByLabelText(/^Time of day,/));
     fireEvent.press(screen.getByText("Dinner"));
     expect(onMealChange).toHaveBeenCalledWith("Dinner");
   });
@@ -112,7 +112,7 @@ describe("LocationsFilterBar", () => {
       renderWithProviders(
         <LocationsFilterBar {...baseProps} compact onSeatsChange={onSeatsChange} />
       );
-      fireEvent.press(screen.getByLabelText("Number of guests"));
+      fireEvent.press(screen.getByLabelText(/^Number of guests,/));
       fireEvent.press(screen.getByText("6"));
       expect(onSeatsChange).toHaveBeenCalledWith(6);
     });

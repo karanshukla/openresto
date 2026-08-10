@@ -31,17 +31,31 @@ export function ToggleSwitch({
   disabled,
   primaryColor,
   borderColor,
+  accessibilityLabel,
+  decorative = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
   primaryColor: string;
   borderColor: string;
+  accessibilityLabel?: string;
+  /**
+   * Set when an enclosing row already carries the switch semantics — the pill is then
+   * only a visual echo of that row's state, and announcing it again would present two
+   * nested switches for one setting.
+   */
+  decorative?: boolean;
 }) {
   return (
     <Pressable
-      role="switch"
-      aria-checked={checked}
+      role={decorative ? undefined : "switch"}
+      aria-checked={decorative ? undefined : checked}
+      accessibilityLabel={decorative ? undefined : accessibilityLabel}
+      accessibilityState={decorative ? undefined : { checked, disabled: Boolean(disabled) }}
+      accessibilityElementsHidden={decorative}
+      importantForAccessibility={decorative ? "no-hide-descendants" : "yes"}
+      focusable={!decorative}
       disabled={disabled}
       onPress={() => !disabled && onChange(!checked)}
       style={[

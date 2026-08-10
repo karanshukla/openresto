@@ -100,7 +100,13 @@ export function SecurityCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Account Security"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
           <Ionicons name="shield-checkmark-outline" size={20} color={primaryColor} />
         </View>
@@ -126,6 +132,9 @@ export function SecurityCard({
             <Pressable
               testID="email-change-button"
               style={[styles.secBtn, { borderColor }]}
+              accessibilityRole="button"
+              accessibilityLabel="Change email address"
+              accessibilityState={{ expanded: showEmailForm }}
               onPress={() => {
                 setShowEmailForm((v) => !v);
                 setShowPvqForm(false);
@@ -171,7 +180,12 @@ export function SecurityCard({
                 >
                   {saving ? "Saving…" : "Update Email"}
                 </Button>
-                <Pressable style={styles.smallBtn} onPress={() => setShowEmailForm(false)}>
+                <Pressable
+                  style={styles.smallBtn}
+                  onPress={() => setShowEmailForm(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel email change"
+                >
                   <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
                     Cancel
                   </ThemedText>
@@ -196,6 +210,9 @@ export function SecurityCard({
             </View>
             <Pressable
               style={[styles.secBtn, { borderColor }]}
+              accessibilityRole="button"
+              accessibilityLabel="Change password recovery question"
+              accessibilityState={{ expanded: showPvqForm }}
               onPress={() => {
                 setShowPvqForm((v) => !v);
                 setShowPwForm(false);
@@ -237,7 +254,12 @@ export function SecurityCard({
                 >
                   {saving ? "Saving…" : "Save Question"}
                 </Button>
-                <Pressable style={styles.smallBtn} onPress={() => setShowPvqForm(false)}>
+                <Pressable
+                  style={styles.smallBtn}
+                  onPress={() => setShowPvqForm(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel recovery question change"
+                >
                   <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
                     Cancel
                   </ThemedText>
@@ -256,6 +278,9 @@ export function SecurityCard({
             </View>
             <Pressable
               style={[styles.secBtn, { borderColor }]}
+              accessibilityRole="button"
+              accessibilityLabel="Change password"
+              accessibilityState={{ expanded: showPwForm }}
               onPress={() => {
                 setShowPwForm((v) => !v);
                 setShowPvqForm(false);
@@ -309,7 +334,12 @@ export function SecurityCard({
                 >
                   {saving ? "Saving…" : "Update Password"}
                 </Button>
-                <Pressable style={styles.smallBtn} onPress={() => setShowPwForm(false)}>
+                <Pressable
+                  style={styles.smallBtn}
+                  onPress={() => setShowPwForm(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel password change"
+                >
                   <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
                     Cancel
                   </ThemedText>

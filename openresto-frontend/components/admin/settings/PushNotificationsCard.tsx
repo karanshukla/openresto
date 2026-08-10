@@ -159,7 +159,13 @@ export function PushNotificationsCard() {
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Push Notifications"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: iconBg }]}>
           <Ionicons name={stateIcon} size={20} color={iconColor} />
         </View>
@@ -232,6 +238,11 @@ export function PushNotificationsCard() {
                 <Pressable
                   onPress={isActive ? handleDisable : handleEnable}
                   disabled={working}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isActive ? "Disable push notifications" : "Enable push notifications"
+                  }
+                  accessibilityState={{ disabled: working, busy: working }}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

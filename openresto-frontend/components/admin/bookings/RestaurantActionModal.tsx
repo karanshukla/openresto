@@ -117,7 +117,14 @@ export default function RestaurantActionModal({
                   ? "Pause Bookings"
                   : "Extend Bookings"}
             </ThemedText>
-            <Pressable onPress={onClose} style={styles.closeBtn} testID="close-modal-button">
+            <Pressable
+              onPress={onClose}
+              style={styles.closeBtn}
+              testID="close-modal-button"
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Ionicons name="close" size={24} color={colors.muted} />
             </Pressable>
           </View>
@@ -163,6 +170,8 @@ export default function RestaurantActionModal({
               </ScrollView>
               <View style={styles.footer}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Done"
                   onPress={onClose}
                   style={[styles.doneBtn, { backgroundColor: primaryColor }]}
                 >
@@ -186,6 +195,9 @@ export default function RestaurantActionModal({
                     key={r.id}
                     onPress={() => handleAction(r.id, r.name, isPaused)}
                     disabled={submitting !== null}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${isPaused ? "Resume" : "Pause"} bookings for ${r.name}`}
+                    accessibilityState={{ disabled: submitting !== null }}
                     style={({ pressed }) => [
                       styles.item,
                       { borderBottomColor: colors.border },

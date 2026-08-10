@@ -65,6 +65,9 @@ export function BookingLookupBar({
         <Pressable
           onPress={onSubmit}
           disabled={loading || !query.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Find booking"
+          accessibilityState={{ disabled: loading || !query.trim(), busy: loading }}
           style={[
             styles.newBookingBtn,
             { backgroundColor: primaryColor },

@@ -70,7 +70,7 @@ describe("DatePicker (native)", () => {
 
   it("renders chevron indicator", () => {
     render(<DatePicker onSelect={jest.fn()} />);
-    expect(screen.getByText("▾")).toBeTruthy();
+    expect(screen.getByText("▾", { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("filters date options to open days only", () => {
@@ -83,7 +83,7 @@ describe("DatePicker (native)", () => {
     // Trigger shows the date label (not "Select a date")
     fireEvent.press(screen.getByText(todayLabel));
     // Both the trigger and the modal item show todayLabel; selected item has checkmark
-    expect(screen.getByText("✓")).toBeTruthy();
+    expect(screen.getByText("✓", { includeHiddenElements: true })).toBeTruthy();
   });
 
   it("falls back to COLORS.primary when brand has no primaryColor", () => {

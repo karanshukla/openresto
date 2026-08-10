@@ -56,7 +56,13 @@ export function LocationTagsSection({
               }}
             >
               <ThemedText style={{ fontSize: 12 }}>{tag}</ThemedText>
-              <Pressable onPress={() => onRemoveTag(tag)} testID={`remove-tag-${tag}`}>
+              <Pressable
+                onPress={() => onRemoveTag(tag)}
+                testID={`remove-tag-${tag}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove tag ${tag}`}
+                hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+              >
                 <Ionicons name="close" size={12} color={mutedColor} />
               </Pressable>
             </View>
@@ -75,6 +81,8 @@ export function LocationTagsSection({
         </View>
         <Pressable
           onPress={() => onAddTag(tagInput)}
+          accessibilityRole="button"
+          accessibilityLabel="Add tag"
           disabled={!tagInput.trim()}
           style={{
             opacity: tagInput.trim() ? 1 : 0.4,

@@ -42,12 +42,16 @@ export function EditableRow({
               setDraft(value);
               setEditing(true);
             }}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${value}`}
           >
             <ThemedText style={[styles.smallBtnText, { color: primaryColor }]}>Edit</ThemedText>
           </Pressable>
           {onDelete && (
             <Pressable
               style={[styles.smallBtn, { paddingHorizontal: 6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${value}`}
               onPress={async () => {
                 const ok = await confirmAction(`Delete "${value}"? This cannot be undone.`);
                 if (ok) await onDelete();
@@ -70,6 +74,9 @@ export function EditableRow({
         <Pressable
           style={[styles.actionBtn, { backgroundColor: primaryColor }]}
           disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel={`Save ${value}`}
+          accessibilityState={{ disabled: saving, busy: saving }}
           onPress={async () => {
             if (!draft.trim()) return;
             setSaving(true);
@@ -82,7 +89,12 @@ export function EditableRow({
             {saving ? "…" : "Save"}
           </ThemedText>
         </Pressable>
-        <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
+        <Pressable
+          style={styles.smallBtn}
+          onPress={() => setEditing(false)}
+          accessibilityRole="button"
+          accessibilityLabel={`Stop editing ${value}`}
+        >
           <Ionicons name="close-outline" size={20} color={mutedColor} />
         </Pressable>
       </View>

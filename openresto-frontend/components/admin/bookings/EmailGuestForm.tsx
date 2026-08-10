@@ -100,6 +100,8 @@ export function EmailGuestForm({
             (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
           ]}
           onPress={onSendEmail}
+          accessibilityRole="button"
+          accessibilityLabel="Send email to guest"
           disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
         >
           <Ionicons name="send-outline" size={14} color="#fff" />

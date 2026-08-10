@@ -99,6 +99,9 @@ export function SocialLinkEditForm({
             <Pressable
               key={icon}
               onPress={() => onChange({ ...state, iconKey: icon })}
+              accessibilityRole="radio"
+              accessibilityLabel={`${icon} icon`}
+              accessibilityState={{ checked: state.iconKey === icon }}
               style={{
                 width: 36,
                 height: 36,
@@ -148,6 +151,8 @@ export function SocialLinkEditForm({
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
         <Pressable
           onPress={onCancel}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel editing this link"
           style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 }}
         >
           <ThemedText style={{ fontSize: 14, color: mutedColor }}>Cancel</ThemedText>
@@ -155,6 +160,12 @@ export function SocialLinkEditForm({
         <Pressable
           onPress={onSave}
           disabled={saving || !state.label.trim() || !state.url.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Save this link"
+          accessibilityState={{
+            disabled: saving || !state.label.trim() || !state.url.trim(),
+            busy: saving,
+          }}
           style={{
             opacity: saving || !state.label.trim() || !state.url.trim() ? 0.5 : 1,
             backgroundColor: primaryColor,

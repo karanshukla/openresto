@@ -182,13 +182,24 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
   return (
     <>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable
+          style={styles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close the new booking form"
+        >
           <TouchableWithoutFeedback>
             <View style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}>
               {/* Header */}
               <View style={[styles.header, { borderBottomColor: borderColor }]}>
                 <ThemedText style={styles.title}>New Booking</ThemedText>
-                <Pressable onPress={onClose} style={styles.closeBtn}>
+                <Pressable
+                  onPress={onClose}
+                  style={styles.closeBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                  hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
+                >
                   <Ionicons name="close" size={22} color={mutedColor} />
                 </Pressable>
               </View>

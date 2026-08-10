@@ -39,15 +39,24 @@ export default function TimePicker({
           testID="time-picker-backdrop"
           style={styles.backdrop}
           onPress={() => setModalVisible(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close the time picker"
         >
-          <ThemedView style={[styles.modalView, { borderColor }]}>
-            <ThemedText type="bodyBold" style={styles.modalTitle}>
+          <ThemedView
+            style={[styles.modalView, { borderColor }]}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel="Select a time"
+          >
+            <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
               Select a time
             </ThemedText>
             <FlatList
               data={options}
               keyExtractor={(item) => item.value}
               style={styles.list}
+              role="menu"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
@@ -58,6 +67,9 @@ export default function TimePicker({
                     onSelect(item.value);
                     setModalVisible(false);
                   }}
+                  role="menuitem"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: item.value === selectedTime }}
                 >
                   <ThemedText
                     style={
@@ -67,7 +79,13 @@ export default function TimePicker({
                     {item.label}
                   </ThemedText>
                   {item.value === selectedTime && (
-                    <ThemedText style={[styles.checkmark, { color: primaryColor }]}>✓</ThemedText>
+                    <ThemedText
+                      style={[styles.checkmark, { color: primaryColor }]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    >
+                      ✓
+                    </ThemedText>
                   )}
                 </TouchableOpacity>
               )}
@@ -83,11 +101,20 @@ export default function TimePicker({
           (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
         onPress={() => setModalVisible(true)}
+        accessibilityRole="button"
+        accessibilityLabel={selected ? `Change time, currently ${selected.label}` : "Select a time"}
+        accessibilityState={{ expanded: modalVisible }}
       >
         <ThemedText style={!selected && { color: placeholderColor }}>
           {selected?.label ?? "Select a time"}
         </ThemedText>
-        <ThemedText style={[styles.chevron, { color: placeholderColor }]}>▾</ThemedText>
+        <ThemedText
+          style={[styles.chevron, { color: placeholderColor }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          ▾
+        </ThemedText>
       </Pressable>
     </>
   );

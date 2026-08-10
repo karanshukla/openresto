@@ -127,6 +127,9 @@ export default function AdminLocationsScreen() {
         <Pressable
           onPress={() => setAddingLocation(true)}
           disabled={addingLocation}
+          accessibilityRole="button"
+          accessibilityLabel="Add location"
+          accessibilityState={{ disabled: addingLocation }}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -187,6 +190,9 @@ export default function AdminLocationsScreen() {
               <Pressable
                 key={r.id}
                 onPress={() => handleSelectLocation(r.id)}
+                accessibilityRole="radio"
+                accessibilityLabel={r.name}
+                accessibilityState={{ checked: active }}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -219,6 +225,13 @@ export default function AdminLocationsScreen() {
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
             disabled={pausing}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isPaused
+                ? `Resume bookings for ${selectedRestaurant.name}`
+                : `Pause bookings for ${selectedRestaurant.name} for an hour`
+            }
+            accessibilityState={{ disabled: pausing, busy: pausing }}
             onPress={async () => {
               setPausing(true);
               if (isPaused) {
@@ -276,6 +289,13 @@ export default function AdminLocationsScreen() {
 
           <Pressable
             disabled={extending || extendedBookings !== null || extendNoActive || activeCount === 0}
+            accessibilityRole="button"
+            accessibilityLabel={`Extend all active bookings at ${selectedRestaurant.name} by an hour`}
+            accessibilityState={{
+              disabled:
+                extending || extendedBookings !== null || extendNoActive || activeCount === 0,
+              busy: extending,
+            }}
             onPress={async () => {
               setExtending(true);
               const result = await extendRestaurantBookings(selectedRestaurant.id, 60);

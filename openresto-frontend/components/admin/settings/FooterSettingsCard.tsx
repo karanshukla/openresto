@@ -165,7 +165,13 @@ export function FooterSettingsCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable style={styles.secHeader} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Footer"
+        accessibilityState={{ expanded }}
+      >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
           <Ionicons name="link-outline" size={20} color={primaryColor} />
         </View>

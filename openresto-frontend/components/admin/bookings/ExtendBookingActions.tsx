@@ -38,6 +38,9 @@ export function ExtendBookingActions({
             ]}
             onPress={() => onExtend(mins)}
             disabled={extending}
+            accessibilityRole="button"
+            accessibilityLabel={`Extend booking by ${mins} minutes`}
+            accessibilityState={{ disabled: extending, busy: extending }}
           >
             <ThemedText style={styles.extendBtnText}>+{mins} min</ThemedText>
           </Pressable>

@@ -193,7 +193,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.xs,
-    ...theme.buttonSizes.small,
+    ...theme.buttonSizes.sm,
     borderRadius: theme.borderRadius.md,
   },
   newBookingBtnText: { ...theme.typography.label, color: "#fff", fontWeight: "700" as const },

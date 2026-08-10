@@ -6,7 +6,11 @@ import { theme } from "@/theme/theme";
 import { initials } from "@/utils/formatters";
 import { isPast, StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { styles } from "@/components/admin/bookings/bookings.styles";
-import { focusedRowHighlight, rowA11yProps } from "@/components/admin/bookings/bookingRowProps";
+import {
+  describeBookingRow,
+  focusedRowHighlight,
+  rowA11yProps,
+} from "@/components/admin/bookings/bookingRowProps";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
 
 export interface BookingsWideTableProps {
@@ -100,7 +104,7 @@ export function BookingsWideTable({
       {bookings.map((b, i) => (
         <Pressable
           key={b.id}
-          {...rowA11yProps(b.id, focusedRowId)}
+          {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b))}
           style={[
             styles.tableRow,
             i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },

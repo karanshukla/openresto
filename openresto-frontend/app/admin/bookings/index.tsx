@@ -346,6 +346,8 @@ export default function AdminBookingsScreen() {
             <Pressable
               style={[styles.newBookingBtn, { backgroundColor: mutedColor }]}
               onPress={() => router.replace("/admin/bookings")}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
             >
               <Ionicons name="close-outline" size={16} color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>Clear</ThemedText>
@@ -354,6 +356,8 @@ export default function AdminBookingsScreen() {
             <Pressable
               style={[styles.newBookingBtn, { backgroundColor: PRIMARY }]}
               onPress={() => setShowNewModal(true)}
+              accessibilityRole="button"
+              accessibilityLabel="New booking"
             >
               <Ionicons name="add-outline" size={16} color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
@@ -412,6 +416,9 @@ export default function AdminBookingsScreen() {
                 key={key}
                 style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
                 onPress={() => setStatusFilter(key)}
+                accessibilityRole="radio"
+                accessibilityLabel={`Show ${label.toLowerCase()} bookings`}
+                accessibilityState={{ checked: statusFilter === key }}
               >
                 <ThemedText
                   style={[
@@ -432,6 +439,9 @@ export default function AdminBookingsScreen() {
             testID="view-toggle-timetable"
             style={[styles.modeBtn, viewMode === "timetable" && { backgroundColor: PRIMARY }]}
             onPress={switchToTimetable}
+            accessibilityRole="radio"
+            accessibilityLabel="Timetable view"
+            accessibilityState={{ checked: viewMode === "timetable" }}
           >
             <Ionicons
               name="grid-outline"
@@ -453,6 +463,9 @@ export default function AdminBookingsScreen() {
             testID="view-toggle-list"
             style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
             onPress={() => setViewMode("list")}
+            accessibilityRole="radio"
+            accessibilityLabel="List view"
+            accessibilityState={{ checked: viewMode === "list" }}
           >
             <Ionicons
               name="list-outline"
@@ -481,10 +494,17 @@ export default function AdminBookingsScreen() {
               testID="grid-nav-prev"
               style={styles.gridNavBtn}
               onPress={() => handleGridDateChange(-1)}
+              accessibilityRole="button"
+              accessibilityLabel="Previous day"
             >
               <Ionicons name="chevron-back" size={18} color={PRIMARY} />
             </Pressable>
-            <Pressable onPress={resetToToday} style={styles.gridDateLabel}>
+            <Pressable
+              onPress={resetToToday}
+              style={styles.gridDateLabel}
+              accessibilityRole="button"
+              accessibilityLabel={`${fmtDate(gridDate)}, jump to today`}
+            >
               <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
               {gridDate.toDateString() !== new Date().toDateString() && (
                 <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
@@ -496,6 +516,8 @@ export default function AdminBookingsScreen() {
               testID="grid-nav-next"
               style={styles.gridNavBtn}
               onPress={() => handleGridDateChange(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Next day"
             >
               <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
             </Pressable>
