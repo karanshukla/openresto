@@ -6,7 +6,7 @@ import Select from "../common/Select";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
-import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
 import PopularTimesPicker from "./PopularTimesPicker";
@@ -23,6 +23,12 @@ import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
 
 const isWeb = Platform.OS === "web";
+/**
+ * Below this the paired fields stack — a phone browser is still `Platform.OS === "web"`,
+ * so width rather than platform decides the column count. Matches the breakpoint
+ * PageContainer switches its padding at, so the form and its container agree.
+ */
+const TWO_COLUMN_MIN_WIDTH = 768;
 
 export interface BookingFormData {
   customerEmail: string;
@@ -98,6 +104,8 @@ export default function BookingForm({
   initialSeats?: number;
 }) {
   const { colors, primaryColor: PRIMARY } = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isTwoColumn = isWeb && width >= TWO_COLUMN_MIN_WIDTH;
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
@@ -409,6 +417,16 @@ export default function BookingForm({
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const holdBanner = (
+    <HoldStatusBanner
+      holdStatus={holdStatus}
+      secondsLeft={secondsLeft}
+      hasSelection={(isAutoAssign || !!tableId) && !!date && !!time}
+      holdMessage={holdMessage}
+      onRefresh={onRefresh}
+    />
+  );
+
   return (
     <View style={styles.form}>
       <WalkInDaysBanner restaurant={restaurant} />
@@ -435,8 +453,11 @@ export default function BookingForm({
       </View>
 
       {/* Row 1: Guests + Date */}
-      <View style={isWeb ? styles.fieldRow : undefined}>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+      <View
+        testID="booking-field-row"
+        style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
+      >
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Number of Guests</ThemedText>
           <Select
             selectedValue={seats}
@@ -444,7 +465,7 @@ export default function BookingForm({
             options={seatOptions}
           />
         </View>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Date</ThemedText>
           {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
               here — only the admin New Booking modal opts in to back-dating (#160). */}
@@ -464,8 +485,11 @@ export default function BookingForm({
       )}
 
       {/* Row 2: Time + Section */}
-      <View style={isWeb ? styles.fieldRow : undefined}>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+      <View
+        testID="booking-field-row"
+        style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
+      >
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Time</ThemedText>
           <TimePicker
             selectedTime={time}
@@ -474,7 +498,7 @@ export default function BookingForm({
             maxTime={maxPickerTime}
           />
         </View>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Section</ThemedText>
           <Select
             selectedValue={sectionId}
@@ -497,8 +521,11 @@ export default function BookingForm({
       )}
 
       {/* Row 3: Table + Full Name */}
-      <View style={isWeb ? styles.fieldRow : undefined}>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+      <View
+        testID="booking-field-row"
+        style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
+      >
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Table</ThemedText>
           {isAutoAssign ? (
             <ThemedText style={[styles.autoAssignHint, { color: colors.muted }]}>
@@ -533,7 +560,7 @@ export default function BookingForm({
             />
           )}
         </View>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Full Name</ThemedText>
           <Input
             placeholder="Your full name"
@@ -546,9 +573,13 @@ export default function BookingForm({
         </View>
       </View>
 
-      {/* Row 4: Email + Special Requests */}
-      <View style={isWeb ? [styles.fieldRow, styles.fieldRowStretch] : undefined}>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+      {/* Row 4: Email + Special Requests. Stacked, each gets its own full-width row and the
+          hold banner moves out to sit directly above the confirm button. */}
+      <View
+        testID="booking-field-row"
+        style={isTwoColumn ? [styles.fieldRow, styles.fieldRowStretch] : styles.fieldRowStacked}
+      >
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Email</ThemedText>
           <Input
             placeholder="your@email.com"
@@ -559,17 +590,9 @@ export default function BookingForm({
             returnKeyType="next"
             blurOnSubmit={false}
           />
-          <View style={isWeb ? styles.holdPush : undefined}>
-            <HoldStatusBanner
-              holdStatus={holdStatus}
-              secondsLeft={secondsLeft}
-              hasSelection={(isAutoAssign || !!tableId) && !!date && !!time}
-              holdMessage={holdMessage}
-              onRefresh={onRefresh}
-            />
-          </View>
+          {isTwoColumn && <View style={styles.holdPush}>{holdBanner}</View>}
         </View>
-        <View style={[styles.field, isWeb && styles.fieldHalf]}>
+        <View style={[styles.field, isTwoColumn && styles.fieldHalf]}>
           <ThemedText style={styles.label}>Special Requests / Allergies</ThemedText>
           <Input
             placeholder="e.g. nut allergy, high chair needed… (optional)"
@@ -581,6 +604,8 @@ export default function BookingForm({
           />
         </View>
       </View>
+
+      {!isTwoColumn && holdBanner}
 
       <ThemedText style={styles.gdpr}>
         By confirming, you agree that your email and booking details will be stored to manage your
@@ -628,6 +653,11 @@ const styles = StyleSheet.create({
   },
   fieldRowStretch: {
     alignItems: "stretch",
+  },
+  // Stacked, the pair's two fields are plain siblings with no gap of their own,
+  // so without this they'd sit tighter together than consecutive rows do.
+  fieldRowStacked: {
+    gap: 20,
   },
   holdPush: {
     marginTop: "auto",
