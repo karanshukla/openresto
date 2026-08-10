@@ -76,11 +76,14 @@ test.describe("Walk-in-only day on the booking form", () => {
     await selectBookingDate(page, tomorrowStr);
 
     // The card's slot row is replaced by the walk-in line, so there is no time to
-    // tap and no way into the booking drawer for that day.
+    // tap and no way into the booking drawer for that day. Scope to the card:
+    // `/book?restaurantId=` deep-links into the full locations list, so an
+    // unscoped slot count also picks up every other location's times.
+    const walkInCard = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
     await expect(
-      page.getByText("No reservations required — first come, first served").first()
+      walkInCard.getByText("No reservations required — first come, first served")
     ).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+    await expect(walkInCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });
 
   test("a non-walk-in day still offers bookable times", async ({ page }) => {
@@ -91,12 +94,15 @@ test.describe("Walk-in-only day on the booking form", () => {
     await selectBookingDate(page, otherDayStr);
 
     // Bookable times appear on the card once availability loads — proves the
-    // booking flow is live for this day.
-    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/).first()).toBeVisible({
+    // booking flow is live for this day. Scoped for the same reason as above:
+    // the walk-in line has to be absent from *this* card, not merely from a page
+    // that happens to list no other walk-in location.
+    const bookableCard = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
+    await expect(bookableCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/).first()).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.getByText("No reservations required — first come, first served")).toHaveCount(
-      0
-    );
+    await expect(
+      bookableCard.getByText("No reservations required — first come, first served")
+    ).toHaveCount(0);
   });
 });

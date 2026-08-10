@@ -47,11 +47,14 @@ test.describe("Admin pause bookings", () => {
     await selectBookingDate(page, futureDateStr(1));
 
     // When paused, every slot has isAvailable:false → the card offers no times at
-    // all, so there is no way into the booking drawer.
+    // all, so there is no way into the booking drawer. Scope to the paused card:
+    // `/book?restaurantId=` deep-links into the full locations list, so an
+    // unscoped slot count also picks up every other location's times.
+    const pausedCard = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
     await expect(
-      page.getByText("No times available — try another date or party size").first()
+      pausedCard.getByText("No times available — try another date or party size")
     ).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+    await expect(pausedCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });
 
   test("unpausing a restaurant restores available slots", async ({ page }) => {

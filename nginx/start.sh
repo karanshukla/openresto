@@ -5,9 +5,13 @@ set -e
 
 # 1. Extract nameservers and wrap IPv6 addresses in [] for Nginx compatibility
 # This handles the "invalid port in resolver" error on Railway (e.g., fd12::10 -> [fd12::10])
-# We also add 127.0.0.11 (Railway/Docker internal DNS) as a reliable fallback.
+# 127.0.0.11 (Docker's embedded DNS) is only a fallback for when resolv.conf names
+# none: `resolver` round-robins across every server listed rather than failing over,
+# so an unreachable entry costs a share of lookups outright. Podman publishes its DNS
+# on the gateway, not 127.0.0.11, and appending it there 502s roughly half the proxied
+# requests — enough to fail the e2e suite while the stack looks healthy.
 RESOLVERS=$(awk '/^nameserver/ {if ($2 ~ /:/) print "["$2"]"; else print $2}' /etc/resolv.conf | xargs echo)
-export RESOLVER="$RESOLVERS 127.0.0.11"
+export RESOLVER="${RESOLVERS:-127.0.0.11}"
 
 echo "Using resolver: $RESOLVER"
 
