@@ -214,6 +214,13 @@ export function AvailabilityGrid({
                       ]}
                       onPress={() => booking && onBookingPress(booking)}
                       disabled={!booking}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        booking
+                          ? `${hour}, ${table.name}, booked by ${booking.customerEmail} for ${booking.seats}`
+                          : `${hour}, ${table.name}, free`
+                      }
+                      accessibilityState={{ disabled: !booking }}
                     >
                       {booking ? (
                         <View style={{ alignItems: "center", gap: 1 }}>

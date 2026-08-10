@@ -5,7 +5,11 @@ import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
 import { StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { styles } from "@/components/admin/bookings/bookings.styles";
-import { focusedRowHighlight, rowA11yProps } from "@/components/admin/bookings/bookingRowProps";
+import {
+  describeBookingRow,
+  focusedRowHighlight,
+  rowA11yProps,
+} from "@/components/admin/bookings/bookingRowProps";
 import { initials } from "@/utils/formatters";
 import { BookingsSortControl } from "@/components/admin/bookings/BookingsSortControl";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
@@ -57,7 +61,7 @@ export function BookingsCardList({
         {bookings.map((b) => (
           <Pressable
             key={b.id}
-            {...rowA11yProps(b.id, focusedRowId)}
+            {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b))}
             style={[
               styles.listCard,
               { backgroundColor: cardBg, borderColor },

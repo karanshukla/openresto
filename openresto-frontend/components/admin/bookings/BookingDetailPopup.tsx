@@ -306,9 +306,15 @@ export function BookingDetailPopup({
           justifyContent: "center",
         }}
         onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close booking details"
       >
         <Pressable
           onPress={/* istanbul ignore next */ (e) => e.stopPropagation?.()}
+          role="dialog"
+          aria-modal
+          accessibilityViewIsModal
+          accessibilityLabel="Booking details"
           style={{
             width: "92%",
             maxWidth: 960,
@@ -343,6 +349,9 @@ export function BookingDetailPopup({
                     style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
                     onPress={handleCancelEdit}
                     disabled={editLoading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Discard changes"
+                    accessibilityState={{ disabled: editLoading }}
                   >
                     <ThemedText style={[styles.actionBtnText, { color: colors.text }]}>
                       Cancel
@@ -352,6 +361,9 @@ export function BookingDetailPopup({
                     style={[styles.actionBtn, { backgroundColor: PRIMARY }]}
                     onPress={handleSaveEdit}
                     disabled={editLoading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Save changes"
+                    accessibilityState={{ disabled: editLoading, busy: editLoading }}
                   >
                     <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
                       {editLoading ? "Saving…" : "Save Changes"}
@@ -364,13 +376,21 @@ export function BookingDetailPopup({
                   <Pressable
                     style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
                     onPress={() => setEditing(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit booking"
                   >
                     <Ionicons name="create-outline" size={16} color={PRIMARY} />
                     <ThemedText style={[styles.actionBtnText, { color: PRIMARY }]}>Edit</ThemedText>
                   </Pressable>
                 )
               )}
-              <Pressable onPress={onClose} style={{ padding: 6 }}>
+              <Pressable
+                onPress={onClose}
+                style={{ padding: 6 }}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
+              >
                 <Ionicons name="close" size={22} color={mutedColor} />
               </Pressable>
             </View>
