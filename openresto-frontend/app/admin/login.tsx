@@ -156,6 +156,8 @@ export default function AdminLoginScreen() {
             </Button>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Forgot password?"
               onPress={() => {
                 setFpEmail(email);
                 setStage("pvq-email");
@@ -358,7 +360,12 @@ export default function AdminLoginScreen() {
           </ThemedView>
 
           {stage === "login" && (
-            <Pressable onPress={() => router.replace("/")} style={{ cursor: "pointer" } as const}>
+            <Pressable
+              onPress={() => router.replace("/")}
+              accessibilityRole="link"
+              accessibilityLabel={`Back to ${brand.appName}`}
+              style={{ cursor: "pointer" } as const}
+            >
               <ThemedText style={[styles.backLink, { color: mutedColor }]}>
                 ← Back to {brand.appName}
               </ThemedText>
@@ -373,7 +380,12 @@ export default function AdminLoginScreen() {
 function BackButton({ onPress }: { onPress: () => void }) {
   const { colors } = useAppTheme();
   return (
-    <Pressable style={styles.backBtn} onPress={onPress}>
+    <Pressable
+      style={styles.backBtn}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+    >
       <Ionicons name="arrow-back" size={16} color={colors.muted} />
       <ThemedText style={[styles.backBtnText, { color: colors.muted }]}>Back</ThemedText>
     </Pressable>

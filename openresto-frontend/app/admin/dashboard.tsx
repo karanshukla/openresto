@@ -177,6 +177,8 @@ export default function AdminDashboardScreen() {
                   <Pressable
                     key={action.title}
                     onPress={() => (action.route ? router.push(action.route) : action.onPress?.())}
+                    accessibilityRole={action.route ? "link" : "button"}
+                    accessibilityLabel={action.title}
                     style={({ hovered }: any) => [
                       styles.actionCard,
                       { backgroundColor: colors.card, borderColor: colors.border },
@@ -210,7 +212,11 @@ export default function AdminDashboardScreen() {
             >
               <View style={styles.listHeader}>
                 <ThemedText style={styles.cardTitle}>Today&apos;s Bookings</ThemedText>
-                <Pressable onPress={() => router.push("/admin/bookings")}>
+                <Pressable
+                  onPress={() => router.push("/admin/bookings")}
+                  accessibilityRole="link"
+                  accessibilityLabel="View all bookings"
+                >
                   <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
                     View all →
                   </ThemedText>
@@ -350,6 +356,9 @@ function OccupancyChart({
           <Pressable
             testID="occupancy-toggle-relative"
             onPress={() => setLabelMode("relative")}
+            accessibilityRole="radio"
+            accessibilityLabel="Label hours relative to now"
+            accessibilityState={{ checked: labelMode === "relative" }}
             style={[
               styles.toggleSegment,
               labelMode === "relative"
@@ -369,6 +378,9 @@ function OccupancyChart({
           <Pressable
             testID="occupancy-toggle-calendar"
             onPress={() => setLabelMode("calendar")}
+            accessibilityRole="radio"
+            accessibilityLabel="Label hours by clock time"
+            accessibilityState={{ checked: labelMode === "calendar" }}
             style={[
               styles.toggleSegment,
               labelMode === "calendar"
@@ -464,6 +476,16 @@ function BookingItem({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[
+        startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        booking.customerName ?? booking.customerEmail,
+        `${booking.seats} guests`,
+        booking.restaurantName,
+        isCancelled ? "cancelled" : null,
+      ]
+        .filter(Boolean)
+        .join(", ")}
       style={({ hovered }: any) => [
         styles.bookingItem,
         { borderTopColor: colors.border },

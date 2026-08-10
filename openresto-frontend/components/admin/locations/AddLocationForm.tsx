@@ -59,6 +59,8 @@ export function AddLocationForm({
       <Pressable
         disabled={saving || !value.trim()}
         onPress={onSubmit}
+        accessibilityRole="button"
+        accessibilityLabel="Add location"
         style={{
           backgroundColor: primaryColor,
           borderRadius: theme.borderRadius.md,
@@ -71,7 +73,14 @@ export function AddLocationForm({
           {saving ? "Adding…" : "Add"}
         </ThemedText>
       </Pressable>
-      <Pressable testID="add-location-cancel" onPress={onCancel} style={{ padding: 6 }}>
+      <Pressable
+        testID="add-location-cancel"
+        onPress={onCancel}
+        style={{ padding: 6 }}
+        accessibilityRole="button"
+        accessibilityLabel="Cancel adding a location"
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
         <Ionicons name="close-outline" size={20} color={mutedColor} />
       </Pressable>
     </View>

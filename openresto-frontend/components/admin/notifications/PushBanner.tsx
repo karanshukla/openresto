@@ -147,6 +147,8 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
       )}
       <Pressable
         onPress={handleEnable}
+        accessibilityRole="button"
+        accessibilityLabel="Enable push notifications"
         disabled={working}
         style={[
           styles.pushBannerBtn,

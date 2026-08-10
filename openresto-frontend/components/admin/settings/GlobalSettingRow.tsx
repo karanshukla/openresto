@@ -24,7 +24,11 @@ export function GlobalSettingRow({
   const { primaryColor } = useAppTheme();
 
   return (
+    // Carries no onPress — the row is a static description of a setting, so it announces as
+    // content rather than as an unnamed button a screen-reader user could try to activate.
     <Pressable
+      accessibilityRole="none"
+      focusable={false}
       style={(state) => [
         styles.globalRow,
         { borderColor, backgroundColor: cardBg },
@@ -36,7 +40,9 @@ export function GlobalSettingRow({
         <Ionicons name={icon} size={18} color={primaryColor} />
       </View>
       <View style={styles.globalRowText}>
-        <ThemedText style={styles.globalRowTitle}>{title}</ThemedText>
+        <ThemedText style={styles.globalRowTitle}>
+          {comingSoon ? `${title} (coming soon)` : title}
+        </ThemedText>
         <ThemedText style={[styles.globalRowSub, { color: mutedColor }]}>{sub}</ThemedText>
       </View>
       {comingSoon ? (

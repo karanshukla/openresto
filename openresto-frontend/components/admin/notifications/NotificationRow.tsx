@@ -80,6 +80,16 @@ export function NotificationRow({
     >
       <Pressable
         onPress={() => onRowTap(n)}
+        accessibilityRole="button"
+        accessibilityLabel={[
+          n.isRead ? "Read" : "Unread",
+          TYPE_LABELS[n.type],
+          n.customerName,
+          n.bookingRef ? `booking ${n.bookingRef}` : null,
+          meta,
+        ]
+          .filter(Boolean)
+          .join(", ")}
         style={(state) => [
           styles.notifRow,
           !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
@@ -121,6 +131,9 @@ export function NotificationRow({
         <View style={styles.rowActions}>
           <Pressable
             onPress={() => onTogglePin(n.id)}
+            accessibilityRole="button"
+            accessibilityLabel={isPinned ? "Unpin notification" : "Pin notification"}
+            accessibilityState={{ selected: isPinned }}
             hitSlop={6}
             style={[
               styles.actionPinBtn,
@@ -140,6 +153,8 @@ export function NotificationRow({
           {n.isRead ? (
             <Pressable
               onPress={() => onMarkUnread(n.id)}
+              accessibilityRole="button"
+              accessibilityLabel="Mark notification unread"
               hitSlop={6}
               style={[
                 styles.actionToggleBtn,
@@ -155,6 +170,8 @@ export function NotificationRow({
           ) : (
             <Pressable
               onPress={() => onMarkRead(n.id)}
+              accessibilityRole="button"
+              accessibilityLabel="Mark notification read"
               hitSlop={6}
               style={[
                 styles.actionToggleBtn,
@@ -169,6 +186,8 @@ export function NotificationRow({
           <Pressable
             testID={`delete-notif-${n.id}`}
             onPress={() => onRequestDelete(n.id)}
+            accessibilityRole="button"
+            accessibilityLabel="Delete notification"
             hitSlop={6}
             style={[
               styles.actionDeleteBtn,

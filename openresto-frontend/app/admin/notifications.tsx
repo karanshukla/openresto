@@ -360,6 +360,13 @@ export default function NotificationsScreen() {
               <Pressable
                 onPress={() => setConfirmDeleteAll(true)}
                 disabled={deletingAll || items.length === 0}
+                accessibilityRole="button"
+                accessibilityLabel="Delete all notifications"
+                accessibilityHint="Keeps pinned notifications"
+                accessibilityState={{
+                  disabled: deletingAll || items.length === 0,
+                  busy: deletingAll,
+                }}
                 style={[
                   styles.markAllBtn,
                   {
@@ -385,6 +392,12 @@ export default function NotificationsScreen() {
                   <Pressable
                     onPress={handleClearRead}
                     disabled={clearingRead || !hasRead}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear read notifications"
+                    accessibilityState={{
+                      disabled: clearingRead || !hasRead,
+                      busy: clearingRead,
+                    }}
                     style={[
                       styles.markAllBtn,
                       {
@@ -409,6 +422,12 @@ export default function NotificationsScreen() {
               <Pressable
                 onPress={handleMarkAllRead}
                 disabled={markingAll || unreadCount === 0}
+                accessibilityRole="button"
+                accessibilityLabel="Mark all notifications read"
+                accessibilityState={{
+                  disabled: markingAll || unreadCount === 0,
+                  busy: markingAll,
+                }}
                 style={[
                   styles.markAllBtn,
                   {
@@ -457,6 +476,9 @@ export default function NotificationsScreen() {
                 <Pressable
                   key={r.id ?? "all"}
                   onPress={() => setSelectedRestaurantId(r.id)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={r.name}
+                  accessibilityState={{ checked: active }}
                   style={[
                     styles.pill,
                     active
@@ -485,6 +507,9 @@ export default function NotificationsScreen() {
                   <Pressable
                     key={f.value}
                     onPress={() => setSelectedType(f.value)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={f.label}
+                    accessibilityState={{ checked: active }}
                     style={[
                       styles.pill,
                       active
@@ -507,6 +532,10 @@ export default function NotificationsScreen() {
 
             <Pressable
               onPress={() => setUnreadOnly((v) => !v)}
+              role="switch"
+              aria-checked={unreadOnly}
+              accessibilityLabel="Show unread only"
+              accessibilityState={{ checked: unreadOnly }}
               style={[
                 styles.pill,
                 styles.pillRow,
@@ -604,6 +633,9 @@ export default function NotificationsScreen() {
               <Pressable
                 onPress={handleLoadMore}
                 disabled={loadingMore}
+                accessibilityRole="button"
+                accessibilityLabel={`Show ${totalCount - items.length} more notifications`}
+                accessibilityState={{ disabled: loadingMore, busy: loadingMore }}
                 style={[
                   styles.loadMoreBtn,
                   { borderTopColor: borderColor, opacity: loadingMore ? 0.6 : 1 },
