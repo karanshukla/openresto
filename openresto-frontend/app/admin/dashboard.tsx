@@ -18,7 +18,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme, ThemeColors } from "@/theme/theme";
 import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
 import AlertModal from "@/components/common/AlertModal";
-import { styles } from "./dashboard.styles";
+import { styles } from "@/styles/admin/dashboard.styles";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);

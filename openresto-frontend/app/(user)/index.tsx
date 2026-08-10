@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isMobileWidth } from "@/constants/breakpoints";
-import { styles } from "./index.styles";
+import { styles } from "@/styles/user/index.styles";
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;

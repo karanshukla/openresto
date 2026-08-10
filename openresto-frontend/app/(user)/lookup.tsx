@@ -33,7 +33,7 @@ import Footer from "@/components/layout/Footer";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
-import { styles } from "./lookup.styles";
+import { styles } from "@/styles/user/lookup.styles";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");

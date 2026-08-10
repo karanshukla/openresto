@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { styles } from "./+not-found.styles";
+import { styles } from "@/styles/not-found.styles";
 
 export default function NotFoundScreen() {
   const pathname = usePathname();

@@ -10,7 +10,7 @@ import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isValidEmail, validatePasswordChange } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
-import { styles } from "./login.styles";
+import { styles } from "@/styles/admin/login.styles";
 
 type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
 

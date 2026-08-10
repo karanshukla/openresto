@@ -12,7 +12,7 @@ import PageLoader from "@/components/common/PageLoader";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
-import { styles } from "./_layout.styles";
+import { styles } from "@/styles/admin/layout.styles";
 
 const MIN_WIDTH = 600;
 

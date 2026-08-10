@@ -19,7 +19,7 @@ import * as Haptics from "expo-haptics";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
-import { styles } from "./[bookingRef].styles";
+import { styles } from "@/styles/user/booking-confirmation.styles";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
