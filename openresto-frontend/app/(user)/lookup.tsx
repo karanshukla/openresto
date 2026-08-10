@@ -161,6 +161,9 @@ export default function LookupScreen() {
                 <Pressable
                   onPress={handleLookup}
                   disabled={!canSearch || loading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Find my booking"
+                  accessibilityState={{ disabled: !canSearch || loading, busy: loading }}
                   style={[
                     styles.searchBtn,
                     { backgroundColor: primaryColor },
@@ -240,6 +243,12 @@ export default function LookupScreen() {
                       !booking.isCancelled && !bookingIsPast && setShowCancelConfirm(true)
                     }
                     disabled={cancelling || booking.isCancelled || bookingIsPast}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel this booking"
+                    accessibilityState={{
+                      disabled: cancelling || booking.isCancelled || bookingIsPast,
+                      busy: cancelling,
+                    }}
                   >
                     <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
                     <ThemedText style={styles.cancelBtnText}>
@@ -317,6 +326,10 @@ function RecentBookingsList({
           key={c.bookingRef}
           style={[styles.recentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => onSelect(c)}
+          accessibilityRole="button"
+          accessibilityLabel={`Look up booking ${c.bookingRef}${
+            c.restaurantName ? ` at ${c.restaurantName}` : ""
+          }`}
         >
           <View style={styles.recentCardRow}>
             <View style={{ flex: 1, gap: 3 }}>
@@ -374,6 +387,8 @@ function BookingActions({
               testID="cal-google-btn"
               style={styles.iconBtn}
               onPress={() => window.open(googleUrl, "_blank")}
+              accessibilityRole="button"
+              accessibilityLabel="Add to Google Calendar"
             >
               <Ionicons name="logo-google" size={18} color={primaryColor} />
             </Pressable>
@@ -381,10 +396,18 @@ function BookingActions({
               testID="cal-outlook-btn"
               style={styles.iconBtn}
               onPress={() => window.open(outlookUrl, "_blank")}
+              accessibilityRole="button"
+              accessibilityLabel="Add to Outlook Calendar"
             >
               <Ionicons name="calendar-outline" size={18} color={primaryColor} />
             </Pressable>
-            <Pressable testID="cal-ics-btn" style={styles.iconBtn} onPress={downloadIcs}>
+            <Pressable
+              testID="cal-ics-btn"
+              style={styles.iconBtn}
+              onPress={downloadIcs}
+              accessibilityRole="button"
+              accessibilityLabel="Download calendar file"
+            >
               <Ionicons name="download-outline" size={18} color={colors.muted} />
             </Pressable>
           </View>
@@ -398,6 +421,8 @@ function BookingActions({
                 <Pressable
                   testID="maps-google-btn-narrow"
                   style={styles.iconBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open in Google Maps"
                   onPress={() =>
                     Linking.openURL(
                       `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
@@ -409,6 +434,8 @@ function BookingActions({
                 <Pressable
                   testID="maps-apple-btn-narrow"
                   style={styles.iconBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open in Apple Maps"
                   onPress={() =>
                     Linking.openURL(
                       `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
@@ -467,6 +494,8 @@ function BookingActions({
                     `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
                   )
                 }
+                accessibilityRole="button"
+                accessibilityLabel="Open in Google Maps"
               >
                 <Ionicons name="navigate-outline" size={16} color={colors.muted} />
                 <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Google</ThemedText>
@@ -481,6 +510,8 @@ function BookingActions({
                     `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
                   )
                 }
+                accessibilityRole="button"
+                accessibilityLabel="Open in Apple Maps"
               >
                 <Ionicons name="navigate-outline" size={16} color={colors.muted} />
                 <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Apple</ThemedText>
@@ -552,6 +583,8 @@ function BookingResultCard({
             <Pressable
               style={[styles.copyBtn, { borderColor: copied ? primaryColor : colors.border }]}
               onPress={handleCopy}
+              accessibilityRole="button"
+              accessibilityLabel={copied ? "Booking reference copied" : "Copy booking reference"}
             >
               <Ionicons
                 name={copied ? "checkmark" : "copy-outline"}

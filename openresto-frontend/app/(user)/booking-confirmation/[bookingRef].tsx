@@ -115,6 +115,8 @@ export default function BookingConfirmationScreen() {
         <Pressable
           style={[styles.retryBtn, { borderColor: colors.border }]}
           onPress={() => router.replace("/")}
+          accessibilityRole="link"
+          accessibilityLabel="Back to Home"
         >
           <ThemedText style={[styles.retryBtnText, { color: primaryColor }]}>
             Back to Home
@@ -212,6 +214,10 @@ export default function BookingConfirmationScreen() {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      copied ? "Booking reference copied" : "Copy booking reference"
+                    }
                   >
                     <Ionicons
                       name={copied ? "checkmark" : "copy-outline"}
@@ -279,6 +285,10 @@ export default function BookingConfirmationScreen() {
                           styles.copyBtn,
                           { borderColor: copied ? primaryColor : colors.border },
                         ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          copied ? "Booking reference copied" : "Copy booking reference"
+                        }
                         onPress={() => {
                           navigator.clipboard.writeText(ref);
                           setCopied(true);
@@ -423,6 +433,12 @@ export default function BookingConfirmationScreen() {
                     !booking.isCancelled && !bookingIsPast && setShowCancelConfirm(true)
                   }
                   disabled={cancelling || booking.isCancelled || bookingIsPast}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel this booking"
+                  accessibilityState={{
+                    disabled: cancelling || booking.isCancelled || bookingIsPast,
+                    busy: cancelling,
+                  }}
                 >
                   <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
                   <ThemedText style={styles.cancelBtnText}>

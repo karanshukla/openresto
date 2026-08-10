@@ -134,6 +134,7 @@ export default function RestaurantCard({
   return (
     <Pressable
       accessibilityRole="link"
+      accessibilityLabel={`${restaurant.name}, view details and book`}
       onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,
@@ -351,6 +352,8 @@ export default function RestaurantCard({
                           `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
                         );
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Book ${s.time} at ${restaurant.name}`}
                       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
                         styles.slot,
                         {
@@ -390,6 +393,8 @@ export default function RestaurantCard({
           <Pressable
             style={({ pressed }) => [cardStyles.viewBtn, pressed && { backgroundColor: surface2 }]}
             onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
+            accessibilityRole="link"
+            accessibilityLabel={`See details for ${restaurant.name}`}
           >
             <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
               See details
