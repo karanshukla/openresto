@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 import BookingForm from "@/components/booking/BookingForm";
 import { getNowInTimezone } from "@/utils/date";
 
@@ -10,14 +11,22 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-// This whole file renders under Platform.OS === "web" so the isWeb-only
-// layout branches (fieldRow/fieldHalf/holdPush styles) get exercised. The
-// native (non-web) branches are already covered by
+// This whole file renders under Platform.OS === "web" at a desktop width, so the
+// two-column layout branches (fieldRow/fieldHalf/holdPush styles) get exercised.
+// The native (non-web) branches are already covered by
 // tests/components/BookingForm.test.tsx, which uses the jest-expo default
 // (Platform.OS === "ios").
+//
+// A phone browser is also Platform.OS === "web", so width — not platform — is
+// what decides the column count. useWindowDimensions reads Dimensions.get, so
+// patching that is how the responsive-layout tests below shrink the viewport.
+let mockViewportWidth = 1024;
 jest.mock("react-native", () => {
   const rn = jest.requireActual("react-native");
   rn.Platform.OS = "web";
+  const actualGet = rn.Dimensions.get.bind(rn.Dimensions);
+  rn.Dimensions.get = (dim: string) =>
+    dim === "window" ? { ...actualGet("window"), width: mockViewportWidth } : actualGet(dim);
   return rn;
 });
 
@@ -54,7 +63,10 @@ jest.mock("@/api/availability", () => ({
 
 jest.mock("@/components/booking/HoldStatusBanner", () => ({
   __esModule: true,
-  default: () => null,
+  default: () => {
+    const { View } = require("react-native");
+    return <View testID="hold-banner" />;
+  },
 }));
 
 jest.mock("@/components/booking/LargePartyNoticeModal", () => ({
@@ -782,5 +794,59 @@ describe("BookingForm", () => {
     // Auto-assign is the default; the group still counts toward capacity, so no large-party notice.
     expect(screen.queryByText("Large party")).toBeNull();
     expect(screen.getByText(/best available table/)).toBeTruthy();
+  });
+});
+
+// Platform.OS === "web" covers a phone browser too, so these assert that the
+// side-by-side field pairs collapse on width rather than on platform.
+describe("BookingForm responsive layout", () => {
+  const DESKTOP_WIDTH = 1024;
+  const PHONE_WIDTH = 390;
+
+  afterEach(() => {
+    mockViewportWidth = DESKTOP_WIDTH;
+  });
+
+  function rowFlexDirections() {
+    return screen
+      .getAllByTestId("booking-field-row")
+      .map((row) => StyleSheet.flatten(row.props.style)?.flexDirection);
+  }
+
+  it("lays the field pairs out side by side at desktop width", async () => {
+    mockViewportWidth = DESKTOP_WIDTH;
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    const directions = rowFlexDirections();
+    expect(directions).toHaveLength(4);
+    expect(directions.every((d) => d === "row")).toBe(true);
+  });
+
+  it("stacks every field pair onto its own row at phone width", async () => {
+    mockViewportWidth = PHONE_WIDTH;
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    const directions = rowFlexDirections();
+    expect(directions).toHaveLength(4);
+    // No row lays out horizontally, so Email and Special Requests each get the
+    // full width instead of sharing a ~180px column.
+    expect(directions.every((d) => d === undefined)).toBe(true);
+  });
+
+  it("renders the hold banner exactly once in either layout", async () => {
+    mockViewportWidth = PHONE_WIDTH;
+    const { unmount } = render(
+      <BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
+    unmount();
+
+    mockViewportWidth = DESKTOP_WIDTH;
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
   });
 });
