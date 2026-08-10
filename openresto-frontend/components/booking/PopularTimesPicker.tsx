@@ -11,7 +11,7 @@ import {
 import { ThemedText } from "../themed-text";
 import { TimeSlotDto } from "@/api/availability";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { Ionicons } from "@expo/vector-icons";
+import { IconButton } from "@/components/common/IconButton";
 import { getNowInTimezone } from "@/utils/date";
 import * as Haptics from "expo-haptics";
 
@@ -179,6 +179,9 @@ export default function PopularTimesPicker({
           }
         }}
         disabled={disabled}
+        accessibilityRole="tab"
+        accessibilityLabel={cat}
+        accessibilityState={{ selected: isActive, disabled }}
         style={[
           styles.tab,
           { borderColor: colors.border },
@@ -212,6 +215,9 @@ export default function PopularTimesPicker({
               Haptics.selectionAsync();
               onSelectTime(slot.time);
             }}
+            accessibilityRole="radio"
+            accessibilityLabel={slot.time}
+            accessibilityState={{ checked: isSelected, selected: isSelected }}
             style={[
               styles.slotChip,
               { borderColor: colors.border, backgroundColor: isDark ? "#1e1e1e" : "#fff" },
@@ -232,17 +238,25 @@ export default function PopularTimesPicker({
   if (wrap) {
     return (
       <View style={styles.container}>
-        <View style={styles.tabs}>{categoryTabs}</View>
-        <View style={styles.wrappedSlots}>{slotChips}</View>
+        <View style={styles.tabs} accessibilityRole="tablist">
+          {categoryTabs}
+        </View>
+        <View style={styles.wrappedSlots} role="radiogroup" accessibilityLabel="Available times">
+          {slotChips}
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabs}>{categoryTabs}</View>
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {categoryTabs}
+      </View>
 
       <View
+        role="radiogroup"
+        accessibilityLabel="Available times"
         style={styles.scrollWrapper}
         onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
       >
@@ -268,17 +282,15 @@ export default function PopularTimesPicker({
               { backgroundColor: colors.page + "99" },
             ]}
           >
-            <Pressable
+            <IconButton
               testID="scroll-left-arrow"
+              name="chevron-back"
+              accessibilityLabel="Show earlier times"
               onPress={() => scrollBy(-180)}
-              style={({ pressed }) => [
-                styles.arrowCircle,
-                { backgroundColor: colors.card, borderColor: PRIMARY },
-                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
-              ]}
-            >
-              <Ionicons name="chevron-back" size={16} color={PRIMARY} />
-            </Pressable>
+              color={PRIMARY}
+              size="md"
+              style={[styles.arrowCircle, { backgroundColor: colors.card, borderColor: PRIMARY }]}
+            />
           </View>
         )}
 
@@ -291,17 +303,15 @@ export default function PopularTimesPicker({
               { backgroundColor: colors.page + "99" },
             ]}
           >
-            <Pressable
+            <IconButton
               testID="scroll-right-arrow"
+              name="chevron-forward"
+              accessibilityLabel="Show later times"
               onPress={() => scrollBy(180)}
-              style={({ pressed }) => [
-                styles.arrowCircle,
-                { backgroundColor: colors.card, borderColor: PRIMARY },
-                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
-              ]}
-            >
-              <Ionicons name="chevron-forward" size={16} color={PRIMARY} />
-            </Pressable>
+              color={PRIMARY}
+              size="md"
+              style={[styles.arrowCircle, { backgroundColor: colors.card, borderColor: PRIMARY }]}
+            />
           </View>
         )}
       </View>

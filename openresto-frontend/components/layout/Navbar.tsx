@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import OverflowMenu from "@/components/layout/OverflowMenu";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
@@ -70,14 +70,21 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
             <Pressable
               onPress={() => router.back()}
               style={[styles.backBtn, isMobile && { marginLeft: -8 }]}
+              accessibilityRole="button"
               accessibilityLabel="Go back"
+              hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
             >
-              <Ionicons name="chevron-back" size={22} color={primaryColor} />
+              <Icon name="chevron-back" size={22} color={primaryColor} />
             </Pressable>
           )}
 
           {pathname === "/" && onScrollToTop ? (
-            <Pressable style={styles.brand} onPress={onScrollToTop}>
+            <Pressable
+              style={styles.brand}
+              onPress={onScrollToTop}
+              accessibilityRole="button"
+              accessibilityLabel={`${brand.appName}, back to top`}
+            >
               <ThemedText
                 style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}
                 numberOfLines={1}
@@ -87,7 +94,11 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
             </Pressable>
           ) : (
             <Link href="/" asChild>
-              <Pressable style={styles.brand}>
+              <Pressable
+                style={styles.brand}
+                accessibilityRole="link"
+                accessibilityLabel={`${brand.appName}, go to home`}
+              >
                 <ThemedText
                   style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}
                   numberOfLines={1}
@@ -99,7 +110,7 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
           )}
         </View>
 
-        <View style={[styles.links, isMobile && { gap: 0 }]}>
+        <View style={[styles.links, isMobile && { gap: 0 }]} role="navigation">
           {NAV_LINKS.map(({ label, href, match }) => {
             const active = match(pathname);
 
@@ -129,6 +140,10 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
             return (
               <Link key={href} href={href as Href} asChild>
                 <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: active }}
+                  aria-current={active ? "page" : undefined}
                   style={StyleSheet.flatten([
                     styles.linkBtn,
                     isMobile && { paddingHorizontal: 10 },

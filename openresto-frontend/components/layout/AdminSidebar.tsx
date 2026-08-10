@@ -149,6 +149,14 @@ export default function AdminSidebar() {
             <Pressable
               key={href}
               onPress={() => router.push(href)}
+              accessibilityRole="link"
+              accessibilityLabel={
+                label === "Notifications" && unreadNotifCount > 0
+                  ? `${label}, ${unreadNotifCount} unread`
+                  : label
+              }
+              accessibilityState={{ selected: active }}
+              aria-current={active ? "page" : undefined}
               style={(state) => [
                 styles.navItem,
                 active
@@ -231,6 +239,12 @@ export default function AdminSidebar() {
         <Pressable
           onPress={handleLookup}
           disabled={lookupLoading || !lookupQuery.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Search bookings"
+          accessibilityState={{
+            disabled: lookupLoading || !lookupQuery.trim(),
+            busy: lookupLoading,
+          }}
           style={[
             styles.lookupBtn,
             { backgroundColor: PRIMARY },
@@ -273,6 +287,8 @@ export default function AdminSidebar() {
       <View style={styles.footer}>
         <Pressable
           onPress={() => router.push("/")}
+          accessibilityRole="link"
+          accessibilityLabel="Back to site"
           style={(state) => [
             styles.footerItem,
             (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
@@ -287,6 +303,7 @@ export default function AdminSidebar() {
             (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
           onPress={toggle}
+          accessibilityRole="button"
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
           <Ionicons
@@ -304,6 +321,8 @@ export default function AdminSidebar() {
             (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
           onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
         >
           <Ionicons name="log-out-outline" size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>Log out</ThemedText>

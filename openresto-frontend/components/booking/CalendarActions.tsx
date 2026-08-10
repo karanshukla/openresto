@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { buildCalendarUrls } from "@/utils/calendar";
 
@@ -105,7 +105,7 @@ function CalBtn({
   onPress,
 }: {
   label: string;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: IconName;
   color: string;
   isDark: boolean;
   onPress: () => void;
@@ -114,8 +114,10 @@ function CalBtn({
     <Pressable
       style={[styles.compactBtn, { backgroundColor: isDark ? `${color}19` : `${color}0F` }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
-      <Ionicons name={icon} size={16} color={color} />
+      <Icon name={icon} size="md" color={color} />
       <ThemedText style={[styles.compactBtnText, { color }]}>{label}</ThemedText>
     </Pressable>
   );
@@ -133,11 +135,11 @@ function FullCalBtn({
 }: {
   label: string;
   sub: string;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: IconName;
   color?: string;
   isDark: boolean;
   onPress: () => void;
-  trailingIcon: React.ComponentProps<typeof Ionicons>["name"];
+  trailingIcon: IconName;
   mutedColor: string;
 }) {
   const textColor = color || mutedColor;
@@ -145,15 +147,17 @@ function FullCalBtn({
     <Pressable
       style={[styles.fullBtn, { backgroundColor: isDark ? `${textColor}1F` : `${textColor}0F` }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${label}. ${sub}` : label}
     >
-      <Ionicons name={icon} size={18} color={textColor} />
+      <Icon name={icon} size="lg" color={textColor} />
       <View style={styles.fullBtnContent}>
         <ThemedText style={[styles.fullBtnText, color ? { color } : undefined]}>{label}</ThemedText>
         {sub ? (
           <ThemedText style={[styles.fullBtnSub, { color: mutedColor }]}>{sub}</ThemedText>
         ) : null}
       </View>
-      <Ionicons name={trailingIcon} size={14} color={mutedColor} />
+      <Icon name={trailingIcon} size="sm" color={mutedColor} />
     </Pressable>
   );
 }
