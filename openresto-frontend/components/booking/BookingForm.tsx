@@ -458,9 +458,9 @@ export default function BookingForm({
       </ThemedText>
     ) : null;
 
-  const timePickerField = (
+  const timePickerField = (label = "Time") => (
     <View style={styles.field}>
-      <ThemedText style={styles.label}>Time</ThemedText>
+      <ThemedText style={styles.label}>{label}</ThemedText>
       <TimePicker
         selectedTime={time}
         onSelect={setTime}
@@ -600,94 +600,133 @@ export default function BookingForm({
     />
   );
 
+  const timesContent = isClosedDay ? (
+    <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
+      The restaurant is closed on this day. Please select a different date.
+    </ThemedText>
+  ) : isWalkInDay ? (
+    <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
+  ) : (
+    <PopularTimesPicker
+      slots={availabilitySlots}
+      selectedTime={time}
+      onSelectTime={setTime}
+      selectedDate={date}
+      timezone={timezone}
+      wrap={isDrawer}
+    />
+  );
+
   const timesBlock = (label: string) => (
     <View style={styles.availabilityHeader}>
       <View style={styles.availabilityLabelRow}>
         <ThemedText style={styles.label}>{label}</ThemedText>
         {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
       </View>
-      {isClosedDay ? (
-        <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
-          The restaurant is closed on this day. Please select a different date.
-        </ThemedText>
-      ) : isWalkInDay ? (
-        <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
-      ) : (
-        <PopularTimesPicker
-          slots={availabilitySlots}
-          selectedTime={time}
-          onSelectTime={setTime}
-          selectedDate={date}
-          timezone={timezone}
-          wrap={isDrawer}
-        />
-      )}
+      {timesContent}
     </View>
   );
+
+  const sectionHeading = (label: string, busy = false) => (
+    <View style={styles.sectionHeadingRow}>
+      <ThemedText style={[styles.sectionHeading, { color: colors.muted }]}>{label}</ThemedText>
+      {busy && <ActivityIndicator size="small" color={PRIMARY} />}
+    </View>
+  );
+
+  const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
 
   // ── Drawer layout ──
   // Party size and date are already settled by the page-level bar, so the drawer asks
   // only for the time, the diner, and (behind a disclosure) a specific seat.
   if (isDrawer) {
     return (
-      <View style={styles.form}>
+      <View style={styles.drawerForm}>
         <WalkInDaysBanner restaurant={restaurant} />
-        {timesBlock("Time")}
-        {holdBanner}
 
-        {partyTooLarge && (
-          <LargePartyNotice
-            maxCapacity={maxTableCapacity}
-            onContact={() => setLargePartyNoticeOpen(true)}
-          />
-        )}
+        <View style={styles.drawerSection}>
+          {sectionHeading("Time", loadingAvailability)}
+          {timesContent}
+          {holdBanner}
+          {partyTooLarge && (
+            <LargePartyNotice
+              maxCapacity={maxTableCapacity}
+              onContact={() => setLargePartyNoticeOpen(true)}
+            />
+          )}
+        </View>
 
-        {nameField}
-        {emailField}
-        {requestsField("Special requests / allergies")}
+        {divider}
 
-        <View style={styles.disclosure}>
+        <View style={styles.drawerSection}>
+          {sectionHeading("Your details")}
+          {nameField}
+          {emailField}
+          {requestsField("Special requests / allergies")}
+        </View>
+
+        {divider}
+
+        {/* Seating is the one optional step, so it reads as a single closed control rather
+            than a bare text link floating between the fields above and the footer below. */}
+        <View style={styles.drawerSection}>
           <Pressable
             testID="seating-disclosure-toggle"
             onPress={() => setSeatingOpen((o) => !o)}
             accessibilityRole="button"
-            style={styles.disclosureToggle}
+            accessibilityState={{ expanded: seatingOpen }}
+            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+              styles.disclosureToggle,
+              {
+                backgroundColor: colors.input,
+                borderColor: hovered || pressed ? PRIMARY : colors.border,
+              },
+            ]}
           >
-            <Ionicons name="options-outline" size={14} color={colors.muted} />
-            <ThemedText style={[styles.disclosureText, { color: PRIMARY }]}>
-              {seatingOpen ? "Hide seating options" : "Choose a section or table instead"}
-            </ThemedText>
+            <Ionicons name="options-outline" size={16} color={colors.muted} />
+            <ThemedText style={styles.disclosureText}>Choose a section or table</ThemedText>
+            <Ionicons
+              name={seatingOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.muted}
+            />
           </Pressable>
           {seatingOpen && (
-            <View style={styles.disclosureBody}>
-              {timePickerField}
+            <View style={[styles.disclosureBody, { borderColor: colors.border }]}>
+              {/* Labelled "Exact time" because the chips above are already "Time" — this one
+                  reaches times the availability list doesn't offer. */}
+              {timePickerField("Exact time")}
               {sectionField}
               {tableField}
             </View>
           )}
         </View>
 
-        {timezoneHint}
+        {divider}
 
-        <View style={styles.privacyBlock}>
-          <ThemedText style={styles.gdprShort}>
-            Your email and booking details are stored only to manage this reservation, never
-            shared.{" "}
-          </ThemedText>
-          <Pressable
-            testID="privacy-note-toggle"
-            onPress={() => setPrivacyOpen((o) => !o)}
-            accessibilityRole="button"
-          >
-            <ThemedText style={[styles.disclosureText, { color: PRIMARY }]}>
-              {privacyOpen ? "Hide privacy note" : "Full privacy note"}
+        <View style={styles.drawerFooter}>
+          {timezoneHint}
+          <View style={styles.privacyBlock}>
+            <ThemedText style={styles.gdprShort}>
+              Your email and booking details are stored only to manage this reservation, never
+              shared.
             </ThemedText>
-          </Pressable>
-          {privacyOpen && <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>}
-        </View>
+            <Pressable
+              testID="privacy-note-toggle"
+              onPress={() => setPrivacyOpen((o) => !o)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: privacyOpen }}
+            >
+              <ThemedText style={[styles.privacyLink, { color: PRIMARY }]}>
+                {privacyOpen ? "Hide privacy note" : "Full privacy note"}
+              </ThemedText>
+            </Pressable>
+            {privacyOpen && <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>}
+          </View>
 
-        {confirmButton}
-        {holdRequiredHint}
+          {confirmButton}
+          {holdRequiredHint}
+        </View>
         {largePartyModal}
       </View>
     );
@@ -737,7 +776,7 @@ export default function BookingForm({
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
       >
-        <View style={half}>{timePickerField}</View>
+        <View style={half}>{timePickerField()}</View>
         <View style={half}>{sectionField}</View>
       </View>
 
@@ -790,24 +829,60 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  disclosure: {
-    gap: 16,
-    marginTop: -4,
+  // ── Drawer layout ──
+  // Sections rather than one flat stack of fields: the drawer asks three separate
+  // things (when, who, and optionally where you sit) and they read as one long form
+  // without the headings and rules to separate them.
+  drawerForm: {
+    gap: 20,
   },
-  disclosureToggle: {
+  drawerSection: {
+    gap: 12,
+  },
+  drawerFooter: {
+    gap: 12,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 2,
+  },
+  sectionHeadingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  disclosureToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
   disclosureText: {
-    fontSize: 13,
+    flex: 1,
+    fontSize: 14,
     fontWeight: "500",
   },
   disclosureBody: {
     gap: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderRadius: 8,
   },
   privacyBlock: {
     gap: 6,
+  },
+  privacyLink: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   gdprShort: {
     fontSize: 12,

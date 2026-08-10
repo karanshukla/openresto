@@ -907,11 +907,26 @@ describe("BookingForm drawer layout", () => {
     expect(screen.getByText("Section")).toBeTruthy();
     expect(screen.getByText("Table")).toBeTruthy();
     expect(screen.getByTestId("time-picker")).toBeTruthy();
-    expect(screen.getByText("Hide seating options")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
     expect(screen.queryByText("Section")).toBeNull();
-    expect(screen.getByText("Choose a section or table instead")).toBeTruthy();
+    // The toggle keeps one stable label and flips its chevron, rather than renaming
+    // itself — the row is a section boundary, not a link that changes meaning.
+    expect(screen.getByText("Choose a section or table")).toBeTruthy();
+  });
+
+  it("groups the drawer into labelled sections and does not label two things 'Time'", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    expect(screen.getByText("Time")).toBeTruthy();
+    expect(screen.getByText("Your details")).toBeTruthy();
+
+    // Opening seating adds an exact-time picker, which must not collide with the
+    // "Time" section heading above it.
+    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    expect(screen.getByText("Exact time")).toBeTruthy();
+    expect(screen.getAllByText("Time")).toHaveLength(1);
   });
 
   it("summarises the privacy terms and expands the full note on request", async () => {
