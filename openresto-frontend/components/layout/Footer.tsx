@@ -1,14 +1,13 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { View, StyleSheet, Pressable, Linking, useWindowDimensions } from "react-native";
+import { View, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { theme } from "@/theme/theme";
-import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H } from "@/constants/breakpoints";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
+import { styles } from "./Footer.styles";
 
 interface FooterProps {
   /** Override the footer's background so it matches a page that doesn't use the default themed page color. */
@@ -83,67 +82,3 @@ export default function Footer({ backgroundColor }: FooterProps) {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: {
-    width: "100%",
-    borderTopWidth: 1,
-  },
-  inner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    rowGap: theme.spacing.sm,
-    columnGap: theme.spacing.md,
-    maxWidth: CONTENT_MAX_WIDTH,
-    width: "100%",
-    minHeight: 56,
-    alignSelf: "center",
-    paddingHorizontal: CONTENT_PADDING_H,
-    paddingVertical: theme.spacing.lg,
-  },
-  innerMobile: {
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  copyright: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  right: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.lg,
-  },
-  social: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.md,
-  },
-  socialBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 32,
-    paddingHorizontal: 4,
-    borderRadius: theme.borderRadius.md,
-  },
-  socialLabel: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "500",
-  },
-  adminBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 32,
-    paddingHorizontal: theme.spacing.xs,
-  },
-  adminText: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "500",
-  },
-});

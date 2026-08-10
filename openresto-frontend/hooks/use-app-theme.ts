@@ -1,7 +1,6 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { getThemeColors } from "@/theme/theme";
+import { getThemeColors, theme } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
-import { theme } from "@/theme/theme";
 import { useMemo } from "react";
 
 /**

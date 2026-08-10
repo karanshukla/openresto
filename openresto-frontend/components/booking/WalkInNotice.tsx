@@ -1,7 +1,8 @@
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./WalkInNotice.styles";
 
 /**
  * Friendly banner shown wherever the booking flow is disabled because a
@@ -48,34 +49,3 @@ export default function WalkInNotice({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  textWrap: {
-    flex: 1,
-    gap: 3,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  body: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-});

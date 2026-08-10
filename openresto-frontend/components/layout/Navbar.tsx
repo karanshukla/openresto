@@ -10,11 +10,11 @@ import { Link, usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { theme } from "@/theme/theme";
 import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import OverflowMenu from "@/components/layout/OverflowMenu";
-import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
+import { isMobileWidth } from "@/constants/breakpoints";
+import { NAV_HEIGHT, styles } from "./Navbar.styles";
 
 const NAV_LINKS = [
   {
@@ -28,8 +28,6 @@ const NAV_LINKS = [
     match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
   },
 ];
-
-const NAV_HEIGHT = 64;
 
 interface NavbarProps {
   onScrollToTop?: () => void;
@@ -161,81 +159,3 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  nav: {
-    width: "100%",
-    borderBottomWidth: 1,
-    height: NAV_HEIGHT,
-    justifyContent: "center",
-  },
-  inner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    maxWidth: CONTENT_MAX_WIDTH,
-    width: "100%",
-    alignSelf: "center",
-    paddingHorizontal: CONTENT_PADDING_H,
-    height: "100%",
-    overflow: "hidden",
-  },
-  leftGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 1,
-    marginRight: 8,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -18,
-    marginRight: 4,
-  },
-  brand: {
-    paddingVertical: 4,
-    flexShrink: 1,
-  },
-  brandText: {
-    ...theme.typography.h2,
-    fontSize: 20,
-    letterSpacing: -0.5,
-  },
-  links: {
-    flexDirection: "row",
-    gap: 4,
-    alignItems: "center",
-    height: "100%",
-    flexShrink: 0,
-  },
-  linkBtn: {
-    ...theme.buttonSizes.md,
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  linkText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  linkUnderline: {
-    position: "absolute",
-    bottom: 0,
-    left: 14,
-    right: 14,
-    height: 2,
-    borderRadius: 2,
-  },
-  themeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 4,
-  },
-});

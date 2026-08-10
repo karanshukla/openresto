@@ -1,8 +1,9 @@
-import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
 import { ThemedText } from "../themed-text";
 import { ThemedView } from "../themed-view";
 import { HoldStatus } from "./useTableHold";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./HoldStatusBanner.styles";
 
 interface HoldStatusBannerProps {
   holdStatus: HoldStatus;
@@ -81,39 +82,3 @@ export default function HoldStatusBanner({
       return null;
   }
 }
-
-const styles = StyleSheet.create({
-  holdRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 6,
-    backgroundColor: "transparent",
-  },
-  holdPending: {
-    opacity: 0.6,
-    fontSize: 13,
-  },
-  holdHeld: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  holdUnavailable: {
-    fontSize: 13,
-  },
-  expiredBox: {
-    gap: 8,
-    marginTop: 6,
-    backgroundColor: "transparent",
-  },
-  refreshBtn: {
-    alignSelf: "flex-start",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-  },
-  refreshBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-});

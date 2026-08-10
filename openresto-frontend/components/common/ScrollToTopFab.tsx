@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./ScrollToTopFab.styles";
 
 /** Scroll distance past which the return-to-top shortcut is worth offering. */
 const SHOW_AFTER_SCROLL_Y = 300;
@@ -32,20 +33,3 @@ export default function ScrollToTopFab({ scrollY, onPress }: Props) {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-  },
-});

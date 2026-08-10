@@ -1,17 +1,11 @@
 import { Children } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  PressableProps,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Pressable, PressableProps, View, ViewStyle } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./Button.styles";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = keyof typeof theme.buttonSizes;
@@ -108,23 +102,3 @@ export default function Button({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.sm,
-  },
-  hovered: {
-    opacity: 0.85,
-  },
-  buttonText: {
-    ...theme.typography.bodyBold,
-  },
-});

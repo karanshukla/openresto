@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Animated, Easing, Text } from "react-native";
+import { View, ActivityIndicator, Animated, Easing, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Brand } from "@/types";
+import { styles } from "./LoadingScreen.styles";
 
 interface LoadingScreenProps {
   brand: Brand;
@@ -89,31 +90,3 @@ export default function LoadingScreen({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  spinner: {
-    marginTop: 32,
-    marginBottom: 16,
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-  },
-  subtext: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 2,
-  },
-});

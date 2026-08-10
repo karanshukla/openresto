@@ -1,6 +1,6 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { theme } from "@/theme/theme";
+import { styles } from "./themed-text.styles";
 
 export type ThemedTextType =
   // theme.typography-aligned variants (prefer these)
@@ -46,41 +46,3 @@ export function ThemedText({
 
   return <Text style={flattenedStyle} {...rest} />;
 }
-
-const styles = StyleSheet.create({
-  // theme.typography scale variants
-  pageTitle: theme.typography.pageTitle,
-  h1: theme.typography.h1,
-  h2: theme.typography.h2,
-  h3: theme.typography.h3,
-  body: theme.typography.body,
-  bodyBold: theme.typography.bodyBold,
-  label: theme.typography.label,
-  labelSmall: theme.typography.labelSmall,
-  caption: theme.typography.caption,
-  captionSmall: theme.typography.captionSmall,
-
-  // Legacy Expo template variants
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 16,
-  },
-});
