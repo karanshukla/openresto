@@ -133,7 +133,6 @@ export default function BookingForm({
   const seats = controlledSeats ?? seatsState;
   const [submitting, setSubmitting] = useState(false);
   const [seatingOpen, setSeatingOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
@@ -453,7 +452,13 @@ export default function BookingForm({
 
   const timezoneHint =
     restaurant.timezone && !isViewerInTimezone(timezone) ? (
-      <ThemedText style={[styles.timezoneHint, { color: colors.muted }]}>
+      <ThemedText
+        style={[
+          styles.timezoneHint,
+          isDrawer && styles.timezoneHintDrawer,
+          { color: colors.muted },
+        ]}
+      >
         All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
       </ThemedText>
     ) : null;
@@ -647,6 +652,8 @@ export default function BookingForm({
         <View style={styles.drawerSection}>
           {sectionHeading("Time", loadingAvailability)}
           {timesContent}
+          {/* Right under the times it qualifies, not buried in the footer. */}
+          {timezoneHint}
           {holdBanner}
           {partyTooLarge && (
             <LargePartyNotice
@@ -705,25 +712,7 @@ export default function BookingForm({
         {divider}
 
         <View style={styles.drawerFooter}>
-          {timezoneHint}
-          <View style={styles.privacyBlock}>
-            <ThemedText style={styles.gdprShort}>
-              Your email and booking details are stored only to manage this reservation, never
-              shared.
-            </ThemedText>
-            <Pressable
-              testID="privacy-note-toggle"
-              onPress={() => setPrivacyOpen((o) => !o)}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: privacyOpen }}
-            >
-              <ThemedText style={[styles.privacyLink, { color: PRIMARY }]}>
-                {privacyOpen ? "Hide privacy note" : "Full privacy note"}
-              </ThemedText>
-            </Pressable>
-            {privacyOpen && <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>}
-          </View>
-
+          <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
           {confirmButton}
           {holdRequiredHint}
         </View>
@@ -877,18 +866,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
   },
-  privacyBlock: {
-    gap: 6,
-  },
-  privacyLink: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  gdprShort: {
-    fontSize: 12,
-    opacity: 0.6,
-    lineHeight: 18,
-  },
   fieldRow: {
     flexDirection: "row",
     gap: 16,
@@ -928,6 +905,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
     marginTop: -10,
+  },
+  // The inline layout pulls the hint up against the row above it; inside a drawer
+  // section it is a normal sibling with the section's own gap.
+  timezoneHintDrawer: {
+    marginTop: 0,
   },
   submitContent: {
     flexDirection: "row",

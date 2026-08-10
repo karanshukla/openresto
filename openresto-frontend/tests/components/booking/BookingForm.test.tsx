@@ -929,17 +929,25 @@ describe("BookingForm drawer layout", () => {
     expect(screen.getAllByText("Time")).toHaveLength(1);
   });
 
-  it("summarises the privacy terms and expands the full note on request", async () => {
+  it("shows the same privacy note as the inline form, in full and without a toggle", async () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
-    expect(screen.getByText(/stored only to manage this reservation/)).toBeTruthy();
-    expect(screen.queryByText(/essential cookie/)).toBeNull();
-
-    fireEvent.press(screen.getByTestId("privacy-note-toggle"));
     expect(screen.getByText(/essential cookie/)).toBeTruthy();
+    expect(screen.queryByTestId("privacy-note-toggle")).toBeNull();
+  });
 
-    fireEvent.press(screen.getByTestId("privacy-note-toggle"));
-    expect(screen.queryByText(/essential cookie/)).toBeNull();
+  it("puts the timezone note under the times it qualifies, not down in the footer", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    // Tree order: the note has to land inside the Time section, which ends where the
+    // "Your details" heading begins.
+    const tree = JSON.stringify(screen.toJSON());
+    const note = tree.indexOf("All times are in");
+    const details = tree.indexOf("Your details");
+    expect(note).toBeGreaterThan(-1);
+    expect(details).toBeGreaterThan(-1);
+    expect(note).toBeLessThan(details);
   });
 
   it("still shows the hold banner and confirm button exactly once", async () => {
