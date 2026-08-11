@@ -14,6 +14,15 @@ jest.mock("@/context/BrandContext", () => {
   return { useBrand: () => brand };
 });
 
+// The trigger formats with the runtime locale, which orders the parts differently in
+// en-GB ("Thu 16 Apr") than en-US ("Thu, Apr 16") — derive the label the same way the
+// component does rather than pinning one locale's order.
+const APR_16_LABEL = new Date("2026-04-16T12:00:00").toLocaleDateString(undefined, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
+
 // Local YYYY-MM-DD (matches how the component computes date strings).
 function localDateValue(d: Date): string {
   const y = d.getFullYear();
@@ -173,7 +182,7 @@ describe("DatePicker (web) as a filter chip", () => {
       />
     );
     expect(screen.getByText("Today")).toBeTruthy();
-    expect(screen.queryByText(/Apr 16/)).toBeNull();
+    expect(screen.queryByText(APR_16_LABEL)).toBeNull();
   });
 
   it("overrides the empty-state label too", () => {
@@ -184,6 +193,6 @@ describe("DatePicker (web) as a filter chip", () => {
 
   it("falls back to the formatted date when no label is supplied", () => {
     render(<DatePickerWeb onSelect={onSelect} icon="calendar-outline" selectedDate="2026-04-16" />);
-    expect(screen.getByText(/Apr 16/)).toBeTruthy();
+    expect(screen.getByText(APR_16_LABEL)).toBeTruthy();
   });
 });

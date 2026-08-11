@@ -148,8 +148,15 @@ describe("BookingDrawer", () => {
   });
 
   it("names the day when booking a date other than today", () => {
+    // The header formats with the runtime locale, so pinning "Fri, Apr 17" would only hold
+    // on an en-US machine — derive the same string rather than assert one locale's order.
+    const expectedDay = new Date("2026-04-17T12:00:00").toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
     renderWithProviders(<BookingDrawer {...baseProps} date="2026-04-17" />);
-    expect(screen.getByText(/^2 guests · Fri, Apr 17 · 19:30$/)).toBeTruthy();
+    expect(screen.getByText(`2 guests · ${expectedDay} · 19:30`)).toBeTruthy();
   });
 
   it("uses singular 'guest' copy for a party of one", () => {

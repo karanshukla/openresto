@@ -699,7 +699,6 @@ export default function BookingForm({
           {/* Labelled "Exact time" because the chips above are the times on offer — this one
               reaches the ones the availability list doesn't show. */}
           {timePickerField("Exact time")}
-          {holdBanner}
           {partyTooLarge && (
             <LargePartyNotice
               maxCapacity={maxTableCapacity}
@@ -760,6 +759,7 @@ export default function BookingForm({
         </View>
 
         {divider}
+        {holdBanner}
 
         <View style={styles.drawerFooter}>
           <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
