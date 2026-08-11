@@ -118,6 +118,20 @@ describe("LocationsFilterBar", () => {
       expect(screen.getByText("Today")).toBeTruthy();
     });
 
+    it("gives the seat trigger room for its own icon, digits and chevron", () => {
+      renderWithProviders(<LocationsFilterBar {...baseProps} compact />);
+      // A 1:2:2 share of a 390px phone is 64px, less than the trigger's contents, and the
+      // count ellipsised down to a stray dot beside the icon. The floor is what it needs.
+      const seats = StyleSheet.flatten(screen.getByTestId("filter-control-seats").props.style);
+      expect(seats.minWidth).toBeGreaterThanOrEqual(80);
+    });
+
+    it("shortens the meal window to a single word", () => {
+      renderWithProviders(<LocationsFilterBar {...baseProps} compact meal="All" />);
+      expect(screen.getByText("All")).toBeTruthy();
+      expect(screen.queryByText("All times")).toBeNull();
+    });
+
     it("still reports changes upward", () => {
       const onSeatsChange = jest.fn();
       renderWithProviders(

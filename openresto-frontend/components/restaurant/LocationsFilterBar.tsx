@@ -19,6 +19,11 @@ const MEAL_OPTIONS = [
   { label: "All times", value: "All" },
 ];
 
+/** "All times" is two words the compact bar can't spare the room for. */
+const MEAL_OPTIONS_COMPACT = MEAL_OPTIONS.map((o) =>
+  o.value === "All" ? { ...o, label: "All" } : o
+);
+
 const SEAT_OPTIONS = [...Array(10).keys()].map((i) => ({
   label: `${i + 1} ${i === 0 ? "guest" : "guests"}`,
   value: i + 1,
@@ -82,7 +87,10 @@ export default function LocationsFilterBar({
         theme.shadows.sm,
       ]}
     >
-      <View style={compact ? styles.controlCompactSeats : styles.controlSeats}>
+      <View
+        testID="filter-control-seats"
+        style={compact ? styles.controlCompactSeats : styles.controlSeats}
+      >
         <Select
           icon="people-outline"
           accessibilityLabel="Number of guests"
@@ -94,7 +102,7 @@ export default function LocationsFilterBar({
 
       <View style={compact ? styles.controlCompactWide : styles.controlDate}>
         <DatePicker
-          icon="calendar-outline"
+          icon={compact ? undefined : "calendar-outline"}
           triggerLabel={formatBarDate(date, today, !!compact)}
           selectedDate={date}
           onSelect={onDateChange}
@@ -103,9 +111,9 @@ export default function LocationsFilterBar({
 
       <View style={compact ? styles.controlCompactWide : styles.controlMeal}>
         <Select
-          icon="time-outline"
+          icon={compact ? undefined : "time-outline"}
           accessibilityLabel="Time of day"
-          options={MEAL_OPTIONS}
+          options={compact ? MEAL_OPTIONS_COMPACT : MEAL_OPTIONS}
           selectedValue={meal}
           onSelect={(v) => onMealChange(v as MealWindow)}
         />
