@@ -90,9 +90,10 @@ function suggestTime(restaurant: HoursSource, timezone: string): string {
 
 /**
  * `inline` is the full form: it owns party size and date and lays fields out in pairs.
- * `drawer` is the booking-drawer variant, where party size and date have already been
- * chosen on the page-level filter bar and are passed in — leaving the drawer to ask
- * only what the list can't: which time, who, and how to reach them.
+ * `drawer` is the booking-drawer variant, where party size and date arrive already chosen
+ * from the page-level filter bar. The date stays the page's; party size is offered again
+ * here — the bar is a first pass at it and the booking is where it gets settled — and a
+ * change is handed back to the page rather than kept private to the form.
  */
 export type BookingFormLayout = "inline" | "drawer";
 
@@ -104,7 +105,9 @@ export default function BookingForm({
   initialSeats,
   layout = "inline",
   seats: controlledSeats,
+  onSeatsChange,
   date: controlledDate,
+  onDateChange,
 }: {
   restaurant: RestaurantDto;
   onSubmit: (data: BookingFormData) => Promise<void> | void;
@@ -112,10 +115,12 @@ export default function BookingForm({
   initialTime?: string;
   initialSeats?: number;
   layout?: BookingFormLayout;
-  /** When set, party size is owned by the caller and its picker is not rendered. */
+  /** When set, party size is owned by the caller — changing it here reports back up. */
   seats?: number;
-  /** When set, the date is owned by the caller and its picker is not rendered. */
+  onSeatsChange?: (seats: number) => void;
+  /** When set, the date is owned by the caller — changing it here reports back up. */
   date?: string;
+  onDateChange?: (date: string) => void;
 }) {
   const { colors, primaryColor: PRIMARY } = useAppTheme();
   const { width } = useWindowDimensions();
@@ -126,6 +131,9 @@ export default function BookingForm({
   const [specialRequests, setSpecialRequests] = useState("");
   const [seatsState, setSeats] = useState(initialSeats ?? 2);
   const seats = controlledSeats ?? seatsState;
+  // Party size can be owned by the page (the Locations filter bar) so the list behind the
+  // drawer re-filters with it; without a caller it stays local to the form.
+  const changeSeats = (value: number) => (onSeatsChange ? onSeatsChange(value) : setSeats(value));
   const [submitting, setSubmitting] = useState(false);
   const [seatingOpen, setSeatingOpen] = useState(false);
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
@@ -170,6 +178,7 @@ export default function BookingForm({
   const [tableGroupId, setTableGroupId] = useState<number | undefined>();
   const [dateState, setDate] = useState<string>(() => suggestDate(restaurant, timezone));
   const date = controlledDate ?? dateState;
+  const changeDate = (value: string) => (onDateChange ? onDateChange(value) : setDate(value));
   const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
   const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlotDto[]>([]);
@@ -330,8 +339,13 @@ export default function BookingForm({
 
   // ── Options ──────────────────────────────────────────────────────────────────
 
+  // The drawer sits under a header reading "2 guests · Today · 19:00" and beside the
+  // Locations bar, so its options speak guests; the inline form's field is already
+  // labelled "Number of Guests" and names the seats instead.
   const seatOptions = [...Array(10).keys()].map((i) => ({
-    label: `${i + 1} seat${i > 0 ? "s" : ""}`,
+    label: isDrawer
+      ? `${i + 1} ${i === 0 ? "guest" : "guests"}`
+      : `${i + 1} seat${i > 0 ? "s" : ""}`,
     value: i + 1,
   }));
 
@@ -457,6 +471,32 @@ export default function BookingForm({
         All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
       </ThemedText>
     ) : null;
+
+  const guestsField = (label = "Guests") => (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>{label}</ThemedText>
+      <Select
+        icon="people-outline"
+        accessibilityLabel="Number of guests"
+        selectedValue={seats}
+        onSelect={(v) => changeSeats(v as number)}
+        options={seatOptions}
+      />
+    </View>
+  );
+
+  const dateField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Date</ThemedText>
+      {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
+          here — only the admin New Booking modal opts in to back-dating (#160). */}
+      <DatePicker
+        selectedDate={date}
+        onSelect={changeDate}
+        openDays={restaurant.openDays?.split(",").map(Number)}
+      />
+    </View>
+  );
 
   const timePickerField = (label = "Time") => (
     <View style={styles.field}>
@@ -637,18 +677,28 @@ export default function BookingForm({
   const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
 
   // ── Drawer layout ──
-  // Party size and date are already settled by the page-level bar, so the drawer asks
-  // only for the time, the diner, and (behind a disclosure) a specific seat.
+  // Every field the drawer owns is a plain field in one column, separated into sections by
+  // the same headings and rules. Party size and date arrive chosen from the page-level bar
+  // and are asked again here, because the booking is where they get settled.
   if (isDrawer) {
     return (
       <View style={styles.drawerForm}>
         <WalkInDaysBanner restaurant={restaurant} />
 
         <View style={styles.drawerSection}>
-          {sectionHeading("Time", loadingAvailability)}
+          {sectionHeading("Party & date", loadingAvailability)}
+          {/* Above the chips they filter: changing either re-asks for times, and the list
+              behind the drawer re-filters with them. */}
+          <View style={styles.drawerRow}>
+            <View style={styles.drawerRowHalf}>{guestsField()}</View>
+            <View style={styles.drawerRowHalf}>{dateField}</View>
+          </View>
           {timesContent}
           {/* Right under the times it qualifies, not buried in the footer. */}
           {timezoneHint}
+          {/* Labelled "Exact time" because the chips above are the times on offer — this one
+              reaches the ones the availability list doesn't show. */}
+          {timePickerField("Exact time")}
           {holdBanner}
           {partyTooLarge && (
             <LargePartyNotice
@@ -669,8 +719,10 @@ export default function BookingForm({
 
         {divider}
 
-        {/* Seating is the one optional step, so it reads as a single closed control rather
-            than a bare text link floating between the fields above and the footer below. */}
+        {/* Seating is optional, so it opens on request rather than sitting there asking a
+            question most diners don't have an answer to. The toggle is a plain row and the
+            fields it reveals are plain fields: boxing them made the one part of the form
+            that is genuinely about sections read as a section of its own. */}
         <View style={styles.drawerSection}>
           <Pressable
             testID="seating-disclosure-toggle"
@@ -680,30 +732,30 @@ export default function BookingForm({
             }}
             accessibilityRole="button"
             accessibilityState={{ expanded: seatingOpen }}
-            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-              styles.disclosureToggle,
-              {
-                backgroundColor: colors.input,
-                borderColor: hovered || pressed ? PRIMARY : colors.border,
-              },
-            ]}
+            style={styles.disclosureToggle}
           >
-            <Ionicons name="options-outline" size={16} color={colors.muted} />
-            <ThemedText style={styles.disclosureText}>Choose a section or table</ThemedText>
-            <Ionicons
-              name={seatingOpen ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={colors.muted}
-            />
+            {({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => {
+              const accent = hovered || pressed ? PRIMARY : colors.muted;
+              return (
+                <>
+                  <Ionicons name="options-outline" size={16} color={accent} />
+                  <ThemedText style={[styles.disclosureText, { color: accent }]}>
+                    Choose a section or table
+                  </ThemedText>
+                  <Ionicons
+                    name={seatingOpen ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color={accent}
+                  />
+                </>
+              );
+            }}
           </Pressable>
           {seatingOpen && (
-            <View style={[styles.disclosureBody, { borderColor: colors.border }]}>
-              {/* Labelled "Exact time" because the chips above are already "Time" — this one
-                  reaches times the availability list doesn't offer. */}
-              {timePickerField("Exact time")}
+            <>
               {sectionField}
               {tableField}
-            </View>
+            </>
           )}
         </View>
 
@@ -731,24 +783,8 @@ export default function BookingForm({
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
       >
-        <View style={[styles.field, half]}>
-          <ThemedText style={styles.label}>Number of Guests</ThemedText>
-          <Select
-            selectedValue={seats}
-            onSelect={(v) => setSeats(v as number)}
-            options={seatOptions}
-          />
-        </View>
-        <View style={[styles.field, half]}>
-          <ThemedText style={styles.label}>Date</ThemedText>
-          {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
-              here — only the admin New Booking modal opts in to back-dating (#160). */}
-          <DatePicker
-            selectedDate={date}
-            onSelect={setDate}
-            openDays={restaurant.openDays?.split(",").map(Number)}
-          />
-        </View>
+        <View style={half}>{guestsField("Number of Guests")}</View>
+        <View style={half}>{dateField}</View>
       </View>
 
       {partyTooLarge && (

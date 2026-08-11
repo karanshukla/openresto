@@ -34,7 +34,15 @@ jest.mock("@/components/booking/BookingForm", () => {
   const { Pressable, Text } = require("react-native");
   return {
     __esModule: true,
-    default: function MockBookingForm({ onSubmit, layout, seats, date, initialTime }: any) {
+    default: function MockBookingForm({
+      onSubmit,
+      onSeatsChange,
+      onDateChange,
+      layout,
+      seats,
+      date,
+      initialTime,
+    }: any) {
       const baseData = {
         customerEmail: "test@example.com",
         customerName: "Test Guest",
@@ -50,6 +58,8 @@ jest.mock("@/components/booking/BookingForm", () => {
           <Text testID="form-seats">{String(seats)}</Text>
           <Text testID="form-date">{String(date)}</Text>
           <Text testID="form-initial-time">{String(initialTime)}</Text>
+          <Pressable testID="form-seats-change" onPress={() => onSeatsChange(6)} />
+          <Pressable testID="form-date-change" onPress={() => onDateChange("2026-04-18")} />
           <Pressable
             testID="submit-trigger"
             onPress={() =>
@@ -120,6 +130,8 @@ const baseProps = {
   today: TODAY,
   variant: "side" as const,
   onClose: jest.fn(),
+  onSeatsChange: jest.fn(),
+  onDateChange: jest.fn(),
 };
 
 describe("BookingDrawer", () => {
@@ -150,6 +162,20 @@ describe("BookingDrawer", () => {
     expect(screen.getByTestId("form-seats").props.children).toBe("5");
     expect(screen.getByTestId("form-date").props.children).toBe(TODAY);
     expect(screen.getByTestId("form-initial-time").props.children).toBe("19:30");
+  });
+
+  it("passes a party-size change up to the page so the list behind it follows", () => {
+    const onSeatsChange = jest.fn();
+    renderWithProviders(<BookingDrawer {...baseProps} onSeatsChange={onSeatsChange} />);
+    fireEvent.press(screen.getByTestId("form-seats-change"));
+    expect(onSeatsChange).toHaveBeenCalledWith(6);
+  });
+
+  it("passes a date change up to the page the same way", () => {
+    const onDateChange = jest.fn();
+    renderWithProviders(<BookingDrawer {...baseProps} onDateChange={onDateChange} />);
+    fireEvent.press(screen.getByTestId("form-date-change"));
+    expect(onDateChange).toHaveBeenCalledWith("2026-04-18");
   });
 
   it("closes on the close button", () => {
