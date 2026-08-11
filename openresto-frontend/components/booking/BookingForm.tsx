@@ -90,9 +90,10 @@ function suggestTime(restaurant: HoursSource, timezone: string): string {
 
 /**
  * `inline` is the full form: it owns party size and date and lays fields out in pairs.
- * `drawer` is the booking-drawer variant, where party size and date have already been
- * chosen on the page-level filter bar and are passed in — leaving the drawer to ask
- * only what the list can't: which time, who, and how to reach them.
+ * `drawer` is the booking-drawer variant, where party size and date arrive already chosen
+ * from the page-level filter bar. The date stays the page's; party size is offered again
+ * here — the bar is a first pass at it and the booking is where it gets settled — and a
+ * change is handed back to the page rather than kept private to the form.
  */
 export type BookingFormLayout = "inline" | "drawer";
 
@@ -104,6 +105,7 @@ export default function BookingForm({
   initialSeats,
   layout = "inline",
   seats: controlledSeats,
+  onSeatsChange,
   date: controlledDate,
 }: {
   restaurant: RestaurantDto;
@@ -112,8 +114,9 @@ export default function BookingForm({
   initialTime?: string;
   initialSeats?: number;
   layout?: BookingFormLayout;
-  /** When set, party size is owned by the caller and its picker is not rendered. */
+  /** When set, party size is owned by the caller — changing it here reports back up. */
   seats?: number;
+  onSeatsChange?: (seats: number) => void;
   /** When set, the date is owned by the caller and its picker is not rendered. */
   date?: string;
 }) {
@@ -126,6 +129,9 @@ export default function BookingForm({
   const [specialRequests, setSpecialRequests] = useState("");
   const [seatsState, setSeats] = useState(initialSeats ?? 2);
   const seats = controlledSeats ?? seatsState;
+  // Party size can be owned by the page (the Locations filter bar) so the list behind the
+  // drawer re-filters with it; without a caller it stays local to the form.
+  const changeSeats = (value: number) => (onSeatsChange ? onSeatsChange(value) : setSeats(value));
   const [submitting, setSubmitting] = useState(false);
   const [seatingOpen, setSeatingOpen] = useState(false);
   const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
@@ -330,8 +336,13 @@ export default function BookingForm({
 
   // ── Options ──────────────────────────────────────────────────────────────────
 
+  // The drawer sits under a header reading "2 guests · Today · 19:00" and beside the
+  // Locations bar, so its options speak guests; the inline form's field is already
+  // labelled "Number of Guests" and names the seats instead.
   const seatOptions = [...Array(10).keys()].map((i) => ({
-    label: `${i + 1} seat${i > 0 ? "s" : ""}`,
+    label: isDrawer
+      ? `${i + 1} ${i === 0 ? "guest" : "guests"}`
+      : `${i + 1} seat${i > 0 ? "s" : ""}`,
     value: i + 1,
   }));
 
@@ -457,6 +468,19 @@ export default function BookingForm({
         All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
       </ThemedText>
     ) : null;
+
+  const guestsField = (
+    <View style={styles.field}>
+      <ThemedText style={styles.label}>Guests</ThemedText>
+      <Select
+        icon="people-outline"
+        accessibilityLabel="Number of guests"
+        selectedValue={seats}
+        onSelect={(v) => changeSeats(v as number)}
+        options={seatOptions}
+      />
+    </View>
+  );
 
   const timePickerField = (label = "Time") => (
     <View style={styles.field}>
@@ -645,7 +669,10 @@ export default function BookingForm({
         <WalkInDaysBanner restaurant={restaurant} />
 
         <View style={styles.drawerSection}>
-          {sectionHeading("Time", loadingAvailability)}
+          {sectionHeading("Party & time", loadingAvailability)}
+          {/* Directly above the chips it filters: changing it re-asks for times, and the
+              list behind the drawer re-filters with it. */}
+          {guestsField}
           {timesContent}
           {/* Right under the times it qualifies, not buried in the footer. */}
           {timezoneHint}
@@ -670,8 +697,10 @@ export default function BookingForm({
         {divider}
 
         {/* Seating is the one optional step, so it reads as a single closed control rather
-            than a bare text link floating between the fields above and the footer below. */}
-        <View style={styles.drawerSection}>
+            than a bare text link floating between the fields above and the footer below.
+            Open, the fields stay inside that same control — a separate bordered box below
+            the toggle reads as two unrelated things stacked. */}
+        <View style={[styles.disclosureCard, { borderColor: colors.border }]}>
           <Pressable
             testID="seating-disclosure-toggle"
             onPress={() => {
@@ -680,24 +709,29 @@ export default function BookingForm({
             }}
             accessibilityRole="button"
             accessibilityState={{ expanded: seatingOpen }}
-            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-              styles.disclosureToggle,
-              {
-                backgroundColor: colors.input,
-                borderColor: hovered || pressed ? PRIMARY : colors.border,
-              },
-            ]}
+            style={[styles.disclosureToggle, { backgroundColor: colors.input }]}
           >
-            <Ionicons name="options-outline" size={16} color={colors.muted} />
-            <ThemedText style={styles.disclosureText}>Choose a section or table</ThemedText>
-            <Ionicons
-              name={seatingOpen ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={colors.muted}
-            />
+            {({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => {
+              const accent = hovered || pressed ? PRIMARY : colors.muted;
+              return (
+                <>
+                  <Ionicons name="options-outline" size={16} color={accent} />
+                  <ThemedText
+                    style={[styles.disclosureText, (hovered || pressed) && { color: PRIMARY }]}
+                  >
+                    Choose a section or table
+                  </ThemedText>
+                  <Ionicons
+                    name={seatingOpen ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color={accent}
+                  />
+                </>
+              );
+            }}
           </Pressable>
           {seatingOpen && (
-            <View style={[styles.disclosureBody, { borderColor: colors.border }]}>
+            <View style={[styles.disclosureBody, { borderTopColor: colors.border }]}>
               {/* Labelled "Exact time" because the chips above are already "Time" — this one
                   reaches times the availability list doesn't offer. */}
               {timePickerField("Exact time")}

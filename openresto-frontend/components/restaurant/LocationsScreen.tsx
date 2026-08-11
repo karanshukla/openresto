@@ -229,6 +229,7 @@ export default function LocationsScreen({
             time={drawer.time}
             today={today}
             variant="side"
+            onSeatsChange={setSeats}
             onClose={closeDrawer}
           />
         )}
@@ -242,6 +243,7 @@ export default function LocationsScreen({
           time={drawer.time}
           today={today}
           variant="sheet"
+          onSeatsChange={setSeats}
           onClose={closeDrawer}
         />
       )}

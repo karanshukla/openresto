@@ -43,12 +43,15 @@ function summaryLine(seats: number, date: string, time: string, today: string): 
  * phones. It exists so choosing a time doesn't push the list of locations off-screen —
  * the comparison stays put while the booking happens beside it.
  *
- * Party size, date and the tapped time arrive already decided, so the panel opens with
- * a hold in flight and asks only for a name and an email.
+ * Party size, date and the tapped time arrive already decided, so the panel opens with a
+ * hold in flight and asks only for a name and an email. Party size stays adjustable here
+ * because it is the one of the three a diner revises while booking rather than while
+ * browsing; the page-level bar is the first pass at it.
  */
 export default function BookingDrawer({
   restaurant,
   seats,
+  onSeatsChange,
   date,
   time,
   today,
@@ -57,6 +60,8 @@ export default function BookingDrawer({
 }: {
   restaurant: RestaurantDto;
   seats: number;
+  /** Party size is the page's, so changing it in here re-filters the list behind the drawer. */
+  onSeatsChange: (seats: number) => void;
   date: string;
   time: string;
   /** Today's date in the brand's timezone, for the "Today · 19:30" summary. */
@@ -178,12 +183,16 @@ export default function BookingDrawer({
           </ThemedView>
         )}
         <BookingForm
-          // Remounting on a new (location, party, date, time) resets the hold and the
-          // suggested table for the new criteria rather than carrying the old ones over.
-          key={`${restaurant.id}-${seats}-${date}-${time}`}
+          // Remounting on a new (location, date, time) resets the hold and the suggested
+          // table for the new criteria rather than carrying the old ones over. Party size
+          // is deliberately not part of the key — it is changed from inside the form, which
+          // already releases the hold and re-asks for availability, and remounting on it
+          // would throw away a name and email the diner has just typed.
+          key={`${restaurant.id}-${date}-${time}`}
           layout="drawer"
           restaurant={restaurant}
           seats={seats}
+          onSeatsChange={onSeatsChange}
           date={date}
           initialTime={time}
           onSubmit={handleSubmit}

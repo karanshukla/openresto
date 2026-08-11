@@ -30,7 +30,15 @@ jest.mock("@/components/booking/BookingDrawer", () => {
   const { View, Text, Pressable } = require("react-native");
   return {
     __esModule: true,
-    default: function MockBookingDrawer({ restaurant, seats, date, time, variant, onClose }: any) {
+    default: function MockBookingDrawer({
+      restaurant,
+      seats,
+      date,
+      time,
+      variant,
+      onClose,
+      onSeatsChange,
+    }: any) {
       return (
         <View testID="mock-drawer">
           <Text testID="drawer-restaurant">{restaurant.name}</Text>
@@ -39,6 +47,7 @@ jest.mock("@/components/booking/BookingDrawer", () => {
           <Text testID="drawer-time">{String(time)}</Text>
           <Text testID="drawer-variant">{variant}</Text>
           <Pressable testID="drawer-close" onPress={onClose} />
+          <Pressable testID="drawer-seats-change" onPress={() => onSeatsChange(6)} />
         </View>
       );
     },
@@ -241,6 +250,22 @@ describe("LocationsScreen", () => {
       expect(screen.getByTestId("drawer-time").props.children).toBe("19:30");
       expect(screen.getByTestId("drawer-seats").props.children).toBe("3");
       expect(screen.getByTestId("drawer-variant").props.children).toBe("side");
+    });
+
+    it("adopts a party size chosen inside the drawer, list included", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen initialSeats={3} />);
+      await waitFor(() => expect(screen.getByTestId("book-2")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("book-2"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("drawer-seats-change"));
+
+      // The bar is the first pass at party size; whatever the booking panel settles on wins,
+      // so the cards behind it can't go on advertising times for a different party.
+      expect(screen.getByTestId("drawer-seats").props.children).toBe("6");
+      expect(screen.getByTestId("seats-1").props.children).toBe("6");
+      expect(screen.getByTestId("seats-2").props.children).toBe("6");
     });
 
     it("opens as a bottom sheet at phone width", async () => {

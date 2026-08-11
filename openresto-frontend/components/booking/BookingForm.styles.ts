@@ -42,14 +42,19 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
+  // One bordered card: the toggle is its header and the fields live inside it, so an
+  // open disclosure stays a single object instead of a box floating under a button.
+  disclosureCard: {
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
   disclosureToggle: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     minHeight: 44,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 8,
   },
   disclosureText: {
     flex: 1,
@@ -59,8 +64,7 @@ export const styles = StyleSheet.create({
   disclosureBody: {
     gap: 16,
     padding: 14,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderTopWidth: 1,
   },
   fieldRow: {
     flexDirection: "row",

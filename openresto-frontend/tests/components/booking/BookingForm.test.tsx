@@ -162,8 +162,15 @@ jest.mock("@/utils/date", () => ({
 
 jest.mock("@/components/common/Select", () => ({
   __esModule: true,
-  default: ({ onSelect, placeholder, selectedValue, options }: any) => {
+  default: ({ onSelect, placeholder, selectedValue, options, accessibilityLabel }: any) => {
     const { Pressable, Text } = require("react-native");
+    if (accessibilityLabel === "Number of guests") {
+      return (
+        <Pressable testID="guests-select" onPress={() => onSelect(selectedValue + 1)}>
+          <Text>GuestsSelect:{selectedValue}</Text>
+        </Pressable>
+      );
+    }
     if (placeholder === "Select a section") {
       return (
         <Pressable testID="section-select" onPress={() => onSelect(20)}>
@@ -873,12 +880,49 @@ describe("BookingForm drawer layout", () => {
     );
   }
 
-  it("drops the guests and date pickers — the page bar owns them", async () => {
+  it("drops the date picker — the page bar owns the date", async () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
-    expect(screen.queryByText("Number of Guests")).toBeNull();
     expect(screen.queryByText("Date")).toBeNull();
     expect(screen.queryAllByTestId("booking-field-row")).toHaveLength(0);
+  });
+
+  it("keeps party size adjustable, seeded from the page bar", async () => {
+    renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByText("Guests")).toBeTruthy();
+    expect(screen.getByText("GuestsSelect:4")).toBeTruthy();
+  });
+
+  it("reports a party-size change back to the caller instead of diverging from it", async () => {
+    const onSeatsChange = jest.fn();
+    renderDrawer({ onSeatsChange });
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    fireEvent.press(screen.getByTestId("guests-select"));
+
+    expect(onSeatsChange).toHaveBeenCalledWith(5);
+    // Still showing the caller's number: the page owns it, so the form waits to be told.
+    expect(screen.getByText("GuestsSelect:4")).toBeTruthy();
+  });
+
+  it("re-asks for availability when the caller raises the party size", async () => {
+    const { rerender } = renderDrawer();
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    rerender(
+      <BookingForm
+        layout="drawer"
+        restaurant={mockRestaurantAllDays as any}
+        seats={6}
+        date="2026-06-24"
+        onSubmit={jest.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 6)
+    );
   });
 
   it("fetches availability for the caller's party size and date", async () => {
@@ -919,14 +963,14 @@ describe("BookingForm drawer layout", () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
 
-    expect(screen.getByText("Time")).toBeTruthy();
+    expect(screen.getByText("Party & time")).toBeTruthy();
     expect(screen.getByText("Your details")).toBeTruthy();
 
-    // Opening seating adds an exact-time picker, which must not collide with the
-    // "Time" section heading above it.
+    // Opening seating adds an exact-time picker, which must not collide with a
+    // "Time" label above it.
     fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
     expect(screen.getByText("Exact time")).toBeTruthy();
-    expect(screen.getAllByText("Time")).toHaveLength(1);
+    expect(screen.queryAllByText("Time")).toHaveLength(0);
   });
 
   it("shows the same privacy note as the inline form, in full and without a toggle", async () => {
