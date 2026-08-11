@@ -200,11 +200,13 @@ describe("BookingDrawer", () => {
     expect(panel.overflow).toBe("hidden");
   });
 
-  it("closes on the close button", () => {
+  it("closes on the close button", async () => {
     const onClose = jest.fn();
     renderWithProviders(<BookingDrawer {...baseProps} onClose={onClose} />);
     fireEvent.press(screen.getByTestId("booking-drawer-close"));
-    expect(onClose).toHaveBeenCalled();
+    // The panel animates itself out before handing control back — the page drops it from
+    // state as soon as onClose fires, so an immediate call would cut the exit off.
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   describe("as a bottom sheet", () => {
@@ -233,11 +235,11 @@ describe("BookingDrawer", () => {
       expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
     });
 
-    it("closes when the backdrop is tapped", () => {
+    it("closes when the backdrop is tapped, after the sheet has slid away", async () => {
       const onClose = jest.fn();
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
       fireEvent.press(screen.getByTestId("booking-drawer-backdrop"));
-      expect(onClose).toHaveBeenCalled();
+      await waitFor(() => expect(onClose).toHaveBeenCalled());
     });
   });
 

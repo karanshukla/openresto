@@ -362,8 +362,10 @@ describe("LocationsScreen", () => {
       expect(screen.getByTestId("drawer-restaurant").props.children).toBe("Uptown Grill");
       expect(screen.getByTestId("drawer-time").props.children).toBe("18:30");
       expect(screen.getByTestId("drawer-seats").props.children).toBe("4");
-      // With the drawer carrying the booking, the card itself stays collapsed.
-      expect(screen.getByTestId("expanded-2").props.children).toBe("false");
+      // The card expands too (#310): arriving from a time press on the home page should
+      // still show the location that was picked, not a booking panel on its own.
+      expect(screen.getByTestId("expanded-2").props.children).toBe("true");
+      expect(screen.getByTestId("expanded-1").props.children).toBe("false");
     });
 
     it("expands the linked location's details when the link carries no time", async () => {

@@ -10,7 +10,12 @@ export const styles = StyleSheet.create({
     width: "100%",
     // react-native-web needs the explicit min-height:0 for the list column to shrink
     // instead of overflowing once the drawer takes its 460px beside it.
-    ...(Platform.OS === "web" ? ({ minHeight: 0 } as object) : null),
+    // The transition lives on the always-applied style, not on `rowWithDrawer` — a
+    // transition declared only while the drawer is open animates the open and snaps
+    // the close, because the rule disappears with the width it was meant to animate.
+    ...(Platform.OS === "web"
+      ? ({ minHeight: 0, transition: "max-width 220ms ease" } as object)
+      : null),
   },
   rowWithDrawer: {
     alignSelf: "center",
