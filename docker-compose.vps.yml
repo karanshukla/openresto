@@ -65,8 +65,10 @@ services:
       - ${HOST_SSL_KEY_PATH}:/etc/nginx/ssl/server.key:ro
       - media_data:/usr/share/nginx/html/media:ro
     depends_on:
-      backend:
-        condition: service_healthy
-      frontend:
-        condition: service_healthy
+      # Start-order only, deliberately not service_healthy: nginx resolves
+      # backend/frontend at startup and Docker registers their DNS at container
+      # creation, so waiting on healthchecks only lengthens the window where
+      # :8443 is unpublished and the public site 502s.
+      - backend
+      - frontend
     restart: always
