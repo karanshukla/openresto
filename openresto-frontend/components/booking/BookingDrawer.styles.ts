@@ -1,5 +1,12 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
+
+/**
+ * Claims a touch outright instead of letting the browser read it as a scroll first. The
+ * sheet's drag-to-dismiss is a downward swipe, which a mobile browser otherwise spends on
+ * its own overscroll gesture before the pan responder sees a thing.
+ */
+const ownsTheGesture = Platform.OS === "web" ? ({ touchAction: "none" } as object) : null;
 
 /** Width of the floating side panel; the sheet layout uses the full width instead. */
 export const DRAWER_WIDTH = 460;
@@ -32,6 +39,8 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    // The page behind an open sheet is not there to be scrolled, let alone reloaded.
+    ...ownsTheGesture,
   },
   sheet: {
     maxHeight: "88%",
@@ -44,6 +53,7 @@ export const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
     paddingBottom: theme.spacing.sm,
     alignItems: "center",
+    ...ownsTheGesture,
   },
   grabber: {
     width: 40,
@@ -57,6 +67,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
+    // The header drags the sheet too, so it needs the same claim on the gesture. Taps
+    // still reach the close button; only browser panning is suppressed.
+    ...ownsTheGesture,
   },
   headerText: {
     flex: 1,
@@ -80,6 +93,9 @@ export const styles = StyleSheet.create({
   },
   scroll: {
     flexShrink: 1,
+    // Scrolling the form to its top and carrying on downwards must stop there rather than
+    // chaining out to the page and pulling it into a reload.
+    ...(Platform.OS === "web" ? ({ overscrollBehavior: "contain" } as object) : null),
   },
   scrollContent: {
     padding: theme.spacing.xl,

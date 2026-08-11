@@ -14,6 +14,15 @@ body,
   overflow-x: hidden;
 }
 
+/* No pull-to-refresh. The booking sheet is dismissed by dragging it downwards, which is
+   the same gesture a mobile browser reloads the page on, and the browser wins: the diner
+   loses the sheet, the held table and anything typed into the form. `contain` keeps
+   ordinary scrolling intact and only drops the overscroll effect at the ends. */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
 html,
 body {
   font-family:
