@@ -1,6 +1,7 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import { Animated, Easing } from "react-native";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { View } from "react-native";
 import { usePathname } from "expo-router";
+import { animateNode, EASE_ENTER } from "@/utils/webAnimation";
 import { styles } from "./RouteTransition.styles";
 
 const DURATION_MS = 140;
@@ -14,11 +15,6 @@ const RISE = 6;
  */
 const START_OPACITY = 0.88;
 
-function prefersReducedMotion() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-}
-
 /**
  * Lifts route content into place whenever the path changes. On web the user layout
  * renders a bare `<Slot />`, so moving between the home page, the locations list and a
@@ -28,44 +24,34 @@ function prefersReducedMotion() {
  * (`?time=19:30`) land on the same view and should not replay the transition. The first
  * paint is exempt too — a cold load has no previous view to replace, and animating it
  * only delays the content the visitor came for.
+ *
+ * The animation is started from a layout effect, before the browser paints: started after
+ * it, the new view paints at rest for a frame and only then drops to START_OPACITY, so the
+ * transition reads as a pulse.
  */
 export default function RouteTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const anim = useRef(new Animated.Value(1)).current;
+  const ref = useRef<View>(null);
   const isFirstPaint = useRef(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isFirstPaint.current) {
       isFirstPaint.current = false;
       return;
     }
-    if (prefersReducedMotion()) {
-      anim.setValue(1);
-      return;
-    }
-    anim.setValue(0);
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: DURATION_MS,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: false,
-    }).start();
-  }, [pathname, anim]);
+    animateNode(
+      ref.current,
+      [
+        { opacity: START_OPACITY, transform: `translateY(${RISE}px)` },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: DURATION_MS, easing: EASE_ENTER }
+    );
+  }, [pathname]);
 
   return (
-    <Animated.View
-      testID="route-transition"
-      style={[
-        styles.root,
-        {
-          opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [START_OPACITY, 1] }),
-          transform: [
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [RISE, 0] }) },
-          ],
-        },
-      ]}
-    >
+    <View ref={ref} testID="route-transition" style={styles.root}>
       {children}
-    </Animated.View>
+    </View>
   );
 }

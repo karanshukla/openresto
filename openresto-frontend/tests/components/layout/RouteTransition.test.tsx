@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 import RouteTransition from "@/components/layout/RouteTransition";
 
@@ -11,93 +11,65 @@ jest.mock("expo-router", () => ({
   usePathname: () => mockUsePathname(),
 }));
 
-function opacityOf(): number {
-  const style = screen.getByTestId("route-transition").props.style;
-  const flat = Array.isArray(style) ? Object.assign({}, ...style) : style;
-  // Animated values render as the node itself in the test renderer; read through it.
-  return typeof flat.opacity === "number" ? flat.opacity : flat.opacity.__getValue();
-}
+jest.mock("@/utils/webAnimation", () => ({
+  ...jest.requireActual("@/utils/webAnimation"),
+  animateNode: jest.fn(() => null),
+}));
+const mockAnimateNode = jest.requireMock("@/utils/webAnimation").animateNode as jest.Mock;
 
-function setReducedMotion(reduced: boolean) {
-  window.matchMedia = jest
-    .fn()
-    .mockReturnValue({ matches: reduced }) as unknown as typeof matchMedia;
+function renderAt(path: string) {
+  mockUsePathname.mockReturnValue(path);
+  return render(
+    <RouteTransition>
+      <Text>{path}</Text>
+    </RouteTransition>
+  );
 }
 
 describe("RouteTransition", () => {
   beforeEach(() => {
-    mockUsePathname.mockReturnValue("/");
-    setReducedMotion(false);
+    mockAnimateNode.mockClear();
   });
 
   it("renders its children", () => {
-    render(
-      <RouteTransition>
-        <Text>Home</Text>
-      </RouteTransition>
-    );
-    expect(screen.getByText("Home")).toBeTruthy();
+    renderAt("/");
+    expect(screen.getByText("/")).toBeTruthy();
   });
 
   it("leaves the first paint alone", () => {
-    render(
-      <RouteTransition>
-        <Text>Home</Text>
-      </RouteTransition>
-    );
-    expect(opacityOf()).toBe(1);
+    renderAt("/");
+    // A cold load has no previous view to replace, and animating it only delays the
+    // content the visitor came for.
+    expect(mockAnimateNode).not.toHaveBeenCalled();
   });
 
-  it("replays the transition when the path changes", async () => {
-    const { rerender } = render(
-      <RouteTransition>
-        <Text>Home</Text>
-      </RouteTransition>
-    );
+  it("animates the new view in when the path changes", () => {
+    const { rerender } = renderAt("/");
 
     mockUsePathname.mockReturnValue("/locations/2");
     rerender(
       <RouteTransition>
-        <Text>Locations</Text>
+        <Text>/locations/2</Text>
       </RouteTransition>
     );
-    // A new view arriving dips, but never far enough to blank the page out.
-    const dipped = opacityOf();
-    expect(dipped).toBeLessThan(1);
-    expect(dipped).toBeGreaterThan(0.8);
-    await waitFor(() => expect(opacityOf()).toBe(1), { timeout: 1000 });
+
+    expect(mockAnimateNode).toHaveBeenCalledTimes(1);
+    const [, keyframes] = mockAnimateNode.mock.calls[0];
+    // Never from zero: the outgoing view is already gone, so a transparent frame shows
+    // the bare page background across the whole viewport and reads as a blink.
+    expect(keyframes[0].opacity).toBeGreaterThan(0.8);
+    expect(keyframes[keyframes.length - 1].opacity).toBe(1);
   });
 
   it("does not replay when only the query string changed", () => {
-    const { rerender } = render(
-      <RouteTransition>
-        <Text>Locations</Text>
-      </RouteTransition>
-    );
+    const { rerender } = renderAt("/locations");
 
     // usePathname() excludes the query string, so ?time=19:30 leaves it untouched.
     rerender(
       <RouteTransition>
-        <Text>Locations</Text>
+        <Text>/locations</Text>
       </RouteTransition>
     );
-    expect(opacityOf()).toBe(1);
-  });
-
-  it("snaps straight to the new view when the visitor asked for reduced motion", () => {
-    const { rerender } = render(
-      <RouteTransition>
-        <Text>Home</Text>
-      </RouteTransition>
-    );
-
-    setReducedMotion(true);
-    mockUsePathname.mockReturnValue("/locations/2");
-    rerender(
-      <RouteTransition>
-        <Text>Locations</Text>
-      </RouteTransition>
-    );
-    expect(opacityOf()).toBe(1);
+    expect(mockAnimateNode).not.toHaveBeenCalled();
   });
 });

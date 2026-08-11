@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Animated, Modal, PanResponder, Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { createBooking } from "@/api/bookings";
 import { convertLocalToUtc } from "@/utils/date";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
+import { animateNode, EASE_ENTER, EASE_EXIT } from "@/utils/webAnimation";
 import { styles } from "./BookingDrawer.styles";
 
 export { DRAWER_WIDTH } from "./BookingDrawer.styles";
@@ -19,8 +20,13 @@ export { DRAWER_WIDTH } from "./BookingDrawer.styles";
 const SHEET_EXIT_DISTANCE = 800;
 /** How far the side panel travels as it fades in and out. */
 const SIDE_ENTER_DISTANCE = 28;
-const SIDE_ENTER_MS = 200;
-const SIDE_EXIT_MS = 160;
+/**
+ * Short on purpose. The list column beside the panel does not animate — the panel takes
+ * its 460px of layout the instant it mounts — so a long entrance leaves the diner looking
+ * at the gap where the panel is about to be.
+ */
+const SIDE_ENTER_MS = 150;
+const SIDE_EXIT_MS = 120;
 
 /**
  * Whether a drag on the sheet's handle should dismiss it: either dragged far enough to
@@ -117,30 +123,41 @@ export default function BookingDrawer({
   // The panel owns its exit as well as its entrance: the page drops it from state the
   // moment onClose fires, so anything that wants an exit animation has to finish it
   // before handing control back.
-  const enter = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(enter, {
-      toValue: 1,
-      duration: SIDE_ENTER_MS,
-      useNativeDriver: false,
-    }).start();
-  }, [enter]);
+  const sideRef = useRef<View>(null);
+  useLayoutEffect(() => {
+    if (variant !== "side") return;
+    animateNode(
+      sideRef.current,
+      [
+        { opacity: 0, transform: `translateX(${SIDE_ENTER_DISTANCE}px)` },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: SIDE_ENTER_MS, easing: EASE_ENTER }
+    );
+  }, [variant]);
 
   const closeWithHaptic = () => {
     Haptics.selectionAsync();
-    const exit =
-      variant === "sheet"
-        ? Animated.timing(dragY, {
-            toValue: SHEET_EXIT_DISTANCE,
-            duration: 180,
-            useNativeDriver: false,
-          })
-        : Animated.timing(enter, {
-            toValue: 0,
-            duration: SIDE_EXIT_MS,
-            useNativeDriver: false,
-          });
-    exit.start(() => onCloseRef.current());
+    const done = () => onCloseRef.current();
+    if (variant === "sheet") {
+      Animated.timing(dragY, {
+        toValue: SHEET_EXIT_DISTANCE,
+        duration: 180,
+        useNativeDriver: false,
+      }).start(done);
+      return;
+    }
+    const exit = animateNode(
+      sideRef.current,
+      [
+        { opacity: 1, transform: "none" },
+        { opacity: 0, transform: `translateX(${SIDE_ENTER_DISTANCE}px)` },
+      ],
+      { duration: SIDE_EXIT_MS, easing: EASE_EXIT, fill: "forwards" }
+    );
+    // No animation to wait on where there is no DOM node, or under reduced motion.
+    if (!exit) return done();
+    exit.onfinish = done;
   };
 
   const handleSubmit = async (data: BookingFormData) => {
@@ -270,26 +287,16 @@ export default function BookingDrawer({
   }
 
   return (
-    <Animated.View
+    <View
+      ref={sideRef}
       testID="booking-drawer"
       style={[
         styles.side,
         { backgroundColor: colors.card, borderColor: colors.border },
         theme.shadows.popup,
-        {
-          opacity: enter,
-          transform: [
-            {
-              translateX: enter.interpolate({
-                inputRange: [0, 1],
-                outputRange: [SIDE_ENTER_DISTANCE, 0],
-              }),
-            },
-          ],
-        },
       ]}
     >
       {body()}
-    </Animated.View>
+    </View>
   );
 }

@@ -31,6 +31,14 @@ jest.mock("@/api/bookings", () => ({
   createBooking: jest.fn(),
 }));
 
+// jsdom has no Web Animations API, so the real helper always returns null here. Mocking it
+// lets one test put a running animation in front of the exit and prove it is waited on.
+jest.mock("@/utils/webAnimation", () => ({
+  ...jest.requireActual("@/utils/webAnimation"),
+  animateNode: jest.fn(() => null),
+}));
+const mockAnimateNode = jest.requireMock("@/utils/webAnimation").animateNode as jest.Mock;
+
 jest.mock("@/components/booking/BookingForm", () => {
   const { Pressable, Text } = require("react-native");
   return {
@@ -204,9 +212,24 @@ describe("BookingDrawer", () => {
     const onClose = jest.fn();
     renderWithProviders(<BookingDrawer {...baseProps} onClose={onClose} />);
     fireEvent.press(screen.getByTestId("booking-drawer-close"));
-    // The panel animates itself out before handing control back — the page drops it from
-    // state as soon as onClose fires, so an immediate call would cut the exit off.
+    // Nothing to animate here, so the panel hands control straight back rather than
+    // waiting on an exit that will never finish.
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("holds the close back until its exit animation has finished", () => {
+    const exit: { onfinish?: () => void } = {};
+    mockAnimateNode.mockReturnValueOnce(null).mockReturnValueOnce(exit);
+    const onClose = jest.fn();
+    renderWithProviders(<BookingDrawer {...baseProps} onClose={onClose} />);
+
+    fireEvent.press(screen.getByTestId("booking-drawer-close"));
+    // The page drops the panel from state the moment onClose fires, so calling it now
+    // would cut the exit off mid-animation.
+    expect(onClose).not.toHaveBeenCalled();
+
+    exit.onfinish?.();
+    expect(onClose).toHaveBeenCalled();
   });
 
   describe("as a bottom sheet", () => {
