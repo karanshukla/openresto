@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Platform, View } from "react-native";
 import { Slot, Stack, useRouter, useSegments } from "expo-router";
 import Navbar from "@/components/layout/Navbar";
+import RouteTransition from "@/components/layout/RouteTransition";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
@@ -38,7 +39,9 @@ export default function UserLayout() {
     return (
       <View style={{ flex: 1 }}>
         <Navbar onOpenShortcuts={() => setShowShortcutsHelp(true)} />
-        <Slot />
+        <RouteTransition>
+          <Slot />
+        </RouteTransition>
         <KeyboardShortcutsHelp
           visible={showShortcutsHelp}
           scope="user"

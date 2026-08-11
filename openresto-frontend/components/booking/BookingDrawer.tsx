@@ -17,6 +17,10 @@ export { DRAWER_WIDTH } from "./BookingDrawer.styles";
 
 /** How far the sheet animates before it is considered gone. */
 const SHEET_EXIT_DISTANCE = 800;
+/** How far the side panel travels as it fades in and out. */
+const SIDE_ENTER_DISTANCE = 28;
+const SIDE_ENTER_MS = 200;
+const SIDE_EXIT_MS = 160;
 
 /**
  * Whether a drag on the sheet's handle should dismiss it: either dragged far enough to
@@ -110,9 +114,33 @@ export default function BookingDrawer({
     })
   ).current;
 
+  // The panel owns its exit as well as its entrance: the page drops it from state the
+  // moment onClose fires, so anything that wants an exit animation has to finish it
+  // before handing control back.
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: SIDE_ENTER_MS,
+      useNativeDriver: false,
+    }).start();
+  }, [enter]);
+
   const closeWithHaptic = () => {
     Haptics.selectionAsync();
-    onClose();
+    const exit =
+      variant === "sheet"
+        ? Animated.timing(dragY, {
+            toValue: SHEET_EXIT_DISTANCE,
+            duration: 180,
+            useNativeDriver: false,
+          })
+        : Animated.timing(enter, {
+            toValue: 0,
+            duration: SIDE_EXIT_MS,
+            useNativeDriver: false,
+          });
+    exit.start(() => onCloseRef.current());
   };
 
   const handleSubmit = async (data: BookingFormData) => {
@@ -242,15 +270,26 @@ export default function BookingDrawer({
   }
 
   return (
-    <View
+    <Animated.View
       testID="booking-drawer"
       style={[
         styles.side,
         { backgroundColor: colors.card, borderColor: colors.border },
         theme.shadows.popup,
+        {
+          opacity: enter,
+          transform: [
+            {
+              translateX: enter.interpolate({
+                inputRange: [0, 1],
+                outputRange: [SIDE_ENTER_DISTANCE, 0],
+              }),
+            },
+          ],
+        },
       ]}
     >
       {body()}
-    </View>
+    </Animated.View>
   );
 }

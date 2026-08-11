@@ -95,8 +95,11 @@ jobs:
               sleep 5
             done
 
-            echo "==> Pruning unused images..."
+            echo "==> Pruning unused images and capping build cache..."
             docker image prune -f
+            # Age filters are useless here — main is deployed several times a
+            # day, so the whole cache is always "recent". Cap it by size instead.
+            docker builder prune -f --max-used-space 2GB
 
             echo "==> Deployment complete."
 

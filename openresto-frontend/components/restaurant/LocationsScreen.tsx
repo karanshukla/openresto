@@ -40,7 +40,9 @@ export function availabilitySummary(
  * (or as a sheet on phones) instead of expanding the card and pushing the rest away.
  *
  * Deep links via /locations/[id] pass `highlightId` to scroll to and expand a specific
- * location; when they also carry a time, the drawer opens straight onto it.
+ * location; when they also carry a time, the drawer opens straight onto it as well —
+ * arriving from a time press on the home page should still show the location the diner
+ * picked, not just a booking panel detached from it.
  */
 export default function LocationsScreen({
   highlightId,
@@ -203,7 +205,7 @@ export default function LocationsScreen({
                         meal={meal}
                         today={today}
                         compact={isCompact}
-                        defaultExpanded={highlightId === r.id && !initialTime}
+                        defaultExpanded={highlightId === r.id}
                         registerRef={registerRef}
                         onExpand={handleExpand}
                         onBook={handleBook}
