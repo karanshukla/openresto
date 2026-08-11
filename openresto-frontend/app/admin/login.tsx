@@ -4,12 +4,13 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View, Platform } from "react-native";
+import { Pressable, ScrollView, TextInput, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isValidEmail, validatePasswordChange } from "@/utils/validation";
 import { Ionicons } from "@expo/vector-icons";
+import { styles } from "@/styles/admin/login.styles";
 
 type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
 
@@ -391,59 +392,3 @@ function BackButton({ onPress }: { onPress: () => void }) {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  outer: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    paddingTop: 60,
-    paddingBottom: 60,
-  },
-  container: { width: "100%", maxWidth: 420, gap: 16 },
-  brandRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 8 },
-  brand: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
-  brandBadge: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 },
-  card: {
-    borderRadius: theme.borderRadius.modal,
-    borderWidth: 1,
-    padding: 28,
-    gap: 4,
-    ...theme.shadows.lg,
-  },
-  title: { fontSize: 24, fontWeight: "800", letterSpacing: -0.5, marginBottom: 4 },
-  subtitle: { ...theme.typography.body, fontSize: 14, marginBottom: theme.spacing.lg },
-  fields: { gap: theme.spacing.md },
-  field: { gap: 4 },
-  label: { ...theme.typography.label, marginBottom: 2 },
-  errorBanner: {
-    backgroundColor: "rgba(220,38,38,0.08)",
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: 4,
-  },
-  errorText: { color: theme.colors.error, fontSize: 14 },
-  submitBtn: { marginTop: theme.spacing.sm },
-  forgotLink: {
-    ...theme.typography.label,
-    textAlign: "center",
-    marginTop: 12,
-    cursor: "pointer" as const,
-  },
-  backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as const },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: theme.spacing.md },
-  backBtnText: { fontSize: 13 },
-  questionBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  questionText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  successIcon: { alignItems: "center", marginBottom: theme.spacing.sm },
-});

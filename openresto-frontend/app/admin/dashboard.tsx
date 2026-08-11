@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  StyleSheet,
   useWindowDimensions,
   View,
   Platform,
@@ -19,6 +18,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme, ThemeColors } from "@/theme/theme";
 import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
 import AlertModal from "@/components/common/AlertModal";
+import { styles } from "@/styles/admin/dashboard.styles";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -524,141 +524,3 @@ function BookingItem({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  outer: {
-    padding: theme.spacing.xxl,
-    paddingTop: theme.spacing.xxxl,
-    paddingBottom: theme.spacing.xxxl,
-    maxWidth: 1200,
-    width: "100%",
-    alignSelf: "center",
-  },
-  header: { marginBottom: theme.spacing.xxxl },
-  pageTitle: { ...theme.typography.pageTitle },
-  pageSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
-  spinner: { marginTop: 100 },
-  metricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: theme.spacing.lg,
-    marginBottom: theme.spacing.xxl,
-  },
-  metricsGridWide: { flexWrap: "nowrap" },
-  metricCard: {
-    flex: 1,
-    minWidth: 200,
-    padding: theme.spacing.xl,
-    borderRadius: theme.borderRadius.card,
-    borderWidth: 1,
-  },
-  metricIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.borderRadius.xl,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: theme.spacing.lg,
-  },
-  metricValue: { fontSize: 24, fontWeight: "800", marginBottom: theme.spacing.xs },
-  metricLabel: { ...theme.typography.label },
-  metricSub: { ...theme.typography.caption, marginTop: 2 },
-  mainRow: { flexDirection: "column", gap: theme.spacing.xxl, marginBottom: theme.spacing.xxl },
-  mainRowWide: { flexDirection: "row", alignItems: "flex-start" },
-  chartCard: {
-    borderRadius: theme.borderRadius.card,
-    borderWidth: 1,
-    padding: theme.spacing.xxl,
-  },
-  chartCardWide: { flex: 2 },
-  chartHeader: { marginBottom: theme.spacing.lg },
-  cardTitle: { ...theme.typography.h3 },
-  chartSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
-  chartArea: { minHeight: 220 },
-  chartHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    flexWrap: "wrap",
-  },
-  summaryText: { ...theme.typography.caption, fontWeight: "600", flexShrink: 1 },
-  toggleRow: {
-    flexDirection: "row",
-    borderRadius: theme.borderRadius.full,
-    overflow: "hidden",
-  },
-  toggleSegment: { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xsm },
-  toggleText: { ...theme.typography.label, fontWeight: "700", fontSize: 12 },
-  countLabel: { ...theme.typography.captionSmall, fontWeight: "700", fontSize: 12 },
-  countLabelPeak: { fontSize: 13 },
-  chartBars: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    height: 220,
-  },
-  barContainer: { flex: 1, alignItems: "center", gap: theme.spacing.sm },
-  barTrack: {
-    width: "100%",
-    height: 180,
-    backgroundColor: "rgba(0,0,0,0.03)",
-    borderRadius: theme.borderRadius.sm,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  barFill: { width: "100%", borderRadius: theme.borderRadius.xs },
-  barLabel: { ...theme.typography.caption, fontWeight: "600" },
-  actionsCol: { flex: 1, gap: theme.spacing.lg },
-  actionsColWide: { maxWidth: 300 },
-  actionCard: {
-    padding: theme.spacing.xl,
-    borderRadius: theme.borderRadius.card,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.lg,
-  },
-  actionTitle: { ...theme.typography.bodyBold },
-  listCard: { borderRadius: theme.borderRadius.card, borderWidth: 1, overflow: "hidden" },
-  listHeader: {
-    padding: theme.spacing.xl,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  viewAll: { ...theme.typography.label },
-  emptyRecent: { padding: 40, alignItems: "center" },
-  emptyText: { fontStyle: "italic" },
-  bookingItem: {
-    padding: theme.spacing.lg,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.lg,
-  },
-  bookingTime: {
-    paddingHorizontal: theme.spacing.xsm,
-    paddingVertical: theme.spacing.xxs,
-    borderRadius: theme.borderRadius.md,
-  },
-  bookingTimeText: { ...theme.typography.label, fontWeight: "700" },
-  bookingInfo: { flex: 1, gap: 2 },
-  bookingEmail: { ...theme.typography.label, fontWeight: "500" },
-  bookingMeta: { ...theme.typography.caption },
-  cancelledBadge: {
-    backgroundColor: `${theme.colors.error}1a`,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: theme.borderRadius.full,
-  },
-  cancelledBadgeText: {
-    color: theme.colors.error,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-});

@@ -1,9 +1,8 @@
-import { StyleSheet } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { ModalCard } from "@/components/common/ModalCard";
-import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./AlertModal.styles";
 
 interface AlertModalProps {
   visible: boolean;
@@ -31,15 +30,3 @@ export default function AlertModal({
     </ModalCard>
   );
 }
-
-const styles = StyleSheet.create({
-  message: {
-    ...theme.typography.body,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  action: {
-    marginTop: theme.spacing.sm,
-    borderRadius: theme.borderRadius.lg,
-  },
-});

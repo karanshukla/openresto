@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
-import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
-import { theme } from "@/theme/theme";
+import { TextInput, TextInputProps, View } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./Input.styles";
 
 const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
   const { colors } = useAppTheme();
@@ -23,16 +23,3 @@ const Input = forwardRef<TextInput, TextInputProps>(function Input({ style, ...p
 });
 
 export default Input;
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 0,
-  },
-  input: {
-    height: theme.formSizes.inputHeight,
-    borderWidth: 1,
-    borderRadius: theme.formSizes.inputBorderRadius,
-    paddingHorizontal: theme.formSizes.inputPaddingH,
-    fontSize: theme.formSizes.inputFontSize,
-  },
-});

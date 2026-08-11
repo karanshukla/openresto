@@ -1,13 +1,13 @@
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { theme } from "@/theme/theme";
 import { RestaurantDto } from "@/api/restaurants";
 import { getHoursForDay, parseOpenDays } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay } from "@/utils/walkIn";
 import { getRestaurantNow } from "@/utils/restaurantTime";
+import { styles } from "./OpeningHoursTable.styles";
 
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -99,63 +99,3 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  table: {
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.lg,
-    overflow: "hidden",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 11,
-    position: "relative",
-  },
-  dayCell: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-  },
-  todayBar: {
-    position: "absolute",
-    left: -theme.spacing.lg,
-    top: "50%",
-    marginTop: -9,
-    width: 3,
-    height: 18,
-    borderRadius: 2,
-  },
-  dayText: {
-    fontSize: 14,
-  },
-  hoursCell: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  hoursText: {
-    fontSize: 14,
-    fontVariant: ["tabular-nums"],
-  },
-  closedText: {
-    fontSize: 14,
-    fontStyle: "italic",
-  },
-  walkInBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-  },
-  walkInText: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
-});

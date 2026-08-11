@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, ScrollView, View, useWindowDimensions } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { theme } from "@/theme/theme";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import PageContainer from "@/components/layout/PageContainer";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
@@ -21,6 +13,7 @@ import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
+import { styles } from "./LocationsScreen.styles";
 
 /** What the user is currently booking: a location plus the time they tapped. */
 interface DrawerTarget {
@@ -255,50 +248,3 @@ export default function LocationsScreen({
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  loadingRoot: { flex: 1, alignItems: "center", justifyContent: "center" },
-  row: {
-    flex: 1,
-    flexDirection: "row",
-    width: "100%",
-    // react-native-web needs the explicit min-height:0 for the list column to shrink
-    // instead of overflowing once the drawer takes its 460px beside it.
-    ...(Platform.OS === "web" ? ({ minHeight: 0 } as object) : null),
-  },
-  rowWithDrawer: {
-    alignSelf: "center",
-  },
-  listColumn: {
-    flex: 1,
-    minWidth: 0,
-  },
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  page: {
-    maxWidth: 820,
-    gap: theme.spacing.lg,
-  },
-  header: {
-    gap: theme.spacing.xs,
-  },
-  title: {
-    ...theme.typography.h1,
-  },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  list: {
-    gap: theme.spacing.md,
-  },
-  empty: {
-    padding: 40,
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 15,
-    fontStyle: "italic",
-  },
-});

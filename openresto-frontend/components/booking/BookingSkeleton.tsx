@@ -1,8 +1,9 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Platform } from "react-native";
+import { View, ScrollView } from "react-native";
 import PageContainer from "@/components/layout/PageContainer";
 import Skeleton from "@/components/common/Skeleton";
 import { ThemedView } from "@/components/themed-view";
+import { styles } from "./BookingSkeleton.styles";
 
 export default function BookingSkeleton() {
   return (
@@ -40,18 +41,3 @@ export default function BookingSkeleton() {
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  scroll: { flex: 1 },
-  page: {
-    maxWidth: Platform.OS === "web" ? /* istanbul ignore next */ 860 : 560,
-    gap: 4,
-  },
-  form: {
-    gap: 16,
-  },
-  field: {
-    marginBottom: 8,
-  },
-});

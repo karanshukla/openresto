@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import { Icon, resolveIconSize, type IconName, type IconSize } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
+import { styles } from "./IconButton.styles";
 
 export type IconButtonVariant = "plain" | "tinted" | "outlined";
 
@@ -74,15 +75,5 @@ export function IconButton({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressed: { opacity: 0.6 },
-  disabled: { opacity: 0.5 },
-});
 
 export default IconButton;

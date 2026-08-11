@@ -1,6 +1,7 @@
 import React from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./PageLoader.styles";
 
 export default function PageLoader() {
   const { colors, primaryColor } = useAppTheme();
@@ -11,11 +12,3 @@ export default function PageLoader() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

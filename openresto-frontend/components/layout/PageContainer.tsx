@@ -1,6 +1,7 @@
-import { View, StyleSheet, type ViewProps, useWindowDimensions } from "react-native";
+import { View, type ViewProps, useWindowDimensions } from "react-native";
 import { theme } from "@/theme/theme";
 import { isMobileWidth } from "@/constants/breakpoints";
+import { styles } from "./PageContainer.styles";
 
 // Constrains content to a readable max-width and centres it on wide screens.
 // Use on every full-page screen so content doesn't stretch across 1920px monitors.
@@ -16,18 +17,3 @@ export default function PageContainer({ children, style, ...props }: ViewProps) 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  outer: {
-    flex: 1,
-    width: "100%",
-    alignItems: "center",
-  },
-  inner: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 1200,
-    paddingHorizontal: theme.spacing.xxl,
-    paddingVertical: theme.spacing.xxl,
-  },
-});

@@ -1,10 +1,10 @@
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { ModalCard } from "@/components/common/ModalCard";
-import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { styles } from "./ConfirmModal.styles";
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -63,21 +63,3 @@ export default function ConfirmModal({
     </ModalCard>
   );
 }
-
-const styles = StyleSheet.create({
-  message: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: theme.spacing.xsm,
-    marginTop: theme.spacing.sm,
-    paddingTop: theme.spacing.lg,
-    borderTopWidth: 1,
-  },
-  action: {
-    flex: 1,
-    borderRadius: theme.borderRadius.lg,
-  },
-});
