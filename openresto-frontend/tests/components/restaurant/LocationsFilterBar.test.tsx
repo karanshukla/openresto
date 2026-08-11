@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { screen, fireEvent } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 import LocationsFilterBar, { formatBarDate } from "@/components/restaurant/LocationsFilterBar";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -88,6 +89,16 @@ describe("LocationsFilterBar", () => {
       <LocationsFilterBar {...baseProps} summary="2 of 3 locations have tables" />
     );
     expect(screen.getByText("2 of 3 locations have tables")).toBeTruthy();
+  });
+
+  it("lets the summary wrap rather than spill out of the bar", () => {
+    renderWithProviders(
+      <LocationsFilterBar {...baseProps} summary="2 of 6 locations have tables" />
+    );
+    // The three controls hold a fixed minimum width, so on a list column narrowed by the
+    // booking panel the summary has to be able to drop onto its own line.
+    const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+    expect(bar.flexWrap).toBe("wrap");
   });
 
   it("omits the summary when there is nothing to say", () => {

@@ -246,7 +246,7 @@ export default function BookingDrawer({
       testID="booking-drawer"
       style={[
         styles.side,
-        { backgroundColor: colors.card, borderLeftColor: colors.border },
+        { backgroundColor: colors.card, borderColor: colors.border },
         theme.shadows.popup,
       ]}
     >

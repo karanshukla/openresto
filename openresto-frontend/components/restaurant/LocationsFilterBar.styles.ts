@@ -5,6 +5,10 @@ export const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
+    // The three controls hold a fixed minimum width, so once the booking panel takes 460px
+    // off the list column there is nothing left for the summary and it spills out of the
+    // bar. Wrapping drops it onto its own line instead, still right-aligned.
+    flexWrap: "wrap",
     gap: theme.spacing.xsm,
     borderWidth: 1,
     borderRadius: theme.borderRadius.card,
