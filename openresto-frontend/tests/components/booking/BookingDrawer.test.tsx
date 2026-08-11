@@ -6,6 +6,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingDrawer";
 import { createBooking } from "@/api/bookings";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
@@ -178,6 +179,20 @@ describe("BookingDrawer", () => {
     expect(onDateChange).toHaveBeenCalledWith("2026-04-18");
   });
 
+  it("floats as a rounded card rather than a column welded to the page edge", () => {
+    renderWithProviders(<BookingDrawer {...baseProps} />);
+    const panel = StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style);
+    expect(panel.borderRadius).toBeGreaterThan(0);
+    // All four sides, not the single left edge a docked column would carry.
+    expect(panel.borderWidth).toBe(1);
+    expect(panel.borderLeftWidth).toBeUndefined();
+    expect(panel.marginTop).toBeGreaterThan(0);
+    expect(panel.marginBottom).toBeGreaterThan(0);
+    expect(panel.marginLeft).toBeGreaterThan(0);
+    // Corners are only round if the header fill and the scroll body are clipped to them.
+    expect(panel.overflow).toBe("hidden");
+  });
+
   it("closes on the close button", () => {
     const onClose = jest.fn();
     renderWithProviders(<BookingDrawer {...baseProps} onClose={onClose} />);
@@ -190,6 +205,16 @@ describe("BookingDrawer", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
       expect(screen.getByTestId("booking-drawer")).toBeTruthy();
       expect(screen.getByText("Toronto Resto")).toBeTruthy();
+    });
+
+    it("keeps the sheet flush to the bottom edge, rounded only at the top", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      const sheet = StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style);
+      // The side panel's float treatment must not leak here: a sheet that floats above
+      // the bottom edge of a phone leaves a strip of page under it.
+      expect(sheet.borderTopLeftRadius).toBeGreaterThan(0);
+      expect(sheet.borderRadius).toBeUndefined();
+      expect(sheet.marginBottom).toBeUndefined();
     });
 
     it("offers a drag handle wired to the pan responder", () => {

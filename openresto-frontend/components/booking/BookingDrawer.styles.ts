@@ -1,14 +1,26 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
-/** Width of the docked side panel; the sheet layout uses the full width instead. */
+/** Width of the floating side panel; the sheet layout uses the full width instead. */
 export const DRAWER_WIDTH = 460;
 
+/** Gap between the panel and the list, the navbar and the bottom of the viewport. */
+const SIDE_INSET = theme.spacing.lg;
+
 export const styles = StyleSheet.create({
+  // A card floating over the page rather than a column welded to its right edge: every
+  // other surface on this screen (the location rows, the filter bar) is a rounded card,
+  // and a full-bleed square panel is the one thing that reads as chrome instead.
   side: {
     width: DRAWER_WIDTH,
     flexShrink: 0,
-    borderLeftWidth: 1,
+    marginTop: SIDE_INSET,
+    marginBottom: SIDE_INSET,
+    marginLeft: SIDE_INSET,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.card,
+    // Without this the header's fill and the scroll body square off the rounded corners.
+    overflow: "hidden",
   },
   sheetRoot: {
     flex: 1,
