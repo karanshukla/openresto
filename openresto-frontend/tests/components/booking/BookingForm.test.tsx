@@ -880,18 +880,14 @@ describe("BookingForm drawer layout", () => {
     );
   }
 
-  it("drops the date picker — the page bar owns the date", async () => {
-    renderDrawer();
-    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
-    expect(screen.queryByText("Date")).toBeNull();
-    expect(screen.queryAllByTestId("booking-field-row")).toHaveLength(0);
-  });
-
-  it("keeps party size adjustable, seeded from the page bar", async () => {
+  it("keeps party size and date adjustable, seeded from the page bar", async () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
     expect(screen.getByText("Guests")).toBeTruthy();
     expect(screen.getByText("GuestsSelect:4")).toBeTruthy();
+    expect(screen.getByText("Date")).toBeTruthy();
+    // The drawer lays fields out in its own single column, never the inline pair rows.
+    expect(screen.queryAllByTestId("booking-field-row")).toHaveLength(0);
   });
 
   it("reports a party-size change back to the caller instead of diverging from it", async () => {
@@ -906,22 +902,17 @@ describe("BookingForm drawer layout", () => {
     expect(screen.getByText("GuestsSelect:4")).toBeTruthy();
   });
 
-  it("re-asks for availability when the caller raises the party size", async () => {
-    const { rerender } = renderDrawer();
+  it("reports a date change back to the caller instead of diverging from it", async () => {
+    const onDateChange = jest.fn();
+    renderDrawer({ onDateChange });
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
 
-    rerender(
-      <BookingForm
-        layout="drawer"
-        restaurant={mockRestaurantAllDays as any}
-        seats={6}
-        date="2026-06-24"
-        onSubmit={jest.fn()}
-      />
-    );
+    fireEvent.press(screen.getByTestId("date-picker-sun"));
 
+    expect(onDateChange).toHaveBeenCalledWith("2026-06-21");
+    // The page owns the date, so the form keeps showing the one it was given.
     await waitFor(() =>
-      expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 6)
+      expect(mockFetchAvailability).toHaveBeenLastCalledWith(expect.anything(), "2026-06-24", 4)
     );
   });
 
@@ -943,14 +934,16 @@ describe("BookingForm drawer layout", () => {
     expect(screen.queryByText("Table")).toBeNull();
   });
 
-  it("reveals the time, section and table controls from the seating disclosure", async () => {
+  it("reveals the section and table controls from the seating disclosure", async () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    // The exact-time picker is about time, not seating, so it stays out in the form.
+    expect(screen.getByTestId("time-picker")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
     expect(screen.getByText("Section")).toBeTruthy();
     expect(screen.getByText("Table")).toBeTruthy();
-    expect(screen.getByTestId("time-picker")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
     expect(screen.queryByText("Section")).toBeNull();
@@ -963,12 +956,11 @@ describe("BookingForm drawer layout", () => {
     renderDrawer();
     await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
 
-    expect(screen.getByText("Party & time")).toBeTruthy();
+    expect(screen.getByText("Party & date")).toBeTruthy();
     expect(screen.getByText("Your details")).toBeTruthy();
 
-    // Opening seating adds an exact-time picker, which must not collide with a
-    // "Time" label above it.
-    fireEvent.press(screen.getByTestId("seating-disclosure-toggle"));
+    // The exact-time picker sits under the chips that are already the times on offer,
+    // so it must not be labelled "Time" as well.
     expect(screen.getByText("Exact time")).toBeTruthy();
     expect(screen.queryAllByText("Time")).toHaveLength(0);
   });

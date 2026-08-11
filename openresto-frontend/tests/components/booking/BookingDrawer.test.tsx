@@ -37,6 +37,7 @@ jest.mock("@/components/booking/BookingForm", () => {
     default: function MockBookingForm({
       onSubmit,
       onSeatsChange,
+      onDateChange,
       layout,
       seats,
       date,
@@ -58,6 +59,7 @@ jest.mock("@/components/booking/BookingForm", () => {
           <Text testID="form-date">{String(date)}</Text>
           <Text testID="form-initial-time">{String(initialTime)}</Text>
           <Pressable testID="form-seats-change" onPress={() => onSeatsChange(6)} />
+          <Pressable testID="form-date-change" onPress={() => onDateChange("2026-04-18")} />
           <Pressable
             testID="submit-trigger"
             onPress={() =>
@@ -129,6 +131,7 @@ const baseProps = {
   variant: "side" as const,
   onClose: jest.fn(),
   onSeatsChange: jest.fn(),
+  onDateChange: jest.fn(),
 };
 
 describe("BookingDrawer", () => {
@@ -166,6 +169,13 @@ describe("BookingDrawer", () => {
     renderWithProviders(<BookingDrawer {...baseProps} onSeatsChange={onSeatsChange} />);
     fireEvent.press(screen.getByTestId("form-seats-change"));
     expect(onSeatsChange).toHaveBeenCalledWith(6);
+  });
+
+  it("passes a date change up to the page the same way", () => {
+    const onDateChange = jest.fn();
+    renderWithProviders(<BookingDrawer {...baseProps} onDateChange={onDateChange} />);
+    fireEvent.press(screen.getByTestId("form-date-change"));
+    expect(onDateChange).toHaveBeenCalledWith("2026-04-18");
   });
 
   it("closes on the close button", () => {

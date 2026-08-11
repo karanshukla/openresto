@@ -38,6 +38,7 @@ jest.mock("@/components/booking/BookingDrawer", () => {
       variant,
       onClose,
       onSeatsChange,
+      onDateChange,
     }: any) {
       return (
         <View testID="mock-drawer">
@@ -48,6 +49,7 @@ jest.mock("@/components/booking/BookingDrawer", () => {
           <Text testID="drawer-variant">{variant}</Text>
           <Pressable testID="drawer-close" onPress={onClose} />
           <Pressable testID="drawer-seats-change" onPress={() => onSeatsChange(6)} />
+          <Pressable testID="drawer-date-change" onPress={() => onDateChange("2026-09-09")} />
         </View>
       );
     },
@@ -266,6 +268,20 @@ describe("LocationsScreen", () => {
       expect(screen.getByTestId("drawer-seats").props.children).toBe("6");
       expect(screen.getByTestId("seats-1").props.children).toBe("6");
       expect(screen.getByTestId("seats-2").props.children).toBe("6");
+    });
+
+    it("adopts a date chosen inside the drawer, list included", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-2")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("book-2"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("drawer-date-change"));
+
+      expect(screen.getByTestId("drawer-date").props.children).toBe("2026-09-09");
+      expect(screen.getByTestId("date-1").props.children).toBe("2026-09-09");
+      expect(screen.getByTestId("date-2").props.children).toBe("2026-09-09");
     });
 
     it("opens as a bottom sheet at phone width", async () => {

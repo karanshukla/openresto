@@ -42,29 +42,28 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
-  // One bordered card: the toggle is its header and the fields live inside it, so an
-  // open disclosure stays a single object instead of a box floating under a button.
-  disclosureCard: {
-    borderWidth: 1,
-    borderRadius: 8,
-    overflow: "hidden",
+  drawerRow: {
+    flexDirection: "row",
+    gap: 12,
   },
+  // Halves rather than content-sized: the guests and date controls carry different label
+  // lengths, and a split row is the only thing keeping them off one column each.
+  drawerRowHalf: {
+    flex: 1,
+    minWidth: 0,
+  },
+  // No border and no fill: the toggle is a row of the form, not a control wrapped around
+  // the fields it reveals, which read as plain fields like every other one.
   disclosureToggle: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    minHeight: 44,
-    paddingHorizontal: 12,
+    gap: 8,
+    minHeight: 28,
   },
   disclosureText: {
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
-  },
-  disclosureBody: {
-    gap: 16,
-    padding: 14,
-    borderTopWidth: 1,
   },
   fieldRow: {
     flexDirection: "row",

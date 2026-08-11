@@ -230,6 +230,7 @@ export default function LocationsScreen({
             today={today}
             variant="side"
             onSeatsChange={setSeats}
+            onDateChange={setDate}
             onClose={closeDrawer}
           />
         )}
@@ -244,6 +245,7 @@ export default function LocationsScreen({
           today={today}
           variant="sheet"
           onSeatsChange={setSeats}
+          onDateChange={setDate}
           onClose={closeDrawer}
         />
       )}
