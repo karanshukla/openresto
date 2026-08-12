@@ -50,6 +50,7 @@ jobs:
 
       - name: Upload Frontend Coverage to Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: openresto-frontend/coverage/lcov.info
@@ -124,6 +125,7 @@ jobs:
 
       - name: Upload Backend Coverage to Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: CoverageReport/lcov.info
@@ -167,6 +169,7 @@ jobs:
     steps:
       - name: Finish Coveralls
         uses: coverallsapp/github-action@v2
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
