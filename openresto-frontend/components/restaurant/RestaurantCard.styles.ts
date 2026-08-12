@@ -9,14 +9,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Image area
   imageArea: {
     aspectRatio: 16 / 9,
     position: "relative",
     overflow: "hidden",
   },
 
-  // Branded placeholder (no image)
   phRingTopRight: {
     position: "absolute",
     width: 200,
@@ -64,7 +62,6 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 1,
   },
-  // Body
   body: {
     padding: 16,
     gap: 12,
@@ -90,12 +87,6 @@ export const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12.5,
-  },
-  metaSep: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    opacity: 0.6,
   },
   mapLinks: {
     flexDirection: "row",
@@ -126,7 +117,6 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
-  // Tags
   tags: {
     flexDirection: "row",
     gap: 6,
@@ -142,7 +132,6 @@ export const styles = StyleSheet.create({
     fontSize: 11.5,
   },
 
-  // Slots
   slotLabel: {
     flexDirection: "row",
     alignItems: "center",
@@ -197,7 +186,6 @@ export const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // Footer
   cardFoot: {
     flexDirection: "row",
     alignItems: "center",

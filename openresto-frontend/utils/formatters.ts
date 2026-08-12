@@ -1,15 +1,15 @@
 /**
- * Small shared formatting helpers used across the admin screens. Extracted from
- * app/admin/bookings/index.tsx where the same three utilities were defined inline.
- */
-
-/**
  * Formats a Date as a short locale-aware label, e.g. "Sat, Apr 18".
- * Uses the runtime locale (undefined first arg) intentionally — admins see dates in their
+ * Uses the runtime locale (undefined first arg) intentionally — users see dates in their
  * own locale, not the restaurant's.
  */
 export function fmtDate(d: Date): string {
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+/** fmtDate for a YYYY-MM-DD string; noon avoids timezone rollover to an adjacent day. */
+export function fmtDateString(yyyyMmDd: string): string {
+  return fmtDate(new Date(yyyyMmDd + "T12:00:00"));
 }
 
 /**

@@ -150,7 +150,6 @@ export function LocationCard({
 
   return (
     <View>
-      {/* Hero strip */}
       <View
         style={{
           padding: 20,
@@ -162,7 +161,6 @@ export function LocationCard({
           borderBottomColor: borderColor,
         }}
       >
-        {/* Logo box */}
         <View
           style={{
             width: 52,
@@ -177,7 +175,6 @@ export function LocationCard({
           <Ionicons name="storefront-outline" size={22} color={primaryColor} />
         </View>
 
-        {/* Name + meta */}
         <View style={{ flex: 1, minWidth: 0 }}>
           <ThemedText
             style={{ fontSize: 20, fontWeight: "600", letterSpacing: -0.3, marginBottom: 5 }}
@@ -216,7 +213,6 @@ export function LocationCard({
           </View>
         </View>
 
-        {/* Right: stats */}
         <View style={{ alignItems: "flex-end", gap: 10, flexShrink: 0 }}>
           <View style={{ flexDirection: "row", gap: 6 }}>
             <StatChip
@@ -244,7 +240,6 @@ export function LocationCard({
         </View>
       </View>
 
-      {/* Compact image strip */}
       <View
         style={{
           paddingHorizontal: 22,
@@ -256,7 +251,6 @@ export function LocationCard({
           borderBottomColor: borderColor,
         }}
       >
-        {/* Thumbnail */}
         <View
           style={{
             width: 96,
@@ -282,7 +276,6 @@ export function LocationCard({
           )}
         </View>
 
-        {/* Label + buttons */}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
             <ThemedText style={{ fontSize: 14, fontWeight: "600", letterSpacing: -0.1 }}>
@@ -352,12 +345,10 @@ export function LocationCard({
         </View>
       </View>
 
-      {/* Restaurant info — full width */}
       <View style={{ padding: 22, borderBottomWidth: 1, borderBottomColor: borderColor }}>
         <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
       </View>
 
-      {/* Sections & Tables — full width below */}
       <View style={{ padding: 22 }}>
         <ThemedText
           style={{ fontSize: 15, fontWeight: "600", letterSpacing: -0.2, marginBottom: 3 }}

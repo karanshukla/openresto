@@ -32,8 +32,6 @@ export default function UserLayout() {
       : {}
   );
 
-  // On web: show the same top navbar, let browser handle back navigation.
-  // On native: use the Stack for native back-swipe and header.
   /* istanbul ignore next */
   if (Platform.OS === "web") {
     return (

@@ -232,6 +232,31 @@ describe("BookingDrawer", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  describe("as a side panel on web", () => {
+    const rn = require("react-native");
+    const originalOS = rn.Platform.OS;
+    beforeEach(() => {
+      rn.Platform.OS = "web";
+    });
+    afterEach(() => {
+      rn.Platform.OS = originalOS;
+    });
+
+    it("closes on Escape", async () => {
+      const onClose = jest.fn();
+      renderWithProviders(<BookingDrawer {...baseProps} variant="side" onClose={onClose} />);
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      await waitFor(() => expect(onClose).toHaveBeenCalled());
+    });
+
+    it("ignores other keys", async () => {
+      const onClose = jest.fn();
+      renderWithProviders(<BookingDrawer {...baseProps} variant="side" onClose={onClose} />);
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
   describe("as a bottom sheet", () => {
     it("renders inside the sheet shell", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
@@ -249,19 +274,24 @@ describe("BookingDrawer", () => {
       expect(sheet.marginBottom).toBeUndefined();
     });
 
-    it("offers a drag handle wired to the pan responder", () => {
+    it("offers a drag handle wired to the pan responder, hidden from assistive tech", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
-      const grabber = screen.getByTestId("booking-drawer-grabber");
+      // The handle duplicates the labeled close button, so it is a11y-hidden by design —
+      // hence includeHiddenElements.
+      const grabber = screen.getByTestId("booking-drawer-grabber", { includeHiddenElements: true });
       // PanResponder spreads its handlers onto the view it is attached to; without them
       // the handle is decorative and the sheet cannot be dragged away.
       expect(grabber.props.onStartShouldSetResponder).toBeDefined();
       expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
+      expect(grabber.props.accessibilityElementsHidden).toBe(true);
     });
 
     it("closes when the backdrop is tapped, after the sheet has slid away", async () => {
       const onClose = jest.fn();
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
-      fireEvent.press(screen.getByTestId("booking-drawer-backdrop"));
+      fireEvent.press(
+        screen.getByTestId("booking-drawer-backdrop", { includeHiddenElements: true })
+      );
       await waitFor(() => expect(onClose).toHaveBeenCalled());
     });
   });

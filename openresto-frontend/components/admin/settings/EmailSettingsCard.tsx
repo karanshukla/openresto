@@ -21,13 +21,6 @@ import { SmtpTestPanel } from "./SmtpTestPanel";
 import { BookingConfirmationToggle } from "./BookingConfirmationToggle";
 import { EmailFailuresList } from "./EmailFailuresList";
 
-// Design CSS var mappings:
-// --surface   = cardBg
-// --surface-2 = surface2  (slightly recessed, used for card backgrounds inside cards)
-// --accent    = primaryColor
-// --ink-3     = mutedColor
-// --border    = borderColor
-
 const PROVIDERS = [
   {
     id: "gmail",
@@ -71,7 +64,6 @@ export function EmailSettingsCard({
   isDark: boolean;
 }) {
   const { text: textColor } = getThemeColors(isDark);
-  // surface-2: the slightly recessed inner surface (used inside cards)
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const borderStrong = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)";
   const okColor = theme.colors.success;
@@ -166,7 +158,6 @@ export function EmailSettingsCard({
 
   const confirmDisabled = !isConfigured && testState !== "ok";
 
-  // ── Provider grid ──────────────────────────────────────────
   const providerGrid = (
     <View style={{ gap: 8 }}>
       <SubLabel mutedColor={mutedColor}>Provider</SubLabel>
@@ -192,7 +183,6 @@ export function EmailSettingsCard({
                   borderColor: on ? primaryColor : borderColor,
                   backgroundColor: on ? cardBg : surface2,
                   position: "relative" as const,
-                  // Ring shadow when active
                 },
                 on && {
                   shadowColor: primaryColor,
@@ -203,7 +193,6 @@ export function EmailSettingsCard({
                 },
               ]}
             >
-              {/* Icon box */}
               <View
                 style={{
                   width: 32,
@@ -245,7 +234,6 @@ export function EmailSettingsCard({
     </View>
   );
 
-  // ── Connection form (left column) ──────────────────────────
   const connectionForm = (
     <View style={{ gap: 6 }}>
       <SubLabel mutedColor={mutedColor}>Connection</SubLabel>
@@ -302,7 +290,6 @@ export function EmailSettingsCard({
       <View style={[styles.field, { marginTop: 4 }]}>
         <ThemedText style={styles.fieldLabel}>Encryption</ThemedText>
         <View style={{ flexDirection: "row", gap: 6 }}>
-          {/* SSL/TLS pill */}
           <Pressable
             onPress={() => setEnableSsl(true)}
             accessibilityRole="radio"
@@ -333,7 +320,6 @@ export function EmailSettingsCard({
               SSL/TLS
             </ThemedText>
           </Pressable>
-          {/* None pill */}
           <Pressable
             onPress={() => setEnableSsl(false)}
             accessibilityRole="radio"
@@ -424,12 +410,10 @@ export function EmailSettingsCard({
     </View>
   );
 
-  // ── Right column: Status → Confirmations ──────────────────
   const rightColumn = (
     <View style={{ gap: 14 }}>
       <SubLabel mutedColor={mutedColor}>Status</SubLabel>
 
-      {/* Test panel (decomposed into <SmtpTestPanel/>) */}
       <SmtpTestPanel
         testState={testState}
         host={host}
@@ -450,7 +434,6 @@ export function EmailSettingsCard({
         dangerBorder={dangerBorder}
       />
 
-      {/* Booking confirmation toggle (decomposed into <BookingConfirmationToggle/>) */}
       <BookingConfirmationToggle
         sendConfirmations={sendConfirmations}
         confirmDisabled={confirmDisabled}
@@ -470,7 +453,6 @@ export function EmailSettingsCard({
         accentSoft={accentSoft}
       />
 
-      {/* Send failures (decomposed into <EmailFailuresList/>) */}
       <EmailFailuresList
         failures={failures}
         mutedColor={mutedColor}
@@ -483,7 +465,6 @@ export function EmailSettingsCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      {/* Collapsible header */}
       <Pressable
         style={styles.secHeader}
         onPress={() => setExpanded((v) => !v)}
@@ -505,10 +486,8 @@ export function EmailSettingsCard({
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[styles.secForm, { borderTopColor: borderColor, gap: 20 }]}>
-          {/* Provider grid */}
           {providerGrid}
 
-          {/* Two-column split (or stacked on narrow) */}
           <View
             style={
               isWide ? { flexDirection: "row", gap: 22, alignItems: "flex-start" } : { gap: 20 }
@@ -518,7 +497,6 @@ export function EmailSettingsCard({
             <View style={isWide ? { width: 340 } : undefined}>{rightColumn}</View>
           </View>
 
-          {/* Status message */}
           {saveMsg && (
             <View
               style={[
@@ -552,7 +530,6 @@ export function EmailSettingsCard({
             </View>
           )}
 
-          {/* Save bar */}
           <View
             style={{
               flexDirection: "row",

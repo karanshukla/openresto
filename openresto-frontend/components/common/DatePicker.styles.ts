@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: theme.colors.overlay.light,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
@@ -52,9 +52,6 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  optionText: {
-    fontSize: 15,
   },
   checkmark: {
     fontWeight: "600",

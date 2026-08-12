@@ -4,7 +4,7 @@ import { theme } from "@/theme/theme";
 export const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: theme.colors.overlay.light,
     justifyContent: "center",
     alignItems: "center",
     padding: theme.spacing.xxl,
@@ -16,11 +16,7 @@ export const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 10,
+    ...theme.shadows.popup,
   },
   header: {
     flexDirection: "row",

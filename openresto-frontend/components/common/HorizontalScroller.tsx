@@ -39,9 +39,6 @@ interface Props extends Omit<ScrollViewProps, "horizontal" | "children"> {
  * three things that make it discoverable — a scroll button at whichever end still has
  * content, a named region with a hint that it scrolls, and (on request) a tab stop so the
  * arrow keys can drive it.
- *
- * The buttons are the affordance the booking flow's time picker already used; this is that
- * pattern made shared, so every row of pills in the app answers the question the same way.
  */
 export default function HorizontalScroller({
   label,

@@ -15,9 +15,6 @@ export const DRAWER_WIDTH = 460;
 const SIDE_INSET = theme.spacing.lg;
 
 export const styles = StyleSheet.create({
-  // A card floating over the page rather than a column welded to its right edge: every
-  // other surface on this screen (the location rows, the filter bar) is a rounded card,
-  // and a full-bleed square panel is the one thing that reads as chrome instead.
   side: {
     width: DRAWER_WIDTH,
     flexShrink: 0,

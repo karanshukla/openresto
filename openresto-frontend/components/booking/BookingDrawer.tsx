@@ -1,5 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Animated, Modal, PanResponder, Pressable, ScrollView, View } from "react-native";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  GestureResponderHandlers,
+  Modal,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -10,11 +19,10 @@ import { theme } from "@/theme/theme";
 import { RestaurantDto } from "@/api/restaurants";
 import { createBooking } from "@/api/bookings";
 import { convertLocalToUtc } from "@/utils/date";
+import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
-import { animateNode, EASE_ENTER, EASE_EXIT } from "@/utils/webAnimation";
+import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import { styles } from "./BookingDrawer.styles";
-
-export { DRAWER_WIDTH } from "./BookingDrawer.styles";
 
 /** How far the sheet animates before it is considered gone. */
 const SHEET_EXIT_DISTANCE = 800;
@@ -37,25 +45,12 @@ export function shouldDismissSheet(dy: number, vy: number): boolean {
 }
 
 function summaryLine(seats: number, date: string, time: string, today: string): string {
-  const when =
-    date === today
-      ? "Today"
-      : new Date(date + "T12:00:00").toLocaleDateString(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        });
+  const when = date === today ? "Today" : fmtDateString(date);
   return `${seats} ${seats === 1 ? "guest" : "guests"} · ${when} · ${time}`;
 }
 
 /**
- * Booking surface for the Locations list: a side panel on desktop, a bottom sheet on
- * phones. It exists so choosing a time doesn't push the list of locations off-screen —
- * the comparison stays put while the booking happens beside it.
- *
- * Party size, date and the tapped time arrive already decided, so the panel opens with a
- * hold in flight. Party size and date stay adjustable here, and a change is handed back to
- * the page: the bar is the first pass at them, the booking is where they get settled.
+ * Booking surface for the Locations list: a side panel on desktop, a bottom sheet on phones.
  */
 export default function BookingDrawer({
   restaurant,
@@ -92,33 +87,39 @@ export default function BookingDrawer({
   }, [onClose]);
 
   const dragY = useRef(new Animated.Value(0)).current;
-  const panResponder = useRef(
-    PanResponder.create({
-      // Only claim clearly-downward drags, so a horizontal swipe or a tap still reaches
-      // the controls underneath.
-      onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderMove: (_e, g) => {
-        // Downward only — dragging up must not lift the sheet off its own bottom edge.
-        if (g.dy > 0) dragY.setValue(g.dy);
-      },
-      onPanResponderRelease: (_e, g) => {
-        if (shouldDismissSheet(g.dy, g.vy)) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          Animated.timing(dragY, {
-            toValue: SHEET_EXIT_DISTANCE,
-            duration: 180,
-            useNativeDriver: false,
-          }).start(() => onCloseRef.current());
-        } else {
-          Animated.spring(dragY, {
-            toValue: 0,
-            bounciness: 0,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        // Only claim clearly-downward drags, so a horizontal swipe or a tap still reaches
+        // the controls underneath.
+        onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderMove: (_e, g) => {
+          // Downward only — dragging up must not lift the sheet off its own bottom edge.
+          if (g.dy > 0) dragY.setValue(g.dy);
+        },
+        onPanResponderRelease: (_e, g) => {
+          if (shouldDismissSheet(g.dy, g.vy)) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Animated.timing(dragY, {
+              toValue: SHEET_EXIT_DISTANCE,
+              duration: prefersReducedMotion() ? 0 : 180,
+              useNativeDriver: false,
+            }).start(({ finished }) => finished && onCloseRef.current());
+          } else {
+            Animated.spring(dragY, {
+              toValue: 0,
+              bounciness: 0,
+              useNativeDriver: false,
+            }).start();
+          }
+        },
+      }),
+    [dragY]
+  );
+
+  // A sheet unmounted mid-exit (e.g. the viewport crossing the compact breakpoint) must not
+  // fire the exit animation's onClose against the replacement drawer.
+  useEffect(() => () => dragY.stopAnimation(), [dragY]);
 
   // The panel owns its exit as well as its entrance: the page drops it from state the
   // moment onClose fires, so anything that wants an exit animation has to finish it
@@ -136,15 +137,15 @@ export default function BookingDrawer({
     );
   }, [variant]);
 
-  const closeWithHaptic = () => {
+  const closeWithHaptic = useCallback(() => {
     Haptics.selectionAsync();
     const done = () => onCloseRef.current();
     if (variant === "sheet") {
       Animated.timing(dragY, {
         toValue: SHEET_EXIT_DISTANCE,
-        duration: 180,
+        duration: prefersReducedMotion() ? 0 : 180,
         useNativeDriver: false,
-      }).start(done);
+      }).start(({ finished }) => finished && done());
       return;
     }
     const exit = animateNode(
@@ -158,7 +159,19 @@ export default function BookingDrawer({
     // No animation to wait on where there is no DOM node, or under reduced motion.
     if (!exit) return done();
     exit.onfinish = done;
-  };
+  }, [variant, dragY]);
+
+  // The side panel is a non-modal dialog spliced into the page, so it takes focus itself
+  // and offers Escape; the list beside it deliberately stays interactive.
+  useEffect(() => {
+    if (variant !== "side" || Platform.OS !== "web") return;
+    (sideRef.current as unknown as HTMLElement | null)?.focus?.();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeWithHaptic();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [variant, closeWithHaptic]);
 
   const handleSubmit = async (data: BookingFormData) => {
     setSubmitError(null);
@@ -196,7 +209,7 @@ export default function BookingDrawer({
     }
   };
 
-  const body = (headerHandlers: object = {}) => (
+  const body = (headerHandlers: Partial<GestureResponderHandlers> = {}) => (
     <>
       <View {...headerHandlers} style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerText}>
@@ -212,6 +225,7 @@ export default function BookingDrawer({
           onPress={closeWithHaptic}
           accessibilityRole="button"
           accessibilityLabel="Close booking panel"
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
         >
           <Ionicons name="close" size={18} color={colors.muted} />
@@ -224,7 +238,7 @@ export default function BookingDrawer({
         keyboardShouldPersistTaps="handled"
       >
         {submitError && (
-          <ThemedView style={styles.errorBanner}>
+          <ThemedView style={styles.errorBanner} role="alert" accessibilityLiveRegion="assertive">
             <ThemedText style={styles.errorText}>{submitError}</ThemedText>
           </ThemedView>
         )}
@@ -254,11 +268,17 @@ export default function BookingDrawer({
         <View style={styles.sheetRoot}>
           <Pressable
             testID="booking-drawer-backdrop"
+            accessibilityRole="button"
+            accessibilityLabel="Close booking panel"
             style={[styles.backdrop, { backgroundColor: colors.overlay }]}
             onPress={closeWithHaptic}
           />
           <Animated.View
             testID="booking-drawer"
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel={`Book ${restaurant.name}`}
             style={[
               styles.sheet,
               { backgroundColor: colors.card, borderTopColor: colors.border },
@@ -270,6 +290,11 @@ export default function BookingDrawer({
             <View
               {...panResponder.panHandlers}
               testID="booking-drawer-grabber"
+              // Drag-to-dismiss duplicates the labeled close button, so the handle stays out
+              // of the a11y tree instead of surfacing as an unnamed node.
+              aria-hidden
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
               style={styles.grabberArea}
             >
               <View
@@ -290,6 +315,9 @@ export default function BookingDrawer({
     <View
       ref={sideRef}
       testID="booking-drawer"
+      role="dialog"
+      accessibilityLabel={`Book ${restaurant.name}`}
+      tabIndex={-1}
       style={[
         styles.side,
         { backgroundColor: colors.card, borderColor: colors.border },

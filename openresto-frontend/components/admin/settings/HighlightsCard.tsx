@@ -115,8 +115,7 @@ export function HighlightsCard({
     setEditState(emptyEdit());
   };
 
-  // Clear any shown error as soon as the admin edits a field, so stale messages don't linger.
-  const handleChange = (s: EditState) => {
+  const clearStaleError = (s: EditState) => {
     setHighlightMsg(null);
     setEditState(s);
   };
@@ -236,7 +235,7 @@ export function HighlightsCard({
                   {editingId === h.id ? (
                     <HighlightEditForm
                       state={editState}
-                      onChange={handleChange}
+                      onChange={clearStaleError}
                       onSave={save}
                       onCancel={cancelEdit}
                       saving={saving}
@@ -333,7 +332,7 @@ export function HighlightsCard({
               {editingId === "new" && (
                 <HighlightEditForm
                   state={editState}
-                  onChange={handleChange}
+                  onChange={clearStaleError}
                   onSave={save}
                   onCancel={cancelEdit}
                   saving={saving}
@@ -413,7 +412,6 @@ function HighlightEditForm({
         gap: 10,
       }}
     >
-      {/* Icon picker */}
       <View style={{ gap: 6 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -445,7 +443,6 @@ function HighlightEditForm({
         </View>
       </View>
 
-      {/* Title */}
       <View style={{ gap: 4 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Title</ThemedText>
         <Input
@@ -455,7 +452,6 @@ function HighlightEditForm({
         />
       </View>
 
-      {/* Body */}
       <View style={{ gap: 4 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Description</ThemedText>
         <Input
@@ -468,7 +464,6 @@ function HighlightEditForm({
         />
       </View>
 
-      {/* Link (optional) */}
       <View style={{ gap: 4 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Link (optional)</ThemedText>
         <Input
@@ -485,7 +480,6 @@ function HighlightEditForm({
 
       {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
 
-      {/* Actions */}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
         <Pressable
           onPress={onCancel}

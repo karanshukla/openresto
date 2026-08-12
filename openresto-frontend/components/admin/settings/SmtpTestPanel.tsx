@@ -12,7 +12,6 @@ export interface SmtpTestPanelProps {
   testMsg: string;
   username: string;
   onTest: () => void;
-  // Theme values (presentational).
   borderColor: string;
   mutedColor: string;
   primaryColor: string;
@@ -29,8 +28,7 @@ export interface SmtpTestPanelProps {
 /**
  * The "Test connection" status panel in the EmailSettingsCard right column — circular indicator
  * + status title/description + the Send-test/Re-test button. Presentational: receives testState
- * + host/port/testMsg (for the "Reaching host:port…" subtitle) + an onTest callback. Extracted
- * during Bundle 9B-2 decomposition.
+ * + host/port/testMsg (for the "Reaching host:port…" subtitle) + an onTest callback.
  */
 export function SmtpTestPanel({
   testState,
@@ -66,7 +64,6 @@ export function SmtpTestPanel({
         backgroundColor: testState === "ok" ? okSoft : testState === "fail" ? dangerSoft : surface2,
       }}
     >
-      {/* Circular indicator */}
       <View
         style={{
           width: 32,
@@ -94,7 +91,6 @@ export function SmtpTestPanel({
         )}
       </View>
 
-      {/* Text */}
       <View style={{ flex: 1 }}>
         <ThemedText
           style={{
@@ -115,7 +111,6 @@ export function SmtpTestPanel({
         </ThemedText>
       </View>
 
-      {/* Button */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Send a test email"

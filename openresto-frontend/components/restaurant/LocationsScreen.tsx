@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, View, useWindowDimensions } from "react-native";
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import PageContainer from "@/components/layout/PageContainer";
-import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import PageLoader from "@/components/common/PageLoader";
+import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
@@ -13,6 +20,7 @@ import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
+import Button from "@/components/common/Button";
 import { styles } from "./LocationsScreen.styles";
 
 /** What the user is currently booking: a location plus the time they tapped. */
@@ -34,11 +42,6 @@ export function availabilitySummary(
 }
 
 /**
- * The Locations list. Party size, date and meal window live here rather than inside each
- * location's booking form, so every card is answering the same question and the list can
- * be read as a comparison. Picking a time opens {@link BookingDrawer} beside the list
- * (or as a sheet on phones) instead of expanding the card and pushing the rest away.
- *
  * Deep links via /locations/[id] pass `highlightId` to scroll to and expand a specific
  * location; when they also carry a time, the drawer opens straight onto it as well —
  * arriving from a time press on the home page should still show the location the diner
@@ -55,19 +58,23 @@ export default function LocationsScreen({
 }) {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scrollY, setScrollY] = useState(0);
-  const { colors, primaryColor } = useAppTheme();
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Raw scroll offsets live in refs; state holds only the booleans the UI reacts to, so
+  // scrolling re-renders the list on transitions instead of every scroll event.
+  const [filterPinned, setFilterPinned] = useState(false);
+  const [fabVisible, setFabVisible] = useState(false);
+  const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = isMobileWidth(width);
 
   const [seats, setSeats] = useState(initialSeats ?? 2);
-  const [date, setDate] = useState<string | null>(null);
+  const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [meal, setMeal] = useState<MealWindow>("All");
   const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
   const [availability, setAvailability] = useState<Record<number, number | null>>({});
   // Where the filter bar's band sits in the unscrolled list, so the page can tell a pinned
   // bar from one still sitting under the heading and only draw its edge once it is pinned.
-  const [filterTop, setFilterTop] = useState(0);
+  const filterTop = useRef(0);
 
   const scrollRef = useRef<ScrollView>(null);
   const itemRefs = useRef<Record<number, View | null>>({});
@@ -77,30 +84,50 @@ export default function LocationsScreen({
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  useEffect(() => {
-    fetchRestaurants().then((data) => {
-      setRestaurants(data);
-      // Every location under one brand shares a clock for the purposes of this page;
-      // the first location's timezone is what "today" means in the filter bar.
-      setDate(getRestaurantDate(data[0]?.timezone ?? "UTC"));
-      setLoading(false);
-    });
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    setFilterPinned(y > filterTop.current);
+    setFabVisible(y > SHOW_AFTER_SCROLL_Y);
   }, []);
 
+  const loadRestaurants = useCallback(() => {
+    setLoading(true);
+    setLoadFailed(false);
+    fetchRestaurants()
+      .then((data) => {
+        setRestaurants(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoadFailed(true);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(loadRestaurants, [loadRestaurants]);
+
+  // Every location under one brand shares a clock for the purposes of this page;
+  // the first location's timezone is what "today" means in the filter bar.
   const today = useMemo(() => getRestaurantDate(restaurants[0]?.timezone ?? "UTC"), [restaurants]);
+  const date = dateOverride ?? today;
 
   const registerRef = useCallback((id: number, ref: View | null) => {
     itemRefs.current[id] = ref;
   }, []);
 
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    },
+    []
+  );
+
   const scrollToItem = useCallback((id: number, delay: number) => {
-    // Let the accordion's 180ms expand tween settle before measuring the target.
-    setTimeout(() => {
-      scrollIntoView(
-        { current: itemRefs.current[id] ?? null } as React.RefObject<View | null>,
-        scrollRef,
-        "start"
-      );
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    // let the accordion's expand tween settle before measuring
+    scrollTimer.current = setTimeout(() => {
+      scrollIntoView({ current: itemRefs.current[id] ?? null }, scrollRef, "start");
     }, delay);
   }, []);
 
@@ -133,17 +160,28 @@ export default function LocationsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, restaurants, highlightId, initialTime]);
 
-  if (loading || !date) {
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (loadFailed) {
     return (
       <ThemedView style={styles.loadingRoot}>
-        <ActivityIndicator testID="loading-screen" size="large" color={primaryColor} />
+        <ThemedText
+          role="alert"
+          accessibilityLiveRegion="assertive"
+          style={[styles.emptyText, { color: colors.muted }]}
+        >
+          Couldn&rsquo;t load our locations. Please check your connection and try again.
+        </ThemedText>
+        <Button variant="secondary" size="md" onPress={loadRestaurants}>
+          Try again
+        </Button>
       </ThemedView>
     );
   }
 
   const summary = availabilitySummary(availability, restaurants.length);
-  // Desktop keeps the drawer as a column beside the list so the comparison stays visible;
-  // phones don't have the room, so it becomes a bottom sheet over the page.
   const sideDrawer = drawer && !isCompact;
   // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
   // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
@@ -152,11 +190,6 @@ export default function LocationsScreen({
 
   return (
     <ThemedView style={styles.root}>
-      {/* With the drawer open the page becomes two panes, so it caps itself to the app's
-          inner content width — the drawer's right edge then lands on the same line as the
-          navbar's overflow menu. Left full-bleed it would sit against the far edge of a
-          wide monitor instead, detached from the chrome above and below it. Closed, the
-          list stays full-bleed exactly as every other screen is. */}
       <View
         testID="locations-row"
         style={[styles.row, sideDrawer && [styles.rowWithDrawer, { maxWidth: contentWidth }]]}
@@ -167,7 +200,7 @@ export default function LocationsScreen({
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
-            onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+            onScroll={handleScroll}
             scrollEventThrottle={100}
           >
             <PageContainer style={styles.page}>
@@ -188,12 +221,14 @@ export default function LocationsScreen({
                 <>
                   <View
                     testID="locations-filter-sticky"
-                    onLayout={(e) => setFilterTop(e.nativeEvent.layout.y)}
+                    onLayout={(e) => {
+                      filterTop.current = e.nativeEvent.layout.y;
+                    }}
                     style={[
                       styles.filterSticky,
                       {
                         backgroundColor: colors.page,
-                        borderBottomColor: scrollY > filterTop ? colors.border : "transparent",
+                        borderBottomColor: filterPinned ? colors.border : "transparent",
                       },
                     ]}
                   >
@@ -201,7 +236,7 @@ export default function LocationsScreen({
                       seats={seats}
                       onSeatsChange={setSeats}
                       date={date}
-                      onDateChange={setDate}
+                      onDateChange={setDateOverride}
                       today={today}
                       meal={meal}
                       onMealChange={setMeal}
@@ -235,37 +270,23 @@ export default function LocationsScreen({
             <Footer />
           </ScrollView>
 
-          <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+          <ScrollToTopFab visible={fabVisible} onPress={scrollToTop} />
         </View>
 
-        {sideDrawer && (
+        {drawer && (
           <BookingDrawer
             restaurant={drawer.restaurant}
             seats={seats}
             date={date}
             time={drawer.time}
             today={today}
-            variant="side"
+            variant={isCompact ? "sheet" : "side"}
             onSeatsChange={setSeats}
-            onDateChange={setDate}
+            onDateChange={setDateOverride}
             onClose={closeDrawer}
           />
         )}
       </View>
-
-      {drawer && isCompact && (
-        <BookingDrawer
-          restaurant={drawer.restaurant}
-          seats={seats}
-          date={date}
-          time={drawer.time}
-          today={today}
-          variant="sheet"
-          onSeatsChange={setSeats}
-          onDateChange={setDate}
-          onClose={closeDrawer}
-        />
-      )}
     </ThemedView>
   );
 }

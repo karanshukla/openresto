@@ -11,12 +11,6 @@ import { styles } from "./OpeningHoursTable.styles";
 
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-/**
- * Full 7-day opening-hours table for a location. Today's row is highlighted; days
- * outside `openDays` read "Closed"; walk-in-only days show a small badge. All data
- * (`openHours`, `openDays`, walk-in policy) already lives on `RestaurantDto` —
- * this is a rendering component, no backend dependency.
- */
 export default function OpeningHoursTable({ restaurant }: { restaurant: RestaurantDto }) {
   const { colors, isDark, primaryColor } = useAppTheme();
   const openDays = parseOpenDays(restaurant.openDays);

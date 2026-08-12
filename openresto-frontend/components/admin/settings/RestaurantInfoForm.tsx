@@ -324,6 +324,13 @@ export function RestaurantInfoForm({
     setContactMsg(null);
   };
 
+  const commitPendingTag = () => {
+    const pending = tagInput.trim();
+    if (!pending) return tags;
+    setTagInput("");
+    return [...new Set([...tags, pending])];
+  };
+
   const save = async () => {
     if (!name.trim()) return;
     // MenuUrl pre-flight (mirrors backend UrlValidator): an external link must be a valid
@@ -351,9 +358,7 @@ export function RestaurantInfoForm({
       return;
     }
     setContactMsg(null);
-    // Flush any pending tag the user typed but didn't press Enter on
-    const finalTags = tagInput.trim() ? [...new Set([...tags, tagInput.trim()])] : tags;
-    if (tagInput.trim()) setTagInput("");
+    const finalTags = commitPendingTag();
     setSaving(true);
     const result = await updateRestaurant(restaurant.id, {
       name: name.trim(),
@@ -412,7 +417,6 @@ export function RestaurantInfoForm({
 
   return (
     <View>
-      {/* Card head */}
       <View
         style={{
           flexDirection: "row",
@@ -434,7 +438,6 @@ export function RestaurantInfoForm({
         </View>
       </View>
 
-      {/* Form */}
       <View style={{ gap: 14 }}>
         <View style={{ gap: 6 }}>
           <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
@@ -772,7 +775,6 @@ export function RestaurantInfoForm({
           </View>
         </View>
 
-        {/* Opening hours (decomposed into <OpeningHoursSection/>) */}
         <OpeningHoursSection
           customHours={customHours}
           openTime={openTime}
@@ -795,7 +797,6 @@ export function RestaurantInfoForm({
           isDark={isDark}
         />
 
-        {/* Reservations / walk-in policy (decomposed into <WalkInPolicySection/>) */}
         <WalkInPolicySection
           walkInOnly={walkInOnly}
           walkInDays={walkInDays}
@@ -811,7 +812,6 @@ export function RestaurantInfoForm({
           isDark={isDark}
         />
 
-        {/* Location tags (decomposed into <LocationTagsSection/>) */}
         <LocationTagsSection
           tags={tags}
           tagInput={tagInput}
@@ -825,12 +825,10 @@ export function RestaurantInfoForm({
         />
       </View>
 
-      {/* Dashed separator */}
       <View
         style={{ marginTop: 20, borderTopWidth: 1, borderStyle: "dashed" as const, borderColor }}
       />
 
-      {/* Save bar */}
       <View
         style={{
           paddingTop: 14,

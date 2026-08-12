@@ -12,7 +12,6 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
   },
   header: { marginBottom: theme.spacing.xxxl },
-  pageTitle: { ...theme.typography.pageTitle },
   pageSub: { ...theme.typography.body, marginTop: theme.spacing.xs },
   spinner: { marginTop: 100 },
   metricsGrid: {

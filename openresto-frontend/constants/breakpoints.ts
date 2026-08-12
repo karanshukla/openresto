@@ -29,7 +29,6 @@ export const MOBILE_BREAKPOINT = BREAKPOINTS.mobile;
 export const CONTENT_MAX_WIDTH = 1320;
 export const CONTENT_PADDING_H = 28;
 
-/** True when the viewport is narrower than the phone breakpoint. */
 export function isMobileWidth(width: number): boolean {
   return width < MOBILE_BREAKPOINT;
 }

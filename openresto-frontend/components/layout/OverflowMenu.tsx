@@ -8,13 +8,7 @@ import { useBrand } from "@/context/BrandContext";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./OverflowMenu.styles";
 
-/**
- * Web-only overflow control that replaces the old standalone light/dark toggle
- * in the navbar. Houses a Help entry (a static popup, not a guided tour), the
- * dark-mode toggle, a keyboard-shortcuts entry point, and the restaurant's
- * social links. Uses the same backdrop-dismiss + card pattern as
- * KeyboardShortcutsHelp.
- */
+/** Web-only overflow menu in the navbar. */
 export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () => void }) {
   const [open, setOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -33,10 +27,6 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   useEffect(() => {
     fetchSocialLinks().then(setSocialLinks);
   }, []);
-
-  const toggleTheme = () => {
-    toggle();
-  };
 
   const openMenu = () => {
     // This component is web-only (see doc comment above), so the ref's
@@ -75,6 +65,8 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         >
           <TouchableWithoutFeedback>
             <View
+              role="menu"
+              accessibilityLabel="More options"
               style={[
                 styles.panel,
                 { backgroundColor: colors.card, borderColor: colors.border },
@@ -90,6 +82,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                   setOpen(false);
                   setShowHelp(true);
                 }}
+                accessibilityRole="menuitem"
                 accessibilityLabel="Help"
               >
                 <Ionicons name="help-circle-outline" size={18} color={colors.muted} />
@@ -103,8 +96,10 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                 ]}
                 onPress={() => {
                   setOpen(false);
-                  toggleTheme();
+                  toggle();
                 }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isDark }}
                 accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
               >
                 <Ionicons
@@ -126,6 +121,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                   setOpen(false);
                   onOpenShortcuts();
                 }}
+                accessibilityRole="menuitem"
                 accessibilityLabel="View keyboard shortcuts"
               >
                 <Ionicons name="keypad-outline" size={18} color={colors.muted} />
@@ -177,15 +173,23 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
           testID="help-backdrop"
           style={styles.helpBackdrop}
           onPress={() => setShowHelp(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close help"
         >
           <TouchableWithoutFeedback>
             <View
+              role="dialog"
+              aria-modal
+              accessibilityViewIsModal
+              accessibilityLabel="Help"
               style={[
                 styles.helpCard,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
             >
-              <ThemedText type="h3">Help</ThemedText>
+              <ThemedText type="h3" accessibilityRole="header">
+                Help
+              </ThemedText>
               <ThemedText style={[styles.helpText, { color: colors.muted }]}>
                 Open the Locations page to see hours, menus, and available times for each location.
                 Pick a time slot to open the booking form right there, or use "My Bookings" to look
@@ -198,6 +202,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                     setShowHelp(false);
                     Linking.openURL(brand.websiteUrl!);
                   }}
+                  accessibilityRole="link"
                   accessibilityLabel="Visit our website"
                 >
                   <Ionicons name="globe-outline" size={16} color={colors.muted} />
@@ -210,6 +215,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                 testID="help-close"
                 style={[styles.closeBtn, { borderColor: colors.border }]}
                 onPress={() => setShowHelp(false)}
+                accessibilityRole="button"
               >
                 <ThemedText style={[styles.closeBtnText, { color: colors.muted }]}>
                   Close

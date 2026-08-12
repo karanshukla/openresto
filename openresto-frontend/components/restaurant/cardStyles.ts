@@ -2,9 +2,7 @@ import { StyleSheet } from "react-native";
 
 /**
  * Presentation shared by the two restaurant cards — the home page's `RestaurantCard`
- * and the Locations list's `LocationListItem`. They previously each carried their own
- * copy, which is how the Locations card ended up with a soft-tinted status badge and a
- * filled "Details" pill while the home card used a solid badge and a plain-text link.
+ * and the Locations list's `LocationListItem`.
  *
  * Status badges are solid and always carry white text, because on the home card they sit
  * on top of a dark photo. Keeping that treatment on the Locations card means one badge

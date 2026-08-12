@@ -2,7 +2,6 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
-  // theme.typography scale variants
   pageTitle: theme.typography.pageTitle,
   h1: theme.typography.h1,
   h2: theme.typography.h2,

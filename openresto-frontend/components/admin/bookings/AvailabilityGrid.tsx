@@ -85,7 +85,6 @@ export function AvailabilityGrid({
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator>
       <View style={{ width: totalW }}>
-        {/* Column headers */}
         <View
           style={[
             {
@@ -132,10 +131,8 @@ export function AvailabilityGrid({
           ))}
         </View>
 
-        {/* Sections + table rows */}
         {sections.map((section) => (
           <View key={section.id}>
-            {/* Section divider */}
             <View
               style={[
                 {
@@ -154,7 +151,6 @@ export function AvailabilityGrid({
               </ThemedText>
             </View>
 
-            {/* Table rows */}
             {section.tables.map((table) => (
               <View
                 key={table.id}
@@ -167,7 +163,6 @@ export function AvailabilityGrid({
                   },
                 ]}
               >
-                {/* Fixed label */}
                 <View
                   style={[
                     {
@@ -188,7 +183,6 @@ export function AvailabilityGrid({
                   </ThemedText>
                 </View>
 
-                {/* Time slot cells */}
                 {timeSlots.map(({ hour }) => {
                   const booking = bookingForCell(table.id, hour);
                   return (

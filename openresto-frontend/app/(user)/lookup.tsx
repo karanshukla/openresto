@@ -28,7 +28,7 @@ import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { buildCalendarUrls } from "@/utils/calendar";
-import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -144,6 +144,7 @@ export default function LookupScreen() {
                 <Input
                   ref={refInputRef}
                   placeholder="e.g. crispy-basil-thyme"
+                  accessibilityLabel="Booking reference"
                   value={refInput}
                   onChangeText={setRefInput}
                   autoCapitalize="none"
@@ -151,6 +152,7 @@ export default function LookupScreen() {
                 <ThemedText style={styles.label}>Email Address</ThemedText>
                 <Input
                   placeholder="The email used when booking"
+                  accessibilityLabel="Email address"
                   value={emailInput}
                   onChangeText={setEmailInput}
                   autoCapitalize="none"
@@ -200,6 +202,8 @@ export default function LookupScreen() {
             <View style={isWide ? styles.wideCol : undefined}>
               {!loading && searched && !booking && (
                 <View
+                  role="status"
+                  accessibilityLiveRegion="polite"
                   style={[
                     styles.resultCard,
                     { backgroundColor: colors.card, borderColor: colors.border },
@@ -281,7 +285,7 @@ export default function LookupScreen() {
         <Footer />
       </ScrollView>
 
-      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+      <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
 
       <ConfirmModal
         visible={showCancelConfirm}

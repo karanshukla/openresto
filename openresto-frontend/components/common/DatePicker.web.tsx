@@ -29,7 +29,7 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Convert a YYYY-MM-DD string (or Date) to ISO day-of-week (1=Mon, 7=Sun) */
+/** ISO day-of-week: 1=Mon … 7=Sun */
 function isoDayOf(d: Date): number {
   const jsDay = d.getDay(); // 0=Sun, 6=Sat
   return jsDay === 0 ? 7 : jsDay;

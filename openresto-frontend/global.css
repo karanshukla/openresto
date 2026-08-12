@@ -168,7 +168,6 @@ body.theme-ready * {
   }
 }
 
-/* Custom cursors for horizontal scroll areas */
 .grab-scroll {
   cursor: grab !important;
 }

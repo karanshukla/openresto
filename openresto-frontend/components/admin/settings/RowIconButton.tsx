@@ -16,8 +16,6 @@ export interface RowIconButtonProps {
 
 /**
  * Row-level action button for the settings cards — edit, delete, combine, move.
- * Thin preset over {@link IconButton}: compact chrome plus the 16px row-action glyph
- * that keeps table/section rows tight.
  */
 export function RowIconButton({ size = 16, ...props }: RowIconButtonProps) {
   return <IconButton compact size={size} {...props} />;

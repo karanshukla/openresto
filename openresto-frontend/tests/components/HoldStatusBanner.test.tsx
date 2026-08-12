@@ -28,7 +28,8 @@ describe("HoldStatusBanner", () => {
 
   it("shows countdown for held status", () => {
     render(<HoldStatusBanner holdStatus="held" secondsLeft={185} hasSelection={true} />);
-    expect(screen.getByText(/Table held - expires in 3:05/)).toBeTruthy();
+    expect(screen.getByText(/Table held/)).toBeTruthy();
+    expect(screen.getByText(/expires in 3:05/)).toBeTruthy();
   });
 
   it("shows generic unavailable message when no holdMessage is provided", () => {

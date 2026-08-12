@@ -101,7 +101,6 @@ export function PushNotificationsCard() {
         auth: arrayBufferToBase64(authBuffer),
       };
 
-      // Register this browser for every location so all push alerts arrive.
       const restaurants = await fetchRestaurants();
       await Promise.all(restaurants.map((r) => subscribePush(r.id, payload)));
 

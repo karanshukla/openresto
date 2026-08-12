@@ -1,4 +1,3 @@
-import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./PageLoader.styles";

@@ -34,8 +34,7 @@ export default function NotificationsScreen() {
     null
   );
   const [selectedType, setSelectedType] = usePersistedState<string>("notifications:type", "");
-  // Intentionally not persisted — "unread only" is transient: once items are
-  // read, the filter would show nothing on the next visit.
+  // "unread only" is transient: once items are read, the filter would show nothing on the next visit.
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const [items, setItems] = useState<AdminNotificationDto[]>([]);
@@ -60,7 +59,6 @@ export default function NotificationsScreen() {
     []
   );
 
-  // Pin state persisted in localStorage
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
     if (Platform.OS !== "web") return new Set();
     try {
@@ -71,12 +69,11 @@ export default function NotificationsScreen() {
     }
   });
 
-  // Local unread overrides — frontend-only, resets on page reload
-  const [localUnreadIds, setLocalUnreadIds] = useState<Set<number>>(new Set());
+  const [sessionUnreadOverrides, setSessionUnreadOverrides] = useState<Set<number>>(new Set());
   const localUnreadRef = useRef<Set<number>>(new Set());
   useEffect(() => {
-    localUnreadRef.current = localUnreadIds;
-  }, [localUnreadIds]);
+    localUnreadRef.current = sessionUnreadOverrides;
+  }, [sessionUnreadOverrides]);
 
   const borderColor = colors.border;
   const cardBg = colors.card;
@@ -166,7 +163,7 @@ export default function NotificationsScreen() {
   const handleRowTap = async (n: AdminNotificationDto) => {
     if (!n.isRead) {
       await markRead(n.id);
-      setLocalUnreadIds((prev) => {
+      setSessionUnreadOverrides((prev) => {
         const s = new Set(prev);
         s.delete(n.id);
         return s;
@@ -182,7 +179,7 @@ export default function NotificationsScreen() {
 
   const handleMarkRead = async (id: number) => {
     await markRead(id);
-    setLocalUnreadIds((prev) => {
+    setSessionUnreadOverrides((prev) => {
       const s = new Set(prev);
       s.delete(id);
       return s;
@@ -191,7 +188,7 @@ export default function NotificationsScreen() {
   };
 
   const handleMarkUnread = (id: number) => {
-    setLocalUnreadIds((prev) => new Set([...prev, id]));
+    setSessionUnreadOverrides((prev) => new Set([...prev, id]));
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, isRead: false } : x)));
   };
 
@@ -217,7 +214,7 @@ export default function NotificationsScreen() {
       await Promise.all(restaurants.map((r) => markAllRead(r.id)));
     }
     setMarkingAll(false);
-    setLocalUnreadIds(new Set());
+    setSessionUnreadOverrides(new Set());
     setItems((prev) => prev.map((x) => ({ ...x, isRead: true })));
     showToast("Marked all as read");
   };
@@ -236,7 +233,6 @@ export default function NotificationsScreen() {
     await deleteNotification(id);
   };
 
-  // For button/tap deletes — pinned items need confirmation first
   const requestDelete = (id: number) => {
     if (pinnedIds.has(id)) {
       setConfirmDeleteId(id);
@@ -256,8 +252,7 @@ export default function NotificationsScreen() {
 
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
-  const handleDeleteAll = async () => {
-    // Pinned items are immune — only delete unpinned visible items
+  const deleteAllUnpinnedVisible = async () => {
     const idsToDelete = items.filter((x) => !pinnedIds.has(x.id)).map((x) => x.id);
     if (idsToDelete.length === 0) {
       showToast("All visible notifications are pinned");
@@ -284,7 +279,6 @@ export default function NotificationsScreen() {
 
   const [clearingRead, setClearingRead] = useState(false);
   const handleClearRead = async () => {
-    // Pinned items are immune to bulk clear
     const readIds = items.filter((x) => x.isRead && !pinnedIds.has(x.id)).map((x) => x.id);
     // istanbul ignore next -- defensive guard: the "Clear read" button is disabled
     // under this exact condition (see `!hasRead` below), so it can't be pressed empty.
@@ -300,14 +294,14 @@ export default function NotificationsScreen() {
   const hasMore = items.length < totalCount;
   const unreadCount = items.filter((x) => !x.isRead).length;
 
-  // Pinned items float to top within the current filtered list
-  const { pinnedItems, unpinnedItems } = useMemo(
+  const pinnedFirst = useMemo(
     () => ({
       pinnedItems: items.filter((x) => pinnedIds.has(x.id)),
       unpinnedItems: items.filter((x) => !pinnedIds.has(x.id)),
     }),
     [items, pinnedIds]
   );
+  const { pinnedItems, unpinnedItems } = pinnedFirst;
 
   const renderRow = (
     n: AdminNotificationDto,
@@ -342,7 +336,6 @@ export default function NotificationsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {Platform.OS !== "web" && <Stack.Screen options={{ title: "Notifications" }} />}
 
-        {/* ── Page header ─────────────────────────────────────────────── */}
         <View style={styles.pageHeader}>
           <View style={styles.headerRow}>
             <View style={styles.pageTitleRow}>
@@ -357,7 +350,6 @@ export default function NotificationsScreen() {
             </View>
 
             <View style={styles.headerActions}>
-              {/* Delete all — deletes unpinned visible items */}
               <Pressable
                 onPress={() => setConfirmDeleteAll(true)}
                 disabled={deletingAll || items.length === 0}
@@ -386,7 +378,6 @@ export default function NotificationsScreen() {
                 </ThemedText>
               </Pressable>
 
-              {/* Clear read */}
               {(() => {
                 const hasRead = items.some((x) => x.isRead && !pinnedIds.has(x.id));
                 return (
@@ -419,7 +410,6 @@ export default function NotificationsScreen() {
                 );
               })()}
 
-              {/* Mark all read — dimmed when nothing to mark */}
               <Pressable
                 onPress={handleMarkAllRead}
                 disabled={markingAll || unreadCount === 0}
@@ -456,14 +446,12 @@ export default function NotificationsScreen() {
           </ThemedText>
         </View>
 
-        {/* ── Push banner ─────────────────────────────────────────────── */}
         <PushBanner
           restaurantId={selectedRestaurantId ?? restaurants[0]?.id ?? null}
           primaryColor={primaryColor}
           isDark={isDark}
         />
 
-        {/* ── Filters — bare pills, no card wrapper ───────────────────── */}
         <View style={styles.filtersSection}>
           <HorizontalScroller label="Locations" contentContainerStyle={styles.pillRow}>
             {[{ id: null, name: "All locations" }, ...restaurants].map((r) => {
@@ -556,7 +544,6 @@ export default function NotificationsScreen() {
           </View>
         </View>
 
-        {/* ── Content ─────────────────────────────────────────────────── */}
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={primaryColor} />
@@ -593,7 +580,6 @@ export default function NotificationsScreen() {
           </View>
         ) : (
           <View style={[styles.listCard, { backgroundColor: cardBg, borderColor }]}>
-            {/* Pinned section */}
             {pinnedItems.length > 0 && (
               <>
                 <View style={[styles.sectionDivider, { borderBottomColor: borderColor }]}>
@@ -622,7 +608,6 @@ export default function NotificationsScreen() {
               </>
             )}
 
-            {/* Main list */}
             {unpinnedItems.map((n, i) => renderRow(n, i, unpinnedItems, false))}
 
             {hasMore && (
@@ -664,7 +649,7 @@ export default function NotificationsScreen() {
         destructive
         onConfirm={() => {
           setConfirmDeleteAll(false);
-          handleDeleteAll();
+          deleteAllUnpinnedVisible();
         }}
         onCancel={() => setConfirmDeleteAll(false)}
       />

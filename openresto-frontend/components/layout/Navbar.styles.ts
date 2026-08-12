@@ -73,12 +73,4 @@ export const styles = StyleSheet.create({
     height: 2,
     borderRadius: 2,
   },
-  themeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 4,
-  },
 });

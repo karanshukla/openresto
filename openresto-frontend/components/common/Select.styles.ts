@@ -27,7 +27,7 @@ export const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: theme.colors.overlay.light,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,

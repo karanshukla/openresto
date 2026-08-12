@@ -28,7 +28,6 @@ export function getHoursForDay(
   };
 }
 
-/** ISO day (1=Mon … 7=Sun) for a "YYYY-MM-DD" date string. */
 export function getIsoDayFromDateString(date: string): number {
   const [y, m, d] = date.split("-").map(Number);
   const jsDay = new Date(y, (m || 1) - 1, d || 1).getDay();
@@ -42,7 +41,6 @@ export function getHoursForDate(
   return getHoursForDay(restaurant, getIsoDayFromDateString(date));
 }
 
-/** Parses the comma-separated OpenDays string into ISO day numbers. */
 export function parseOpenDays(openDays?: string | null): number[] {
   if (!openDays) return [1, 2, 3, 4, 5, 6, 7];
   const days = openDays
@@ -52,7 +50,6 @@ export function parseOpenDays(openDays?: string | null): number[] {
   return days.length > 0 ? days : [1, 2, 3, 4, 5, 6, 7];
 }
 
-/** True when at least one day's hours differ from another's. */
 export function hasCustomHours(restaurant: HoursSource): boolean {
   const hours = restaurant.openHours;
   if (!hours || hours.length === 0) return false;
@@ -61,7 +58,6 @@ export function hasCustomHours(restaurant: HoursSource): boolean {
 
 const DAY_NAMES_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-/** Short weekday name ("Wed") for an ISO day number. */
 export function isoDayShortName(isoDay: number): string {
   return DAY_NAMES_SHORT[isoDay - 1] ?? "";
 }

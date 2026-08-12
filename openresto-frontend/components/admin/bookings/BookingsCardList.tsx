@@ -21,7 +21,6 @@ export interface BookingsCardListProps {
   /** Active sort (drives the control indicator). */
   sort: SortState;
   onSortChange: (key: SortKey) => void;
-  /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   cardBg: string;
   mutedColor: string;
@@ -30,8 +29,7 @@ export interface BookingsCardListProps {
 }
 
 /**
- * Narrow (mobile) bookings list — one card per booking. Extracted from the
- * bookings screen for decomposition; presentational, owns no state. A
+ * Narrow (mobile) bookings list — one card per booking. A
  * `BookingsSortControl` row above the cards provides the sort affordance that
  * the wide table gets via clickable column headers.
  */

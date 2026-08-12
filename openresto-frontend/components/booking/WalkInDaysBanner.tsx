@@ -6,11 +6,7 @@ import { WalkInSource, walkInDaysLabel } from "@/utils/walkIn";
 import { styles } from "./WalkInDaysBanner.styles";
 
 /**
- * Persistent heads-up shown on the booking page for locations that only
- * take walk-ins on specific days (e.g. "Fridays and Saturdays"), so
- * customers know upfront - before picking a date - that those days aren't
- * bookable online. Renders nothing for locations without custom walk-in
- * days; fully walk-in locations skip the booking form entirely and show
+ * Fully walk-in locations skip the booking form entirely and show
  * `WalkInNotice` instead.
  */
 export default function WalkInDaysBanner({ restaurant }: { restaurant: WalkInSource }) {

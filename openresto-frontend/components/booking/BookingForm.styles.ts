@@ -14,10 +14,6 @@ export const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-  // ── Drawer layout ──
-  // Sections rather than one flat stack of fields: the drawer asks three separate
-  // things (when, who, and optionally where you sit) and they read as one long form
-  // without the headings and rules to separate them.
   drawerForm: {
     gap: 20,
   },
@@ -52,8 +48,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  // No border and no fill: the toggle is a row of the form, not a control wrapped around
-  // the fields it reveals, which read as plain fields like every other one.
   disclosureToggle: {
     flexDirection: "row",
     alignItems: "center",
@@ -102,7 +96,6 @@ export const styles = StyleSheet.create({
   },
   timezoneHint: {
     fontSize: 12,
-    color: "#6b7280",
     marginTop: -10,
   },
   // The inline layout pulls the hint up against the row above it; inside a drawer
@@ -110,30 +103,20 @@ export const styles = StyleSheet.create({
   timezoneHintDrawer: {
     marginTop: 0,
   },
-  submitContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  submitText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
   textarea: {
     height: 80,
     textAlignVertical: "top",
     paddingTop: 10,
   },
+  // colors.muted at full opacity, not a faded text color: 0.5 opacity fell below WCAG AA
+  // contrast in light mode.
   hint: {
-    opacity: 0.5,
     fontSize: 12,
     textAlign: "center",
     marginTop: -10,
   },
   gdpr: {
     fontSize: 12,
-    opacity: 0.5,
     lineHeight: 18,
   },
 });

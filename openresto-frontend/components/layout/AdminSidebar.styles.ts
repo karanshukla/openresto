@@ -53,9 +53,6 @@ export const styles = StyleSheet.create({
     position: "relative",
     gap: 10,
   },
-  navIcon: {
-    width: 20,
-  },
   navLabel: {
     fontSize: 14,
     flex: 1,

@@ -41,7 +41,6 @@ export function describeBookingRow(b: {
 }
 
 /**
- * Inline background tint applied to the keyboard-focused row.
  * Returns `undefined` when the row isn't focused (ignored in RN style arrays).
  */
 export function focusedRowHighlight(

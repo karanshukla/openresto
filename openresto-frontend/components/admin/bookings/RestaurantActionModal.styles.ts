@@ -1,12 +1,13 @@
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
+import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: theme.colors.overlay.light,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   content: {
     width: "100%",
@@ -15,11 +16,7 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     overflow: "hidden",
-    ...Platform.select({
-      web: {
-        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-      },
-    }),
+    ...theme.shadows.popup,
   },
   header: {
     flexDirection: "row",

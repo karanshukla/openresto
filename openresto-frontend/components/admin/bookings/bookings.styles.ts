@@ -25,7 +25,6 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     flexWrap: "wrap",
   },
-  headerSep: { width: 1, height: 24, marginHorizontal: theme.spacing.xs },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -53,7 +52,6 @@ export const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingVertical: 60, gap: theme.spacing.md },
   emptyText: { ...theme.typography.body, fontStyle: "italic" },
 
-  // Grid card
   gridCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -90,7 +88,6 @@ export const styles = StyleSheet.create({
   gridTableName: { ...theme.typography.caption, fontWeight: "600" },
   gridTableSeats: { fontSize: 10 },
 
-  // Table (list)
   tableCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -171,7 +168,6 @@ export const styles = StyleSheet.create({
   badgeText: { ...theme.typography.labelSmall, fontWeight: "700" },
   rowActionBtn: { padding: 6, borderRadius: theme.borderRadius.md },
 
-  // Card list (mobile)
   cardListWrap: { gap: theme.spacing.md },
   cardList: { gap: theme.spacing.md },
   listCard: {

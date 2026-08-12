@@ -17,11 +17,7 @@ interface ErrorScreenProps {
 }
 
 /**
- * Full-screen fallback UI for unrecoverable render errors. Presentational —
- * no data, no side effects. Modeled on the existing +not-found.tsx visual
- * language (faded icon, title, muted message, primary-color actions).
- *
- * Used by the root error.tsx boundary (Bundle 12). The retry/onGoHome props
+ * Used by the root error.tsx boundary. The retry/onGoHome props
  * are optional so the same component can serve boundaries that have no
  * navigation context.
  */

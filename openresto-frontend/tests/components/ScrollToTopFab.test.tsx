@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, fireEvent } from "@testing-library/react-native";
-import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 const mockWindowDimensions = { width: 375, height: 812 };
@@ -12,13 +12,17 @@ jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
 }));
 
 describe("ScrollToTopFab", () => {
-  it("renders once scrollY is past the threshold", () => {
-    renderWithProviders(<ScrollToTopFab scrollY={350} onPress={jest.fn()} />);
+  it("exposes the scroll threshold callers gate visibility on", () => {
+    expect(SHOW_AFTER_SCROLL_Y).toBe(300);
+  });
+
+  it("renders when visible", () => {
+    renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
     expect(screen.getByRole("button")).toBeTruthy();
   });
 
-  it("does not render when scrollY is at the threshold", () => {
-    renderWithProviders(<ScrollToTopFab scrollY={300} onPress={jest.fn()} />);
+  it("does not render when not visible", () => {
+    renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
     expect(screen.queryByRole("button")).toBeNull();
   });
 
@@ -35,7 +39,7 @@ describe("ScrollToTopFab", () => {
     const original = wdModule.default;
     wdModule.default = () => dimensions;
     try {
-      renderWithProviders(<ScrollToTopFab scrollY={500} onPress={jest.fn()} />);
+      renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
       expect(screen.getByRole("button")).toBeTruthy();
     } finally {
       wdModule.default = original;
@@ -44,7 +48,7 @@ describe("ScrollToTopFab", () => {
 
   it("calls onPress when pressed", () => {
     const onPress = jest.fn();
-    renderWithProviders(<ScrollToTopFab scrollY={400} onPress={onPress} />);
+    renderWithProviders(<ScrollToTopFab visible onPress={onPress} />);
     fireEvent.press(screen.getByRole("button"));
     expect(onPress).toHaveBeenCalledTimes(1);
   });

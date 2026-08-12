@@ -14,7 +14,6 @@ export const styles = StyleSheet.create({
   },
   retryBtnText: { fontSize: 14, fontWeight: "600" },
 
-  // Header — mirrors lookup page
   header: { alignItems: "center", gap: 8, marginTop: 8, marginBottom: 20 },
   checkCircle: {
     width: 56,
@@ -27,13 +26,11 @@ export const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", letterSpacing: -0.6, marginTop: 8 },
   subtitle: { fontSize: 15, textAlign: "center", lineHeight: 22 },
 
-  // Two-column layout
   wideRow: { flexDirection: "row", gap: theme.spacing.xl, alignItems: "stretch" },
   narrowGap: { gap: theme.spacing.lg },
   wideCol: { flex: 1 },
   rightCol: { gap: theme.spacing.lg, flexDirection: "column" },
 
-  // Detail rows card
   detailCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -41,7 +38,6 @@ export const styles = StyleSheet.create({
     ...theme.shadows.md,
   },
 
-  // Reference card
   refCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -73,20 +69,11 @@ export const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xxs,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
+    minHeight: theme.a11y.minTouchTargetCompact,
   },
   copyBtnText: { ...theme.typography.caption, fontWeight: "600" },
   refHint: { ...theme.typography.caption, textAlign: "center" },
-  savedNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingTop: theme.spacing.sm,
-    marginTop: theme.spacing.xsm,
-    borderTopWidth: 1,
-  },
-  savedNoteText: { ...theme.typography.caption, opacity: 0.75 },
 
-  // Calendar card
   actionCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -109,7 +96,6 @@ export const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: theme.spacing.sm,
   },
-  // Directions card — same pill style as restaurant card homepage
   mapAddressRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
   mapMeta: { flexDirection: "row", alignItems: "flex-start", gap: 5, flex: 1 },
   mapAddress: { fontSize: 13, flex: 1, lineHeight: 18 },
