@@ -206,7 +206,11 @@ describe("LocationsScreen", () => {
     expect(style.zIndex).toBe(5);
     // An opaque band, or the cards show through the bar's rounded corners on the way past.
     expect(style.backgroundColor).toBeTruthy();
-    expect(style.paddingBottom + style.marginBottom).toBe(0);
+    // The band — top gap, bottom gap and its edge — costs the resting list no height.
+    expect(style.paddingTop + style.marginTop).toBe(0);
+    expect(style.paddingBottom + style.marginBottom + style.borderBottomWidth).toBe(0);
+    // At rest the bar is part of the list, not a toolbar: no edge until it pins.
+    expect(style.borderBottomColor).toBe("transparent");
   });
 
   it("drives every card from the same party size, date and meal window", async () => {
@@ -436,6 +440,28 @@ describe("LocationsScreen", () => {
         expect(scrollIntoView).toHaveBeenCalledWith({ current: null }, expect.anything(), "start"),
       { timeout: 1000 }
     );
+  });
+
+  it("draws the filter bar's edge once the list has scrolled under it", async () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    const band = screen.getByTestId("locations-filter-sticky");
+    fireEvent(band, "layout", { nativeEvent: { layout: { y: 120 } } });
+
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 60 } } });
+    expect(
+      StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style)
+        .borderBottomColor
+    ).toBe("transparent");
+
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    expect(
+      StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style)
+        .borderBottomColor
+    ).not.toBe("transparent");
   });
 
   it("onScroll handler updates scrollY", async () => {

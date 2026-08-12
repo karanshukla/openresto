@@ -18,7 +18,7 @@ import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
 import { groupDisplayName, groupedTableIds } from "@/utils/tableGroups";
 import { getOpenDaysList, getRestaurantNow } from "@/utils/restaurantTime";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
+import { cardStyles } from "@/components/restaurant/cardStyles";
 import { LinkedText } from "@/components/common/LinkedText";
 import OpeningHoursTable from "@/components/restaurant/OpeningHoursTable";
 import WalkInNotice from "@/components/booking/WalkInNotice";
@@ -173,21 +173,6 @@ export default function LocationListItem({
       return next;
     });
   };
-
-  const statusBadge = closedOnDate ? (
-    <View style={[cardStyles.badge, cardStyles.badgeMuted]}>
-      <ThemedText style={cardStyles.badgeText}>
-        {isToday ? "Closed today" : `Closed ${isoDayShortName(selectedIsoDay)}`}
-      </ThemedText>
-    </View>
-  ) : (
-    <View
-      style={[cardStyles.badge, { backgroundColor: openBadgeColor(accentR, accentG, accentB) }]}
-    >
-      <View style={cardStyles.badgeDot} />
-      <ThemedText style={cardStyles.badgeText}>Open till {dayHours.close}</ThemedText>
-    </View>
-  );
 
   const walkInBadge = walkInBadgeText ? (
     <View style={[cardStyles.badge, cardStyles.badgeMuted]}>
@@ -359,21 +344,21 @@ export default function LocationListItem({
     </Pressable>
   ) : null;
 
-  const hoursMeta = closedOnDate ? (
-    nextOpening ? (
-      <View style={styles.metaItem}>
-        <Ionicons name="time-outline" size={12} color={mutedColor} />
-        <ThemedText style={[styles.metaText, { color: mutedColor }]}>
-          Opens {isoDayShortName(nextOpening.isoDay)} {nextOpening.open}
-        </ThemedText>
-      </View>
-    ) : null
-  ) : (
+  // Open or closed, a location's hours are one muted line in the meta row. They used to be
+  // a solid accent pill beside the name as well, which said nothing the line didn't and
+  // shouted it over the times underneath — the one thing on this card worth scanning for.
+  const dayLabel = isToday ? "today" : isoDayShortName(selectedIsoDay);
+  const closedLabel = `Closed ${dayLabel}`;
+  const hoursLabel = !closedOnDate
+    ? `${dayHours.open} – ${dayHours.close} ${dayLabel}`
+    : nextOpening
+      ? `${closedLabel} · opens ${isoDayShortName(nextOpening.isoDay)} ${nextOpening.open}`
+      : closedLabel;
+
+  const hoursMeta = (
     <View style={styles.metaItem}>
       <Ionicons name="time-outline" size={12} color={mutedColor} />
-      <ThemedText style={[styles.metaText, { color: mutedColor }]}>
-        {dayHours.open} – {dayHours.close} {isToday ? "today" : isoDayShortName(selectedIsoDay)}
-      </ThemedText>
+      <ThemedText style={[styles.metaText, { color: mutedColor }]}>{hoursLabel}</ThemedText>
     </View>
   );
 
@@ -403,10 +388,7 @@ export default function LocationListItem({
                   </ThemedText>
                 </View>
               ) : null}
-              <View style={styles.badgeRow}>
-                {statusBadge}
-                {walkInBadge}
-              </View>
+              {walkInBadge ? <View style={styles.badgeRow}>{walkInBadge}</View> : null}
             </View>
           </View>
 
@@ -429,7 +411,6 @@ export default function LocationListItem({
                   <ThemedText style={styles.name} numberOfLines={1}>
                     {restaurant.name}
                   </ThemedText>
-                  {statusBadge}
                   {walkInBadge}
                 </View>
                 <View style={styles.metaRow}>

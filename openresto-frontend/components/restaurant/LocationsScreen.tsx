@@ -65,6 +65,9 @@ export default function LocationsScreen({
   const [meal, setMeal] = useState<MealWindow>("All");
   const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
   const [availability, setAvailability] = useState<Record<number, number | null>>({});
+  // Where the filter bar's band sits in the unscrolled list, so the page can tell a pinned
+  // bar from one still sitting under the heading and only draw its edge once it is pinned.
+  const [filterTop, setFilterTop] = useState(0);
 
   const scrollRef = useRef<ScrollView>(null);
   const itemRefs = useRef<Record<number, View | null>>({});
@@ -185,7 +188,14 @@ export default function LocationsScreen({
                 <>
                   <View
                     testID="locations-filter-sticky"
-                    style={[styles.filterSticky, { backgroundColor: colors.page }]}
+                    onLayout={(e) => setFilterTop(e.nativeEvent.layout.y)}
+                    style={[
+                      styles.filterSticky,
+                      {
+                        backgroundColor: colors.page,
+                        borderBottomColor: scrollY > filterTop ? colors.border : "transparent",
+                      },
+                    ]}
                   >
                     <LocationsFilterBar
                       seats={seats}

@@ -1,8 +1,9 @@
 /**
  * @jest-environment jsdom
  *
- * The compact Locations row: identity, status badges, the slot quick-pick driven by the
- * page-level filter bar, and the "Details" body (blurb, maps, weekly hours, seating).
+ * The compact Locations row: identity, the meta row that states hours and walk-in policy,
+ * the slot quick-pick driven by the page-level filter bar, and the "Details" body
+ * (blurb, maps, weekly hours, seating).
  * Booking itself now lives in BookingDrawer and is covered by its own suite.
  */
 import React from "react";
@@ -96,9 +97,10 @@ describe("LocationListItem", () => {
     expect(screen.getByText("123 Test St")).toBeTruthy();
   });
 
-  it("shows an 'Open till' badge with the selected day's closing time", async () => {
+  it("states an open location's hours once, in the meta row, with no badge repeating them", async () => {
     renderWithProviders(<LocationListItem {...baseProps} restaurant={mockRestaurant as any} />);
-    await waitFor(() => expect(screen.getByText("Open till 22:00")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("09:00 – 22:00 today")).toBeTruthy());
+    expect(screen.queryByText(/Open till/)).toBeNull();
   });
 
   it("keeps the booking form out of the card — booking is the drawer's job now", async () => {
@@ -333,8 +335,7 @@ describe("LocationListItem", () => {
           restaurant={{ ...mockRestaurant, openDays: String(FRIDAY) } as any}
         />
       );
-      await waitFor(() => expect(screen.getByText("Closed today")).toBeTruthy());
-      expect(screen.getByText("Opens Fri 09:00")).toBeTruthy();
+      await waitFor(() => expect(screen.getByText("Closed today · opens Fri 09:00")).toBeTruthy());
     });
 
     it("names the day instead of saying 'today' for a closed future date", async () => {
@@ -345,7 +346,7 @@ describe("LocationListItem", () => {
           restaurant={{ ...mockRestaurant, openDays: String(THURSDAY) } as any}
         />
       );
-      await waitFor(() => expect(screen.getByText("Closed Fri")).toBeTruthy());
+      await waitFor(() => expect(screen.getByText(/^Closed Fri/)).toBeTruthy());
     });
 
     it("says only that it is closed when the location has no open days at all", async () => {
@@ -365,8 +366,7 @@ describe("LocationListItem", () => {
           restaurant={{ ...mockRestaurant, openDays: String(FRIDAY) } as any}
         />
       );
-      await waitFor(() => expect(screen.getByText("Opens Fri 09:00")).toBeTruthy());
-      expect(screen.getAllByText("Opens Fri 09:00")).toHaveLength(1);
+      await waitFor(() => expect(screen.getAllByText(/opens Fri 09:00/)).toHaveLength(1));
       expect(screen.queryByText(/No reservations required/)).toBeNull();
     });
 

@@ -29,14 +29,14 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.lg,
   },
   header: {
-    gap: theme.spacing.xs,
+    gap: theme.spacing.xxs,
   },
   title: {
-    ...theme.typography.h1,
+    ...theme.typography.pageTitle,
+    lineHeight: 38,
   },
   subtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...theme.typography.body,
   },
   // The bar states the question every card below it is answering, so it stays pinned to
   // the top of the list rather than scrolling away from its own answers. Two details it
@@ -46,10 +46,18 @@ export const styles = StyleSheet.create({
   // the bar's rounded corners so cards don't show through them on the way past.
   filterSticky: {
     zIndex: 5,
-    // Cancelled by the matching negative margin: the band only exists once the bar is
-    // pinned, and at rest the list should sit exactly where it did before.
+    // Both paddings are cancelled by matching negative margins: the band only exists once
+    // the bar is pinned, and at rest the list should sit exactly where it did before. The
+    // top half is what keeps the pinned bar off the navbar's underside instead of welded
+    // to it, and it hides the cards passing through that gap.
+    paddingTop: theme.spacing.md,
+    marginTop: -theme.spacing.md,
     paddingBottom: theme.spacing.sm,
-    marginBottom: -theme.spacing.sm,
+    marginBottom: -(theme.spacing.sm + 1),
+    // Always present and transparent so pinning only changes the colour: a border that
+    // appeared with the pin would push the whole list down a pixel as it landed.
+    borderBottomWidth: 1,
+    borderBottomColor: "transparent",
     ...(Platform.OS === "web" ? ({ position: "sticky", top: 0 } as object) : null),
   },
   list: {
