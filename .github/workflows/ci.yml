@@ -55,6 +55,7 @@ jobs:
           file: openresto-frontend/coverage/lcov.info
           flag-name: frontend
           parallel: true
+          fail-on-error: false
 
       - name: Upload Frontend Coverage
         if: always()
@@ -128,6 +129,7 @@ jobs:
           file: CoverageReport/lcov.info
           flag-name: backend
           parallel: true
+          fail-on-error: false
 
       - name: Upload Test Results
         if: always()
@@ -168,6 +170,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
+          fail-on-error: false
 
   docker:
     name: Docker + ZAP
