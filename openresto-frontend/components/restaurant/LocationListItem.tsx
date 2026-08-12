@@ -156,7 +156,7 @@ export default function LocationListItem({
   const accentB = parseInt(accentHex.slice(4, 6), 16);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},${isDark ? 0.15 : 0.12})`;
   const accentBorder = `rgba(${accentR},${accentG},${accentB},0.3)`;
-  const surface2 = isDark ? "#1b1e23" : "#f3efe6";
+  const surface2 = colors.surfaceAlt;
 
   const tags = restaurant.tags ?? [];
   const thumbSize = compact ? 64 : 108;
@@ -369,7 +369,7 @@ export default function LocationListItem({
       style={[
         styles.item,
         { backgroundColor: colors.card, borderColor },
-        expanded && { borderColor: isDark ? "#383d47" : "#cfc6b1" },
+        expanded && { borderColor: colors.borderStrong },
       ]}
     >
       {compact ? (

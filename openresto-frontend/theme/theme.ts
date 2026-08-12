@@ -34,6 +34,16 @@ export const theme = {
       dark: "#1e2022",
     },
 
+    // The recessed control surface a card sits its own controls on: time chips, map
+    // links, icon buttons, and the surface a plain-text action takes while hovered.
+    // Distinct from `input`, which is a field's fill. Cool, like `page` and `border`:
+    // the light value used to be a warm cream borrowed from the home page's own warm
+    // body, which read as faintly yellow anywhere else it was reused.
+    surfaceAlt: {
+      light: "#eef0f3",
+      dark: "#1b1e23",
+    },
+
     page: {
       light: "#f2f3f5",
       dark: "#111214",
@@ -52,6 +62,13 @@ export const theme = {
     border: {
       light: "rgba(0,0,0,0.12)", // Increased from 0.08 for better visibility
       dark: "rgba(255,255,255,0.16)", // Increased from 0.1 for better visibility
+    },
+
+    // Opaque, and a step up in contrast from `border`: what a card outlines itself with
+    // once it is expanded or otherwise the one the diner is acting on.
+    borderStrong: {
+      light: "#c9cfd8",
+      dark: "#383d47",
     },
 
     overlay: {
@@ -274,10 +291,12 @@ export const getThemeColors = (isDark: boolean) => ({
   text: isDark ? theme.colors.text.dark : theme.colors.text.light,
   muted: isDark ? theme.colors.muted.dark : theme.colors.muted.light,
   surface: isDark ? theme.colors.surface.dark : theme.colors.surface.light,
+  surfaceAlt: isDark ? theme.colors.surfaceAlt.dark : theme.colors.surfaceAlt.light,
   page: isDark ? theme.colors.page.dark : theme.colors.page.light,
   card: isDark ? theme.colors.card.dark : theme.colors.card.light,
   input: isDark ? theme.colors.input.dark : theme.colors.input.light,
   border: isDark ? theme.colors.border.dark : theme.colors.border.light,
+  borderStrong: isDark ? theme.colors.borderStrong.dark : theme.colors.borderStrong.light,
   overlay: isDark ? theme.colors.overlay.dark : theme.colors.overlay.light,
   disabled: isDark ? theme.colors.disabled.dark : theme.colors.disabled.light,
   success: theme.colors.success,

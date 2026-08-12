@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 // Synchronous theme init — runs at module load, before React mounts.
 // This is the earliest possible moment to set the correct background.
@@ -35,6 +36,7 @@ function AppWithTheme() {
   const brand = useBrand();
   const pathname = usePathname();
   const segments = useSegments();
+  const { colors } = useAppTheme();
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -85,6 +87,11 @@ function AppWithTheme() {
           headerShown: false,
           title: brand.appName,
           animation: Platform.OS === "web" ? "fade" : "default",
+          // React Navigation paints its own light default (rgb(242,242,242)) inline on the
+          // screen container, below everything the app renders. Nothing in global.css can
+          // reach an inline style, and in dark mode the route transition's brief 0.88
+          // opacity let that layer flash through the whole viewport.
+          contentStyle: { backgroundColor: colors.page },
         }}
       >
         <Stack.Screen name="(user)" />

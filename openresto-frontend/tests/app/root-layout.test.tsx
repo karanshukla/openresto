@@ -51,7 +51,8 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 jest.mock("expo-router", () => {
   const { View } = require("react-native");
   const React = require("react");
-  const Stack = ({ children }: any) => React.createElement(View, { testID: "stack" }, children);
+  const Stack = ({ children, screenOptions }: any) =>
+    React.createElement(View, { testID: "stack", screenOptions }, children);
   Stack.Screen = () => null;
   return {
     Stack,
@@ -77,8 +78,9 @@ jest.mock("react-native-safe-area-context", () => ({
   SafeAreaProvider: ({ children }: any) => children,
 }));
 
+const mockScheme = { current: "light" as "light" | "dark" };
 jest.mock("@/hooks/use-color-scheme", () => ({
-  useColorScheme: () => "light",
+  useColorScheme: () => mockScheme.current,
 }));
 
 jest.mock("react-native-reanimated", () => ({}));
@@ -88,8 +90,22 @@ import { usePathname, useSegments } from "expo-router";
 describe("RootLayout", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockScheme.current = "light";
     (usePathname as jest.Mock).mockReturnValue("/");
     (useSegments as jest.Mock).mockReturnValue([]);
+  });
+
+  // React Navigation paints its own light default on the screen container, inline and
+  // below everything the app renders, where no stylesheet can reach it. In dark mode the
+  // route transition's momentary 0.88 opacity let it flash through the whole viewport.
+  it.each([
+    ["light", "#f2f3f5"],
+    ["dark", "#111214"],
+  ] as const)("backs the navigator's screens with the %s page colour", async (scheme, expected) => {
+    mockScheme.current = scheme;
+    render(<RootLayout />);
+    const stack = await screen.findByTestId("stack");
+    expect(stack.props.screenOptions.contentStyle).toEqual({ backgroundColor: expected });
   });
 
   it("renders correctly on web and sets title", async () => {

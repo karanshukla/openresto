@@ -212,7 +212,7 @@ export default function BookingDrawer({
           onPress={closeWithHaptic}
           accessibilityRole="button"
           accessibilityLabel="Close booking panel"
-          style={[styles.closeBtn, { backgroundColor: isDark ? "#1b1e23" : "#f3efe6" }]}
+          style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
         >
           <Ionicons name="close" size={18} color={colors.muted} />
         </Pressable>

@@ -117,7 +117,7 @@ export default function RestaurantCard({
 
   const cardBg = colors.card;
   const borderColor = colors.border;
-  const surface2 = isDark ? "#1b1e23" : "#f3efe6";
+  const surface2 = colors.surfaceAlt;
 
   const cardShadow =
     Platform.OS === "web"
@@ -143,7 +143,7 @@ export default function RestaurantCard({
         { backgroundColor: cardBg, borderColor },
         (hovered || pressed) &&
           Platform.OS === "web" && {
-            borderColor: isDark ? "#383d47" : "#cfc6b1",
+            borderColor: colors.borderStrong,
           },
       ]}
     >
