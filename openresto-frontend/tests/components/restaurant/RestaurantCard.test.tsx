@@ -275,15 +275,22 @@ describe("RestaurantCard", () => {
   });
 
   it("answers a tap on a time the same way", async () => {
-    (fetchAvailability as jest.Mock).mockResolvedValue({
-      slots: [{ time: "19:00", isAvailable: true, category: "Dinner" }],
-    });
-    render(<RestaurantCard restaurant={mockRestaurant} party={2} />);
-    await waitFor(() => expect(screen.getByText("19:00")).toBeTruthy());
+    // Pin clock to noon UTC so the 19:00 slot is always in the future.
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-01T12:00:00Z"));
+    try {
+      (fetchAvailability as jest.Mock).mockResolvedValue({
+        slots: [{ time: "19:00", isAvailable: true, category: "Dinner" }],
+      });
+      render(<RestaurantCard restaurant={mockRestaurant} party={2} />);
+      await waitFor(() => expect(screen.getByText("19:00")).toBeTruthy());
 
-    fireEvent.press(screen.getByText("19:00"), { stopPropagation: () => {} });
-    expect(Haptics.selectionAsync).toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1?time=19%3A00&party=2");
+      fireEvent.press(screen.getByText("19:00"), { stopPropagation: () => {} });
+      expect(Haptics.selectionAsync).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1?time=19%3A00&party=2");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("presses Apple Maps link and opens URL", async () => {
