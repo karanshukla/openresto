@@ -46,12 +46,7 @@ function shortDate(date: string): string {
   });
 }
 
-/**
- * Page-level party/date/meal bar for the Locations list. These three inputs used to
- * live inside every location's own booking form, which made the cards impossible to
- * compare — each one answered a different question. Hoisting them here means one set
- * of criteria drives every card's slot row at once.
- */
+/** Page-level party/date/meal bar for the Locations list. */
 export default function LocationsFilterBar({
   seats,
   onSeatsChange,
@@ -120,7 +115,13 @@ export default function LocationsFilterBar({
       </View>
 
       {!compact && summary ? (
-        <ThemedText style={[styles.summary, { color: colors.muted }]}>{summary}</ThemedText>
+        <ThemedText
+          style={[styles.summary, { color: colors.muted }]}
+          role="status"
+          accessibilityLiveRegion="polite"
+        >
+          {summary}
+        </ThemedText>
       ) : null}
     </View>
   );

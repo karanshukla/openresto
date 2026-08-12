@@ -93,8 +93,7 @@ export function FooterSettingsCard({
     setEditState(emptyEdit());
   };
 
-  // Clear any shown error as soon as the admin edits a field, so stale messages don't linger.
-  const handleChange = (s: EditState) => {
+  const clearStaleError = (s: EditState) => {
     setLinkMsg(null);
     setEditState(s);
   };
@@ -276,7 +275,7 @@ export function FooterSettingsCard({
                     {editingId === link.id ? (
                       <SocialLinkEditForm
                         state={editState}
-                        onChange={handleChange}
+                        onChange={clearStaleError}
                         onSave={save}
                         onCancel={cancelEdit}
                         saving={saving}
@@ -307,7 +306,7 @@ export function FooterSettingsCard({
                 {editingId === "new" && (
                   <SocialLinkEditForm
                     state={editState}
-                    onChange={handleChange}
+                    onChange={clearStaleError}
                     onSave={save}
                     onCancel={cancelEdit}
                     saving={saving}

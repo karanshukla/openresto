@@ -3,7 +3,13 @@ import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   root: { flex: 1 },
-  loadingRoot: { flex: 1, alignItems: "center", justifyContent: "center" },
+  loadingRoot: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.lg,
+    padding: theme.spacing.xxl,
+  },
   row: {
     flex: 1,
     flexDirection: "row",
@@ -38,12 +44,10 @@ export const styles = StyleSheet.create({
   subtitle: {
     ...theme.typography.body,
   },
-  // The bar states the question every card below it is answering, so it stays pinned to
-  // the top of the list rather than scrolling away from its own answers. Two details it
-  // can't do without: the explicit zIndex, because react-native-web stamps `zIndex: 0` on
-  // every View and a later sibling would otherwise paint straight over the pinned bar;
-  // and the page-coloured band (set at the call site, where the theme is), which fills
-  // the bar's rounded corners so cards don't show through them on the way past.
+  // The explicit zIndex is required: react-native-web stamps `zIndex: 0` on every View
+  // and a later sibling would otherwise paint straight over the pinned bar. The
+  // page-coloured band (set at the call site, where the theme is) fills the bar's
+  // rounded corners so cards don't show through them on the way past.
   filterSticky: {
     zIndex: 5,
     // Both paddings are cancelled by matching negative margins: the band only exists once

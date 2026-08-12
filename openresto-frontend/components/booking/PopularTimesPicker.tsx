@@ -49,7 +49,6 @@ export default function PopularTimesPicker({
 
   const categories: Category[] = ["Lunch", "Dinner", "All"];
 
-  // For today's date, strip out slots whose time has already passed.
   const slotsInView = useMemo(() => {
     if (!slots?.length || !selectedDate || !timezone) return slots ?? [];
     const { dateStr: todayStr, hours, minutes } = getNowInTimezone(timezone);
@@ -67,7 +66,6 @@ export default function PopularTimesPicker({
     return available.filter((s) => s.category === activeCategory);
   }, [slotsInView, activeCategory]);
 
-  // A category tab is disabled when it's today and the entire meal period has already passed.
   const isCategoryDisabled = (cat: Category): boolean => {
     if (cat === "All") return false;
     if (!selectedDate || !timezone) return false;
@@ -76,7 +74,6 @@ export default function PopularTimesPicker({
     return !slotsInView.some((s) => s.category === cat);
   };
 
-  // If the active category has no available slots but others do, fall back to 'All'.
   useEffect(() => {
     const hasAvailableInCategory = slotsInView.some(
       (s) => s.isAvailable && s.category === activeCategory
@@ -91,16 +88,13 @@ export default function PopularTimesPicker({
     }
   }, [slotsInView, activeCategory]);
 
-  // Web-specific: Mouse Wheel and Drag-to-scroll — only runs when Platform.OS === "web"
   /* istanbul ignore next */
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
-    // @ts-ignore
-    const node = scrollRef.current?.getScrollableNode?.();
+    const node = scrollRef.current?.getScrollableNode?.() as HTMLElement | undefined;
     if (!node) return;
 
-    // 1. Mouse Wheel -> Horizontal Scroll
     const handleWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
         node.scrollLeft += e.deltaY;
@@ -109,7 +103,6 @@ export default function PopularTimesPicker({
       }
     };
 
-    // 2. Click and Drag
     let isDown = false;
     let startX: number;
     let scrollLeft: number;
@@ -179,6 +172,7 @@ export default function PopularTimesPicker({
           }
         }}
         disabled={disabled}
+        hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
         accessibilityRole="tab"
         accessibilityLabel={cat}
         accessibilityState={{ selected: isActive, disabled }}
@@ -204,7 +198,9 @@ export default function PopularTimesPicker({
 
   const slotChips =
     filteredSlots.length === 0 ? (
-      <ThemedText style={styles.emptyText}>No slots available for this period.</ThemedText>
+      <ThemedText style={styles.emptyText} role="status" accessibilityLiveRegion="polite">
+        No slots available for this period.
+      </ThemedText>
     ) : (
       filteredSlots.map((slot) => {
         const isSelected = selectedTime === slot.time;

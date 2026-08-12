@@ -1,7 +1,9 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { Linking, Modal, Pressable, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
+import { ModalCard } from "@/components/common/ModalCard";
+import Button from "@/components/common/Button";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { useBrand } from "@/context/BrandContext";
@@ -18,9 +20,6 @@ interface LargePartyNoticeModalProps {
 }
 
 /**
- * Notice shown when a party is too large for any single table at the location.
- * Matches the AlertModal card pattern, with the addition of contact CTAs.
- *
  * Contact resolution runs per-field, location-first then brand-wide (see
  * {@link resolveContact}). Social links are the last resort, for deployments that
  * configured a footer link ("Message us on WhatsApp") but no typed contact — they're
@@ -44,8 +43,6 @@ export default function LargePartyNoticeModal({
     let cancelled = false;
     fetchSocialLinks().then((links) => {
       if (cancelled) return;
-      // Surface every configured link; the restaurant controls what shows up.
-      // Sorted by the admin-set order, same as the footer.
       setContactLinks([...links].sort((a, b) => a.sortOrder - b.sortOrder));
     });
     return () => {
@@ -54,85 +51,77 @@ export default function LargePartyNoticeModal({
   }, [visible, hasTypedContact]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <View
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onStartShouldSetResponder={() => true}
-        >
-          <ThemedText type="h3">Large party</ThemedText>
-          <ThemedText style={[styles.message, { color: colors.muted }]}>
-            Our largest table seats {maxCapacity}, so a booking for a bigger group needs to be
-            arranged directly. Please get in touch and we&apos;ll happily sort something out.
-          </ThemedText>
+    <ModalCard visible={visible} title="Large party" onDismiss={onClose} dismissLabel="Close">
+      <ThemedText style={[styles.message, { color: colors.muted }]}>
+        Our largest table seats {maxCapacity}, so a booking for a bigger group needs to be arranged
+        directly. Please get in touch and we&apos;ll happily sort something out.
+      </ThemedText>
 
-          {hasTypedContact ? (
-            <View style={styles.contacts}>
-              {contact.phone && (
-                <Pressable
-                  style={[styles.contactBtn, { borderColor: colors.border }]}
-                  onPress={() => Linking.openURL(telHref(contact.phone!))}
-                  accessibilityRole="link"
-                  accessibilityLabel={`Call ${contact.phone}`}
-                  hitSlop={6}
-                >
-                  <Ionicons name="call-outline" size={16} color={primaryColor} />
-                  <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
-                    {contact.phone}
-                  </ThemedText>
-                </Pressable>
-              )}
-              {contact.email && (
-                <Pressable
-                  style={[styles.contactBtn, { borderColor: colors.border }]}
-                  onPress={() => Linking.openURL(mailtoHref(contact.email!))}
-                  accessibilityRole="link"
-                  accessibilityLabel={`Email ${contact.email}`}
-                  hitSlop={6}
-                >
-                  <Ionicons name="mail-outline" size={16} color={primaryColor} />
-                  <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
-                    {contact.email}
-                  </ThemedText>
-                </Pressable>
-              )}
-            </View>
-          ) : (
-            contactLinks !== null &&
-            (contactLinks.length > 0 ? (
-              <View style={styles.contacts}>
-                {contactLinks.map((link) => (
-                  <Pressable
-                    key={link.id}
-                    style={[styles.contactBtn, { borderColor: colors.border }]}
-                    onPress={() => Linking.openURL(link.url)}
-                    accessibilityRole="link"
-                    accessibilityLabel={link.label}
-                    hitSlop={6}
-                  >
-                    <Ionicons
-                      name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                      size={16}
-                      color={primaryColor}
-                    />
-                    <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
-                      {link.label}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
-                No contact details are listed yet — please reach out to us directly.
+      {hasTypedContact ? (
+        <View style={styles.contacts}>
+          {contact.phone && (
+            <Pressable
+              style={[styles.contactBtn, { borderColor: colors.border }]}
+              onPress={() => Linking.openURL(telHref(contact.phone!))}
+              accessibilityRole="link"
+              accessibilityLabel={`Call ${contact.phone}`}
+              hitSlop={6}
+            >
+              <Ionicons name="call-outline" size={16} color={primaryColor} />
+              <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                {contact.phone}
               </ThemedText>
-            ))
+            </Pressable>
           )}
-
-          <Pressable style={[styles.btn, { backgroundColor: primaryColor }]} onPress={onClose}>
-            <ThemedText style={styles.btnText}>Got it</ThemedText>
-          </Pressable>
+          {contact.email && (
+            <Pressable
+              style={[styles.contactBtn, { borderColor: colors.border }]}
+              onPress={() => Linking.openURL(mailtoHref(contact.email!))}
+              accessibilityRole="link"
+              accessibilityLabel={`Email ${contact.email}`}
+              hitSlop={6}
+            >
+              <Ionicons name="mail-outline" size={16} color={primaryColor} />
+              <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                {contact.email}
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
-      </Pressable>
-    </Modal>
+      ) : (
+        contactLinks !== null &&
+        (contactLinks.length > 0 ? (
+          <View style={styles.contacts}>
+            {contactLinks.map((link) => (
+              <Pressable
+                key={link.id}
+                style={[styles.contactBtn, { borderColor: colors.border }]}
+                onPress={() => Linking.openURL(link.url)}
+                accessibilityRole="link"
+                accessibilityLabel={link.label}
+                hitSlop={6}
+              >
+                <Ionicons
+                  name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
+                  size={16}
+                  color={primaryColor}
+                />
+                <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
+                  {link.label}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
+            No contact details are listed yet — please reach out to us directly.
+          </ThemedText>
+        ))
+      )}
+
+      <Button size="md" onPress={onClose}>
+        Got it
+      </Button>
+    </ModalCard>
   );
 }

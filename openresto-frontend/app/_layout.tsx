@@ -41,13 +41,10 @@ function AppWithTheme() {
   useEffect(() => {
     if (Platform.OS !== "web") return;
 
-    // Helper to format title: "Page | App Name"
     const setTabTitle = (page?: string) => {
       document.title = page ? `${page} | ${brand.appName}` : brand.appName;
     };
 
-    // segments is an array of the path components.
-    // We filter out groups like (user) to get the actual functional segments.
     const actualSegments = segments.filter((s) => !s.startsWith("("));
     const primarySegment = actualSegments[0];
 
@@ -69,7 +66,6 @@ function AppWithTheme() {
     } else if (primarySegment === "restaurant") {
       setTabTitle("Restaurant Details");
     } else {
-      // Default fallback for other sections
       const fallbackTitle = primarySegment.charAt(0).toUpperCase() + primarySegment.slice(1);
       setTabTitle(fallbackTitle);
     }

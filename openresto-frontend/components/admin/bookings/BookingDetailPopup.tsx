@@ -15,6 +15,7 @@ import {
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
@@ -301,7 +302,7 @@ export function BookingDetailPopup({
       <Pressable
         style={{
           flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
+          backgroundColor: theme.colors.overlay.light,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -326,7 +327,6 @@ export function BookingDetailPopup({
             overflow: "hidden",
           }}
         >
-          {/* Header */}
           <View
             style={{
               flexDirection: "row",
@@ -396,7 +396,6 @@ export function BookingDetailPopup({
             </View>
           </View>
 
-          {/* Body */}
           <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 20, gap: 16 }}>
             {loading ? (
               <ActivityIndicator size="large" color={PRIMARY} style={{ marginVertical: 40 }} />

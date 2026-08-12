@@ -210,6 +210,63 @@ describe("LocationListItem", () => {
       );
     });
 
+    it("stops loading and reports empty availability when the fetch fails", async () => {
+      const onAvailabilityChange = jest.fn();
+      (fetchAvailability as jest.Mock).mockRejectedValue(new Error("network down"));
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={utcRestaurant as any}
+          onAvailabilityChange={onAvailabilityChange}
+        />
+      );
+      await waitFor(() =>
+        expect(screen.getByText("No times available — try another date or party size")).toBeTruthy()
+      );
+      expect(screen.queryByTestId("location-slots-loading-1")).toBeNull();
+      await waitFor(() => expect(onAvailabilityChange).toHaveBeenCalledWith(1, 0));
+    });
+
+    it("ignores an availability result that lands after unmount", async () => {
+      let resolveFetch!: (v: unknown) => void;
+      (fetchAvailability as jest.Mock).mockImplementation(
+        () => new Promise((res) => (resolveFetch = res))
+      );
+      const onAvailabilityChange = jest.fn();
+      const { unmount } = renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={utcRestaurant as any}
+          onAvailabilityChange={onAvailabilityChange}
+        />
+      );
+      unmount();
+      onAvailabilityChange.mockClear();
+      resolveFetch({ slots: [{ time: "14:00", isAvailable: true, category: "Dinner" }] });
+      await new Promise((r) => setTimeout(r, 0));
+      expect(onAvailabilityChange).not.toHaveBeenCalled();
+    });
+
+    it("ignores an availability failure that lands after unmount", async () => {
+      let rejectFetch!: (e: Error) => void;
+      (fetchAvailability as jest.Mock).mockImplementation(
+        () => new Promise((_res, rej) => (rejectFetch = rej))
+      );
+      const onAvailabilityChange = jest.fn();
+      const { unmount } = renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={utcRestaurant as any}
+          onAvailabilityChange={onAvailabilityChange}
+        />
+      );
+      unmount();
+      onAvailabilityChange.mockClear();
+      rejectFetch(new Error("late failure"));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(onAvailabilityChange).not.toHaveBeenCalled();
+    });
+
     it("reports its usable-slot count up to the page for the availability summary", async () => {
       const onAvailabilityChange = jest.fn();
       (fetchAvailability as jest.Mock).mockResolvedValue({
@@ -607,9 +664,24 @@ describe("LocationListItem", () => {
           restaurant={{ ...mockRestaurant, imageUrl: "https://example.com/photo.jpg" } as any}
         />
       );
-      await waitFor(() => expect(screen.getByTestId("location-image")).toBeTruthy());
-      fireEvent(screen.getByTestId("location-image"), "error");
-      await waitFor(() => expect(screen.queryByTestId("location-image")).toBeNull());
+      // The thumbnail is decorative and hidden from accessibility, so queries must opt in.
+      const withHidden = { includeHiddenElements: true } as const;
+      await waitFor(() => expect(screen.getByTestId("location-image", withHidden)).toBeTruthy());
+      fireEvent(screen.getByTestId("location-image", withHidden), "error");
+      await waitFor(() => expect(screen.queryByTestId("location-image", withHidden)).toBeNull());
+    });
+
+    it("hides the decorative thumbnail image from accessibility", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={{ ...mockRestaurant, imageUrl: "https://example.com/photo.jpg" } as any}
+        />
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId("location-image", { includeHiddenElements: true })).toBeTruthy()
+      );
+      expect(screen.queryByTestId("location-image")).toBeNull();
     });
 
     it("shows the name's initial when there is no image", async () => {

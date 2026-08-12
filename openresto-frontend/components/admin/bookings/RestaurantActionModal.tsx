@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, View, ScrollView, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import {
   BookingDetailDto,
 } from "@/api/admin";
 import { styles } from "./RestaurantActionModal.styles";
+import { theme } from "@/theme/theme";
 
 interface RestaurantActionModalProps {
   visible: boolean;
@@ -100,10 +101,20 @@ export default function RestaurantActionModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View
+          role="dialog"
+          aria-modal
+          accessibilityViewIsModal
+          accessibilityLabel={
+            extendedBookings
+              ? "Bookings extended"
+              : actionType === "pause"
+                ? "Pause bookings"
+                : "Extend bookings"
+          }
           style={[styles.content, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
           <View style={styles.header}>
-            <ThemedText style={styles.title}>
+            <ThemedText style={styles.title} accessibilityRole="header">
               {extendedBookings
                 ? "Bookings Extended"
                 : actionType === "pause"
@@ -135,6 +146,7 @@ export default function RestaurantActionModal({
               style={styles.spinner}
               color={primaryColor}
               testID="loading-indicator"
+              accessibilityLabel="Loading restaurants"
             />
           ) : extendedBookings ? (
             <>
@@ -210,7 +222,7 @@ export default function RestaurantActionModal({
                             }}
                           >
                             <ThemedText
-                              style={{ color: "#ef4444", fontSize: 10, fontWeight: "700" }}
+                              style={{ color: theme.colors.error, fontSize: 10, fontWeight: "700" }}
                             >
                               PAUSED
                             </ThemedText>
@@ -237,7 +249,9 @@ export default function RestaurantActionModal({
                               : "pause-circle-outline"
                         }
                         size={20}
-                        color={isPaused && actionType === "pause" ? "#16a34a" : primaryColor}
+                        color={
+                          isPaused && actionType === "pause" ? theme.colors.success : primaryColor
+                        }
                       />
                     )}
                   </Pressable>

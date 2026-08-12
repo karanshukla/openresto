@@ -12,7 +12,6 @@ export interface BookingLookupBarProps {
   status: LookupStatus;
   onQueryChange: (text: string) => void;
   onSubmit: () => void;
-  /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   inputBg: string;
   textColor: string;
@@ -22,8 +21,6 @@ export interface BookingLookupBarProps {
 
 /**
  * Email/reference lookup input + Find button + status messages.
- * Extracted from the bookings screen header for decomposition; presentational,
- * owns no state (the screen drives query/loading/status + the submit handler).
  */
 export function BookingLookupBar({
   query,

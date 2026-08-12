@@ -25,7 +25,7 @@ export const theme = {
     },
 
     muted: {
-      light: "#4b5563", // Increased contrast from #6b7280 for WCAG AA
+      light: "#4b5563",
       dark: "#9ca3af",
     },
 
@@ -36,9 +36,7 @@ export const theme = {
 
     // The recessed control surface a card sits its own controls on: time chips, map
     // links, icon buttons, and the surface a plain-text action takes while hovered.
-    // Distinct from `input`, which is a field's fill. Cool, like `page` and `border`:
-    // the light value used to be a warm cream borrowed from the home page's own warm
-    // body, which read as faintly yellow anywhere else it was reused.
+    // Distinct from `input`, which is a field's fill. Cool, like `page` and `border`.
     surfaceAlt: {
       light: "#eef0f3",
       dark: "#1b1e23",
@@ -60,8 +58,8 @@ export const theme = {
     },
 
     border: {
-      light: "rgba(0,0,0,0.12)", // Increased from 0.08 for better visibility
-      dark: "rgba(255,255,255,0.16)", // Increased from 0.1 for better visibility
+      light: "rgba(0,0,0,0.12)",
+      dark: "rgba(255,255,255,0.16)",
     },
 
     // Opaque, and a step up in contrast from `border`: what a card outlines itself with
@@ -82,7 +80,6 @@ export const theme = {
     },
   },
 
-  // Status badge colors for booking statuses
   status: {
     arrived: {
       bg: { light: "#dcfce7", dark: "#14532d22" },
@@ -98,11 +95,11 @@ export const theme = {
     },
     scheduled: {
       bg: { light: "#f1f5f9", dark: "#1e2934" },
-      text: "#475569", // Increased contrast from #64748b
+      text: "#475569",
     },
     completed: {
       bg: { light: "#f1f5f9", dark: "#1a1c1e" },
-      text: "#475569", // Increased contrast from #94a3b8
+      text: "#475569",
     },
     cancelled: {
       bg: { light: "rgba(220,38,38,0.1)", dark: "rgba(220,38,38,0.15)" },
@@ -110,11 +107,10 @@ export const theme = {
     },
     past: {
       bg: { light: "#f1f5f9", dark: "#1a1c1e" },
-      text: { light: "#475569", dark: "#94a3b8" }, // Increased contrast for light mode
+      text: { light: "#475569", dark: "#94a3b8" },
     },
   },
 
-  // Badge colors for location status
   badge: {
     active: {
       bg: "#dcfce7",
@@ -186,7 +182,6 @@ export const theme = {
     full: 9999,
   },
 
-  // Standard dimensions for form controls — centralises the "44px input" convention
   formSizes: {
     inputHeight: 44,
     inputSmHeight: 36,
@@ -196,7 +191,6 @@ export const theme = {
   },
 
   typography: {
-    // Large page-level title (dashboard, full-page screens)
     pageTitle: {
       fontSize: 32,
       fontWeight: "800" as const,
@@ -274,7 +268,6 @@ export const theme = {
       shadowRadius: 12,
       elevation: 4,
     },
-    // For modals/dialogs that float above page content
     popup: {
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 8 },

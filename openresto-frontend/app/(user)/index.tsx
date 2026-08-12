@@ -16,10 +16,11 @@ import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkelet
 import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
-import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/index.styles";
+import { hexToRgb } from "@/utils/colors";
 
 /**
  * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
@@ -33,6 +34,8 @@ const HERO_COLLAPSE_SUB = { dataSet: { heroCollapse: "sub" } };
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
 let _cachedHighlights: HighlightDto[] | null = null;
+
+const DEFAULT_PARTY_SIZE = 2;
 
 export function resetHomeCache() {
   _cachedRestaurants = null;
@@ -53,7 +56,6 @@ export default function HomeScreen() {
   const scrollToTop = useCallback(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
-  const party = 2;
 
   useEffect(() => {
     Promise.all([fetchRestaurants(), fetchHighlights()]).then(([restaurantData, highlightData]) => {
@@ -69,13 +71,9 @@ export default function HomeScreen() {
   const hasHero = !!brand.headerImageUrl && Platform.OS === "web";
   const heroTextShadow = "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)";
 
-  const accentHex = primaryColor.replace("#", "");
-  const accentR = parseInt(accentHex.slice(0, 2), 16);
-  const accentG = parseInt(accentHex.slice(2, 4), 16);
-  const accentB = parseInt(accentHex.slice(4, 6), 16);
+  const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},0.18)`;
 
-  // Home-page copy falls back to the pre-customization defaults when unset.
   const DEFAULT_SUBTITLE =
     "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!";
   const heroSubtitle = brand.subtitle?.trim() || DEFAULT_SUBTITLE;
@@ -105,15 +103,13 @@ export default function HomeScreen() {
   // loaded and found one location.
   const skeletonCount = numColumns === 1 ? 2 : numColumns;
 
-  // On a phone the highlights become a swipeable rail rather than a stack four cards
-  // tall, so the locations below stay reachable without scrolling past the whole thing.
   // The card is deliberately narrower than the viewport: the sliver of the next one is
   // what says "this scrolls" without a scrollbar to say it.
   const railCardWidth = Math.min(300, Math.round(width * 0.78));
   const railGap = 12;
   const useHighlightRail = numHighlightCols === 1;
 
-  const HighlightsContainer = ({ children }: { children: ReactNode }) =>
+  const wrapHighlights = (cards: ReactNode) =>
     useHighlightRail ? (
       <HorizontalScroller
         testID="highlights-rail"
@@ -121,9 +117,6 @@ export default function HomeScreen() {
         // The cards are only focusable when they carry a link, so without a stop of its
         // own a keyboard could reach the third highlight only by luck.
         keyboardFocusable
-        // The peeking next card is this row's own indication that it scrolls. A button
-        // would have to sit on top of a card to be at its end, and there is no gap here
-        // for it to sit in.
         scrollButtons={false}
         snapToInterval={railCardWidth + railGap}
         decelerationRate="fast"
@@ -138,12 +131,10 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={styles.highlightsRailContent}
       >
-        {children}
+        {cards}
       </HorizontalScroller>
     ) : (
-      <View style={[styles.highlightsGrid, { flexDirection: "row", flexWrap: "wrap" }]}>
-        {children}
-      </View>
+      <View style={[styles.highlightsGrid, styles.rowWrap]}>{cards}</View>
     );
 
   return (
@@ -160,7 +151,6 @@ export default function HomeScreen() {
         {...(HOME_SCROLL_TIMELINE as object)}
       >
         <View style={{ flex: 1 }}>
-          {/* ── Hero ── */}
           <View
             style={[
               styles.hero,
@@ -234,7 +224,6 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* ── Highlights ── */}
             {/* Hide the whole section (heading included) when no highlights exist. */}
             {highlights.length > 0 && (
               <View style={[styles.highlights, isMobile && { paddingHorizontal: 20 }]}>
@@ -258,8 +247,8 @@ export default function HomeScreen() {
                     {highlightsSubheading}
                   </ThemedText>
                 </View>
-                <HighlightsContainer>
-                  {highlights.map((h) => {
+                {wrapHighlights(
+                  highlights.map((h) => {
                     const cardStyle = [
                       styles.highlightCard,
                       { backgroundColor: colors.card, borderColor: colors.border },
@@ -315,7 +304,8 @@ export default function HomeScreen() {
                       <Pressable
                         key={h.id}
                         accessibilityRole="link"
-                        accessibilityHint={h.link}
+                        accessibilityLabel={`${h.title}. ${h.body}`}
+                        accessibilityHint="Opens in a new tab"
                         onPress={() => Linking.openURL(h.link!)}
                         style={cardStyle}
                       >
@@ -326,13 +316,12 @@ export default function HomeScreen() {
                         {cardContent}
                       </View>
                     );
-                  })}
-                </HighlightsContainer>
+                  })
+                )}
               </View>
             )}
           </View>
 
-          {/* ── Main body ── */}
           <View style={[styles.body, isMobile && { paddingHorizontal: 16 }]}>
             <View style={styles.sectionHead}>
               <ThemedText style={styles.sectionTitle}>Our locations</ThemedText>
@@ -340,7 +329,9 @@ export default function HomeScreen() {
 
             <View
               testID={loading ? "loading-screen" : undefined}
-              style={[styles.grid, numColumns > 1 && { flexDirection: "row", flexWrap: "wrap" }]}
+              aria-busy={loading}
+              accessibilityLabel={loading ? "Loading locations" : undefined}
+              style={[styles.grid, numColumns > 1 && styles.rowWrap]}
             >
               {loading
                 ? Array.from({ length: skeletonCount }, (_, i) => (
@@ -348,9 +339,9 @@ export default function HomeScreen() {
                       <RestaurantCardSkeleton />
                     </View>
                   ))
-                : restaurants.map((r, i) => (
+                : restaurants.map((r) => (
                     <View key={r.id} style={cardWrapperStyle}>
-                      <RestaurantCard restaurant={r} index={i} party={party} />
+                      <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
                     </View>
                   ))}
             </View>
@@ -360,7 +351,7 @@ export default function HomeScreen() {
         <Footer />
       </ScrollView>
 
-      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+      <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
     </ThemedView>
   );
 }

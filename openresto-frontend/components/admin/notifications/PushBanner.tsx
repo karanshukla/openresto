@@ -50,9 +50,6 @@ export interface PushBannerProps {
  * state, and — if push is available but not yet active — shows a banner with an
  * Enable button that subscribes the service worker. Renders nothing on native
  * or when push is unsupported/already active.
- *
- * Extracted from the notifications screen for decomposition; self-contained
- * (owns its fetch + subscription state).
  */
 export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerProps) {
   const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
@@ -141,7 +138,11 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
         Enable push notifications to get real-time booking alerts.
       </ThemedText>
       {errorMsg && (
-        <ThemedText style={[styles.pushBannerText, { color: theme.colors.error, flex: undefined }]}>
+        <ThemedText
+          role="alert"
+          accessibilityLiveRegion="assertive"
+          style={[styles.pushBannerText, { color: theme.colors.error, flex: undefined }]}
+        >
           {errorMsg}
         </ThemedText>
       )}

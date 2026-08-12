@@ -121,7 +121,6 @@ export function SecurityCard({
 
       <AnimatedAccordion expanded={expanded}>
         <>
-          {/* Email row */}
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={{ flex: 1 }}>
               <ThemedText style={styles.secRowTitle}>Email</ThemedText>
@@ -194,7 +193,6 @@ export function SecurityCard({
             </View>
           )}
 
-          {/* PVQ status row */}
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={{ flex: 1, gap: 2 }}>
               <ThemedText style={styles.secRowTitle}>Security Question</ThemedText>
@@ -268,7 +266,6 @@ export function SecurityCard({
             </View>
           )}
 
-          {/* Password row */}
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={{ flex: 1 }}>
               <ThemedText style={styles.secRowTitle}>Password</ThemedText>

@@ -46,6 +46,9 @@ export default function Skeleton({
 
   return (
     <Animated.View
+      accessible={false}
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
       style={[
         {
           width,

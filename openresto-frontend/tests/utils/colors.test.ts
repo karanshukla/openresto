@@ -1,4 +1,14 @@
-import { hexToRgba } from "@/utils/colors";
+import { hexToRgb, hexToRgba } from "@/utils/colors";
+
+describe("colors utility - hexToRgb", () => {
+  it("parses a hex color written without the leading hash", () => {
+    expect(hexToRgb("ff0000")).toEqual({ r: 255, g: 0, b: 0 });
+  });
+
+  it("parses a short hex color written without the leading hash", () => {
+    expect(hexToRgb("f00")).toEqual({ r: 255, g: 0, b: 0 });
+  });
+});
 
 describe("colors utility - hexToRgba", () => {
   it("converts #ffffff to rgba(255,255,255,1)", () => {

@@ -18,14 +18,12 @@ export interface DangerZoneRestaurant {
 export interface DangerZoneProps {
   /** All restaurants (active + archived) shown as selection pills. */
   restaurants: DangerZoneRestaurant[];
-  /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   cardBg: string;
   mutedColor: string;
   isDark: boolean;
   /** Called after a successful archive/restore with the id + the new archived flag.
-   *  The parent reconciles its active + all-restaurant lists (the original logic
-   *  patches the all-list in place, and either filters or re-fetches the active list). */
+   *  The parent reconciles its active + all-restaurant lists. */
   onArchived: (id: number, archived: boolean) => Promise<void>;
   /** Called after a successful delete with the id. The parent reconciles both lists. */
   onDeleted: (id: number) => Promise<void>;
@@ -33,15 +31,6 @@ export interface DangerZoneProps {
 
 /**
  * Archive / Delete section for the locations screen.
- *
- * Owns its internal UI state (expand, selected restaurant, delete step, error
- * flags, loading flags) and performs the API calls. Delegates the *data
- * reconciliation* (how the parent's active/all restaurant lists update after a
- * mutation) to the parent via `onArchived` / `onDeleted` callbacks — this keeps
- * the precise original reconciliation logic in the screen, where it has access
- * to both lists, while the UI + API orchestration lives here.
- *
- * Extracted from the locations screen for decomposition.
  */
 export function DangerZone({
   restaurants,
@@ -188,7 +177,6 @@ export function DangerZone({
 
             {dangerSelectedRestaurant ? (
               <>
-                {/* Archive / Restore row */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -252,7 +240,6 @@ export function DangerZone({
                   </Pressable>
                 </View>
 
-                {/* Delete row */}
                 <View
                   style={{
                     padding: 14,

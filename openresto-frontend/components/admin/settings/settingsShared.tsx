@@ -3,7 +3,6 @@ import { ThemedText } from "@/components/themed-text";
 
 /**
  * Shared presentational helpers for the EmailSettingsCard sub-section components.
- * Extracted from the original monolithic card during Bundle 9B-2 decomposition.
  */
 
 /** Small uppercase label used to head each sub-section of the email settings card. */

@@ -29,6 +29,7 @@ function renderAt(path: string) {
 describe("RouteTransition", () => {
   beforeEach(() => {
     mockAnimateNode.mockClear();
+    mockAnimateNode.mockReturnValue(null);
   });
 
   it("renders its children", () => {
@@ -59,6 +60,29 @@ describe("RouteTransition", () => {
     // the bare page background across the whole viewport and reads as a blink.
     expect(keyframes[0].opacity).toBeGreaterThan(0.8);
     expect(keyframes[keyframes.length - 1].opacity).toBe(1);
+  });
+
+  it("cancels the running animation when the path changes again mid-flight", () => {
+    const cancel = jest.fn();
+    mockAnimateNode.mockReturnValue({ cancel });
+    const { rerender } = renderAt("/");
+
+    mockUsePathname.mockReturnValue("/locations/2");
+    rerender(
+      <RouteTransition>
+        <Text>/locations/2</Text>
+      </RouteTransition>
+    );
+    expect(cancel).not.toHaveBeenCalled();
+
+    mockUsePathname.mockReturnValue("/locations/3");
+    rerender(
+      <RouteTransition>
+        <Text>/locations/3</Text>
+      </RouteTransition>
+    );
+    // A fast second navigation must not stack a second keyframe animation over the first.
+    expect(cancel).toHaveBeenCalledTimes(1);
   });
 
   it("does not replay when only the query string changed", () => {

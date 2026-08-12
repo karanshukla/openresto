@@ -3,37 +3,6 @@ import { theme } from "@/theme/theme";
 import { hexToRgba } from "@/utils/colors";
 
 export const bookingDetailStyles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: {
-    padding: theme.spacing.xxl,
-    paddingTop: theme.spacing.xxxl,
-    gap: theme.spacing.lg,
-    maxWidth: 1100,
-    width: "100%",
-    alignSelf: "center",
-  },
-
-  // Page header
-  pageHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    flexWrap: "wrap",
-    gap: theme.spacing.md,
-  },
-  headerLeft: {
-    gap: 6,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-  },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-  backText: { fontSize: 14, fontWeight: "600" },
-  pageTitle: { ...theme.typography.h1 },
-
-  // Two-column layout
   twoCol: {
     flexDirection: "row",
     gap: theme.spacing.lg,
@@ -42,7 +11,6 @@ export const bookingDetailStyles = StyleSheet.create({
   colLeft: { flex: 1 },
   colRight: { flex: 1 },
 
-  // Details card
   card: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -61,7 +29,6 @@ export const bookingDetailStyles = StyleSheet.create({
   rowValue: { fontSize: 14, flex: 1, textAlign: "right" },
   divider: { height: 1 },
 
-  // Edit form / sections
   section: {
     borderWidth: 1,
     borderRadius: theme.borderRadius.card,
@@ -74,7 +41,6 @@ export const bookingDetailStyles = StyleSheet.create({
   fieldRow: { flexDirection: "row", gap: theme.spacing.md },
   fieldHalf: { flex: 1 },
 
-  // Extend buttons
   extendBtns: { flexDirection: "row", gap: theme.spacing.sm },
   extendBtn: {
     flex: 1,
@@ -85,7 +51,6 @@ export const bookingDetailStyles = StyleSheet.create({
   },
   extendBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
 
-  // Email section
   emailTo: { fontSize: 13, marginBottom: 4 },
   emailActions: {
     flexDirection: "row",
@@ -104,7 +69,6 @@ export const bookingDetailStyles = StyleSheet.create({
   emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   emailResultText: { fontSize: 13, fontWeight: "500" },
 
-  // Header action buttons
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -115,7 +79,6 @@ export const bookingDetailStyles = StyleSheet.create({
   },
   actionBtnText: { ...theme.typography.label },
 
-  // Danger zone buttons (bottom of page)
   uncancelBtn: {
     flexDirection: "row",
     alignItems: "center",

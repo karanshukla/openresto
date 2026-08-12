@@ -180,6 +180,16 @@ describe("LocationsScreen", () => {
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
   });
 
+  it("shows an error with retry when the fetch fails, and recovers on retry", async () => {
+    (fetchRestaurants as jest.Mock).mockRejectedValueOnce(new Error("network down"));
+    (fetchRestaurants as jest.Mock).mockResolvedValueOnce(mockRestaurants);
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByText(/load our locations/)).toBeTruthy());
+    fireEvent.press(screen.getByText("Try again"));
+    await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+    expect(screen.queryByText(/load our locations/)).toBeNull();
+  });
+
   it("shows the empty state when there are no locations", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue([]);
     renderWithProviders(<LocationsScreen />);

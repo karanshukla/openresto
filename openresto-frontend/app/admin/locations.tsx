@@ -90,15 +90,13 @@ export default function AdminLocationsScreen() {
           minute: "2-digit",
         })
       : null;
-  // Keeps the transient selectedId and its persisted counterpart in sync so the
-  // next visit lands on the restaurant the admin was last viewing.
-  const selectLocation = (id: number | null) => {
+  const selectAndRemember = (id: number | null) => {
     setSelectedId(id);
     setPersistedSelectedId(id);
   };
 
   function handleSelectLocation(id: number) {
-    selectLocation(id);
+    selectAndRemember(id);
     setExtendedBookings(null);
     setExtendNoActive(false);
   }
@@ -115,7 +113,6 @@ export default function AdminLocationsScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: "Locations" }} />}
 
-      {/* ── Page header ─────────────────────────────────────────────── */}
       <View style={styles.pageHeader}>
         <View style={{ gap: 2 }}>
           <ThemedText type="h1">Locations</ThemedText>
@@ -150,7 +147,6 @@ export default function AdminLocationsScreen() {
         </Pressable>
       </View>
 
-      {/* ── Add location form ────────────────────────────────────────── */}
       {addingLocation && (
         <AddLocationForm
           value={newLocationName}
@@ -166,7 +162,7 @@ export default function AdminLocationsScreen() {
             setSavingLocation(false);
             if (created) {
               setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
-              selectLocation(created.id);
+              selectAndRemember(created.id);
             }
             setNewLocationName("");
             setAddingLocation(false);
@@ -178,7 +174,6 @@ export default function AdminLocationsScreen() {
         />
       )}
 
-      {/* ── Location selector pills ──────────────────────────────────── */}
       {restaurants.length > 0 && (
         <HorizontalScroller
           label="Locations"
@@ -220,7 +215,6 @@ export default function AdminLocationsScreen() {
         </HorizontalScroller>
       )}
 
-      {/* ── Booking action buttons ──────────────────────────────────── */}
       {selectedRestaurant && (
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable
@@ -355,7 +349,6 @@ export default function AdminLocationsScreen() {
         </View>
       )}
 
-      {/* ── Location detail or empty state ───────────────────────────── */}
       {restaurants.length === 0 ? (
         <View
           style={{
@@ -407,7 +400,6 @@ export default function AdminLocationsScreen() {
         </View>
       ) : null}
 
-      {/* ── Archive / Delete (decomposed into <DangerZone/>) ───────── */}
       <DangerZone
         restaurants={allRestaurants}
         borderColor={borderColor}
@@ -415,7 +407,6 @@ export default function AdminLocationsScreen() {
         mutedColor={mutedColor}
         isDark={isDark}
         onArchived={async (id, archived) => {
-          // Patch the all-restaurants list in place (faithful to the original).
           setAllRestaurants((prev) =>
             prev.map((r) => (r.id === id ? { ...r, isArchived: archived } : r))
           );
@@ -424,7 +415,7 @@ export default function AdminLocationsScreen() {
             setRestaurants((prev) => {
               const remaining = prev.filter((r) => r.id !== id);
               if (selectedId === id) {
-                selectLocation(remaining.length > 0 ? remaining[0].id : null);
+                selectAndRemember(remaining.length > 0 ? remaining[0].id : null);
               }
               return remaining;
             });
@@ -432,7 +423,7 @@ export default function AdminLocationsScreen() {
             // Restoring: re-fetch active list + select the restored restaurant.
             fetchRestaurants().then((active) => {
               setRestaurants(active);
-              selectLocation(id);
+              selectAndRemember(id);
             });
           }
         }}
@@ -440,7 +431,7 @@ export default function AdminLocationsScreen() {
           setAllRestaurants((prev) => prev.filter((r) => r.id !== id));
           setRestaurants((prev) => {
             const remaining = prev.filter((r) => r.id !== id);
-            selectLocation(remaining.length > 0 ? remaining[0].id : null);
+            selectAndRemember(remaining.length > 0 ? remaining[0].id : null);
             return remaining;
           });
         }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
 import { Slot, Stack, useRouter, usePathname, useSegments } from "expo-router";
 import { ThemedView } from "@/components/themed-view";

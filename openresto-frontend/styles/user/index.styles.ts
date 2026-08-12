@@ -5,7 +5,6 @@ export const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
 
-  // Hero
   hero: {
     borderBottomWidth: 1,
     overflow: "hidden",
@@ -38,7 +37,6 @@ export const styles = StyleSheet.create({
     maxWidth: 500,
   },
 
-  // Highlights
   highlights: {
     maxWidth: 1320,
     width: "100%",
@@ -65,6 +63,10 @@ export const styles = StyleSheet.create({
   },
   highlightsGrid: {
     gap: 12,
+  },
+  rowWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   // The rail runs edge to edge while its cards still line up with the section's own
   // padding: the negative margin cancels the 20px the highlights block insets by at
@@ -105,7 +107,6 @@ export const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
-  // Body
   body: {
     maxWidth: 1320,
     width: "100%",
@@ -130,31 +131,5 @@ export const styles = StyleSheet.create({
   },
   cardWrapper: {
     width: "100%",
-  },
-  spinner: {
-    marginTop: 60,
-  },
-  // Footer
-  footer: {
-    borderTopWidth: 1,
-    paddingHorizontal: 28,
-    paddingVertical: 28,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 12,
-    maxWidth: 1320,
-    width: "100%",
-    alignSelf: "center",
-  },
-  footerText: {
-    fontSize: 13,
-  },
-  footerLinks: {
-    flexDirection: "row",
-    gap: 18,
-  },
-  footerLink: {
-    fontSize: 13,
   },
 });

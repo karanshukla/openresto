@@ -13,7 +13,7 @@ import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmatio
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import ScrollToTopFab from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import * as Haptics from "expo-haptics";
 import { isPast } from "@/components/admin/bookings/StatusBadge";
@@ -152,7 +152,6 @@ export default function BookingConfirmationScreen() {
           />
         )}
         <PageContainer>
-          {/* Header — same spacing pattern as lookup page */}
           <View style={styles.header}>
             <View
               style={[
@@ -175,7 +174,6 @@ export default function BookingConfirmationScreen() {
             </ThemedText>
           </View>
 
-          {/* Booking reference — above detail rows on mobile, inside right col on wide */}
           {!isWide && (
             <View
               style={[
@@ -231,9 +229,7 @@ export default function BookingConfirmationScreen() {
             </View>
           )}
 
-          {/* Two-column on wide: [details] | [ref card + calendar] */}
           <View style={isWide ? styles.wideRow : styles.narrowGap}>
-            {/* Left / top on narrow: detail rows */}
             <View
               style={[
                 styles.detailCard,
@@ -249,7 +245,6 @@ export default function BookingConfirmationScreen() {
               />
             </View>
 
-            {/* Right col on wide: ref card + calendar + directions stacked */}
             <View style={[isWide && styles.wideCol, styles.rightCol]}>
               {isWide && (
                 <View
@@ -379,6 +374,7 @@ export default function BookingConfirmationScreen() {
                             `https://maps.google.com/?q=${encodeURIComponent(restaurant.address!)}`
                           )
                         }
+                        accessibilityRole="link"
                         accessibilityLabel="Open in Google Maps"
                       >
                         <Ionicons name="navigate-outline" size={13} color={colors.muted} />
@@ -399,6 +395,7 @@ export default function BookingConfirmationScreen() {
                             `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address!)}`
                           )
                         }
+                        accessibilityRole="link"
                         accessibilityLabel="Open in Apple Maps"
                       >
                         <Ionicons name="navigate-outline" size={13} color={colors.muted} />
@@ -473,7 +470,7 @@ export default function BookingConfirmationScreen() {
 
         <Footer />
       </ScrollView>
-      <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />
+      <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
     </View>
   );
 }

@@ -8,8 +8,7 @@ import { styles } from "./settings.styles";
 
 /**
  * The icon-picker + label/url inputs + save/cancel actions used when creating or editing a
- * social link in the FooterSettingsCard. Already a self-contained component in the original
- * file; moved to its own module during Bundle 9B-3 decomposition.
+ * social link in the FooterSettingsCard.
  */
 
 const ICON_OPTIONS = [
@@ -91,7 +90,6 @@ export function SocialLinkEditForm({
         gap: 10,
       }}
     >
-      {/* Icon picker */}
       <View style={{ gap: 6 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -123,7 +121,6 @@ export function SocialLinkEditForm({
         </View>
       </View>
 
-      {/* Label */}
       <View style={{ gap: 4 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Label</ThemedText>
         <Input
@@ -133,7 +130,6 @@ export function SocialLinkEditForm({
         />
       </View>
 
-      {/* URL */}
       <View style={{ gap: 4 }}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>URL</ThemedText>
         <Input
@@ -147,7 +143,6 @@ export function SocialLinkEditForm({
 
       {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
 
-      {/* Actions */}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
         <Pressable
           onPress={onCancel}

@@ -189,10 +189,17 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
           accessibilityLabel="Close the new booking form"
         >
           <TouchableWithoutFeedback>
-            <View style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}>
-              {/* Header */}
+            <View
+              role="dialog"
+              aria-modal
+              accessibilityViewIsModal
+              accessibilityLabel="New booking"
+              style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}
+            >
               <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                <ThemedText style={styles.title}>New Booking</ThemedText>
+                <ThemedText style={styles.title} accessibilityRole="header">
+                  New Booking
+                </ThemedText>
                 <Pressable
                   onPress={onClose}
                   style={styles.closeBtn}
@@ -206,7 +213,11 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={PRIMARY} />
+                  <ActivityIndicator
+                    size="large"
+                    color={PRIMARY}
+                    accessibilityLabel="Loading booking form"
+                  />
                 </View>
               ) : (
                 <ScrollView

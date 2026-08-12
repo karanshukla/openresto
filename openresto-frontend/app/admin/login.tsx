@@ -17,13 +17,11 @@ type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
 export default function AdminLoginScreen() {
   const [stage, setStage] = useState<Stage>("login");
 
-  // Login form
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Forgot password flow
   const [fpEmail, setFpEmail] = useState("");
   const [pvqQuestion, setPvqQuestion] = useState<string | null>(null);
   const [pvqAnswer, setPvqAnswer] = useState("");
@@ -39,8 +37,6 @@ export default function AdminLoginScreen() {
   const { colors, brand, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
 
-  // ── Login ────────────────────────────────────────────────────────────────
-
   const handleLogin = async () => {
     setLoginError(null);
     setLoginLoading(true);
@@ -52,8 +48,6 @@ export default function AdminLoginScreen() {
       setLoginError("Invalid email or password. Please try again.");
     }
   };
-
-  // ── Forgot password: step 1 — load PVQ question ─────────────────────────
 
   const handleFetchQuestion = async () => {
     setFpError(null);
@@ -68,8 +62,6 @@ export default function AdminLoginScreen() {
     setStage("pvq-answer");
   };
 
-  // ── Forgot password: step 2 — verify PVQ answer ──────────────────────────
-
   const handleVerifyAnswer = async () => {
     setFpError(null);
     setFpLoading(true);
@@ -82,8 +74,6 @@ export default function AdminLoginScreen() {
     setResetToken(result.resetToken);
     setStage("reset");
   };
-
-  // ── Forgot password: step 3 — set new password ───────────────────────────
 
   const handleResetPassword = async () => {
     const v = validatePasswordChange(newPassword, confirmPassword);
@@ -101,8 +91,6 @@ export default function AdminLoginScreen() {
     }
     setStage("done");
   };
-
-  // ── Render ───────────────────────────────────────────────────────────────
 
   const cardContent = () => {
     if (stage === "login") {
@@ -319,7 +307,6 @@ export default function AdminLoginScreen() {
       );
     }
 
-    // stage === "done"
     return (
       <>
         <View style={styles.successIcon}>

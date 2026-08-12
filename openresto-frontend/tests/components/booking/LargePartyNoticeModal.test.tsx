@@ -159,7 +159,7 @@ describe("LargePartyNoticeModal", () => {
     openURL.mockRestore();
   });
 
-  it("does not close when a press starts inside the card", () => {
+  it("closes from the backdrop but not from a press inside the card", () => {
     const onClose = jest.fn();
     render(
       <LargePartyNoticeModal
@@ -170,11 +170,26 @@ describe("LargePartyNoticeModal", () => {
       />
     );
 
-    // The card claims the responder so a press inside it never reaches the backdrop.
-    const card = screen.UNSAFE_root.findAll(
-      (node) => typeof node.props.onStartShouldSetResponder === "function"
-    )[0];
-    expect(card.props.onStartShouldSetResponder()).toBe(true);
+    // The card sits over the backdrop, so a press on its content never reaches it.
+    fireEvent.press(screen.getByText(/Our largest table seats 8/));
     expect(onClose).not.toHaveBeenCalled();
+
+    // The card's accessibilityViewIsModal hides the sibling backdrop from queries.
+    fireEvent.press(screen.getByLabelText("Close", { includeHiddenElements: true }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("presents as a labelled dialog", () => {
+    render(
+      <LargePartyNoticeModal
+        visible
+        maxCapacity={8}
+        restaurant={{ phoneNumber: "+1 555 0100" }}
+        onClose={jest.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText("Large party")).toBeTruthy();
+    expect(screen.getByRole("header", { name: "Large party" })).toBeTruthy();
   });
 });

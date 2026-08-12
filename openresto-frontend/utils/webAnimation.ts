@@ -1,6 +1,4 @@
-/** Decelerating curve for anything arriving on screen: fast off the mark, soft landing. */
 export const EASE_ENTER = "cubic-bezier(0.2, 0, 0, 1)";
-/** The mirror, for anything leaving: eases in, then goes. */
 export const EASE_EXIT = "cubic-bezier(0.4, 0, 1, 1)";
 
 export function prefersReducedMotion(): boolean {
@@ -8,7 +6,6 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
 }
 
-/** A View's ref is its DOM node on web, and a native instance everywhere else. */
 function domNode(target: unknown): HTMLElement | null {
   const node = target as HTMLElement | null;
   return node && typeof node.animate === "function" ? node : null;

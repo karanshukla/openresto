@@ -13,7 +13,6 @@ export interface NotificationRowProps {
   isPinned: boolean;
   isLast: boolean;
   webTouchActive: boolean;
-  /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   mutedColor: string;
   isDark: boolean;
@@ -30,9 +29,6 @@ export interface NotificationRowProps {
  * A single notification row — rendered inside both the pinned and unpinned
  * lists. Wraps a swipeable (delete via swipe on touch devices) around a row
  * showing the type icon, title, customer/meta, and pin/read/delete actions.
- *
- * Extracted from the notifications screen for decomposition; presentational,
- * owns no state.
  */
 export function NotificationRow({
   notification: n,
@@ -98,17 +94,14 @@ export function NotificationRow({
           },
         ]}
       >
-        {/* Unread accent bar */}
         <View
           style={[styles.accentBar, { backgroundColor: !n.isRead ? primaryColor : "transparent" }]}
         />
 
-        {/* Type icon */}
         <View style={[styles.notifIcon, { backgroundColor: hexToRgba(typeIcon.color, 0.1) }]}>
           <Ionicons name={typeIcon.name} size={18} color={typeIcon.color} />
         </View>
 
-        {/* Text content */}
         <View style={styles.notifBody}>
           <View style={styles.notifTitleRow}>
             <ThemedText style={styles.notifType}>{TYPE_LABELS[n.type]}</ThemedText>
@@ -198,7 +191,6 @@ export function NotificationRow({
           </Pressable>
         </View>
 
-        {/* Navigate arrow */}
         {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (
           <Ionicons name="chevron-forward" size={15} color={mutedColor} />
         )}

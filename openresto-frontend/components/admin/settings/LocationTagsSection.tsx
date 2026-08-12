@@ -11,7 +11,6 @@ export interface LocationTagsSectionProps {
   onSetTagInput: (v: string) => void;
   onAddTag: (raw: string) => void;
   onRemoveTag: (tag: string) => void;
-  // Theme values (presentational).
   borderColor: string;
   mutedColor: string;
   primaryColor: string;
@@ -21,7 +20,7 @@ export interface LocationTagsSectionProps {
 /**
  * The "Location tags" section of RestaurantInfoForm — chip list with remove + an add input
  * (Enter or blur commits, plus an add button). Presentational: receives all state + setters as
- * props, owns no data fetching. Extracted during Bundle 9B-1 decomposition.
+ * props, owns no data fetching.
  */
 export function LocationTagsSection({
   tags,

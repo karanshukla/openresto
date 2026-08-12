@@ -71,6 +71,7 @@ export const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xxs,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
+    minHeight: theme.a11y.minTouchTargetCompact,
   },
   copyBtnText: { ...theme.typography.caption, fontWeight: "600" },
   iconStrip: {
@@ -91,7 +92,14 @@ export const styles = StyleSheet.create({
   },
   iconGroupLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 0.6, marginRight: 2 },
   iconGroupRow: { flexDirection: "row" },
-  iconBtn: { padding: theme.spacing.xsm, borderRadius: theme.borderRadius.md },
+  iconBtn: {
+    padding: theme.spacing.xsm,
+    borderRadius: theme.borderRadius.md,
+    minWidth: theme.a11y.minTouchTarget,
+    minHeight: theme.a11y.minTouchTarget,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   iconSep: { width: 1, alignSelf: "stretch" },
   actionsRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   actionCard: {

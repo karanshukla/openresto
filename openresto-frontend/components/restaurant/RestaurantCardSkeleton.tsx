@@ -4,9 +4,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./RestaurantCardSkeleton.styles";
 
 /**
- * A {@link RestaurantCard} with its content not yet arrived. Shaped from the real card's
- * own layout — 16:9 image, name, address, a row of times, a footer — so the grid settles
- * into place rather than jumping from a centred spinner to full cards.
+ * Placeholder card matching RestaurantCard's layout so the grid doesn't jump.
  */
 export default function RestaurantCardSkeleton() {
   const { colors } = useAppTheme();

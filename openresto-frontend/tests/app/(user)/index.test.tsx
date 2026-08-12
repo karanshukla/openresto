@@ -271,8 +271,9 @@ describe("HomeScreen", () => {
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
-    // The linked card carries the url as its accessibilityHint.
-    const link = screen.getByA11yHint("https://example.com/menu");
+    // The linked card is a named link; the hint says it leaves the page, not the raw url.
+    const link = screen.getByLabelText("Full menu. See what's cooking.");
+    expect(link.props.accessibilityHint).toBe("Opens in a new tab");
     fireEvent.press(link);
     expect(openURLSpy).toHaveBeenCalledWith("https://example.com/menu");
     openURLSpy.mockRestore();
@@ -281,8 +282,8 @@ describe("HomeScreen", () => {
   it("renders a non-linked highlight as a plain card (no link role)", async () => {
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
-    // The default mock highlight has no link → no link hint present.
-    expect(screen.queryByA11yHint("https://example.com/menu")).toBeNull();
+    // The default mock highlight has no link → no card carries the new-tab hint.
+    expect(screen.queryByA11yHint("Opens in a new tab")).toBeNull();
     expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
   });
 

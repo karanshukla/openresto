@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { hexToRgb } from "@/utils/colors";
 import { styles } from "./WalkInNotice.styles";
 
 /**
@@ -19,10 +20,7 @@ export default function WalkInNotice({
 }) {
   const { colors, primaryColor } = useAppTheme();
 
-  const accentHex = primaryColor.replace("#", "");
-  const r = parseInt(accentHex.slice(0, 2), 16);
-  const g = parseInt(accentHex.slice(2, 4), 16);
-  const b = parseInt(accentHex.slice(4, 6), 16);
+  const { r, g, b } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${r},${g},${b},0.10)`;
   const accentBorder = `rgba(${r},${g},${b},0.28)`;
 

@@ -22,7 +22,6 @@ export function generateDateOptions(options?: {
       month: "short",
       day: "numeric",
     });
-    // Generate value in local YYYY-MM-DD format
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");

@@ -15,8 +15,7 @@ export interface RowTextButtonProps {
 }
 
 /**
- * Small bordered text-pill that pairs with {@link RowIconButton} in a row's trailing action
- * cluster. Used for the primary, non-destructive "Edit" affordance so it reads as a real button,
+ * Used for the primary, non-destructive "Edit" affordance so it reads as a real button,
  * while destructive actions stay icon-only.
  */
 export function RowTextButton({

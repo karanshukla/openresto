@@ -206,8 +206,7 @@ export default function AdminBookingsScreen() {
     if (selectedRestaurantId) loadGrid(selectedRestaurantId, gridDate);
   };
 
-  // Single source of truth for reconciling list + timetable after any booking mutation.
-  const refreshBookings = () => {
+  const reconcileAfterBookingMutation = () => {
     setRefreshKey((key) => key + 1);
     if (selectedRestaurantId && viewMode === "timetable") {
       loadGrid(selectedRestaurantId, gridDate);
@@ -309,7 +308,6 @@ export default function AdminBookingsScreen() {
         />
       )}
 
-      {/* Page header */}
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.pageTitle}>
@@ -325,7 +323,6 @@ export default function AdminBookingsScreen() {
         </View>
 
         <View style={styles.headerControls}>
-          {/* Lookup input + Find button + status messages */}
           <BookingLookupBar
             query={lookupQuery}
             loading={lookupLoading}
@@ -366,7 +363,6 @@ export default function AdminBookingsScreen() {
         </View>
       </View>
 
-      {/* Toolbar */}
       <View
         style={{
           flexDirection: "row",
@@ -375,7 +371,6 @@ export default function AdminBookingsScreen() {
           gap: 8,
         }}
       >
-        {/* Restaurant chips */}
         {restaurants.length > 1 &&
           restaurants.map((r) => (
             <Pressable
@@ -399,10 +394,8 @@ export default function AdminBookingsScreen() {
             </Pressable>
           ))}
 
-        {/* Spacer */}
         <View style={{ flex: 1 }} />
 
-        {/* Status filter — only show for list view */}
         {viewMode === "list" && (
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             {(
@@ -433,7 +426,6 @@ export default function AdminBookingsScreen() {
           </View>
         )}
 
-        {/* View toggle */}
         <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
           <Pressable
             testID="view-toggle-timetable"
@@ -483,11 +475,9 @@ export default function AdminBookingsScreen() {
         </View>
       </View>
 
-      {/* Content */}
       {loading && viewMode === "list" ? (
         <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
       ) : viewMode === "timetable" ? (
-        /* ── Timetable view ── */
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
             <Pressable
@@ -586,7 +576,6 @@ export default function AdminBookingsScreen() {
           </Pressable>
         </View>
       ) : isWide ? (
-        /* ── Wide table view ── */
         <BookingsWideTable
           bookings={sorted}
           focusedRowId={focusedRowId}
@@ -601,7 +590,6 @@ export default function AdminBookingsScreen() {
           primaryColor={PRIMARY}
         />
       ) : (
-        /* ── Mobile card list ── */
         <BookingsCardList
           bookings={sorted}
           focusedRowId={focusedRowId}
@@ -616,14 +604,13 @@ export default function AdminBookingsScreen() {
         />
       )}
 
-      {/* Booking detail popup */}
       <BookingDetailPopup
         bookingId={selectedBookingId}
         onClose={() => {
           setSelectedBookingId(null);
           setDetailInitialFocus(undefined);
         }}
-        onMutated={refreshBookings}
+        onMutated={reconcileAfterBookingMutation}
         initialFocus={detailInitialFocus}
       />
 
@@ -633,7 +620,7 @@ export default function AdminBookingsScreen() {
         onCreated={(id) => {
           setShowNewModal(false);
           setSelectedBookingId(id);
-          refreshBookings();
+          reconcileAfterBookingMutation();
         }}
       />
 
@@ -654,7 +641,7 @@ export default function AdminBookingsScreen() {
           setCancelTarget(null);
           try {
             await adminDeleteBooking(id);
-            refreshBookings();
+            reconcileAfterBookingMutation();
           } catch (err) {
             showError(err);
           }

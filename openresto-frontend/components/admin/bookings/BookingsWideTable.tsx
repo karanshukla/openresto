@@ -21,7 +21,6 @@ export interface BookingsWideTableProps {
   /** Active sort (drives header indicator). */
   sort: SortState;
   onSortChange: (key: SortKey) => void;
-  /** Theme values passed from the orchestrating screen (presentational). */
   borderColor: string;
   cardBg: string;
   mutedColor: string;
@@ -31,8 +30,7 @@ export interface BookingsWideTableProps {
 
 /**
  * Wide (desktop/tablet) bookings list — a bordered table with one row per
- * booking. Extracted from the bookings screen for decomposition; presentational,
- * owns no state (the screen drives focus + open/cancel callbacks + sort).
+ * booking.
  *
  * TIME / GUEST / PARTY / TABLE headers are pressable and drive sort state;
  * STATUS reflects booking state and isn't a sort axis.
@@ -109,7 +107,6 @@ export function BookingsWideTable({
             styles.tableRow,
             i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
             { cursor: "pointer" } as const,
-            // Even rows get the faint zebra tint unless they're focused.
             i % 2 === 1 && !focusedRowHighlight(b.id, focusedRowId, primaryColor)
               ? { backgroundColor: zebraBg }
               : null,
@@ -117,7 +114,6 @@ export function BookingsWideTable({
           ]}
           onPress={() => onOpenBooking(b.id)}
         >
-          {/* Avatar + time */}
           <View style={[styles.colTime, { flexDirection: "row", alignItems: "center", gap: 8 }]}>
             <View
               style={{

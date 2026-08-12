@@ -8,7 +8,6 @@ export interface BookingConfirmationToggleProps {
   confirmDisabled: boolean;
   /** Fired with the next value when the user toggles (parent owns the state + save-msg side-effect). */
   onToggle: (next: boolean) => void;
-  // Theme values (presentational).
   borderColor: string;
   mutedColor: string;
   primaryColor: string;
@@ -21,7 +20,6 @@ export interface BookingConfirmationToggleProps {
  * The "Booking confirmation" toggle card in the EmailSettingsCard right column — icon + title +
  * description + the on/off switch, plus a "Configure and test SMTP above to enable" hint when the
  * toggle is disabled. Presentational: receives the current value + a single onToggle callback.
- * Extracted during Bundle 9B-2 decomposition.
  */
 export function BookingConfirmationToggle({
   sendConfirmations,
@@ -66,7 +64,6 @@ export function BookingConfirmationToggle({
             paddingHorizontal: 14,
           }}
         >
-          {/* Icon box */}
           <View
             style={{
               width: 30,

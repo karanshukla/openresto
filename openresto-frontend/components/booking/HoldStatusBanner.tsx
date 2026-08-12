@@ -30,8 +30,8 @@ export default function HoldStatusBanner({
   switch (holdStatus) {
     case "pending":
       return (
-        <ThemedView style={styles.holdRow}>
-          <ActivityIndicator size="small" />
+        <ThemedView style={styles.holdRow} role="status" accessibilityLiveRegion="polite">
+          <ActivityIndicator size="small" accessibilityLabel="Checking availability" />
           <ThemedText style={styles.holdPending}>Checking availability…</ThemedText>
         </ThemedView>
       );
@@ -40,8 +40,17 @@ export default function HoldStatusBanner({
       const secs = secondsLeft % 60;
       return (
         <ThemedView style={styles.holdRow}>
+          {/* The ticking countdown lives outside the live region so it isn't re-announced every second. */}
+          <ThemedText
+            style={[styles.holdHeld, { color: colors.success }]}
+            role="status"
+            accessibilityLiveRegion="polite"
+          >
+            ✓ Table held
+          </ThemedText>
           <ThemedText style={[styles.holdHeld, { color: colors.success }]}>
-            ✓ Table held - expires in {mins}:{secs.toString().padStart(2, "0")}
+            {" "}
+            - expires in {mins}:{secs.toString().padStart(2, "0")}
           </ThemedText>
         </ThemedView>
       );

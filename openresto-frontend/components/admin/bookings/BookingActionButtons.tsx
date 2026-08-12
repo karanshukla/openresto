@@ -27,7 +27,6 @@ export function BookingActionButtons({
 }: BookingActionButtonsProps) {
   return (
     <>
-      {/* Uncancel - only for cancelled bookings */}
       {isCancelled && (
         <Pressable
           style={[styles.uncancelBtn, uncancelling && { opacity: 0.6 }]}
@@ -44,7 +43,6 @@ export function BookingActionButtons({
         </Pressable>
       )}
 
-      {/* Cancel - hide if already cancelled or the booking has already passed */}
       {!isCancelled && !isPast && (
         <Pressable
           style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
@@ -61,7 +59,6 @@ export function BookingActionButtons({
         </Pressable>
       )}
 
-      {/* Permanent delete (GDPR) */}
       <Pressable
         style={[
           styles.purgeBtn,

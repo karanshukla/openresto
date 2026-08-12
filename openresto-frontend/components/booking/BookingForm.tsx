@@ -28,6 +28,12 @@ import { styles } from "./BookingForm.styles";
 
 const isWeb = Platform.OS === "web";
 
+const ANY_SECTION_ID = 0;
+
+const groupSelectValue = (groupId: number) => -groupId;
+const isGroupSelectValue = (value: number) => value < 0;
+const groupIdFromSelectValue = (value: number) => -value;
+
 export interface BookingFormData {
   customerEmail: string;
   customerName: string;
@@ -46,8 +52,6 @@ export interface BookingFormData {
   holdId: string | null;
   specialRequests: string;
 }
-
-// ── Auto-suggestion helpers ──────────────────────────────────────────────────
 
 /* istanbul ignore next */
 function addDays(dateStr: string, n: number): string {
@@ -86,15 +90,7 @@ function suggestTime(restaurant: HoursSource, timezone: string): string {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ── Component ────────────────────────────────────────────────────────────────
-
-/**
- * `inline` is the full form: it owns party size and date and lays fields out in pairs.
- * `drawer` is the booking-drawer variant, where party size and date arrive already chosen
- * from the page-level filter bar. The date stays the page's; party size is offered again
- * here — the bar is a first pass at it and the booking is where it gets settled — and a
- * change is handed back to the page rather than kept private to the form.
- */
+/** Booking form used inline on a location page or as the body of the booking drawer. */
 export type BookingFormLayout = "inline" | "drawer";
 
 export default function BookingForm({
@@ -131,12 +127,10 @@ export default function BookingForm({
   const [specialRequests, setSpecialRequests] = useState("");
   const [seatsState, setSeats] = useState(initialSeats ?? 2);
   const seats = controlledSeats ?? seatsState;
-  // Party size can be owned by the page (the Locations filter bar) so the list behind the
-  // drawer re-filters with it; without a caller it stays local to the form.
   const changeSeats = (value: number) => (onSeatsChange ? onSeatsChange(value) : setSeats(value));
   const [submitting, setSubmitting] = useState(false);
   const [seatingOpen, setSeatingOpen] = useState(false);
-  const [sectionId, setSectionId] = useState<number>(0); // 0 = "Any section" (server auto-assigns)
+  const [sectionId, setSectionId] = useState<number>(ANY_SECTION_ID);
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
   const allGroups = restaurant.groups ?? [];
@@ -155,10 +149,10 @@ export default function BookingForm({
   // "Any section" is the default option (value 0); concrete sections follow. When selected,
   // the form hides the table dropdown and lets the server pick the best available table.
   const sectionOptions = [
-    { label: "Any section", value: 0 },
+    { label: "Any section", value: ANY_SECTION_ID },
     ...restaurant.sections.map((s) => ({ label: s.name, value: s.id })),
   ];
-  const isAutoAssign = sectionId === 0;
+  const isAutoAssign = sectionId === ANY_SECTION_ID;
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
   // Groups belong to the picked section only when *every* member sits in it — booking a group is
   // booking all its tables, so one member elsewhere means the party would be split across sections.
@@ -248,7 +242,6 @@ export default function BookingForm({
     tableGroupId,
   });
 
-  // Fetch availability when date/seats change
   useEffect(() => {
     const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
     const jsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
@@ -265,7 +258,6 @@ export default function BookingForm({
         const res = await fetchAvailability(restaurant.id, date, seats);
         if (res && res.slots) {
           setAvailabilitySlots(res.slots);
-          // If current time is not in available slots, pick the first available one
           const isCurrentValid = res.slots.find((s) => s.time === time && s.isAvailable);
           if (!isCurrentValid) {
             const firstAvail = res.slots.find((s) => s.isAvailable);
@@ -284,8 +276,7 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, seats, restaurant.id]);
 
-  // When availability or time changes, ensure we have a valid table selected.
-  // Skipped in auto-assign mode — the server picks the table, so we don't pre-select one here.
+  // Auto-assign mode: the server picks the table, so no pre-selection here.
   useEffect(() => {
     if (isAutoAssign) {
       if (tableId !== undefined) setTableId(undefined);
@@ -304,8 +295,6 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableTableIds, seats, isAutoAssign]);
 
-  // When section changes, release hold and pick best table in new section (or clear the
-  // table selection when switching into "Any section" auto-assign mode).
   useEffect(() => {
     releaseCurrentHold();
     if (isAutoAssign) {
@@ -323,7 +312,6 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
-  // When seats change, release current hold
   useEffect(() => {
     releaseCurrentHold();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -337,11 +325,6 @@ export default function BookingForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyTooLarge, maxTableCapacity]);
 
-  // ── Options ──────────────────────────────────────────────────────────────────
-
-  // The drawer sits under a header reading "2 guests · Today · 19:00" and beside the
-  // Locations bar, so its options speak guests; the inline form's field is already
-  // labelled "Number of Guests" and names the seats instead.
   const seatOptions = [...Array(10).keys()].map((i) => ({
     label: isDrawer
       ? `${i + 1} ${i === 0 ? "guest" : "guests"}`
@@ -357,7 +340,6 @@ export default function BookingForm({
           t.seats <= seats + restaurant.maxTableOversizeSeats)
     )
     .filter((t) => {
-      // Strictly filter only if we have availability data for the selected time
       if (currentSlot) {
         return availableTableIds.includes(t.id);
       }
@@ -367,8 +349,7 @@ export default function BookingForm({
 
   // Combinable groups (#274): a group is selectable when it sits in the picked section, its combined
   // capacity fits the party, it respects the optional oversize cap, and (when availability data is
-  // present) the group's id is in the slot's availableGroupIds. Groups use negative Select values
-  // (-groupId) so they're distinguishable from positive table ids.
+  // present) the group's id is in the slot's availableGroupIds.
   const eligibleGroups = groupsInSection
     .filter(
       (g) =>
@@ -384,10 +365,8 @@ export default function BookingForm({
       label: `${table.name ?? `Table ${table.id}`} (${table.seats} seats)`,
       value: table.id,
     })),
-    ...eligibleGroups.map((g) => ({ label: groupDropdownLabel(g), value: -g.id })),
+    ...eligibleGroups.map((g) => ({ label: groupDropdownLabel(g), value: groupSelectValue(g.id) })),
   ];
-
-  // ── Submit ───────────────────────────────────────────────────────────────────
 
   const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
   const selectedJsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
@@ -403,8 +382,8 @@ export default function BookingForm({
     selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
 
   const isValid =
-    !partyTooLarge && // block large parties — no single table or group can seat them
-    (isAutoAssign || !!tableId || !!tableGroupId) && // auto-assign, a table, or a group is selected
+    !partyTooLarge &&
+    (isAutoAssign || !!tableId || !!tableGroupId) &&
     !!date &&
     !!time &&
     customerName.trim().length > 0 &&
@@ -446,8 +425,6 @@ export default function BookingForm({
       setSubmitting(false);
     }
   };
-
-  // ── Render ───────────────────────────────────────────────────────────────────
 
   const holdBanner = (
     <HoldStatusBanner
@@ -514,6 +491,7 @@ export default function BookingForm({
     <View style={styles.field}>
       <ThemedText style={styles.label}>Section</ThemedText>
       <Select
+        accessibilityLabel="Section"
         selectedValue={sectionId}
         onSelect={(val) => {
           if (holdStatus === "held" || holdStatus === "expired") {
@@ -541,19 +519,17 @@ export default function BookingForm({
         </ThemedText>
       ) : (
         <Select
-          // A group selection is encoded as a negative value (-groupId); a table as its id.
-          selectedValue={tableGroupId ? -tableGroupId : tableId}
+          accessibilityLabel="Table"
+          selectedValue={tableGroupId ? groupSelectValue(tableGroupId) : tableId}
           onSelect={(val) => {
             if (holdStatus === "held" || holdStatus === "expired") {
               setHoldStatus("idle");
             }
             const v = val as number;
-            if (v < 0) {
-              // Group selected — clear any single-table selection.
-              setTableGroupId(-v);
+            if (isGroupSelectValue(v)) {
+              setTableGroupId(groupIdFromSelectValue(v));
               setTableId(undefined);
             } else {
-              // Single table selected — clear any group selection.
               setTableGroupId(undefined);
               setTableId(v);
             }
@@ -570,6 +546,7 @@ export default function BookingForm({
       <ThemedText style={styles.label}>Full Name</ThemedText>
       <Input
         placeholder="Your full name"
+        accessibilityLabel="Full name"
         value={customerName}
         onChangeText={setCustomerName}
         autoCapitalize="words"
@@ -584,6 +561,7 @@ export default function BookingForm({
       <ThemedText style={styles.label}>Email</ThemedText>
       <Input
         placeholder="your@email.com"
+        accessibilityLabel="Email address"
         value={customerEmail}
         onChangeText={setCustomerEmail}
         keyboardType="email-address"
@@ -599,6 +577,7 @@ export default function BookingForm({
       <ThemedText style={styles.label}>{label}</ThemedText>
       <Input
         placeholder="e.g. nut allergy, high chair needed… (optional)"
+        accessibilityLabel="Special requests or allergies"
         value={specialRequests}
         onChangeText={setSpecialRequests}
         multiline
@@ -611,15 +590,13 @@ export default function BookingForm({
   const gdprText = `By confirming, you agree that your email and booking details will be stored to manage your reservation. We also use an essential cookie to remember your recent bookings on this device. We do not share your data with third parties. You can request deletion by contacting the restaurant.`;
 
   const confirmButton = (
-    <Button onPress={handleSubmit} disabled={!isValid || submitting}>
-      {submitting ? (
-        <View style={styles.submitContent}>
-          <ActivityIndicator size="small" color="#fff" />
-          <ThemedText style={styles.submitText}>Confirming…</ThemedText>
-        </View>
-      ) : (
-        "Confirm Booking"
-      )}
+    <Button
+      onPress={handleSubmit}
+      disabled={!isValid || submitting}
+      loading={submitting}
+      accessibilityLabel="Confirm booking"
+    >
+      {submitting ? "Confirming…" : "Confirm Booking"}
     </Button>
   );
 
@@ -628,7 +605,13 @@ export default function BookingForm({
     (isAutoAssign || tableId) &&
     date &&
     time && (
-      <ThemedText style={styles.hint}>A table hold is required before confirming.</ThemedText>
+      <ThemedText
+        style={[styles.hint, { color: colors.muted }]}
+        role="status"
+        accessibilityLiveRegion="polite"
+      >
+        A table hold is required before confirming.
+      </ThemedText>
     );
 
   const largePartyModal = (
@@ -658,10 +641,16 @@ export default function BookingForm({
   );
 
   const timesBlock = (label: string) => (
-    <View style={styles.availabilityHeader}>
+    <View style={styles.availabilityHeader} aria-busy={loadingAvailability}>
       <View style={styles.availabilityLabelRow}>
         <ThemedText style={styles.label}>{label}</ThemedText>
-        {loadingAvailability && <ActivityIndicator size="small" color={PRIMARY} />}
+        {loadingAvailability && (
+          <ActivityIndicator
+            size="small"
+            color={PRIMARY}
+            accessibilityLabel="Loading available times"
+          />
+        )}
       </View>
       {timesContent}
     </View>
@@ -670,16 +659,18 @@ export default function BookingForm({
   const sectionHeading = (label: string, busy = false) => (
     <View style={styles.sectionHeadingRow}>
       <ThemedText style={[styles.sectionHeading, { color: colors.muted }]}>{label}</ThemedText>
-      {busy && <ActivityIndicator size="small" color={PRIMARY} />}
+      {busy && (
+        <ActivityIndicator
+          size="small"
+          color={PRIMARY}
+          accessibilityLabel="Loading available times"
+        />
+      )}
     </View>
   );
 
   const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
 
-  // ── Drawer layout ──
-  // Every field the drawer owns is a plain field in one column, separated into sections by
-  // the same headings and rules. Party size and date arrive chosen from the page-level bar
-  // and are asked again here, because the booking is where they get settled.
   if (isDrawer) {
     return (
       <View style={styles.drawerForm}>
@@ -687,17 +678,12 @@ export default function BookingForm({
 
         <View style={styles.drawerSection}>
           {sectionHeading("Party & date", loadingAvailability)}
-          {/* Above the chips they filter: changing either re-asks for times, and the list
-              behind the drawer re-filters with them. */}
           <View style={styles.drawerRow}>
             <View style={styles.drawerRowHalf}>{guestsField()}</View>
             <View style={styles.drawerRowHalf}>{dateField}</View>
           </View>
           {timesContent}
-          {/* Right under the times it qualifies, not buried in the footer. */}
           {timezoneHint}
-          {/* Labelled "Exact time" because the chips above are the times on offer — this one
-              reaches the ones the availability list doesn't show. */}
           {timePickerField("Exact time")}
           {partyTooLarge && (
             <LargePartyNotice
@@ -718,10 +704,6 @@ export default function BookingForm({
 
         {divider}
 
-        {/* Seating is optional, so it opens on request rather than sitting there asking a
-            question most diners don't have an answer to. The toggle is a plain row and the
-            fields it reveals are plain fields: boxing them made the one part of the form
-            that is genuinely about sections read as a section of its own. */}
         <View style={styles.drawerSection}>
           <Pressable
             testID="seating-disclosure-toggle"
@@ -762,7 +744,7 @@ export default function BookingForm({
         {holdBanner}
 
         <View style={styles.drawerFooter}>
-          <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
+          <ThemedText style={[styles.gdpr, { color: colors.muted }]}>{gdprText}</ThemedText>
           {confirmButton}
           {holdRequiredHint}
         </View>
@@ -778,7 +760,6 @@ export default function BookingForm({
       <WalkInDaysBanner restaurant={restaurant} />
       {timesBlock("Popular Times")}
 
-      {/* Row 1: Guests + Date */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
@@ -794,7 +775,6 @@ export default function BookingForm({
         />
       )}
 
-      {/* Row 2: Time + Section */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
@@ -805,7 +785,6 @@ export default function BookingForm({
 
       {timezoneHint}
 
-      {/* Row 3: Table + Full Name */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? styles.fieldRow : styles.fieldRowStacked}
@@ -814,8 +793,6 @@ export default function BookingForm({
         <View style={half}>{nameField}</View>
       </View>
 
-      {/* Row 4: Email + Special Requests. Stacked, each gets its own full-width row and the
-          hold banner moves out to sit directly above the confirm button. */}
       <View
         testID="booking-field-row"
         style={isTwoColumn ? [styles.fieldRow, styles.fieldRowStretch] : styles.fieldRowStacked}
@@ -829,7 +806,7 @@ export default function BookingForm({
 
       {!isTwoColumn && holdBanner}
 
-      <ThemedText style={styles.gdpr}>{gdprText}</ThemedText>
+      <ThemedText style={[styles.gdpr, { color: colors.muted }]}>{gdprText}</ThemedText>
 
       {confirmButton}
       {holdRequiredHint}

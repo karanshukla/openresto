@@ -6,7 +6,6 @@ import { theme } from "@/theme/theme";
 export interface AddLocationFormProps {
   value: string;
   saving: boolean;
-  /** Theme values passed from the orchestrating screen (presentational). */
   isDark: boolean;
   mutedColor: string;
   primaryColor: string;
@@ -17,8 +16,6 @@ export interface AddLocationFormProps {
 
 /**
  * Inline "add location" form — name input + Add button + cancel.
- * Extracted from the locations screen for decomposition; presentational,
- * owns no state (the screen drives the value + saving flag + handlers).
  */
 export function AddLocationForm({
   value,

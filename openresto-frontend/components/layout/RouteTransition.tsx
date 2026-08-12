@@ -16,10 +16,6 @@ const RISE = 6;
 const START_OPACITY = 0.88;
 
 /**
- * Lifts route content into place whenever the path changes. On web the user layout
- * renders a bare `<Slot />`, so moving between the home page, the locations list and a
- * booking confirmation is a hard cut with no sense of one view replacing another.
- *
  * Keyed off the pathname rather than the rendered children: query-string changes
  * (`?time=19:30`) land on the same view and should not replay the transition. The first
  * paint is exempt too — a cold load has no previous view to replace, and animating it
@@ -39,7 +35,7 @@ export default function RouteTransition({ children }: { children: ReactNode }) {
       isFirstPaint.current = false;
       return;
     }
-    animateNode(
+    const anim = animateNode(
       ref.current,
       [
         { opacity: START_OPACITY, transform: `translateY(${RISE}px)` },
@@ -47,6 +43,7 @@ export default function RouteTransition({ children }: { children: ReactNode }) {
       ],
       { duration: DURATION_MS, easing: EASE_ENTER }
     );
+    return () => anim?.cancel();
   }, [pathname]);
 
   return (
