@@ -39,7 +39,7 @@ export default function PopularTimesPicker({
   timezone,
   wrap = false,
 }: PopularTimesPickerProps) {
-  const { colors, isDark, primaryColor: PRIMARY } = useAppTheme();
+  const { colors, primaryColor: PRIMARY } = useAppTheme();
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
 
   const scrollRef = useRef<ScrollView>(null);
@@ -216,7 +216,7 @@ export default function PopularTimesPicker({
             accessibilityState={{ checked: isSelected, selected: isSelected }}
             style={[
               styles.slotChip,
-              { borderColor: colors.border, backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+              { borderColor: colors.border, backgroundColor: colors.input },
               isSelected && {
                 backgroundColor: PRIMARY,
                 borderColor: PRIMARY,

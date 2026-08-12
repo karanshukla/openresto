@@ -90,7 +90,6 @@ export const styles = StyleSheet.create({
   },
   slotText: {
     fontSize: 14,
-    fontWeight: "700",
   },
   emptyText: {
     fontSize: 14,

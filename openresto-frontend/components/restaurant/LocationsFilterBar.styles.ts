@@ -11,7 +11,6 @@ export const styles = StyleSheet.create({
     // same for a control itself on a phone too narrow to hold all three.
     flexWrap: "wrap",
     gap: theme.spacing.xsm,
-    borderWidth: 1,
     borderRadius: theme.borderRadius.card,
     padding: theme.spacing.md,
   },

@@ -3,7 +3,6 @@ import { ThemedText } from "@/components/themed-text";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { theme } from "@/theme/theme";
 import { styles } from "./LocationsFilterBar.styles";
 
 /**
@@ -75,12 +74,7 @@ export default function LocationsFilterBar({
   return (
     <View
       testID="locations-filter-bar"
-      style={[
-        styles.bar,
-        compact && styles.barCompact,
-        { backgroundColor: colors.card, borderColor: colors.border },
-        theme.shadows.sm,
-      ]}
+      style={[styles.bar, compact && styles.barCompact, { backgroundColor: colors.card }]}
     >
       <View
         testID="filter-control-seats"
