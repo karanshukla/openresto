@@ -1,5 +1,4 @@
 import { View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -8,6 +7,7 @@ import { getHoursForDay, parseOpenDays } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay } from "@/utils/walkIn";
 import { getRestaurantNow } from "@/utils/restaurantTime";
 import { styles } from "./OpeningHoursTable.styles";
+import { Icon } from "@/components/common/Icon";
 
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -80,7 +80,7 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
                     },
                   ]}
                 >
-                  <Ionicons name="walk-outline" size={10} color={colors.muted} />
+                  <Icon name="walk-outline" size={10} color={colors.muted} />
                   <ThemedText style={[styles.walkInText, { color: colors.muted }]}>
                     Walk-in
                   </ThemedText>

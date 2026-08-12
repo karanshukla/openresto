@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, View, ScrollView, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   adminGetRestaurants,
@@ -12,6 +11,7 @@ import {
 } from "@/api/admin";
 import { styles } from "./RestaurantActionModal.styles";
 import { theme } from "@/theme/theme";
+import { Icon } from "@/components/common/Icon";
 
 interface RestaurantActionModalProps {
   visible: boolean;
@@ -129,7 +129,7 @@ export default function RestaurantActionModal({
               accessibilityLabel="Close"
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={24} color={colors.muted} />
+              <Icon name="close" size="xxl" color={colors.muted} />
             </Pressable>
           </View>
 
@@ -240,7 +240,7 @@ export default function RestaurantActionModal({
                     {submitting === r.id ? (
                       <ActivityIndicator size="small" color={primaryColor} />
                     ) : (
-                      <Ionicons
+                      <Icon
                         name={
                           actionType === "extend"
                             ? "time-outline"
@@ -248,7 +248,7 @@ export default function RestaurantActionModal({
                               ? "play-circle-outline"
                               : "pause-circle-outline"
                         }
-                        size={20}
+                        size="xl"
                         color={
                           isPaused && actionType === "pause" ? theme.colors.success : primaryColor
                         }

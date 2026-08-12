@@ -1,8 +1,8 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
+import { Icon } from "@/components/common/Icon";
 
 interface ExtendBookingActionsProps {
   borderColor: string;
@@ -21,7 +21,7 @@ export function ExtendBookingActions({
   return (
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
-        <Ionicons name="time-outline" size={16} color={mutedColor} />
+        <Icon name="time-outline" size="md" color={mutedColor} />
         <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Extend booking</ThemedText>
       </View>
       <View style={styles.extendBtns}>

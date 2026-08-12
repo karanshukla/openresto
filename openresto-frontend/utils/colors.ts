@@ -1,4 +1,10 @@
-export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+export interface RgbColor {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export function hexToRgb(hex: string): RgbColor {
   if (!hex || typeof hex !== "string") return { r: 0, g: 0, b: 0 };
 
   // Brand colors can arrive without the leading hash; treat "ff0000" as "#ff0000".

@@ -1,7 +1,8 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel, ToggleSwitch } from "./settingsShared";
+import { Icon } from "@/components/common/Icon";
+import { styles } from "./BookingConfirmationToggle.styles";
 
 export interface BookingConfirmationToggleProps {
   sendConfirmations: boolean;
@@ -33,18 +34,13 @@ export function BookingConfirmationToggle({
   accentSoft,
 }: BookingConfirmationToggleProps) {
   return (
-    <View style={{ gap: 8 }}>
+    <View style={styles.wrapper}>
       <SubLabel mutedColor={mutedColor}>Booking confirmations</SubLabel>
       <View
         style={[
-          {
-            borderWidth: 1,
-            borderColor,
-            borderRadius: 12,
-            overflow: "hidden",
-            backgroundColor: surface2,
-          },
-          confirmDisabled && { opacity: 0.65 },
+          styles.card,
+          { borderColor, backgroundColor: surface2 },
+          confirmDisabled && styles.cardDisabled,
         ]}
       >
         <Pressable
@@ -56,43 +52,17 @@ export function BookingConfirmationToggle({
           aria-checked={sendConfirmations}
           accessibilityLabel="Send booking confirmation emails"
           accessibilityState={{ checked: sendConfirmations, disabled: confirmDisabled }}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 14,
-            padding: 12,
-            paddingHorizontal: 14,
-          }}
+          style={styles.row}
         >
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              backgroundColor: cardBg,
-              borderWidth: 1,
-              borderColor,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Ionicons name="mail-outline" size={14} color={mutedColor} />
+          <View style={[styles.iconWrap, { backgroundColor: cardBg, borderColor }]}>
+            <Icon name="mail-outline" size="sm" color={mutedColor} />
           </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <ThemedText style={{ fontSize: 14, fontWeight: "500" }}>
-                Booking confirmation
-              </ThemedText>
-              <View
-                style={{
-                  backgroundColor: accentSoft,
-                  borderRadius: 999,
-                  paddingHorizontal: 7,
-                  paddingVertical: 2,
-                }}
-              />
+          <View style={styles.copy}>
+            <View style={styles.titleRow}>
+              <ThemedText style={styles.title}>Booking confirmation</ThemedText>
+              <View style={[styles.badge, { backgroundColor: accentSoft }]} />
             </View>
-            <ThemedText style={{ fontSize: 12.5, color: mutedColor, marginTop: 2 }}>
+            <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
               Sent the moment a guest books a table.
             </ThemedText>
           </View>
@@ -109,20 +79,9 @@ export function BookingConfirmationToggle({
           />
         </Pressable>
         {confirmDisabled && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              padding: 10,
-              paddingHorizontal: 14,
-              borderTopWidth: 1,
-              borderTopColor: borderColor,
-              backgroundColor: cardBg,
-            }}
-          >
-            <Ionicons name="shield-outline" size={13} color={mutedColor} />
-            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+          <View style={[styles.hint, { borderTopColor: borderColor, backgroundColor: cardBg }]}>
+            <Icon name="shield-outline" size={13} color={mutedColor} />
+            <ThemedText style={[styles.hintText, { color: mutedColor }]}>
               Configure and test SMTP above to enable.
             </ThemedText>
           </View>

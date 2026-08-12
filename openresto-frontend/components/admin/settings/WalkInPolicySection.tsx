@@ -1,8 +1,9 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./WalkInPolicySection.styles";
+import { Icon } from "@/components/common/Icon";
 
 export interface WalkInPolicySectionProps {
   walkInOnly: boolean;
@@ -43,28 +44,11 @@ export function WalkInPolicySection({
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
 
   return (
-    <View
-      style={{
-        gap: 12,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 12,
-        padding: 14,
-        backgroundColor: surface2,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>Reservations</ThemedText>
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+    <View style={[settingsStyles.policyCard, { borderColor, backgroundColor: surface2 }]}>
+      <View style={settingsStyles.policyHeader}>
+        <View style={settingsStyles.policyHeaderCopy}>
+          <ThemedText style={settingsStyles.policyTitle}>Reservations</ThemedText>
+          <ThemedText style={[settingsStyles.policySub, { color: mutedColor }]}>
             {walkInOnly
               ? "Walk-ins only, online booking is off"
               : walkInDays.length > 0
@@ -73,13 +57,10 @@ export function WalkInPolicySection({
           </ThemedText>
         </View>
         <View
-          style={{
-            flexDirection: "row",
-            gap: 2,
-            padding: 3,
-            borderRadius: 9,
-            backgroundColor: isDark ? "#1b1d1f" : "#eef0f2",
-          }}
+          style={[
+            settingsStyles.policyModeGroup,
+            { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
+          ]}
         >
           {modeButton(
             "Online bookings",
@@ -99,19 +80,19 @@ export function WalkInPolicySection({
       </View>
 
       {walkInOnly ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Ionicons name="walk-outline" size={12} color={mutedColor} />
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+        <View style={settingsStyles.policyNote}>
+          <Icon name="walk-outline" size="xs" color={mutedColor} />
+          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
             The location stays listed publicly, but guests can't book online. They'll see a walk-in
             notice instead. Toggle back anytime; nothing is deleted or archived.
           </ThemedText>
         </View>
       ) : (
-        <View style={{ gap: 6 }}>
-          <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>
+        <View style={settingsStyles.policyField}>
+          <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
             Walk-in only days
           </ThemedText>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <View style={settingsStyles.dayGrid}>
             {DAY_SHORT.map((label, i) => {
               const day = i + 1;
               const active = walkInDays.includes(day);
@@ -124,25 +105,17 @@ export function WalkInPolicySection({
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "walk-ins only" : "online bookings"}. Tap to toggle.`}
-                  style={{
-                    minWidth: 96,
-                    flexGrow: 1,
-                    backgroundColor: active ? primaryColor : cardBg,
-                    borderWidth: 1,
-                    borderColor: active ? primaryColor : borderColor,
-                    borderRadius: 9,
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    alignItems: "center",
-                    opacity: closed ? 0.55 : 1,
-                  }}
+                  style={[
+                    settingsStyles.dayBtn,
+                    {
+                      backgroundColor: active ? primaryColor : cardBg,
+                      borderColor: active ? primaryColor : borderColor,
+                    },
+                    closed && styles.dayBtnClosed,
+                  ]}
                 >
                   <ThemedText
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "500",
-                      color: active ? "#fff" : textColor,
-                    }}
+                    style={[settingsStyles.dayBtnLabel, { color: active ? "#fff" : textColor }]}
                   >
                     {label}
                   </ThemedText>
@@ -150,7 +123,7 @@ export function WalkInPolicySection({
               );
             })}
           </View>
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
             Highlighted days stay open but only take walk-ins. The booking form is disabled for
             those dates. Dimmed days are currently marked closed.
           </ThemedText>

@@ -9,8 +9,8 @@ import { useRouter, Stack } from "expo-router";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isValidEmail, validatePasswordChange } from "@/utils/validation";
-import { Ionicons } from "@expo/vector-icons";
 import { styles } from "@/styles/admin/login.styles";
+import { Icon } from "@/components/common/Icon";
 
 type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
 
@@ -223,7 +223,7 @@ export default function AdminLoginScreen() {
               { borderColor: colors.border, backgroundColor: colors.card },
             ]}
           >
-            <Ionicons name="help-circle-outline" size={18} color={primaryColor} />
+            <Icon name="help-circle-outline" size="lg" color={primaryColor} />
             <ThemedText style={[styles.questionText, { color: mutedColor }]}>
               {pvqQuestion}
             </ThemedText>
@@ -262,7 +262,7 @@ export default function AdminLoginScreen() {
       return (
         <>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle-outline" size={32} color={theme.colors.success} />
+            <Icon name="checkmark-circle-outline" size={32} color={theme.colors.success} />
           </View>
           <ThemedText style={styles.title}>Set new password</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
@@ -310,7 +310,7 @@ export default function AdminLoginScreen() {
     return (
       <>
         <View style={styles.successIcon}>
-          <Ionicons name="checkmark-circle" size={40} color={theme.colors.success} />
+          <Icon name="checkmark-circle" size={40} color={theme.colors.success} />
         </View>
         <ThemedText style={styles.title}>Password reset!</ThemedText>
         <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
@@ -374,7 +374,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="Back"
     >
-      <Ionicons name="arrow-back" size={16} color={colors.muted} />
+      <Icon name="arrow-back" size="md" color={colors.muted} />
       <ThemedText style={[styles.backBtnText, { color: colors.muted }]}>Back</ThemedText>
     </Pressable>
   );

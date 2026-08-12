@@ -1,13 +1,13 @@
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, useState } from "react";
 import { View, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./Footer.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 export default function Footer() {
   const { brand, colors } = useAppTheme();
@@ -44,11 +44,7 @@ export default function Footer() {
                   hitSlop={8}
                   style={({ hovered }: any) => [styles.socialBtn, hovered && { opacity: 0.65 }]}
                 >
-                  <Ionicons
-                    name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                    size={15}
-                    color={colors.muted}
-                  />
+                  <Icon name={link.iconKey as IconName} size={15} color={colors.muted} />
                   <ThemedText style={[styles.socialLabel, { color: colors.muted }]}>
                     {link.label}
                   </ThemedText>
@@ -64,7 +60,7 @@ export default function Footer() {
               hitSlop={10}
               style={styles.adminBtn}
             >
-              <Ionicons name="settings-outline" size={14} color={colors.muted} />
+              <Icon name="settings-outline" size="sm" color={colors.muted} />
               <ThemedText style={[styles.adminText, { color: colors.muted }]}>Admin</ThemedText>
             </Pressable>
           </Link>

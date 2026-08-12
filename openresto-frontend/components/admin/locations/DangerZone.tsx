@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { styles } from "@/components/admin/settings/settings.styles";
 import { adminDeleteRestaurant, adminSetRestaurantArchived } from "@/api/admin";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
+import { Icon } from "@/components/common/Icon";
 
 /** Minimal restaurant record the danger zone needs (subset of the admin list shape). */
 export interface DangerZoneRestaurant {
@@ -110,7 +110,7 @@ export function DangerZone({
           }}
         >
           <View style={[styles.secIcon, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
-            <Ionicons name="warning-outline" size={20} color="#dc2626" />
+            <Icon name="warning-outline" size="xl" color="#dc2626" />
           </View>
           <View style={{ flex: 1 }}>
             <ThemedText style={styles.secTitle}>Archive or delete a location</ThemedText>
@@ -120,7 +120,7 @@ export function DangerZone({
                 : "Permanently remove or hide a location"}
             </ThemedText>
           </View>
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+          <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
         </Pressable>
 
         <AnimatedAccordion expanded={expanded}>
@@ -154,7 +154,7 @@ export function DangerZone({
                         opacity: archived ? 0.65 : 1,
                       }}
                     >
-                      <Ionicons
+                      <Icon
                         name={archived ? "archive-outline" : "storefront-outline"}
                         size={13}
                         color={active ? "#fff" : pillColor}
@@ -190,11 +190,11 @@ export function DangerZone({
                   }}
                 >
                   <View style={[styles.secIcon, { backgroundColor: "rgba(217,119,6,0.12)" }]}>
-                    <Ionicons
+                    <Icon
                       name={
                         dangerSelectedRestaurant.isArchived ? "refresh-outline" : "archive-outline"
                       }
-                      size={20}
+                      size="xl"
                       color="#d97706"
                     />
                   </View>
@@ -253,7 +253,7 @@ export function DangerZone({
                   {deleteStep === "idle" ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                       <View style={[styles.secIcon, { backgroundColor: "rgba(220,38,38,0.1)" }]}>
-                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                        <Icon name="trash-outline" size="xl" color="#dc2626" />
                       </View>
                       <View style={{ flex: 1 }}>
                         <ThemedText style={styles.secRowTitle}>Delete Location</ThemedText>
@@ -285,9 +285,9 @@ export function DangerZone({
                   ) : (
                     <>
                       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-                        <Ionicons
+                        <Icon
                           name="warning-outline"
-                          size={18}
+                          size="lg"
                           color="#dc2626"
                           style={{ marginTop: 1 }}
                         />

@@ -1,5 +1,4 @@
 import { Pressable, View, type ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
@@ -12,6 +11,7 @@ import {
   rowA11yProps,
 } from "@/components/admin/bookings/bookingRowProps";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
+import { Icon } from "@/components/common/Icon";
 
 export interface BookingsWideTableProps {
   bookings: BookingDetailDto[];
@@ -78,7 +78,7 @@ export function BookingsWideTable({
         >
           {label}
         </ThemedText>
-        <Ionicons name={icon} size={11} color={isActive ? primaryColor : mutedColor} />
+        <Icon name={icon} size={11} color={isActive ? primaryColor : mutedColor} />
       </Pressable>
     );
   };
@@ -163,7 +163,7 @@ export function BookingsWideTable({
 
           <View style={styles.colParty}>
             <View style={styles.partyPill}>
-              <Ionicons name="people-outline" size={12} color={mutedColor} />
+              <Icon name="people-outline" size="xs" color={mutedColor} />
               <ThemedText style={[styles.tdParty, { color: mutedColor }]}>{b.seats}</ThemedText>
             </View>
           </View>
@@ -204,7 +204,7 @@ export function BookingsWideTable({
                   onCancelBooking(b);
                 }}
               >
-                <Ionicons name="close-outline" size={14} color={theme.status.cancelled.text} />
+                <Icon name="close-outline" size="sm" color={theme.status.cancelled.text} />
               </Pressable>
             )}
           </View>

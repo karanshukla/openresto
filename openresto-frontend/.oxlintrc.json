@@ -106,9 +106,26 @@
     "prefer-const": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",
-    "typescript/no-explicit-any": "warn"
+    "typescript/no-explicit-any": "warn",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@expo/vector-icons",
+            "message": "Use <Icon> / <IconButton> from @/components/common/Icon — they carry the icon size scale and the decorative-by-default accessibility contract."
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
+    {
+      "files": ["components/common/Icon.tsx", "components/common/LoadingScreen.tsx"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
     {
       "files": ["**/metro.config.js"],
       "env": {

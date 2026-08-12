@@ -5,13 +5,14 @@ import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import { theme, getThemeColors } from "@/theme/theme";
 import { TableDto, deleteTable, updateTable, fetchTableDeleteImpact } from "@/api/restaurants";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./TableRow.styles";
 import { RowIconButton } from "./RowIconButton";
 import { RowTextButton } from "./RowTextButton";
+import { Icon } from "@/components/common/Icon";
 
 /**
  * Group membership context for a table row (#273). When present, the row renders inside a
@@ -117,48 +118,40 @@ export function TableRow({
         testID={`table-select-row-${table.id}`}
         onPress={isGrouped ? undefined : onToggleSelect}
         disabled={isGrouped}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          padding: 12,
-          borderWidth: 1,
-          borderColor,
-          borderRadius: 10,
-          opacity: isGrouped ? 0.45 : 1,
-          backgroundColor: selected ? hexToRgba(primaryColor, 0.08) : surface2,
-        }}
+        style={[
+          styles.selectTile,
+          {
+            borderColor,
+            backgroundColor: selected ? hexToRgba(primaryColor, 0.08) : surface2,
+          },
+          isGrouped && styles.selectTileLocked,
+        ]}
       >
-        <Ionicons
+        <Icon
           name={isGrouped ? "lock-closed" : selected ? "checkbox" : "square-outline"}
-          size={16}
+          size="md"
           color={isGrouped ? mutedColor : primaryColor}
         />
-        <View style={{ flex: 1 }}>
-          <ThemedText style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
+        <View style={settingsStyles.tileCopy}>
+          <ThemedText style={settingsStyles.tileTitle} numberOfLines={1}>
             {table.name ?? `T${table.id}`}
           </ThemedText>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-            <Ionicons name="people-outline" size={12} color={mutedColor} />
-            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+          <View style={styles.seatsRow}>
+            <Icon name="people-outline" size="xs" color={mutedColor} />
+            <ThemedText style={[styles.seatsText, { color: mutedColor }]}>
               {table.seats} seat{table.seats === 1 ? "" : "s"}
             </ThemedText>
             {isGrouped && group && (
               <View
                 testID={`table-group-chip-${table.id}`}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 4,
-                  marginLeft: 6,
-                  backgroundColor: hexToRgba(primaryColor, 0.12),
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: theme.borderRadius.full,
-                }}
+                style={[
+                  styles.groupChip,
+                  styles.groupChipSelect,
+                  { backgroundColor: hexToRgba(primaryColor, 0.12) },
+                ]}
               >
-                <Ionicons name="link" size={11} color={primaryColor} />
-                <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+                <Icon name="link" size={11} color={primaryColor} />
+                <ThemedText style={[styles.groupChipText, { color: primaryColor }]}>
                   {group.label}
                 </ThemedText>
               </View>
@@ -174,26 +167,27 @@ export function TableRow({
   if (!editing && deleteStep === "confirm") {
     return (
       <View
-        style={{
-          padding: 12,
-          borderWidth: 1,
-          borderColor: hexToRgba(theme.colors.error, 0.4),
-          borderRadius: 10,
-          gap: 10,
-          backgroundColor: isDark
-            ? hexToRgba(theme.colors.error, 0.1)
-            : hexToRgba(theme.colors.error, 0.05),
-        }}
+        style={[
+          styles.confirmTile,
+          {
+            borderColor: hexToRgba(theme.colors.error, 0.4),
+            backgroundColor: isDark
+              ? hexToRgba(theme.colors.error, 0.1)
+              : hexToRgba(theme.colors.error, 0.05),
+          },
+        ]}
       >
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-          <Ionicons
+        <View style={settingsStyles.confirmCopy}>
+          <Icon
             name="warning-outline"
             size={15}
             color={theme.colors.error}
-            style={{ marginTop: 1 }}
+            style={settingsStyles.confirmIcon}
           />
-          <ThemedText style={{ flex: 1, fontSize: 12, lineHeight: 17 }}>
-            <ThemedText style={{ fontWeight: "700" }}>Delete &ldquo;{tableName}&rdquo;?</ThemedText>{" "}
+          <ThemedText style={settingsStyles.confirmText}>
+            <ThemedText style={settingsStyles.confirmTextStrong}>
+              Delete &ldquo;{tableName}&rdquo;?
+            </ThemedText>{" "}
             {impactLoading
               ? "This will permanently remove the table."
               : impact && impact > 0
@@ -202,32 +196,25 @@ export function TableRow({
             This cannot be undone.
           </ThemedText>
         </View>
-        <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
+        <View style={settingsStyles.confirmActions}>
           <Pressable
             testID="table-delete-cancel-btn"
-            style={[styles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
+            style={[settingsStyles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
             onPress={cancelDelete}
             disabled={deleting}
           >
-            <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+            <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
+              Cancel
+            </ThemedText>
           </Pressable>
           <Pressable
             testID="table-delete-confirm-btn"
             disabled={deleting}
             onPress={confirmDelete}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: theme.borderRadius.md,
-              backgroundColor: theme.colors.error,
-              opacity: deleting ? 0.7 : 1,
-            }}
+            style={[settingsStyles.confirmDeleteBtn, { opacity: deleting ? 0.7 : 1 }]}
           >
             {deleting && <ActivityIndicator size="small" color="#fff" />}
-            <ThemedText style={[styles.smallBtnText, { color: "#fff", fontWeight: "700" }]}>
+            <ThemedText style={[settingsStyles.smallBtnText, settingsStyles.confirmDeleteBtnText]}>
               {deleting ? "Deleting…" : "Yes, delete"}
             </ThemedText>
           </Pressable>
@@ -241,62 +228,31 @@ export function TableRow({
   // and skip the combine action.
   if (!editing) {
     return (
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          padding: 12,
-          backgroundColor: surface2,
-          borderWidth: 1,
-          borderColor,
-          borderRadius: 10,
-        }}
-      >
-        {/* Leading icon square */}
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: cardBg,
-            borderWidth: 1,
-            borderColor,
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Ionicons name={group ? "link" : "grid-outline"} size={18} color={primaryColor} />
+      <View style={[settingsStyles.tile, { backgroundColor: surface2, borderColor }]}>
+        <View style={[settingsStyles.tileIcon, { backgroundColor: cardBg, borderColor }]}>
+          <Icon name={group ? "link" : "grid-outline"} size="lg" color={primaryColor} />
         </View>
 
-        {/* Title + subtitle (seats, and the group chip when grouped) */}
-        <View style={{ flex: 1 }}>
-          <ThemedText style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
+        <View style={settingsStyles.tileCopy}>
+          <ThemedText style={settingsStyles.tileTitle} numberOfLines={1}>
             {table.name ?? `T${table.id}`}
           </ThemedText>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <Ionicons name="people-outline" size={12} color={mutedColor} />
-            <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+          <View style={styles.rowSeatsRow}>
+            <Icon name="people-outline" size="xs" color={mutedColor} />
+            <ThemedText style={[styles.seatsText, { color: mutedColor }]}>
               {table.seats} seat{table.seats === 1 ? "" : "s"}
             </ThemedText>
             {group && (
               <View
                 testID={`table-group-chip-${table.id}`}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 4,
-                  marginLeft: 4,
-                  backgroundColor: hexToRgba(primaryColor, 0.14),
-                  paddingLeft: 8,
-                  paddingRight: 2,
-                  paddingVertical: 2,
-                  borderRadius: theme.borderRadius.full,
-                }}
+                style={[
+                  styles.groupChip,
+                  styles.groupChipRow,
+                  { backgroundColor: hexToRgba(primaryColor, 0.14) },
+                ]}
               >
-                <Ionicons name="link" size={11} color={primaryColor} />
-                <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+                <Icon name="link" size={11} color={primaryColor} />
+                <ThemedText style={[styles.groupChipText, { color: primaryColor }]}>
                   {group.label}
                 </ThemedText>
                 <Pressable
@@ -305,9 +261,9 @@ export function TableRow({
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${tableName} from group`}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  style={{ padding: 2 }}
+                  style={styles.unlinkBtn}
                 >
-                  <Ionicons name="close" size={12} color={primaryColor} />
+                  <Icon name="close" size="xs" color={primaryColor} />
                 </Pressable>
               </View>
             )}
@@ -316,7 +272,7 @@ export function TableRow({
 
         {/* Trailing actions — mix of text pill (Edit) and icon buttons (combine/delete); gap 8 keeps
             the cluster tight and visually balanced across the two button types. */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={styles.rowActions}>
           {!group && (
             <RowIconButton
               testID={`table-link-btn-${table.id}`}
@@ -353,32 +309,24 @@ export function TableRow({
   // Edit mode — full-width inline form (kept intact; Save/Cancel are text buttons by design).
   return (
     <View
-      style={{
-        width: "100%",
-        borderWidth: 1,
-        borderRadius: 10,
-        borderColor: primaryColor,
-        padding: 12,
-        gap: 10,
-        backgroundColor: isDark ? hexToRgba(primaryColor, 0.08) : hexToRgba(primaryColor, 0.04),
-      }}
+      style={[
+        styles.editCard,
+        {
+          borderColor: primaryColor,
+          backgroundColor: isDark ? hexToRgba(primaryColor, 0.08) : hexToRgba(primaryColor, 0.04),
+        },
+      ]}
     >
-      <ThemedText
-        style={{ fontSize: 11, fontWeight: "700", color: primaryColor, letterSpacing: 0.5 }}
-      >
+      <ThemedText style={[styles.editHeading, { color: primaryColor }]}>
         EDITING · {table.name ?? `Table ${table.id}`}
       </ThemedText>
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 2, gap: 4 }}>
-          <ThemedText style={{ fontSize: 11, fontWeight: "600", color: mutedColor }}>
-            NAME
-          </ThemedText>
+      <View style={styles.editFields}>
+        <View style={styles.editNameField}>
+          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>NAME</ThemedText>
           <Input value={draftName} onChangeText={setDraftName} placeholder="e.g. Table 1" />
         </View>
-        <View style={{ flex: 1, gap: 4 }}>
-          <ThemedText style={{ fontSize: 11, fontWeight: "600", color: mutedColor }}>
-            SEATS
-          </ThemedText>
+        <View style={styles.editSeatsField}>
+          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>SEATS</ThemedText>
           <Select
             selectedValue={draftSeats}
             onSelect={(v) => setDraftSeats(v as number)}
@@ -387,14 +335,12 @@ export function TableRow({
           />
         </View>
       </View>
-      <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
-        <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={{ color: mutedColor, fontSize: 13, fontWeight: "600" }}>
-            Cancel
-          </ThemedText>
+      <View style={styles.editActions}>
+        <Pressable style={settingsStyles.smallBtn} onPress={() => setEditing(false)}>
+          <ThemedText style={[styles.editCancelText, { color: mutedColor }]}>Cancel</ThemedText>
         </Pressable>
         <Pressable
-          style={[styles.actionBtn, { backgroundColor: primaryColor, paddingHorizontal: 16 }]}
+          style={[settingsStyles.actionBtn, styles.editSaveBtn, { backgroundColor: primaryColor }]}
           disabled={saving}
           onPress={async () => {
             setSaving(true);
@@ -409,7 +355,7 @@ export function TableRow({
             }
           }}
         >
-          <ThemedText style={[styles.actionBtnText, { color: "#fff", fontWeight: "700" }]}>
+          <ThemedText style={[settingsStyles.actionBtnText, styles.editSaveText]}>
             {saving ? "Saving…" : "Save"}
           </ThemedText>
         </Pressable>

@@ -1,8 +1,9 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./LocationTagsSection.styles";
+import { Icon } from "@/components/common/Icon";
 
 export interface LocationTagsSectionProps {
   tags: string[];
@@ -34,27 +35,15 @@ export function LocationTagsSection({
   surface2,
 }: LocationTagsSectionProps) {
   return (
-    <View style={{ gap: 6 }}>
-      <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Location tags</ThemedText>
+    <View style={styles.wrapper}>
+      <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+        Location tags
+      </ThemedText>
       {tags.length > 0 && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
+        <View style={styles.chips}>
           {tags.map((tag) => (
-            <View
-              key={tag}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                backgroundColor: surface2,
-                borderWidth: 1,
-                borderColor,
-                borderRadius: 999,
-                paddingLeft: 10,
-                paddingRight: 6,
-                paddingVertical: 4,
-              }}
-            >
-              <ThemedText style={{ fontSize: 12 }}>{tag}</ThemedText>
+            <View key={tag} style={[styles.chip, { backgroundColor: surface2, borderColor }]}>
+              <ThemedText style={styles.chipText}>{tag}</ThemedText>
               <Pressable
                 onPress={() => onRemoveTag(tag)}
                 testID={`remove-tag-${tag}`}
@@ -62,14 +51,14 @@ export function LocationTagsSection({
                 accessibilityLabel={`Remove tag ${tag}`}
                 hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
               >
-                <Ionicons name="close" size={12} color={mutedColor} />
+                <Icon name="close" size="xs" color={mutedColor} />
               </Pressable>
             </View>
           ))}
         </View>
       )}
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <View style={{ flex: 1 }}>
+      <View style={styles.addRow}>
+        <View style={styles.addInput}>
           <Input
             value={tagInput}
             onChangeText={onSetTagInput}
@@ -83,19 +72,15 @@ export function LocationTagsSection({
           accessibilityRole="button"
           accessibilityLabel="Add tag"
           disabled={!tagInput.trim()}
-          style={{
-            opacity: tagInput.trim() ? 1 : 0.4,
-            backgroundColor: primaryColor,
-            borderRadius: 10,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            justifyContent: "center",
-          }}
+          style={[
+            styles.addBtn,
+            { opacity: tagInput.trim() ? 1 : 0.4, backgroundColor: primaryColor },
+          ]}
         >
-          <Ionicons name="add" size={18} color="#fff" />
+          <Icon name="add" size="lg" color="#fff" />
         </Pressable>
       </View>
-      <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+      <ThemedText style={[styles.hint, { color: mutedColor }]}>
         Short labels shown on the public restaurant card (e.g. "Dog friendly", "Terrace").
       </ThemedText>
     </View>

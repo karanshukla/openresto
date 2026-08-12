@@ -3,7 +3,6 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import {
@@ -16,9 +15,11 @@ import {
 } from "@/api/admin";
 import { isValidUrl } from "@/utils/validation";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./FooterSettingsCard.styles";
 import { SocialLinkEditForm, emptyEdit, type EditState, type IconKey } from "./SocialLinkEditForm";
 import { SocialLinkRow } from "./SocialLinkRow";
+import { Icon } from "@/components/common/Icon";
 
 export function FooterSettingsCard({
   borderColor,
@@ -163,20 +164,20 @@ export function FooterSettingsCard({
   };
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable
-        style={styles.secHeader}
+        style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
         accessibilityRole="button"
         accessibilityLabel="Footer"
         accessibilityState={{ expanded }}
       >
-        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Ionicons name="link-outline" size={20} color={primaryColor} />
+        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
+          <Icon name="link-outline" size="xl" color={primaryColor} />
         </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText style={styles.secTitle}>Footer</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]} numberOfLines={1}>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Footer</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
             {loading
               ? "Loading…"
               : links.length > 0
@@ -184,25 +185,19 @@ export function FooterSettingsCard({
                 : "Copyright text and social links"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
-        <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-          <View style={styles.field}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <ThemedText style={styles.fieldLabel}>Copyright Text</ThemedText>
+        <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+          <View style={settingsStyles.field}>
+            <View style={settingsStyles.fieldHeader}>
+              <ThemedText style={settingsStyles.fieldLabel}>Copyright Text</ThemedText>
               <ThemedText
-                style={{
-                  fontSize: 11,
-                  color: copyrightText.length > 200 ? theme.colors.error : mutedColor,
-                }}
+                style={[
+                  settingsStyles.fieldCharCount,
+                  { color: copyrightText.length > 200 ? theme.colors.error : mutedColor },
+                ]}
               >
                 {copyrightText.length}/200
               </ThemedText>
@@ -213,12 +208,15 @@ export function FooterSettingsCard({
               placeholder={`© ${new Date().getFullYear()} ${brand.appName}. All rights reserved.`}
               maxLength={200}
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Shown in the site footer. Leave blank to use the default above.
             </ThemedText>
             {copyrightMsg && (
               <ThemedText
-                style={[copyrightMsg.ok ? styles.successText : styles.errorText, { marginTop: 4 }]}
+                style={[
+                  copyrightMsg.ok ? settingsStyles.successText : settingsStyles.errorText,
+                  styles.saveMsg,
+                ]}
               >
                 {copyrightMsg.text}
               </ThemedText>
@@ -227,45 +225,33 @@ export function FooterSettingsCard({
               onPress={handleSaveCopyright}
               disabled={savingCopyright || !copyrightIsDirty}
               accessibilityLabel="Save copyright text"
-              style={{
-                opacity: savingCopyright || !copyrightIsDirty ? 0.5 : 1,
-                backgroundColor: primaryColor,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 8,
-                alignSelf: "flex-start",
-                marginTop: 8,
-              }}
+              style={[
+                styles.saveBtn,
+                {
+                  opacity: savingCopyright || !copyrightIsDirty ? 0.5 : 1,
+                  backgroundColor: primaryColor,
+                },
+              ]}
             >
-              <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
+              <ThemedText style={styles.saveBtnText}>
                 {savingCopyright ? "Saving…" : "Save"}
               </ThemedText>
             </Pressable>
           </View>
 
-          <View style={{ height: 1, backgroundColor: borderColor, marginVertical: 4 }} />
+          <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
-          <View style={{ gap: 12 }}>
-            <ThemedText style={styles.fieldLabel}>Social Links</ThemedText>
+          <View style={styles.linksSection}>
+            <ThemedText style={settingsStyles.fieldLabel}>Social Links</ThemedText>
 
             {loading ? (
               <ActivityIndicator color={primaryColor} />
             ) : (
-              <View style={{ gap: 8 }}>
+              <View style={styles.linksList}>
                 {links.length === 0 && editingId !== "new" && (
-                  <View
-                    style={{
-                      padding: 20,
-                      alignItems: "center",
-                      gap: 6,
-                      borderWidth: 1,
-                      borderColor,
-                      borderRadius: 10,
-                      borderStyle: "dashed" as const,
-                    }}
-                  >
-                    <Ionicons name="link-outline" size={22} color={mutedColor} />
-                    <ThemedText style={{ fontSize: 13, color: mutedColor, textAlign: "center" }}>
+                  <View style={[settingsStyles.emptyState, { borderColor }]}>
+                    <Icon name="link-outline" size={22} color={mutedColor} />
+                    <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
                       No links yet. Press Add to create your first one.
                     </ThemedText>
                   </View>
@@ -324,21 +310,14 @@ export function FooterSettingsCard({
                 {editingId !== "new" && (
                   <Pressable
                     onPress={startNew}
-                    style={{
-                      backgroundColor: primaryColor,
-                      borderRadius: 10,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      alignSelf: "flex-start",
-                    }}
+                    style={[
+                      settingsStyles.addPill,
+                      styles.addPillLeft,
+                      { backgroundColor: primaryColor },
+                    ]}
                   >
-                    <Ionicons name="add" size={16} color="#fff" />
-                    <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
-                      Add
-                    </ThemedText>
+                    <Icon name="add" size="md" color="#fff" />
+                    <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
                   </Pressable>
                 )}
               </View>

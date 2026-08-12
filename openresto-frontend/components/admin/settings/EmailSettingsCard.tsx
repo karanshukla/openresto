@@ -4,7 +4,6 @@ import { View, Pressable, useWindowDimensions } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import { Ionicons } from "@expo/vector-icons";
 import { theme, getThemeColors } from "@/theme/theme";
 import {
   getEmailSettings,
@@ -15,11 +14,13 @@ import {
 } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./EmailSettingsCard.styles";
 import { SubLabel } from "./settingsShared";
 import { SmtpTestPanel } from "./SmtpTestPanel";
 import { BookingConfirmationToggle } from "./BookingConfirmationToggle";
 import { EmailFailuresList } from "./EmailFailuresList";
+import { Icon } from "@/components/common/Icon";
 
 const PROVIDERS = [
   {
@@ -159,9 +160,9 @@ export function EmailSettingsCard({
   const confirmDisabled = !isConfigured && testState !== "ok";
 
   const providerGrid = (
-    <View style={{ gap: 8 }}>
+    <View style={styles.providerBlock}>
       <SubLabel mutedColor={mutedColor}>Provider</SubLabel>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      <View style={styles.providerGrid}>
         {PROVIDERS.map((p) => {
           const on = activeProviderId === p.id;
           return (
@@ -172,59 +173,31 @@ export function EmailSettingsCard({
               accessibilityLabel={p.name}
               accessibilityState={{ checked: on }}
               style={[
+                styles.providerCard,
                 {
-                  flex: 1,
-                  minWidth: 130,
-                  borderWidth: 1,
-                  borderRadius: 12,
-                  padding: 12,
-                  paddingHorizontal: 14,
-                  gap: 4,
                   borderColor: on ? primaryColor : borderColor,
                   backgroundColor: on ? cardBg : surface2,
-                  position: "relative" as const,
                 },
-                on && {
-                  shadowColor: primaryColor,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 6,
-                  elevation: 4,
-                },
+                on && [styles.providerCardSelected, { shadowColor: primaryColor }],
               ]}
             >
               <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  backgroundColor: on ? accentSoft : cardBg,
-                  borderWidth: on ? 0 : 1,
-                  borderColor,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 4,
-                }}
+                style={[
+                  styles.providerIcon,
+                  {
+                    backgroundColor: on ? accentSoft : cardBg,
+                    borderWidth: on ? 0 : 1,
+                    borderColor,
+                  },
+                ]}
               >
-                <Ionicons name={p.icon} size={15} color={on ? primaryColor : mutedColor} />
+                <Icon name={p.icon} size={15} color={on ? primaryColor : mutedColor} />
               </View>
-              <ThemedText style={{ fontSize: 13.5, fontWeight: "600" }}>{p.name}</ThemedText>
-              <ThemedText style={{ fontSize: 11.5, color: mutedColor }}>{p.hint}</ThemedText>
+              <ThemedText style={styles.providerName}>{p.name}</ThemedText>
+              <ThemedText style={[styles.providerHint, { color: mutedColor }]}>{p.hint}</ThemedText>
               {on && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 10,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    backgroundColor: primaryColor,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons name="checkmark" size={11} color="#fff" />
+                <View style={[styles.providerCheck, { backgroundColor: primaryColor }]}>
+                  <Icon name="checkmark" size={11} color="#fff" />
                 </View>
               )}
             </Pressable>
@@ -235,11 +208,11 @@ export function EmailSettingsCard({
   );
 
   const connectionForm = (
-    <View style={{ gap: 6 }}>
+    <View style={styles.connectionBlock}>
       <SubLabel mutedColor={mutedColor}>Connection</SubLabel>
 
-      <View style={styles.field}>
-        <ThemedText style={styles.fieldLabel}>SMTP Host</ThemedText>
+      <View style={settingsStyles.field}>
+        <ThemedText style={settingsStyles.fieldLabel}>SMTP Host</ThemedText>
         <Input
           value={host}
           onChangeText={setHost}
@@ -248,14 +221,14 @@ export function EmailSettingsCard({
         />
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-        <View style={[styles.field, { flex: 1 }]}>
-          <ThemedText style={styles.fieldLabel}>Port</ThemedText>
-          <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-            <View style={{ width: 80 }}>
+      <View style={[styles.fieldRow, styles.fieldRowSpaced]}>
+        <View style={[settingsStyles.field, styles.fieldFlex]}>
+          <ThemedText style={settingsStyles.fieldLabel}>Port</ThemedText>
+          <View style={styles.portRow}>
+            <View style={styles.portInput}>
               <Input value={port} onChangeText={setPort} placeholder="587" keyboardType="numeric" />
             </View>
-            <View style={{ flexDirection: "row", gap: 4, flex: 1 }}>
+            <View style={styles.portPresets}>
               {PORT_PRESETS.map((p) => (
                 <Pressable
                   key={p}
@@ -263,20 +236,19 @@ export function EmailSettingsCard({
                   accessibilityRole="radio"
                   accessibilityLabel={`Use port ${p}`}
                   accessibilityState={{ checked: port === String(p) }}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: port === String(p) ? borderStrong : borderColor,
-                    backgroundColor: port === String(p) ? cardBg : surface2,
-                  }}
+                  style={[
+                    styles.portPreset,
+                    {
+                      borderColor: port === String(p) ? borderStrong : borderColor,
+                      backgroundColor: port === String(p) ? cardBg : surface2,
+                    },
+                  ]}
                 >
                   <ThemedText
-                    style={{
-                      fontSize: 12,
-                      color: port === String(p) ? textColor : mutedColor,
-                    }}
+                    style={[
+                      styles.portPresetText,
+                      { color: port === String(p) ? textColor : mutedColor },
+                    ]}
                   >
                     {p}
                   </ThemedText>
@@ -287,35 +259,30 @@ export function EmailSettingsCard({
         </View>
       </View>
 
-      <View style={[styles.field, { marginTop: 4 }]}>
-        <ThemedText style={styles.fieldLabel}>Encryption</ThemedText>
-        <View style={{ flexDirection: "row", gap: 6 }}>
+      <View style={[settingsStyles.field, styles.fieldSpaced]}>
+        <ThemedText style={settingsStyles.fieldLabel}>Encryption</ThemedText>
+        <View style={styles.encryptionRow}>
           <Pressable
             onPress={() => setEnableSsl(true)}
             accessibilityRole="radio"
             accessibilityLabel="SSL/TLS encryption"
             accessibilityState={{ checked: enableSsl }}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              paddingVertical: 9,
-              paddingHorizontal: 10,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: enableSsl ? okBorder : borderColor,
-              backgroundColor: enableSsl ? okSoft : surface2,
-            }}
+            style={[
+              styles.encryptionOption,
+              styles.encryptionOptionWithIcon,
+              {
+                borderColor: enableSsl ? okBorder : borderColor,
+                backgroundColor: enableSsl ? okSoft : surface2,
+              },
+            ]}
           >
-            <Ionicons name="shield-checkmark" size={13} color={enableSsl ? okColor : mutedColor} />
+            <Icon name="shield-checkmark" size={13} color={enableSsl ? okColor : mutedColor} />
             <ThemedText
-              style={{
-                fontSize: 13,
-                fontWeight: enableSsl ? "500" : "400",
-                color: enableSsl ? okColor : mutedColor,
-              }}
+              style={[
+                styles.encryptionLabel,
+                enableSsl && styles.encryptionLabelOn,
+                { color: enableSsl ? okColor : mutedColor },
+              ]}
             >
               SSL/TLS
             </ThemedText>
@@ -325,24 +292,20 @@ export function EmailSettingsCard({
             accessibilityRole="radio"
             accessibilityLabel="No encryption"
             accessibilityState={{ checked: !enableSsl }}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 9,
-              paddingHorizontal: 10,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: !enableSsl ? borderStrong : borderColor,
-              backgroundColor: !enableSsl ? cardBg : surface2,
-            }}
+            style={[
+              styles.encryptionOption,
+              {
+                borderColor: !enableSsl ? borderStrong : borderColor,
+                backgroundColor: !enableSsl ? cardBg : surface2,
+              },
+            ]}
           >
             <ThemedText
-              style={{
-                fontSize: 13,
-                fontWeight: !enableSsl ? "500" : "400",
-                color: !enableSsl ? textColor : mutedColor,
-              }}
+              style={[
+                styles.encryptionLabel,
+                !enableSsl && styles.encryptionLabelOn,
+                { color: !enableSsl ? textColor : mutedColor },
+              ]}
             >
               None
             </ThemedText>
@@ -350,8 +313,8 @@ export function EmailSettingsCard({
         </View>
       </View>
 
-      <View style={[styles.field, { marginTop: 4 }]}>
-        <ThemedText style={styles.fieldLabel}>Username</ThemedText>
+      <View style={[settingsStyles.field, styles.fieldSpaced]}>
+        <ThemedText style={settingsStyles.fieldLabel}>Username</ThemedText>
         <Input
           value={username}
           onChangeText={setUsername}
@@ -360,10 +323,10 @@ export function EmailSettingsCard({
         />
       </View>
 
-      <View style={styles.field}>
-        <ThemedText style={styles.fieldLabel}>Password</ThemedText>
-        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-          <View style={{ flex: 1 }}>
+      <View style={settingsStyles.field}>
+        <ThemedText style={settingsStyles.fieldLabel}>Password</ThemedText>
+        <View style={styles.passwordRow}>
+          <View style={styles.passwordInput}>
             <Input
               key={showPassword ? "pw-visible" : "pw-hidden"}
               value={password}
@@ -375,30 +338,30 @@ export function EmailSettingsCard({
           </View>
           <Pressable
             onPress={() => setShowPassword((v) => !v)}
-            style={{ padding: 8 }}
+            style={styles.passwordToggle}
             accessibilityRole="button"
             accessibilityLabel={showPassword ? "Hide password" : "Show password"}
             accessibilityState={{ expanded: showPassword }}
           >
-            <Ionicons
+            <Icon
               name={showPassword ? "eye-off-outline" : "eye-outline"}
-              size={20}
+              size="xl"
               color={mutedColor}
             />
           </Pressable>
         </View>
       </View>
 
-      <View style={{ height: 8 }} />
+      <View style={styles.blockGap} />
       <SubLabel mutedColor={mutedColor}>Sender identity</SubLabel>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={[styles.field, { flex: 1 }]}>
-          <ThemedText style={styles.fieldLabel}>From name</ThemedText>
+      <View style={styles.fieldRow}>
+        <View style={[settingsStyles.field, styles.fieldFlex]}>
+          <ThemedText style={settingsStyles.fieldLabel}>From name</ThemedText>
           <Input value={fromName} onChangeText={setFromName} placeholder="OpenResto" />
         </View>
-        <View style={[styles.field, { flex: 1 }]}>
-          <ThemedText style={styles.fieldLabel}>From email</ThemedText>
+        <View style={[settingsStyles.field, styles.fieldFlex]}>
+          <ThemedText style={settingsStyles.fieldLabel}>From email</ThemedText>
           <Input
             value={fromEmail}
             onChangeText={setFromEmail}
@@ -411,7 +374,7 @@ export function EmailSettingsCard({
   );
 
   const rightColumn = (
-    <View style={{ gap: 14 }}>
+    <View style={styles.rightColumn}>
       <SubLabel mutedColor={mutedColor}>Status</SubLabel>
 
       <SmtpTestPanel
@@ -464,65 +427,60 @@ export function EmailSettingsCard({
   );
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable
-        style={styles.secHeader}
+        style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
         accessibilityRole="button"
         accessibilityLabel="Email (SMTP)"
         accessibilityState={{ expanded }}
       >
-        <View style={[styles.secIcon, { backgroundColor: accentSoft }]}>
-          <Ionicons name="mail-outline" size={20} color={primaryColor} />
+        <View style={[settingsStyles.secIcon, { backgroundColor: accentSoft }]}>
+          <Icon name="mail-outline" size="xl" color={primaryColor} />
         </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText style={styles.secTitle}>Email (SMTP)</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Email (SMTP)</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]}>
             {isConfigured ? `Connected · ${host}` : "Setup required"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
-        <View style={[styles.secForm, { borderTopColor: borderColor, gap: 20 }]}>
+        <View style={[settingsStyles.secForm, styles.form, { borderTopColor: borderColor }]}>
           {providerGrid}
 
-          <View
-            style={
-              isWide ? { flexDirection: "row", gap: 22, alignItems: "flex-start" } : { gap: 20 }
-            }
-          >
-            <View style={isWide ? { flex: 1 } : undefined}>{connectionForm}</View>
-            <View style={isWide ? { width: 340 } : undefined}>{rightColumn}</View>
+          <View style={isWide ? styles.columnsWide : styles.columnsNarrow}>
+            <View style={isWide ? styles.fieldFlex : undefined}>{connectionForm}</View>
+            <View style={isWide ? styles.rightColumnWide : undefined}>{rightColumn}</View>
           </View>
 
           {saveMsg && (
             <View
               style={[
-                styles.successBanner,
+                settingsStyles.successBanner,
+                styles.saveBanner,
                 {
                   backgroundColor: saveMsg.ok
                     ? `${theme.colors.success}10`
                     : `${theme.colors.warning}10`,
-                  borderRadius: 8,
-                  borderWidth: 1,
                   borderColor: saveMsg.ok
                     ? `${theme.colors.success}30`
                     : `${theme.colors.warning}30`,
-                  padding: 10,
                 },
               ]}
             >
-              <Ionicons
+              <Icon
                 name={saveMsg.ok ? "checkmark-circle" : "warning-outline"}
-                size={16}
+                size="md"
                 color={saveMsg.ok ? theme.colors.success : theme.colors.warning}
               />
               <ThemedText
                 style={[
-                  saveMsg.ok ? styles.successText : styles.secBtnText,
-                  { flex: 1, color: saveMsg.ok ? theme.colors.success : theme.colors.warning },
+                  saveMsg.ok ? settingsStyles.successText : settingsStyles.secBtnText,
+                  styles.saveBannerText,
+                  { color: saveMsg.ok ? theme.colors.success : theme.colors.warning },
                 ]}
               >
                 {saveMsg.text}
@@ -530,18 +488,10 @@ export function EmailSettingsCard({
             </View>
           )}
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              paddingTop: 14,
-              borderTopWidth: 1,
-              borderTopColor: borderColor,
-              borderStyle: "dashed",
-            }}
-          >
-            <ThemedText style={[styles.secBtnText, { color: mutedColor, fontSize: 12, flex: 1 }]}>
+          <View style={[styles.footer, { borderTopColor: borderColor }]}>
+            <ThemedText
+              style={[settingsStyles.secBtnText, styles.footerHint, { color: mutedColor }]}
+            >
               {testState === "ok"
                 ? "Connection verified · confirmations ready"
                 : "Test the connection before enabling confirmations"}

@@ -1,6 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +18,7 @@ import { theme, ThemeColors } from "@/theme/theme";
 import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionModal";
 import AlertModal from "@/components/common/AlertModal";
 import { styles } from "@/styles/admin/dashboard.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -189,9 +189,9 @@ export default function AdminDashboardScreen() {
                       hovered && { opacity: 0.9, transform: [{ scale: 0.98 }] },
                     ]}
                   >
-                    <Ionicons
+                    <Icon
                       name={action.icon}
-                      size={24}
+                      size="xxl"
                       color={action.primary ? theme.colors.white : primaryColor}
                     />
                     <ThemedText
@@ -281,7 +281,7 @@ function MetricCard({
     label: string;
     value: string | number;
     sub: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: IconName;
     accent: string;
   };
   colors: ThemeColors;
@@ -289,7 +289,7 @@ function MetricCard({
   return (
     <View style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.metricIconWrap, { backgroundColor: `${stat.accent}14` }]}>
-        <Ionicons name={stat.icon} size={20} color={stat.accent} />
+        <Icon name={stat.icon} size="xl" color={stat.accent} />
       </View>
       <ThemedText style={styles.metricValue}>{stat.value}</ThemedText>
       <ThemedText style={[styles.metricLabel, { color: colors.muted }]}>{stat.label}</ThemedText>
@@ -520,7 +520,7 @@ function BookingItem({
           {booking.seats} guests · {booking.restaurantName}
         </ThemedText>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+      <Icon name="chevron-forward" size="md" color={colors.muted} />
     </Pressable>
   );
 }

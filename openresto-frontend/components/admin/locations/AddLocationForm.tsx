@@ -1,7 +1,7 @@
 import { Pressable, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
+import { Icon } from "@/components/common/Icon";
 
 export interface AddLocationFormProps {
   value: string;
@@ -40,7 +40,7 @@ export function AddLocationForm({
         backgroundColor: isDark ? `${primaryColor}08` : `${primaryColor}04`,
       }}
     >
-      <Ionicons name="storefront-outline" size={18} color={primaryColor} />
+      <Icon name="storefront-outline" size="lg" color={primaryColor} />
       <TextInput
         value={value}
         onChangeText={onValueChange}
@@ -78,7 +78,7 @@ export function AddLocationForm({
         accessibilityLabel="Cancel adding a location"
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <Ionicons name="close-outline" size={20} color={mutedColor} />
+        <Icon name="close-outline" size="xl" color={mutedColor} />
       </Pressable>
     </View>
   );

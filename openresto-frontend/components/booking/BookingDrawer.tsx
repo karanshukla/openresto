@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -23,6 +22,7 @@ import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import { styles } from "./BookingDrawer.styles";
+import { Icon } from "@/components/common/Icon";
 
 /** How far the sheet animates before it is considered gone. */
 const SHEET_EXIT_DISTANCE = 800;
@@ -228,7 +228,7 @@ export default function BookingDrawer({
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
         >
-          <Ionicons name="close" size={18} color={colors.muted} />
+          <Icon name="close" size="lg" color={colors.muted} />
         </Pressable>
       </View>
 

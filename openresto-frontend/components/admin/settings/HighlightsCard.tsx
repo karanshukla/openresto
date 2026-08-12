@@ -1,9 +1,8 @@
-import { useState, useEffect, type ComponentProps } from "react";
+import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ThemeColors } from "@/theme/theme";
 import {
@@ -15,7 +14,9 @@ import {
 } from "@/api/admin";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./HighlightsCard.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 const ICON_OPTIONS = [
   "flame-outline",
@@ -182,20 +183,20 @@ export function HighlightsCard({
   };
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable
-        style={styles.secHeader}
+        style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
         accessibilityRole="button"
         accessibilityLabel="Highlights"
         accessibilityState={{ expanded }}
       >
-        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Ionicons name="sparkles-outline" size={20} color={primaryColor} />
+        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
+          <Icon name="sparkles-outline" size="xl" color={primaryColor} />
         </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText style={styles.secTitle}>Highlights</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Highlights</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]}>
             {loading
               ? "Loading…"
               : highlights.length > 0
@@ -203,29 +204,19 @@ export function HighlightsCard({
                 : "None configured · Home page"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
-        <View style={[styles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
+        <View style={[settingsStyles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
           {loading ? (
             <ActivityIndicator color={primaryColor} />
           ) : (
-            <View style={{ gap: 8 }}>
+            <View style={styles.list}>
               {highlights.length === 0 && editingId !== "new" && (
-                <View
-                  style={{
-                    padding: 20,
-                    alignItems: "center",
-                    gap: 6,
-                    borderWidth: 1,
-                    borderColor,
-                    borderRadius: 10,
-                    borderStyle: "dashed" as const,
-                  }}
-                >
-                  <Ionicons name="sparkles-outline" size={22} color={mutedColor} />
-                  <ThemedText style={{ fontSize: 13, color: mutedColor, textAlign: "center" }}>
+                <View style={[settingsStyles.emptyState, { borderColor }]}>
+                  <Icon name="sparkles-outline" size={22} color={mutedColor} />
+                  <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
                     No highlights yet. Press Add to create your first one.
                   </ThemedText>
                 </View>
@@ -248,55 +239,27 @@ export function HighlightsCard({
                     />
                   ) : (
                     <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "flex-start",
-                        gap: 12,
-                        padding: 12,
-                        backgroundColor: surface2,
-                        borderWidth: 1,
-                        borderColor,
-                        borderRadius: 10,
-                      }}
+                      style={[
+                        settingsStyles.tile,
+                        styles.tileTop,
+                        { backgroundColor: surface2, borderColor },
+                      ]}
                     >
                       <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          backgroundColor: cardBg,
-                          borderWidth: 1,
-                          borderColor,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
+                        style={[settingsStyles.tileIcon, { backgroundColor: cardBg, borderColor }]}
                       >
-                        <Ionicons
-                          name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                          size={18}
-                          color={primaryColor}
-                        />
+                        <Icon name={h.iconKey as IconName} size="lg" color={primaryColor} />
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>
-                          {h.title}
-                        </ThemedText>
-                        <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }}>
+                      <View style={settingsStyles.tileCopy}>
+                        <ThemedText style={settingsStyles.tileTitle}>{h.title}</ThemedText>
+                        <ThemedText style={[styles.body, { color: mutedColor }]}>
                           {h.body}
                         </ThemedText>
                         {h.link ? (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 3,
-                              marginTop: 3,
-                            }}
-                          >
-                            <Ionicons name="link-outline" size={11} color={primaryColor} />
+                          <View style={styles.linkRow}>
+                            <Icon name="link-outline" size={11} color={primaryColor} />
                             <ThemedText
-                              style={{ fontSize: 11, color: primaryColor }}
+                              style={[styles.linkText, { color: primaryColor }]}
                               numberOfLines={1}
                             >
                               {h.link}
@@ -304,24 +267,24 @@ export function HighlightsCard({
                           </View>
                         ) : null}
                       </View>
-                      <View style={{ flexDirection: "row", gap: 6 }}>
+                      <View style={styles.actions}>
                         <Pressable
                           onPress={() => startEdit(h)}
-                          style={{ padding: 6 }}
+                          style={styles.actionBtn}
                           accessibilityRole="button"
                           accessibilityLabel={`Edit highlight ${h.title}`}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Ionicons name="pencil-outline" size={16} color={mutedColor} />
+                          <Icon name="pencil-outline" size="md" color={mutedColor} />
                         </Pressable>
                         <Pressable
                           onPress={() => remove(h.id)}
-                          style={{ padding: 6 }}
+                          style={styles.actionBtn}
                           accessibilityRole="button"
                           accessibilityLabel={`Delete highlight ${h.title}`}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                          <Icon name="trash-outline" size="md" color="#ef4444" />
                         </Pressable>
                       </View>
                     </View>
@@ -350,21 +313,14 @@ export function HighlightsCard({
                   onPress={startNew}
                   accessibilityRole="button"
                   accessibilityLabel="Add highlight"
-                  style={{
-                    backgroundColor: primaryColor,
-                    borderRadius: 10,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    alignSelf: "flex-start",
-                  }}
+                  style={[
+                    settingsStyles.addPill,
+                    styles.addPillLeft,
+                    { backgroundColor: primaryColor },
+                  ]}
                 >
-                  <Ionicons name="add" size={16} color="#fff" />
-                  <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
-                    Add
-                  </ThemedText>
+                  <Icon name="add" size="md" color="#fff" />
+                  <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
                 </Pressable>
               )}
             </View>
@@ -402,19 +358,10 @@ function HighlightEditForm({
   error?: string | null;
 }) {
   return (
-    <View
-      style={{
-        padding: 14,
-        backgroundColor: surface2,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 10,
-        gap: 10,
-      }}
-    >
-      <View style={{ gap: 6 }}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+    <View style={[settingsStyles.editForm, { backgroundColor: surface2, borderColor }]}>
+      <View style={settingsStyles.editFormIconField}>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
+        <View style={settingsStyles.editFormIconGrid}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
               key={icon}
@@ -422,20 +369,17 @@ function HighlightEditForm({
               accessibilityRole="radio"
               accessibilityLabel={`${icon} icon`}
               accessibilityState={{ checked: state.iconKey === icon }}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: state.iconKey === icon ? primaryColor : borderColor,
-                backgroundColor: state.iconKey === icon ? primaryColor + "22" : colors.input,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={[
+                settingsStyles.editFormSwatch,
+                {
+                  borderColor: state.iconKey === icon ? primaryColor : borderColor,
+                  backgroundColor: state.iconKey === icon ? primaryColor + "22" : colors.input,
+                },
+              ]}
             >
-              <Ionicons
-                name={icon as ComponentProps<typeof Ionicons>["name"]}
-                size={18}
+              <Icon
+                name={icon as IconName}
+                size="lg"
                 color={state.iconKey === icon ? primaryColor : mutedColor}
               />
             </Pressable>
@@ -443,8 +387,8 @@ function HighlightEditForm({
         </View>
       </View>
 
-      <View style={{ gap: 4 }}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Title</ThemedText>
+      <View style={settingsStyles.editFormField}>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>Title</ThemedText>
         <Input
           value={state.title}
           onChangeText={(v) => onChange({ ...state, title: v })}
@@ -452,20 +396,24 @@ function HighlightEditForm({
         />
       </View>
 
-      <View style={{ gap: 4 }}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Description</ThemedText>
+      <View style={settingsStyles.editFormField}>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+          Description
+        </ThemedText>
         <Input
           value={state.body}
           onChangeText={(v) => onChange({ ...state, body: v })}
           placeholder="Short sentence about this highlight"
           multiline
           numberOfLines={3}
-          style={{ height: 76, paddingTop: 10, paddingBottom: 10 }}
+          style={styles.bodyInput}
         />
       </View>
 
-      <View style={{ gap: 4 }}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Link (optional)</ThemedText>
+      <View style={settingsStyles.editFormField}>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+          Link (optional)
+        </ThemedText>
         <Input
           value={state.link}
           onChangeText={(v) => onChange({ ...state, link: v })}
@@ -473,21 +421,27 @@ function HighlightEditForm({
           autoCapitalize="none"
           keyboardType="url"
         />
-        <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+        <ThemedText style={[styles.linkHint, { color: mutedColor }]}>
           Makes the whole card clickable. Leave blank for a static highlight.
         </ThemedText>
       </View>
 
-      {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
+      {error ? (
+        <ThemedText style={[settingsStyles.errorText, settingsStyles.editFormError]}>
+          {error}
+        </ThemedText>
+      ) : null}
 
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+      <View style={settingsStyles.editFormActions}>
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
           accessibilityLabel="Cancel editing this highlight"
-          style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 }}
+          style={settingsStyles.editFormCancelBtn}
         >
-          <ThemedText style={{ fontSize: 14, color: mutedColor }}>Cancel</ThemedText>
+          <ThemedText style={[settingsStyles.editFormCancelText, { color: mutedColor }]}>
+            Cancel
+          </ThemedText>
         </Pressable>
         <Pressable
           onPress={onSave}
@@ -495,19 +449,16 @@ function HighlightEditForm({
           accessibilityRole="button"
           accessibilityLabel="Save this highlight"
           accessibilityState={{ disabled: saving || !state.title.trim(), busy: saving }}
-          style={{
-            opacity: saving || !state.title.trim() ? 0.5 : 1,
-            backgroundColor: primaryColor,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderRadius: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-          }}
+          style={[
+            settingsStyles.editFormSaveBtn,
+            {
+              opacity: saving || !state.title.trim() ? 0.5 : 1,
+              backgroundColor: primaryColor,
+            },
+          ]}
         >
-          <Ionicons name="checkmark" size={14} color="#fff" />
-          <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
+          <Icon name="checkmark" size="sm" color="#fff" />
+          <ThemedText style={settingsStyles.editFormSaveText}>
             {saving ? "Saving…" : "Save"}
           </ThemedText>
         </Pressable>

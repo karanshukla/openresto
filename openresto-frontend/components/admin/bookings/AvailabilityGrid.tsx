@@ -1,11 +1,11 @@
 import { ScrollView, View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { getThemeColors } from "@/theme/theme";
 import { SectionWithTables, BookingDetailDto } from "@/api/admin";
 import { styles } from "./bookings.styles";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
+import { Icon } from "@/components/common/Icon";
 
 function buildTimeSlots(openTime: string, closeTime: string) {
   const startHour = parseInt(openTime.split(":")[0], 10);
@@ -74,7 +74,7 @@ export function AvailabilityGrid({
   if (sections.length === 0) {
     return (
       <View style={{ padding: 40, alignItems: "center" }}>
-        <Ionicons name="grid-outline" size={32} color={mutedColor} />
+        <Icon name="grid-outline" size={32} color={mutedColor} />
         <ThemedText style={[{ color: mutedColor, marginTop: 10, fontSize: 14 }]}>
           No tables found. Add sections and tables in Location Manager.
         </ThemedText>
@@ -218,7 +218,7 @@ export function AvailabilityGrid({
                     >
                       {booking ? (
                         <View style={{ alignItems: "center", gap: 1 }}>
-                          <Ionicons name="person" size={10} color={PRIMARY} />
+                          <Icon name="person" size={10} color={PRIMARY} />
                           <ThemedText style={styles.gridCellEmail} numberOfLines={1}>
                             {booking.customerEmail?.split("@")[0]}
                           </ThemedText>

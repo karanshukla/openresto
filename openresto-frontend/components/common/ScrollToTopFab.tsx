@@ -1,8 +1,8 @@
 import { Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./ScrollToTopFab.styles";
+import { Icon } from "@/components/common/Icon";
 
 /** Scroll distance past which the return-to-top shortcut is worth offering. */
 export const SHOW_AFTER_SCROLL_Y = 300;
@@ -27,7 +27,7 @@ export default function ScrollToTopFab({ visible, onPress }: Props) {
       accessibilityLabel="Scroll to top"
       accessibilityRole="button"
     >
-      <Ionicons name="chevron-up" size={22} color="#fff" />
+      <Icon name="chevron-up" size={22} color="#fff" />
     </Pressable>
   );
 }

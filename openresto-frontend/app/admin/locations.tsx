@@ -3,7 +3,6 @@ import { ActivityIndicator, ScrollView, View, Platform, Pressable } from "react-
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { fetchRestaurants, createRestaurant, RestaurantDto } from "@/api/restaurants";
 import {
@@ -21,6 +20,7 @@ import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
 import { DangerZone } from "@/components/admin/locations/DangerZone";
 import { styles } from "@/components/admin/settings/settings.styles";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
+import { Icon } from "@/components/common/Icon";
 
 export default function AdminLocationsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -140,7 +140,7 @@ export default function AdminLocationsScreen() {
             opacity: addingLocation ? 0.5 : 1,
           }}
         >
-          <Ionicons name="add" size={16} color="#fff" />
+          <Icon name="add" size="md" color="#fff" />
           <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
             Add location
           </ThemedText>
@@ -265,7 +265,7 @@ export default function AdminLocationsScreen() {
               minHeight: 44,
             }}
           >
-            <Ionicons
+            <Icon
               name={isPaused ? "play-circle-outline" : "pause-circle-outline"}
               size={15}
               color={isPaused ? "#16a34a" : "#ca8a04"}
@@ -319,7 +319,7 @@ export default function AdminLocationsScreen() {
               minHeight: 44,
             }}
           >
-            <Ionicons
+            <Icon
               name="timer-outline"
               size={15}
               color={
@@ -370,7 +370,7 @@ export default function AdminLocationsScreen() {
               marginBottom: 4,
             }}
           >
-            <Ionicons name="storefront-outline" size={28} color={mutedColor} />
+            <Icon name="storefront-outline" size={28} color={mutedColor} />
           </View>
           <ThemedText style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}>
             No locations yet

@@ -1,9 +1,9 @@
 import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
 import { styles } from "./LargePartyNotice.styles";
+import { Icon } from "@/components/common/Icon";
 
 /**
  * Inline bubble shown in the booking form when the selected party size exceeds the
@@ -34,7 +34,7 @@ export default function LargePartyNotice({
       accessibilityLabel="Contact us about a large party"
     >
       <View style={[styles.iconWrap, { backgroundColor: primaryColor }]}>
-        <Ionicons name="people-outline" size={20} color="#fff" />
+        <Icon name="people-outline" size="xl" color="#fff" />
       </View>
       <View style={styles.textWrap}>
         <ThemedText style={[styles.title, { color: colors.text }]}>Large party</ThemedText>

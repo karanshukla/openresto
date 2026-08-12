@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import {
   SectionDto,
@@ -22,9 +21,11 @@ import { theme, getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./SectionBlock.styles";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
+import { Icon } from "@/components/common/Icon";
 
 export function SectionBlock({
   section,
@@ -230,35 +231,14 @@ export function SectionBlock({
 
   return (
     <View
-      style={[
-        styles.sectionBlock,
-        {
-          borderWidth: 1,
-          borderColor,
-          borderRadius: 12,
-          overflow: "hidden",
-          backgroundColor: surface2,
-          marginBottom: 8,
-        },
-      ]}
+      style={[settingsStyles.sectionBlock, styles.card, { borderColor, backgroundColor: surface2 }]}
     >
       {/* Section header — surface background with border-bottom. Name + count subtitle on the
           left, a tidy cluster of icon actions on the right (consistent with the table tiles and
           the rest of the settings cards). Editing state swaps to a name Input + text Save/Cancel. */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          backgroundColor: cardBg,
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
-        }}
-      >
+      <View style={[styles.header, { backgroundColor: cardBg, borderBottomColor: borderColor }]}>
         {/* Left: name / edit input + count subtitle */}
-        <View style={{ flex: 1, gap: 2 }}>
+        <View style={styles.headerCopy}>
           {editing ? (
             <Input
               value={draft}
@@ -268,8 +248,8 @@ export function SectionBlock({
             />
           ) : (
             <>
-              <ThemedText style={styles.editableValue}>{section.name}</ThemedText>
-              <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+              <ThemedText style={settingsStyles.editableValue}>{section.name}</ThemedText>
+              <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
                 {section.tables.length} tables · {totalSeats} seats
                 {sectionGroups.length > 0
                   ? ` · ${sectionGroups.length} combinable group${sectionGroups.length > 1 ? "s" : ""}`
@@ -280,11 +260,11 @@ export function SectionBlock({
         </View>
 
         {/* Right: edit/save/delete actions — gap 8 to match the table-row trailing cluster. */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={styles.headerActions}>
           {editing ? (
             <>
               <Pressable
-                style={[styles.actionBtn, { backgroundColor: primaryColor }]}
+                style={[settingsStyles.actionBtn, { backgroundColor: primaryColor }]}
                 disabled={saving}
                 onPress={async () => {
                   if (!draft.trim()) return;
@@ -295,12 +275,12 @@ export function SectionBlock({
                   setEditing(false);
                 }}
               >
-                <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
+                <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
                   {saving ? "…" : "Save"}
                 </ThemedText>
               </Pressable>
-              <Pressable style={styles.smallBtn} onPress={() => setEditing(false)}>
-                <ThemedText style={[styles.smallBtnText, { color: colors.muted }]}>
+              <Pressable style={settingsStyles.smallBtn} onPress={() => setEditing(false)}>
+                <ThemedText style={[settingsStyles.smallBtnText, { color: colors.muted }]}>
                   Cancel
                 </ThemedText>
               </Pressable>
@@ -357,26 +337,25 @@ export function SectionBlock({
           the consequence is visible in context. Cancel returns to the header without destroying. */}
       {deleteStep === "confirm" && (
         <View
-          style={{
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            borderBottomWidth: 1,
-            borderBottomColor: borderColor,
-            gap: 10,
-            backgroundColor: isDark
-              ? hexToRgba(theme.colors.error, 0.08)
-              : hexToRgba(theme.colors.error, 0.04),
-          }}
+          style={[
+            styles.confirmBanner,
+            {
+              borderBottomColor: borderColor,
+              backgroundColor: isDark
+                ? hexToRgba(theme.colors.error, 0.08)
+                : hexToRgba(theme.colors.error, 0.04),
+            },
+          ]}
         >
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-            <Ionicons
+          <View style={settingsStyles.confirmCopy}>
+            <Icon
               name="warning-outline"
               size={15}
               color={theme.colors.error}
-              style={{ marginTop: 1 }}
+              style={settingsStyles.confirmIcon}
             />
-            <ThemedText style={{ flex: 1, fontSize: 12, lineHeight: 17 }}>
-              <ThemedText style={{ fontWeight: "700" }}>
+            <ThemedText style={settingsStyles.confirmText}>
+              <ThemedText style={settingsStyles.confirmTextStrong}>
                 Delete section &ldquo;{section.name}&rdquo; and all its tables?
               </ThemedText>{" "}
               {impactLoading
@@ -387,32 +366,27 @@ export function SectionBlock({
               This cannot be undone.
             </ThemedText>
           </View>
-          <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
+          <View style={settingsStyles.confirmActions}>
             <Pressable
               testID="section-delete-cancel-btn"
-              style={[styles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
+              style={[settingsStyles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
               onPress={cancelSectionDelete}
               disabled={deleting}
             >
-              <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+              <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
+                Cancel
+              </ThemedText>
             </Pressable>
             <Pressable
               testID="section-delete-confirm-btn"
               disabled={deleting}
               onPress={confirmSectionDelete}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: theme.borderRadius.md,
-                backgroundColor: theme.colors.error,
-                opacity: deleting ? 0.7 : 1,
-              }}
+              style={[settingsStyles.confirmDeleteBtn, { opacity: deleting ? 0.7 : 1 }]}
             >
               {deleting && <ActivityIndicator size="small" color="#fff" />}
-              <ThemedText style={[styles.smallBtnText, { color: "#fff", fontWeight: "700" }]}>
+              <ThemedText
+                style={[settingsStyles.smallBtnText, settingsStyles.confirmDeleteBtnText]}
+              >
                 {deleting ? "Deleting…" : "Yes, delete"}
               </ThemedText>
             </Pressable>
@@ -424,30 +398,30 @@ export function SectionBlock({
           source table and offers Cancel / Combine. The table rows below become checkboxes. */}
       {inSelectionMode && (
         <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderBottomWidth: 1,
-            borderBottomColor: borderColor,
-            backgroundColor: isDark ? hexToRgba(primaryColor, 0.1) : hexToRgba(primaryColor, 0.06),
-            gap: 8,
-          }}
+          style={[
+            styles.selectionBar,
+            {
+              borderBottomColor: borderColor,
+              backgroundColor: isDark
+                ? hexToRgba(primaryColor, 0.1)
+                : hexToRgba(primaryColor, 0.06),
+            },
+          ]}
         >
-          <ThemedText style={{ flex: 1, fontSize: 12, color: primaryColor, fontWeight: "600" }}>
+          <ThemedText style={[styles.selectionLabel, { color: primaryColor }]}>
             Select tables to combine with &ldquo;
             {section.tables.find((t) => t.id === linkingFromId)?.name ?? `T${linkingFromId}`}
             &rdquo; ({selectedIds.size} selected)
           </ThemedText>
-          <Pressable style={styles.smallBtn} onPress={cancelLink} disabled={combining}>
-            <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>Cancel</ThemedText>
+          <Pressable style={settingsStyles.smallBtn} onPress={cancelLink} disabled={combining}>
+            <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
+              Cancel
+            </ThemedText>
           </Pressable>
           <Pressable
             testID="section-combine-btn"
             style={[
-              styles.actionBtn,
+              settingsStyles.actionBtn,
               {
                 backgroundColor: primaryColor,
                 opacity: selectedIds.size < 2 || combining ? 0.5 : 1,
@@ -459,7 +433,9 @@ export function SectionBlock({
             {combining ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>Combine</ThemedText>
+              <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
+                Combine
+              </ThemedText>
             )}
           </Pressable>
         </View>
@@ -472,22 +448,21 @@ export function SectionBlock({
           if (!g) return null;
           return (
             <View
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: borderColor,
-                gap: 8,
-                backgroundColor: isDark
-                  ? hexToRgba(primaryColor, 0.1)
-                  : hexToRgba(primaryColor, 0.06),
-              }}
+              style={[
+                styles.groupEditBar,
+                {
+                  borderBottomColor: borderColor,
+                  backgroundColor: isDark
+                    ? hexToRgba(primaryColor, 0.1)
+                    : hexToRgba(primaryColor, 0.06),
+                },
+              ]}
             >
-              <ThemedText style={{ fontSize: 12, fontWeight: "600", color: primaryColor }}>
+              <ThemedText style={[styles.groupEditLabel, { color: primaryColor }]}>
                 Edit combined seats · {groupLabel(g)}
               </ThemedText>
-              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-                <View style={{ flex: 1 }}>
+              <View style={styles.groupEditRow}>
+                <View style={styles.groupEditSelect}>
                   <Select
                     selectedValue={parseInt(draftCombinedSeats, 10) || undefined}
                     onSelect={(v) => setDraftCombinedSeats(String(v))}
@@ -498,17 +473,19 @@ export function SectionBlock({
                     placeholder={String(g.combinedSeats)}
                   />
                 </View>
-                <Pressable style={styles.smallBtn} onPress={() => setEditingGroupId(null)}>
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
+                <Pressable style={settingsStyles.smallBtn} onPress={() => setEditingGroupId(null)}>
+                  <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
                     Cancel
                   </ThemedText>
                 </Pressable>
                 <Pressable
                   testID="group-save-combined-btn"
-                  style={[styles.actionBtn, { backgroundColor: primaryColor }]}
+                  style={[settingsStyles.actionBtn, { backgroundColor: primaryColor }]}
                   onPress={() => saveCombinedSeats(g.id)}
                 >
-                  <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>Save</ThemedText>
+                  <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
+                    Save
+                  </ThemedText>
                 </Pressable>
               </View>
             </View>
@@ -517,7 +494,7 @@ export function SectionBlock({
 
       {/* Table list — tiles with breathing room (rows are now rounded surface tiles, not
           divider-separated). */}
-      <View style={{ padding: 12, gap: 8 }}>
+      <View style={styles.tableList}>
         {section.tables.map((t) => (
           <TableRow
             key={t.id}
@@ -538,19 +515,11 @@ export function SectionBlock({
           />
         ))}
         {section.tables.length === 0 && (
-          <View
-            style={{
-              padding: 20,
-              alignItems: "center",
-              gap: 6,
-              borderWidth: 1,
-              borderColor,
-              borderRadius: 10,
-              borderStyle: "dashed" as const,
-            }}
-          >
-            <Ionicons name="grid-outline" size={22} color={mutedColor} />
-            <ThemedText style={{ fontSize: 13, color: mutedColor }}>No tables yet.</ThemedText>
+          <View style={[settingsStyles.emptyState, { borderColor }]}>
+            <Icon name="grid-outline" size={22} color={mutedColor} />
+            <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
+              No tables yet.
+            </ThemedText>
           </View>
         )}
       </View>
@@ -562,34 +531,27 @@ export function SectionBlock({
           testID={`group-edit-btn-${g.id}`}
           accessibilityRole="button"
           accessibilityLabel={`Edit ${groupLabel(g)} combined seats`}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            alignSelf: "flex-start",
-            marginHorizontal: 12,
-            marginBottom: 8,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: 1,
-            borderColor: hexToRgba(primaryColor, 0.4),
-            backgroundColor: hexToRgba(primaryColor, 0.06),
-          }}
+          style={[
+            styles.groupEditTrigger,
+            {
+              borderColor: hexToRgba(primaryColor, 0.4),
+              backgroundColor: hexToRgba(primaryColor, 0.06),
+            },
+          ]}
           onPress={() => {
             setEditingGroupId(g.id);
             setDraftCombinedSeats(String(g.combinedSeats));
           }}
         >
-          <Ionicons name="create-outline" size={13} color={primaryColor} />
-          <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
+          <Icon name="create-outline" size={13} color={primaryColor} />
+          <ThemedText style={[styles.groupEditTriggerText, { color: primaryColor }]}>
             Edit &ldquo;{groupLabel(g)}&rdquo; combined seats
           </ThemedText>
         </Pressable>
       ))}
 
       {/* Add table */}
-      <View style={{ padding: 12, paddingTop: 0 }}>
+      <View style={styles.addTableRow}>
         <AddRow
           label="Add Table"
           placeholder="Table name (e.g. T1, Booth 1)"

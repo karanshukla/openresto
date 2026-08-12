@@ -1,8 +1,9 @@
 import { View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel } from "./settingsShared";
 import type { EmailFailureDto } from "@/api/admin";
+import { Icon } from "@/components/common/Icon";
+import { styles } from "./EmailFailuresList.styles";
 
 export interface EmailFailuresListProps {
   failures: EmailFailureDto[];
@@ -27,17 +28,9 @@ export function EmailFailuresList({
   if (failures.length === 0) return null;
 
   return (
-    <View style={{ gap: 8 }}>
+    <View style={styles.wrapper}>
       <SubLabel mutedColor={mutedColor}>Send failures</SubLabel>
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: dangerBorder,
-          borderRadius: 12,
-          overflow: "hidden",
-          backgroundColor: dangerSoft,
-        }}
-      >
+      <View style={[styles.list, { borderColor: dangerBorder, backgroundColor: dangerSoft }]}>
         {failures.map((f, i) => {
           const date = new Date(f.attemptedAt);
           const dateStr = date.toLocaleDateString(undefined, {
@@ -49,33 +42,24 @@ export function EmailFailuresList({
           return (
             <View
               key={f.id}
-              style={{
-                padding: 12,
-                paddingHorizontal: 14,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: dangerBorder,
-                gap: 3,
-              }}
+              style={[
+                styles.entry,
+                { borderTopWidth: i === 0 ? 0 : 1, borderTopColor: dangerBorder },
+              ]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="warning-outline" size={13} color={dangerColor} />
-                <ThemedText
-                  style={{ fontSize: 12.5, fontWeight: "500", flex: 1 }}
-                  numberOfLines={1}
-                >
+              <View style={styles.entryHeader}>
+                <Icon name="warning-outline" size={13} color={dangerColor} />
+                <ThemedText style={styles.recipient} numberOfLines={1}>
                   {f.recipientEmail}
                 </ThemedText>
-                <ThemedText style={{ fontSize: 11, color: mutedColor }}>{dateStr}</ThemedText>
+                <ThemedText style={[styles.timestamp, { color: mutedColor }]}>{dateStr}</ThemedText>
               </View>
               {f.bookingRef && (
-                <ThemedText style={{ fontSize: 11.5, color: mutedColor, paddingLeft: 19 }}>
+                <ThemedText style={[styles.detail, { color: mutedColor }]}>
                   Ref: {f.bookingRef}
                 </ThemedText>
               )}
-              <ThemedText
-                style={{ fontSize: 11.5, color: dangerColor, paddingLeft: 19 }}
-                numberOfLines={2}
-              >
+              <ThemedText style={[styles.detail, { color: dangerColor }]} numberOfLines={2}>
                 {f.errorMessage}
               </ThemedText>
             </View>
