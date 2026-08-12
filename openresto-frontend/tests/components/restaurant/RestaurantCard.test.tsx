@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react-nativ
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import { fetchAvailability } from "@/api/availability";
 import { Linking, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -29,6 +30,8 @@ jest.mock("@/context/BrandContext", () => ({
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
+
+jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
 
 jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
 
@@ -260,6 +263,27 @@ describe("RestaurantCard", () => {
     // Pass a mock event to satisfy e.stopPropagation?.()
     fireEvent.press(screen.getByText("Google"), { stopPropagation: () => {} });
     expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining("maps.google.com"));
+  });
+
+  it("answers a tap on the card itself before navigating", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant} />);
+    await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText("Test Bistro, view details and book"));
+    expect(Haptics.selectionAsync).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1");
+  });
+
+  it("answers a tap on a time the same way", async () => {
+    (fetchAvailability as jest.Mock).mockResolvedValue({
+      slots: [{ time: "19:00", isAvailable: true, category: "Dinner" }],
+    });
+    render(<RestaurantCard restaurant={mockRestaurant} party={2} />);
+    await waitFor(() => expect(screen.getByText("19:00")).toBeTruthy());
+
+    fireEvent.press(screen.getByText("19:00"), { stopPropagation: () => {} });
+    expect(Haptics.selectionAsync).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1?time=19%3A00&party=2");
   });
 
   it("presses Apple Maps link and opens URL", async () => {

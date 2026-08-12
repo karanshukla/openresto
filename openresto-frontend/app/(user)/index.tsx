@@ -1,24 +1,33 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
-import { useEffect, useState, useRef, useCallback, type ComponentProps } from "react";
 import {
-  ActivityIndicator,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from "react-native";
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
+import { Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { Stack } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
+import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/index.styles";
+
+/**
+ * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
+ * react-native-web's data-attribute escape hatch and isn't in React Native's own prop
+ * types, so it is spread through a cast the way web-only style properties are elsewhere.
+ */
+const HOME_SCROLL_TIMELINE = { dataSet: { scrollTimeline: "home" } };
+const HERO_COLLAPSE_TITLE = { dataSet: { heroCollapse: "title" } };
+const HERO_COLLAPSE_SUB = { dataSet: { heroCollapse: "sub" } };
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
@@ -81,6 +90,50 @@ export default function HomeScreen() {
   const numColumns = width < 600 ? 1 : width < 1000 ? 2 : 3;
   const numHighlightCols = width < 600 ? 1 : width < 900 ? 2 : 4;
 
+  const cardWrapperStyle = [
+    styles.cardWrapper,
+    numColumns > 1 && {
+      width:
+        numColumns === 2
+          ? ("calc(50% - 9px)" as unknown as number)
+          : ("calc(33.333% - 12px)" as unknown as number),
+      minWidth: 320,
+    },
+  ];
+  // One row's worth, except on a phone: a single card reads as the whole list having
+  // loaded and found one location.
+  const skeletonCount = numColumns === 1 ? 2 : numColumns;
+
+  // On a phone the highlights become a swipeable rail rather than a stack four cards
+  // tall, so the locations below stay reachable without scrolling past the whole thing.
+  // The card is deliberately narrower than the viewport: the sliver of the next one is
+  // what says "this scrolls" without a scrollbar to say it.
+  const railCardWidth = Math.min(300, Math.round(width * 0.78));
+  const railGap = 12;
+  const useHighlightRail = numHighlightCols === 1;
+
+  const HighlightsContainer = ({ children }: { children: ReactNode }) =>
+    useHighlightRail ? (
+      <ScrollView
+        testID="highlights-rail"
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={railCardWidth + railGap}
+        decelerationRate="fast"
+        style={[
+          styles.highlightsRail,
+          Platform.OS === "web" && ({ scrollSnapType: "x mandatory" } as object),
+        ]}
+        contentContainerStyle={styles.highlightsRailContent}
+      >
+        {children}
+      </ScrollView>
+    ) : (
+      <View style={[styles.highlightsGrid, { flexDirection: "row", flexWrap: "wrap" }]}>
+        {children}
+      </View>
+    );
+
   return (
     <ThemedView style={styles.root}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: brand.appName }} />}
@@ -92,6 +145,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
+        {...(HOME_SCROLL_TIMELINE as object)}
       >
         <View style={{ flex: 1 }}>
           {/* ── Hero ── */}
@@ -154,11 +208,15 @@ export default function HomeScreen() {
                 ]}
               >
                 <ThemedText
+                  {...(HERO_COLLAPSE_TITLE as object)}
                   style={[styles.heroTitle, isMobile && { fontSize: 40, lineHeight: 44 }]}
                 >
                   {brand.appName}
                 </ThemedText>
-                <ThemedText style={[styles.heroSub, { color: mutedColor }]}>
+                <ThemedText
+                  {...(HERO_COLLAPSE_SUB as object)}
+                  style={[styles.heroSub, { color: mutedColor }]}
+                >
                   {heroSubtitle}
                 </ThemedText>
               </View>
@@ -188,12 +246,7 @@ export default function HomeScreen() {
                     {highlightsSubheading}
                   </ThemedText>
                 </View>
-                <View
-                  style={[
-                    styles.highlightsGrid,
-                    numHighlightCols > 1 && { flexDirection: "row", flexWrap: "wrap" },
-                  ]}
-                >
+                <HighlightsContainer>
                   {highlights.map((h) => {
                     const cardStyle = [
                       styles.highlightCard,
@@ -204,6 +257,12 @@ export default function HomeScreen() {
                             ? ("calc(50% - 6px)" as unknown as number)
                             : ("calc(25% - 9px)" as unknown as number),
                         minWidth: 200,
+                      },
+                      useHighlightRail && {
+                        width: railCardWidth,
+                        ...(Platform.OS === "web"
+                          ? ({ scrollSnapAlign: "start" } as object)
+                          : null),
                       },
                       // A linked card reads as interactive: lift it slightly.
                       h.link && { cursor: "pointer" as const },
@@ -256,7 +315,7 @@ export default function HomeScreen() {
                       </View>
                     );
                   })}
-                </View>
+                </HighlightsContainer>
               </View>
             )}
           </View>
@@ -267,36 +326,22 @@ export default function HomeScreen() {
               <ThemedText style={styles.sectionTitle}>Our locations</ThemedText>
             </View>
 
-            {loading ? (
-              <ActivityIndicator
-                testID="loading-screen"
-                style={styles.spinner}
-                size="large"
-                color={primaryColor}
-              />
-            ) : (
-              <View
-                style={[styles.grid, numColumns > 1 && { flexDirection: "row", flexWrap: "wrap" }]}
-              >
-                {restaurants.map((r, i) => (
-                  <View
-                    key={r.id}
-                    style={[
-                      styles.cardWrapper,
-                      numColumns > 1 && {
-                        width:
-                          numColumns === 2
-                            ? ("calc(50% - 9px)" as unknown as number)
-                            : ("calc(33.333% - 12px)" as unknown as number),
-                        minWidth: 320,
-                      },
-                    ]}
-                  >
-                    <RestaurantCard restaurant={r} index={i} party={party} />
-                  </View>
-                ))}
-              </View>
-            )}
+            <View
+              testID={loading ? "loading-screen" : undefined}
+              style={[styles.grid, numColumns > 1 && { flexDirection: "row", flexWrap: "wrap" }]}
+            >
+              {loading
+                ? Array.from({ length: skeletonCount }, (_, i) => (
+                    <View key={i} style={cardWrapperStyle}>
+                      <RestaurantCardSkeleton />
+                    </View>
+                  ))
+                : restaurants.map((r, i) => (
+                    <View key={r.id} style={cardWrapperStyle}>
+                      <RestaurantCard restaurant={r} index={i} party={party} />
+                    </View>
+                  ))}
+            </View>
           </View>
         </View>
 

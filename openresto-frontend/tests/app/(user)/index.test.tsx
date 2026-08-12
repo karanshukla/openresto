@@ -89,6 +89,60 @@ describe("HomeScreen", () => {
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
   });
 
+  // The skeletons hide themselves from assistive tech, which also hides them from the
+  // default query — placeholders are worth nothing to a screen reader and no more to a
+  // test that isn't asking for them by name.
+  const skeletons = () =>
+    screen.queryAllByTestId("restaurant-card-skeleton", { includeHiddenElements: true });
+
+  it("holds the grid's shape with card skeletons while loading, not a spinner", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 1200, height: 900 });
+    renderWithProviders(<HomeScreen />);
+
+    // One row's worth, so the page doesn't resize under the visitor when the cards land.
+    expect(skeletons()).toHaveLength(3);
+
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    expect(skeletons()).toHaveLength(0);
+  });
+
+  it("shows two skeletons on a phone, where one would read as a finished list", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 375, height: 812 });
+    renderWithProviders(<HomeScreen />);
+
+    expect(skeletons()).toHaveLength(2);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+  });
+
+  it("swipes the highlights sideways on a phone rather than stacking them", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 375, height: 812 });
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    const rail = screen.getByTestId("highlights-rail");
+    expect(rail.props.horizontal).toBe(true);
+    // Snapping is what makes it read as a rail of cards instead of a free scroll.
+    expect(rail.props.snapToInterval).toBeGreaterThan(0);
+    expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
+  });
+
+  it("keeps the highlights grid once there is room for more than one column", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 1200, height: 900 });
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    expect(screen.queryByTestId("highlights-rail")).toBeNull();
+    expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
+  });
+
   it("renders restaurants after loading", async () => {
     renderWithProviders(<HomeScreen />);
 

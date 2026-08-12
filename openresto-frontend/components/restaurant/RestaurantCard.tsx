@@ -3,6 +3,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { useRouter, type Href } from "expo-router";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -53,6 +54,13 @@ export default function RestaurantCard({
   const { colors, isDark, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
   const router = useRouter();
+
+  // Every route this card can take answers a tap, so each one confirms the tap first.
+  // Haptics.selectionAsync is a no-op on web and on devices without a taptic engine.
+  const openLocation = () => {
+    Haptics.selectionAsync();
+    router.push(`/(user)/locations/${restaurant.id}` as Href);
+  };
 
   const [slots, setSlots] = useState<TimeSlotDto[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
@@ -136,15 +144,15 @@ export default function RestaurantCard({
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={`${restaurant.name}, view details and book`}
-      onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
+      onPress={() => openLocation()}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,
         cardShadow,
         { backgroundColor: cardBg, borderColor },
-        (hovered || pressed) &&
-          Platform.OS === "web" && {
-            borderColor: colors.borderStrong,
-          },
+        hovered && Platform.OS === "web" && { borderColor: colors.borderStrong },
+        // Touch has no hover to fall back on, so the press itself has to answer: the
+        // whole card takes the accent edge and settles a hair into the page.
+        pressed && { borderColor: primaryColor, transform: [{ scale: 0.99 }] },
       ]}
     >
       {/* Image area */}
@@ -349,6 +357,7 @@ export default function RestaurantCard({
                       key={s.time}
                       onPress={(e) => {
                         e.stopPropagation?.();
+                        Haptics.selectionAsync();
                         router.push(
                           `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
                         );
@@ -393,7 +402,7 @@ export default function RestaurantCard({
           </View>
           <Pressable
             style={({ pressed }) => [cardStyles.viewBtn, pressed && { backgroundColor: surface2 }]}
-            onPress={() => router.push(`/(user)/locations/${restaurant.id}` as Href)}
+            onPress={() => openLocation()}
             accessibilityRole="link"
             accessibilityLabel={`See details for ${restaurant.name}`}
           >

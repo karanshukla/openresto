@@ -109,6 +109,65 @@ body.theme-ready * {
   }
 }
 
+/* The home page's large title collapses into the navbar as you scroll, the way a native
+   large-title header does. It is the same string as the navbar's own brand text, so it can
+   simply shrink toward its top-left corner and fade — the navbar's copy is already sitting
+   where it lands, and the handover reads as one title moving rather than two existing.
+
+   Driven by a scroll timeline, not by JS: a scroll-linked animation stepped from a scroll
+   handler ticks on the same main thread the list is already busy on (see
+   utils/webAnimation.ts for the measurement that pushed route transitions off it), and it
+   would have to re-render the page on every frame to do it. `scroll()` hands the whole
+   thing to the compositor. Where it isn't supported the hero simply scrolls away, which is
+   what it did before. */
+@keyframes home-hero-title-collapse {
+  to {
+    opacity: 0;
+    transform: scale(0.34) translateY(-10px);
+  }
+}
+
+@keyframes home-hero-sub-collapse {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* Named rather than `scroll(nearest)`: an `overflow: hidden` element is a scroll container
+   too, so `nearest` bound the animation to the hero itself — which never scrolls, leaving
+   the title frozen at progress 0. The name is declared on the one element that does scroll
+   and resolved from its descendants.
+
+   The ranges are short on purpose: the title only has ~56px of scroll before it reaches the
+   navbar's underside, so a longer range would leave it scrolling past at full size and the
+   handover would read as the title leaving rather than landing. */
+[data-scroll-timeline="home"] {
+  scroll-timeline-name: --home-scroll;
+  scroll-timeline-axis: block;
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-hero-collapse="title"] {
+    transform-origin: left top;
+    animation: home-hero-title-collapse linear both;
+    animation-timeline: --home-scroll;
+    animation-range: 0px 130px;
+  }
+
+  [data-hero-collapse="sub"] {
+    animation: home-hero-sub-collapse linear both;
+    animation-timeline: --home-scroll;
+    animation-range: 0px 90px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-collapse] {
+    animation: none;
+  }
+}
+
 /* Custom cursors for horizontal scroll areas */
 .grab-scroll {
   cursor: grab !important;
