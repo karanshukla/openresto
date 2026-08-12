@@ -4,9 +4,9 @@ import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Select, { type SelectOption } from "@/components/common/Select";
 import { theme } from "@/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 export function AddRow({
   label,
@@ -53,7 +53,7 @@ export function AddRow({
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <Ionicons name="add" size={16} color="#fff" />
+        <Icon name="add" size="md" color="#fff" />
         <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>{label}</ThemedText>
       </Pressable>
     );
@@ -128,7 +128,7 @@ export function AddRow({
           accessibilityLabel="Cancel add"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="close" size={16} color={theme.colors.muted.light} />
+          <Icon name="close" size="md" color={theme.colors.muted.light} />
         </Pressable>
       </View>
     </View>

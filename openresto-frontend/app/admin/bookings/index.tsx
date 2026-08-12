@@ -24,7 +24,6 @@ import {
 } from "react-native";
 import { useRouter, Stack, useLocalSearchParams } from "expo-router";
 import { theme } from "@/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 import { AvailabilityGrid } from "@/components/admin/bookings/AvailabilityGrid";
@@ -43,6 +42,7 @@ import { styles } from "@/components/admin/bookings/bookings.styles";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { fmtDate } from "@/utils/formatters";
+import { Icon } from "@/components/common/Icon";
 
 type ViewMode = "timetable" | "list";
 
@@ -346,7 +346,7 @@ export default function AdminBookingsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Clear search"
             >
-              <Ionicons name="close-outline" size={16} color="#fff" />
+              <Icon name="close-outline" size="md" color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>Clear</ThemedText>
             </Pressable>
           ) : (
@@ -356,7 +356,7 @@ export default function AdminBookingsScreen() {
               accessibilityRole="button"
               accessibilityLabel="New booking"
             >
-              <Ionicons name="add-outline" size={16} color="#fff" />
+              <Icon name="add-outline" size="md" color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
             </Pressable>
           )}
@@ -435,7 +435,7 @@ export default function AdminBookingsScreen() {
             accessibilityLabel="Timetable view"
             accessibilityState={{ checked: viewMode === "timetable" }}
           >
-            <Ionicons
+            <Icon
               name="grid-outline"
               size={15}
               color={viewMode === "timetable" ? "#fff" : mutedColor}
@@ -459,11 +459,7 @@ export default function AdminBookingsScreen() {
             accessibilityLabel="List view"
             accessibilityState={{ checked: viewMode === "list" }}
           >
-            <Ionicons
-              name="list-outline"
-              size={15}
-              color={viewMode === "list" ? "#fff" : mutedColor}
-            />
+            <Icon name="list-outline" size={15} color={viewMode === "list" ? "#fff" : mutedColor} />
             {isWide && (
               <ThemedText
                 style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}
@@ -487,7 +483,7 @@ export default function AdminBookingsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Previous day"
             >
-              <Ionicons name="chevron-back" size={18} color={PRIMARY} />
+              <Icon name="chevron-back" size="lg" color={PRIMARY} />
             </Pressable>
             <Pressable
               onPress={resetToToday}
@@ -509,7 +505,7 @@ export default function AdminBookingsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Next day"
             >
-              <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
+              <Icon name="chevron-forward" size="lg" color={PRIMARY} />
             </Pressable>
           </View>
 
@@ -563,7 +559,7 @@ export default function AdminBookingsScreen() {
         </View>
       ) : sorted.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={40} color={mutedColor} />
+          <Icon name="calendar-outline" size={40} color={mutedColor} />
           <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
             No bookings found
           </ThemedText>
@@ -571,7 +567,7 @@ export default function AdminBookingsScreen() {
             style={[styles.newBookingBtn, { backgroundColor: PRIMARY, marginTop: 8 }]}
             onPress={() => setShowNewModal(true)}
           >
-            <Ionicons name="add-outline" size={16} color="#fff" />
+            <Icon name="add-outline" size="md" color="#fff" />
             <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
           </Pressable>
         </View>

@@ -4,7 +4,6 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { validatePasswordChange } from "@/utils/validation";
 import {
@@ -18,6 +17,7 @@ import {
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 export function SecurityCard({
   borderColor,
@@ -108,7 +108,7 @@ export function SecurityCard({
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
-          <Ionicons name="shield-checkmark-outline" size={20} color={primaryColor} />
+          <Icon name="shield-checkmark-outline" size="xl" color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Account Security</ThemedText>
@@ -116,7 +116,7 @@ export function SecurityCard({
             Manage your password and identity verification
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
@@ -347,7 +347,7 @@ export function SecurityCard({
 
           {msg?.ok && (
             <View style={styles.successBanner}>
-              <Ionicons name="checkmark-circle-outline" size={16} color="#16a34a" />
+              <Icon name="checkmark-circle-outline" size="md" color="#16a34a" />
               <ThemedText style={styles.successText}>{msg.text}</ThemedText>
             </View>
           )}

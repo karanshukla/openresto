@@ -8,7 +8,6 @@ import { logout } from "@/api/auth";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
 import { adminLookupBookings } from "@/api/admin";
@@ -16,6 +15,7 @@ import { getUnreadCount } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { styles } from "./AdminSidebar.styles";
+import { Icon } from "@/components/common/Icon";
 
 const NAV_ITEMS = [
   {
@@ -127,7 +127,7 @@ export default function AdminSidebar() {
     >
       <View style={styles.brand}>
         <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
-          <Ionicons name="restaurant-outline" size={16} color={theme.colors.white} />
+          <Icon name="restaurant-outline" size="md" color={theme.colors.white} />
         </View>
         <View style={styles.brandTextGroup}>
           <ThemedText style={styles.brandName} numberOfLines={1}>
@@ -167,7 +167,7 @@ export default function AdminSidebar() {
               ]}
             >
               <View style={{ position: "relative", width: 20 }}>
-                <Ionicons name={icon} size={18} color={active ? PRIMARY : colors.muted} />
+                <Icon name={icon} size="lg" color={active ? PRIMARY : colors.muted} />
                 {label === "Notifications" && unreadNotifCount > 0 && (
                   <View
                     style={{
@@ -256,7 +256,7 @@ export default function AdminSidebar() {
             <ActivityIndicator size="small" color={theme.colors.white} />
           ) : (
             <>
-              <Ionicons name="search-outline" size={15} color={theme.colors.white} />
+              <Icon name="search-outline" size={15} color={theme.colors.white} />
               <ThemedText style={styles.lookupBtnText}>Search</ThemedText>
             </>
           )}
@@ -295,7 +295,7 @@ export default function AdminSidebar() {
             (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
         >
-          <Ionicons name="arrow-back-outline" size={15} color={colors.muted} />
+          <Icon name="arrow-back-outline" size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>Back to site</ThemedText>
         </Pressable>
         <Pressable
@@ -307,11 +307,7 @@ export default function AdminSidebar() {
           accessibilityRole="button"
           accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <Ionicons
-            name={isDark ? "sunny-outline" : "moon-outline"}
-            size={15}
-            color={colors.muted}
-          />
+          <Icon name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>
             {isDark ? "Light mode" : "Dark mode"}
           </ThemedText>
@@ -325,7 +321,7 @@ export default function AdminSidebar() {
           accessibilityRole="button"
           accessibilityLabel="Log out"
         >
-          <Ionicons name="log-out-outline" size={15} color={colors.muted} />
+          <Icon name="log-out-outline" size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>Log out</ThemedText>
         </Pressable>
       </View>

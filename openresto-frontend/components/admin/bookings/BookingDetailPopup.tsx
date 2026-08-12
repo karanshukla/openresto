@@ -14,7 +14,6 @@ import {
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useRef, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -27,6 +26,7 @@ import { ExtendBookingActions } from "./ExtendBookingActions";
 import { EmailGuestForm } from "./EmailGuestForm";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { isPast } from "./StatusBadge";
+import { Icon } from "@/components/common/Icon";
 
 export function BookingDetailPopup({
   bookingId,
@@ -379,7 +379,7 @@ export function BookingDetailPopup({
                     accessibilityRole="button"
                     accessibilityLabel="Edit booking"
                   >
-                    <Ionicons name="create-outline" size={16} color={PRIMARY} />
+                    <Icon name="create-outline" size="md" color={PRIMARY} />
                     <ThemedText style={[styles.actionBtnText, { color: PRIMARY }]}>Edit</ThemedText>
                   </Pressable>
                 )
@@ -391,7 +391,7 @@ export function BookingDetailPopup({
                 accessibilityLabel="Close"
                 hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
               >
-                <Ionicons name="close" size={22} color={mutedColor} />
+                <Icon name="close" size={22} color={mutedColor} />
               </Pressable>
             </View>
           </View>

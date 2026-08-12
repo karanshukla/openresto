@@ -9,7 +9,6 @@ import {
   deleteLocationImage,
 } from "@/api/restaurants";
 import { reorderSections } from "@/api/admin";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
@@ -17,6 +16,7 @@ import { AddRow } from "./AddRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { summarizeHours } from "@/utils/openingHours";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 function StatChip({
   label,
@@ -172,7 +172,7 @@ export function LocationCard({
             flexShrink: 0,
           }}
         >
-          <Ionicons name="storefront-outline" size={22} color={primaryColor} />
+          <Icon name="storefront-outline" size={22} color={primaryColor} />
         </View>
 
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -186,7 +186,7 @@ export function LocationCard({
             {restaurant.address ? (
               <>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                  <Ionicons name="location-outline" size={12} color={mutedColor} />
+                  <Icon name="location-outline" size="xs" color={mutedColor} />
                   <ThemedText style={{ fontSize: 13, color: mutedColor }} numberOfLines={1}>
                     {restaurant.address}
                   </ThemedText>
@@ -197,7 +197,7 @@ export function LocationCard({
               </>
             ) : null}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-              <Ionicons name="time-outline" size={12} color={mutedColor} />
+              <Icon name="time-outline" size="xs" color={mutedColor} />
               <ThemedText style={{ fontSize: 13, color: mutedColor }}>{hoursText}</ThemedText>
             </View>
             {restaurant.timezone ? (
@@ -272,7 +272,7 @@ export function LocationCard({
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (
-            <Ionicons name="image-outline" size={20} color={mutedColor} />
+            <Icon name="image-outline" size="xl" color={mutedColor} />
           )}
         </View>
 

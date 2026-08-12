@@ -5,7 +5,6 @@ import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } fro
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
@@ -14,6 +13,7 @@ import { hexToRgb } from "@/utils/colors";
 import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/restaurantTime";
 import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
+import { Icon } from "@/components/common/Icon";
 
 function opensLaterToday(restaurant: RestaurantDto): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -194,7 +194,7 @@ export default function RestaurantCard({
             <View style={styles.phRingTopRight} />
             <View style={styles.phRingBottomLeft} />
             <View style={styles.phCenter}>
-              <Ionicons name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
+              <Icon name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
               <ThemedText style={styles.phInitial}>
                 {restaurant.name.charAt(0).toUpperCase()}
               </ThemedText>
@@ -220,7 +220,7 @@ export default function RestaurantCard({
           </View>
           {walkInBadgeText && (
             <View style={[cardStyles.badge, cardStyles.badgeMuted]} testID="walk-in-badge">
-              <Ionicons name="walk-outline" size={12} color="#fff" />
+              <Icon name="walk-outline" size="xs" color="#fff" />
               <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
             </View>
           )}
@@ -234,7 +234,7 @@ export default function RestaurantCard({
               {restaurant.name}
             </ThemedText>
             <View style={styles.meta}>
-              <Ionicons name="location-outline" size={11} color={mutedColor} />
+              <Icon name="location-outline" size={11} color={mutedColor} />
               <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
                 {restaurant.address || "Multiple areas"}
               </ThemedText>
@@ -256,7 +256,7 @@ export default function RestaurantCard({
                   accessibilityRole="link"
                   accessibilityLabel="Open in Google Maps"
                 >
-                  <Ionicons name="navigate-outline" size={11} color={mutedColor} />
+                  <Icon name="navigate-outline" size={11} color={mutedColor} />
                   <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>
                     Google
                   </ThemedText>
@@ -278,7 +278,7 @@ export default function RestaurantCard({
                   accessibilityRole="link"
                   accessibilityLabel="Open in Apple Maps"
                 >
-                  <Ionicons name="navigate-outline" size={11} color={mutedColor} />
+                  <Icon name="navigate-outline" size={11} color={mutedColor} />
                   <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>Apple</ThemedText>
                 </Pressable>
               </View>
@@ -297,7 +297,7 @@ export default function RestaurantCard({
             accessibilityRole="link"
             accessibilityLabel="Open booking page in new tab"
           >
-            <Ionicons name="open-outline" size={14} color={mutedColor} />
+            <Icon name="open-outline" size="sm" color={mutedColor} />
           </Pressable>
         </View>
 
@@ -319,7 +319,7 @@ export default function RestaurantCard({
         <View style={styles.slotsArea}>
           {walkInLocation || walkInToday ? (
             <View style={styles.walkInEmptyState} testID="walk-in-slot-notice">
-              <Ionicons name="walk-outline" size={18} color={mutedColor} />
+              <Icon name="walk-outline" size="lg" color={mutedColor} />
               <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
                 No reservations required
               </ThemedText>
@@ -377,7 +377,7 @@ export default function RestaurantCard({
 
         <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
           <View style={styles.hoursRow}>
-            <Ionicons name="time-outline" size={12} color={mutedColor} style={{ marginRight: 5 }} />
+            <Icon name="time-outline" size="xs" color={mutedColor} style={{ marginRight: 5 }} />
             {closedToday ? (
               <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
                 Closed today
@@ -402,7 +402,7 @@ export default function RestaurantCard({
             <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
               See details
             </ThemedText>
-            <Ionicons name="arrow-forward" size={13} color={primaryColor} />
+            <Icon name="arrow-forward" size={13} color={primaryColor} />
           </Pressable>
         </View>
       </View>

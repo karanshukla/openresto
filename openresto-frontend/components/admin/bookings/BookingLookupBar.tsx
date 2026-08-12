@@ -1,8 +1,8 @@
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { styles } from "@/components/admin/bookings/bookings.styles";
+import { Icon } from "@/components/common/Icon";
 
 export type LookupStatus = "idle" | "not_found" | "multiple";
 
@@ -75,7 +75,7 @@ export function BookingLookupBar({
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Ionicons name="search-outline" size={15} color="#fff" />
+              <Icon name="search-outline" size={15} color="#fff" />
               <ThemedText style={styles.newBookingBtnText}>Find</ThemedText>
             </>
           )}

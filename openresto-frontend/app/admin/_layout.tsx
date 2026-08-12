@@ -5,7 +5,6 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
 import PageLoader from "@/components/common/PageLoader";
@@ -13,13 +12,14 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
 import { styles } from "@/styles/admin/layout.styles";
+import { Icon } from "@/components/common/Icon";
 
 const MIN_WIDTH = 600;
 
 function DesktopOnlyWall() {
   return (
     <ThemedView style={styles.wall}>
-      <Ionicons name="desktop-outline" size={48} color={theme.colors.primary} />
+      <Icon name="desktop-outline" size={48} color={theme.colors.primary} />
       <ThemedText style={styles.wallTitle}>Screen too small</ThemedText>
       <ThemedText style={styles.wallBody}>
         The admin dashboard requires a wider screen.{"\n"}

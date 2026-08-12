@@ -1,7 +1,7 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 type TestState = "idle" | "testing" | "ok" | "fail";
 
@@ -82,8 +82,8 @@ export function SmtpTestPanel({
         {testState === "idle" && (
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: mutedColor }} />
         )}
-        {testState === "testing" && <Ionicons name="reload-outline" size={14} color={mutedColor} />}
-        {testState === "ok" && <Ionicons name="checkmark" size={16} color="#fff" />}
+        {testState === "testing" && <Icon name="reload-outline" size="sm" color={mutedColor} />}
+        {testState === "ok" && <Icon name="checkmark" size="md" color="#fff" />}
         {testState === "fail" && (
           <ThemedText style={{ fontSize: 18, fontWeight: "700", color: "#fff", lineHeight: 20 }}>
             ×
@@ -123,7 +123,7 @@ export function SmtpTestPanel({
           (!host || !username) && { opacity: 0.4 },
         ]}
       >
-        <Ionicons name="flash-outline" size={14} color={primaryColor} />
+        <Icon name="flash-outline" size="sm" color={primaryColor} />
         <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
           {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
         </ThemedText>

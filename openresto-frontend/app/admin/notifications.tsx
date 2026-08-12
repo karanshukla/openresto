@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -23,6 +22,7 @@ import { NotificationRow } from "@/components/admin/notifications/NotificationRo
 import { PAGE_SIZE, PIN_STORAGE_KEY, TYPE_FILTERS } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
+import { Icon } from "@/components/common/Icon";
 
 export default function NotificationsScreen() {
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -371,7 +371,7 @@ export default function NotificationsScreen() {
                 {deletingAll ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Ionicons name="trash-outline" size={16} color="#fff" />
+                  <Icon name="trash-outline" size="md" color="#fff" />
                 )}
                 <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
                   {deletingAll ? "Deleting…" : "Delete all"}
@@ -401,7 +401,7 @@ export default function NotificationsScreen() {
                     {clearingRead ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                      <Icon name="checkmark-circle-outline" size="md" color="#fff" />
                     )}
                     <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
                       {clearingRead ? "Clearing…" : "Clear read"}
@@ -430,7 +430,7 @@ export default function NotificationsScreen() {
                 {markingAll ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Ionicons name="checkmark-done-outline" size={16} color="#fff" />
+                  <Icon name="checkmark-done-outline" size="md" color="#fff" />
                 )}
                 <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
                   {markingAll ? "Marking…" : "Mark all read"}
@@ -551,7 +551,7 @@ export default function NotificationsScreen() {
         ) : error ? (
           <View style={styles.center}>
             <View style={[styles.emptyIconRing, { borderColor }]}>
-              <Ionicons name="warning-outline" size={28} color={mutedColor} />
+              <Icon name="warning-outline" size={28} color={mutedColor} />
             </View>
             <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
               Something went wrong
@@ -563,7 +563,7 @@ export default function NotificationsScreen() {
         ) : items.length === 0 ? (
           <View style={styles.center}>
             <View style={[styles.emptyIconRing, { borderColor }]}>
-              <Ionicons
+              <Icon
                 name={unreadOnly ? "checkmark-circle-outline" : "notifications-off-outline"}
                 size={28}
                 color={mutedColor}
@@ -583,7 +583,7 @@ export default function NotificationsScreen() {
             {pinnedItems.length > 0 && (
               <>
                 <View style={[styles.sectionDivider, { borderBottomColor: borderColor }]}>
-                  <Ionicons name="bookmark" size={11} color={primaryColor} />
+                  <Icon name="bookmark" size={11} color={primaryColor} />
                   <ThemedText style={[styles.sectionLabel, { color: primaryColor }]}>
                     Pinned
                   </ThemedText>
@@ -636,7 +636,7 @@ export default function NotificationsScreen() {
 
       {toast && (
         <View style={styles.toast} pointerEvents="none">
-          <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
+          <Icon name="checkmark-circle-outline" size={15} color="#fff" />
           <ThemedText style={styles.toastText}>{toast}</ThemedText>
         </View>
       )}

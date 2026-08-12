@@ -5,13 +5,13 @@ import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import { theme, getThemeColors } from "@/theme/theme";
 import { TableDto, deleteTable, updateTable, fetchTableDeleteImpact } from "@/api/restaurants";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles } from "./settings.styles";
 import { RowIconButton } from "./RowIconButton";
 import { RowTextButton } from "./RowTextButton";
+import { Icon } from "@/components/common/Icon";
 
 /**
  * Group membership context for a table row (#273). When present, the row renders inside a
@@ -129,9 +129,9 @@ export function TableRow({
           backgroundColor: selected ? hexToRgba(primaryColor, 0.08) : surface2,
         }}
       >
-        <Ionicons
+        <Icon
           name={isGrouped ? "lock-closed" : selected ? "checkbox" : "square-outline"}
-          size={16}
+          size="md"
           color={isGrouped ? mutedColor : primaryColor}
         />
         <View style={{ flex: 1 }}>
@@ -139,7 +139,7 @@ export function TableRow({
             {table.name ?? `T${table.id}`}
           </ThemedText>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-            <Ionicons name="people-outline" size={12} color={mutedColor} />
+            <Icon name="people-outline" size="xs" color={mutedColor} />
             <ThemedText style={{ fontSize: 12, color: mutedColor }}>
               {table.seats} seat{table.seats === 1 ? "" : "s"}
             </ThemedText>
@@ -157,7 +157,7 @@ export function TableRow({
                   borderRadius: theme.borderRadius.full,
                 }}
               >
-                <Ionicons name="link" size={11} color={primaryColor} />
+                <Icon name="link" size={11} color={primaryColor} />
                 <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
                   {group.label}
                 </ThemedText>
@@ -186,7 +186,7 @@ export function TableRow({
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-          <Ionicons
+          <Icon
             name="warning-outline"
             size={15}
             color={theme.colors.error}
@@ -267,7 +267,7 @@ export function TableRow({
             flexShrink: 0,
           }}
         >
-          <Ionicons name={group ? "link" : "grid-outline"} size={18} color={primaryColor} />
+          <Icon name={group ? "link" : "grid-outline"} size="lg" color={primaryColor} />
         </View>
 
         {/* Title + subtitle (seats, and the group chip when grouped) */}
@@ -276,7 +276,7 @@ export function TableRow({
             {table.name ?? `T${table.id}`}
           </ThemedText>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <Ionicons name="people-outline" size={12} color={mutedColor} />
+            <Icon name="people-outline" size="xs" color={mutedColor} />
             <ThemedText style={{ fontSize: 12, color: mutedColor }}>
               {table.seats} seat{table.seats === 1 ? "" : "s"}
             </ThemedText>
@@ -295,7 +295,7 @@ export function TableRow({
                   borderRadius: theme.borderRadius.full,
                 }}
               >
-                <Ionicons name="link" size={11} color={primaryColor} />
+                <Icon name="link" size={11} color={primaryColor} />
                 <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
                   {group.label}
                 </ThemedText>
@@ -307,7 +307,7 @@ export function TableRow({
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   style={{ padding: 2 }}
                 >
-                  <Ionicons name="close" size={12} color={primaryColor} />
+                  <Icon name="close" size="xs" color={primaryColor} />
                 </Pressable>
               </View>
             )}

@@ -1,8 +1,7 @@
-import { type ComponentProps } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import type { AdminSocialLinkDto } from "@/api/admin";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 export interface SocialLinkRowProps {
   link: AdminSocialLinkDto;
@@ -56,11 +55,7 @@ export function SocialLinkRow({
           flexShrink: 0,
         }}
       >
-        <Ionicons
-          name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-          size={18}
-          color={primaryColor}
-        />
+        <Icon name={link.iconKey as IconName} size="lg" color={primaryColor} />
       </View>
       <View style={{ flex: 1 }}>
         <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>{link.label}</ThemedText>
@@ -74,14 +69,14 @@ export function SocialLinkRow({
           style={{ padding: 6 }}
           accessibilityLabel={`Edit ${link.label}`}
         >
-          <Ionicons name="pencil-outline" size={16} color={mutedColor} />
+          <Icon name="pencil-outline" size="md" color={mutedColor} />
         </Pressable>
         <Pressable
           onPress={() => onDelete(link.id)}
           style={{ padding: 6 }}
           accessibilityLabel={`Delete ${link.label}`}
         >
-          <Ionicons name="trash-outline" size={16} color="#ef4444" />
+          <Icon name="trash-outline" size="md" color="#ef4444" />
         </Pressable>
       </View>
     </View>

@@ -3,7 +3,6 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import {
@@ -19,6 +18,7 @@ import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
 import { SocialLinkEditForm, emptyEdit, type EditState, type IconKey } from "./SocialLinkEditForm";
 import { SocialLinkRow } from "./SocialLinkRow";
+import { Icon } from "@/components/common/Icon";
 
 export function FooterSettingsCard({
   borderColor,
@@ -172,7 +172,7 @@ export function FooterSettingsCard({
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Ionicons name="link-outline" size={20} color={primaryColor} />
+          <Icon name="link-outline" size="xl" color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Footer</ThemedText>
@@ -184,7 +184,7 @@ export function FooterSettingsCard({
                 : "Copyright text and social links"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
@@ -264,7 +264,7 @@ export function FooterSettingsCard({
                       borderStyle: "dashed" as const,
                     }}
                   >
-                    <Ionicons name="link-outline" size={22} color={mutedColor} />
+                    <Icon name="link-outline" size={22} color={mutedColor} />
                     <ThemedText style={{ fontSize: 13, color: mutedColor, textAlign: "center" }}>
                       No links yet. Press Add to create your first one.
                     </ThemedText>
@@ -335,7 +335,7 @@ export function FooterSettingsCard({
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Ionicons name="add" size={16} color="#fff" />
+                    <Icon name="add" size="md" color="#fff" />
                     <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
                       Add
                     </ThemedText>

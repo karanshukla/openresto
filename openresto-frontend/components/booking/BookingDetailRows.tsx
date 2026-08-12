@@ -1,9 +1,9 @@
 import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
 import { styles } from "./BookingDetailRows.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 interface BookingDetailRowsProps {
   booking: BookingDto;
@@ -13,7 +13,7 @@ interface BookingDetailRowsProps {
 }
 
 type RowData = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: IconName;
   label: string;
   value: string;
 };
@@ -96,7 +96,7 @@ export default function BookingDetailRows({
         <View key={label}>
           {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
           <View style={styles.row}>
-            <Ionicons name={icon} size={15} color={mutedColor} />
+            <Icon name={icon} size={15} color={mutedColor} />
             <View style={styles.content}>
               <ThemedText style={[styles.label, { color: mutedColor }]}>{label}</ThemedText>
               <ThemedText style={styles.value}>{value}</ThemedText>

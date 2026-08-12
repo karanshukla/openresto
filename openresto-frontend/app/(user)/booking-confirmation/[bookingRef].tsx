@@ -5,7 +5,6 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { theme } from "@/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import CalendarActions from "@/components/booking/CalendarActions";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
@@ -20,6 +19,7 @@ import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/booking-confirmation.styles";
+import { Icon } from "@/components/common/Icon";
 
 export default function BookingConfirmationScreen() {
   const { bookingRef, email } = useLocalSearchParams<{ bookingRef: string; email: string }>();
@@ -101,7 +101,7 @@ export default function BookingConfirmationScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.page }]}>
         {Platform.OS !== "web" && <Stack.Screen options={{ title: "Not Found" }} />}
-        <Ionicons name="alert-circle-outline" size={40} color={colors.muted} />
+        <Icon name="alert-circle-outline" size={40} color={colors.muted} />
         <ThemedText style={[styles.notFoundText, { color: colors.muted }]}>
           Booking not found.
         </ThemedText>
@@ -159,7 +159,7 @@ export default function BookingConfirmationScreen() {
                 { backgroundColor: booking.isCancelled ? theme.colors.error : primaryColor },
               ]}
             >
-              <Ionicons
+              <Icon
                 name={booking.isCancelled ? "close" : "checkmark"}
                 size={32}
                 color={theme.colors.white}
@@ -210,9 +210,9 @@ export default function BookingConfirmationScreen() {
                       copied ? "Booking reference copied" : "Copy booking reference"
                     }
                   >
-                    <Ionicons
+                    <Icon
                       name={copied ? "checkmark" : "copy-outline"}
-                      size={14}
+                      size="sm"
                       color={copied ? primaryColor : colors.muted}
                     />
                     <ThemedText
@@ -283,9 +283,9 @@ export default function BookingConfirmationScreen() {
                           setTimeout(() => setCopied(false), 2000);
                         }}
                       >
-                        <Ionicons
+                        <Icon
                           name={copied ? "checkmark" : "copy-outline"}
-                          size={14}
+                          size="sm"
                           color={copied ? primaryColor : colors.muted}
                         />
                         <ThemedText
@@ -352,7 +352,7 @@ export default function BookingConfirmationScreen() {
                     })}
                   <View style={styles.mapAddressRow}>
                     <View style={styles.mapMeta}>
-                      <Ionicons name="location-outline" size={13} color={colors.muted} />
+                      <Icon name="location-outline" size={13} color={colors.muted} />
                       <ThemedText
                         style={[styles.mapAddress, { color: colors.muted }]}
                         numberOfLines={2}
@@ -377,7 +377,7 @@ export default function BookingConfirmationScreen() {
                         accessibilityRole="link"
                         accessibilityLabel="Open in Google Maps"
                       >
-                        <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                        <Icon name="navigate-outline" size={13} color={colors.muted} />
                         <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
                           Google
                         </ThemedText>
@@ -398,7 +398,7 @@ export default function BookingConfirmationScreen() {
                         accessibilityRole="link"
                         accessibilityLabel="Open in Apple Maps"
                       >
-                        <Ionicons name="navigate-outline" size={13} color={colors.muted} />
+                        <Icon name="navigate-outline" size={13} color={colors.muted} />
                         <ThemedText style={[styles.mapLinkText, { color: colors.muted }]}>
                           Apple
                         </ThemedText>
@@ -430,7 +430,7 @@ export default function BookingConfirmationScreen() {
                     busy: cancelling,
                   }}
                 >
-                  <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
+                  <Icon name="trash-outline" size={15} color={theme.colors.error} />
                   <ThemedText style={styles.cancelBtnText}>
                     {booking.isCancelled
                       ? "Already Cancelled"

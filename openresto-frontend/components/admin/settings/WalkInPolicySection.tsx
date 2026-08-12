@@ -1,8 +1,8 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 export interface WalkInPolicySectionProps {
   walkInOnly: boolean;
@@ -100,7 +100,7 @@ export function WalkInPolicySection({
 
       {walkInOnly ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Ionicons name="walk-outline" size={12} color={mutedColor} />
+          <Icon name="walk-outline" size="xs" color={mutedColor} />
           <ThemedText style={{ fontSize: 11, color: mutedColor }}>
             The location stays listed publicly, but guests can't book online. They'll see a walk-in
             notice instead. Toggle back anytime; nothing is deleted or archived.

@@ -1,9 +1,9 @@
 import { View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
 import { styles } from "./WalkInNotice.styles";
+import { Icon } from "@/components/common/Icon";
 
 /**
  * Friendly banner shown wherever the booking flow is disabled because a
@@ -38,7 +38,7 @@ export default function WalkInNotice({
       style={[styles.card, { backgroundColor: accentSoft, borderColor: accentBorder }]}
     >
       <View style={[styles.iconWrap, { backgroundColor: primaryColor }]}>
-        <Ionicons name="walk-outline" size={20} color="#fff" />
+        <Icon name="walk-outline" size="xl" color="#fff" />
       </View>
       <View style={styles.textWrap}>
         <ThemedText style={[styles.title, { color: colors.text }]}>{title}</ThemedText>

@@ -1,12 +1,12 @@
 import { Platform, Pressable, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { hexToRgba } from "@/utils/colors";
 import { theme } from "@/theme/theme";
 import type { AdminNotificationDto } from "@/api/notifications";
 import { TYPE_ICONS, TYPE_LABELS, formatBookingDate, relativeTime } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
+import { Icon } from "@/components/common/Icon";
 
 export interface NotificationRowProps {
   notification: AdminNotificationDto;
@@ -64,12 +64,12 @@ export function NotificationRow({
       enabled={(Platform.OS !== "web" || webTouchActive) && !isPinned}
       renderLeftActions={() => (
         <View style={styles.swipeDeleteBg}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
+          <Icon name="trash-outline" size="xl" color="#fff" />
         </View>
       )}
       renderRightActions={() => (
         <View style={styles.swipeDeleteBg}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
+          <Icon name="trash-outline" size="xl" color="#fff" />
         </View>
       )}
       onSwipeableOpen={() => onSwipeDelete(n.id)}
@@ -99,7 +99,7 @@ export function NotificationRow({
         />
 
         <View style={[styles.notifIcon, { backgroundColor: hexToRgba(typeIcon.color, 0.1) }]}>
-          <Ionicons name={typeIcon.name} size={18} color={typeIcon.color} />
+          <Icon name={typeIcon.name} size="lg" color={typeIcon.color} />
         </View>
 
         <View style={styles.notifBody}>
@@ -187,12 +187,12 @@ export function NotificationRow({
               { backgroundColor: hexToRgba(theme.colors.error, 0.12) },
             ]}
           >
-            <Ionicons name="trash-outline" size={13} color={theme.colors.error} />
+            <Icon name="trash-outline" size={13} color={theme.colors.error} />
           </Pressable>
         </View>
 
         {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (
-          <Ionicons name="chevron-forward" size={15} color={mutedColor} />
+          <Icon name="chevron-forward" size={15} color={mutedColor} />
         )}
       </Pressable>
     </ReanimatedSwipeable>

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import {
   SectionDto,
@@ -25,6 +24,7 @@ import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles } from "./settings.styles";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
+import { Icon } from "@/components/common/Icon";
 
 export function SectionBlock({
   section,
@@ -369,7 +369,7 @@ export function SectionBlock({
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-            <Ionicons
+            <Icon
               name="warning-outline"
               size={15}
               color={theme.colors.error}
@@ -549,7 +549,7 @@ export function SectionBlock({
               borderStyle: "dashed" as const,
             }}
           >
-            <Ionicons name="grid-outline" size={22} color={mutedColor} />
+            <Icon name="grid-outline" size={22} color={mutedColor} />
             <ThemedText style={{ fontSize: 13, color: mutedColor }}>No tables yet.</ThemedText>
           </View>
         )}
@@ -581,7 +581,7 @@ export function SectionBlock({
             setDraftCombinedSeats(String(g.combinedSeats));
           }}
         >
-          <Ionicons name="create-outline" size={13} color={primaryColor} />
+          <Icon name="create-outline" size={13} color={primaryColor} />
           <ThemedText style={{ fontSize: 11, color: primaryColor, fontWeight: "600" }}>
             Edit &ldquo;{groupLabel(g)}&rdquo; combined seats
           </ThemedText>

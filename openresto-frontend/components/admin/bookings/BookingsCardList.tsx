@@ -1,5 +1,4 @@
 import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
@@ -13,6 +12,7 @@ import {
 import { initials } from "@/utils/formatters";
 import { BookingsSortControl } from "@/components/admin/bookings/BookingsSortControl";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
+import { Icon } from "@/components/common/Icon";
 
 export interface BookingsCardListProps {
   bookings: BookingDetailDto[];
@@ -101,7 +101,7 @@ export function BookingsCardList({
                   })}
                 </ThemedText>
                 <View style={styles.partyPill}>
-                  <Ionicons name="people-outline" size={12} color={mutedColor} />
+                  <Icon name="people-outline" size="xs" color={mutedColor} />
                   <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
                     {b.seats} guests · {b.tableName}
                   </ThemedText>

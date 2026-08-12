@@ -7,7 +7,6 @@ import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
 import { Platform, Pressable, View, ActivityIndicator, useWindowDimensions } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
@@ -25,6 +24,7 @@ import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 import { styles } from "./BookingForm.styles";
+import { Icon } from "@/components/common/Icon";
 
 const isWeb = Platform.OS === "web";
 
@@ -719,13 +719,13 @@ export default function BookingForm({
               const accent = hovered || pressed ? PRIMARY : colors.muted;
               return (
                 <>
-                  <Ionicons name="options-outline" size={16} color={accent} />
+                  <Icon name="options-outline" size="md" color={accent} />
                   <ThemedText style={[styles.disclosureText, { color: accent }]}>
                     Choose a section or table
                   </ThemedText>
-                  <Ionicons
+                  <Icon
                     name={seatingOpen ? "chevron-up" : "chevron-down"}
-                    size={16}
+                    size="md"
                     color={accent}
                   />
                 </>

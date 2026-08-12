@@ -1,10 +1,9 @@
-import { type ComponentProps } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/theme/theme";
 import { styles } from "./settings.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 /**
  * The icon-picker + label/url inputs + save/cancel actions used when creating or editing a
@@ -111,9 +110,9 @@ export function SocialLinkEditForm({
                 justifyContent: "center",
               }}
             >
-              <Ionicons
-                name={icon as ComponentProps<typeof Ionicons>["name"]}
-                size={18}
+              <Icon
+                name={icon as IconName}
+                size="lg"
                 color={state.iconKey === icon ? primaryColor : mutedColor}
               />
             </Pressable>
@@ -172,7 +171,7 @@ export function SocialLinkEditForm({
             gap: 6,
           }}
         >
-          <Ionicons name="checkmark" size={14} color="#fff" />
+          <Icon name="checkmark" size="sm" color="#fff" />
           <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
             {saving ? "Saving…" : "Save"}
           </ThemedText>

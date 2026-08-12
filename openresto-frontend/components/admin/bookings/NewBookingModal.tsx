@@ -7,7 +7,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -22,6 +21,7 @@ import { adminCreateBooking } from "@/api/admin";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./NewBookingModal.styles";
+import { Icon } from "@/components/common/Icon";
 
 function todayDate() {
   return new Date().toISOString().split("T")[0];
@@ -207,7 +207,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   accessibilityLabel="Close"
                   hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
                 >
-                  <Ionicons name="close" size={22} color={mutedColor} />
+                  <Icon name="close" size={22} color={mutedColor} />
                 </Pressable>
               </View>
 

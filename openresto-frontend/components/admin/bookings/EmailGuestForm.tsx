@@ -1,9 +1,9 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
+import { Icon } from "@/components/common/Icon";
 
 interface ThemeColors {
   input: string;
@@ -44,7 +44,7 @@ export function EmailGuestForm({
   return (
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
-        <Ionicons name="mail-outline" size={16} color={mutedColor} />
+        <Icon name="mail-outline" size="md" color={mutedColor} />
         <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
       </View>
       <ThemedText style={[styles.emailTo, { color: mutedColor }]}>To: {customerEmail}</ThemedText>
@@ -104,7 +104,7 @@ export function EmailGuestForm({
           accessibilityLabel="Send email to guest"
           disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
         >
-          <Ionicons name="send-outline" size={14} color="#fff" />
+          <Icon name="send-outline" size="sm" color="#fff" />
           <ThemedText style={styles.emailSendBtnText}>
             {emailSending ? "Sending…" : "Send Email"}
           </ThemedText>

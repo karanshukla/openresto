@@ -14,13 +14,13 @@ import {
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
 import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
 import { styles as sharedStyles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 const TIMEZONES = [
   "UTC",
@@ -488,7 +488,7 @@ export function RestaurantInfoForm({
                 backgroundColor: surface2,
               }}
             >
-              <Ionicons name="document-text-outline" size={18} color={primaryColor} />
+              <Icon name="document-text-outline" size="lg" color={primaryColor} />
               <ThemedText style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
                 Uploaded menu PDF
               </ThemedText>
@@ -846,7 +846,7 @@ export function RestaurantInfoForm({
             </>
           ) : (
             <>
-              <Ionicons name="checkmark" size={13} color={mutedColor} />
+              <Icon name="checkmark" size={13} color={mutedColor} />
               <ThemedText style={{ fontSize: 12, color: mutedColor }}>All changes saved</ThemedText>
             </>
           )}

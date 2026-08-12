@@ -19,7 +19,6 @@ import {
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import Input from "@/components/common/Input";
 import { theme, ThemeColors } from "@/theme/theme";
-import { Ionicons } from "@expo/vector-icons";
 import PageContainer from "@/components/layout/PageContainer";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -34,6 +33,7 @@ import { isPast } from "@/components/admin/bookings/StatusBadge";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/lookup.styles";
+import { Icon } from "@/components/common/Icon";
 
 export default function LookupScreen() {
   const [refInput, setRefInput] = useState("");
@@ -125,7 +125,7 @@ export default function LookupScreen() {
       >
         <PageContainer>
           <View style={[styles.header, !isWide && { marginBottom: 12 }]}>
-            <Ionicons name="search-outline" size={32} color={primaryColor} />
+            <Icon name="search-outline" size={32} color={primaryColor} />
             <ThemedText style={styles.title}>Find My Booking</ThemedText>
             <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
               Enter your booking reference and email to look up your reservation.
@@ -176,7 +176,7 @@ export default function LookupScreen() {
                     <ActivityIndicator size="small" color={theme.colors.white} />
                   ) : (
                     <>
-                      <Ionicons name="search" size={16} color={theme.colors.white} />
+                      <Icon name="search" size="md" color={theme.colors.white} />
                       <ThemedText style={styles.searchBtnText}>Look Up</ThemedText>
                     </>
                   )}
@@ -210,7 +210,7 @@ export default function LookupScreen() {
                     isWide ? { marginTop: 0 } : { marginTop: 16 },
                   ]}
                 >
-                  <Ionicons name="alert-circle-outline" size={28} color={colors.muted} />
+                  <Icon name="alert-circle-outline" size={28} color={colors.muted} />
                   <ThemedText style={[styles.notFound, { color: colors.muted }]}>
                     No booking found matching that reference and email.
                   </ThemedText>
@@ -254,7 +254,7 @@ export default function LookupScreen() {
                       busy: cancelling,
                     }}
                   >
-                    <Ionicons name="trash-outline" size={15} color={theme.colors.error} />
+                    <Icon name="trash-outline" size={15} color={theme.colors.error} />
                     <ThemedText style={styles.cancelBtnText}>
                       {booking.isCancelled
                         ? "Already Cancelled"
@@ -345,7 +345,7 @@ function RecentBookingsList({
                 {c.seats} guest{c.seats !== 1 ? "s" : ""}
               </ThemedText>
             </View>
-            <Ionicons name="chevron-forward-outline" size={16} color={colors.muted} />
+            <Icon name="chevron-forward-outline" size="md" color={colors.muted} />
           </View>
         </Pressable>
       ))}
@@ -394,7 +394,7 @@ function BookingActions({
               accessibilityRole="button"
               accessibilityLabel="Add to Google Calendar"
             >
-              <Ionicons name="logo-google" size={18} color={primaryColor} />
+              <Icon name="logo-google" size="lg" color={primaryColor} />
             </Pressable>
             <Pressable
               testID="cal-outlook-btn"
@@ -403,7 +403,7 @@ function BookingActions({
               accessibilityRole="button"
               accessibilityLabel="Add to Outlook Calendar"
             >
-              <Ionicons name="calendar-outline" size={18} color={primaryColor} />
+              <Icon name="calendar-outline" size="lg" color={primaryColor} />
             </Pressable>
             <Pressable
               testID="cal-ics-btn"
@@ -412,7 +412,7 @@ function BookingActions({
               accessibilityRole="button"
               accessibilityLabel="Download calendar file"
             >
-              <Ionicons name="download-outline" size={18} color={colors.muted} />
+              <Icon name="download-outline" size="lg" color={colors.muted} />
             </Pressable>
           </View>
         </View>
@@ -433,7 +433,7 @@ function BookingActions({
                     )
                   }
                 >
-                  <Ionicons name="navigate-outline" size={18} color={colors.muted} />
+                  <Icon name="navigate-outline" size="lg" color={colors.muted} />
                 </Pressable>
                 <Pressable
                   testID="maps-apple-btn-narrow"
@@ -446,7 +446,7 @@ function BookingActions({
                     )
                   }
                 >
-                  <Ionicons name="map-outline" size={18} color={colors.muted} />
+                  <Icon name="map-outline" size="lg" color={colors.muted} />
                 </Pressable>
               </View>
             </View>
@@ -501,7 +501,7 @@ function BookingActions({
                 accessibilityRole="button"
                 accessibilityLabel="Open in Google Maps"
               >
-                <Ionicons name="navigate-outline" size={16} color={colors.muted} />
+                <Icon name="navigate-outline" size="md" color={colors.muted} />
                 <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Google</ThemedText>
               </Pressable>
               <Pressable
@@ -517,7 +517,7 @@ function BookingActions({
                 accessibilityRole="button"
                 accessibilityLabel="Open in Apple Maps"
               >
-                <Ionicons name="navigate-outline" size={16} color={colors.muted} />
+                <Icon name="navigate-outline" size="md" color={colors.muted} />
                 <ThemedText style={[styles.mapBtnText, { color: colors.muted }]}>Apple</ThemedText>
               </Pressable>
             </View>
@@ -563,9 +563,9 @@ function BookingResultCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.resultHeader}>
-          <Ionicons
+          <Icon
             name={booking.isCancelled ? "close-circle" : "checkmark-circle"}
-            size={20}
+            size="xl"
             color={booking.isCancelled ? theme.colors.error : primaryColor}
           />
           <ThemedText style={styles.resultTitle}>
@@ -590,9 +590,9 @@ function BookingResultCard({
               accessibilityRole="button"
               accessibilityLabel={copied ? "Booking reference copied" : "Copy booking reference"}
             >
-              <Ionicons
+              <Icon
                 name={copied ? "checkmark" : "copy-outline"}
-                size={14}
+                size="sm"
                 color={copied ? primaryColor : colors.muted}
               />
               <ThemedText

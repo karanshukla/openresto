@@ -1,9 +1,9 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import TimePicker from "@/components/common/TimePicker";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 type WeekHours = Record<number, { open: string; close: string }>;
 
@@ -256,7 +256,7 @@ export function OpeningHoursSection({
                         justifyContent: "center",
                       })}
                     >
-                      <Ionicons name="copy-outline" size={14} color={mutedColor} />
+                      <Icon name="copy-outline" size="sm" color={mutedColor} />
                     </Pressable>
                   </>
                 ) : (
@@ -271,15 +271,15 @@ export function OpeningHoursSection({
           })}
           <ThemedText style={{ fontSize: 11, color: mutedColor }}>
             Tap a day to mark it open or closed. Use{" "}
-            <Ionicons name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours
-            to the whole week.
+            <Icon name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours to
+            the whole week.
           </ThemedText>
         </View>
       )}
 
       {anyOvernight && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Ionicons name="moon-outline" size={12} color={mutedColor} />
+          <Icon name="moon-outline" size="xs" color={mutedColor} />
           <ThemedText style={{ fontSize: 11, color: mutedColor }}>
             A closing time at or before opening means the restaurant closes after midnight.
           </ThemedText>

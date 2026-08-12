@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, Platform, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -10,6 +9,7 @@ import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notific
 import { fetchRestaurants } from "@/api/restaurants";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -166,7 +166,7 @@ export function PushNotificationsCard() {
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: iconBg }]}>
-          <Ionicons name={stateIcon} size={20} color={iconColor} />
+          <Icon name={stateIcon} size="xl" color={iconColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Push Notifications</ThemedText>
@@ -182,7 +182,7 @@ export function PushNotificationsCard() {
         {pushState === "loading" ? (
           <ActivityIndicator size="small" color={primaryColor} />
         ) : (
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+          <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
         )}
       </Pressable>
 
@@ -191,9 +191,9 @@ export function PushNotificationsCard() {
           <View style={[styles.secForm, { borderTopColor: borderColor }]}>
             {isUnconfigured ? (
               <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-                <Ionicons
+                <Icon
                   name="warning-outline"
-                  size={16}
+                  size="md"
                   color={theme.colors.warning}
                   style={{ marginTop: 1 }}
                 />
@@ -205,9 +205,9 @@ export function PushNotificationsCard() {
               </View>
             ) : isDenied ? (
               <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-                <Ionicons
+                <Icon
                   name="information-circle-outline"
-                  size={16}
+                  size="md"
                   color={theme.colors.warning}
                   style={{ marginTop: 1 }}
                 />

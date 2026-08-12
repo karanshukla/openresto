@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush } from "@/api/notifications";
 import { arrayBufferToBase64, urlBase64ToUint8Array } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
+import { Icon } from "@/components/common/Icon";
 
 type PushStatus = "unknown" | "active" | "inactive" | "denied" | "unsupported";
 
@@ -115,7 +115,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
           },
         ]}
       >
-        <Ionicons name="notifications-off-outline" size={16} color={theme.colors.warning} />
+        <Icon name="notifications-off-outline" size="md" color={theme.colors.warning} />
         <ThemedText style={[styles.pushBannerText, { color: theme.colors.warning }]}>
           Push notifications blocked - enable in browser site settings.
         </ThemedText>
@@ -133,7 +133,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
         },
       ]}
     >
-      <Ionicons name="notifications-outline" size={16} color={primaryColor} />
+      <Icon name="notifications-outline" size="md" color={primaryColor} />
       <ThemedText style={[styles.pushBannerText, { color: primaryColor }]}>
         Enable push notifications to get real-time booking alerts.
       </ThemedText>

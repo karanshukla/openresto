@@ -1,9 +1,8 @@
-import { useState, useEffect, type ComponentProps } from "react";
+import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ThemeColors } from "@/theme/theme";
 import {
@@ -16,6 +15,7 @@ import {
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
 import { styles } from "./settings.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 const ICON_OPTIONS = [
   "flame-outline",
@@ -191,7 +191,7 @@ export function HighlightsCard({
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Ionicons name="sparkles-outline" size={20} color={primaryColor} />
+          <Icon name="sparkles-outline" size="xl" color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Highlights</ThemedText>
@@ -203,7 +203,7 @@ export function HighlightsCard({
                 : "None configured · Home page"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
@@ -224,7 +224,7 @@ export function HighlightsCard({
                     borderStyle: "dashed" as const,
                   }}
                 >
-                  <Ionicons name="sparkles-outline" size={22} color={mutedColor} />
+                  <Icon name="sparkles-outline" size={22} color={mutedColor} />
                   <ThemedText style={{ fontSize: 13, color: mutedColor, textAlign: "center" }}>
                     No highlights yet. Press Add to create your first one.
                   </ThemedText>
@@ -272,11 +272,7 @@ export function HighlightsCard({
                           flexShrink: 0,
                         }}
                       >
-                        <Ionicons
-                          name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                          size={18}
-                          color={primaryColor}
-                        />
+                        <Icon name={h.iconKey as IconName} size="lg" color={primaryColor} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>
@@ -294,7 +290,7 @@ export function HighlightsCard({
                               marginTop: 3,
                             }}
                           >
-                            <Ionicons name="link-outline" size={11} color={primaryColor} />
+                            <Icon name="link-outline" size={11} color={primaryColor} />
                             <ThemedText
                               style={{ fontSize: 11, color: primaryColor }}
                               numberOfLines={1}
@@ -312,7 +308,7 @@ export function HighlightsCard({
                           accessibilityLabel={`Edit highlight ${h.title}`}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Ionicons name="pencil-outline" size={16} color={mutedColor} />
+                          <Icon name="pencil-outline" size="md" color={mutedColor} />
                         </Pressable>
                         <Pressable
                           onPress={() => remove(h.id)}
@@ -321,7 +317,7 @@ export function HighlightsCard({
                           accessibilityLabel={`Delete highlight ${h.title}`}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                          <Icon name="trash-outline" size="md" color="#ef4444" />
                         </Pressable>
                       </View>
                     </View>
@@ -361,7 +357,7 @@ export function HighlightsCard({
                     alignSelf: "flex-start",
                   }}
                 >
-                  <Ionicons name="add" size={16} color="#fff" />
+                  <Icon name="add" size="md" color="#fff" />
                   <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>
                     Add
                   </ThemedText>
@@ -433,9 +429,9 @@ function HighlightEditForm({
                 justifyContent: "center",
               }}
             >
-              <Ionicons
-                name={icon as ComponentProps<typeof Ionicons>["name"]}
-                size={18}
+              <Icon
+                name={icon as IconName}
+                size="lg"
                 color={state.iconKey === icon ? primaryColor : mutedColor}
               />
             </Pressable>
@@ -506,7 +502,7 @@ function HighlightEditForm({
             gap: 6,
           }}
         >
-          <Ionicons name="checkmark" size={14} color="#fff" />
+          <Icon name="checkmark" size="sm" color="#fff" />
           <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
             {saving ? "Saving…" : "Save"}
           </ThemedText>

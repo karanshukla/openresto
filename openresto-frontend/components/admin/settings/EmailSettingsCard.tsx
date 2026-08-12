@@ -4,7 +4,6 @@ import { View, Pressable, useWindowDimensions } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import { Ionicons } from "@expo/vector-icons";
 import { theme, getThemeColors } from "@/theme/theme";
 import {
   getEmailSettings,
@@ -20,6 +19,7 @@ import { SubLabel } from "./settingsShared";
 import { SmtpTestPanel } from "./SmtpTestPanel";
 import { BookingConfirmationToggle } from "./BookingConfirmationToggle";
 import { EmailFailuresList } from "./EmailFailuresList";
+import { Icon } from "@/components/common/Icon";
 
 const PROVIDERS = [
   {
@@ -206,7 +206,7 @@ export function EmailSettingsCard({
                   marginBottom: 4,
                 }}
               >
-                <Ionicons name={p.icon} size={15} color={on ? primaryColor : mutedColor} />
+                <Icon name={p.icon} size={15} color={on ? primaryColor : mutedColor} />
               </View>
               <ThemedText style={{ fontSize: 13.5, fontWeight: "600" }}>{p.name}</ThemedText>
               <ThemedText style={{ fontSize: 11.5, color: mutedColor }}>{p.hint}</ThemedText>
@@ -224,7 +224,7 @@ export function EmailSettingsCard({
                     justifyContent: "center",
                   }}
                 >
-                  <Ionicons name="checkmark" size={11} color="#fff" />
+                  <Icon name="checkmark" size={11} color="#fff" />
                 </View>
               )}
             </Pressable>
@@ -309,7 +309,7 @@ export function EmailSettingsCard({
               backgroundColor: enableSsl ? okSoft : surface2,
             }}
           >
-            <Ionicons name="shield-checkmark" size={13} color={enableSsl ? okColor : mutedColor} />
+            <Icon name="shield-checkmark" size={13} color={enableSsl ? okColor : mutedColor} />
             <ThemedText
               style={{
                 fontSize: 13,
@@ -380,9 +380,9 @@ export function EmailSettingsCard({
             accessibilityLabel={showPassword ? "Hide password" : "Show password"}
             accessibilityState={{ expanded: showPassword }}
           >
-            <Ionicons
+            <Icon
               name={showPassword ? "eye-off-outline" : "eye-outline"}
-              size={20}
+              size="xl"
               color={mutedColor}
             />
           </Pressable>
@@ -473,7 +473,7 @@ export function EmailSettingsCard({
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: accentSoft }]}>
-          <Ionicons name="mail-outline" size={20} color={primaryColor} />
+          <Icon name="mail-outline" size="xl" color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Email (SMTP)</ThemedText>
@@ -481,7 +481,7 @@ export function EmailSettingsCard({
             {isConfigured ? `Connected · ${host}` : "Setup required"}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
@@ -514,9 +514,9 @@ export function EmailSettingsCard({
                 },
               ]}
             >
-              <Ionicons
+              <Icon
                 name={saveMsg.ok ? "checkmark-circle" : "warning-outline"}
-                size={16}
+                size="md"
                 color={saveMsg.ok ? theme.colors.success : theme.colors.warning}
               />
               <ThemedText

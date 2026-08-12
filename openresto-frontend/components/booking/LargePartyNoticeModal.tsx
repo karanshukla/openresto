@@ -1,6 +1,5 @@
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ModalCard } from "@/components/common/ModalCard";
 import Button from "@/components/common/Button";
@@ -9,6 +8,7 @@ import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { useBrand } from "@/context/BrandContext";
 import { ContactSource, hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { styles } from "./LargePartyNoticeModal.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 interface LargePartyNoticeModalProps {
   visible: boolean;
@@ -67,7 +67,7 @@ export default function LargePartyNoticeModal({
               accessibilityLabel={`Call ${contact.phone}`}
               hitSlop={6}
             >
-              <Ionicons name="call-outline" size={16} color={primaryColor} />
+              <Icon name="call-outline" size="md" color={primaryColor} />
               <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
                 {contact.phone}
               </ThemedText>
@@ -81,7 +81,7 @@ export default function LargePartyNoticeModal({
               accessibilityLabel={`Email ${contact.email}`}
               hitSlop={6}
             >
-              <Ionicons name="mail-outline" size={16} color={primaryColor} />
+              <Icon name="mail-outline" size="md" color={primaryColor} />
               <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
                 {contact.email}
               </ThemedText>
@@ -101,11 +101,7 @@ export default function LargePartyNoticeModal({
                 accessibilityLabel={link.label}
                 hitSlop={6}
               >
-                <Ionicons
-                  name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                  size={16}
-                  color={primaryColor}
-                />
+                <Icon name={link.iconKey as IconName} size="md" color={primaryColor} />
                 <ThemedText style={[styles.contactLabel, { color: primaryColor }]}>
                   {link.label}
                 </ThemedText>

@@ -4,7 +4,6 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 import { saveBrandSettings, uploadHeroImage, deleteHeroImage } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
@@ -12,6 +11,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 const MAX_HERO_MB = 5;
 
@@ -153,7 +153,7 @@ export function BrandSettingsCard({
         accessibilityState={{ expanded }}
       >
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Ionicons name="brush-outline" size={20} color={primaryColor} />
+          <Icon name="brush-outline" size="xl" color={primaryColor} />
         </View>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.secTitle}>Brand Identity</ThemedText>
@@ -164,7 +164,7 @@ export function BrandSettingsCard({
               : ""}
           </ThemedText>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={mutedColor} />
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
@@ -426,7 +426,7 @@ export function BrandSettingsCard({
                     gap: 6,
                   }}
                 >
-                  <Ionicons name="image-outline" size={24} color={mutedColor} />
+                  <Icon name="image-outline" size="xxl" color={mutedColor} />
                   <ThemedText style={{ fontSize: 12, color: mutedColor }}>
                     No header image
                   </ThemedText>

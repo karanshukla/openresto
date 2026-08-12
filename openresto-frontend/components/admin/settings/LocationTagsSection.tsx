@@ -1,8 +1,8 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { styles } from "./settings.styles";
+import { Icon } from "@/components/common/Icon";
 
 export interface LocationTagsSectionProps {
   tags: string[];
@@ -62,7 +62,7 @@ export function LocationTagsSection({
                 accessibilityLabel={`Remove tag ${tag}`}
                 hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
               >
-                <Ionicons name="close" size={12} color={mutedColor} />
+                <Icon name="close" size="xs" color={mutedColor} />
               </Pressable>
             </View>
           ))}
@@ -92,7 +92,7 @@ export function LocationTagsSection({
             justifyContent: "center",
           }}
         >
-          <Ionicons name="add" size={18} color="#fff" />
+          <Icon name="add" size="lg" color="#fff" />
         </Pressable>
       </View>
       <ThemedText style={{ fontSize: 11, color: mutedColor }}>

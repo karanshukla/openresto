@@ -1,7 +1,7 @@
 import { View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel, ToggleSwitch } from "./settingsShared";
+import { Icon } from "@/components/common/Icon";
 
 export interface BookingConfirmationToggleProps {
   sendConfirmations: boolean;
@@ -76,7 +76,7 @@ export function BookingConfirmationToggle({
               justifyContent: "center",
             }}
           >
-            <Ionicons name="mail-outline" size={14} color={mutedColor} />
+            <Icon name="mail-outline" size="sm" color={mutedColor} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -121,7 +121,7 @@ export function BookingConfirmationToggle({
               backgroundColor: cardBg,
             }}
           >
-            <Ionicons name="shield-outline" size={13} color={mutedColor} />
+            <Icon name="shield-outline" size={13} color={mutedColor} />
             <ThemedText style={{ fontSize: 12, color: mutedColor }}>
               Configure and test SMTP above to enable.
             </ThemedText>

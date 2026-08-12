@@ -1,26 +1,19 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
-import {
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-  type ComponentProps,
-  type ReactNode,
-} from "react";
+import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { Stack } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { Ionicons } from "@expo/vector-icons";
 import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 /**
  * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
@@ -279,15 +272,11 @@ export default function HomeScreen() {
                               },
                             ]}
                           >
-                            <Ionicons
-                              name={h.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                              size={16}
-                              color={primaryColor}
-                            />
+                            <Icon name={h.iconKey as IconName} size="md" color={primaryColor} />
                           </View>
                           <ThemedText style={styles.highlightTitle}>{h.title}</ThemedText>
                           {h.link ? (
-                            <Ionicons
+                            <Icon
                               name="open-outline"
                               size={13}
                               color={mutedColor}

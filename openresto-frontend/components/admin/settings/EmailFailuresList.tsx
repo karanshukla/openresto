@@ -1,8 +1,8 @@
 import { View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel } from "./settingsShared";
 import type { EmailFailureDto } from "@/api/admin";
+import { Icon } from "@/components/common/Icon";
 
 export interface EmailFailuresListProps {
   failures: EmailFailureDto[];
@@ -58,7 +58,7 @@ export function EmailFailuresList({
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="warning-outline" size={13} color={dangerColor} />
+                <Icon name="warning-outline" size={13} color={dangerColor} />
                 <ThemedText
                   style={{ fontSize: 12.5, fontWeight: "500", flex: 1 }}
                   numberOfLines={1}

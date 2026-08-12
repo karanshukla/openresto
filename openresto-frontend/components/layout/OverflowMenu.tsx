@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Modal, Pressable, View, TouchableWithoutFeedback } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useBrand } from "@/context/BrandContext";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./OverflowMenu.styles";
+import { Icon, type IconName } from "@/components/common/Icon";
 
 /** Web-only overflow menu in the navbar. */
 export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () => void }) {
@@ -52,7 +52,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         accessibilityLabel="Open menu"
         accessibilityRole="button"
       >
-        <Ionicons name="ellipsis-vertical" size={19} color={colors.muted} />
+        <Icon name="ellipsis-vertical" size={19} color={colors.muted} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -85,7 +85,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                 accessibilityRole="menuitem"
                 accessibilityLabel="Help"
               >
-                <Ionicons name="help-circle-outline" size={18} color={colors.muted} />
+                <Icon name="help-circle-outline" size="lg" color={colors.muted} />
                 <ThemedText style={styles.rowText}>Help</ThemedText>
               </Pressable>
 
@@ -102,9 +102,9 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                 accessibilityState={{ checked: isDark }}
                 accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
               >
-                <Ionicons
+                <Icon
                   name={isDark ? "sunny-outline" : "moon-outline"}
-                  size={18}
+                  size="lg"
                   color={colors.muted}
                 />
                 <ThemedText style={styles.rowText}>
@@ -124,7 +124,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                 accessibilityRole="menuitem"
                 accessibilityLabel="View keyboard shortcuts"
               >
-                <Ionicons name="keypad-outline" size={18} color={colors.muted} />
+                <Icon name="keypad-outline" size="lg" color={colors.muted} />
                 <ThemedText style={styles.rowText}>Keyboard shortcuts</ThemedText>
               </Pressable>
 
@@ -148,11 +148,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                           hovered && { opacity: 0.65 },
                         ]}
                       >
-                        <Ionicons
-                          name={link.iconKey as ComponentProps<typeof Ionicons>["name"]}
-                          size={16}
-                          color={colors.muted}
-                        />
+                        <Icon name={link.iconKey as IconName} size="md" color={colors.muted} />
                       </Pressable>
                     ))}
                   </View>
@@ -205,7 +201,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
                   accessibilityRole="link"
                   accessibilityLabel="Visit our website"
                 >
-                  <Ionicons name="globe-outline" size={16} color={colors.muted} />
+                  <Icon name="globe-outline" size="md" color={colors.muted} />
                   <ThemedText style={[styles.helpLinkText, { color: colors.muted }]}>
                     Visit our website
                   </ThemedText>

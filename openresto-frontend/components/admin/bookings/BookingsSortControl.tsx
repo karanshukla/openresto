@@ -1,8 +1,8 @@
 import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
+import { Icon } from "@/components/common/Icon";
 
 export interface BookingsSortControlProps {
   sort: SortState;
@@ -69,7 +69,7 @@ export function BookingsSortControl({
               >
                 {label}
               </ThemedText>
-              <Ionicons
+              <Icon
                 name={
                   !isActive
                     ? "swap-vertical-outline"

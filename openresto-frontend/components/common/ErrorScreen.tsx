@@ -1,9 +1,9 @@
 import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./ErrorScreen.styles";
+import { Icon } from "@/components/common/Icon";
 
 interface ErrorScreenProps {
   /** Defaults to "Something went wrong". */
@@ -34,7 +34,7 @@ export default function ErrorScreen({
     <ThemedView style={styles.root}>
       <View style={styles.content}>
         <View style={[styles.iconRing, { borderColor: colors.border }]}>
-          <Ionicons name="warning-outline" size={32} color={mutedColor} />
+          <Icon name="warning-outline" size={32} color={mutedColor} />
         </View>
         <ThemedText style={styles.title}>{title}</ThemedText>
         <ThemedText style={[styles.message, { color: mutedColor }]}>{message}</ThemedText>

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -25,6 +24,7 @@ import OpeningHoursTable from "@/components/restaurant/OpeningHoursTable";
 import WalkInNotice from "@/components/booking/WalkInNotice";
 import type { MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import { styles } from "./LocationListItem.styles";
+import { Icon } from "@/components/common/Icon";
 
 const SLOTS_SHOWN_WIDE = 5;
 const SLOTS_SHOWN_COMPACT = 3;
@@ -172,7 +172,7 @@ export default function LocationListItem({
 
   const walkInBadge = walkInBadgeText ? (
     <View style={[cardStyles.badge, cardStyles.badgeMuted]}>
-      <Ionicons name="walk-outline" size={11} color="#fff" />
+      <Icon name="walk-outline" size={11} color="#fff" />
       <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
     </View>
   ) : null;
@@ -191,7 +191,7 @@ export default function LocationListItem({
       ]}
     >
       <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>Details</ThemedText>
-      <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
+      <Icon name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
     </Pressable>
   );
 
@@ -242,7 +242,7 @@ export default function LocationListItem({
   const walkInLine =
     walkInLocation || walkInOnDate ? (
       <View style={styles.walkInRow}>
-        <Ionicons name="walk-outline" size={15} color={mutedColor} />
+        <Icon name="walk-outline" size={15} color={mutedColor} />
         <ThemedText style={[styles.walkInText, { color: mutedColor }]}>
           No reservations required — first come, first served
         </ThemedText>
@@ -338,7 +338,7 @@ export default function LocationListItem({
       accessibilityRole="link"
       accessibilityLabel={`Open in ${label}`}
     >
-      <Ionicons name="navigate-outline" size={12} color={mutedColor} />
+      <Icon name="navigate-outline" size="xs" color={mutedColor} />
       <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>{label}</ThemedText>
     </Pressable>
   );
@@ -350,7 +350,7 @@ export default function LocationListItem({
       accessibilityRole="link"
       accessibilityLabel="View menu"
     >
-      <Ionicons name="document-text-outline" size={12} color={primaryColor} />
+      <Icon name="document-text-outline" size="xs" color={primaryColor} />
       <ThemedText style={[styles.metaText, styles.metaLink, { color: primaryColor }]}>
         Menu
       </ThemedText>
@@ -367,7 +367,7 @@ export default function LocationListItem({
 
   const hoursMeta = (
     <View style={styles.metaItem}>
-      <Ionicons name="time-outline" size={12} color={mutedColor} />
+      <Icon name="time-outline" size="xs" color={mutedColor} />
       <ThemedText style={[styles.metaText, { color: mutedColor }]}>{hoursLabel}</ThemedText>
     </View>
   );
@@ -392,7 +392,7 @@ export default function LocationListItem({
               </ThemedText>
               {restaurant.address ? (
                 <View style={styles.metaItem}>
-                  <Ionicons name="location-outline" size={12} color={mutedColor} />
+                  <Icon name="location-outline" size="xs" color={mutedColor} />
                   <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
                     {restaurant.address}
                   </ThemedText>
@@ -424,7 +424,7 @@ export default function LocationListItem({
                 <View style={styles.metaRow}>
                   {restaurant.address ? (
                     <View style={styles.metaItem}>
-                      <Ionicons name="location-outline" size={12} color={mutedColor} />
+                      <Icon name="location-outline" size="xs" color={mutedColor} />
                       <ThemedText
                         style={[styles.metaText, { color: mutedColor }]}
                         numberOfLines={1}
@@ -476,16 +476,11 @@ export default function LocationListItem({
               accessibilityRole="link"
               accessibilityLabel="Open menu"
             >
-              <Ionicons name="document-text-outline" size={16} color={primaryColor} />
+              <Icon name="document-text-outline" size="md" color={primaryColor} />
               <ThemedText style={[styles.menuButtonText, { color: primaryColor }]}>
                 View menu
               </ThemedText>
-              <Ionicons
-                name="open-outline"
-                size={13}
-                color={mutedColor}
-                style={styles.menuButtonEnd}
-              />
+              <Icon name="open-outline" size={13} color={mutedColor} style={styles.menuButtonEnd} />
             </Pressable>
           ) : null}
 
@@ -539,7 +534,7 @@ export default function LocationListItem({
                               {table.name ?? `Table ${table.id}`}
                             </ThemedText>
                             {groupMemberIds.has(table.id) && (
-                              <Ionicons name="link" size={11} color={primaryColor} />
+                              <Icon name="link" size={11} color={primaryColor} />
                             )}
                           </View>
                           <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
@@ -565,7 +560,7 @@ export default function LocationListItem({
                         { borderColor: `${primaryColor}55`, backgroundColor: `${primaryColor}12` },
                       ]}
                     >
-                      <Ionicons name="link" size={15} color={primaryColor} />
+                      <Icon name="link" size={15} color={primaryColor} />
                       <View style={styles.groupTextCol}>
                         <ThemedText style={styles.groupName}>{groupDisplayName(group)}</ThemedText>
                         <ThemedText style={[styles.groupSeats, { color: mutedColor }]}>
