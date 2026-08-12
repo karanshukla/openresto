@@ -30,6 +30,8 @@ The Restaurant business has changed. Indie restaurants run on razor thin margins
 
 <img src="https://github.com/user-attachments/assets/ce52d6ed-6989-490c-b950-81777eefa14a" width="750" alt="Booking interface">
 
+<img width="1973" height="1372" alt="image" src="https://github.com/user-attachments/assets/5dd1446f-40d8-4304-8eb7-fe231690539c" />
+
 <img src="https://github.com/user-attachments/assets/3b5b5892-869f-413d-89ef-ee96d78aaa99" width="700" alt="Restaurant search">
 
 <img width="700" alt="Screenshot 2026-06-26 154244" src="https://github.com/user-attachments/assets/72242735-468b-42a3-9f3a-7a1261bc70c4" />
