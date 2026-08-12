@@ -19,7 +19,8 @@ import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
-import { styles as sharedStyles } from "./settings.styles";
+import { styles as sharedStyles, domStyles, themedSelect } from "./settings.styles";
+import { styles } from "./RestaurantInfoForm.styles";
 import { Icon } from "@/components/common/Icon";
 
 const TIMEZONES = [
@@ -417,41 +418,29 @@ export function RestaurantInfoForm({
 
   return (
     <View>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 14,
-          marginBottom: 18,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <ThemedText
-            style={{ fontSize: 16, fontWeight: "600", letterSpacing: -0.2, marginBottom: 4 }}
-          >
-            Restaurant info
-          </ThemedText>
-          <ThemedText style={{ fontSize: 13, color: mutedColor }}>
+      <View style={styles.header}>
+        <View style={styles.headerCopy}>
+          <ThemedText style={styles.headerTitle}>Restaurant info</ThemedText>
+          <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
             Name, address, hours and timezone for this location.
           </ThemedText>
         </View>
       </View>
 
-      <View style={{ gap: 14 }}>
-        <View style={{ gap: 6 }}>
+      <View style={styles.body}>
+        <View style={styles.field}>
           <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
             Restaurant name
           </ThemedText>
           <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
         </View>
 
-        <View style={{ gap: 6 }}>
+        <View style={styles.field}>
           <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>Address</ThemedText>
           <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
         </View>
 
-        <View style={{ gap: 6 }}>
+        <View style={styles.field}>
           <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
             Description (optional)
           </ThemedText>
@@ -461,35 +450,23 @@ export function RestaurantInfoForm({
             placeholder="Short blurb shown on the location page. Supports links like [menu](https://example.com)."
             multiline
             numberOfLines={4}
-            style={{ height: 96, paddingTop: 10, paddingBottom: 10 }}
+            style={styles.descriptionInput}
           />
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
             Shown on the public location page. Use [label](https://url) for links.
           </ThemedText>
         </View>
 
-        <View style={{ gap: 6 }}>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+        <View style={styles.field}>
+          <View style={styles.menuLabelRow}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Menu (optional)
             </ThemedText>
           </View>
           {menuUrlIsServedFile ? (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-                paddingVertical: 12,
-                paddingHorizontal: 14,
-                borderWidth: 1,
-                borderColor,
-                borderRadius: 10,
-                backgroundColor: surface2,
-              }}
-            >
+            <View style={[styles.menuFileRow, { borderColor, backgroundColor: surface2 }]}>
               <Icon name="document-text-outline" size="lg" color={primaryColor} />
-              <ThemedText style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
+              <ThemedText style={styles.menuFileName} numberOfLines={1}>
                 Uploaded menu PDF
               </ThemedText>
               <Pressable
@@ -518,7 +495,7 @@ export function RestaurantInfoForm({
               keyboardType="url"
             />
           )}
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <View style={styles.menuActions}>
             {!menuUrlIsServedFile && (
               <Pressable
                 style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
@@ -535,23 +512,23 @@ export function RestaurantInfoForm({
             )}
             {menuMsg && (
               <ThemedText
-                style={{
-                  fontSize: 12,
-                  color: menuMsg.ok ? theme.colors.success : theme.colors.error,
-                }}
+                style={[
+                  styles.menuMsg,
+                  { color: menuMsg.ok ? theme.colors.success : theme.colors.error },
+                ]}
               >
                 {menuMsg.text}
               </ThemedText>
             )}
           </View>
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
             Upload a PDF (max 10 MB) or paste a link to your menu. Shown as a &quot;View menu&quot;
             button on the location page.
           </ThemedText>
         </View>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+        <View style={styles.fieldGrid}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Contact phone (optional)
             </ThemedText>
@@ -568,7 +545,7 @@ export function RestaurantInfoForm({
               maxLength={MAX_PHONE_LENGTH}
             />
           </View>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Contact email (optional)
             </ThemedText>
@@ -586,36 +563,21 @@ export function RestaurantInfoForm({
             />
           </View>
         </View>
-        {contactMsg && (
-          <ThemedText style={{ fontSize: 12, color: theme.colors.error }}>{contactMsg}</ThemedText>
-        )}
-        <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: -8 }}>
+        {contactMsg && <ThemedText style={styles.contactError}>{contactMsg}</ThemedText>}
+        <ThemedText style={[styles.contactHint, { color: mutedColor }]}>
           Shown to diners who need to arrange a booking directly (e.g. a large party). Leave blank
           to use the brand-wide contact details from Settings.
         </ThemedText>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+        <View style={styles.fieldGrid}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Timezone
             </ThemedText>
             <select
               value={timezone}
               onChange={/* istanbul ignore next */ (e) => setTimezone(e.target.value)}
-              style={{
-                width: "100%",
-                height: 44,
-                borderWidth: 1,
-                borderStyle: "solid" as const,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                cursor: "pointer",
-              }}
+              style={{ ...domStyles.select, ...themedSelect(colors) }}
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>
@@ -623,12 +585,12 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
               If this value differs from the customer's device timezone, a note will appear on the
               booking page.
             </ThemedText>
           </View>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Default Booking duration
             </ThemedText>
@@ -639,20 +601,7 @@ export function RestaurantInfoForm({
                 /* istanbul ignore next */ (e) =>
                   setDefaultBookingDurationMinutes(Number(e.target.value))
               }
-              style={{
-                width: "100%",
-                height: 44,
-                borderWidth: 1,
-                borderStyle: "solid" as const,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                cursor: "pointer",
-              }}
+              style={{ ...domStyles.select, ...themedSelect(colors) }}
             >
               {DURATION_OPTIONS.map((minutes) => (
                 <option key={minutes} value={minutes}>
@@ -660,11 +609,11 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
               How long each new booking occupies a table by default
             </ThemedText>
           </View>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Booking start-time interval
             </ThemedText>
@@ -675,20 +624,7 @@ export function RestaurantInfoForm({
                 /* istanbul ignore next */ (e) =>
                   setBookingSlotIntervalMinutes(Number(e.target.value))
               }
-              style={{
-                width: "100%",
-                height: 44,
-                borderWidth: 1,
-                borderStyle: "solid" as const,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                cursor: "pointer",
-              }}
+              style={{ ...domStyles.select, ...themedSelect(colors) }}
             >
               {SLOT_INTERVAL_OPTIONS.map((minutes) => (
                 <option key={minutes} value={minutes}>
@@ -696,11 +632,11 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
               How far apart selectable start times are (independent of booking duration)
             </ThemedText>
           </View>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Max table oversize
             </ThemedText>
@@ -711,20 +647,7 @@ export function RestaurantInfoForm({
                 /* istanbul ignore next */ (e) =>
                   setMaxTableOversizeSeats(e.target.value === "" ? null : Number(e.target.value))
               }
-              style={{
-                width: "100%",
-                height: 44,
-                borderWidth: 1,
-                borderStyle: "solid" as const,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                cursor: "pointer",
-              }}
+              style={{ ...domStyles.select, ...themedSelect(colors) }}
             >
               <option value="">Off</option>
               {OVERSIZE_OPTIONS.map((seats) => (
@@ -733,11 +656,11 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
               Don&apos;t offer tables more than this many seats larger than the party size
             </ThemedText>
           </View>
-          <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
+          <View style={styles.gridField}>
             <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
               Booking reference format
             </ThemedText>
@@ -748,20 +671,7 @@ export function RestaurantInfoForm({
                 /* istanbul ignore next */ (e) =>
                   setBookingRefFormat(e.target.value as BookingRefFormat)
               }
-              style={{
-                width: "100%",
-                height: 44,
-                borderWidth: 1,
-                borderStyle: "solid" as const,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingLeft: 12,
-                paddingRight: 12,
-                fontSize: 14,
-                backgroundColor: colors.input,
-                color: colors.text,
-                cursor: "pointer",
-              }}
+              style={{ ...domStyles.select, ...themedSelect(colors) }}
             >
               {BOOKING_REF_FORMAT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -769,7 +679,7 @@ export function RestaurantInfoForm({
                 </option>
               ))}
             </select>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
               What new booking references look like — existing bookings keep theirs
             </ThemedText>
           </View>
@@ -825,49 +735,36 @@ export function RestaurantInfoForm({
         />
       </View>
 
-      <View
-        style={{ marginTop: 20, borderTopWidth: 1, borderStyle: "dashed" as const, borderColor }}
-      />
+      <View style={[styles.divider, { borderColor }]} />
 
-      <View
-        style={{
-          paddingTop: 14,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={styles.footer}>
+        <View style={styles.dirtyIndicator}>
           {dirty ? (
             <>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#f59e0b" }} />
-              <ThemedText style={{ fontSize: 12, color: mutedColor }}>Unsaved changes</ThemedText>
+              <View style={styles.dirtyDot} />
+              <ThemedText style={[styles.dirtyText, { color: mutedColor }]}>
+                Unsaved changes
+              </ThemedText>
             </>
           ) : (
             <>
               <Icon name="checkmark" size={13} color={mutedColor} />
-              <ThemedText style={{ fontSize: 12, color: mutedColor }}>All changes saved</ThemedText>
+              <ThemedText style={[styles.dirtyText, { color: mutedColor }]}>
+                All changes saved
+              </ThemedText>
             </>
           )}
         </View>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={styles.footerActions}>
           <Pressable
             onPress={discard}
             disabled={!dirty}
             accessibilityRole="button"
             accessibilityLabel="Discard unsaved changes"
             accessibilityState={{ disabled: !dirty }}
-            style={{
-              opacity: dirty ? 1 : 0.4,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 10,
-            }}
+            style={[styles.discardBtn, { opacity: dirty ? 1 : 0.4 }]}
           >
-            <ThemedText style={{ fontSize: 14, color: mutedColor, fontWeight: "500" }}>
-              Discard
-            </ThemedText>
+            <ThemedText style={[styles.discardText, { color: mutedColor }]}>Discard</ThemedText>
           </Pressable>
           <Pressable
             onPress={save}
@@ -875,20 +772,15 @@ export function RestaurantInfoForm({
             accessibilityRole="button"
             accessibilityLabel="Save location details"
             accessibilityState={{ disabled: !dirty || saving || !name.trim(), busy: saving }}
-            style={{
-              opacity: !dirty || saving || !name.trim() ? 0.5 : 1,
-              backgroundColor: primaryColor,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 10,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-            }}
+            style={[
+              styles.saveBtn,
+              {
+                opacity: !dirty || saving || !name.trim() ? 0.5 : 1,
+                backgroundColor: primaryColor,
+              },
+            ]}
           >
-            <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
-              {saving ? "Saving…" : "Save changes"}
-            </ThemedText>
+            <ThemedText style={styles.saveText}>{saving ? "Saving…" : "Save changes"}</ThemedText>
           </Pressable>
         </View>
       </View>

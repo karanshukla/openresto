@@ -2,7 +2,8 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import TimePicker from "@/components/common/TimePicker";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./OpeningHoursSection.styles";
 import { Icon } from "@/components/common/Icon";
 
 type WeekHours = Record<number, { open: string; close: string }>;
@@ -61,39 +62,19 @@ export function OpeningHoursSection({
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
 
   return (
-    <View
-      style={{
-        gap: 12,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 12,
-        padding: 14,
-        backgroundColor: surface2,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <ThemedText style={{ fontSize: 13, fontWeight: "600" }}>Opening hours</ThemedText>
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+    <View style={[settingsStyles.policyCard, { borderColor, backgroundColor: surface2 }]}>
+      <View style={settingsStyles.policyHeader}>
+        <View style={settingsStyles.policyHeaderCopy}>
+          <ThemedText style={settingsStyles.policyTitle}>Opening hours</ThemedText>
+          <ThemedText style={[settingsStyles.policySub, { color: mutedColor }]}>
             {openDays.length} of 7 days open
           </ThemedText>
         </View>
         <View
-          style={{
-            flexDirection: "row",
-            gap: 2,
-            padding: 3,
-            borderRadius: 9,
-            backgroundColor: isDark ? "#1b1d1f" : "#eef0f2",
-          }}
+          style={[
+            settingsStyles.policyModeGroup,
+            { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
+          ]}
         >
           {modeButton(
             "Same every day",
@@ -114,9 +95,11 @@ export function OpeningHoursSection({
 
       {!customHours ? (
         <>
-          <View style={{ flexDirection: "row", gap: 14 }}>
-            <View style={{ flex: 1, gap: 6 }}>
-              <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Opens</ThemedText>
+          <View style={styles.uniformTimes}>
+            <View style={styles.uniformTimeField}>
+              <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                Opens
+              </ThemedText>
               <TimePicker
                 selectedTime={openTime}
                 onSelect={onSetOpenTime}
@@ -124,8 +107,10 @@ export function OpeningHoursSection({
                 maxTime="23:45"
               />
             </View>
-            <View style={{ flex: 1, gap: 6 }}>
-              <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Closes</ThemedText>
+            <View style={styles.uniformTimeField}>
+              <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                Closes
+              </ThemedText>
               <TimePicker
                 selectedTime={closeTime}
                 onSelect={onSetCloseTime}
@@ -135,9 +120,11 @@ export function OpeningHoursSection({
             </View>
           </View>
 
-          <View style={{ gap: 6 }}>
-            <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Open days</ThemedText>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <View style={settingsStyles.policyField}>
+            <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+              Open days
+            </ThemedText>
+            <View style={settingsStyles.dayGrid}>
               {DAY_LABELS.map((label, i) => {
                 const day = i + 1;
                 const active = openDays.includes(day);
@@ -147,24 +134,16 @@ export function OpeningHoursSection({
                     onPress={() => onToggleDay(day)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    style={{
-                      minWidth: 96,
-                      flexGrow: 1,
-                      backgroundColor: active ? primaryColor : cardBg,
-                      borderWidth: 1,
-                      borderColor: active ? primaryColor : borderColor,
-                      borderRadius: 9,
-                      paddingVertical: 10,
-                      paddingHorizontal: 12,
-                      alignItems: "center",
-                    }}
+                    style={[
+                      settingsStyles.dayBtn,
+                      {
+                        backgroundColor: active ? primaryColor : cardBg,
+                        borderColor: active ? primaryColor : borderColor,
+                      },
+                    ]}
                   >
                     <ThemedText
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "500",
-                        color: active ? "#fff" : textColor,
-                      }}
+                      style={[settingsStyles.dayBtnLabel, { color: active ? "#fff" : textColor }]}
                     >
                       {label}
                     </ThemedText>
@@ -172,49 +151,35 @@ export function OpeningHoursSection({
                 );
               })}
             </View>
-            <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+            <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
               Tap a day to mark it open or closed.
             </ThemedText>
           </View>
         </>
       ) : (
-        <View style={{ gap: 8 }}>
+        <View style={styles.perDayList}>
           {DAY_SHORT.map((label, i) => {
             const day = i + 1;
             const active = openDays.includes(day);
             const hours = weekHours[day];
             return (
-              <View
-                key={day}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  opacity: active ? 1 : 0.75,
-                }}
-              >
+              <View key={day} style={[styles.perDayRow, !active && styles.perDayRowClosed]}>
                 <Pressable
                   onPress={() => onToggleDay(day)}
                   testID={`day-toggle-${day}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "open" : "closed"}. Tap to toggle.`}
-                  style={{
-                    width: 58,
-                    backgroundColor: active ? primaryColor : cardBg,
-                    borderWidth: 1,
-                    borderColor: active ? primaryColor : borderColor,
-                    borderRadius: 8,
-                    paddingVertical: 9,
-                    alignItems: "center",
-                  }}
+                  style={[
+                    styles.dayChip,
+                    {
+                      backgroundColor: active ? primaryColor : cardBg,
+                      borderColor: active ? primaryColor : borderColor,
+                    },
+                  ]}
                 >
                   <ThemedText
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: active ? "#fff" : mutedColor,
-                    }}
+                    style={[styles.dayChipLabel, { color: active ? "#fff" : mutedColor }]}
                   >
                     {label}
                   </ThemedText>
@@ -222,7 +187,7 @@ export function OpeningHoursSection({
 
                 {active ? (
                   <>
-                    <View style={{ flex: 1, minWidth: 96 }}>
+                    <View style={styles.timeField}>
                       <TimePicker
                         selectedTime={hours.open}
                         onSelect={(t) => onSetDayHours(day, { open: t })}
@@ -230,8 +195,8 @@ export function OpeningHoursSection({
                         maxTime="23:45"
                       />
                     </View>
-                    <ThemedText style={{ fontSize: 12, color: mutedColor }}>–</ThemedText>
-                    <View style={{ flex: 1, minWidth: 96 }}>
+                    <ThemedText style={[styles.timeSeparator, { color: mutedColor }]}>–</ThemedText>
+                    <View style={styles.timeField}>
                       <TimePicker
                         selectedTime={hours.close}
                         onSelect={(t) => onSetDayHours(day, { close: t })}
@@ -243,33 +208,28 @@ export function OpeningHoursSection({
                       onPress={() => onCopyHoursToAllDays(day)}
                       testID={`copy-hours-${day}`}
                       accessibilityLabel={`Copy ${DAY_LABELS[i]}'s hours to every day`}
-                      style={(state) => ({
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: (state as { hovered?: boolean }).hovered
-                          ? primaryColor
-                          : borderColor,
-                        backgroundColor: cardBg,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      })}
+                      style={(state) => [
+                        styles.copyBtn,
+                        {
+                          borderColor: (state as { hovered?: boolean }).hovered
+                            ? primaryColor
+                            : borderColor,
+                          backgroundColor: cardBg,
+                        },
+                      ]}
                     >
                       <Icon name="copy-outline" size="sm" color={mutedColor} />
                     </Pressable>
                   </>
                 ) : (
-                  <ThemedText
-                    style={{ flex: 1, fontSize: 12.5, color: mutedColor, fontStyle: "italic" }}
-                  >
+                  <ThemedText style={[styles.closedLabel, { color: mutedColor }]}>
                     Closed
                   </ThemedText>
                 )}
               </View>
             );
           })}
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
             Tap a day to mark it open or closed. Use{" "}
             <Icon name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours to
             the whole week.
@@ -278,9 +238,9 @@ export function OpeningHoursSection({
       )}
 
       {anyOvernight && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={settingsStyles.policyNote}>
           <Icon name="moon-outline" size="xs" color={mutedColor} />
-          <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
             A closing time at or before opening means the restaurant closes after midnight.
           </ThemedText>
         </View>

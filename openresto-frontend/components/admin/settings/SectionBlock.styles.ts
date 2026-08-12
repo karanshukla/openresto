@@ -1,0 +1,62 @@
+import { StyleSheet } from "react-native";
+import { theme } from "@/theme/theme";
+
+export const styles = StyleSheet.create({
+  card: {
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.xl,
+    overflow: "hidden",
+    marginBottom: theme.spacing.sm,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+  },
+  headerCopy: { flex: 1, gap: 2 },
+  headerSub: { fontSize: 12 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  confirmBanner: {
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    gap: theme.spacing.xsm,
+  },
+  selectionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: theme.spacing.xsm,
+    borderBottomWidth: 1,
+    gap: theme.spacing.sm,
+  },
+  selectionLabel: { flex: 1, fontSize: 12, fontWeight: "600" },
+  groupEditBar: {
+    paddingHorizontal: 14,
+    paddingVertical: theme.spacing.xsm,
+    borderBottomWidth: 1,
+    gap: theme.spacing.sm,
+  },
+  groupEditLabel: { fontSize: 12, fontWeight: "600" },
+  groupEditRow: { flexDirection: "row", gap: theme.spacing.sm, alignItems: "center" },
+  groupEditSelect: { flex: 1 },
+  tableList: { padding: theme.spacing.md, gap: theme.spacing.sm },
+  groupEditTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xxs,
+    alignSelf: "flex-start",
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xsm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+  },
+  groupEditTriggerText: { fontSize: 11, fontWeight: "600" },
+  addTableRow: { padding: theme.spacing.md, paddingTop: 0 },
+});

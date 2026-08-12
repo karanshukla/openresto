@@ -5,7 +5,8 @@ import Input from "@/components/common/Input";
 import Select, { type SelectOption } from "@/components/common/Select";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./AddRow.styles";
 import { Icon } from "@/components/common/Icon";
 
 export function AddRow({
@@ -39,22 +40,13 @@ export function AddRow({
   if (!open) {
     return (
       <Pressable
-        style={{
-          backgroundColor: primaryColor,
-          borderRadius: 10,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-          alignSelf: "flex-end",
-        }}
+        style={[settingsStyles.addPill, styles.addPillRight, { backgroundColor: primaryColor }]}
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={label}
       >
         <Icon name="add" size="md" color="#fff" />
-        <ThemedText style={{ fontSize: 13, fontWeight: "600", color: "#fff" }}>{label}</ThemedText>
+        <ThemedText style={settingsStyles.addPillText}>{label}</ThemedText>
       </Pressable>
     );
   }
@@ -62,8 +54,8 @@ export function AddRow({
   // Expanded — inputs + a right-aligned footer: filled-primary text Add and a bordered close (X)
   // icon so the dismiss affordance is consistent with the rest of the row actions.
   return (
-    <View style={styles.addForm}>
-      <View style={{ flexDirection: "row", gap: 12 }}>
+    <View style={settingsStyles.addForm}>
+      <View style={styles.fields}>
         <View style={{ flex: extraPlaceholder ? 3 : 1 }}>
           <Input
             value={name}
@@ -73,7 +65,7 @@ export function AddRow({
           />
         </View>
         {extraPlaceholder && (
-          <View style={{ flex: 1 }}>
+          <View style={styles.extraField}>
             {extraOptions ? (
               <Select
                 selectedValue={extra || undefined}
@@ -92,9 +84,7 @@ export function AddRow({
           </View>
         )}
       </View>
-      <View
-        style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end", alignItems: "center" }}
-      >
+      <View style={styles.footer}>
         <Pressable
           onPress={async () => {
             if (!name.trim()) return;
@@ -106,19 +96,17 @@ export function AddRow({
             setOpen(false);
           }}
           disabled={saving || !name.trim()}
-          style={[styles.actionBtn, { backgroundColor: primaryColor, opacity: saving ? 0.6 : 1 }]}
+          style={[
+            settingsStyles.actionBtn,
+            { backgroundColor: primaryColor, opacity: saving ? 0.6 : 1 },
+          ]}
         >
-          <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
+          <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
             {saving ? "Adding…" : "Add"}
           </ThemedText>
         </Pressable>
         <Pressable
-          style={{
-            padding: 6,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: theme.colors.border.light,
-          }}
+          style={styles.cancelBtn}
           onPress={() => {
             setOpen(false);
             setName("");

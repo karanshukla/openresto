@@ -1,6 +1,7 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./SmtpTestPanel.styles";
 import { Icon } from "@/components/common/Icon";
 
 type TestState = "idle" | "testing" | "ok" | "fail";
@@ -51,59 +52,41 @@ export function SmtpTestPanel({
 }: SmtpTestPanelProps) {
   return (
     <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 14,
-        padding: 14,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderRadius: 12,
-        borderColor:
-          testState === "ok" ? okBorder : testState === "fail" ? dangerBorder : borderColor,
-        backgroundColor: testState === "ok" ? okSoft : testState === "fail" ? dangerSoft : surface2,
-      }}
+      style={[
+        styles.panel,
+        {
+          borderColor:
+            testState === "ok" ? okBorder : testState === "fail" ? dangerBorder : borderColor,
+          backgroundColor:
+            testState === "ok" ? okSoft : testState === "fail" ? dangerSoft : surface2,
+        },
+      ]}
     >
       <View
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor:
-            testState === "ok" ? okColor : testState === "fail" ? dangerColor : borderColor,
-          backgroundColor:
-            testState === "ok" ? okColor : testState === "fail" ? dangerColor : cardBg,
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
+        style={[
+          styles.indicator,
+          {
+            borderColor:
+              testState === "ok" ? okColor : testState === "fail" ? dangerColor : borderColor,
+            backgroundColor:
+              testState === "ok" ? okColor : testState === "fail" ? dangerColor : cardBg,
+          },
+        ]}
       >
-        {testState === "idle" && (
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: mutedColor }} />
-        )}
+        {testState === "idle" && <View style={[styles.idleDot, { backgroundColor: mutedColor }]} />}
         {testState === "testing" && <Icon name="reload-outline" size="sm" color={mutedColor} />}
         {testState === "ok" && <Icon name="checkmark" size="md" color="#fff" />}
-        {testState === "fail" && (
-          <ThemedText style={{ fontSize: 18, fontWeight: "700", color: "#fff", lineHeight: 20 }}>
-            ×
-          </ThemedText>
-        )}
+        {testState === "fail" && <ThemedText style={styles.failMark}>×</ThemedText>}
       </View>
 
-      <View style={{ flex: 1 }}>
-        <ThemedText
-          style={{
-            fontSize: 13.5,
-            fontWeight: "600",
-          }}
-        >
+      <View style={styles.copy}>
+        <ThemedText style={styles.title}>
           {testState === "idle" && "Not yet tested"}
           {testState === "testing" && "Testing connection…"}
           {testState === "ok" && "Connection successful"}
           {testState === "fail" && "Connection failed"}
         </ThemedText>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }}>
+        <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
           {testState === "idle" && "Send a test to verify settings before going live."}
           {testState === "testing" && `Reaching ${host || "host"}:${port}…`}
           {testState === "ok" && (testMsg || "Authentication accepted. Test email delivered.")}
@@ -118,13 +101,14 @@ export function SmtpTestPanel({
           if (testState !== "testing" && host && username) onTest();
         }}
         style={[
-          styles.secBtn,
-          { flexDirection: "row", gap: 6, paddingHorizontal: 14, borderColor, flexShrink: 0 },
-          (!host || !username) && { opacity: 0.4 },
+          settingsStyles.secBtn,
+          styles.testBtn,
+          { borderColor },
+          (!host || !username) && styles.testBtnDisabled,
         ]}
       >
         <Icon name="flash-outline" size="sm" color={primaryColor} />
-        <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
+        <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
           {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
         </ThemedText>
       </Pressable>

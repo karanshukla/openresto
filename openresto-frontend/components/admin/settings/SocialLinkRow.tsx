@@ -2,6 +2,8 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import type { AdminSocialLinkDto } from "@/api/admin";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./SocialLinkRow.styles";
 
 export interface SocialLinkRowProps {
   link: AdminSocialLinkDto;
@@ -30,50 +32,27 @@ export function SocialLinkRow({
   surface2,
 }: SocialLinkRowProps) {
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        padding: 12,
-        backgroundColor: surface2,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 10,
-      }}
-    >
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          backgroundColor: cardBg,
-          borderWidth: 1,
-          borderColor,
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
+    <View style={[settingsStyles.tile, { backgroundColor: surface2, borderColor }]}>
+      <View style={[settingsStyles.tileIcon, { backgroundColor: cardBg, borderColor }]}>
         <Icon name={link.iconKey as IconName} size="lg" color={primaryColor} />
       </View>
-      <View style={{ flex: 1 }}>
-        <ThemedText style={{ fontSize: 14, fontWeight: "600" }}>{link.label}</ThemedText>
-        <ThemedText style={{ fontSize: 12, color: mutedColor, marginTop: 2 }} numberOfLines={1}>
+      <View style={settingsStyles.tileCopy}>
+        <ThemedText style={settingsStyles.tileTitle}>{link.label}</ThemedText>
+        <ThemedText style={[settingsStyles.tileSub, { color: mutedColor }]} numberOfLines={1}>
           {link.url}
         </ThemedText>
       </View>
-      <View style={{ flexDirection: "row", gap: 6 }}>
+      <View style={styles.actions}>
         <Pressable
           onPress={() => onEdit(link)}
-          style={{ padding: 6 }}
+          style={styles.actionBtn}
           accessibilityLabel={`Edit ${link.label}`}
         >
           <Icon name="pencil-outline" size="md" color={mutedColor} />
         </Pressable>
         <Pressable
           onPress={() => onDelete(link.id)}
-          style={{ padding: 6 }}
+          style={styles.actionBtn}
           accessibilityLabel={`Delete ${link.label}`}
         >
           <Icon name="trash-outline" size="md" color="#ef4444" />

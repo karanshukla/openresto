@@ -1,5 +1,6 @@
 import { Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import { styles } from "./sectionHelpers.styles";
 
 /**
  * Shared presentational helpers for the RestaurantInfoForm sub-section components.
@@ -46,23 +47,20 @@ export function modeButton(
       testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
-      style={{
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 7,
-        backgroundColor: active ? (isDark ? "#33363a" : "#fff") : "transparent",
-        ...(active && {
-          borderWidth: 1,
-          borderColor,
-        }),
-      }}
+      style={[
+        styles.modeBtn,
+        active && [
+          styles.modeBtnActive,
+          { backgroundColor: isDark ? "#33363a" : "#fff", borderColor },
+        ],
+      ]}
     >
       <ThemedText
-        style={{
-          fontSize: 12,
-          fontWeight: active ? "600" : "500",
-          color: active ? textColor : mutedColor,
-        }}
+        style={[
+          styles.modeBtnLabel,
+          active && styles.modeBtnLabelActive,
+          { color: active ? textColor : mutedColor },
+        ]}
       >
         {label}
       </ThemedText>

@@ -10,7 +10,12 @@ import { useBrand } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { styles } from "./settings.styles";
+import {
+  styles as settingsStyles,
+  domStyles as settingsDomStyles,
+  themedSelect,
+} from "./settings.styles";
+import { styles, domStyles } from "./BrandSettingsCard.styles";
 import { Icon } from "@/components/common/Icon";
 
 const MAX_HERO_MB = 5;
@@ -144,20 +149,20 @@ export function BrandSettingsCard({
   ];
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable
-        style={styles.secHeader}
+        style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
         accessibilityRole="button"
         accessibilityLabel="Brand Identity"
         accessibilityState={{ expanded }}
       >
-        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
+        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
           <Icon name="brush-outline" size="xl" color={primaryColor} />
         </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText style={styles.secTitle}>Brand Identity</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]} numberOfLines={1}>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Brand Identity</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
             {appName} · {brandPrimaryColor}
             {faviconIcon
               ? ` · ${FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label ?? faviconIcon}`
@@ -168,21 +173,15 @@ export function BrandSettingsCard({
       </Pressable>
 
       <AnimatedAccordion expanded={expanded}>
-        <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-          <View style={styles.field}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <ThemedText style={styles.fieldLabel}>App Name</ThemedText>
+        <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+          <View style={settingsStyles.field}>
+            <View style={settingsStyles.fieldHeader}>
+              <ThemedText style={settingsStyles.fieldLabel}>App Name</ThemedText>
               <ThemedText
-                style={{
-                  fontSize: 11,
-                  color: appName.length > 32 ? theme.colors.error : mutedColor,
-                }}
+                style={[
+                  settingsStyles.fieldCharCount,
+                  { color: appName.length > 32 ? theme.colors.error : mutedColor },
+                ]}
               >
                 {appName.length}/32
               </ThemedText>
@@ -195,20 +194,14 @@ export function BrandSettingsCard({
             />
           </View>
 
-          <View style={styles.field}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <ThemedText style={styles.fieldLabel}>Home Page Subtitle</ThemedText>
+          <View style={settingsStyles.field}>
+            <View style={settingsStyles.fieldHeader}>
+              <ThemedText style={settingsStyles.fieldLabel}>Home Page Subtitle</ThemedText>
               <ThemedText
-                style={{
-                  fontSize: 11,
-                  color: subtitle.length > 160 ? theme.colors.error : mutedColor,
-                }}
+                style={[
+                  settingsStyles.fieldCharCount,
+                  { color: subtitle.length > 160 ? theme.colors.error : mutedColor },
+                ]}
               >
                 {subtitle.length}/160
               </ThemedText>
@@ -219,14 +212,14 @@ export function BrandSettingsCard({
               placeholder="Scroll down to pick a location below…"
               maxLength={160}
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Tagline shown under the app name. Leave blank for the default text.
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Primary Color</ThemedText>
-            <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Primary Color</ThemedText>
+            <View style={styles.swatchRow}>
               {PRESET_COLORS.map((c) => (
                 <Pressable
                   key={c}
@@ -235,32 +228,28 @@ export function BrandSettingsCard({
                   accessibilityRole="radio"
                   accessibilityLabel={`Primary color ${c}`}
                   accessibilityState={{ checked: brandPrimaryColor === c }}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: c,
-                    borderWidth: brandPrimaryColor === c ? 3 : 0,
-                    borderColor: "#fff",
-                    shadowColor: "#000",
-                    shadowOpacity: brandPrimaryColor === c ? 0.3 : 0,
-                    shadowRadius: 4,
-                    shadowOffset: { width: 0, height: 2 },
-                  }}
+                  style={[
+                    styles.swatch,
+                    {
+                      backgroundColor: c,
+                      borderWidth: brandPrimaryColor === c ? 3 : 0,
+                      shadowOpacity: brandPrimaryColor === c ? 0.3 : 0,
+                    },
+                  ]}
                 />
               ))}
               <Input
                 value={brandPrimaryColor}
                 onChangeText={setBrandPrimaryColor}
                 placeholder="#0a7ea4"
-                style={{ width: 100 }}
+                style={styles.hexInput}
               />
             </View>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Favicon Icon</ThemedText>
-            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Favicon Icon</ThemedText>
+            <View style={styles.faviconGrid}>
               {FAVICON_ICONS.map((icon) => {
                 const isSelected = faviconIcon === icon.id;
                 const dataUri = buildFaviconDataUri(icon.id, brandPrimaryColor);
@@ -271,32 +260,30 @@ export function BrandSettingsCard({
                     onPress={() => setFaviconIcon(isSelected ? undefined : icon.id)}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: isSelected }}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 10,
-                      borderWidth: isSelected ? 2 : 1,
-                      borderColor: isSelected ? brandPrimaryColor : `${brandPrimaryColor}40`,
-                      backgroundColor: isSelected ? `${brandPrimaryColor}18` : "transparent",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+                    style={[
+                      styles.faviconSwatch,
+                      {
+                        borderWidth: isSelected ? 2 : 1,
+                        borderColor: isSelected ? brandPrimaryColor : `${brandPrimaryColor}40`,
+                        backgroundColor: isSelected ? `${brandPrimaryColor}18` : "transparent",
+                      },
+                    ]}
                     accessibilityLabel={icon.label}
                   >
-                    <img src={dataUri} alt={icon.label} style={{ width: 22, height: 22 }} />
+                    <img src={dataUri} alt={icon.label} style={domStyles.faviconImage} />
                   </Pressable>
                 );
               })}
             </View>
             {faviconIcon && (
-              <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
                 {FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label} · tap to deselect
               </ThemedText>
             )}
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Website URL</ThemedText>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Website URL</ThemedText>
             <Input
               value={websiteUrl}
               onChangeText={setWebsiteUrl}
@@ -304,13 +291,13 @@ export function BrandSettingsCard({
               autoCapitalize="none"
               keyboardType="url"
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Used in confirmation email links and images. Must be the public URL of this app.
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Contact Phone</ThemedText>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Contact Phone</ThemedText>
             <Input
               value={phoneNumber}
               onChangeText={setPhoneNumber}
@@ -319,13 +306,13 @@ export function BrandSettingsCard({
               keyboardType="phone-pad"
               maxLength={MAX_CONTACT_PHONE_LENGTH}
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Fallback contact shown when a location has no phone number of its own.
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Contact Email</ThemedText>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Contact Email</ThemedText>
             <Input
               value={emailAddress}
               onChangeText={setEmailAddress}
@@ -334,26 +321,26 @@ export function BrandSettingsCard({
               keyboardType="email-address"
               maxLength={MAX_CONTACT_EMAIL_LENGTH}
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Fallback contact shown when a location has no email of its own.
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Highlights Heading</ThemedText>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Highlights Heading</ThemedText>
             <Input
               value={highlightsHeading}
               onChangeText={setHighlightsHeading}
               placeholder="Restaurant highlights"
               maxLength={60}
             />
-            <ThemedText style={{ fontSize: 11, color: mutedColor, marginTop: 4 }}>
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Heading above the highlights section. Leave blank for the default.
             </ThemedText>
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>Highlights Subheading</ThemedText>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>Highlights Subheading</ThemedText>
             <Input
               value={highlightsSubheading}
               onChangeText={setHighlightsSubheading}
@@ -362,99 +349,64 @@ export function BrandSettingsCard({
             />
           </View>
 
-          <View style={styles.field}>
-            <ThemedText style={styles.fieldLabel}>
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>
               Homepage Header Image (max {MAX_HERO_MB} MB)
             </ThemedText>
-            <View style={{ gap: 6 }}>
-              <ThemedText style={styles.fieldLabel}>Image fit</ThemedText>
+            <View style={styles.heroFitField}>
+              <ThemedText style={settingsStyles.fieldLabel}>Image fit</ThemedText>
               <select
                 data-testid="header-image-fit-select"
                 value={headerImageFit}
                 onChange={/* istanbul ignore next */ (e) => setHeaderImageFit(e.target.value)}
-                style={{
-                  width: "100%",
-                  height: 44,
-                  borderWidth: 1,
-                  borderStyle: "solid" as const,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  paddingLeft: 12,
-                  paddingRight: 12,
-                  fontSize: 14,
-                  backgroundColor: colors.input,
-                  color: colors.text,
-                  cursor: "pointer",
-                }}
+                style={{ ...settingsDomStyles.select, ...themedSelect(colors) }}
               >
                 <option value="Cover">Cover (fill, may crop)</option>
                 <option value="Contain">Contain (show whole image)</option>
               </select>
-              <ThemedText style={{ fontSize: 11, color: mutedColor }}>
+              <ThemedText style={[styles.heroFitHint, { color: mutedColor }]}>
                 &quot;Contain&quot; avoids cropping on mobile; &quot;Cover&quot; fills the frame.
               </ThemedText>
             </View>
-            <View style={{ gap: 8, marginTop: 8 }}>
+            <View style={styles.heroBlock}>
               {heroPreview ? (
-                <View
-                  style={{
-                    width: "100%",
-                    aspectRatio: 16 / 5,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor,
-                  }}
-                >
-                  <img
-                    src={heroPreview}
-                    alt="Header"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
+                <View style={[styles.heroFrame, { borderColor }]}>
+                  <img src={heroPreview} alt="Header" style={domStyles.heroImage} />
                 </View>
               ) : (
-                <View
-                  style={{
-                    width: "100%",
-                    aspectRatio: 16 / 5,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderStyle: "dashed" as const,
-                    borderColor,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                  }}
-                >
+                <View style={[styles.heroPlaceholder, { borderColor }]}>
                   <Icon name="image-outline" size="xxl" color={mutedColor} />
-                  <ThemedText style={{ fontSize: 12, color: mutedColor }}>
+                  <ThemedText style={[styles.heroPlaceholderText, { color: mutedColor }]}>
                     No header image
                   </ThemedText>
                 </View>
               )}
-              <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={styles.heroActions}>
                 <Pressable
-                  style={[styles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
+                  style={[settingsStyles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
                   onPress={handlePickHero}
                   disabled={heroUploading}
                   accessibilityRole="button"
                   accessibilityLabel={heroPreview ? "Change header image" : "Upload header image"}
                   accessibilityState={{ disabled: heroUploading, busy: heroUploading }}
                 >
-                  <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
+                  <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
                     {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
                   </ThemedText>
                 </Pressable>
                 {heroPreview && (
                   <Pressable
-                    style={[styles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
+                    style={[
+                      settingsStyles.secBtn,
+                      { borderColor, opacity: heroUploading ? 0.5 : 1 },
+                    ]}
                     onPress={handleDeleteHero}
                     disabled={heroUploading}
                     accessibilityRole="button"
                     accessibilityLabel="Remove header image"
                     accessibilityState={{ disabled: heroUploading }}
                   >
-                    <ThemedText style={[styles.secBtnText, { color: theme.colors.error }]}>
+                    <ThemedText style={[settingsStyles.secBtnText, { color: theme.colors.error }]}>
                       Remove
                     </ThemedText>
                   </Pressable>
@@ -464,7 +416,7 @@ export function BrandSettingsCard({
           </View>
 
           {msg && (
-            <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
+            <ThemedText style={msg.ok ? settingsStyles.successText : settingsStyles.errorText}>
               {msg.text}
             </ThemedText>
           )}
@@ -472,7 +424,7 @@ export function BrandSettingsCard({
           <Button
             onPress={handleSave}
             disabled={saving || !appName.trim() || formIsDirty === false}
-            style={{ marginTop: 4 }}
+            style={styles.saveBtn}
           >
             {saving ? "Saving…" : "Save"}
           </Button>

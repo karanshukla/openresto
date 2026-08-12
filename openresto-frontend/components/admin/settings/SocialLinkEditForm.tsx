@@ -79,19 +79,10 @@ export function SocialLinkEditForm({
   error?: string | null;
 }) {
   return (
-    <View
-      style={{
-        padding: 14,
-        backgroundColor: surface2,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 10,
-        gap: 10,
-      }}
-    >
-      <View style={{ gap: 6 }}>
+    <View style={[styles.editForm, { backgroundColor: surface2, borderColor }]}>
+      <View style={styles.editFormIconField}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        <View style={styles.editFormIconGrid}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
               key={icon}
@@ -99,16 +90,13 @@ export function SocialLinkEditForm({
               accessibilityRole="radio"
               accessibilityLabel={`${icon} icon`}
               accessibilityState={{ checked: state.iconKey === icon }}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: state.iconKey === icon ? primaryColor : borderColor,
-                backgroundColor: state.iconKey === icon ? primaryColor + "22" : colors.input,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={[
+                styles.editFormSwatch,
+                {
+                  borderColor: state.iconKey === icon ? primaryColor : borderColor,
+                  backgroundColor: state.iconKey === icon ? primaryColor + "22" : colors.input,
+                },
+              ]}
             >
               <Icon
                 name={icon as IconName}
@@ -120,7 +108,7 @@ export function SocialLinkEditForm({
         </View>
       </View>
 
-      <View style={{ gap: 4 }}>
+      <View style={styles.editFormField}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Label</ThemedText>
         <Input
           value={state.label}
@@ -129,7 +117,7 @@ export function SocialLinkEditForm({
         />
       </View>
 
-      <View style={{ gap: 4 }}>
+      <View style={styles.editFormField}>
         <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>URL</ThemedText>
         <Input
           value={state.url}
@@ -140,16 +128,18 @@ export function SocialLinkEditForm({
         />
       </View>
 
-      {error ? <ThemedText style={[styles.errorText, { marginTop: 2 }]}>{error}</ThemedText> : null}
+      {error ? (
+        <ThemedText style={[styles.errorText, styles.editFormError]}>{error}</ThemedText>
+      ) : null}
 
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+      <View style={styles.editFormActions}>
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
           accessibilityLabel="Cancel editing this link"
-          style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 }}
+          style={styles.editFormCancelBtn}
         >
-          <ThemedText style={{ fontSize: 14, color: mutedColor }}>Cancel</ThemedText>
+          <ThemedText style={[styles.editFormCancelText, { color: mutedColor }]}>Cancel</ThemedText>
         </Pressable>
         <Pressable
           onPress={onSave}
@@ -160,21 +150,16 @@ export function SocialLinkEditForm({
             disabled: saving || !state.label.trim() || !state.url.trim(),
             busy: saving,
           }}
-          style={{
-            opacity: saving || !state.label.trim() || !state.url.trim() ? 0.5 : 1,
-            backgroundColor: primaryColor,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderRadius: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-          }}
+          style={[
+            styles.editFormSaveBtn,
+            {
+              opacity: saving || !state.label.trim() || !state.url.trim() ? 0.5 : 1,
+              backgroundColor: primaryColor,
+            },
+          ]}
         >
           <Icon name="checkmark" size="sm" color="#fff" />
-          <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
-            {saving ? "Saving…" : "Save"}
-          </ThemedText>
+          <ThemedText style={styles.editFormSaveText}>{saving ? "Saving…" : "Save"}</ThemedText>
         </Pressable>
       </View>
     </View>

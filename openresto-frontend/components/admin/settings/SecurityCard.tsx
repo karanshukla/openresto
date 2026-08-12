@@ -110,7 +110,7 @@ export function SecurityCard({
         <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
           <Icon name="shield-checkmark-outline" size="xl" color={primaryColor} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={styles.secHeaderCopy}>
           <ThemedText style={styles.secTitle}>Account Security</ThemedText>
           <ThemedText style={[styles.secSub, { color: mutedColor }]}>
             Manage your password and identity verification
@@ -122,7 +122,7 @@ export function SecurityCard({
       <AnimatedAccordion expanded={expanded}>
         <>
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
-            <View style={{ flex: 1 }}>
+            <View style={styles.secRowCopy}>
               <ThemedText style={styles.secRowTitle}>Email</ThemedText>
               <ThemedText style={[styles.secRowSub, { color: mutedColor }]} numberOfLines={1}>
                 {email ?? "Loading…"}
@@ -171,11 +171,11 @@ export function SecurityCard({
                   {msg.text}
                 </ThemedText>
               )}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+              <View style={styles.formActions}>
                 <Button
                   onPress={handleChangeEmail}
                   disabled={saving || !newEmail.trim() || !currentPwForEmail}
-                  style={{ flex: 1 }}
+                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Update Email"}
                 </Button>
@@ -194,7 +194,7 @@ export function SecurityCard({
           )}
 
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
-            <View style={{ flex: 1, gap: 2 }}>
+            <View style={[styles.secRowCopy, styles.policyHeaderCopy]}>
               <ThemedText style={styles.secRowTitle}>Security Question</ThemedText>
               {pvqStatus?.isConfigured ? (
                 <ThemedText style={[styles.secRowSub, { color: mutedColor }]} numberOfLines={1}>
@@ -244,11 +244,11 @@ export function SecurityCard({
                 />
               </View>
               {msg && !msg.ok && <ThemedText style={styles.errorText}>{msg.text}</ThemedText>}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+              <View style={styles.formActions}>
                 <Button
                   onPress={handleSavePvq}
                   disabled={saving || !pvqQuestion.trim() || !pvqAnswer.trim()}
-                  style={{ flex: 1 }}
+                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Save Question"}
                 </Button>
@@ -267,7 +267,7 @@ export function SecurityCard({
           )}
 
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
-            <View style={{ flex: 1 }}>
+            <View style={styles.secRowCopy}>
               <ThemedText style={styles.secRowTitle}>Password</ThemedText>
               <ThemedText style={[styles.secRowSub, { color: mutedColor }]}>
                 Change your admin password
@@ -323,11 +323,11 @@ export function SecurityCard({
                   {msg.text}
                 </ThemedText>
               )}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+              <View style={styles.formActions}>
                 <Button
                   onPress={handleChangePw}
                   disabled={saving || !currentPw || newPw.length < 6}
-                  style={{ flex: 1 }}
+                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Update Password"}
                 </Button>

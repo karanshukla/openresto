@@ -8,7 +8,8 @@ import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
 import { fetchRestaurants } from "@/api/restaurants";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles } from "./PushNotificationsCard.styles";
 import { Icon } from "@/components/common/Icon";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -157,22 +158,22 @@ export function PushNotificationsCard() {
               : "Enable to receive real-time booking alerts";
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <Pressable
-        style={styles.secHeader}
+        style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
         accessibilityRole="button"
         accessibilityLabel="Push Notifications"
         accessibilityState={{ expanded }}
       >
-        <View style={[styles.secIcon, { backgroundColor: iconBg }]}>
+        <View style={[settingsStyles.secIcon, { backgroundColor: iconBg }]}>
           <Icon name={stateIcon} size="xl" color={iconColor} />
         </View>
-        <View style={{ flex: 1 }}>
-          <ThemedText style={styles.secTitle}>Push Notifications</ThemedText>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Push Notifications</ThemedText>
           <ThemedText
             style={[
-              styles.secSub,
+              settingsStyles.secSub,
               { color: isUnconfigured || isDenied ? theme.colors.warning : mutedColor },
             ]}
           >
@@ -188,51 +189,47 @@ export function PushNotificationsCard() {
 
       <AnimatedAccordion expanded={expanded}>
         {pushState !== "loading" && (
-          <View style={[styles.secForm, { borderTopColor: borderColor }]}>
+          <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
             {isUnconfigured ? (
-              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <View style={styles.notice}>
                 <Icon
                   name="warning-outline"
                   size="md"
                   color={theme.colors.warning}
-                  style={{ marginTop: 1 }}
+                  style={styles.noticeIcon}
                 />
-                <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
+                <ThemedText style={[styles.noticeText, { color: mutedColor }]}>
                   Push notifications require VAPID keys to be configured in the server environment
                   (VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY). Contact your administrator to set these
                   up.
                 </ThemedText>
               </View>
             ) : isDenied ? (
-              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <View style={styles.notice}>
                 <Icon
                   name="information-circle-outline"
                   size="md"
                   color={theme.colors.warning}
-                  style={{ marginTop: 1 }}
+                  style={styles.noticeIcon}
                 />
-                <ThemedText style={{ fontSize: 13, color: mutedColor, flex: 1, lineHeight: 19 }}>
+                <ThemedText style={[styles.noticeText, { color: mutedColor }]}>
                   Push notifications are blocked by your browser. Open your browser&apos;s site
                   settings to allow notifications, then reload this page.
                 </ThemedText>
               </View>
             ) : pushState === "unavailable" ? (
-              <ThemedText style={{ fontSize: 13, color: mutedColor, lineHeight: 19 }}>
+              <ThemedText style={[styles.bodyText, { color: mutedColor }]}>
                 Push notifications are not supported in this browser.
               </ThemedText>
             ) : (
-              <View style={{ gap: 12 }}>
-                <ThemedText style={{ fontSize: 13, color: mutedColor, lineHeight: 19 }}>
+              <View style={styles.body}>
+                <ThemedText style={[styles.bodyText, { color: mutedColor }]}>
                   {isActive
                     ? "You will receive push notifications for new bookings, cancellations, and capacity alerts across all locations."
                     : "Enable push notifications to receive real-time alerts for new bookings, cancellations, and when a location is nearly full."}
                 </ThemedText>
 
-                {errorMsg && (
-                  <ThemedText style={{ fontSize: 13, color: theme.colors.error }}>
-                    {errorMsg}
-                  </ThemedText>
-                )}
+                {errorMsg && <ThemedText style={styles.error}>{errorMsg}</ThemedText>}
 
                 <Pressable
                   onPress={isActive ? handleDisable : handleEnable}
@@ -242,22 +239,16 @@ export function PushNotificationsCard() {
                     isActive ? "Disable push notifications" : "Enable push notifications"
                   }
                   accessibilityState={{ disabled: working, busy: working }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    paddingVertical: 10,
-                    paddingHorizontal: 16,
-                    borderRadius: theme.borderRadius.md,
-                    borderWidth: 1,
-                    borderColor: isActive ? theme.colors.error : primaryColor,
-                    backgroundColor: isActive
-                      ? hexToRgba(theme.colors.error, isDark ? 0.1 : 0.06)
-                      : hexToRgba(primaryColor, isDark ? 0.12 : 0.08),
-                    opacity: working ? 0.6 : 1,
-                    alignSelf: "flex-start",
-                  }}
+                  style={[
+                    styles.toggleBtn,
+                    {
+                      borderColor: isActive ? theme.colors.error : primaryColor,
+                      backgroundColor: isActive
+                        ? hexToRgba(theme.colors.error, isDark ? 0.1 : 0.06)
+                        : hexToRgba(primaryColor, isDark ? 0.12 : 0.08),
+                    },
+                    working && styles.toggleBtnBusy,
+                  ]}
                 >
                   {working && (
                     <ActivityIndicator
@@ -266,11 +257,10 @@ export function PushNotificationsCard() {
                     />
                   )}
                   <ThemedText
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "600",
-                      color: isActive ? theme.colors.error : primaryColor,
-                    }}
+                    style={[
+                      styles.toggleBtnText,
+                      { color: isActive ? theme.colors.error : primaryColor },
+                    ]}
                   >
                     {working
                       ? isActive

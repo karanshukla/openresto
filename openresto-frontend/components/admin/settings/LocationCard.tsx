@@ -15,7 +15,8 @@ import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { summarizeHours } from "@/utils/openingHours";
-import { styles } from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import { styles, domStyles } from "./LocationCard.styles";
 import { Icon } from "@/components/common/Icon";
 
 function StatChip({
@@ -33,34 +34,9 @@ function StatChip({
 }) {
   const surface2 = isDark ? "#252729" : "#f9fafb";
   return (
-    <View
-      style={{
-        backgroundColor: surface2,
-        borderWidth: 1,
-        borderColor,
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        minWidth: 72,
-        alignItems: "flex-start",
-      }}
-    >
-      <ThemedText
-        style={{
-          fontSize: 20,
-          fontWeight: "600",
-          letterSpacing: -0.5,
-          lineHeight: 24,
-          marginBottom: 3,
-        }}
-      >
-        {value}
-      </ThemedText>
-      <ThemedText
-        style={{ fontSize: 11, color: mutedColor, textTransform: "uppercase", letterSpacing: 0.7 }}
-      >
-        {label}
-      </ThemedText>
+    <View style={[styles.statChip, { backgroundColor: surface2, borderColor }]}>
+      <ThemedText style={styles.statValue}>{value}</ThemedText>
+      <ThemedText style={[styles.statLabel, { color: mutedColor }]}>{label}</ThemedText>
     </View>
   );
 }
@@ -150,62 +126,35 @@ export function LocationCard({
 
   return (
     <View>
-      <View
-        style={{
-          padding: 20,
-          paddingHorizontal: 22,
-          flexDirection: "row",
-          gap: 20,
-          alignItems: "center",
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
-        }}
-      >
-        <View
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 12,
-            backgroundColor: accentSoft,
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
+      <View style={[styles.header, { borderBottomColor: borderColor }]}>
+        <View style={[styles.headerIcon, { backgroundColor: accentSoft }]}>
           <Icon name="storefront-outline" size={22} color={primaryColor} />
         </View>
 
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <ThemedText
-            style={{ fontSize: 20, fontWeight: "600", letterSpacing: -0.3, marginBottom: 5 }}
-            numberOfLines={1}
-          >
+        <View style={styles.headerCopy}>
+          <ThemedText style={styles.headerName} numberOfLines={1}>
             {restaurant.name}
           </ThemedText>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <View style={styles.metaRow}>
             {restaurant.address ? (
               <>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                <View style={styles.metaItem}>
                   <Icon name="location-outline" size="xs" color={mutedColor} />
-                  <ThemedText style={{ fontSize: 13, color: mutedColor }} numberOfLines={1}>
+                  <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
                     {restaurant.address}
                   </ThemedText>
                 </View>
-                <View
-                  style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: mutedColor }}
-                />
+                <View style={[styles.metaDot, { backgroundColor: mutedColor }]} />
               </>
             ) : null}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <View style={styles.metaItem}>
               <Icon name="time-outline" size="xs" color={mutedColor} />
-              <ThemedText style={{ fontSize: 13, color: mutedColor }}>{hoursText}</ThemedText>
+              <ThemedText style={[styles.metaText, { color: mutedColor }]}>{hoursText}</ThemedText>
             </View>
             {restaurant.timezone ? (
               <>
-                <View
-                  style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: mutedColor }}
-                />
-                <ThemedText style={{ fontSize: 13, color: mutedColor }}>
+                <View style={[styles.metaDot, { backgroundColor: mutedColor }]} />
+                <ThemedText style={[styles.metaText, { color: mutedColor }]}>
                   {restaurant.timezone}
                 </ThemedText>
               </>
@@ -213,8 +162,8 @@ export function LocationCard({
           </View>
         </View>
 
-        <View style={{ alignItems: "flex-end", gap: 10, flexShrink: 0 }}>
-          <View style={{ flexDirection: "row", gap: 6 }}>
+        <View style={styles.stats}>
+          <View style={styles.statsRow}>
             <StatChip
               label="Sections"
               value={restaurant.sections.length}
@@ -240,65 +189,31 @@ export function LocationCard({
         </View>
       </View>
 
-      <View
-        style={{
-          paddingHorizontal: 22,
-          paddingVertical: 16,
-          flexDirection: "row",
-          gap: 16,
-          alignItems: "center",
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
-        }}
-      >
+      <View style={[styles.imageRow, { borderBottomColor: borderColor }]}>
         <View
-          style={{
-            width: 96,
-            height: 68,
-            borderRadius: 8,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderStyle: restaurant.imageUrl ? ("solid" as const) : ("dashed" as const),
-            borderColor,
-            flexShrink: 0,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          style={[
+            styles.imageFrame,
+            { borderStyle: restaurant.imageUrl ? "solid" : "dashed", borderColor },
+          ]}
         >
           {restaurant.imageUrl ? (
-            <img
-              src={restaurant.imageUrl}
-              alt="Location"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+            <img src={restaurant.imageUrl} alt="Location" style={domStyles.image} />
           ) : (
             <Icon name="image-outline" size="xl" color={mutedColor} />
           )}
         </View>
 
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
-            <ThemedText style={{ fontSize: 14, fontWeight: "600", letterSpacing: -0.1 }}>
-              Location image
-            </ThemedText>
-            <ThemedText
-              style={{
-                fontSize: 10,
-                fontWeight: "600",
-                textTransform: "uppercase" as const,
-                letterSpacing: 1,
-                color: mutedColor,
-              }}
-            >
-              optional
-            </ThemedText>
+        <View style={styles.imageCopy}>
+          <View style={styles.imageTitleRow}>
+            <ThemedText style={styles.imageTitle}>Location image</ThemedText>
+            <ThemedText style={[styles.imageOptional, { color: mutedColor }]}>optional</ThemedText>
           </View>
-          <ThemedText style={{ fontSize: 12, color: mutedColor, marginBottom: 10 }}>
+          <ThemedText style={[styles.imageHint, { color: mutedColor }]}>
             Shown on the restaurant card. JPEG, PNG or WebP, max 2 MB.
           </ThemedText>
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <View style={styles.imageActions}>
             <Pressable
-              style={[styles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
+              style={[settingsStyles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
               onPress={handlePickImage}
               disabled={imgUploading}
               accessibilityRole="button"
@@ -309,7 +224,7 @@ export function LocationCard({
               }
               accessibilityState={{ disabled: imgUploading, busy: imgUploading }}
             >
-              <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
+              <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
                 {imgUploading
                   ? "Uploading…"
                   : restaurant.imageUrl
@@ -319,24 +234,24 @@ export function LocationCard({
             </Pressable>
             {restaurant.imageUrl && (
               <Pressable
-                style={[styles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
+                style={[settingsStyles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
                 onPress={handleDeleteImage}
                 disabled={imgUploading}
                 accessibilityRole="button"
                 accessibilityLabel={`Remove image for ${restaurant.name}`}
                 accessibilityState={{ disabled: imgUploading }}
               >
-                <ThemedText style={[styles.secBtnText, { color: theme.colors.error }]}>
+                <ThemedText style={[settingsStyles.secBtnText, { color: theme.colors.error }]}>
                   Remove
                 </ThemedText>
               </Pressable>
             )}
             {imgMsg && (
               <ThemedText
-                style={{
-                  fontSize: 12,
-                  color: imgMsg.ok ? theme.colors.success : theme.colors.error,
-                }}
+                style={[
+                  styles.imageMsg,
+                  { color: imgMsg.ok ? theme.colors.success : theme.colors.error },
+                ]}
               >
                 {imgMsg.text}
               </ThemedText>
@@ -345,21 +260,17 @@ export function LocationCard({
         </View>
       </View>
 
-      <View style={{ padding: 22, borderBottomWidth: 1, borderBottomColor: borderColor }}>
+      <View style={[styles.infoBlock, { borderBottomColor: borderColor }]}>
         <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
       </View>
 
-      <View style={{ padding: 22 }}>
-        <ThemedText
-          style={{ fontSize: 15, fontWeight: "600", letterSpacing: -0.2, marginBottom: 3 }}
-        >
-          Sections & tables
-        </ThemedText>
-        <ThemedText style={{ fontSize: 13, color: mutedColor, marginBottom: 20 }}>
+      <View style={styles.sectionsBlock}>
+        <ThemedText style={styles.sectionsTitle}>Sections & tables</ThemedText>
+        <ThemedText style={[styles.sectionsSub, { color: mutedColor }]}>
           Group tables into dining areas. Guests can book by section.
         </ThemedText>
 
-        <View style={{ gap: 14 }}>
+        <View style={styles.sectionsList}>
           {restaurant.sections.map((section, index) => (
             <SectionBlock
               key={section.id}
@@ -413,13 +324,13 @@ export function LocationCard({
             />
           ))}
           {restaurant.sections.length === 0 && (
-            <ThemedText style={{ fontSize: 13, color: mutedColor, fontStyle: "italic" }}>
+            <ThemedText style={[styles.sectionsEmpty, { color: mutedColor }]}>
               No sections yet.
             </ThemedText>
           )}
         </View>
 
-        <View style={{ marginTop: 12 }}>
+        <View style={styles.addSectionRow}>
           <AddRow
             label="Add Section"
             placeholder="e.g. Indoor, Patio, Bar"
