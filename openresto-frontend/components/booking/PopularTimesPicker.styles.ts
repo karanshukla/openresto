@@ -83,7 +83,9 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     minWidth: 70,
+    minHeight: 44,
     alignItems: "center",
+    justifyContent: "center",
     elevation: 1,
   },
   slotText: {

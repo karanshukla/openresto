@@ -15,6 +15,7 @@ import {
   isoDayShortName,
 } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
+import { hexToRgb } from "@/utils/colors";
 import { groupDisplayName, groupedTableIds } from "@/utils/tableGroups";
 import { getOpenDaysList, getRestaurantNow } from "@/utils/restaurantTime";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
@@ -29,14 +30,7 @@ const SLOTS_SHOWN_WIDE = 5;
 const SLOTS_SHOWN_COMPACT = 3;
 
 /**
- * A single location in the Locations list, sized so several fit on one screen and
- * can be compared at a glance: a thumbnail, one line of identity, one line of
- * status, and a row of bookable times.
- *
- * Party size, date and meal window are *not* owned here — they come down from the
- * page-level filter bar, so every card answers the same question. Pressing a time
- * hands off to the booking drawer via `onBook`; everything that isn't part of that
- * decision (blurb, weekly hours, seating map, directions) stays behind "Details".
+ * A single location row in the Locations list: header + times now, details behind an accordion.
  */
 export default function LocationListItem({
   restaurant,
@@ -100,15 +94,14 @@ export default function LocationListItem({
   const walkInBadgeText = walkInBadgeLabel(restaurant);
   const bookable = !closedOnDate && !walkInLocation && !walkInOnDate;
 
-  // Register this item's view ref with the parent for scroll-anchor wiring.
   useEffect(() => {
     registerRef(restaurant.id, itemRef.current);
     return () => registerRef(restaurant.id, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant.id]);
 
-  // Availability for the page-level (date, party) pair. Refetches whenever the filter
-  // bar changes, which is what makes the cards comparable against one another.
+  // Refetches whenever the filter bar changes, which is what makes the cards
+  // comparable against one another.
   useEffect(() => {
     if (!bookable) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -118,11 +111,17 @@ export default function LocationListItem({
     }
     let cancelled = false;
     setSlotsLoading(true);
-    fetchAvailability(restaurant.id, date, seats).then((data) => {
-      if (cancelled) return;
-      setSlots(data && Array.isArray(data.slots) ? data.slots.filter((s) => s.isAvailable) : []);
-      setSlotsLoading(false);
-    });
+    fetchAvailability(restaurant.id, date, seats)
+      .then((data) => {
+        if (cancelled) return;
+        setSlots(data && Array.isArray(data.slots) ? data.slots.filter((s) => s.isAvailable) : []);
+        setSlotsLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSlots([]);
+        setSlotsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -150,10 +149,7 @@ export default function LocationListItem({
   const shownSlots = usableSlots.slice(0, maxShown);
   const overflowCount = usableSlots.length - shownSlots.length;
 
-  const accentHex = primaryColor.replace("#", "");
-  const accentR = parseInt(accentHex.slice(0, 2), 16);
-  const accentG = parseInt(accentHex.slice(2, 4), 16);
-  const accentB = parseInt(accentHex.slice(4, 6), 16);
+  const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},${isDark ? 0.15 : 0.12})`;
   const accentBorder = `rgba(${accentR},${accentG},${accentB},0.3)`;
   const surface2 = colors.surfaceAlt;
@@ -195,8 +191,6 @@ export default function LocationListItem({
       ]}
     >
       <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>Details</ThemedText>
-      {/* A chevron, not the home card's forward arrow: this expands in place rather
-          than navigating somewhere. */}
       <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
     </Pressable>
   );
@@ -232,6 +226,9 @@ export default function LocationListItem({
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           onError={() => setImageError(true)}
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
       )}
       {!restaurant.imageUrl && (
@@ -242,9 +239,6 @@ export default function LocationListItem({
     </View>
   );
 
-  // Why there is nothing to book. Only walk-in locations get a line of their own —
-  // a location that is simply closed already says "Opens Wed 16:00" in its meta row,
-  // and repeating it under a walk-in glyph reads as a policy it doesn't have.
   const walkInLine =
     walkInLocation || walkInOnDate ? (
       <View style={styles.walkInRow}>
@@ -320,6 +314,7 @@ export default function LocationListItem({
               }}
               accessibilityRole="button"
               accessibilityLabel={`Show all times for ${restaurant.name}`}
+              hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
             >
               <ThemedText style={[styles.slotMoreInline, { color: mutedColor }]}>
                 +{overflowCount} more
@@ -329,6 +324,24 @@ export default function LocationListItem({
       </View>
     );
   })();
+
+  const mapLink = (label: string, url: string) => (
+    <Pressable
+      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+        styles.mapLink,
+        {
+          backgroundColor: surface2,
+          borderColor: hovered || pressed ? primaryColor : borderColor,
+        },
+      ]}
+      onPress={() => Linking.openURL(url)}
+      accessibilityRole="link"
+      accessibilityLabel={`Open in ${label}`}
+    >
+      <Ionicons name="navigate-outline" size={12} color={mutedColor} />
+      <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>{label}</ThemedText>
+    </Pressable>
+  );
 
   const menuLink = restaurant.menuUrl ? (
     <Pressable
@@ -344,9 +357,6 @@ export default function LocationListItem({
     </Pressable>
   ) : null;
 
-  // Open or closed, a location's hours are one muted line in the meta row. They used to be
-  // a solid accent pill beside the name as well, which said nothing the line didn't and
-  // shouted it over the times underneath — the one thing on this card worth scanning for.
   const dayLabel = isToday ? "today" : isoDayShortName(selectedIsoDay);
   const closedLabel = `Closed ${dayLabel}`;
   const hoursLabel = !closedOnDate
@@ -395,8 +405,6 @@ export default function LocationListItem({
           {bookable ? slotRow : null}
 
           <View style={[styles.compactFoot, { borderTopColor: borderColor }]}>
-            {/* The compact card has no meta row, so its footer carries whichever line
-                explains the card: today's hours, the next opening, or the walk-in policy. */}
             {walkInLine ?? hoursMeta}
             {detailsToggle}
           </View>
@@ -436,7 +444,6 @@ export default function LocationListItem({
         </View>
       )}
 
-      {/* ── Details ── everything that isn't part of the pick-a-time decision ── */}
       <AnimatedAccordion expanded={expanded}>
         <View style={[styles.expandedBody, { borderTopColor: borderColor }]}>
           {restaurant.description ? (
@@ -456,8 +463,6 @@ export default function LocationListItem({
             </View>
           )}
 
-          {/* The wide card links the menu from its meta row, but the compact one has no
-              meta row — this is the only way to it on a phone. */}
           {restaurant.menuUrl ? (
             <Pressable
               style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -486,48 +491,14 @@ export default function LocationListItem({
 
           {restaurant.address && (
             <View style={styles.mapLinks}>
-              <Pressable
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.mapLink,
-                  {
-                    backgroundColor: surface2,
-                    borderColor: hovered || pressed ? primaryColor : borderColor,
-                  },
-                ]}
-                onPress={() =>
-                  Linking.openURL(
-                    // The `|| ""` fallback is unreachable: this whole block only renders inside
-                    // `restaurant.address && (...)`, so address is always truthy here.
-                    `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || /* istanbul ignore next */ "")}`
-                  )
-                }
-                accessibilityLabel="Open in Google Maps"
-              >
-                <Ionicons name="navigate-outline" size={12} color={mutedColor} />
-                <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>
-                  Google Maps
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.mapLink,
-                  {
-                    backgroundColor: surface2,
-                    borderColor: hovered || pressed ? primaryColor : borderColor,
-                  },
-                ]}
-                onPress={() =>
-                  Linking.openURL(
-                    `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || /* istanbul ignore next */ "")}`
-                  )
-                }
-                accessibilityLabel="Open in Apple Maps"
-              >
-                <Ionicons name="navigate-outline" size={12} color={mutedColor} />
-                <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>
-                  Apple Maps
-                </ThemedText>
-              </Pressable>
+              {mapLink(
+                "Google Maps",
+                `https://maps.google.com/?q=${encodeURIComponent(restaurant.address)}`
+              )}
+              {mapLink(
+                "Apple Maps",
+                `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`
+              )}
             </View>
           )}
 

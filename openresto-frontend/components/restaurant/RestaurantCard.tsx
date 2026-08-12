@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
+import { hexToRgb } from "@/utils/colors";
 import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/restaurantTime";
 import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
@@ -48,7 +49,6 @@ export default function RestaurantCard({
   party = 2,
 }: {
   restaurant: RestaurantDto;
-  index?: number; // kept for API compatibility
   party?: number;
 }) {
   const { colors, isDark, primaryColor } = useAppTheme();
@@ -116,10 +116,7 @@ export default function RestaurantCard({
   const closedToday = !getOpenDaysList(restaurant).includes(todayIsoDay);
   const tags = restaurant.tags ?? [];
 
-  const accentHex = primaryColor.replace("#", "");
-  const accentR = parseInt(accentHex.slice(0, 2), 16);
-  const accentG = parseInt(accentHex.slice(2, 4), 16);
-  const accentB = parseInt(accentHex.slice(4, 6), 16);
+  const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},0.12)`;
   const accentBorder = `rgba(${accentR},${accentG},${accentB},0.3)`;
 
@@ -155,7 +152,6 @@ export default function RestaurantCard({
         pressed && { borderColor: primaryColor, transform: [{ scale: 0.99 }] },
       ]}
     >
-      {/* Image area */}
       <View
         style={[
           styles.imageArea,
@@ -187,17 +183,16 @@ export default function RestaurantCard({
               source={{ uri: restaurant.imageUrl }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
             />
           )
         }
-        {/* Branded placeholder content – visible only when no image */}
         {!restaurant.imageUrl && (
           <>
-            {/* Decorative ring – top right */}
             <View style={styles.phRingTopRight} />
-            {/* Decorative ring – bottom left */}
             <View style={styles.phRingBottomLeft} />
-            {/* Centre: icon + initial */}
             <View style={styles.phCenter}>
               <Ionicons name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
               <ThemedText style={styles.phInitial}>
@@ -207,7 +202,6 @@ export default function RestaurantCard({
           </>
         )}
 
-        {/* Top row: status badge */}
         <View style={styles.imageTopRow}>
           <View
             style={[
@@ -233,9 +227,7 @@ export default function RestaurantCard({
         </View>
       </View>
 
-      {/* Card body */}
       <View style={styles.body}>
-        {/* Name row */}
         <View style={styles.nameRow}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <ThemedText style={styles.name} numberOfLines={1}>
@@ -261,6 +253,7 @@ export default function RestaurantCard({
                       `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
                     );
                   }}
+                  accessibilityRole="link"
                   accessibilityLabel="Open in Google Maps"
                 >
                   <Ionicons name="navigate-outline" size={11} color={mutedColor} />
@@ -282,6 +275,7 @@ export default function RestaurantCard({
                       `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
                     );
                   }}
+                  accessibilityRole="link"
                   accessibilityLabel="Open in Apple Maps"
                 >
                   <Ionicons name="navigate-outline" size={11} color={mutedColor} />
@@ -300,13 +294,13 @@ export default function RestaurantCard({
                 router.push(`/(user)/locations/${restaurant.id}` as Href);
               }
             }}
+            accessibilityRole="link"
             accessibilityLabel="Open booking page in new tab"
           >
             <Ionicons name="open-outline" size={14} color={mutedColor} />
           </Pressable>
         </View>
 
-        {/* Tags */}
         {tags.length > 0 && (
           <View style={styles.tags}>
             {tags.map((t) => (
@@ -381,7 +375,6 @@ export default function RestaurantCard({
           )}
         </View>
 
-        {/* Footer */}
         <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
           <View style={styles.hoursRow}>
             <Ionicons name="time-outline" size={12} color={mutedColor} style={{ marginRight: 5 }} />

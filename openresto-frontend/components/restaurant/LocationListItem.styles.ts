@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  // ── Wide (desktop/tablet) header ──
   wideHeader: {
     flexDirection: "row",
     gap: 14,
@@ -30,7 +29,6 @@ export const styles = StyleSheet.create({
     gap: 3,
   },
 
-  // ── Compact (phone) header ──
   compactHeader: {
     padding: theme.spacing.md,
     gap: theme.spacing.xsm,
@@ -125,6 +123,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: theme.a11y.minTouchTarget,
   },
   slotCompact: {
     flexGrow: 1,
@@ -175,7 +174,6 @@ export const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // ── Details body ──
   expandedBody: {
     padding: theme.spacing.lg,
     gap: theme.spacing.xxl,
