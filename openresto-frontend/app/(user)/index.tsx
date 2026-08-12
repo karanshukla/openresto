@@ -55,9 +55,6 @@ export default function HomeScreen() {
     });
   }, []);
 
-  const bg = isDark ? "#0c0d10" : "#f7f4ed";
-  const surface = isDark ? "#14161a" : "#ffffff";
-  const border = isDark ? "#25282f" : "#e2dbcb";
   const mutedColor = colors.muted;
   const hasHero = !!brand.headerImageUrl && Platform.OS === "web";
   const heroTextShadow = "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)";
@@ -85,7 +82,7 @@ export default function HomeScreen() {
   const numHighlightCols = width < 600 ? 1 : width < 900 ? 2 : 4;
 
   return (
-    <ThemedView style={[styles.root, { backgroundColor: bg }]}>
+    <ThemedView style={styles.root}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: brand.appName }} />}
 
       <ScrollView
@@ -102,14 +99,14 @@ export default function HomeScreen() {
             style={[
               styles.hero,
               {
-                backgroundColor: surface,
-                borderBottomColor: border,
+                backgroundColor: colors.card,
+                borderBottomColor: colors.border,
                 ...(!hasHero &&
                   Platform.OS === "web" &&
                   ({
                     background: isDark
-                      ? `radial-gradient(80% 90% at 90% 10%, ${accentSoft}, transparent 60%), radial-gradient(60% 80% at 10% 100%, rgba(${accentR},${accentG},${accentB},0.12), transparent 60%), linear-gradient(180deg, ${surface} 0%, ${bg} 100%)`
-                      : `radial-gradient(80% 90% at 90% 10%, ${accentSoft}, transparent 60%), linear-gradient(180deg, ${surface} 0%, ${bg} 100%)`,
+                      ? `radial-gradient(80% 90% at 90% 10%, ${accentSoft}, transparent 60%), radial-gradient(60% 80% at 10% 100%, rgba(${accentR},${accentG},${accentB},0.12), transparent 60%), linear-gradient(180deg, ${colors.card} 0%, ${colors.page} 100%)`
+                      : `radial-gradient(80% 90% at 90% 10%, ${accentSoft}, transparent 60%), linear-gradient(180deg, ${colors.card} 0%, ${colors.page} 100%)`,
                   } as object)),
               },
             ]}
@@ -148,8 +145,8 @@ export default function HomeScreen() {
                 style={[
                   styles.heroTextPill,
                   hasHero && {
-                    backgroundColor: surface,
-                    borderColor: border,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
                     borderRadius: 12,
                     borderWidth: 1,
                     padding: 16,
@@ -200,7 +197,7 @@ export default function HomeScreen() {
                   {highlights.map((h) => {
                     const cardStyle = [
                       styles.highlightCard,
-                      { backgroundColor: surface, borderColor: border },
+                      { backgroundColor: colors.card, borderColor: colors.border },
                       numHighlightCols > 1 && {
                         width:
                           numHighlightCols === 2
@@ -303,7 +300,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Footer backgroundColor={bg} />
+        <Footer />
       </ScrollView>
 
       <ScrollToTopFab scrollY={scrollY} onPress={scrollToTop} />

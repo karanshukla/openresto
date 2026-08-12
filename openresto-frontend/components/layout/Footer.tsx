@@ -9,12 +9,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./Footer.styles";
 
-interface FooterProps {
-  /** Override the footer's background so it matches a page that doesn't use the default themed page color. */
-  backgroundColor?: string;
-}
-
-export default function Footer({ backgroundColor }: FooterProps) {
+export default function Footer() {
   const { brand, colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -32,11 +27,7 @@ export default function Footer({ backgroundColor }: FooterProps) {
 
   return (
     <ThemedView
-      style={[
-        styles.footer,
-        { borderTopColor: colors.border, paddingBottom: insets.bottom },
-        backgroundColor && { backgroundColor },
-      ]}
+      style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
     >
       <View style={[styles.inner, isMobile && styles.innerMobile]}>
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>
