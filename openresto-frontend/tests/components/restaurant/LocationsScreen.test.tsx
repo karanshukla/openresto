@@ -197,6 +197,18 @@ describe("LocationsScreen", () => {
     expect(screen.getByTestId("locations-filter-bar")).toBeTruthy();
   });
 
+  it("pins the filter bar over the cards rather than letting them paint across it", async () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    const style = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
+    expect(style.zIndex).toBe(5);
+    // An opaque band, or the cards show through the bar's rounded corners on the way past.
+    expect(style.backgroundColor).toBeTruthy();
+    expect(style.paddingBottom + style.marginBottom).toBe(0);
+  });
+
   it("drives every card from the same party size, date and meal window", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     renderWithProviders(<LocationsScreen initialSeats={4} />);

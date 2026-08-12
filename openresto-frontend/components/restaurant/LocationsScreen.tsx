@@ -183,17 +183,22 @@ export default function LocationsScreen({
                 </ThemedView>
               ) : (
                 <>
-                  <LocationsFilterBar
-                    seats={seats}
-                    onSeatsChange={setSeats}
-                    date={date}
-                    onDateChange={setDate}
-                    today={today}
-                    meal={meal}
-                    onMealChange={setMeal}
-                    summary={summary}
-                    compact={isCompact}
-                  />
+                  <View
+                    testID="locations-filter-sticky"
+                    style={[styles.filterSticky, { backgroundColor: colors.page }]}
+                  >
+                    <LocationsFilterBar
+                      seats={seats}
+                      onSeatsChange={setSeats}
+                      date={date}
+                      onDateChange={setDate}
+                      today={today}
+                      meal={meal}
+                      onMealChange={setMeal}
+                      summary={summary}
+                      compact={isCompact}
+                    />
+                  </View>
 
                   <View style={styles.list}>
                     {restaurants.map((r) => (
