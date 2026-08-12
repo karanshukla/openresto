@@ -20,6 +20,7 @@ import { LocationCard } from "@/components/admin/settings/LocationCard";
 import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
 import { DangerZone } from "@/components/admin/locations/DangerZone";
 import { styles } from "@/components/admin/settings/settings.styles";
+import HorizontalScroller from "@/components/common/HorizontalScroller";
 
 export default function AdminLocationsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -179,9 +180,8 @@ export default function AdminLocationsScreen() {
 
       {/* ── Location selector pills ──────────────────────────────────── */}
       {restaurants.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
+        <HorizontalScroller
+          label="Locations"
           contentContainerStyle={{ flexDirection: "row", gap: 6, alignItems: "center" }}
         >
           {restaurants.map((r) => {
@@ -217,7 +217,7 @@ export default function AdminLocationsScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </HorizontalScroller>
       )}
 
       {/* ── Booking action buttons ──────────────────────────────────── */}

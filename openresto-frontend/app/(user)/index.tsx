@@ -13,6 +13,7 @@ import { Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } f
 import { Stack } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
+import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Ionicons } from "@expo/vector-icons";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
@@ -114,20 +115,31 @@ export default function HomeScreen() {
 
   const HighlightsContainer = ({ children }: { children: ReactNode }) =>
     useHighlightRail ? (
-      <ScrollView
+      <HorizontalScroller
         testID="highlights-rail"
-        horizontal
-        showsHorizontalScrollIndicator={false}
+        label={highlightsHeading}
+        // The cards are only focusable when they carry a link, so without a stop of its
+        // own a keyboard could reach the third highlight only by luck.
+        keyboardFocusable
+        // The peeking next card is this row's own indication that it scrolls. A button
+        // would have to sit on top of a card to be at its end, and there is no gap here
+        // for it to sit in.
+        scrollButtons={false}
         snapToInterval={railCardWidth + railGap}
         decelerationRate="fast"
         style={[
           styles.highlightsRail,
-          Platform.OS === "web" && ({ scrollSnapType: "x mandatory" } as object),
+          Platform.OS === "web" &&
+            // Without the scroll padding, mandatory snapping pulls the first card flush to
+            // the viewport edge on load: the rail's own left inset reads as 20px of
+            // scrolled-past content, so the browser snaps it away and the row starts out
+            // of line with the heading above it.
+            ({ scrollSnapType: "x mandatory", scrollPaddingLeft: 20 } as object),
         ]}
         contentContainerStyle={styles.highlightsRailContent}
       >
         {children}
-      </ScrollView>
+      </HorizontalScroller>
     ) : (
       <View style={[styles.highlightsGrid, { flexDirection: "row", flexWrap: "wrap" }]}>
         {children}

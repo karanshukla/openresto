@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { styles } from "@/components/admin/settings/settings.styles";
 import { adminDeleteRestaurant, adminSetRestaurantArchived } from "@/api/admin";
+import HorizontalScroller from "@/components/common/HorizontalScroller";
 
 /** Minimal restaurant record the danger zone needs (subset of the admin list shape). */
 export interface DangerZoneRestaurant {
@@ -136,9 +137,8 @@ export function DangerZone({
         <AnimatedAccordion expanded={expanded}>
           <View style={[styles.secForm, { borderTopColor: borderColor, gap: 16 }]}>
             {restaurants.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
+              <HorizontalScroller
+                label="Locations"
                 contentContainerStyle={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}
               >
                 {restaurants.map((r) => {
@@ -183,7 +183,7 @@ export function DangerZone({
                     </Pressable>
                   );
                 })}
-              </ScrollView>
+              </HorizontalScroller>
             )}
 
             {dangerSelectedRestaurant ? (

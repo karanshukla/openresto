@@ -22,6 +22,7 @@ import { PushBanner } from "@/components/admin/notifications/PushBanner";
 import { NotificationRow } from "@/components/admin/notifications/NotificationRow";
 import { PAGE_SIZE, PIN_STORAGE_KEY, TYPE_FILTERS } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
+import HorizontalScroller from "@/components/common/HorizontalScroller";
 
 export default function NotificationsScreen() {
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -464,11 +465,7 @@ export default function NotificationsScreen() {
 
         {/* ── Filters — bare pills, no card wrapper ───────────────────── */}
         <View style={styles.filtersSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pillRow}
-          >
+          <HorizontalScroller label="Locations" contentContainerStyle={styles.pillRow}>
             {[{ id: null, name: "All locations" }, ...restaurants].map((r) => {
               const active =
                 r.id === null ? selectedRestaurantId === null : selectedRestaurantId === r.id;
@@ -492,12 +489,11 @@ export default function NotificationsScreen() {
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </HorizontalScroller>
 
           <View style={styles.pillRow2}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
+            <HorizontalScroller
+              label="Notification types"
               style={{ flex: 1 }}
               contentContainerStyle={styles.pillRow}
             >
@@ -528,7 +524,7 @@ export default function NotificationsScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </HorizontalScroller>
 
             <Pressable
               onPress={() => setUnreadOnly((v) => !v)}
