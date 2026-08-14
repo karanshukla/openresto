@@ -7,6 +7,10 @@ Emits SQL on stdout. Consumers pipe it straight into sqlite3:
     python3 scripts/demo_data.py config            # brand, locations, sections, tables, groups
     python3 scripts/demo_data.py bookings          # bookings + admin notifications
     python3 scripts/demo_data.py all               # both, in FK-safe order
+    python3 scripts/demo_data.py accounts          # the Owner + demo Manager (see below)
+
+The `accounts` section is not part of `all`: it needs an admin password, which it
+takes from ADMIN_EMAIL/ADMIN_PASSWORD or from --settings-file, never from argv.
 
 This file replaces three copies of the same dataset that used to drift apart
 (seed-local.sh's bash heredocs, purge-bookings.sh's inline Python, and a
@@ -26,11 +30,33 @@ Conventions this script upholds (see CLAUDE.md):
 """
 
 import argparse
+import base64
+import hashlib
 import json
+import os
+import pathlib
 import random
 import sys
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
+# ─── Admin accounts ──────────────────────────────────────────────────────────
+# The instance is multi-user, so a single-account demo never shows the Users
+# card doing anything. These two exist to surface that:
+#
+#   Owner    — the bootstrap account, email/password from configuration. No
+#              DisplayName, so the UI's "display name falls back to email" path
+#              is exercised alongside the Manager's, which has one.
+#   Manager  — the role that sees everything except user management, so a
+#              visitor can sign in as one and watch the Users card disappear.
+#
+# The Manager shares the Owner's password on purpose: on the public demo the
+# admin password is published anyway, so "same password, different email" is
+# one less thing to explain. Do not reuse this generator on an instance where
+# that is not already true.
+
+DEMO_MANAGER_EMAIL = "manager@openresto.com"
+DEMO_MANAGER_DISPLAY_NAME = "Dee Reynolds"
 
 # ─── Brand ───────────────────────────────────────────────────────────────────
 # Every nullable brand field is populated: AccentColor, HeaderImageFit and
@@ -600,6 +626,82 @@ def emit_media(ds, media_dir):
     return out, linked
 
 
+# ─── Admin accounts ──────────────────────────────────────────────────────────
+
+
+def resolve_admin_credentials(settings_file):
+    """
+    The Owner's email and password, from an ASP.NET appsettings JSON when one is
+    given, else the ADMIN_EMAIL/ADMIN_PASSWORD environment variables the API's own
+    bootstrap falls back to. Never taken from argv: a password there is readable by
+    any local user through `ps`.
+    """
+    email = password = None
+
+    if settings_file:
+        path = pathlib.Path(settings_file)
+        if not path.is_file():
+            raise SystemExit(f"settings file not found: {settings_file}")
+        admin = json.loads(path.read_text(encoding="utf-8")).get("Admin") or {}
+        email = admin.get("Email") or None
+        password = admin.get("Password") or None
+
+    email = email or os.environ.get("ADMIN_EMAIL") or "admin@openresto.com"
+    password = password or os.environ.get("ADMIN_PASSWORD")
+    if not password:
+        raise SystemExit(
+            "no admin password available — set ADMIN_PASSWORD or pass --settings-file"
+        )
+    return email.strip().lower(), password
+
+
+def hash_password(password):
+    """PBKDF2-SHA256, 100k iterations, 16-byte salt, 32-byte key — matches PasswordService."""
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000, dklen=32)
+    return base64.b64encode(key).decode(), base64.b64encode(salt).decode()
+
+
+def emit_accounts(owner_email, owner_password, now_utc):
+    """
+    Replaces every admin account with the curated pair. Wiping first is the point on
+    the demo: its admin password is public, so an account a visitor invited themselves
+    must not survive the reset, for the same reason their uploads don't.
+    """
+    out = [
+        "-- ── Admin accounts: the bootstrap Owner + a demo Manager ──",
+        "DELETE FROM AdminCredentials;",
+        "DELETE FROM sqlite_sequence WHERE name = 'AdminCredentials';",
+    ]
+
+    created = utc_str(now_utc)
+    accounts = [
+        # DisplayName None on purpose: between the two rows, both branches of the
+        # UI's "display name, falling back to email" render.
+        (owner_email, owner_password, None, "Owner"),
+        (DEMO_MANAGER_EMAIL, owner_password, DEMO_MANAGER_DISPLAY_NAME, "Manager"),
+    ]
+
+    for email, password, display_name, role in accounts:
+        password_hash, password_salt = hash_password(password)
+        out.append(
+            insert(
+                "AdminCredentials",
+                {
+                    "Email": email.strip().lower(),
+                    "PasswordHash": password_hash,
+                    "PasswordSalt": password_salt,
+                    "DisplayName": display_name,
+                    "Role": role,
+                    "IsActive": True,
+                    "CreatedAt": created,
+                },
+            )
+        )
+
+    return out, len(accounts)
+
+
 # ─── Booking generation ──────────────────────────────────────────────────────
 
 
@@ -919,11 +1021,21 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
 
 def main():
     p = argparse.ArgumentParser(description="Emit OpenResto demo-data SQL on stdout.")
-    p.add_argument("section", choices=["config", "bookings", "media", "all"], nargs="?", default="all")
+    p.add_argument(
+        "section",
+        choices=["config", "bookings", "media", "accounts", "all"],
+        nargs="?",
+        default="all",
+    )
     p.add_argument(
         "--media-dir",
         default=None,
         help="directory to scan for hero/location/menu files; required by the 'media' section",
+    )
+    p.add_argument(
+        "--settings-file",
+        default=None,
+        help="appsettings JSON to read Admin:Email/Admin:Password from ('accounts' section)",
     )
     p.add_argument("--days-back", type=int, default=14, help="days of history to generate (default 14)")
     p.add_argument("--days-forward", type=int, default=14, help="days of upcoming bookings (default 14)")
@@ -965,6 +1077,15 @@ def main():
         lines += booking_lines
         lines.append("")
 
+    # Accounts stay out of 'all': they need a password the generator cannot invent,
+    # so every caller asks for them explicitly and supplies one.
+    account_count = 0
+    if args.section == "accounts":
+        owner_email, owner_password = resolve_admin_credentials(args.settings_file)
+        account_lines, account_count = emit_accounts(owner_email, owner_password, now_utc)
+        lines += account_lines
+        lines.append("")
+
     # Media runs last so it overwrites the NULLs the config step wrote.
     media_count = 0
     if args.section == "media" or (args.section == "all" and args.media_dir):
@@ -975,6 +1096,10 @@ def main():
     lines += ["COMMIT;", "PRAGMA foreign_keys=ON;"]
 
     print("\n".join(lines))
+    if args.section == "accounts":
+        print(f"[demo_data] {account_count} admin accounts", file=sys.stderr)
+        return
+
     summary = f"[demo_data] {len(ds['restaurants'])} locations, {len(ds['tables'])} tables"
     if args.section in ("bookings", "all"):
         summary += f", {booking_count} bookings"

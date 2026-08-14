@@ -6,12 +6,13 @@
 # shared with purge-bookings.sh). This script only locates the database and
 # applies what the generator emits.
 #
-# AdminCredentials are wiped and the single Owner account is re-seeded from the
-# same Admin:Email/Admin:Password the API bootstraps from, so a reseed leaves you
-# logged-in-able immediately and any extra users invited through the UI are gone.
-# It has to be re-seeded here rather than left to the API: login stopped creating
-# accounts when multi-user landed, and only startup bootstraps one — a wiped table
-# under a running dev server would otherwise have nothing to log in to.
+# AdminCredentials are wiped and re-seeded from demo_data.py's `accounts` section:
+# the Owner, using the Admin:Email/Admin:Password in appsettings.Development.json,
+# plus the demo Manager. So a reseed leaves you logged-in-able immediately, any user
+# invited through the Users card is gone, and both roles are there to click through.
+# They have to be re-seeded here rather than left to the API: login stopped creating
+# accounts when multi-user landed, and only startup bootstraps one, so a wiped table
+# under a running dev server would have nothing to log in to.
 #
 # Usage:
 #   bash scripts/seed-local.sh
@@ -121,7 +122,10 @@ find_db() {
 
 # ── Generate ─────────────────────────────────────────────────────────────────
 SQL_FILE="$(mktemp -t seed-local.XXXXXX.sql)"
-trap 'rm -f "$SQL_FILE"' EXIT
+# The generator wraps each section in its own BEGIN/COMMIT, so accounts go in a second
+# file rather than being appended into the first (which would nest transactions).
+ACCOUNTS_SQL_FILE="$(mktemp -t seed-local-accounts.XXXXXX.sql)"
+trap 'rm -f "$SQL_FILE" "$ACCOUNTS_SQL_FILE"' EXIT
 
 # Location images and the hero are linked from whatever is actually in the
 # media directory, so an image uploaded through the admin UI survives a reseed.
@@ -132,65 +136,22 @@ fi
 
 python3 "$GENERATOR" "$SECTION" "${MEDIA_ARGS[@]+"${MEDIA_ARGS[@]}"}" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
 
-# Wipe every account (including anyone invited through the Users card) and put back
-# exactly the Owner the API would have bootstrapped, so the configured login works
-# without restarting the backend. PBKDF2-SHA256, 100k iterations, 16-byte salt,
-# 32-byte key — matches PasswordService; CreatedAt matches demo_data.py's UTC format.
+# Replace the accounts with the curated pair the generator defines. The password comes from
+# the same appsettings the API bootstraps from, so the configured login works right after a
+# reseed — it has to happen here, because login stopped creating accounts and only startup
+# bootstraps one.
+SEED_ACCOUNTS=0
 if [[ $KEEP_ADMIN -eq 0 && "$SECTION" != "bookings" ]]; then
-  ADMIN_SQL="$(python3 - "$REPO_ROOT/OpenRestoApi/appsettings.Development.json" <<'PYEOF'
-import base64, datetime, hashlib, json, os, pathlib, sys
-
-settings = {}
-path = pathlib.Path(sys.argv[1])
-if path.is_file():
-    settings = json.loads(path.read_text(encoding="utf-8")).get("Admin", {}) or {}
-
-email = settings.get("Email") or os.environ.get("ADMIN_EMAIL") or "admin@openresto.com"
-password = settings.get("Password") or os.environ.get("ADMIN_PASSWORD")
-if not password:
-    # No configured password to hash — emit nothing and let the caller warn.
-    sys.exit(0)
-
-salt = os.urandom(16)
-key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000, dklen=32)
-created = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-def q(v):
-    return "'" + str(v).replace("'", "''") + "'"
-
-print(
-    "INSERT INTO AdminCredentials"
-    "(Email,PasswordHash,PasswordSalt,DisplayName,Role,IsActive,CreatedAt) VALUES("
-    + ",".join(
-        [
-            q(email.strip().lower()),
-            q(base64.b64encode(key).decode()),
-            q(base64.b64encode(salt).decode()),
-            "NULL",
-            q("Owner"),
-            "1",
-            q(created),
-        ]
-    )
-    + ");"
-)
-PYEOF
-  )"
-
-  {
-    echo "DELETE FROM AdminCredentials;"
-    echo "DELETE FROM sqlite_sequence WHERE name = 'AdminCredentials';"
-    if [[ -n "$ADMIN_SQL" ]]; then
-      echo "$ADMIN_SQL"
-    fi
-  } >> "$SQL_FILE"
-
-  [[ -n "$ADMIN_SQL" ]] || log "WARNING: no Admin:Password configured — accounts wiped without a replacement. Restart the backend with ADMIN_PASSWORD set to bootstrap one."
+  python3 "$GENERATOR" accounts \
+    --settings-file "$REPO_ROOT/OpenRestoApi/appsettings.Development.json" > "$ACCOUNTS_SQL_FILE" \
+    || die "could not generate admin accounts — set Admin:Password in appsettings.Development.json, or pass --keep-admin."
+  SEED_ACCOUNTS=1
 fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
   log "DRY RUN — emitting SQL to stdout, database untouched."
   cat "$SQL_FILE"
+  if [[ $SEED_ACCOUNTS -eq 1 ]]; then cat "$ACCOUNTS_SQL_FILE"; fi
   exit 0
 fi
 
@@ -204,6 +165,7 @@ log "DB:      $DB"
 log "Section: $SECTION"
 
 apply_sql "$DB" < "$SQL_FILE"
+if [[ $SEED_ACCOUNTS -eq 1 ]]; then apply_sql "$DB" < "$ACCOUNTS_SQL_FILE"; fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log "Done. Row counts:"

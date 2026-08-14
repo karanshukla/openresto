@@ -6,7 +6,7 @@
 #   1. generate the demo dataset SQL on the host (before touching anything)
 #   2. restore restaurant config    (brand, locations, sections, tables, groups)
 #   3. reseed bookings + notifications with fresh dates relative to now
-#   4. reset admin credentials from .env
+#   4. reset admin accounts (the Owner from .env, plus the demo Manager)
 #   5. restore uploaded media from data/media-snapshot/
 #   6. point ImageUrl/HeaderImageUrl/MenuUrl at the files that now exist
 #
@@ -71,12 +71,39 @@ command -v python3 >/dev/null 2>&1 || die "python3 is required on the host."
 
 # --- 1. Generate the dataset BEFORE touching the live database ---------------
 SQL_FILE="$(mktemp -t demo-data.XXXXXX.sql)"
-trap 'rm -f "$SQL_FILE"' EXIT
+ACCOUNTS_SQL_FILE="$(mktemp -t demo-accounts.XXXXXX.sql)"
+trap 'rm -f "$SQL_FILE" "$ACCOUNTS_SQL_FILE"' EXIT
 
 log "Generating demo dataset ($SECTION)..."
 python3 "$GENERATOR" "$SECTION" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE" \
   || die "dataset generation failed — demo left untouched."
 log "Generated $(wc -l < "$SQL_FILE") lines of SQL."
+
+# Accounts are generated here too, for the same reason: a missing password should abort
+# while the demo is still intact, not after the dataset has already been applied. The
+# password reaches the generator through the environment rather than argv, where any
+# local user could read it out of `ps`.
+ADMIN_EMAIL=""
+SEED_ACCOUNTS=0
+if [[ ! -f "$ENV_FILE" ]]; then
+  log "WARNING: .env not found at $ENV_FILE — skipping credential reset."
+else
+  ADMIN_EMAIL="$(grep -E '^ADMIN_EMAIL=' "$ENV_FILE" | cut -d= -f2- | tr -d '[:space:]' || true)"
+  ADMIN_PASSWORD="$(grep -E '^ADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2- || true)"
+
+  if [[ -z "$ADMIN_EMAIL" || -z "$ADMIN_PASSWORD" ]]; then
+    log "WARNING: ADMIN_EMAIL or ADMIN_PASSWORD missing in .env — skipping credential reset."
+  else
+    ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+      python3 "$GENERATOR" accounts > "$ACCOUNTS_SQL_FILE" \
+      || die "account generation failed — demo left untouched."
+    SEED_ACCOUNTS=1
+    # Derived from what was actually generated, so adding an account to the dataset
+    # doesn't silently leave this assertion checking the old number.
+    EXPECTED_ACCOUNTS="$(grep -c '^INSERT INTO AdminCredentials' "$ACCOUNTS_SQL_FILE")"
+    unset ADMIN_PASSWORD
+  fi
+fi
 
 CONTAINER="$(docker compose -f "$COMPOSE_FILE" ps -q backend 2>/dev/null | head -1)"
 [[ -n "$CONTAINER" ]] || die "backend container not running (compose file: $COMPOSE_FILE)."
@@ -97,43 +124,22 @@ docker exec "$CONTAINER" sqlite3 "$DB" 'PRAGMA wal_checkpoint(TRUNCATE);' >/dev/
 count() { docker exec "$CONTAINER" sqlite3 "$DB" "SELECT COUNT(*) FROM $1;"; }
 log "Applied. Locations: $(count Restaurants), tables: $(count Tables), bookings: $(count Bookings), notifications: $(count AdminNotifications)"
 
-# --- 4. Reset admin credentials from .env ------------------------------------
-if [[ ! -f "$ENV_FILE" ]]; then
-  log "WARNING: .env not found at $ENV_FILE — skipping credential reset."
-else
-  ADMIN_EMAIL="$(grep -E '^ADMIN_EMAIL=' "$ENV_FILE" | cut -d= -f2- | tr -d '[:space:]' || true)"
-  ADMIN_PASSWORD="$(grep -E '^ADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2- || true)"
+# --- 4. Reset admin accounts -------------------------------------------------
+# The demo's admin password is public, so a visitor can invite themselves a colleague.
+# The generator's accounts section wipes every row and puts back only the curated pair,
+# for the same reason visitor uploads don't survive a reset.
+if [[ $SEED_ACCOUNTS -eq 1 ]]; then
+  log "Resetting admin accounts (Owner $ADMIN_EMAIL + demo Manager)..."
+  docker exec -i "$CONTAINER" sqlite3 "$DB" < "$ACCOUNTS_SQL_FILE"
 
-  if [[ -z "$ADMIN_EMAIL" || -z "$ADMIN_PASSWORD" ]]; then
-    log "WARNING: ADMIN_EMAIL or ADMIN_PASSWORD missing in .env — skipping credential reset."
-  else
-    # PBKDF2-SHA256, 100k iterations, 16-byte salt, 32-byte key — matches AuthService.HashPassword
-    read -r NEW_HASH NEW_SALT < <(python3 - "$ADMIN_PASSWORD" <<'PYEOF'
-import sys, os, hashlib, base64
-password = sys.argv[1].encode()
-salt = os.urandom(16)
-key = hashlib.pbkdf2_hmac('sha256', password, salt, 100_000, dklen=32)
-print(base64.b64encode(key).decode(), base64.b64encode(salt).decode())
-PYEOF
-    )
-
-    ESCAPED_EMAIL="${ADMIN_EMAIL//\'/\'\'}"
-    log "Resetting admin credentials for $ADMIN_EMAIL..."
-    # The demo's admin password is public, so a visitor can invite themselves a colleague.
-    # Wipe every account except the lowest-id one (the bootstrap Owner) and reset that one,
-    # for the same reason visitor uploads don't survive a reset.
-    docker exec "$CONTAINER" sqlite3 "$DB" \
-      "DELETE FROM AdminCredentials WHERE Id <> (SELECT MIN(Id) FROM AdminCredentials);" \
-      "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', DisplayName=NULL, Role='Owner', IsActive=1, PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL;"
-
-    ACTUAL_EMAIL="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT Email FROM AdminCredentials LIMIT 1;')"
-    [[ "$ACTUAL_EMAIL" == "$ADMIN_EMAIL" ]] \
-      || die "AdminCredentials.Email is '$ACTUAL_EMAIL' after reset, expected '$ADMIN_EMAIL'."
-    ACCOUNT_COUNT="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM AdminCredentials;')"
-    [[ "$ACCOUNT_COUNT" == "1" ]] \
-      || die "Expected exactly one admin account after reset, found $ACCOUNT_COUNT."
-    log "Credential reset done."
-  fi
+  OWNERS="$(docker exec "$CONTAINER" sqlite3 "$DB" \
+    "SELECT COUNT(*) FROM AdminCredentials WHERE Role='Owner' AND IsActive=1 AND lower(Email)=lower('${ADMIN_EMAIL//\'/\'\'}');")"
+  [[ "$OWNERS" == "1" ]] \
+    || die "expected exactly one active Owner named '$ADMIN_EMAIL' after reset, found $OWNERS."
+  ACCOUNT_COUNT="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM AdminCredentials;')"
+  [[ "$ACCOUNT_COUNT" == "$EXPECTED_ACCOUNTS" ]] \
+    || die "expected $EXPECTED_ACCOUNTS admin accounts after reset, found $ACCOUNT_COUNT."
+  log "Account reset done ($ACCOUNT_COUNT accounts)."
 fi
 
 # --- 5. Restore media --------------------------------------------------------
