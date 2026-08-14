@@ -110,7 +110,7 @@ export default function LargePartyNoticeModal({
           </View>
         ) : (
           <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
-            No contact details are listed yet — please reach out to us directly.
+            No contact details are listed yet. Please reach out to us directly.
           </ThemedText>
         ))
       )}

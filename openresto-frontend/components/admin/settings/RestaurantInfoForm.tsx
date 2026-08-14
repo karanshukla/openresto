@@ -680,7 +680,7 @@ export function RestaurantInfoForm({
               ))}
             </select>
             <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              What new booking references look like — existing bookings keep theirs
+              What new booking references look like. Existing bookings keep theirs.
             </ThemedText>
           </View>
         </View>

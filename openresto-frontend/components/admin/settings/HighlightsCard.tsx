@@ -4,7 +4,7 @@ import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { ThemeColors } from "@/theme/theme";
+import { theme, ThemeColors } from "@/theme/theme";
 import {
   adminGetHighlights,
   adminCreateHighlight,
@@ -16,6 +16,7 @@ import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./HighlightsCard.styles";
+import { RowTextButton } from "./RowTextButton";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 const ICON_OPTIONS = [
@@ -268,24 +269,20 @@ export function HighlightsCard({
                         ) : null}
                       </View>
                       <View style={styles.actions}>
-                        <Pressable
+                        <RowTextButton
+                          label="Edit"
+                          icon="pencil-outline"
+                          color={mutedColor}
                           onPress={() => startEdit(h)}
-                          style={styles.actionBtn}
-                          accessibilityRole="button"
                           accessibilityLabel={`Edit highlight ${h.title}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Icon name="pencil-outline" size="md" color={mutedColor} />
-                        </Pressable>
-                        <Pressable
+                        />
+                        <RowTextButton
+                          label="Delete"
+                          icon="trash-outline"
+                          color={theme.colors.error}
                           onPress={() => remove(h.id)}
-                          style={styles.actionBtn}
-                          accessibilityRole="button"
                           accessibilityLabel={`Delete highlight ${h.title}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Icon name="trash-outline" size="md" color="#ef4444" />
-                        </Pressable>
+                        />
                       </View>
                     </View>
                   )}

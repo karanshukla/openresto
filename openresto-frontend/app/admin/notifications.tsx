@@ -318,6 +318,7 @@ export default function NotificationsScreen() {
         isLast={isLast}
         webTouchActive={webTouchActive}
         borderColor={borderColor}
+        cardBg={cardBg}
         mutedColor={mutedColor}
         isDark={isDark}
         primaryColor={primaryColor}

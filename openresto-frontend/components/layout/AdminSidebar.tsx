@@ -1,11 +1,18 @@
-import { View, Pressable, Platform, TextInput, ActivityIndicator } from "react-native";
-import { usePathname, useRouter } from "expo-router";
+import {
+  View,
+  Pressable,
+  Platform,
+  TextInput,
+  ActivityIndicator,
+  type ViewStyle,
+} from "react-native";
+import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { roleLabel } from "@/constants/roles";
+import { roleLabel, type Capability } from "@/constants/roles";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -16,38 +23,77 @@ import { getUnreadCount } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { styles } from "./AdminSidebar.styles";
-import { Icon } from "@/components/common/Icon";
+import { Icon, type IconName } from "@/components/common/Icon";
 
-const NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  icon: IconName;
+  href: Href;
+  match: (p: string) => boolean;
+  /** When set, the entry only renders for a role that holds this capability. */
+  capability?: Capability;
+}
+
+const NAV_SECTIONS: { heading: string; items: NavItem[] }[] = [
   {
-    label: "Overview",
-    icon: "grid-outline" as const,
-    href: "/admin/dashboard" as const,
-    match: (p: string) => p === "/admin/dashboard",
+    heading: "Manage",
+    items: [
+      {
+        label: "Overview",
+        icon: "grid-outline" as const,
+        href: "/admin/dashboard" as const,
+        match: (p: string) => p === "/admin/dashboard",
+      },
+      {
+        label: "Bookings",
+        icon: "calendar-outline" as const,
+        href: "/admin/bookings" as const,
+        match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
+      },
+      {
+        label: "Locations",
+        icon: "storefront-outline" as const,
+        href: "/admin/locations" as const,
+        match: (p: string) => p === "/admin/locations",
+      },
+      {
+        label: "Notifications",
+        icon: "notifications-outline" as const,
+        href: "/admin/notifications" as const,
+        match: (p: string) => p === "/admin/notifications",
+      },
+    ],
   },
   {
-    label: "Bookings",
-    icon: "calendar-outline" as const,
-    href: "/admin/bookings" as const,
-    match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
-  },
-  {
-    label: "Locations",
-    icon: "storefront-outline" as const,
-    href: "/admin/locations" as const,
-    match: (p: string) => p === "/admin/locations",
-  },
-  {
-    label: "Notifications",
-    icon: "notifications-outline" as const,
-    href: "/admin/notifications" as const,
-    match: (p: string) => p === "/admin/notifications",
-  },
-  {
-    label: "Settings",
-    icon: "settings-outline" as const,
-    href: "/admin/settings" as const,
-    match: (p: string) => p === "/admin/settings",
+    heading: "Configure",
+    items: [
+      {
+        label: "Brand",
+        icon: "color-palette-outline" as const,
+        // /admin/settings redirects here, so it owns the bare path's highlight too.
+        href: "/admin/settings/brand" as const,
+        match: (p: string) => p === "/admin/settings/brand" || p === "/admin/settings",
+      },
+      {
+        label: "Email & Push",
+        icon: "mail-outline" as const,
+        href: "/admin/settings/email" as const,
+        match: (p: string) => p === "/admin/settings/email",
+      },
+      {
+        label: "Users",
+        icon: "people-outline" as const,
+        href: "/admin/settings/users" as const,
+        match: (p: string) => p === "/admin/settings/users",
+        capability: "manage:users" as const,
+      },
+      {
+        label: "Account",
+        icon: "person-circle-outline" as const,
+        href: "/admin/settings/account" as const,
+        match: (p: string) => p === "/admin/settings/account",
+      },
+    ],
   },
 ];
 
@@ -56,7 +102,7 @@ export default function AdminSidebar() {
   const router = useRouter();
   const { colors, isDark, brand, primaryColor: PRIMARY } = useAppTheme();
   const { toggle } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, can } = useAuth();
   const [locationCount, setLocationCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const insets = useSafeAreaInsets();
@@ -124,7 +170,16 @@ export default function AdminSidebar() {
           paddingBottom: Math.max(insets.bottom, 8),
         },
 
-        Platform.OS === "web" ? { position: "sticky" as any, top: 0 } : { height: "100%" },
+        // Sticky and self-scrolling: the nav is tall enough now that a short viewport
+        // would otherwise clip the footer (identity, theme toggle, log out).
+        Platform.OS === "web"
+          ? ({
+              position: "sticky",
+              top: 0,
+              height: "100vh",
+              overflowY: "auto",
+            } as unknown as ViewStyle)
+          : { height: "100%" },
       ]}
     >
       <View style={styles.brand}>
@@ -146,70 +201,61 @@ export default function AdminSidebar() {
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       <View style={styles.nav}>
-        {NAV_ITEMS.map(({ label, icon, href, match }) => {
-          const active = match(pathname);
-          return (
-            <Pressable
-              key={href}
-              onPress={() => router.push(href)}
-              accessibilityRole="link"
-              accessibilityLabel={
-                label === "Notifications" && unreadNotifCount > 0
-                  ? `${label}, ${unreadNotifCount} unread`
-                  : label
-              }
-              accessibilityState={{ selected: active }}
-              aria-current={active ? "page" : undefined}
-              style={(state) => [
-                styles.navItem,
-                active
-                  ? { backgroundColor: activeBg }
-                  : (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
-                { cursor: "pointer" } as const,
-              ]}
-            >
-              <View style={{ position: "relative", width: 20 }}>
-                <Icon name={icon} size="lg" color={active ? PRIMARY : colors.muted} />
-                {label === "Notifications" && unreadNotifCount > 0 && (
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: -4,
-                      right: -4,
-                      minWidth: 14,
-                      height: 14,
-                      borderRadius: 7,
-                      backgroundColor: PRIMARY,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      paddingHorizontal: 2,
-                    }}
+        {NAV_SECTIONS.map(({ heading, items }) => (
+          <View key={heading} style={styles.navSection}>
+            <ThemedText style={[styles.navHeading, { color: colors.muted }]}>
+              {heading.toUpperCase()}
+            </ThemedText>
+            {items
+              .filter((item) => !item.capability || can(item.capability))
+              .map(({ label, icon, href, match }) => {
+                const active = match(pathname);
+                const showBadge = label === "Notifications" && unreadNotifCount > 0;
+                return (
+                  <Pressable
+                    key={label}
+                    onPress={() => router.push(href)}
+                    accessibilityRole="link"
+                    accessibilityLabel={showBadge ? `${label}, ${unreadNotifCount} unread` : label}
+                    accessibilityState={{ selected: active }}
+                    aria-current={active ? "page" : undefined}
+                    style={(state) => [
+                      styles.navItem,
+                      active
+                        ? { backgroundColor: activeBg }
+                        : (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
+                      { cursor: "pointer" } as const,
+                    ]}
                   >
+                    <View style={styles.navIcon}>
+                      <Icon name={icon} size="lg" color={active ? PRIMARY : colors.muted} />
+                      {showBadge && (
+                        <View style={[styles.navBadge, { backgroundColor: PRIMARY }]}>
+                          <ThemedText style={styles.navBadgeText}>
+                            {unreadNotifCount > 99 ? "99+" : String(unreadNotifCount)}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
                     <ThemedText
-                      style={{ fontSize: 9, fontWeight: "700", color: theme.colors.white }}
+                      style={[
+                        styles.navLabel,
+                        active ? { color: PRIMARY, fontWeight: "700" } : { color: colors.muted },
+                      ]}
                     >
-                      {unreadNotifCount > 99 ? "99+" : String(unreadNotifCount)}
+                      {label}
                     </ThemedText>
-                  </View>
-                )}
-              </View>
-              <ThemedText
-                style={[
-                  styles.navLabel,
-                  active ? { color: PRIMARY, fontWeight: "700" } : { color: colors.muted },
-                ]}
-              >
-                {label}
-              </ThemedText>
-              {active && (
-                <View
-                  style={[styles.activeBar, { backgroundColor: PRIMARY }]}
-                  pointerEvents="none"
-                />
-              )}
-            </Pressable>
-          );
-        })}
+                    {active && (
+                      <View
+                        style={[styles.activeBar, { backgroundColor: PRIMARY }]}
+                        pointerEvents="none"
+                      />
+                    )}
+                  </Pressable>
+                );
+              })}
+          </View>
+        ))}
       </View>
 
       <View style={styles.spacer} />
@@ -291,7 +337,7 @@ export default function AdminSidebar() {
         {user && (
           <View style={styles.identity} testID="sidebar-identity">
             <ThemedText style={styles.identityName} numberOfLines={1}>
-              {user.displayName ?? user.email}
+              {user.displayName ?? user.email.split("@")[0]}
             </ThemedText>
             <View style={[styles.roleBadge, { backgroundColor: hexToRgba(PRIMARY, 0.12) }]}>
               <ThemedText style={[styles.roleBadgeText, { color: PRIMARY }]}>

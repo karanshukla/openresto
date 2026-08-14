@@ -10,7 +10,6 @@ import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./TableRow.styles";
-import { RowIconButton } from "./RowIconButton";
 import { RowTextButton } from "./RowTextButton";
 import { Icon } from "@/components/common/Icon";
 
@@ -270,13 +269,14 @@ export function TableRow({
           </View>
         </View>
 
-        {/* Trailing actions — mix of text pill (Edit) and icon buttons (combine/delete); gap 8 keeps
-            the cluster tight and visually balanced across the two button types. */}
+        {/* Trailing actions: every one is a named pill. The admin runs on tablets, often for
+            staff who do not use the app daily, so a bare glyph is not enough of a label. */}
         <View style={styles.rowActions}>
           {!group && (
-            <RowIconButton
+            <RowTextButton
               testID={`table-link-btn-${table.id}`}
-              name="link-outline"
+              label="Combine"
+              icon="link-outline"
               color={primaryColor}
               onPress={onLink}
               accessibilityLabel={`Combine ${tableName} into a group`}
@@ -294,9 +294,10 @@ export function TableRow({
             }}
             accessibilityLabel={`Edit ${tableName}`}
           />
-          <RowIconButton
+          <RowTextButton
             testID={`table-delete-btn-${table.id}`}
-            name="trash-outline"
+            label="Delete"
+            icon="trash-outline"
             color={theme.colors.error}
             onPress={startDelete}
             accessibilityLabel={`Delete ${tableName}`}

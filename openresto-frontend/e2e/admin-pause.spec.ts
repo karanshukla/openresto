@@ -52,7 +52,7 @@ test.describe("Admin pause bookings", () => {
     // unscoped slot count also picks up every other location's times.
     const pausedCard = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
     await expect(
-      pausedCard.getByText("No times available — try another date or party size")
+      pausedCard.getByText("No times available, try another date or party size")
     ).toBeVisible({ timeout: 20_000 });
     await expect(pausedCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });

@@ -75,7 +75,8 @@ describe("AdminSidebar", () => {
     await waitFor(() => {
       expect(screen.getByText("Overview")).toBeTruthy();
       expect(screen.getByText("Bookings")).toBeTruthy();
-      expect(screen.getByText("Settings")).toBeTruthy();
+      expect(screen.getByText("Brand")).toBeTruthy();
+      expect(screen.getByText("Account")).toBeTruthy();
       expect(screen.getByText("Back to site")).toBeTruthy();
     });
   });

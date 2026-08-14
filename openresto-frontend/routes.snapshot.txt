@@ -14,7 +14,11 @@
 /admin/locations
 /admin/login
 /admin/notifications
-/admin/settings
+/admin/settings/account
+/admin/settings/brand
+/admin/settings/email
+/admin/settings/index
+/admin/settings/users
 /book
 /book/[restaurantId]
 /booking-confirmation/[bookingRef]

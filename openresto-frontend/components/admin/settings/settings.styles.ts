@@ -36,6 +36,16 @@ export const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
   },
+  // The settings routes are single-column forms: a full 1200px would stretch every input
+  // across the whole screen, which is what made the old combined page look unfinished.
+  settingsContainer: {
+    padding: theme.spacing.xxl,
+    paddingTop: theme.spacing.xxxl,
+    gap: theme.spacing.lg,
+    maxWidth: 880,
+    width: "100%",
+    alignSelf: "center",
+  },
   pageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

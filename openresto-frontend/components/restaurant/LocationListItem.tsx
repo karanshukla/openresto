@@ -152,7 +152,7 @@ export default function LocationListItem({
       <View style={styles.walkInRow}>
         <Icon name="walk-outline" size={15} color={mutedColor} />
         <ThemedText style={[styles.walkInText, { color: mutedColor }]}>
-          No reservations required — first come, first served
+          No reservations required, first come first served
         </ThemedText>
       </View>
     ) : null;

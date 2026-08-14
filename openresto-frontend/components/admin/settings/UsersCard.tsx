@@ -19,6 +19,8 @@ import {
   type AdminUserDto,
   type UserMutationResult,
 } from "@/api/users";
+import { theme } from "@/theme/theme";
+import { RowTextButton } from "./RowTextButton";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./UsersCard.styles";
 
@@ -151,6 +153,14 @@ export function UsersCard({
 
   const isSelf = (u: AdminUserDto) => currentUser?.id === u.id;
 
+  /**
+   * The role picker below the row already states the current role, so the badge is only
+   * worth its space where no picker is offered: your own row, and the legacy `Admin` claim
+   * that no picker option matches.
+   */
+  const showsRoleBadge = (u: AdminUserDto) =>
+    isSelf(u) || !ASSIGNABLE_ROLES.some((r) => r.toLowerCase() === u.role.toLowerCase());
+
   return (
     <View
       style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}
@@ -188,6 +198,7 @@ export function UsersCard({
                   <View
                     style={[
                       settingsStyles.tile,
+                      styles.userTile,
                       { backgroundColor: surface2, borderColor },
                       !u.isActive && styles.inactiveRow,
                     ]}
@@ -197,95 +208,99 @@ export function UsersCard({
                       <ThemedText style={settingsStyles.tileTitle}>
                         {u.displayName ?? u.email}
                       </ThemedText>
-                      <ThemedText style={[settingsStyles.tileSub, { color: mutedColor }]}>
-                        {u.email}
-                      </ThemedText>
-                      <View style={styles.rowMeta}>
-                        <View style={[styles.badge, { backgroundColor: `${primaryColor}14` }]}>
-                          <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
-                            {roleLabel(u.role)}
-                          </ThemedText>
+                      {u.displayName && (
+                        <ThemedText style={[settingsStyles.tileSub, { color: mutedColor }]}>
+                          {u.email}
+                        </ThemedText>
+                      )}
+                      {(showsRoleBadge(u) || !u.isActive) && (
+                        <View style={styles.rowMeta}>
+                          {showsRoleBadge(u) && (
+                            <View style={[styles.badge, { backgroundColor: `${primaryColor}14` }]}>
+                              <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
+                                {roleLabel(u.role)}
+                              </ThemedText>
+                            </View>
+                          )}
+                          {!u.isActive && (
+                            <View style={[styles.badge, { backgroundColor: "#ef444422" }]}>
+                              <ThemedText style={[styles.badgeText, { color: "#ef4444" }]}>
+                                Deactivated
+                              </ThemedText>
+                            </View>
+                          )}
                         </View>
-                        {!u.isActive && (
-                          <View style={[styles.badge, { backgroundColor: "#ef444422" }]}>
-                            <ThemedText style={[styles.badgeText, { color: "#ef4444" }]}>
-                              Deactivated
-                            </ThemedText>
-                          </View>
-                        )}
-                      </View>
+                      )}
                       {isSelf(u) && (
                         <ThemedText style={[styles.selfNote, { color: mutedColor }]}>
-                          This is you — change your own password under Account Security.
+                          This is you. Change your own password on the Account page.
                         </ThemedText>
+                      )}
+                      {/* Your own role is shown as the badge above but not offered as a
+                          control: the server refuses a self-role-change for the same reason
+                          it refuses a self-deactivation. */}
+                      {!isSelf(u) && (
+                        <View style={styles.roleField}>
+                          <ThemedText style={[styles.roleFieldLabel, { color: mutedColor }]}>
+                            Role
+                          </ThemedText>
+                          <View style={styles.roleChoices}>
+                            {ASSIGNABLE_ROLES.map((role) => {
+                              const selected = u.role.toLowerCase() === role.toLowerCase();
+                              return (
+                                <Pressable
+                                  key={role}
+                                  disabled={busy || selected}
+                                  onPress={() => handleRoleChange(u, role)}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Make ${u.email} ${role}`}
+                                  accessibilityState={{ selected }}
+                                  style={[
+                                    styles.roleChoice,
+                                    { borderColor: selected ? primaryColor : borderColor },
+                                  ]}
+                                >
+                                  <ThemedText
+                                    style={[
+                                      styles.roleChoiceText,
+                                      { color: selected ? primaryColor : mutedColor },
+                                    ]}
+                                  >
+                                    {role}
+                                  </ThemedText>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        </View>
                       )}
                     </View>
                     <View style={styles.actions}>
-                      <Pressable
+                      <RowTextButton
+                        label="Reset password"
+                        icon="key-outline"
+                        color={mutedColor}
+                        accessibilityLabel={`Set a new password for ${u.email}`}
                         onPress={() => {
                           setMsg(null);
                           setResetPassword("");
                           setResetForId((id) => (id === u.id ? null : u.id));
                         }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Set a new password for ${u.email}`}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Icon name="key-outline" size="md" color={mutedColor} />
-                      </Pressable>
+                      />
                       {!isSelf(u) && (
-                        <Pressable
-                          onPress={() => handleActiveToggle(u)}
+                        <RowTextButton
+                          label={u.isActive ? "Deactivate" : "Reactivate"}
+                          icon={u.isActive ? "ban-outline" : "checkmark-circle-outline"}
+                          color={u.isActive ? theme.colors.error : primaryColor}
                           disabled={busy}
-                          accessibilityRole="button"
                           accessibilityLabel={
                             u.isActive ? `Deactivate ${u.email}` : `Reactivate ${u.email}`
                           }
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Icon
-                            name={u.isActive ? "ban-outline" : "checkmark-circle-outline"}
-                            size="md"
-                            color={u.isActive ? "#ef4444" : primaryColor}
-                          />
-                        </Pressable>
+                          onPress={() => handleActiveToggle(u)}
+                        />
                       )}
                     </View>
                   </View>
-
-                  {/* Your own role is shown as the badge above but not offered as a control:
-                      the server refuses a self-role-change for the same reason it refuses a
-                      self-deactivation. */}
-                  {!isSelf(u) && (
-                    <View style={styles.roleChoices}>
-                      {ASSIGNABLE_ROLES.map((role) => {
-                        const selected = u.role.toLowerCase() === role.toLowerCase();
-                        return (
-                          <Pressable
-                            key={role}
-                            disabled={busy || selected}
-                            onPress={() => handleRoleChange(u, role)}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Make ${u.email} ${role}`}
-                            accessibilityState={{ selected }}
-                            style={[
-                              styles.roleChoice,
-                              { borderColor: selected ? primaryColor : borderColor },
-                            ]}
-                          >
-                            <ThemedText
-                              style={[
-                                styles.roleChoiceText,
-                                { color: selected ? primaryColor : mutedColor },
-                              ]}
-                            >
-                              {role}
-                            </ThemedText>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  )}
 
                   {resetForId === u.id && (
                     <View style={settingsStyles.addForm}>
@@ -407,7 +422,11 @@ export function UsersCard({
                 </View>
               ) : (
                 <Pressable
-                  style={[settingsStyles.addPill, { backgroundColor: primaryColor }]}
+                  style={[
+                    settingsStyles.addPill,
+                    styles.addPillLeft,
+                    { backgroundColor: primaryColor },
+                  ]}
                   onPress={() => {
                     setShowAddForm(true);
                     setMsg(null);

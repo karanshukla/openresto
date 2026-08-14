@@ -71,10 +71,14 @@ function AdminLayoutInner() {
     /* istanbul ignore next */
     const PAGE_TITLES: Record<string, string> = {
       "/admin/dashboard": "Dashboard",
-      "/admin/settings": "Settings",
+      "/admin/settings/brand": "Brand",
+      "/admin/settings/email": "Email & Push",
+      "/admin/settings/users": "Users",
+      "/admin/settings/account": "Account",
       "/admin/bookings": "Bookings",
       "/admin/bookings/new": "New Walk-in",
       "/admin/locations": "Locations",
+      "/admin/notifications": "Notifications",
       "/admin/login": "Admin Login",
     };
     /* istanbul ignore next */
@@ -105,7 +109,7 @@ function AdminLayoutInner() {
           "g d": () => router.push("/admin/dashboard"),
           "g b": () => router.push("/admin/bookings"),
           "g l": () => router.push("/admin/locations"),
-          "g s": () => router.push("/admin/settings"),
+          "g s": () => router.push("/admin/settings/brand"),
           "/": (e) => {
             e.preventDefault();
             focusTarget("admin-lookup");
@@ -123,7 +127,12 @@ function AdminLayoutInner() {
       <Stack.Screen name="bookings/index" options={{ title: "Bookings" }} />
       <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
       <Stack.Screen name="locations" options={{ title: "Locations" }} />
-      <Stack.Screen name="settings" options={{ title: "Settings" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="settings/index" options={{ title: "Settings" }} />
+      <Stack.Screen name="settings/brand" options={{ title: "Brand" }} />
+      <Stack.Screen name="settings/email" options={{ title: "Email & Push" }} />
+      <Stack.Screen name="settings/users" options={{ title: "Users" }} />
+      <Stack.Screen name="settings/account" options={{ title: "Account" }} />
     </Stack>
   );
 

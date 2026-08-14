@@ -100,7 +100,7 @@ describe("SecurityCard", () => {
     (authApi.getMyPvqStatus as jest.Mock).mockResolvedValue(null);
     renderCard();
     await waitFor(() => {
-      expect(screen.getByText(/Not configured - set one up to enable password reset/)).toBeTruthy();
+      expect(screen.getByText(/Not configured. Set one up to enable password reset./)).toBeTruthy();
     });
   });
 

@@ -54,7 +54,7 @@ export function LocationSlotRow({
   if (shownSlots.length === 0) {
     return (
       <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
-        No times available — try another date or party size
+        No times available, try another date or party size
       </ThemedText>
     );
   }

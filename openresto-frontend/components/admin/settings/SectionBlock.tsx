@@ -320,9 +320,10 @@ export function SectionBlock({
                 }}
                 accessibilityLabel={`Rename ${section.name} section`}
               />
-              <RowIconButton
+              <RowTextButton
                 testID="section-delete-btn"
-                name="trash-outline"
+                label="Delete"
+                icon="trash-outline"
                 color={theme.colors.error}
                 disabled={deleteStep === "confirm"}
                 onPress={startSectionDelete}

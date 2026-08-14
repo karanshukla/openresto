@@ -441,7 +441,7 @@ public class RestaurantManagementService(
         if (combinedSeats <= largestMemberSeats)
         {
             throw new ValidationException(
-                $"CombinedSeats ({combinedSeats}) must be more than the largest member table ({largestMemberSeats}) — "
+                $"CombinedSeats ({combinedSeats}) must be more than the largest member table ({largestMemberSeats}). "
                 + "combining these tables would not seat a bigger party.");
         }
     }

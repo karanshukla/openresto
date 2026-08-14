@@ -15,8 +15,9 @@ export interface RowTextButtonProps {
 }
 
 /**
- * Used for the primary, non-destructive "Edit" affordance so it reads as a real button,
- * while destructive actions stay icon-only.
+ * Every row-level action in the admin, destructive ones included. The admin is used on
+ * tablets by staff who are not in it daily, so an action carries its name rather than
+ * relying on a glyph the reader has to decode.
  */
 export function RowTextButton({
   label,
