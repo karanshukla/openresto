@@ -91,6 +91,13 @@ describe("UsersCard", () => {
     expect(screen.getByText("2 accounts · Owners can manage users")).toBeTruthy();
   });
 
+  it("says 1 account, not 1 accounts, for a single-user instance", async () => {
+    (usersApi.adminListUsers as jest.Mock).mockResolvedValue([OWNER]);
+    await renderLoaded();
+
+    expect(screen.getByText("1 account · Owners can manage users")).toBeTruthy();
+  });
+
   it("marks a deactivated account", async () => {
     (usersApi.adminListUsers as jest.Mock).mockResolvedValue([
       OWNER,
@@ -174,6 +181,23 @@ describe("UsersCard", () => {
     await waitFor(() =>
       expect(usersApi.adminCreateUser).toHaveBeenCalledWith(
         expect.objectContaining({ role: "Owner" })
+      )
+    );
+  });
+
+  it("omits a blank display name rather than sending an empty string", async () => {
+    (usersApi.adminCreateUser as jest.Mock).mockResolvedValue({ ok: true, user: MANAGER });
+    await renderLoaded();
+    await openAddForm();
+    fireEvent.changeText(screen.getByPlaceholderText("colleague@restaurant.com"), "new@test.com");
+    fireEvent.changeText(screen.getByPlaceholderText("Alex Rivera"), "   ");
+    fireEvent.changeText(screen.getByPlaceholderText("••••••••"), "temp-password");
+
+    fireEvent.press(screen.getByText("Create user"));
+
+    await waitFor(() =>
+      expect(usersApi.adminCreateUser).toHaveBeenCalledWith(
+        expect.objectContaining({ displayName: undefined })
       )
     );
   });
