@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Infrastructure.Persistence;
@@ -112,6 +113,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AdminCredential>(a =>
         {
             a.HasKey(x => x.Id);
+            // Emails are lower-cased on every write path (bootstrap, create-user, change-email),
+            // so an ordinary unique index is enough to make "one account per address"
+            // case-insensitive — no NOCASE collation change, which SQLite can only apply by
+            // rebuilding the table.
+            a.HasIndex(x => x.Email).IsUnique();
+            a.Property(x => x.DisplayName).HasMaxLength(UserFields.MaxDisplayNameLength);
+            a.Property(x => x.Role).HasMaxLength(UserFields.MaxRoleLength).HasDefaultValue(UserRoles.Owner);
+            a.Property(x => x.IsActive).HasDefaultValue(true);
+            a.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<AdminNotification>(n =>

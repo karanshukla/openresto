@@ -11,10 +11,10 @@ const NEW_EMAIL = "e2e-change-email@example.com";
 /**
  * Admin changes the login email from Settings → Account Security.
  *
- * The email column backs the single shared AdminCredential row, so this test
- * mutates global auth state. It runs serially and always restores the
- * original email in afterEach — even on failure — so later tests (and the
- * global-setup storageState, which is keyed to ADMIN_EMAIL) keep working.
+ * This rewrites the email of the bootstrap Owner — the account every other admin
+ * spec signs in as — so it mutates global auth state. It runs serially and always
+ * restores the original email in afterEach, even on failure, so later tests (and
+ * the global-setup storageState, which is keyed to ADMIN_EMAIL) keep working.
  */
 test.describe("Admin change email", () => {
   test.describe.configure({ mode: "serial" });
@@ -36,8 +36,10 @@ test.describe("Admin change email", () => {
     });
     // The card renders in stages — the heading appears before the email row
     // finishes hydrating from the rate-limited admin fetch, so gate the email
-    // on the same reload fallback rather than a bare expect.
-    await expectVisibleWithReload(page, page.getByText(ADMIN_EMAIL), { timeout: 10_000 });
+    // on the same reload fallback rather than a bare expect. Scoped to the card:
+    // the sidebar's identity block shows the same address.
+    const securityCard = page.getByTestId("security-card");
+    await expectVisibleWithReload(page, securityCard.getByText(ADMIN_EMAIL), { timeout: 10_000 });
 
     // Scoped by testID rather than DOM position — the Brand Identity card
     // also renders a "Change" button (shown when a header image is already
@@ -50,7 +52,11 @@ test.describe("Admin change email", () => {
     await page.getByText("Update Email").click();
 
     await expect(page.getByText("Email changed successfully.")).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(NEW_EMAIL)).toBeVisible({ timeout: 10_000 });
+    await expect(securityCard.getByText(NEW_EMAIL)).toBeVisible({ timeout: 10_000 });
+    // The change is pushed into the auth context, so the sidebar re-renders with it too.
+    await expect(page.getByTestId("sidebar-identity").getByText(NEW_EMAIL)).toBeVisible({
+      timeout: 10_000,
+    });
 
     // The old email can no longer log in ...
     const oldLoginRes = await page.request.post("/api/admin/auth/login", {

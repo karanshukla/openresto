@@ -408,35 +408,14 @@ public static partial class DatabaseExtensions
 
                     DbSeeder.Seed(db);
 
-                    if (!db.AdminCredentials.Any())
+                    // Reuse the canonical IPasswordService PBKDF2 implementation (100k iters,
+                    // SHA256, 32-byte hash, 16-byte salt, Base64) instead of an inline duplicate.
+                    using (IServiceScope seedScope = app.Services.CreateScope())
                     {
-                        string? configEmail = configuration["Admin:Email"];
-                        string email = !string.IsNullOrWhiteSpace(configEmail)
-                            ? configEmail
-                            : Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@openresto.com";
-
-                        string? configPassword = configuration["Admin:Password"];
-                        string? password = !string.IsNullOrWhiteSpace(configPassword)
-                            ? configPassword
-                            : Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
-
-                        if (string.IsNullOrWhiteSpace(password))
-                        {
-                            throw new InvalidOperationException(
-                                "Admin:Password must be configured before first use. Set it via ADMIN_PASSWORD env var.");
-                        }
-                        // Reuse the canonical IPasswordService PBKDF2 implementation (100k iters,
-                        // SHA256, 32-byte hash, 16-byte salt, Base64) instead of an inline duplicate.
-                        using IServiceScope seedScope = app.Services.CreateScope();
-                        var passwordService = seedScope.ServiceProvider.GetRequiredService<OpenRestoApi.Core.Application.Interfaces.IPasswordService>();
-                        (string hash, string salt) = passwordService.Hash(password);
-                        db.AdminCredentials.Add(new OpenRestoApi.Core.Domain.AdminCredential
-                        {
-                            Email = email,
-                            PasswordHash = hash,
-                            PasswordSalt = salt,
-                        });
-                        db.SaveChanges();
+                        AdminBootstrap.EnsureInitialOwner(
+                            db,
+                            configuration,
+                            seedScope.ServiceProvider.GetRequiredService<OpenRestoApi.Core.Application.Interfaces.IPasswordService>());
                     }
 
                     success = true;

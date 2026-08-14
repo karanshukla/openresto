@@ -4,6 +4,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import { AuthProvider } from "@/context/AuthContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 global.fetch = jest.fn(() =>
@@ -24,6 +25,12 @@ jest.mock("expo-router", () => {
 
 jest.mock("@/api/auth", () => ({
   logout: jest.fn().mockResolvedValue(true),
+  checkSession: jest.fn().mockResolvedValue({
+    id: 1,
+    email: "admin@test.com",
+    displayName: "Admin Person",
+    role: "Owner",
+  }),
 }));
 
 jest.mock("@/api/admin", () => ({
@@ -60,7 +67,11 @@ describe("AdminSidebar", () => {
     );
 
   it("renders all navigation links", async () => {
-    renderWithProviders(<AdminSidebar />);
+    renderWithProviders(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
     await waitFor(() => {
       expect(screen.getByText("Overview")).toBeTruthy();
       expect(screen.getByText("Bookings")).toBeTruthy();
@@ -70,7 +81,11 @@ describe("AdminSidebar", () => {
   });
 
   it("renders the lookup booking widget", async () => {
-    renderWithProviders(<AdminSidebar />);
+    renderWithProviders(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
     await waitFor(() => {
       expect(screen.getByText("Lookup Booking")).toBeTruthy();
       expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy();
@@ -78,7 +93,11 @@ describe("AdminSidebar", () => {
   });
 
   it("calls logout when sign out is pressed", async () => {
-    renderWithProviders(<AdminSidebar />);
+    renderWithProviders(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
     const signOutBtn = await screen.findByText("Log out");
     fireEvent.press(signOutBtn);
     expect(logout).toHaveBeenCalled();

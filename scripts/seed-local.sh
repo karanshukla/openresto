@@ -6,9 +6,13 @@
 # shared with purge-bookings.sh). This script only locates the database and
 # applies what the generator emits.
 #
-# AdminCredentials are wiped but NOT re-seeded — the API bootstraps them from
-# appsettings.Development.json on first login, so just log in with the
-# email/password defined there. No password hashing needed here.
+# AdminCredentials are wiped and re-seeded from demo_data.py's `accounts` section:
+# the Owner, using the Admin:Email/Admin:Password in appsettings.Development.json,
+# plus the demo Manager. So a reseed leaves you logged-in-able immediately, any user
+# invited through the Users card is gone, and both roles are there to click through.
+# They have to be re-seeded here rather than left to the API: login stopped creating
+# accounts when multi-user landed, and only startup bootstraps one, so a wiped table
+# under a running dev server would have nothing to log in to.
 #
 # Usage:
 #   bash scripts/seed-local.sh
@@ -118,7 +122,10 @@ find_db() {
 
 # ── Generate ─────────────────────────────────────────────────────────────────
 SQL_FILE="$(mktemp -t seed-local.XXXXXX.sql)"
-trap 'rm -f "$SQL_FILE"' EXIT
+# The generator wraps each section in its own BEGIN/COMMIT, so accounts go in a second
+# file rather than being appended into the first (which would nest transactions).
+ACCOUNTS_SQL_FILE="$(mktemp -t seed-local-accounts.XXXXXX.sql)"
+trap 'rm -f "$SQL_FILE" "$ACCOUNTS_SQL_FILE"' EXIT
 
 # Location images and the hero are linked from whatever is actually in the
 # media directory, so an image uploaded through the admin UI survives a reseed.
@@ -129,18 +136,22 @@ fi
 
 python3 "$GENERATOR" "$SECTION" "${MEDIA_ARGS[@]+"${MEDIA_ARGS[@]}"}" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
 
-# The API re-bootstraps admin credentials from appsettings on the next login,
-# so wiping them keeps a reseeded database in sync with the configured login.
+# Replace the accounts with the curated pair the generator defines. The password comes from
+# the same appsettings the API bootstraps from, so the configured login works right after a
+# reseed — it has to happen here, because login stopped creating accounts and only startup
+# bootstraps one.
+SEED_ACCOUNTS=0
 if [[ $KEEP_ADMIN -eq 0 && "$SECTION" != "bookings" ]]; then
-  {
-    echo "DELETE FROM AdminCredentials;"
-    echo "DELETE FROM sqlite_sequence WHERE name = 'AdminCredentials';"
-  } >> "$SQL_FILE"
+  python3 "$GENERATOR" accounts \
+    --settings-file "$REPO_ROOT/OpenRestoApi/appsettings.Development.json" > "$ACCOUNTS_SQL_FILE" \
+    || die "could not generate admin accounts — set Admin:Password in appsettings.Development.json, or pass --keep-admin."
+  SEED_ACCOUNTS=1
 fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
   log "DRY RUN — emitting SQL to stdout, database untouched."
   cat "$SQL_FILE"
+  if [[ $SEED_ACCOUNTS -eq 1 ]]; then cat "$ACCOUNTS_SQL_FILE"; fi
   exit 0
 fi
 
@@ -154,6 +165,7 @@ log "DB:      $DB"
 log "Section: $SECTION"
 
 apply_sql "$DB" < "$SQL_FILE"
+if [[ $SEED_ACCOUNTS -eq 1 ]]; then apply_sql "$DB" < "$ACCOUNTS_SQL_FILE"; fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log "Done. Row counts:"

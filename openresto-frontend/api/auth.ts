@@ -21,7 +21,18 @@ export async function logout(): Promise<void> {
 
 // ---------- Session check ----------
 
-export async function checkSession(): Promise<{ email: string } | "rate-limited" | null> {
+/**
+ * The signed-in admin, as returned by `GET /admin/auth/me`. Treat unknown extra fields as
+ * additive — the server may grow this shape (permissions, scoping) without a client change.
+ */
+export interface AuthUser {
+  id: number;
+  email: string;
+  displayName: string | null;
+  role: string;
+}
+
+export async function checkSession(): Promise<AuthUser | "rate-limited" | null> {
   try {
     const res = await get("/admin/auth/me");
     if (res.status === 429) return "rate-limited";
@@ -71,9 +82,23 @@ export interface PvqStatus {
   question: string | null;
 }
 
-export async function getPvqStatus(): Promise<PvqStatus | null> {
+/** The security question for a given address — the forgot-password screen has no session yet. */
+export async function getPvqStatus(email: string): Promise<PvqStatus | null> {
   try {
-    const res = await get("/admin/auth/pvq", { credentials: "omit" });
+    const res = await get(`/admin/auth/pvq?email=${encodeURIComponent(email)}`, {
+      credentials: "omit",
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/** The signed-in admin's own security question, for the settings screen. */
+export async function getMyPvqStatus(): Promise<PvqStatus | null> {
+  try {
+    const res = await get("/admin/auth/pvq/me");
     if (!res.ok) return null;
     return await res.json();
   } catch {

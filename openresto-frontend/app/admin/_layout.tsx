@@ -3,10 +3,10 @@ import { Platform, useWindowDimensions, View } from "react-native";
 import { Slot, Stack, useRouter, usePathname, useSegments } from "expo-router";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { checkSession } from "@/api/auth";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { theme } from "@/theme/theme";
 import { useBrand } from "@/context/BrandContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import PageLoader from "@/components/common/PageLoader";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
@@ -34,15 +34,17 @@ export default function AdminLayout() {
   const showWall = Platform.OS === "web" && width < MIN_WIDTH;
 
   // AdminLayoutInner stays mounted even when the wall is shown so that auth
-  // state is preserved — unmounting it would reset authState to "loading" and
+  // state is preserved — unmounting it would reset the status to "loading" and
   // trigger an unnecessary session re-check (which can bounce the user to login).
   return (
-    <View style={{ flex: 1 }}>
-      {showWall && <DesktopOnlyWall />}
-      <View style={[{ flex: 1 }, showWall && { display: "none" as const }]}>
-        <AdminLayoutInner />
+    <AuthProvider>
+      <View style={{ flex: 1 }}>
+        {showWall && <DesktopOnlyWall />}
+        <View style={[{ flex: 1 }, showWall && { display: "none" as const }]}>
+          <AdminLayoutInner />
+        </View>
       </View>
-    </View>
+    </AuthProvider>
   );
 }
 
@@ -60,9 +62,7 @@ function AdminLayoutInner() {
   // sibling stack screens on navigation).
   const isAdminRouteActive = segments[0] === "admin";
   const brand = useBrand();
-  const [authState, setAuthState] = useState<"loading" | "authenticated" | "unauthenticated">(
-    "loading"
-  );
+  const { status: authState } = useAuth();
 
   useEffect(() => {
     /* istanbul ignore next */
@@ -85,30 +85,15 @@ function AdminLayoutInner() {
     if (title) document.title = `${title} | ${brand.appName}`;
   }, [pathname, brand.appName]);
 
+  // AuthProvider resolves the session; the layout only reacts to the verdict. A rate-limited
+  // /me deliberately does not reach "unauthenticated", so throttling never bounces a
+  // signed-in admin to the login screen.
   useEffect(() => {
-    const onLoginScreen = pathname === "/admin/login";
-    if (onLoginScreen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAuthState("authenticated");
-      return;
+    if (authState === "unauthenticated" && pathname !== "/admin/login") {
+      router.replace("/admin/login");
     }
-
-    if (authState === "authenticated") return;
-
-    checkSession().then((session) => {
-      if (session === "rate-limited") {
-        // We're being rate limited, but we likely have a session.
-        // Don't log out, just assume we're still authenticated.
-        setAuthState("authenticated");
-      } else if (session) {
-        setAuthState("authenticated");
-      } else {
-        setAuthState("unauthenticated");
-        router.replace("/admin/login");
-      }
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [authState, pathname]);
 
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const shortcutsEnabled =
@@ -131,21 +116,36 @@ function AdminLayoutInner() {
       : {}
   );
 
-  if (authState === "loading") return <PageLoader />;
+  const nativeStack = (
+    <Stack>
+      <Stack.Screen name="login" options={{ title: "Admin Login", headerBackVisible: false }} />
+      <Stack.Screen name="dashboard" options={{ title: "Dashboard", headerBackVisible: false }} />
+      <Stack.Screen name="bookings/index" options={{ title: "Bookings" }} />
+      <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
+      <Stack.Screen name="locations" options={{ title: "Locations" }} />
+      <Stack.Screen name="settings" options={{ title: "Settings" }} />
+    </Stack>
+  );
 
-  /* istanbul ignore next */
-  if (Platform.OS === "web") {
-    const onLoginScreen = pathname === "/admin/login";
-    if (onLoginScreen) {
+  // The login screen is where you go to *get* a session, so it renders straight away rather
+  // than sitting behind the loading state every other admin route waits on.
+  if (pathname === "/admin/login") {
+    /* istanbul ignore next */
+    if (Platform.OS === "web") {
       return (
         <ThemedView style={{ flex: 1 }}>
           <Slot />
         </ThemedView>
       );
     }
+    return nativeStack;
+  }
 
-    if (authState !== "authenticated") return null;
+  if (authState === "loading") return <PageLoader />;
+  if (authState !== "authenticated") return null;
 
+  /* istanbul ignore next */
+  if (Platform.OS === "web") {
     return (
       <ThemedView style={{ flex: 1, flexDirection: "row" }}>
         <AdminSidebar />
@@ -161,20 +161,5 @@ function AdminLayoutInner() {
     );
   }
 
-  if (authState !== "authenticated") {
-    const onLoginScreen = pathname === "/admin/login";
-    /* istanbul ignore else */
-    if (!onLoginScreen) return null;
-  }
-
-  return (
-    <Stack>
-      <Stack.Screen name="login" options={{ title: "Admin Login", headerBackVisible: false }} />
-      <Stack.Screen name="dashboard" options={{ title: "Dashboard", headerBackVisible: false }} />
-      <Stack.Screen name="bookings/index" options={{ title: "Bookings" }} />
-      <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
-      <Stack.Screen name="locations" options={{ title: "Locations" }} />
-      <Stack.Screen name="settings" options={{ title: "Settings" }} />
-    </Stack>
-  );
+  return nativeStack;
 }

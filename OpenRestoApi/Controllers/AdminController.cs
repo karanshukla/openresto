@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AuthPolicies.RequireAdmin)]
 public class AdminController(AdminService adminService) : ControllerBase
 {
     public enum bookingStatus { active, cancelled, all, past, upcoming }

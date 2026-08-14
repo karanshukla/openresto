@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
-import { logout } from "@/api/auth";
+import { useAuth } from "@/context/AuthContext";
+import { roleLabel } from "@/constants/roles";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -55,6 +56,7 @@ export default function AdminSidebar() {
   const router = useRouter();
   const { colors, isDark, brand, primaryColor: PRIMARY } = useAppTheme();
   const { toggle } = useTheme();
+  const { user, signOut } = useAuth();
   const [locationCount, setLocationCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const insets = useSafeAreaInsets();
@@ -107,7 +109,7 @@ export default function AdminSidebar() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     router.replace("/admin/login");
   };
 
@@ -286,6 +288,18 @@ export default function AdminSidebar() {
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       <View style={styles.footer}>
+        {user && (
+          <View style={styles.identity} testID="sidebar-identity">
+            <ThemedText style={styles.identityName} numberOfLines={1}>
+              {user.displayName ?? user.email}
+            </ThemedText>
+            <View style={[styles.roleBadge, { backgroundColor: hexToRgba(PRIMARY, 0.12) }]}>
+              <ThemedText style={[styles.roleBadgeText, { color: PRIMARY }]}>
+                {roleLabel(user.role)}
+              </ThemedText>
+            </View>
+          </View>
+        )}
         <Pressable
           onPress={() => router.push("/")}
           accessibilityRole="link"

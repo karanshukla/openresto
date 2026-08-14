@@ -1,10 +1,10 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
@@ -38,16 +38,20 @@ public class AuthController(
     }
 
     [HttpGet("me")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [EnableRateLimiting("public")]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
-        string? email = User.FindFirst(ClaimTypes.Email)?.Value;
-        return Ok(new { email });
+        CurrentUserDto? user = await _authService.GetCurrentUserAsync();
+        // A structurally-valid token whose account has been deleted or deactivated is no
+        // longer a session — the frontend treats the 401 as "signed out".
+        if (user == null)
+            return Unauthorized(new { message = "Session no longer matches an active account." });
+        return Ok(user);
     }
 
     [HttpPost("change-password")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
         // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
@@ -58,7 +62,7 @@ public class AuthController(
     }
 
     [HttpPost("change-email")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest req)
     {
         // ValidationException (invalid email) and BusinessRuleException (same email)
@@ -71,14 +75,27 @@ public class AuthController(
         return Ok(new { message = "Email changed successfully.", email = req.NewEmail!.Trim().ToLowerInvariant() });
     }
 
+    /// <summary>
+    /// The security question for a given account, for the forgot-password screen (which has no
+    /// session yet). This confirms whether an address has an account with a question configured
+    /// — an accepted trade-off for a self-hosted, internal tool, bounded by the <c>auth</c>
+    /// rate-limit policy. The signed-in equivalent is <c>GET pvq/me</c>.
+    /// </summary>
     [HttpGet("pvq")]
-    public async Task<IActionResult> GetPvqStatus()
+    public async Task<IActionResult> GetPvqStatus([FromQuery] string? email)
     {
-        return Ok(await _securityQuestions.GetStatusAsync());
+        return Ok(await _securityQuestions.GetStatusAsync(email ?? string.Empty));
+    }
+
+    [HttpGet("pvq/me")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    public async Task<IActionResult> GetMyPvqStatus()
+    {
+        return Ok(await _securityQuestions.GetStatusForCurrentUserAsync());
     }
 
     [HttpPost("pvq/setup")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> SetupPvq([FromBody] SetupPvqRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Question) || string.IsNullOrWhiteSpace(req.Answer))

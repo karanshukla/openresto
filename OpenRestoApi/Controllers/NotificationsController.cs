@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize]
+[Authorize(Policy = AuthPolicies.RequireAdmin)]
 public class NotificationsController(INotificationService notificationService) : ControllerBase
 {
     private readonly INotificationService _notifications = notificationService;

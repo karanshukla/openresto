@@ -4,12 +4,17 @@ import AdminLoginScreen from "@/app/admin/login";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRouter } from "expo-router";
 import { BrandProvider } from "@/context/BrandContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 jest.mock("@/api/auth", () => ({
   login: jest.fn(),
   getPvqStatus: jest.fn(),
   verifyPvq: jest.fn(),
   resetPassword: jest.fn(),
+  // The screen pushes the freshly-established session into the auth context after a
+  // successful login, so the provider's own resolve has to be mockable too.
+  checkSession: jest.fn().mockResolvedValue(null),
+  logout: jest.fn(),
 }));
 
 jest.mock("expo-router", () => ({
@@ -44,7 +49,9 @@ describe("AdminLoginScreen", () => {
   it("renders login form by default", () => {
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
     expect(screen.getByText("Sign in")).toBeTruthy();
@@ -55,7 +62,9 @@ describe("AdminLoginScreen", () => {
     (login as jest.Mock).mockResolvedValue({ message: "Success" });
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -70,7 +79,9 @@ describe("AdminLoginScreen", () => {
     (login as jest.Mock).mockResolvedValue(null);
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -90,7 +101,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -122,7 +135,9 @@ describe("AdminLoginScreen", () => {
   it("email submitEditing triggers the onSubmitEditing callback", () => {
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
     const emailInput = screen.getByPlaceholderText("admin@restaurant.com");
@@ -135,7 +150,11 @@ describe("AdminLoginScreen", () => {
     const spy = jest
       .spyOn(brandModule, "useBrand")
       .mockReturnValueOnce({ appName: "Test", primaryColor: "" });
-    render(<AdminLoginScreen />);
+    render(
+      <AuthProvider>
+        <AdminLoginScreen />
+      </AuthProvider>
+    );
     expect(screen.getByText("Sign in")).toBeTruthy();
     spy.mockRestore();
   });
@@ -143,7 +162,9 @@ describe("AdminLoginScreen", () => {
   it("'Back to {appName}' link on login stage calls router.replace('/')", () => {
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -157,7 +178,9 @@ describe("AdminLoginScreen", () => {
   it("Back button in pvq-email stage returns to login", () => {
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -173,7 +196,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -195,7 +220,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -215,7 +242,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -239,7 +268,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -263,7 +294,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -290,7 +323,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 
@@ -327,7 +362,9 @@ describe("AdminLoginScreen", () => {
 
     render(
       <BrandProvider>
-        <AdminLoginScreen />
+        <AuthProvider>
+          <AdminLoginScreen />
+        </AuthProvider>
       </BrandProvider>
     );
 

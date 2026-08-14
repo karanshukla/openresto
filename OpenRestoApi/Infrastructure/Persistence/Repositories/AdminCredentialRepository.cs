@@ -8,14 +8,25 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories;
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.AuthServiceTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.SecurityQuestionsServiceTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.UserServiceTests")]
 [ExternalAccessAllowed]
 internal class AdminCredentialRepository(AppDbContext db) : IAdminCredentialRepository
 {
     private readonly AppDbContext _db = db;
 
-    public async Task<AdminCredential?> GetAsync()
+    public async Task<AdminCredential?> GetByIdAsync(int id)
     {
-        return await _db.AdminCredentials.FirstOrDefaultAsync();
+        return await _db.AdminCredentials.FirstOrDefaultAsync(c => c.Id == id);
+    }
+
+    public async Task<List<AdminCredential>> GetAllAsync()
+    {
+        return await _db.AdminCredentials.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    public async Task<int> CountActiveByRoleAsync(string role)
+    {
+        return await _db.AdminCredentials.CountAsync(c => c.IsActive && c.Role == role);
     }
 
     public async Task<AdminCredential?> GetByEmailAsync(string email)

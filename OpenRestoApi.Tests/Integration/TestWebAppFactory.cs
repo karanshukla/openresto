@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -82,9 +83,32 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>
-    /// Generates a valid JWT token for the test admin user.
+    /// Generates a valid JWT for the seeded admin, in the shape the current build mints:
+    /// user id + email + the account's own role.
     /// </summary>
-    public static string GenerateTestJwt()
+    public string GenerateTestJwt()
+    {
+        AdminCredential admin = GetSeededAdmin();
+        return GenerateJwt(admin.Id, admin.Email, admin.Role);
+    }
+
+    /// <summary>
+    /// A token in the shape a pre-multi-user build minted: no <c>sub</c> claim and the retired
+    /// <c>Admin</c> role. Backward compatibility for these is why services fall back to the email
+    /// claim and why both policies accept <see cref="UserRoles.LegacyAdmin"/>.
+    /// </summary>
+    public static string GenerateLegacyJwt(string email = AdminEmail)
+        => BuildToken([new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Role, UserRoles.LegacyAdmin)]);
+
+    public static string GenerateJwt(int userId, string email, string role)
+        => BuildToken(
+        [
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new Claim(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.Role, role),
+        ]);
+
+    private static string BuildToken(Claim[] claims)
     {
         byte[] keyBytes = Encoding.UTF8.GetBytes(JwtKey);
         var credentials = new SigningCredentials(
@@ -93,15 +117,19 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
         var token = new JwtSecurityToken(
             issuer: JwtIssuer,
             audience: JwtAudience,
-            claims: new[]
-            {
-                new Claim(ClaimTypes.Email, AdminEmail),
-                new Claim(ClaimTypes.Role, "Admin")
-            },
+            claims: claims,
             expires: DateTime.UtcNow.AddDays(1),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>The account created by the first-run bootstrap — an Owner.</summary>
+    public AdminCredential GetSeededAdmin()
+    {
+        using IServiceScope scope = Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return db.AdminCredentials.OrderBy(c => c.Id).First();
     }
 
     /// <summary>
@@ -109,9 +137,14 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     /// </summary>
     public HttpClient CreateAuthenticatedClient()
     {
+        return CreateClientWithToken(GenerateTestJwt());
+    }
+
+    public HttpClient CreateClientWithToken(string jwt)
+    {
         HttpClient client = CreateClient();
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerateTestJwt());
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
         return client;
     }
 

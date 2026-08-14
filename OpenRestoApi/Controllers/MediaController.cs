@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/media")]
-[Authorize]
+[Authorize(Policy = AuthPolicies.RequireAdmin)]
 [EnableRateLimiting("public")]
 public class MediaController(MediaService mediaService) : ControllerBase
 {

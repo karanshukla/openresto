@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
@@ -25,7 +26,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Post(RestaurantDto dto)
     {
         RestaurantDto created = await _service.CreateAsync(dto);
@@ -33,7 +34,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Put(int id, UpdateRestaurantRequest req)
     {
         // ValidationException (bad DefaultBookingDurationMinutes) → 400 is mapped
@@ -45,7 +46,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // ── Sections ────────────────────────────────────────────────────────────
 
     [HttpPost("{id}/sections")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> AddSection(int id, CreateSectionRequest req)
     {
         SectionDto? result = await _service.AddSectionAsync(id, req.Name);
@@ -53,7 +54,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpPut("{id}/sections/{sectionId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> UpdateSection(int id, int sectionId, UpdateSectionRequest req)
     {
         SectionDto? result = await _service.UpdateSectionAsync(id, sectionId, req.Name);
@@ -61,7 +62,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpDelete("{id}/sections/{sectionId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> DeleteSection(int id, int sectionId)
         => await _service.DeleteSectionAsync(id, sectionId) ? NoContent() : NotFound();
 
@@ -70,7 +71,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // 404 when the section doesn't exist / doesn't belong to the restaurant, so the UI can degrade
     // to generic copy rather than blocking the delete.
     [HttpGet("{id}/sections/{sectionId}/impact")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> GetSectionDeleteImpact(int id, int sectionId)
     {
         DeleteImpactDto? result = await _service.GetSectionDeleteImpactAsync(id, sectionId);
@@ -80,7 +81,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // ── Tables ──────────────────────────────────────────────────────────────
 
     [HttpPost("{id}/sections/{sectionId}/tables")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> AddTable(int id, int sectionId, CreateTableRequest req)
     {
         TableDto? result = await _service.AddTableAsync(id, sectionId, req.Name, req.Seats);
@@ -88,7 +89,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpPut("{id}/sections/{sectionId}/tables/{tableId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
     {
         TableDto? result = await _service.UpdateTableAsync(id, sectionId, tableId, req.Name, req.Seats);
@@ -96,7 +97,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpDelete("{id}/sections/{sectionId}/tables/{tableId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
         => await _service.DeleteTableAsync(id, sectionId, tableId) ? NoContent() : NotFound();
 
@@ -104,7 +105,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // Counts non-cancelled future bookings that would lose their table reference. 404 when the table
     // doesn't exist / doesn't belong to the restaurant+section, so the UI can fall back to generic copy.
     [HttpGet("{id}/sections/{sectionId}/tables/{tableId}/impact")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> GetTableDeleteImpact(int id, int sectionId, int tableId)
     {
         DeleteImpactDto? result = await _service.GetTableDeleteImpactAsync(id, sectionId, tableId);
@@ -118,7 +119,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // floor) is mapped to 400 by GlobalExceptionHandler; null result → 404.
 
     [HttpPost("{id}/groups")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> AddTableGroup(int id, CreateTableGroupRequest req)
     {
         TableGroupDto? result = await _service.AddTableGroupAsync(id, req);
@@ -126,7 +127,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpPut("{id}/groups/{groupId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> UpdateTableGroup(int id, int groupId, UpdateTableGroupRequest req)
     {
         TableGroupDto? result = await _service.UpdateTableGroupAsync(id, groupId, req);
@@ -134,7 +135,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     }
 
     [HttpDelete("{id}/groups/{groupId}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> DeleteTableGroup(int id, int groupId)
         => await _service.DeleteTableGroupAsync(id, groupId) ? NoContent() : NotFound();
 }
