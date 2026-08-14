@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
 
 [ApiController]
 [Route("api/admin/email-settings")]
-[Authorize]
+[Authorize(Policy = AuthPolicies.RequireAdmin)]
 public class EmailSettingsController(EmailSettingsService emailSettings) : ControllerBase
 {
     private readonly EmailSettingsService _emailSettings = emailSettings;

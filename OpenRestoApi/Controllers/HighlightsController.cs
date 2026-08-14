@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 
@@ -21,7 +22,7 @@ public class HighlightsController(HighlightService highlightService) : Controlle
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Create([FromBody] CreateHighlightRequest req)
     {
         var dto = await _highlights.CreateAsync(req);
@@ -29,7 +30,7 @@ public class HighlightsController(HighlightService highlightService) : Controlle
     }
 
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateHighlightRequest req)
     {
         var dto = await _highlights.UpdateAsync(id, req);
@@ -42,7 +43,7 @@ public class HighlightsController(HighlightService highlightService) : Controlle
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Delete(int id)
     {
         bool deleted = await _highlights.DeleteAsync(id);

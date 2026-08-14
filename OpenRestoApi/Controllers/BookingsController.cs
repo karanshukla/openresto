@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Infrastructure.Cookies;
 
 namespace OpenRestoApi.Controllers
@@ -16,7 +17,7 @@ namespace OpenRestoApi.Controllers
         private readonly RecentBookingsCookie _recentCookie = recentCookie;
 
         [HttpGet("/api/restaurants/{restaurantId}/bookings")]
-        [Authorize]
+        [Authorize(Policy = AuthPolicies.RequireAdmin)]
         public async Task<IActionResult> GetBookings(int restaurantId)
         {
             IEnumerable<BookingDto> bookings = await _bookingService.GetBookingsByRestaurantAsync(restaurantId);
@@ -24,7 +25,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize]
+        [Authorize(Policy = AuthPolicies.RequireAdmin)]
         public async Task<IActionResult> GetBooking(int id)
         {
             BookingDto? booking = await _bookingService.GetBookingByIdAsync(id);
@@ -87,7 +88,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
+        [Authorize(Policy = AuthPolicies.RequireAdmin)]
         public async Task<IActionResult> UpdateBooking(int id, [FromBody] BookingDto bookingDto)
         {
             if (id != bookingDto.Id)
@@ -105,7 +106,7 @@ namespace OpenRestoApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Policy = AuthPolicies.RequireAdmin)]
         public async Task<IActionResult> DeleteBooking(int id)
         {
             await _bookingService.DeleteBookingAsync(id);

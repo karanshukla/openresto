@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Extensions;
@@ -111,7 +112,10 @@ public sealed class InitializeDatabaseTests : IDisposable
 
         Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
 
-        Assert.Throws<InvalidOperationException>(() => app.InitializeDatabase(connectionString, app.Configuration));
+        // The bootstrap now lives in exactly one place (AdminBootstrap), so the missing-password
+        // failure surfaces as the same InfrastructureException the auth services used to throw
+        // from their own copies of it.
+        Assert.Throws<InfrastructureException>(() => app.InitializeDatabase(connectionString, app.Configuration));
     }
 
     [Fact]

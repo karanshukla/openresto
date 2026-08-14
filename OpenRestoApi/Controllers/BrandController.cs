@@ -93,7 +93,7 @@ public class BrandController(BrandService brandService) : ControllerBase
     }
 
     [HttpPatch]
-    [Authorize]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     public async Task<IActionResult> Save([FromBody] BrandRequest req)
     {
         // ValidationException (bad app-name/color/favicon/copyright) → 400 is mapped

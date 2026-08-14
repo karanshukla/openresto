@@ -125,6 +125,40 @@ public class AuthGateTests : IClassFixture<TestWebAppFactory>
             (await _client.PostAsync("/api/admin/auth/pvq/setup",
                 Json(new { question = "q", answer = "a" }))).StatusCode);
 
+    [Fact]
+    public async Task Auth_PvqMe_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.GetAsync("/api/admin/auth/pvq/me")).StatusCode);
+
+    // ── UsersController (Owner-only user management) ─────────────────────────
+
+    [Fact]
+    public async Task Users_List_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.GetAsync("/api/admin/users")).StatusCode);
+
+    [Fact]
+    public async Task Users_Create_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsync("/api/admin/users",
+                Json(new { email = "x@x.com", password = "password", role = "Manager" }))).StatusCode);
+
+    [Fact]
+    public async Task Users_UpdateRole_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PatchAsync("/api/admin/users/1/role", Json(new { role = "Manager" }))).StatusCode);
+
+    [Fact]
+    public async Task Users_SetActive_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PatchAsync("/api/admin/users/1/active", Json(new { isActive = false }))).StatusCode);
+
+    [Fact]
+    public async Task Users_ResetPassword_Returns401() =>
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsync("/api/admin/users/1/reset-password",
+                Json(new { newPassword = "password" }))).StatusCode);
+
     // ── EmailSettingsController ([Authorize] at class level) ─────────────────
 
     [Fact]

@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -11,31 +12,36 @@ namespace OpenRestoApi.Tests.Services;
 
 public class SecurityQuestionsServiceTests
 {
-    private static (SecurityQuestionsService svc, IPasswordService passwords) CreateService(AppDbContext db, IConfiguration? config = null)
+    private static (SecurityQuestionsService svc, IPasswordService passwords) CreateService(
+        AppDbContext db, ICurrentUserService? currentUser = null)
     {
         var passwords = new PasswordService();
-        config ??= new ConfigurationBuilder().Build(); // empty config — env-var fallback in bootstrap
         var svc = new SecurityQuestionsService(
             new AdminCredentialRepository(db),
             passwords,
-            config);
+            currentUser ?? FakeCurrentUser.Anonymous());
         return (svc, passwords);
     }
 
-    private static void SeedCredential(AppDbContext db, string email = "admin@openresto.com")
+    private static AdminCredential SeedCredential(
+        AppDbContext db, string email = "admin@openresto.com", bool isActive = true)
     {
         var passwords = new PasswordService();
         (string hash, string salt) = passwords.Hash("bootstrap-password");
-        db.AdminCredentials.Add(new AdminCredential
+        var cred = new AdminCredential
         {
             Email = email,
             PasswordHash = hash,
             PasswordSalt = salt,
-        });
+            Role = UserRoles.Owner,
+            IsActive = isActive,
+        };
+        db.AdminCredentials.Add(cred);
         db.SaveChanges();
+        return cred;
     }
 
-    // ── GetStatusAsync ──────────────────────────────────────────────────────────
+    // ── GetStatusAsync (public, email-keyed) ────────────────────────────────────
 
     [Fact]
     public async Task GetStatusAsync_When_No_Credential_Returns_Not_Configured()
@@ -43,10 +49,23 @@ public class SecurityQuestionsServiceTests
         using AppDbContext db = TestDbFactory.Create(nameof(GetStatusAsync_When_No_Credential_Returns_Not_Configured));
         (SecurityQuestionsService svc, _) = CreateService(db);
 
-        var status = await svc.GetStatusAsync();
+        PvqStatusDto status = await svc.GetStatusAsync("nobody@openresto.com");
 
         Assert.False(status.IsConfigured);
         Assert.Null(status.Question);
+    }
+
+    [Fact]
+    public async Task GetStatusAsync_With_Blank_Email_Returns_Not_Configured()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetStatusAsync_With_Blank_Email_Returns_Not_Configured));
+        AdminCredential cred = SeedCredential(db);
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
+        await svc.SetupAsync("Q?", "a");
+
+        PvqStatusDto status = await svc.GetStatusAsync("   ");
+
+        Assert.False(status.IsConfigured);
     }
 
     [Fact]
@@ -56,10 +75,54 @@ public class SecurityQuestionsServiceTests
         SeedCredential(db);
         (SecurityQuestionsService svc, _) = CreateService(db);
 
-        var status = await svc.GetStatusAsync();
+        PvqStatusDto status = await svc.GetStatusAsync("admin@openresto.com");
 
         Assert.False(status.IsConfigured);
         Assert.Null(status.Question);
+    }
+
+    [Fact]
+    public async Task GetStatusAsync_Returns_The_Question_Of_The_Named_Account_Only()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetStatusAsync_Returns_The_Question_Of_The_Named_Account_Only));
+        AdminCredential owner = SeedCredential(db, "owner@openresto.com");
+        AdminCredential manager = SeedCredential(db, "manager@openresto.com");
+        (SecurityQuestionsService ownerSvc, _) = CreateService(db, FakeCurrentUser.For(owner));
+        (SecurityQuestionsService managerSvc, _) = CreateService(db, FakeCurrentUser.For(manager));
+        await ownerSvc.SetupAsync("Owner question?", "a");
+        await managerSvc.SetupAsync("Manager question?", "b");
+
+        Assert.Equal("Owner question?", (await ownerSvc.GetStatusAsync("owner@openresto.com")).Question);
+        Assert.Equal("Manager question?", (await ownerSvc.GetStatusAsync("manager@openresto.com")).Question);
+    }
+
+    // ── GetStatusForCurrentUserAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetStatusForCurrentUserAsync_Returns_The_Callers_Own_Question()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetStatusForCurrentUserAsync_Returns_The_Callers_Own_Question));
+        SeedCredential(db, "owner@openresto.com");
+        AdminCredential manager = SeedCredential(db, "manager@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(manager));
+        await svc.SetupAsync("Manager question?", "b");
+
+        PvqStatusDto status = await svc.GetStatusForCurrentUserAsync();
+
+        Assert.True(status.IsConfigured);
+        Assert.Equal("Manager question?", status.Question);
+    }
+
+    [Fact]
+    public async Task GetStatusForCurrentUserAsync_Returns_Not_Configured_When_Unauthenticated()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetStatusForCurrentUserAsync_Returns_Not_Configured_When_Unauthenticated));
+        SeedCredential(db);
+        (SecurityQuestionsService svc, _) = CreateService(db);
+
+        PvqStatusDto status = await svc.GetStatusForCurrentUserAsync();
+
+        Assert.False(status.IsConfigured);
     }
 
     // ── SetupAsync ──────────────────────────────────────────────────────────────
@@ -68,8 +131,8 @@ public class SecurityQuestionsServiceTests
     public async Task SetupAsync_Persists_Normalised_Answer_Hash_And_Question()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Persists_Normalised_Answer_Hash_And_Question));
-        SeedCredential(db);
-        (SecurityQuestionsService svc, var passwords) = CreateService(db);
+        AdminCredential seeded = SeedCredential(db);
+        (SecurityQuestionsService svc, IPasswordService passwords) = CreateService(db, FakeCurrentUser.For(seeded));
 
         await svc.SetupAsync("  What is your favourite colour?  ", "  Blue  ");
 
@@ -82,75 +145,48 @@ public class SecurityQuestionsServiceTests
     }
 
     [Fact]
-    public async Task SetupAsync_CreatesCredential_UsingConfigValues_WhenNoneExists()
+    public async Task SetupAsync_Targets_The_Caller_Not_The_First_Row()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_CreatesCredential_UsingConfigValues_WhenNoneExists));
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Admin:Email"] = "config@openresto.com",
-                ["Admin:Password"] = "config-password",
-            })
-            .Build();
-        (SecurityQuestionsService svc, IPasswordService passwords) = CreateService(db, config);
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Targets_The_Caller_Not_The_First_Row));
+        AdminCredential owner = SeedCredential(db, "owner@openresto.com");
+        AdminCredential manager = SeedCredential(db, "manager@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(manager));
 
-        await svc.SetupAsync("Q?", "A");
+        await svc.SetupAsync("Manager question?", "b");
 
-        AdminCredential cred = await db.AdminCredentials.SingleAsync();
-        Assert.Equal("config@openresto.com", cred.Email);
-        Assert.True(passwords.Verify("config-password", cred.PasswordHash, cred.PasswordSalt));
+        Assert.Null((await db.AdminCredentials.SingleAsync(c => c.Id == owner.Id)).PvqQuestion);
+        Assert.Equal("Manager question?", (await db.AdminCredentials.SingleAsync(c => c.Id == manager.Id)).PvqQuestion);
     }
 
     [Fact]
-    public async Task SetupAsync_CreatesCredential_UsingEnvVarFallback_WhenConfigMissing()
+    public async Task SetupAsync_Resolves_Caller_By_Email_For_Tokens_Without_A_User_Id()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_CreatesCredential_UsingEnvVarFallback_WhenConfigMissing));
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Resolves_Caller_By_Email_For_Tokens_Without_A_User_Id));
+        SeedCredential(db, "legacy@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.ForLegacyToken("legacy@openresto.com"));
 
-        Environment.SetEnvironmentVariable("ADMIN_EMAIL", "env@openresto.com");
-        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", "env-password");
-        try
-        {
-            await svc.SetupAsync("Q?", "A");
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("ADMIN_EMAIL", null);
-            Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
-        }
+        await svc.SetupAsync("Q?", "a");
 
-        AdminCredential cred = await db.AdminCredentials.SingleAsync();
-        Assert.Equal("env@openresto.com", cred.Email);
+        Assert.Equal("Q?", (await db.AdminCredentials.SingleAsync()).PvqQuestion);
     }
 
     [Fact]
-    public async Task SetupAsync_UsesDefaultEmail_WhenConfigAndEnvVarEmailMissing()
+    public async Task SetupAsync_Throws_When_The_Session_Names_No_Live_Account()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_UsesDefaultEmail_WhenConfigAndEnvVarEmailMissing));
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Throws_When_The_Session_Names_No_Live_Account));
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.ForLegacyToken("ghost@openresto.com"));
 
-        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", "env-password");
-        try
-        {
-            await svc.SetupAsync("Q?", "A");
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
-        }
-
-        AdminCredential cred = await db.AdminCredentials.SingleAsync();
-        Assert.Equal("admin@openresto.com", cred.Email);
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.SetupAsync("Q?", "A"));
     }
 
     [Fact]
-    public async Task SetupAsync_Throws_WhenNoCredentialExists_AndNoPasswordConfigured()
+    public async Task SetupAsync_Throws_For_A_Deactivated_Account()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Throws_WhenNoCredentialExists_AndNoPasswordConfigured));
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        using AppDbContext db = TestDbFactory.Create(nameof(SetupAsync_Throws_For_A_Deactivated_Account));
+        AdminCredential cred = SeedCredential(db, "disabled@openresto.com", isActive: false);
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
 
-        Environment.SetEnvironmentVariable("ADMIN_PASSWORD", null);
-        await Assert.ThrowsAsync<InfrastructureException>(() => svc.SetupAsync("Q?", "A"));
+        await Assert.ThrowsAsync<NotFoundException>(() => svc.SetupAsync("Q?", "A"));
     }
 
     // ── VerifyAsync ─────────────────────────────────────────────────────────────
@@ -169,11 +205,26 @@ public class SecurityQuestionsServiceTests
     }
 
     [Fact]
+    public async Task VerifyAsync_Returns_NotConfigured_For_A_Deactivated_Account()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Returns_NotConfigured_For_A_Deactivated_Account));
+        AdminCredential cred = SeedCredential(db, "disabled@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
+        await svc.SetupAsync("Q?", "answer");
+        cred.IsActive = false;
+        await db.SaveChangesAsync();
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("disabled@openresto.com", "answer");
+
+        Assert.Equal(PvqVerifyStatus.NotConfigured, outcome.Status);
+    }
+
+    [Fact]
     public async Task VerifyAsync_Returns_WrongAnswer_When_Answer_Mismatched()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Returns_WrongAnswer_When_Answer_Mismatched));
-        SeedCredential(db, "admin@openresto.com");
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        AdminCredential cred = SeedCredential(db, "admin@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
         await svc.SetupAsync("Q?", "Correct");
 
         PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "wrong");
@@ -186,31 +237,31 @@ public class SecurityQuestionsServiceTests
     public async Task VerifyAsync_Returns_Success_And_Mints_Reset_Token_On_Correct_Answer()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Returns_Success_And_Mints_Reset_Token_On_Correct_Answer));
-        SeedCredential(db, "admin@openresto.com");
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        AdminCredential cred = SeedCredential(db, "admin@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
         await svc.SetupAsync("Q?", "answer");
 
         PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "ANSWER");
 
         Assert.Equal(PvqVerifyStatus.Success, outcome.Status);
         Assert.False(string.IsNullOrWhiteSpace(outcome.ResetToken));
-        AdminCredential cred = await db.AdminCredentials.SingleAsync();
-        Assert.Equal(outcome.ResetToken, cred.ResetToken);
-        Assert.NotNull(cred.ResetTokenExpiry);
+        AdminCredential after = await db.AdminCredentials.SingleAsync();
+        Assert.Equal(outcome.ResetToken, after.ResetToken);
+        Assert.NotNull(after.ResetTokenExpiry);
     }
 
     [Fact]
     public async Task VerifyAsync_Token_Expiry_Is_15_Minutes_From_Now()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Token_Expiry_Is_15_Minutes_From_Now));
-        SeedCredential(db);
-        (SecurityQuestionsService svc, _) = CreateService(db);
+        AdminCredential cred = SeedCredential(db);
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
         await svc.SetupAsync("Q?", "a");
         DateTime before = DateTime.UtcNow;
 
         await svc.VerifyAsync("admin@openresto.com", "a");
 
-        AdminCredential cred = await db.AdminCredentials.SingleAsync();
-        Assert.InRange(cred.ResetTokenExpiry!.Value, before.AddMinutes(15).AddSeconds(-5), before.AddMinutes(15).AddSeconds(5));
+        AdminCredential after = await db.AdminCredentials.SingleAsync();
+        Assert.InRange(after.ResetTokenExpiry!.Value, before.AddMinutes(15).AddSeconds(-5), before.AddMinutes(15).AddSeconds(5));
     }
 }

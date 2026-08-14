@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 using WebPush;
@@ -135,7 +137,17 @@ public static class ServiceCollectionExtensions
                 };
             });
 
-        services.AddAuthorization();
+        // The role → capability mapping lives here and nowhere else; controllers only ever
+        // name a policy. LegacyAdmin satisfies both because it is what the pre-multi-user
+        // build minted for the one and only admin, who becomes an Owner on upgrade — honouring
+        // it keeps in-flight 30-day sessions working instead of silently signing everyone out.
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AuthPolicies.RequireAdmin, policy =>
+                policy.RequireRole(UserRoles.Owner, UserRoles.Manager, UserRoles.LegacyAdmin));
+            options.AddPolicy(AuthPolicies.RequireOwner, policy =>
+                policy.RequireRole(UserRoles.Owner, UserRoles.LegacyAdmin));
+        });
 
         return services;
     }
@@ -152,6 +164,9 @@ public static class ServiceCollectionExtensions
 
         services.AddControllers();
         services.AddOpenApi();
+        // Backs ICurrentUserService — services read the caller off the request's claims
+        // rather than being handed an HttpContext.
+        services.AddHttpContextAccessor();
         services.AddDistributedMemoryCache();
 
         // HoldService must be Singleton — the in-memory dictionary must survive across requests
@@ -175,10 +190,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHighlightRepository, HighlightRepository>();
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
 
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ISecurityQuestionsService, SecurityQuestionsService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<UserService>();
         services.AddScoped<BookingService>();
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();

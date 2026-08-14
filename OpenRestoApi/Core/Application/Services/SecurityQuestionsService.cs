@@ -12,25 +12,29 @@ public record PvqVerifyOutcome(PvqVerifyStatus Status, string? ResetToken = null
 public sealed class SecurityQuestionsService(
     IAdminCredentialRepository credentialRepository,
     IPasswordService passwordService,
-    IConfiguration config) : ISecurityQuestionsService
+    ICurrentUserService currentUser) : ISecurityQuestionsService
 {
     private readonly IAdminCredentialRepository _credentialRepository = credentialRepository;
     private readonly IPasswordService _passwordService = passwordService;
-    private readonly IConfiguration _config = config;
+    private readonly ICurrentUserService _currentUser = currentUser;
 
-    public async Task<PvqStatusDto> GetStatusAsync()
+    public async Task<PvqStatusDto> GetStatusAsync(string email)
     {
-        AdminCredential? cred = await _credentialRepository.GetAsync();
-        return new PvqStatusDto
-        {
-            IsConfigured = cred?.PvqQuestion != null,
-            Question = cred?.PvqQuestion,
-        };
+        AdminCredential? cred = string.IsNullOrWhiteSpace(email)
+            ? null
+            : await _credentialRepository.GetByEmailAsync(email);
+        return ToStatus(cred);
+    }
+
+    public async Task<PvqStatusDto> GetStatusForCurrentUserAsync()
+    {
+        return ToStatus(await ResolveCurrentUserAsync());
     }
 
     public async Task SetupAsync(string question, string answer)
     {
-        AdminCredential cred = await GetOrCreateCredentialAsync();
+        AdminCredential cred = await ResolveCurrentUserAsync()
+            ?? throw new NotFoundException("No account matches the signed-in session.");
         (cred.PvqAnswerHash, cred.PvqAnswerSalt) = _passwordService.Hash(NormaliseAnswer(answer));
         cred.PvqQuestion = question.Trim();
         await _credentialRepository.SaveChangesAsync();
@@ -40,7 +44,8 @@ public sealed class SecurityQuestionsService(
     {
         AdminCredential? cred = await _credentialRepository.GetByEmailAsync(email);
 
-        if (cred?.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
+        // A deactivated account must not be resettable back into use via the public flow.
+        if (cred?.IsActive != true || cred.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
             return new PvqVerifyOutcome(PvqVerifyStatus.NotConfigured);
 
         if (!_passwordService.Verify(NormaliseAnswer(answer), cred.PvqAnswerHash, cred.PvqAnswerSalt))
@@ -53,33 +58,14 @@ public sealed class SecurityQuestionsService(
         return new PvqVerifyOutcome(PvqVerifyStatus.Success, token);
     }
 
-    // Same bootstrap precedence as AuthService.GetOrCreateCredentialAsync: config first, then
-    // env vars, then hardcoded default email / throw-on-missing password. SetupPvq is
-    // [Authorize]-gated so this branch only runs if the row was never seeded by first login.
-    private async Task<AdminCredential> GetOrCreateCredentialAsync()
+    private static PvqStatusDto ToStatus(AdminCredential? cred) => new()
     {
-        AdminCredential? cred = await _credentialRepository.GetAsync();
-        if (cred != null) return cred;
+        IsConfigured = cred?.PvqQuestion != null,
+        Question = cred?.PvqQuestion,
+    };
 
-        string? configEmail = _config["Admin:Email"];
-        string email = !string.IsNullOrWhiteSpace(configEmail)
-            ? configEmail
-            : Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@openresto.com";
-
-        string? configPassword = _config["Admin:Password"];
-        string? password = !string.IsNullOrWhiteSpace(configPassword)
-            ? configPassword
-            : Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
-
-        if (string.IsNullOrWhiteSpace(password))
-            throw new InfrastructureException(
-                "Admin:Password must be configured before first use. Set it via ADMIN_PASSWORD env var.");
-
-        (string hash, string salt) = _passwordService.Hash(password);
-        cred = new AdminCredential { Email = email, PasswordHash = hash, PasswordSalt = salt };
-        await _credentialRepository.AddAsync(cred);
-        return cred;
-    }
+    private Task<AdminCredential?> ResolveCurrentUserAsync()
+        => CurrentUserResolver.ResolveAsync(_currentUser, _credentialRepository);
 
     private static string NormaliseAnswer(string answer) => answer.Trim().ToLowerInvariant();
 }

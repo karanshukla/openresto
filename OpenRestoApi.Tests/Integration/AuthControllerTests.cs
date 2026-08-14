@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -433,7 +435,7 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         Assert.Equal(HttpStatusCode.OK, setupResponse.StatusCode);
 
         // 2. Check PVQ status
-        HttpResponseMessage statusResponse = await client.GetAsync("/api/admin/auth/pvq");
+        HttpResponseMessage statusResponse = await client.GetAsync($"/api/admin/auth/pvq?email={TestWebAppFactory.AdminEmail}");
         Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
         JsonElement status = await statusResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(status.GetProperty("isConfigured").GetBoolean());
@@ -580,22 +582,141 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
     }
 
     [Fact]
-    public async Task Login_InitializesCredentials_IfNoneExist()
+    public async Task Login_DoesNotInventAnAccount_WhenNoneExist()
     {
+        // Creating the first account is the startup bootstrap's job, not login's. The rows are
+        // restored afterwards because the whole class shares one in-memory database.
+        List<AdminCredential> saved;
         using (IServiceScope scope = _factory.Services.CreateScope())
         {
-            AppDbContext db = scope.ServiceProvider.GetRequiredService<OpenRestoApi.Infrastructure.Persistence.AppDbContext>();
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            saved = await db.AdminCredentials.AsNoTracking().ToListAsync();
             db.AdminCredentials.RemoveRange(db.AdminCredentials);
             await db.SaveChangesAsync();
         }
 
-        HttpClient client = _factory.CreateClient();
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
+        try
         {
-            email = TestWebAppFactory.AdminEmail,
-            password = TestWebAppFactory.AdminPassword
-        });
+            HttpClient client = _factory.CreateClient();
+            HttpResponseMessage response = await client.PostAsJsonAsync("/api/admin/auth/login", new
+            {
+                email = TestWebAppFactory.AdminEmail,
+                password = TestWebAppFactory.AdminPassword
+            });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            using IServiceScope check = _factory.Services.CreateScope();
+            Assert.Empty(check.ServiceProvider.GetRequiredService<AppDbContext>().AdminCredentials);
+        }
+        finally
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.AdminCredentials.AddRange(saved);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    // ── Multi-user ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Me_ReturnsIdDisplayNameAndRole()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+
+        JsonElement body = await (await client.GetAsync("/api/admin/auth/me"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+
+        AdminCredential admin = _factory.GetSeededAdmin();
+        Assert.Equal(admin.Id, body.GetProperty("id").GetInt32());
+        Assert.Equal(UserRoles.Owner, body.GetProperty("role").GetString());
+        // DisplayName is optional; the property must still be present so clients can rely on it.
+        Assert.True(body.TryGetProperty("displayName", out _));
+    }
+
+    [Fact]
+    public async Task Me_WithATokenNamingNoAccount_Returns401()
+    {
+        HttpClient client = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(999_999, "ghost@test.com", UserRoles.Owner));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/admin/auth/me")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Me_WithAPreMultiUserToken_StillResolvesTheAccount()
+    {
+        // A 30-day token minted before the upgrade carries no user id and the retired "Admin"
+        // role — it must keep working rather than silently signing the operator out.
+        HttpClient client = _factory.CreateClientWithToken(TestWebAppFactory.GenerateLegacyJwt());
+
+        HttpResponseMessage response = await client.GetAsync("/api/admin/auth/me");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(TestWebAppFactory.AdminEmail, body.GetProperty("email").GetString());
+    }
+
+    [Fact]
+    public async Task LoginAsSecondUser_ReturnsThatUsersOwnSession()
+    {
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+            (string hash, string salt) = passwords.Hash("SecondPass123!");
+            db.AdminCredentials.Add(new AdminCredential
+            {
+                Email = "second@test.com",
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                DisplayName = "Second User",
+                Role = UserRoles.Manager,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        HttpClient client = _factory.CreateClient();
+        HttpResponseMessage login = await client.PostAsJsonAsync("/api/admin/auth/login", new
+        {
+            email = "second@test.com",
+            password = "SecondPass123!"
+        });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+
+        string cookie = login.Headers.GetValues("Set-Cookie")
+            .First(v => v.StartsWith("openresto_auth=", StringComparison.OrdinalIgnoreCase))
+            .Split(';')[0];
+        var meRequest = new HttpRequestMessage(HttpMethod.Get, "/api/admin/auth/me");
+        meRequest.Headers.Add("Cookie", cookie);
+        JsonElement me = await (await client.SendAsync(meRequest)).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal("second@test.com", me.GetProperty("email").GetString());
+        Assert.Equal("Second User", me.GetProperty("displayName").GetString());
+        Assert.Equal(UserRoles.Manager, me.GetProperty("role").GetString());
+    }
+
+    [Fact]
+    public async Task PvqStatus_IsKeyedByEmail_AndPvqMe_ReturnsTheCallersOwn()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        await client.PostAsJsonAsync("/api/admin/auth/pvq/setup", new
+        {
+            question = "Which street?",
+            answer = "Baker"
+        });
+
+        HttpClient unauth = _factory.CreateClient();
+        JsonElement known = await (await unauth.GetAsync(
+            $"/api/admin/auth/pvq?email={TestWebAppFactory.AdminEmail}")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Which street?", known.GetProperty("question").GetString());
+
+        JsonElement unknown = await (await unauth.GetAsync(
+            "/api/admin/auth/pvq?email=nobody@test.com")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(unknown.GetProperty("isConfigured").GetBoolean());
+
+        JsonElement mine = await (await client.GetAsync("/api/admin/auth/pvq/me"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Which street?", mine.GetProperty("question").GetString());
     }
 }
