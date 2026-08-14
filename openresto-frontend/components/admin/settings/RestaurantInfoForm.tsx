@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   BookingRefFormat,
@@ -469,18 +471,18 @@ export function RestaurantInfoForm({
               <ThemedText style={styles.menuFileName} numberOfLines={1}>
                 Uploaded menu PDF
               </ThemedText>
-              <Pressable
-                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+              <Button
+                variant="secondary"
+                tone="danger"
+                size="md"
+                icon="trash-outline"
                 onPress={handleDeleteMenu}
                 disabled={menuUploading}
-                accessibilityRole="button"
+                loading={menuUploading}
                 accessibilityLabel="Remove the uploaded menu PDF"
-                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
-                <ThemedText style={[sharedStyles.secBtnText, { color: theme.colors.error }]}>
-                  {menuUploading ? "Removing…" : "Remove file"}
-                </ThemedText>
-              </Pressable>
+                {menuUploading ? "Removing…" : "Remove file"}
+              </Button>
             </View>
           ) : (
             <Input
@@ -497,18 +499,17 @@ export function RestaurantInfoForm({
           )}
           <View style={styles.menuActions}>
             {!menuUrlIsServedFile && (
-              <Pressable
-                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+              <Button
+                variant="secondary"
+                size="md"
+                icon="cloud-upload-outline"
                 onPress={handlePickMenu}
                 disabled={menuUploading}
-                accessibilityRole="button"
+                loading={menuUploading}
                 accessibilityLabel="Upload a menu PDF"
-                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
-                <ThemedText style={[sharedStyles.secBtnText, { color: primaryColor }]}>
-                  {menuUploading ? "Uploading…" : "Upload PDF"}
-                </ThemedText>
-              </Pressable>
+                {menuUploading ? "Uploading…" : "Upload PDF"}
+              </Button>
             )}
             {menuMsg && (
               <ThemedText
@@ -730,7 +731,6 @@ export function RestaurantInfoForm({
           onRemoveTag={removeTag}
           borderColor={borderColor}
           mutedColor={mutedColor}
-          primaryColor={primaryColor}
           surface2={surface2}
         />
       </View>
@@ -755,34 +755,27 @@ export function RestaurantInfoForm({
             </>
           )}
         </View>
-        <View style={styles.footerActions}>
-          <Pressable
+        <ButtonRow>
+          <Button
+            variant="secondary"
+            tone="neutral"
+            size="md"
             onPress={discard}
             disabled={!dirty}
-            accessibilityRole="button"
             accessibilityLabel="Discard unsaved changes"
-            accessibilityState={{ disabled: !dirty }}
-            style={[styles.discardBtn, { opacity: dirty ? 1 : 0.4 }]}
           >
-            <ThemedText style={[styles.discardText, { color: mutedColor }]}>Discard</ThemedText>
-          </Pressable>
-          <Pressable
+            Discard
+          </Button>
+          <Button
+            size="md"
             onPress={save}
             disabled={!dirty || saving || !name.trim()}
-            accessibilityRole="button"
+            loading={saving}
             accessibilityLabel="Save location details"
-            accessibilityState={{ disabled: !dirty || saving || !name.trim(), busy: saving }}
-            style={[
-              styles.saveBtn,
-              {
-                opacity: !dirty || saving || !name.trim() ? 0.5 : 1,
-                backgroundColor: primaryColor,
-              },
-            ]}
           >
-            <ThemedText style={styles.saveText}>{saving ? "Saving…" : "Save changes"}</ThemedText>
-          </Pressable>
-        </View>
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </ButtonRow>
       </View>
     </View>
   );

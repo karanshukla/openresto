@@ -1,6 +1,8 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
+import { StyleSheet, type TextStyle, type ViewStyle } from "react-native";
 import Button from "@/components/common/Button";
+import { theme } from "@/theme/theme";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: jest.fn(() => "light"),
@@ -102,5 +104,80 @@ describe("Button", () => {
     (useColorScheme as jest.Mock).mockReturnValueOnce("dark");
     render(<Button>Dark</Button>);
     expect(screen.getByText("Dark")).toBeTruthy();
+  });
+
+  describe("tone", () => {
+    const surface = () => StyleSheet.flatten(screen.getByRole("button").props.style) as ViewStyle;
+    const labelColor = () => StyleSheet.flatten(screen.getByText("Act").props.style) as TextStyle;
+
+    it.each(["brand", "danger", "warning", "success", "neutral"] as const)(
+      "renders the %s tone",
+      (tone) => {
+        render(<Button tone={tone}>Act</Button>);
+        expect(screen.getByText("Act")).toBeTruthy();
+      }
+    );
+
+    it("fills a primary button with its tone", () => {
+      render(<Button tone="danger">Act</Button>);
+      expect(surface().backgroundColor).toBe(theme.colors.error);
+      expect(labelColor().color).toBe(theme.colors.white);
+    });
+
+    it("outlines a secondary button in its tone and leaves it unfilled", () => {
+      render(
+        <Button variant="secondary" tone="danger">
+          Act
+        </Button>
+      );
+      expect(surface().borderColor).toBe(theme.colors.error);
+      expect(surface().backgroundColor).toBeUndefined();
+      expect(labelColor().color).toBe(theme.colors.error);
+    });
+
+    /**
+     * `variant="danger"` predates the tone axis; it has to keep meaning "filled destructive"
+     * so call sites written against the old API don't silently turn brand-coloured.
+     */
+    it("keeps variant='danger' as filled destructive", () => {
+      render(<Button variant="danger">Act</Button>);
+      expect(surface().backgroundColor).toBe(theme.colors.error);
+    });
+
+    it("lets an explicit tone override the legacy danger variant", () => {
+      render(
+        <Button variant="danger" tone="brand">
+          Act
+        </Button>
+      );
+      expect(surface().backgroundColor).toBe("#0a7ea4");
+    });
+
+    it("greys out to the disabled surface regardless of tone", () => {
+      render(
+        <Button tone="danger" disabled>
+          Act
+        </Button>
+      );
+      expect(surface().backgroundColor).not.toBe(theme.colors.error);
+    });
+  });
+
+  it("stretches only when fullWidth is set", () => {
+    const { rerender } = render(<Button>Act</Button>);
+    const surface = () => StyleSheet.flatten(screen.getByRole("button").props.style) as ViewStyle;
+    expect(surface().alignSelf).toBeUndefined();
+    rerender(<Button fullWidth>Act</Button>);
+    expect(surface().alignSelf).toBe("stretch");
+    expect(surface().width).toBe("100%");
+  });
+
+  it("merges a caller-supplied accessibilityState with its own", () => {
+    render(<Button accessibilityState={{ expanded: true }}>Act</Button>);
+    expect(screen.getByRole("button").props.accessibilityState).toMatchObject({
+      expanded: true,
+      disabled: false,
+      busy: false,
+    });
   });
 });

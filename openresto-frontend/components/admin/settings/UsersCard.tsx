@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
@@ -20,7 +21,7 @@ import {
   type UserMutationResult,
 } from "@/api/users";
 import { theme } from "@/theme/theme";
-import { RowTextButton } from "./RowTextButton";
+import { RowTextButton } from "@/components/common/RowTextButton";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./UsersCard.styles";
 
@@ -316,18 +317,19 @@ export function UsersCard({
                           Share this with {u.email} out of band; they can change it once signed in.
                         </ThemedText>
                       </View>
-                      <View style={settingsStyles.formActions}>
+                      <ButtonRow style={settingsStyles.formActions}>
                         <Button
-                          style={settingsStyles.formActionPrimary}
-                          onPress={() => handleResetPassword(u)}
-                          loading={busy}
+                          variant="secondary"
+                          tone="neutral"
+                          size="md"
+                          onPress={() => setResetForId(null)}
                         >
-                          Set password
-                        </Button>
-                        <Button variant="secondary" onPress={() => setResetForId(null)}>
                           Cancel
                         </Button>
-                      </View>
+                        <Button size="md" onPress={() => handleResetPassword(u)} loading={busy}>
+                          Set password
+                        </Button>
+                      </ButtonRow>
                     </View>
                   )}
                 </View>
@@ -402,16 +404,11 @@ export function UsersCard({
                       })}
                     </View>
                   </View>
-                  <View style={settingsStyles.formActions}>
-                    <Button
-                      style={settingsStyles.formActionPrimary}
-                      onPress={handleCreate}
-                      loading={busy}
-                    >
-                      Create user
-                    </Button>
+                  <ButtonRow style={settingsStyles.formActions}>
                     <Button
                       variant="secondary"
+                      tone="neutral"
+                      size="md"
                       onPress={() => {
                         setShowAddForm(false);
                         setNewUser(emptyNewUser());
@@ -420,25 +417,24 @@ export function UsersCard({
                     >
                       Cancel
                     </Button>
-                  </View>
+                    <Button size="md" onPress={handleCreate} loading={busy}>
+                      Create user
+                    </Button>
+                  </ButtonRow>
                 </View>
               ) : (
-                <Pressable
-                  style={[
-                    settingsStyles.addPill,
-                    styles.addPillLeft,
-                    { backgroundColor: primaryColor },
-                  ]}
-                  onPress={() => {
-                    setShowAddForm(true);
-                    setMsg(null);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add user"
-                >
-                  <Icon name="add" size="md" color="#fff" />
-                  <ThemedText style={settingsStyles.addPillText}>Add user</ThemedText>
-                </Pressable>
+                <ButtonRow align="start">
+                  <Button
+                    size="md"
+                    icon="add"
+                    onPress={() => {
+                      setShowAddForm(true);
+                      setMsg(null);
+                    }}
+                  >
+                    Add user
+                  </Button>
+                </ButtonRow>
               )}
             </View>
           )}

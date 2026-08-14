@@ -12,6 +12,7 @@ import {
 } from "@/components/admin/bookings/bookingRowProps";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
 import { Icon } from "@/components/common/Icon";
+import { RowTextButton } from "@/components/common/RowTextButton";
 
 export interface BookingsWideTableProps {
   bookings: BookingDetailDto[];
@@ -191,21 +192,18 @@ export function BookingsWideTable({
 
           <View style={styles.colAction}>
             {!b.isCancelled && !isPast(b.date) && (
-              <Pressable
-                accessibilityLabel="Cancel booking"
-                style={[
-                  styles.rowActionBtn,
-                  { backgroundColor: theme.status.cancelled.bg[isDark ? "dark" : "light"] },
-                ]}
+              <RowTextButton
+                label="Cancel"
+                icon="close-outline"
+                color={theme.status.cancelled.text}
+                accessibilityLabel={`Cancel booking for ${b.customerName ?? b.customerEmail}`}
                 onPress={(e) => {
                   // stopPropagation is present on web mouse events but not RN's
                   // GestureResponderEvent — guard both the event and the method.
                   (e as { stopPropagation?: () => void } | undefined)?.stopPropagation?.();
                   onCancelBooking(b);
                 }}
-              >
-                <Icon name="close-outline" size="sm" color={theme.status.cancelled.text} />
-              </Pressable>
+              />
             )}
           </View>
         </Pressable>

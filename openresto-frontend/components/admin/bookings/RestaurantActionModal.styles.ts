@@ -71,14 +71,4 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.05)",
   },
-  doneBtn: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  doneBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
 });

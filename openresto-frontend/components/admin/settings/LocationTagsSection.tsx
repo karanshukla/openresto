@@ -1,6 +1,7 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./LocationTagsSection.styles";
 import { Icon } from "@/components/common/Icon";
@@ -14,7 +15,6 @@ export interface LocationTagsSectionProps {
   onRemoveTag: (tag: string) => void;
   borderColor: string;
   mutedColor: string;
-  primaryColor: string;
   surface2: string;
 }
 
@@ -31,7 +31,6 @@ export function LocationTagsSection({
   onRemoveTag,
   borderColor,
   mutedColor,
-  primaryColor,
   surface2,
 }: LocationTagsSectionProps) {
   return (
@@ -67,18 +66,15 @@ export function LocationTagsSection({
             onBlur={() => tagInput.trim() && onAddTag(tagInput)}
           />
         </View>
-        <Pressable
+        <Button
+          size="md"
+          icon="add"
           onPress={() => onAddTag(tagInput)}
-          accessibilityRole="button"
-          accessibilityLabel="Add tag"
           disabled={!tagInput.trim()}
-          style={[
-            styles.addBtn,
-            { opacity: tagInput.trim() ? 1 : 0.4, backgroundColor: primaryColor },
-          ]}
+          accessibilityLabel="Add tag"
         >
-          <Icon name="add" size="lg" color="#fff" />
-        </Pressable>
+          Add
+        </Button>
       </View>
       <ThemedText style={[styles.hint, { color: mutedColor }]}>
         Short labels shown on the public restaurant card (e.g. "Dog friendly", "Terrace").

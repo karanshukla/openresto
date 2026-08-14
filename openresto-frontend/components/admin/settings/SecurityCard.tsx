@@ -4,6 +4,7 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { theme } from "@/theme/theme";
 import { validatePasswordChange } from "@/utils/validation";
 import { getMyPvqStatus, setupPvq, changePassword, changeEmail, PvqStatus } from "@/api/auth";
@@ -121,10 +122,10 @@ export function SecurityCard({
                 {email ?? "Loading…"}
               </ThemedText>
             </View>
-            <Pressable
+            <Button
               testID="email-change-button"
-              style={[styles.secBtn, { borderColor }]}
-              accessibilityRole="button"
+              variant="secondary"
+              size="md"
               accessibilityLabel="Change email address"
               accessibilityState={{ expanded: showEmailForm }}
               onPress={() => {
@@ -134,8 +135,8 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>Change</ThemedText>
-            </Pressable>
+              Change
+            </Button>
           </View>
 
           {showEmailForm && (
@@ -166,25 +167,24 @@ export function SecurityCard({
                   {msg.text}
                 </ThemedText>
               )}
-              <View style={styles.formActions}>
+              <ButtonRow style={styles.formActions}>
                 <Button
+                  variant="secondary"
+                  tone="neutral"
+                  size="md"
+                  onPress={() => setShowEmailForm(false)}
+                  accessibilityLabel="Cancel email change"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="md"
                   onPress={handleChangeEmail}
                   disabled={saving || !newEmail.trim() || !currentPwForEmail}
-                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Update Email"}
                 </Button>
-                <Pressable
-                  style={styles.smallBtn}
-                  onPress={() => setShowEmailForm(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancel email change"
-                >
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
-                    Cancel
-                  </ThemedText>
-                </Pressable>
-              </View>
+              </ButtonRow>
             </View>
           )}
 
@@ -201,9 +201,9 @@ export function SecurityCard({
                 </ThemedText>
               )}
             </View>
-            <Pressable
-              style={[styles.secBtn, { borderColor }]}
-              accessibilityRole="button"
+            <Button
+              variant="secondary"
+              size="md"
               accessibilityLabel="Change password recovery question"
               accessibilityState={{ expanded: showPvqForm }}
               onPress={() => {
@@ -213,10 +213,8 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>
-                {pvqStatus?.isConfigured ? "Change" : "Set up"}
-              </ThemedText>
-            </Pressable>
+              {pvqStatus?.isConfigured ? "Change" : "Set up"}
+            </Button>
           </View>
 
           {showPvqForm && (
@@ -241,25 +239,24 @@ export function SecurityCard({
                 </View>
               </View>
               {msg && !msg.ok && <ThemedText style={styles.errorText}>{msg.text}</ThemedText>}
-              <View style={styles.formActions}>
+              <ButtonRow style={styles.formActions}>
                 <Button
+                  variant="secondary"
+                  tone="neutral"
+                  size="md"
+                  onPress={() => setShowPvqForm(false)}
+                  accessibilityLabel="Cancel recovery question change"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="md"
                   onPress={handleSavePvq}
                   disabled={saving || !pvqQuestion.trim() || !pvqAnswer.trim()}
-                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Save Question"}
                 </Button>
-                <Pressable
-                  style={styles.smallBtn}
-                  onPress={() => setShowPvqForm(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancel recovery question change"
-                >
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
-                    Cancel
-                  </ThemedText>
-                </Pressable>
-              </View>
+              </ButtonRow>
             </View>
           )}
 
@@ -270,9 +267,9 @@ export function SecurityCard({
                 Change your admin password
               </ThemedText>
             </View>
-            <Pressable
-              style={[styles.secBtn, { borderColor }]}
-              accessibilityRole="button"
+            <Button
+              variant="secondary"
+              size="md"
               accessibilityLabel="Change password"
               accessibilityState={{ expanded: showPwForm }}
               onPress={() => {
@@ -282,8 +279,8 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              <ThemedText style={[styles.secBtnText, { color: primaryColor }]}>Change</ThemedText>
-            </Pressable>
+              Change
+            </Button>
           </View>
 
           {showPwForm && (
@@ -322,25 +319,24 @@ export function SecurityCard({
                   {msg.text}
                 </ThemedText>
               )}
-              <View style={styles.formActions}>
+              <ButtonRow style={styles.formActions}>
                 <Button
+                  variant="secondary"
+                  tone="neutral"
+                  size="md"
+                  onPress={() => setShowPwForm(false)}
+                  accessibilityLabel="Cancel password change"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="md"
                   onPress={handleChangePw}
                   disabled={saving || !currentPw || newPw.length < 6}
-                  style={styles.formActionPrimary}
                 >
                   {saving ? "Saving…" : "Update Password"}
                 </Button>
-                <Pressable
-                  style={styles.smallBtn}
-                  onPress={() => setShowPwForm(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancel password change"
-                >
-                  <ThemedText style={[styles.smallBtnText, { color: mutedColor }]}>
-                    Cancel
-                  </ThemedText>
-                </Pressable>
-              </View>
+              </ButtonRow>
             </View>
           )}
 

@@ -5,7 +5,8 @@ import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { hexToRgba } from "@/utils/colors";
-import { theme } from "@/theme/theme";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { fetchRestaurants } from "@/api/restaurants";
 import {
   getNotifications,
@@ -350,94 +351,52 @@ export default function NotificationsScreen() {
               )}
             </View>
 
-            <View style={styles.headerActions}>
-              <Pressable
+            {/* One filled button per cluster: marking read is the routine action, so the two
+                destructive ones sit at outlined weight beside it rather than shouting equally. */}
+            <ButtonRow style={styles.headerActions}>
+              <Button
+                variant="secondary"
+                tone="danger"
+                size="md"
+                icon="trash-outline"
                 onPress={() => setConfirmDeleteAll(true)}
                 disabled={deletingAll || items.length === 0}
-                accessibilityRole="button"
+                loading={deletingAll}
                 accessibilityLabel="Delete all notifications"
                 accessibilityHint="Keeps pinned notifications"
-                accessibilityState={{
-                  disabled: deletingAll || items.length === 0,
-                  busy: deletingAll,
-                }}
-                style={[
-                  styles.markAllBtn,
-                  {
-                    backgroundColor: theme.colors.error,
-                    opacity: items.length === 0 ? 0.35 : 1,
-                  },
-                ]}
               >
-                {deletingAll ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Icon name="trash-outline" size="md" color="#fff" />
-                )}
-                <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
-                  {deletingAll ? "Deleting…" : "Delete all"}
-                </ThemedText>
-              </Pressable>
+                {deletingAll ? "Deleting…" : "Delete all"}
+              </Button>
 
               {(() => {
                 const hasRead = items.some((x) => x.isRead && !pinnedIds.has(x.id));
                 return (
-                  <Pressable
+                  <Button
+                    variant="secondary"
+                    tone="danger"
+                    size="md"
+                    icon="checkmark-circle-outline"
                     onPress={handleClearRead}
                     disabled={clearingRead || !hasRead}
-                    accessibilityRole="button"
+                    loading={clearingRead}
                     accessibilityLabel="Clear read notifications"
-                    accessibilityState={{
-                      disabled: clearingRead || !hasRead,
-                      busy: clearingRead,
-                    }}
-                    style={[
-                      styles.markAllBtn,
-                      {
-                        backgroundColor: theme.colors.error,
-                        opacity: !hasRead || clearingRead ? 0.35 : 1,
-                      },
-                    ]}
                   >
-                    {clearingRead ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Icon name="checkmark-circle-outline" size="md" color="#fff" />
-                    )}
-                    <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
-                      {clearingRead ? "Clearing…" : "Clear read"}
-                    </ThemedText>
-                  </Pressable>
+                    {clearingRead ? "Clearing…" : "Clear read"}
+                  </Button>
                 );
               })()}
 
-              <Pressable
+              <Button
+                size="md"
+                icon="checkmark-done-outline"
                 onPress={handleMarkAllRead}
                 disabled={markingAll || unreadCount === 0}
-                accessibilityRole="button"
+                loading={markingAll}
                 accessibilityLabel="Mark all notifications read"
-                accessibilityState={{
-                  disabled: markingAll || unreadCount === 0,
-                  busy: markingAll,
-                }}
-                style={[
-                  styles.markAllBtn,
-                  {
-                    backgroundColor: primaryColor,
-                    opacity: unreadCount === 0 ? 0.35 : 1,
-                  },
-                ]}
               >
-                {markingAll ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Icon name="checkmark-done-outline" size="md" color="#fff" />
-                )}
-                <ThemedText style={[styles.markAllText, { color: "#fff" }]}>
-                  {markingAll ? "Marking…" : "Mark all read"}
-                </ThemedText>
-              </Pressable>
-            </View>
+                {markingAll ? "Marking…" : "Mark all read"}
+              </Button>
+            </ButtonRow>
           </View>
 
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
@@ -612,22 +571,19 @@ export default function NotificationsScreen() {
             {unpinnedItems.map((n, i) => renderRow(n, i, unpinnedItems, false))}
 
             {hasMore && (
-              <Pressable
+              <Button
+                variant="ghost"
+                tone="neutral"
+                size="md"
+                fullWidth
+                style={[styles.loadMoreBtn, { borderTopColor: borderColor }]}
                 onPress={handleLoadMore}
                 disabled={loadingMore}
-                accessibilityRole="button"
+                loading={loadingMore}
                 accessibilityLabel={`Show ${totalCount - items.length} more notifications`}
-                accessibilityState={{ disabled: loadingMore, busy: loadingMore }}
-                style={[
-                  styles.loadMoreBtn,
-                  { borderTopColor: borderColor, opacity: loadingMore ? 0.6 : 1 },
-                ]}
               >
-                {loadingMore && <ActivityIndicator size="small" color={primaryColor} />}
-                <ThemedText style={[styles.loadMoreText, { color: mutedColor }]}>
-                  {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
-                </ThemedText>
-              </Pressable>
+                {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
+              </Button>
             )}
           </View>
         )}

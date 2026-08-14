@@ -8,17 +8,4 @@ export const styles = StyleSheet.create({
   body: { gap: theme.spacing.md },
   bodyText: { fontSize: 13, lineHeight: 19 },
   error: { fontSize: 13, color: theme.colors.error },
-  toggleBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.xsm,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    alignSelf: "flex-start",
-  },
-  toggleBtnBusy: { opacity: 0.6 },
-  toggleBtnText: { fontSize: 14, fontWeight: "600" },
 });

@@ -3,7 +3,6 @@ import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   list: { gap: theme.spacing.sm },
-  addPillLeft: { alignSelf: "flex-start" },
   // The row grew a role picker, so its trailing actions sit with the name rather than
   // drifting to the vertical middle of a two-line tile.
   userTile: { alignItems: "flex-start" },
@@ -19,7 +18,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-end",
     flexWrap: "wrap",
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
   },
   inactiveRow: { opacity: 0.55 },
   roleField: { gap: theme.spacing.xxs, marginTop: theme.spacing.sm },

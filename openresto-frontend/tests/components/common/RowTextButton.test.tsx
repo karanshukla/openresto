@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import { StyleSheet, type ViewStyle } from "react-native";
-import { RowTextButton } from "@/components/admin/settings/RowTextButton";
+import { RowTextButton } from "@/components/common/RowTextButton";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: ({ name }: { name: string }) =>
@@ -90,6 +90,20 @@ describe("RowTextButton", () => {
   it("merges a caller-supplied style over its own", () => {
     render(<RowTextButton {...baseProps} style={{ marginLeft: 8 }} />);
     expect(resolvedStyle().marginLeft).toBe(8);
+  });
+
+  /* A plain action carries no selection state — see "is enabled and undimmed at rest" above,
+     which pins accessibilityState to exactly { disabled: false }. */
+  it("fills with its color and announces the state when selected", () => {
+    render(<RowTextButton {...baseProps} label="Pin" selected color="#0a7ea4" />);
+    expect(resolvedStyle().backgroundColor).toBe("#0a7ea4");
+    expect(screen.getByRole("button").props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it("stays unfilled but still announces the state when deselected", () => {
+    render(<RowTextButton {...baseProps} label="Pin" selected={false} />);
+    expect(resolvedStyle().backgroundColor).toBeUndefined();
+    expect(screen.getByRole("button").props.accessibilityState).toMatchObject({ selected: false });
   });
 
   it("reaches the 44px touch target through hitSlop", () => {

@@ -1,6 +1,8 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { ThemeColors } from "@/theme/theme";
 import { styles } from "./settings.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -132,36 +134,27 @@ export function SocialLinkEditForm({
         <ThemedText style={[styles.errorText, styles.editFormError]}>{error}</ThemedText>
       ) : null}
 
-      <View style={styles.editFormActions}>
-        <Pressable
+      <ButtonRow>
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
           onPress={onCancel}
-          accessibilityRole="button"
           accessibilityLabel="Cancel editing this link"
-          style={styles.editFormCancelBtn}
         >
-          <ThemedText style={[styles.editFormCancelText, { color: mutedColor }]}>Cancel</ThemedText>
-        </Pressable>
-        <Pressable
+          Cancel
+        </Button>
+        <Button
+          size="md"
+          icon="checkmark"
           onPress={onSave}
           disabled={saving || !state.label.trim() || !state.url.trim()}
-          accessibilityRole="button"
+          loading={saving}
           accessibilityLabel="Save this link"
-          accessibilityState={{
-            disabled: saving || !state.label.trim() || !state.url.trim(),
-            busy: saving,
-          }}
-          style={[
-            styles.editFormSaveBtn,
-            {
-              opacity: saving || !state.label.trim() || !state.url.trim() ? 0.5 : 1,
-              backgroundColor: primaryColor,
-            },
-          ]}
         >
-          <Icon name="checkmark" size="sm" color="#fff" />
-          <ThemedText style={styles.editFormSaveText}>{saving ? "Saving…" : "Save"}</ThemedText>
-        </Pressable>
-      </View>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </ButtonRow>
     </View>
   );
 }

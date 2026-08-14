@@ -18,7 +18,13 @@ export const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1, gap: 2 },
   headerSub: { fontSize: 12 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
+  },
   confirmBanner: {
     paddingHorizontal: 14,
     paddingVertical: 11,
@@ -29,6 +35,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    flexWrap: "wrap",
     paddingHorizontal: 14,
     paddingVertical: theme.spacing.xsm,
     borderBottomWidth: 1,

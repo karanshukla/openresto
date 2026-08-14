@@ -386,7 +386,6 @@ export function EmailSettingsCard({
         onTest={handleTest}
         borderColor={borderColor}
         mutedColor={mutedColor}
-        primaryColor={primaryColor}
         cardBg={cardBg}
         surface2={surface2}
         okColor={okColor}
@@ -478,7 +477,7 @@ export function EmailSettingsCard({
               />
               <ThemedText
                 style={[
-                  saveMsg.ok ? settingsStyles.successText : settingsStyles.secBtnText,
+                  saveMsg.ok ? settingsStyles.successText : settingsStyles.statusText,
                   styles.saveBannerText,
                   { color: saveMsg.ok ? theme.colors.success : theme.colors.warning },
                 ]}
@@ -490,13 +489,18 @@ export function EmailSettingsCard({
 
           <View style={[styles.footer, { borderTopColor: borderColor }]}>
             <ThemedText
-              style={[settingsStyles.secBtnText, styles.footerHint, { color: mutedColor }]}
+              style={[settingsStyles.statusText, styles.footerHint, { color: mutedColor }]}
             >
               {testState === "ok"
                 ? "Connection verified · confirmations ready"
                 : "Test the connection before enabling confirmations"}
             </ThemedText>
-            <Button onPress={handleSave} disabled={saving || !host || !username}>
+            <Button
+              size="md"
+              onPress={handleSave}
+              disabled={saving || !host || !username}
+              loading={saving}
+            >
               {saving ? "Saving…" : "Save SMTP settings"}
             </Button>
           </View>

@@ -3,6 +3,8 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import {
@@ -308,17 +310,16 @@ export function FooterSettingsCard({
                 )}
 
                 {editingId !== "new" && (
-                  <Pressable
-                    onPress={startNew}
-                    style={[
-                      settingsStyles.addPill,
-                      styles.addPillLeft,
-                      { backgroundColor: primaryColor },
-                    ]}
-                  >
-                    <Icon name="add" size="md" color="#fff" />
-                    <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
-                  </Pressable>
+                  <ButtonRow align="start">
+                    <Button
+                      size="md"
+                      icon="add"
+                      onPress={startNew}
+                      accessibilityLabel="Add social link"
+                    >
+                      Add
+                    </Button>
+                  </ButtonRow>
                 )}
               </View>
             )}

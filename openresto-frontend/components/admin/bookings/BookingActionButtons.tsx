@@ -1,26 +1,24 @@
-import { Pressable } from "react-native";
-import { ThemedText } from "@/components/themed-text";
-import { theme } from "@/theme/theme";
-import { bookingDetailStyles as styles } from "./booking-detail.styles";
-import { Icon } from "@/components/common/Icon";
+import Button from "@/components/common/Button";
 
 interface BookingActionButtonsProps {
   isCancelled: boolean;
   isPast?: boolean;
   uncancelling: boolean;
   deleting: boolean;
-  mutedColor: string;
   onUncancel: () => void;
   onCancel: () => void;
   onPurge: () => void;
 }
 
+/**
+ * The booking's own lifecycle actions, stacked full-width in the detail panel: they are the
+ * point of the panel, so each takes the column rather than competing for a corner of it.
+ */
 export function BookingActionButtons({
   isCancelled,
   isPast,
   uncancelling,
   deleting,
-  mutedColor,
   onUncancel,
   onCancel,
   onPurge,
@@ -28,55 +26,51 @@ export function BookingActionButtons({
   return (
     <>
       {isCancelled && (
-        <Pressable
-          style={[styles.uncancelBtn, uncancelling && { opacity: 0.6 }]}
+        <Button
+          variant="secondary"
+          tone="success"
+          size="md"
+          fullWidth
+          icon="refresh-outline"
           onPress={onUncancel}
           disabled={uncancelling}
-          accessibilityRole="button"
+          loading={uncancelling}
           accessibilityLabel="Restore booking"
-          accessibilityState={{ disabled: uncancelling, busy: uncancelling }}
         >
-          <Icon name="refresh-outline" size="md" color={theme.colors.success} />
-          <ThemedText style={styles.uncancelBtnText}>
-            {uncancelling ? "Restoring…" : "Restore Booking"}
-          </ThemedText>
-        </Pressable>
+          {uncancelling ? "Restoring…" : "Restore Booking"}
+        </Button>
       )}
 
       {!isCancelled && !isPast && (
-        <Pressable
-          style={[styles.cancelBtn, deleting && { opacity: 0.6 }]}
+        <Button
+          variant="secondary"
+          tone="danger"
+          size="md"
+          fullWidth
+          icon="trash-outline"
           onPress={onCancel}
           disabled={deleting}
-          accessibilityRole="button"
+          loading={deleting}
           accessibilityLabel="Cancel booking"
-          accessibilityState={{ disabled: deleting, busy: deleting }}
         >
-          <Icon name="trash-outline" size={15} color={theme.colors.error} />
-          <ThemedText style={styles.cancelBtnText}>
-            {deleting ? "Cancelling…" : "Cancel Booking"}
-          </ThemedText>
-        </Pressable>
+          {deleting ? "Cancelling…" : "Cancel Booking"}
+        </Button>
       )}
 
-      <Pressable
-        style={[
-          styles.purgeBtn,
-          { borderColor: "rgba(128,128,128,0.2)" },
-          deleting && { opacity: 0.6 },
-        ]}
+      <Button
+        variant="secondary"
+        tone="neutral"
+        size="md"
+        fullWidth
+        icon="nuclear-outline"
         onPress={onPurge}
         disabled={deleting}
-        accessibilityRole="button"
+        loading={deleting}
         accessibilityLabel="Permanently delete booking for GDPR"
         accessibilityHint="This cannot be undone"
-        accessibilityState={{ disabled: deleting, busy: deleting }}
       >
-        <Icon name="nuclear-outline" size={15} color={mutedColor} />
-        <ThemedText style={[styles.purgeBtnText, { color: mutedColor }]}>
-          Permanently Delete (GDPR)
-        </ThemedText>
-      </Pressable>
+        Permanently Delete (GDPR)
+      </Button>
     </>
   );
 }

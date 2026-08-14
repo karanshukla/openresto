@@ -4,6 +4,7 @@ import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { theme } from "@/theme/theme";
 import { saveBrandSettings, uploadHeroImage, deleteHeroImage } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
@@ -386,34 +387,29 @@ export function BrandSettingsCard({
                 </View>
               )}
               <View style={styles.heroActions}>
-                <Pressable
-                  style={[settingsStyles.secBtn, { borderColor, opacity: heroUploading ? 0.5 : 1 }]}
+                <Button
+                  variant="secondary"
+                  size="md"
+                  icon="cloud-upload-outline"
                   onPress={handlePickHero}
                   disabled={heroUploading}
-                  accessibilityRole="button"
+                  loading={heroUploading}
                   accessibilityLabel={heroPreview ? "Change header image" : "Upload header image"}
-                  accessibilityState={{ disabled: heroUploading, busy: heroUploading }}
                 >
-                  <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
-                    {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
-                  </ThemedText>
-                </Pressable>
+                  {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
+                </Button>
                 {heroPreview && (
-                  <Pressable
-                    style={[
-                      settingsStyles.secBtn,
-                      { borderColor, opacity: heroUploading ? 0.5 : 1 },
-                    ]}
+                  <Button
+                    variant="secondary"
+                    tone="danger"
+                    size="md"
+                    icon="trash-outline"
                     onPress={handleDeleteHero}
                     disabled={heroUploading}
-                    accessibilityRole="button"
                     accessibilityLabel="Remove header image"
-                    accessibilityState={{ disabled: heroUploading }}
                   >
-                    <ThemedText style={[settingsStyles.secBtnText, { color: theme.colors.error }]}>
-                      Remove
-                    </ThemedText>
-                  </Pressable>
+                    Remove
+                  </Button>
                 )}
               </View>
             </View>
@@ -425,13 +421,16 @@ export function BrandSettingsCard({
             </ThemedText>
           )}
 
-          <Button
-            onPress={handleSave}
-            disabled={saving || !appName.trim() || formIsDirty === false}
-            style={styles.saveBtn}
-          >
-            {saving ? "Saving…" : "Save"}
-          </Button>
+          <ButtonRow style={styles.saveBtn}>
+            <Button
+              size="md"
+              onPress={handleSave}
+              disabled={saving || !appName.trim() || formIsDirty === false}
+              loading={saving}
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </ButtonRow>
         </View>
       </AnimatedAccordion>
     </View>

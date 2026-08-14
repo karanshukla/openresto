@@ -7,6 +7,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
 import { fetchRestaurants } from "@/api/restaurants";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./PushNotificationsCard.styles";
@@ -28,7 +30,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 type PushState = "loading" | "unconfigured" | "unavailable" | "denied" | "active" | "inactive";
 
 export function PushNotificationsCard() {
-  const { colors, primaryColor, isDark } = useAppTheme();
+  const { colors, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const mutedColor = colors.muted;
   const cardBg = colors.card;
@@ -231,36 +233,18 @@ export function PushNotificationsCard() {
 
                 {errorMsg && <ThemedText style={styles.error}>{errorMsg}</ThemedText>}
 
-                <Pressable
-                  onPress={isActive ? handleDisable : handleEnable}
-                  disabled={working}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    isActive ? "Disable push notifications" : "Enable push notifications"
-                  }
-                  accessibilityState={{ disabled: working, busy: working }}
-                  style={[
-                    styles.toggleBtn,
-                    {
-                      borderColor: isActive ? theme.colors.error : primaryColor,
-                      backgroundColor: isActive
-                        ? hexToRgba(theme.colors.error, isDark ? 0.1 : 0.06)
-                        : hexToRgba(primaryColor, isDark ? 0.12 : 0.08),
-                    },
-                    working && styles.toggleBtnBusy,
-                  ]}
-                >
-                  {working && (
-                    <ActivityIndicator
-                      size="small"
-                      color={isActive ? theme.colors.error : primaryColor}
-                    />
-                  )}
-                  <ThemedText
-                    style={[
-                      styles.toggleBtnText,
-                      { color: isActive ? theme.colors.error : primaryColor },
-                    ]}
+                <ButtonRow align="start">
+                  <Button
+                    variant="secondary"
+                    tone={isActive ? "danger" : "brand"}
+                    size="md"
+                    icon={isActive ? "notifications-off-outline" : "notifications-outline"}
+                    onPress={isActive ? handleDisable : handleEnable}
+                    disabled={working}
+                    loading={working}
+                    accessibilityLabel={
+                      isActive ? "Disable push notifications" : "Enable push notifications"
+                    }
                   >
                     {working
                       ? isActive
@@ -269,8 +253,8 @@ export function PushNotificationsCard() {
                       : isActive
                         ? "Disable push notifications"
                         : "Enable push notifications"}
-                  </ThemedText>
-                </Pressable>
+                  </Button>
+                </ButtonRow>
               </View>
             )}
           </View>

@@ -16,7 +16,9 @@ import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./HighlightsCard.styles";
-import { RowTextButton } from "./RowTextButton";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
+import { RowTextButton } from "@/components/common/RowTextButton";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 const ICON_OPTIONS = [
@@ -306,19 +308,16 @@ export function HighlightsCard({
               )}
 
               {editingId !== "new" && (
-                <Pressable
-                  onPress={startNew}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add highlight"
-                  style={[
-                    settingsStyles.addPill,
-                    styles.addPillLeft,
-                    { backgroundColor: primaryColor },
-                  ]}
-                >
-                  <Icon name="add" size="md" color="#fff" />
-                  <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
-                </Pressable>
+                <ButtonRow align="start">
+                  <Button
+                    size="md"
+                    icon="add"
+                    onPress={startNew}
+                    accessibilityLabel="Add highlight"
+                  >
+                    Add
+                  </Button>
+                </ButtonRow>
               )}
             </View>
           )}
@@ -429,37 +428,27 @@ function HighlightEditForm({
         </ThemedText>
       ) : null}
 
-      <View style={settingsStyles.editFormActions}>
-        <Pressable
+      <ButtonRow>
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
           onPress={onCancel}
-          accessibilityRole="button"
           accessibilityLabel="Cancel editing this highlight"
-          style={settingsStyles.editFormCancelBtn}
         >
-          <ThemedText style={[settingsStyles.editFormCancelText, { color: mutedColor }]}>
-            Cancel
-          </ThemedText>
-        </Pressable>
-        <Pressable
+          Cancel
+        </Button>
+        <Button
+          size="md"
+          icon="checkmark"
           onPress={onSave}
           disabled={saving || !state.title.trim()}
-          accessibilityRole="button"
+          loading={saving}
           accessibilityLabel="Save this highlight"
-          accessibilityState={{ disabled: saving || !state.title.trim(), busy: saving }}
-          style={[
-            settingsStyles.editFormSaveBtn,
-            {
-              opacity: saving || !state.title.trim() ? 0.5 : 1,
-              backgroundColor: primaryColor,
-            },
-          ]}
         >
-          <Icon name="checkmark" size="sm" color="#fff" />
-          <ThemedText style={settingsStyles.editFormSaveText}>
-            {saving ? "Saving…" : "Save"}
-          </ThemedText>
-        </Pressable>
-      </View>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </ButtonRow>
     </View>
   );
 }

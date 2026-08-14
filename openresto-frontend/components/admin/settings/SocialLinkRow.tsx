@@ -3,7 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import type { AdminSocialLinkDto } from "@/api/admin";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
-import { RowTextButton } from "./RowTextButton";
+import { RowTextButton } from "@/components/common/RowTextButton";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./SocialLinkRow.styles";
 

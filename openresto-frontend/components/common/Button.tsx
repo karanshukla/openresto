@@ -1,5 +1,12 @@
 import { Children } from "react";
-import { ActivityIndicator, Pressable, PressableProps, View, ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  PressableProps,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -7,20 +14,35 @@ import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./Button.styles";
 
+/**
+ * Weight, not colour: how much the button asks for the eye. `primary` is filled, `secondary`
+ * is outlined, `ghost` is bare text. `danger` predates the `tone` axis and is kept as the
+ * spelling for a filled destructive button.
+ */
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+
+/**
+ * Colour, not weight: what the action means. Split from `variant` so an outlined destructive
+ * button ("Remove image") and a filled one ("Yes, delete") are the same control at two weights
+ * rather than two hand-rolled styles.
+ */
+export type ButtonTone = "brand" | "danger" | "warning" | "success" | "neutral";
+
 export type ButtonSize = keyof typeof theme.buttonSizes;
 
 interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
   children: React.ReactNode;
   disabled?: boolean;
-  /** Visual treatment. Independent of `size`. */
   variant?: ButtonVariant;
+  tone?: ButtonTone;
   size?: ButtonSize;
   /** Renders a spinner in place of the leading icon and blocks presses. */
   loading?: boolean;
   icon?: IconName;
   iconPosition?: "leading" | "trailing";
-  style?: ViewStyle;
+  /** Stretches to the container. Reserve for a form's single submit button. */
+  fullWidth?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 /**
@@ -40,27 +62,41 @@ export default function Button({
   children,
   disabled,
   variant = "primary",
+  tone,
   size = "lg",
   loading = false,
   icon,
   iconPosition = "leading",
+  fullWidth = false,
   style,
   onPress,
   accessibilityLabel,
+  accessibilityState,
   ...props
 }: ButtonProps) {
   const { colors, primaryColor } = useAppTheme();
   const sizeStyles = theme.buttonSizes[size];
   const isInert = Boolean(disabled) || loading;
 
-  const tone = variant === "danger" ? theme.colors.error : primaryColor;
-  const filled = variant === "primary" || variant === "danger";
-  const contentColor = isInert ? colors.muted : filled ? theme.colors.white : tone;
+  const weight = variant === "danger" ? "primary" : variant;
+  const resolvedTone = tone ?? (variant === "danger" ? "danger" : "brand");
+
+  const toneColors: Record<ButtonTone, string> = {
+    brand: primaryColor,
+    danger: theme.colors.error,
+    warning: theme.colors.warning,
+    success: theme.colors.success,
+    neutral: colors.muted,
+  };
+  const toneColor = toneColors[resolvedTone];
+
+  const filled = weight === "primary";
+  const contentColor = isInert ? colors.muted : filled ? theme.colors.white : toneColor;
 
   const surfaceStyle: ViewStyle = filled
-    ? { backgroundColor: isInert ? colors.disabled : tone }
-    : variant === "secondary"
-      ? { borderWidth: 1, borderColor: isInert ? colors.disabled : tone }
+    ? { backgroundColor: isInert ? colors.disabled : toneColor }
+    : weight === "secondary"
+      ? { borderWidth: 1, borderColor: isInert ? colors.disabled : toneColor }
       : {};
 
   const handlePress: PressableProps["onPress"] = (e) => {
@@ -76,6 +112,7 @@ export default function Button({
         styles.button,
         sizeStyles,
         surfaceStyle,
+        fullWidth && styles.fullWidth,
         /* istanbul ignore next */
         (state as { hovered?: boolean }).hovered && !isInert && styles.hovered,
         style,
@@ -84,7 +121,7 @@ export default function Button({
       onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={deriveLabel(children, accessibilityLabel)}
-      accessibilityState={{ disabled: isInert, busy: loading }}
+      accessibilityState={{ ...accessibilityState, disabled: isInert, busy: loading }}
       aria-busy={loading}
       {...props}
     >
@@ -94,7 +131,11 @@ export default function Button({
         ) : icon && iconPosition === "leading" ? (
           <Icon name={icon} size={glyphSize} color={contentColor} />
         ) : null}
-        <ThemedText style={[styles.buttonText, { color: contentColor }]}>{children}</ThemedText>
+        <ThemedText
+          style={[styles.buttonText, size === "sm" && styles.buttonTextSm, { color: contentColor }]}
+        >
+          {children}
+        </ThemedText>
         {!loading && icon && iconPosition === "trailing" ? (
           <Icon name={icon} size={glyphSize} color={contentColor} />
         ) : null}

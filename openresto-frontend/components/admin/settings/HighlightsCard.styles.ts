@@ -9,9 +9,13 @@ export const styles = StyleSheet.create({
   body: { fontSize: 12, marginTop: 2 },
   linkRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   linkText: { fontSize: 11 },
-  actions: { flexDirection: "row", gap: theme.spacing.xxs },
-  actionBtn: { padding: theme.spacing.xxs },
-  addPillLeft: { alignSelf: "flex-start" },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
+  },
   bodyInput: { height: 76, paddingTop: theme.spacing.xsm, paddingBottom: theme.spacing.xsm },
   linkHint: { fontSize: 11 },
 });

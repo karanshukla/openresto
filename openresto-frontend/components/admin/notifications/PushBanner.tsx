@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, View } from "react-native";
+import { Platform, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
 import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush } from "@/api/notifications";
@@ -146,22 +147,16 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
           {errorMsg}
         </ThemedText>
       )}
-      <Pressable
+      <Button
+        size="md"
+        icon="notifications-outline"
         onPress={handleEnable}
-        accessibilityRole="button"
-        accessibilityLabel="Enable push notifications"
         disabled={working}
-        style={[
-          styles.pushBannerBtn,
-          { backgroundColor: primaryColor, opacity: working ? 0.7 : 1 },
-        ]}
+        loading={working}
+        accessibilityLabel="Enable push notifications"
       >
-        {working ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <ThemedText style={styles.pushBannerBtnText}>Enable</ThemedText>
-        )}
-      </Pressable>
+        Enable
+      </Button>
     </View>
   );
 }

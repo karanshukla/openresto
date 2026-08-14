@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable, ActivityIndicator } from "react-native";
+import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -10,7 +10,9 @@ import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./TableRow.styles";
-import { RowTextButton } from "./RowTextButton";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
+import { RowTextButton } from "@/components/common/RowTextButton";
 import { Icon } from "@/components/common/Icon";
 
 /**
@@ -195,29 +197,28 @@ export function TableRow({
             This cannot be undone.
           </ThemedText>
         </View>
-        <View style={settingsStyles.confirmActions}>
-          <Pressable
+        <ButtonRow>
+          <Button
             testID="table-delete-cancel-btn"
-            style={[settingsStyles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
+            variant="secondary"
+            tone="neutral"
+            size="md"
             onPress={cancelDelete}
             disabled={deleting}
           >
-            <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
-              Cancel
-            </ThemedText>
-          </Pressable>
-          <Pressable
+            Cancel
+          </Button>
+          <Button
             testID="table-delete-confirm-btn"
+            tone="danger"
+            size="md"
             disabled={deleting}
+            loading={deleting}
             onPress={confirmDelete}
-            style={[settingsStyles.confirmDeleteBtn, { opacity: deleting ? 0.7 : 1 }]}
           >
-            {deleting && <ActivityIndicator size="small" color="#fff" />}
-            <ThemedText style={[settingsStyles.smallBtnText, settingsStyles.confirmDeleteBtnText]}>
-              {deleting ? "Deleting…" : "Yes, delete"}
-            </ThemedText>
-          </Pressable>
-        </View>
+            {deleting ? "Deleting…" : "Yes, delete"}
+          </Button>
+        </ButtonRow>
       </View>
     );
   }
@@ -336,13 +337,21 @@ export function TableRow({
           />
         </View>
       </View>
-      <View style={styles.editActions}>
-        <Pressable style={settingsStyles.smallBtn} onPress={() => setEditing(false)}>
-          <ThemedText style={[styles.editCancelText, { color: mutedColor }]}>Cancel</ThemedText>
-        </Pressable>
-        <Pressable
-          style={[settingsStyles.actionBtn, styles.editSaveBtn, { backgroundColor: primaryColor }]}
+      <ButtonRow style={styles.editActions}>
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
+          onPress={() => setEditing(false)}
+          accessibilityLabel={`Cancel editing ${tableName}`}
+        >
+          Cancel
+        </Button>
+        <Button
+          size="md"
           disabled={saving}
+          loading={saving}
+          accessibilityLabel={`Save ${tableName}`}
           onPress={async () => {
             setSaving(true);
             const result = await updateTable(restaurantId, sectionId, table.id, {
@@ -356,11 +365,9 @@ export function TableRow({
             }
           }}
         >
-          <ThemedText style={[settingsStyles.actionBtnText, styles.editSaveText]}>
-            {saving ? "Saving…" : "Save"}
-          </ThemedText>
-        </Pressable>
-      </View>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </ButtonRow>
     </View>
   );
 }

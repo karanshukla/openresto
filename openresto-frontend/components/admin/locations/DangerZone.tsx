@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { styles } from "@/components/admin/settings/settings.styles";
@@ -215,29 +217,22 @@ export function DangerZone({
                       </ThemedText>
                     )}
                   </View>
-                  <Pressable
+                  <Button
+                    variant="secondary"
+                    tone="warning"
+                    size="md"
+                    icon="archive-outline"
                     disabled={archiving}
+                    loading={archiving}
                     onPress={handleArchive}
-                    accessibilityRole="button"
                     accessibilityLabel={`Archive ${dangerSelectedRestaurant.name}`}
-                    accessibilityState={{ disabled: archiving, busy: archiving }}
-                    style={[
-                      styles.secBtn,
-                      {
-                        borderColor: "#d97706",
-                        backgroundColor: isDark ? "rgba(217,119,6,0.1)" : "rgba(217,119,6,0.06)",
-                        opacity: archiving ? 0.5 : 1,
-                      },
-                    ]}
                   >
-                    <ThemedText style={[styles.secBtnText, { color: "#d97706" }]}>
-                      {archiving
-                        ? "Saving…"
-                        : dangerSelectedRestaurant.isArchived
-                          ? "Restore"
-                          : "Archive…"}
-                    </ThemedText>
-                  </Pressable>
+                    {archiving
+                      ? "Saving…"
+                      : dangerSelectedRestaurant.isArchived
+                        ? "Restore"
+                        : "Archive…"}
+                  </Button>
                 </View>
 
                 <View
@@ -262,25 +257,17 @@ export function DangerZone({
                           its sections, tables, and bookings.
                         </ThemedText>
                       </View>
-                      <Pressable
+                      <Button
+                        variant="secondary"
+                        tone="danger"
+                        size="md"
+                        icon="trash-outline"
                         onPress={() => setDeleteStep("confirm")}
-                        accessibilityRole="button"
                         accessibilityLabel={`Permanently delete ${dangerSelectedRestaurant.name}`}
                         accessibilityHint="Asks for confirmation first"
-                        style={[
-                          styles.secBtn,
-                          {
-                            borderColor: "#dc2626",
-                            backgroundColor: isDark
-                              ? "rgba(220,38,38,0.1)"
-                              : "rgba(220,38,38,0.06)",
-                          },
-                        ]}
                       >
-                        <ThemedText style={[styles.secBtnText, { color: "#dc2626" }]}>
-                          Delete…
-                        </ThemedText>
-                      </Pressable>
+                        Delete…
+                      </Button>
                     </View>
                   ) : (
                     <>
@@ -304,45 +291,31 @@ export function DangerZone({
                           Failed to delete. Please try again.
                         </ThemedText>
                       )}
-                      <View style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}>
-                        <Pressable
+                      <ButtonRow>
+                        <Button
+                          variant="secondary"
+                          tone="neutral"
+                          size="md"
                           onPress={() => {
                             setDeleteStep("idle");
                             setDeleteError(false);
                           }}
                           disabled={deleting}
-                          accessibilityRole="button"
                           accessibilityLabel="Cancel deletion"
-                          accessibilityState={{ disabled: deleting }}
-                          style={[styles.secBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
                         >
-                          <ThemedText style={[styles.secBtnText, { color: mutedColor }]}>
-                            Cancel
-                          </ThemedText>
-                        </Pressable>
-                        <Pressable
+                          Cancel
+                        </Button>
+                        <Button
+                          tone="danger"
+                          size="md"
                           onPress={handleDelete}
                           disabled={deleting}
-                          accessibilityRole="button"
+                          loading={deleting}
                           accessibilityLabel={`Confirm permanent deletion of ${dangerSelectedRestaurant.name}`}
-                          accessibilityState={{ disabled: deleting, busy: deleting }}
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                            paddingHorizontal: 14,
-                            paddingVertical: 8,
-                            borderRadius: 8,
-                            backgroundColor: "#dc2626",
-                            opacity: deleting ? 0.7 : 1,
-                          }}
                         >
-                          {deleting && <ActivityIndicator size="small" color="#fff" />}
-                          <ThemedText style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>
-                            {deleting ? "Deleting…" : "Yes, delete permanently"}
-                          </ThemedText>
-                        </Pressable>
-                      </View>
+                          {deleting ? "Deleting…" : "Yes, delete permanently"}
+                        </Button>
+                      </ButtonRow>
                     </>
                   )}
                 </View>

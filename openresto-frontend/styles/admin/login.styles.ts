@@ -35,15 +35,8 @@ export const styles = StyleSheet.create({
   },
   errorText: { color: theme.colors.error, fontSize: 14 },
   submitBtn: { marginTop: theme.spacing.sm },
-  forgotLink: {
-    ...theme.typography.label,
-    textAlign: "center",
-    marginTop: 12,
-    cursor: "pointer" as const,
-  },
   backLink: { fontSize: 14, textAlign: "center", cursor: "pointer" as const },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: theme.spacing.md },
-  backBtnText: { fontSize: 13 },
+  backBtn: { marginBottom: theme.spacing.md, marginLeft: -theme.spacing.md },
   questionBox: {
     flexDirection: "row",
     alignItems: "flex-start",

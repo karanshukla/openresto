@@ -50,6 +50,7 @@ export const styles = StyleSheet.create({
   modeBtnText: { ...theme.typography.label },
   spinner: { marginTop: 40 },
   emptyState: { alignItems: "center", paddingVertical: 60, gap: theme.spacing.md },
+  emptyStateAction: { marginTop: theme.spacing.sm },
   emptyText: { ...theme.typography.body, fontStyle: "italic" },
 
   gridCard: {
@@ -151,7 +152,7 @@ export const styles = StyleSheet.create({
   colParty: { width: 64, alignItems: "flex-start" },
   colTable: { width: 64 },
   colStatus: { width: 108 },
-  colAction: { width: 64, flexDirection: "row", alignItems: "center", gap: 6 },
+  colAction: { width: 96, flexDirection: "row", alignItems: "center", gap: 6 },
   tdTime: { ...theme.typography.bodyBold, fontSize: 14 },
   tdDate: { ...theme.typography.caption, marginTop: 1 },
   tdGuest: { ...theme.typography.body, fontWeight: "500" },
@@ -166,7 +167,6 @@ export const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   badgeText: { ...theme.typography.labelSmall, fontWeight: "700" },
-  rowActionBtn: { padding: 6, borderRadius: theme.borderRadius.md },
 
   cardListWrap: { gap: theme.spacing.md },
   cardList: { gap: theme.spacing.md },
@@ -184,13 +184,4 @@ export const styles = StyleSheet.create({
   },
   listCardInfo: { flex: 1, gap: 4 },
   listCardRight: { alignItems: "flex-end" },
-
-  newBookingBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xs,
-    ...theme.buttonSizes.sm,
-    borderRadius: theme.borderRadius.md,
-  },
-  newBookingBtnText: { ...theme.typography.label, color: "#fff", fontWeight: "700" as const },
 });

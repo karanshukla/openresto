@@ -14,5 +14,4 @@ export const styles = StyleSheet.create({
   divider: { height: 1, marginVertical: theme.spacing.xs },
   linksSection: { gap: theme.spacing.md },
   linksList: { gap: theme.spacing.sm },
-  addPillLeft: { alignSelf: "flex-start" },
 });

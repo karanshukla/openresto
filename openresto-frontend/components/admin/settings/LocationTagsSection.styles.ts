@@ -17,11 +17,5 @@ export const styles = StyleSheet.create({
   chipText: { fontSize: 12 },
   addRow: { flexDirection: "row", gap: theme.spacing.sm },
   addInput: { flex: 1 },
-  addBtn: {
-    borderRadius: theme.borderRadius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.xsm,
-    justifyContent: "center",
-  },
   hint: { fontSize: 11 },
 });
