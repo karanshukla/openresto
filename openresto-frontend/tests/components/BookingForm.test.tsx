@@ -9,7 +9,6 @@ import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 // Mock useTableHold
 jest.mock("@/components/booking/useTableHold");
-const mockReleaseCurrentHold = jest.fn();
 const mockSetHoldStatus = jest.fn();
 
 jest.mock("@/api/availability", () => ({
@@ -67,7 +66,6 @@ describe("BookingForm", () => {
       resolvedTableId: null,
       resolvedSectionId: null,
       setHoldStatus: mockSetHoldStatus,
-      releaseCurrentHold: mockReleaseCurrentHold,
     });
     // Mock window.confirm
     delete (window as any).confirm;
@@ -239,7 +237,6 @@ describe("BookingForm", () => {
       secondsLeft: 0,
       holdId: null,
       setHoldStatus: mockSetHoldStatus,
-      releaseCurrentHold: mockReleaseCurrentHold,
     });
     const onSubmit = jest.fn();
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);

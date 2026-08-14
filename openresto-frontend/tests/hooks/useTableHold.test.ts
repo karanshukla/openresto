@@ -156,7 +156,13 @@ describe("useTableHold", () => {
     expect(mockReleaseHold).toHaveBeenCalledWith("hold-cleanup");
   });
 
-  it("releaseCurrentHold resets state and calls releaseHold", async () => {
+  // ── Seating changes drop the hold they invalidated (#316) ──────────────────
+  //
+  // The seating pick reaches this hook only as params, so these cover the whole contract that
+  // BookingForm used to enforce with an explicit releaseCurrentHold() call: a pick that stops
+  // being holdable releases outright, and a pick that resolves elsewhere is replaced atomically.
+
+  it("releases the hold when the seating pick is cleared", async () => {
     mockCreateHold.mockResolvedValueOnce({
       ok: true,
       hold: {
@@ -166,8 +172,9 @@ describe("useTableHold", () => {
       },
     });
 
-    const params = { ...defaultParams, tableId: 100 };
-    const { result } = renderHook(() => useTableHold(params));
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100 },
+    });
 
     await act(async () => {
       jest.advanceTimersByTime(2000);
@@ -175,13 +182,146 @@ describe("useTableHold", () => {
 
     expect(result.current.holdStatus).toBe("held");
 
-    act(() => {
-      result.current.releaseCurrentHold();
-    });
+    // Switching to a section with no fitting table leaves the form with no pick at all.
+    rerender({ ...defaultParams, tableId: undefined });
 
     expect(mockReleaseHold).toHaveBeenCalledWith("hold-manual");
     expect(result.current.holdStatus).toBe("idle");
     expect(result.current.hold).toBeNull();
+    expect(result.current.holdId).toBeNull();
+  });
+
+  it("keeps the hold when a param outside the held unit changes", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "hold-kept",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
+    });
+
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100 },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+
+    // The email is a trigger for the effect but not part of the held unit, so correcting a typo
+    // must not churn a hold that is still valid.
+    rerender({ ...defaultParams, tableId: 100, email: "corrected@example.com" });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+    expect(result.current.hold?.holdId).toBe("hold-kept");
+    expect(mockCreateHold).toHaveBeenCalledTimes(1);
+    expect(mockReleaseHold).not.toHaveBeenCalled();
+  });
+
+  it("replaces the hold when the seating pick moves to another table", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "hold-table-100",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
+    });
+
+    const sections = [
+      { id: 10, tables: [{ id: 100 }] },
+      { id: 20, tables: [{ id: 200 }] },
+    ];
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, sections, tableId: 100 },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "hold-table-200",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
+    });
+
+    // Picking a table in another section: the old hold stops standing the moment the pick changes.
+    rerender({ ...defaultParams, sections, tableId: 200 });
+    expect(result.current.holdStatus).toBe("pending");
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockCreateHold).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ tableId: 200, sectionId: 20, currentHoldId: "hold-table-100" })
+    );
+    expect(result.current.hold?.holdId).toBe("hold-table-200");
+  });
+
+  it("replaces a table hold when the pick switches to a combinable group", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "hold-table",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+      },
+    });
+
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100, seats: 4 },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.holdStatus).toBe("held");
+
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "hold-group",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+        tableGroupId: 5,
+      },
+    });
+
+    // tableId and tableGroupId are mutually exclusive in the dropdown, so the group pick arrives
+    // with the table cleared.
+    rerender({ ...defaultParams, tableId: undefined, tableGroupId: 5, seats: 4 });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockCreateHold).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        tableId: null,
+        sectionId: null,
+        tableGroupId: 5,
+        seats: 4,
+        currentHoldId: "hold-table",
+      })
+    );
+    expect(result.current.resolvedGroupId).toBe(5);
   });
 
   it("re-triggers hold when date changes, passing currentHoldId for atomic replace", async () => {

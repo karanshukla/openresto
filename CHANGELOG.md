@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Untangled the circular dependency between `useBookingSeating` and `useTableHold`** (#316) — the split in #315 left one seam: the hold hook needs the seating pick, and the seating hook was calling back into the hold hook to drop a hold its own change had invalidated. `BookingForm` bridged that with a ref assigned during render, which only worked because of the order the two hooks happened to be called in. The explicit release turned out to be redundant: every param that identifies the held unit is already a dependency of the hold effect, so a seating change either stops being holdable (released outright) or resolves to a different unit (replaced atomically, forwarding the old hold id so the server frees it in the same call). The ref, the `releaseCurrentHold` argument and the party-size release effect are all gone, and `releaseCurrentHold` is no longer exported so the cycle can't come back. Data now flows one way, which means swapping the two hook calls fails to compile rather than silently changing behaviour. Four `useTableHold` tests cover the contract the ref was standing in for: pick cleared, pick moved to another table, table swapped for a combinable group, and a param outside the held unit (the email) changing without churning a valid hold.
+
 ## [1.7.0] - 2026-08-12
 
 This is a frontend focused release. I wanted to move away from responsive design towards interfaces that felt familiar on mobile and web. I also wanted to give the code some love, so a ton of refactoring and accessibility passes have been included.

@@ -1,5 +1,5 @@
 import { RestaurantDto } from "@/api/restaurants";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../common/Button";
 import { ThemedText } from "../themed-text";
 import { Platform, View, ActivityIndicator, useWindowDimensions } from "react-native";
@@ -128,12 +128,6 @@ export default function BookingForm({
 
   const currentSlot = availabilitySlots.find((s) => s.time === time);
 
-  // useTableHold and useBookingSeating each need something the other produces: the hold needs
-  // the current seating pick, and a seating change has to drop the hold that pick invalidated.
-  // A ref breaks the cycle — it is filled in below, during the same render, so the seating
-  // hook's effects always see the live releaser by the time they run.
-  const releaseHoldRef = useRef<() => void>(() => {});
-
   const {
     allTables,
     sectionId,
@@ -146,38 +140,25 @@ export default function BookingForm({
     tableOptions,
     maxTableCapacity,
     partyTooLarge,
-  } = useBookingSeating({
-    restaurant,
-    seats,
-    currentSlot,
-    releaseCurrentHold: () => releaseHoldRef.current(),
-  });
+  } = useBookingSeating({ restaurant, seats, currentSlot });
 
-  const {
-    holdStatus,
-    holdMessage,
-    secondsLeft,
-    holdId,
-    resolvedTableId,
-    setHoldStatus,
-    releaseCurrentHold,
-  } = useTableHold({
-    restaurantId: restaurant.id,
-    sections: restaurant.sections,
-    tableId,
-    date,
-    time,
-    email: customerEmail,
-    autoAssign: isAutoAssign,
-    seats,
-    tableGroupId,
-  });
-  releaseHoldRef.current = releaseCurrentHold;
-
-  useEffect(() => {
-    releaseCurrentHold();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seats]);
+  // The seating pick is the only thing that flows between these two hooks, and it flows one way:
+  // useTableHold releases or replaces its hold whenever these params change, so nothing has to
+  // reach back into it. The call order is therefore pinned by the tableId/isAutoAssign reads
+  // below rather than by effect timing — swapping the hooks fails to compile instead of silently
+  // changing behaviour.
+  const { holdStatus, holdMessage, secondsLeft, holdId, resolvedTableId, setHoldStatus } =
+    useTableHold({
+      restaurantId: restaurant.id,
+      sections: restaurant.sections,
+      tableId,
+      date,
+      time,
+      email: customerEmail,
+      autoAssign: isAutoAssign,
+      seats,
+      tableGroupId,
+    });
 
   // When the party size exceeds the largest table, surface the contact-restaurant
   // notice so the user knows why booking is blocked. Re-opens on each over-capacity
