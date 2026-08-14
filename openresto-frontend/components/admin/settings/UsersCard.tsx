@@ -341,25 +341,27 @@ export function UsersCard({
 
               {showAddForm ? (
                 <View style={settingsStyles.addForm}>
-                  <View style={settingsStyles.field}>
-                    <ThemedText style={settingsStyles.fieldLabel}>Email</ThemedText>
-                    <Input
-                      value={newUser.email}
-                      onChangeText={(email) => setNewUser((s) => ({ ...s, email }))}
-                      placeholder="colleague@restaurant.com"
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                    />
-                  </View>
-                  <View style={settingsStyles.field}>
-                    <ThemedText style={settingsStyles.fieldLabel}>
-                      Display name (optional)
-                    </ThemedText>
-                    <Input
-                      value={newUser.displayName}
-                      onChangeText={(displayName) => setNewUser((s) => ({ ...s, displayName }))}
-                      placeholder="Alex Rivera"
-                    />
+                  <View style={settingsStyles.fieldRow}>
+                    <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+                      <ThemedText style={settingsStyles.fieldLabel}>Email</ThemedText>
+                      <Input
+                        value={newUser.email}
+                        onChangeText={(email) => setNewUser((s) => ({ ...s, email }))}
+                        placeholder="colleague@restaurant.com"
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                      />
+                    </View>
+                    <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+                      <ThemedText style={settingsStyles.fieldLabel}>
+                        Display name (optional)
+                      </ThemedText>
+                      <Input
+                        value={newUser.displayName}
+                        onChangeText={(displayName) => setNewUser((s) => ({ ...s, displayName }))}
+                        placeholder="Alex Rivera"
+                      />
+                    </View>
                   </View>
                   <View style={settingsStyles.field}>
                     <ThemedText style={settingsStyles.fieldLabel}>Temporary password</ThemedText>
