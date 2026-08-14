@@ -655,14 +655,47 @@ def resolve_admin_credentials(settings_file):
     return email.strip().lower(), password
 
 
-def hash_password(password):
+def _derive_credential(secret):
     """PBKDF2-SHA256, 100k iterations, 16-byte salt, 32-byte key — matches PasswordService."""
     salt = os.urandom(16)
-    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000, dklen=32)
+    key = hashlib.pbkdf2_hmac("sha256", secret.encode(), salt, 100_000, dklen=32)
     return base64.b64encode(key).decode(), base64.b64encode(salt).decode()
 
 
-def emit_accounts(owner_email, owner_password, now_utc):
+def build_demo_accounts(settings_file):
+    """
+    The curated account rows, with credentials already derived. Reading the configured
+    password and hashing it both happen here, so the plaintext never enters a structure
+    that reaches the emitted SQL — which carries only the hash and the salt, exactly like
+    a row the API would have written. Each row gets its own salt even though the two
+    share a password.
+    """
+    owner_email, secret = resolve_admin_credentials(settings_file)
+
+    # DisplayName None on purpose: between the two rows, both branches of the UI's
+    # "display name, falling back to email" render.
+    identities = [
+        (owner_email, None, "Owner"),
+        (DEMO_MANAGER_EMAIL, DEMO_MANAGER_DISPLAY_NAME, "Manager"),
+    ]
+
+    accounts = []
+    for email, display_name, role in identities:
+        password_hash, password_salt = _derive_credential(secret)
+        accounts.append(
+            {
+                "Email": email.strip().lower(),
+                "PasswordHash": password_hash,
+                "PasswordSalt": password_salt,
+                "DisplayName": display_name,
+                "Role": role,
+                "IsActive": True,
+            }
+        )
+    return accounts
+
+
+def emit_accounts(accounts, now_utc):
     """
     Replaces every admin account with the curated pair. Wiping first is the point on
     the demo: its admin password is public, so an account a visitor invited themselves
@@ -675,29 +708,8 @@ def emit_accounts(owner_email, owner_password, now_utc):
     ]
 
     created = utc_str(now_utc)
-    accounts = [
-        # DisplayName None on purpose: between the two rows, both branches of the
-        # UI's "display name, falling back to email" render.
-        (owner_email, owner_password, None, "Owner"),
-        (DEMO_MANAGER_EMAIL, owner_password, DEMO_MANAGER_DISPLAY_NAME, "Manager"),
-    ]
-
-    for email, password, display_name, role in accounts:
-        password_hash, password_salt = hash_password(password)
-        out.append(
-            insert(
-                "AdminCredentials",
-                {
-                    "Email": email.strip().lower(),
-                    "PasswordHash": password_hash,
-                    "PasswordSalt": password_salt,
-                    "DisplayName": display_name,
-                    "Role": role,
-                    "IsActive": True,
-                    "CreatedAt": created,
-                },
-            )
-        )
+    for account in accounts:
+        out.append(insert("AdminCredentials", {**account, "CreatedAt": created}))
 
     return out, len(accounts)
 
@@ -1081,8 +1093,9 @@ def main():
     # so every caller asks for them explicitly and supplies one.
     account_count = 0
     if args.section == "accounts":
-        owner_email, owner_password = resolve_admin_credentials(args.settings_file)
-        account_lines, account_count = emit_accounts(owner_email, owner_password, now_utc)
+        account_lines, account_count = emit_accounts(
+            build_demo_accounts(args.settings_file), now_utc
+        )
         lines += account_lines
         lines.append("")
 
