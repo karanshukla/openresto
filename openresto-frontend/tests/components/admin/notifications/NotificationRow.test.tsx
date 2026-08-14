@@ -13,6 +13,7 @@ jest.mock("react-native-gesture-handler/ReanimatedSwipeable", () => {
 
 const theme = {
   borderColor: "#ddd",
+  cardBg: "#fff",
   mutedColor: "#888",
   isDark: false,
   primaryColor: "#0a7ea4",

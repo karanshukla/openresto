@@ -116,7 +116,7 @@ export default function AdminDashboardScreen() {
     {
       title: "Manage Settings",
       icon: "settings-outline" as const,
-      route: "/admin/settings" as const,
+      route: "/admin/settings/brand" as const,
     },
   ];
 

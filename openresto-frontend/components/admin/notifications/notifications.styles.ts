@@ -184,11 +184,13 @@ export const styles = StyleSheet.create({
     width: 106,
   },
   actionDeleteBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: theme.borderRadius.full,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 5,
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: theme.borderRadius.full,
   },
   swipeDeleteBg: {
     backgroundColor: theme.colors.error,

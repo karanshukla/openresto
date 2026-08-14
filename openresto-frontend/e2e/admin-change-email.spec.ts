@@ -9,7 +9,7 @@ import {
 const NEW_EMAIL = "e2e-change-email@example.com";
 
 /**
- * Admin changes the login email from Settings → Account Security.
+ * Admin changes the login email from the Account settings page.
  *
  * This rewrites the email of the bootstrap Owner — the account every other admin
  * spec signs in as — so it mutates global auth state. It runs serially and always
@@ -27,18 +27,15 @@ test.describe("Admin change email", () => {
 
   test("changing email via Settings updates login credentials", async ({ page }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/admin/settings");
-    // The Account Security card hydrates from rate-limited admin fetches;
-    // reload (cool-down first) if it hasn't rendered within the window. Once
-    // the heading is up the rest of the card (incl. ADMIN_EMAIL) has hydrated.
-    await expectVisibleWithReload(page, page.getByText("ACCOUNT SECURITY", { exact: true }), {
-      timeout: 10_000,
-    });
-    // The card renders in stages — the heading appears before the email row
-    // finishes hydrating from the rate-limited admin fetch, so gate the email
-    // on the same reload fallback rather than a bare expect. Scoped to the card:
-    // the sidebar's identity block shows the same address.
+    await page.goto("/admin/settings/account");
+    // The Account card hydrates from rate-limited admin fetches; reload (cool-down
+    // first) if it hasn't rendered within the window.
     const securityCard = page.getByTestId("security-card");
+    await expectVisibleWithReload(page, securityCard, { timeout: 10_000 });
+    // The card renders in stages: its chrome appears before the email row finishes
+    // hydrating from the rate-limited admin fetch, so gate the email on the same
+    // reload fallback rather than a bare expect. Scoped to the card, because the
+    // sidebar's identity block shows the same address.
     await expectVisibleWithReload(page, securityCard.getByText(ADMIN_EMAIL), { timeout: 10_000 });
 
     // Scoped by testID rather than DOM position — the Brand Identity card
@@ -54,9 +51,10 @@ test.describe("Admin change email", () => {
     await expect(page.getByText("Email changed successfully.")).toBeVisible({ timeout: 10_000 });
     await expect(securityCard.getByText(NEW_EMAIL)).toBeVisible({ timeout: 10_000 });
     // The change is pushed into the auth context, so the sidebar re-renders with it too.
-    await expect(page.getByTestId("sidebar-identity").getByText(NEW_EMAIL)).toBeVisible({
-      timeout: 10_000,
-    });
+    // An account with no display name is identified there by the local part of its email.
+    await expect(
+      page.getByTestId("sidebar-identity").getByText(NEW_EMAIL.split("@")[0])
+    ).toBeVisible({ timeout: 10_000 });
 
     // The old email can no longer log in ...
     const oldLoginRes = await page.request.post("/api/admin/auth/login", {

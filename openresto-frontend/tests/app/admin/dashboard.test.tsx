@@ -246,7 +246,7 @@ describe("AdminDashboardScreen", () => {
     });
 
     fireEvent.press(screen.getByText("Manage Settings"));
-    expect(mockPush).toHaveBeenCalledWith("/admin/settings");
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings/brand");
   });
 
   it("navigates to bookings list on View All Bookings press", async () => {

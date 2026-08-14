@@ -1,7 +1,9 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import type { AdminSocialLinkDto } from "@/api/admin";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { theme } from "@/theme/theme";
+import { RowTextButton } from "./RowTextButton";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./SocialLinkRow.styles";
 
@@ -43,20 +45,20 @@ export function SocialLinkRow({
         </ThemedText>
       </View>
       <View style={styles.actions}>
-        <Pressable
+        <RowTextButton
+          label="Edit"
+          icon="pencil-outline"
+          color={mutedColor}
           onPress={() => onEdit(link)}
-          style={styles.actionBtn}
           accessibilityLabel={`Edit ${link.label}`}
-        >
-          <Icon name="pencil-outline" size="md" color={mutedColor} />
-        </Pressable>
-        <Pressable
+        />
+        <RowTextButton
+          label="Delete"
+          icon="trash-outline"
+          color={theme.colors.error}
           onPress={() => onDelete(link.id)}
-          style={styles.actionBtn}
           accessibilityLabel={`Delete ${link.label}`}
-        >
-          <Icon name="trash-outline" size="md" color="#ef4444" />
-        </Pressable>
+        />
       </View>
     </View>
   );

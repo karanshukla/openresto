@@ -96,11 +96,11 @@ describe("AdminLayout keyboard shortcuts", () => {
     expect(mockRouter.push).toHaveBeenCalledWith("/admin/locations");
   });
 
-  it("navigates to settings on g then s", async () => {
+  it("navigates to brand settings on g then s", async () => {
     await renderAuthenticated();
     dispatchKeydown("g");
     dispatchKeydown("s");
-    expect(mockRouter.push).toHaveBeenCalledWith("/admin/settings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/settings/brand");
   });
 
   it("focuses the sidebar lookup input on '/'", async () => {

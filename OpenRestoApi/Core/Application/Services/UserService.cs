@@ -140,7 +140,7 @@ public class UserService(
         if (activeOwners <= 1)
         {
             throw new BusinessRuleException(
-                $"Cannot {action} the last active {UserRoles.Owner} — promote another user first.");
+                $"Cannot {action} the last active {UserRoles.Owner}. Promote another user first.");
         }
     }
 }

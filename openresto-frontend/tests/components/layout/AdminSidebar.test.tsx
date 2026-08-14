@@ -73,17 +73,60 @@ describe("AdminSidebar", () => {
     await waitFor(() => expect(screen.getByText("Managing 2 locations")).toBeTruthy());
   });
 
-  it("renders navigation items", async () => {
+  it("renders navigation items grouped into sections", async () => {
     render(
       <AuthProvider>
         <AdminSidebar />
       </AuthProvider>
     );
     await waitFor(() => {
+      expect(screen.getByText("MANAGE")).toBeTruthy();
       expect(screen.getByText("Overview")).toBeTruthy();
       expect(screen.getByText("Bookings")).toBeTruthy();
-      expect(screen.getByText("Settings")).toBeTruthy();
+      expect(screen.getByText("CONFIGURE")).toBeTruthy();
+      expect(screen.getByText("Brand")).toBeTruthy();
+      expect(screen.getByText("Email & Push")).toBeTruthy();
+      expect(screen.getByText("Account")).toBeTruthy();
     });
+  });
+
+  it("shows the Users entry to an Owner", async () => {
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("Users")).toBeTruthy());
+    fireEvent.press(screen.getByText("Users"));
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings/users");
+  });
+
+  it("hides the Users entry from a Manager", async () => {
+    const { checkSession } = require("@/api/auth");
+    (checkSession as jest.Mock).mockResolvedValueOnce({
+      id: 2,
+      email: "manager@test.com",
+      displayName: "Manager Person",
+      role: "Manager",
+    });
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("CONFIGURE")).toBeTruthy());
+    expect(screen.queryByText("Users")).toBeNull();
+  });
+
+  it("navigates to brand settings when Brand is pressed", async () => {
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("Brand")).toBeTruthy());
+    fireEvent.press(screen.getByText("Brand"));
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings/brand");
   });
 
   it("navigates to overview when Overview is pressed", async () => {

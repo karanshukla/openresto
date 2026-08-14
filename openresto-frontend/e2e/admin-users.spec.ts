@@ -29,7 +29,7 @@ const invitedRow = (card: Locator): Locator =>
 
 async function openUsersCard(page: Page): Promise<Locator> {
   await gotoAdminDashboard(page);
-  await page.goto("/admin/settings");
+  await page.goto("/admin/settings/users");
   // The settings page hydrates from rate-limited admin fetches; reload (after a cool-down)
   // if the card hasn't rendered, the same way the other settings specs do.
   const card = page.getByTestId("users-card");

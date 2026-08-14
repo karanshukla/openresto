@@ -81,7 +81,7 @@ test.describe("Walk-in-only day on the booking form", () => {
     // unscoped slot count also picks up every other location's times.
     const walkInCard = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
     await expect(
-      walkInCard.getByText("No reservations required — first come, first served")
+      walkInCard.getByText("No reservations required, first come first served")
     ).toBeVisible({ timeout: 15_000 });
     await expect(walkInCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
   });
@@ -102,7 +102,7 @@ test.describe("Walk-in-only day on the booking form", () => {
       timeout: 20_000,
     });
     await expect(
-      bookableCard.getByText("No reservations required — first come, first served")
+      bookableCard.getByText("No reservations required, first come first served")
     ).toHaveCount(0);
   });
 });

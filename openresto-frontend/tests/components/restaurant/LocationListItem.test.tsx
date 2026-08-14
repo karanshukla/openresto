@@ -206,7 +206,7 @@ describe("LocationListItem", () => {
       (fetchAvailability as jest.Mock).mockResolvedValue(null);
       renderWithProviders(<LocationListItem {...baseProps} restaurant={utcRestaurant as any} />);
       await waitFor(() =>
-        expect(screen.getByText("No times available — try another date or party size")).toBeTruthy()
+        expect(screen.getByText("No times available, try another date or party size")).toBeTruthy()
       );
     });
 
@@ -221,7 +221,7 @@ describe("LocationListItem", () => {
         />
       );
       await waitFor(() =>
-        expect(screen.getByText("No times available — try another date or party size")).toBeTruthy()
+        expect(screen.getByText("No times available, try another date or party size")).toBeTruthy()
       );
       expect(screen.queryByTestId("location-slots-loading-1")).toBeNull();
       await waitFor(() => expect(onAvailabilityChange).toHaveBeenCalledWith(1, 0));
@@ -365,12 +365,12 @@ describe("LocationListItem", () => {
         />
       );
       await waitFor(() =>
-        expect(screen.getByText("No reservations required — first come, first served")).toBeTruthy()
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
       );
       // Stated once, in the footer — not repeated where the slot row would be.
-      expect(
-        screen.getAllByText("No reservations required — first come, first served")
-      ).toHaveLength(1);
+      expect(screen.getAllByText("No reservations required, first come first served")).toHaveLength(
+        1
+      );
     });
 
     it("falls back to the hours line in the footer for a bookable location", async () => {
@@ -435,7 +435,7 @@ describe("LocationListItem", () => {
         />
       );
       await waitFor(() =>
-        expect(screen.getByText("No reservations required — first come, first served")).toBeTruthy()
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
       );
       expect(screen.getByText("Walk-ins only")).toBeTruthy();
       expect(fetchAvailability).not.toHaveBeenCalled();
@@ -449,7 +449,7 @@ describe("LocationListItem", () => {
         />
       );
       await waitFor(() =>
-        expect(screen.getByText("No reservations required — first come, first served")).toBeTruthy()
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
       );
       expect(screen.getByText("Walk-ins on Thursdays")).toBeTruthy();
     });

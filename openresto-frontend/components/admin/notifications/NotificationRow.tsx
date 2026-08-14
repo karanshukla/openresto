@@ -14,6 +14,7 @@ export interface NotificationRowProps {
   isLast: boolean;
   webTouchActive: boolean;
   borderColor: string;
+  cardBg: string;
   mutedColor: string;
   isDark: boolean;
   primaryColor: string;
@@ -36,6 +37,7 @@ export function NotificationRow({
   isLast,
   webTouchActive,
   borderColor,
+  cardBg,
   mutedColor,
   isDark,
   primaryColor,
@@ -56,22 +58,24 @@ export function NotificationRow({
     .filter(Boolean)
     .join(" · ");
 
+  // The swipe-to-delete panels sit behind the row, so the row has to paint its own surface
+  // or they bleed through as red edges. Rendering them only where swiping is possible keeps
+  // them out of the pointer-driven layout entirely.
+  const swipeEnabled = (Platform.OS !== "web" || webTouchActive) && !isPinned;
+  const renderSwipeDelete = () => (
+    <View style={styles.swipeDeleteBg}>
+      <Icon name="trash-outline" size="xl" color="#fff" />
+    </View>
+  );
+
   return (
     <ReanimatedSwipeable
       friction={2}
       leftThreshold={64}
       rightThreshold={64}
-      enabled={(Platform.OS !== "web" || webTouchActive) && !isPinned}
-      renderLeftActions={() => (
-        <View style={styles.swipeDeleteBg}>
-          <Icon name="trash-outline" size="xl" color="#fff" />
-        </View>
-      )}
-      renderRightActions={() => (
-        <View style={styles.swipeDeleteBg}>
-          <Icon name="trash-outline" size="xl" color="#fff" />
-        </View>
-      )}
+      enabled={swipeEnabled}
+      renderLeftActions={swipeEnabled ? renderSwipeDelete : undefined}
+      renderRightActions={swipeEnabled ? renderSwipeDelete : undefined}
       onSwipeableOpen={() => onSwipeDelete(n.id)}
     >
       <Pressable
@@ -88,6 +92,7 @@ export function NotificationRow({
           .join(", ")}
         style={(state) => [
           styles.notifRow,
+          { backgroundColor: cardBg },
           !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
           (state as { hovered?: boolean }).hovered && {
             backgroundColor: isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.018)",
@@ -188,6 +193,9 @@ export function NotificationRow({
             ]}
           >
             <Icon name="trash-outline" size={13} color={theme.colors.error} />
+            <ThemedText style={[styles.actionText, { color: theme.colors.error }]}>
+              Delete
+            </ThemedText>
           </Pressable>
         </View>
 

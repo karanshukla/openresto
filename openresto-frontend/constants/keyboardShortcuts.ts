@@ -12,7 +12,7 @@ export const ADMIN_SHORTCUTS: ShortcutEntry[] = [
   { keys: "g d", description: "Go to Dashboard" },
   { keys: "g b", description: "Go to Bookings" },
   { keys: "g l", description: "Go to Locations" },
-  { keys: "g s", description: "Go to Settings" },
+  { keys: "g s", description: "Go to Brand settings" },
   { keys: "/", description: "Focus the sidebar Lookup Booking search" },
   { keys: "c", description: "Create a new booking" },
   { keys: "j / ↓", description: "Move selection down in the bookings list" },

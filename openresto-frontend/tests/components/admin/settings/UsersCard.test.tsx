@@ -122,7 +122,7 @@ describe("UsersCard", () => {
     await renderLoaded();
 
     expect(
-      screen.getByText("This is you — change your own password under Account Security.")
+      screen.getByText("This is you. Change your own password on the Account page.")
     ).toBeTruthy();
   });
 

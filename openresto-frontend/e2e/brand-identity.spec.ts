@@ -47,7 +47,7 @@ test.describe("Brand identity (UI)", () => {
     page,
   }) => {
     await gotoAdminDashboard(page);
-    await page.goto("/admin/settings");
+    await page.goto("/admin/settings/brand");
     await expect(page.getByText("Brand Identity")).toBeVisible({ timeout: 15_000 });
 
     // The Brand Identity card's App Name + Primary Color inputs.
