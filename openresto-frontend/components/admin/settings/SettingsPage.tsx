@@ -27,7 +27,7 @@ export function SettingsPage({
   const { colors } = useAppTheme();
 
   return (
-    <ScrollView contentContainerStyle={styles.settingsContainer}>
+    <ScrollView contentContainerStyle={styles.container}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title }} />}
 
       <View style={styles.pageHeader}>

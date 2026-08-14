@@ -296,57 +296,61 @@ export function BrandSettingsCard({
             </ThemedText>
           </View>
 
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Contact Phone</ThemedText>
-            <Input
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="+44 20 7946 0958"
-              autoCapitalize="none"
-              keyboardType="phone-pad"
-              maxLength={MAX_CONTACT_PHONE_LENGTH}
-            />
-            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Fallback contact shown when a location has no phone number of its own.
-            </ThemedText>
+          <View style={settingsStyles.fieldRow}>
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Contact Phone</ThemedText>
+              <Input
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder="+44 20 7946 0958"
+                autoCapitalize="none"
+                keyboardType="phone-pad"
+                maxLength={MAX_CONTACT_PHONE_LENGTH}
+              />
+              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+                Fallback contact shown when a location has no phone number of its own.
+              </ThemedText>
+            </View>
+
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Contact Email</ThemedText>
+              <Input
+                value={emailAddress}
+                onChangeText={setEmailAddress}
+                placeholder="bookings@example.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                maxLength={MAX_CONTACT_EMAIL_LENGTH}
+              />
+              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+                Fallback contact shown when a location has no email of its own.
+              </ThemedText>
+            </View>
           </View>
 
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Contact Email</ThemedText>
-            <Input
-              value={emailAddress}
-              onChangeText={setEmailAddress}
-              placeholder="bookings@example.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              maxLength={MAX_CONTACT_EMAIL_LENGTH}
-            />
-            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Fallback contact shown when a location has no email of its own.
-            </ThemedText>
-          </View>
+          <View style={settingsStyles.fieldRow}>
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Highlights Heading</ThemedText>
+              <Input
+                value={highlightsHeading}
+                onChangeText={setHighlightsHeading}
+                placeholder="Restaurant highlights"
+                maxLength={60}
+              />
+              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+                Heading above the highlights section. Leave blank for the default.
+              </ThemedText>
+            </View>
 
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Highlights Heading</ThemedText>
-            <Input
-              value={highlightsHeading}
-              onChangeText={setHighlightsHeading}
-              placeholder="Restaurant highlights"
-              maxLength={60}
-            />
-            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Heading above the highlights section. Leave blank for the default.
-            </ThemedText>
-          </View>
-
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Highlights Subheading</ThemedText>
-            <Input
-              value={highlightsSubheading}
-              onChangeText={setHighlightsSubheading}
-              placeholder="Curated by the owner"
-              maxLength={60}
-            />
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Highlights Subheading</ThemedText>
+              <Input
+                value={highlightsSubheading}
+                onChangeText={setHighlightsSubheading}
+                placeholder="Curated by the owner"
+                maxLength={60}
+              />
+            </View>
           </View>
 
           <View style={settingsStyles.field}>

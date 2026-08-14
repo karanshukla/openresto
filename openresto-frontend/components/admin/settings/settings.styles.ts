@@ -36,16 +36,6 @@ export const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
   },
-  // The settings routes are single-column forms: a full 1200px would stretch every input
-  // across the whole screen, which is what made the old combined page look unfinished.
-  settingsContainer: {
-    padding: theme.spacing.xxl,
-    paddingTop: theme.spacing.xxxl,
-    gap: theme.spacing.lg,
-    maxWidth: 880,
-    width: "100%",
-    alignSelf: "center",
-  },
   pageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -97,7 +87,15 @@ export const styles = StyleSheet.create({
   sectionBlock: {
     paddingBottom: theme.spacing.md,
   },
-  field: { gap: theme.spacing.xs },
+  // SettingsPage now renders at the same 1200px width as every other admin page (via
+  // `container` below), so a lone field left unbounded would stretch a one-line input
+  // across the whole card. Capping it keeps inputs a readable size regardless of container
+  // width; fieldRow/fieldFlex below let two related fields (e.g. phone/email) share a row.
+  field: { gap: theme.spacing.xs, width: "100%", maxWidth: 480 },
+  // minWidth (paired with the row's flexWrap) is what makes a row's two fields drop to
+  // stacked full-width columns on a narrow viewport instead of squeezing side by side.
+  fieldRow: { flexDirection: "row", gap: theme.spacing.md, flexWrap: "wrap" },
+  fieldFlex: { flex: 1, minWidth: 220 },
   // Shared form-field label style used across every settings card. Inline copies in
   // RestaurantInfoForm / HighlightsCard should migrate to this token (see #231).
   fieldLabel: { fontSize: 12, fontWeight: "500" as const },

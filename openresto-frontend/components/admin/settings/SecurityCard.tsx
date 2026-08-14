@@ -140,24 +140,26 @@ export function SecurityCard({
 
           {showEmailForm && (
             <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>New email</ThemedText>
-                <Input
-                  value={newEmail}
-                  onChangeText={setNewEmail}
-                  placeholder="new@email.com"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>Current password</ThemedText>
-                <Input
-                  value={currentPwForEmail}
-                  onChangeText={setCurrentPwForEmail}
-                  secureTextEntry
-                  placeholder="••••••••"
-                />
+              <View style={styles.fieldRow}>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>New email</ThemedText>
+                  <Input
+                    value={newEmail}
+                    onChangeText={setNewEmail}
+                    placeholder="new@email.com"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>Current password</ThemedText>
+                  <Input
+                    value={currentPwForEmail}
+                    onChangeText={setCurrentPwForEmail}
+                    secureTextEntry
+                    placeholder="••••••••"
+                  />
+                </View>
               </View>
               {msg && (
                 <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
@@ -219,22 +221,24 @@ export function SecurityCard({
 
           {showPvqForm && (
             <View style={[styles.secForm, { borderTopColor: borderColor }]}>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>Security question</ThemedText>
-                <Input
-                  value={pvqQuestion}
-                  onChangeText={setPvqQuestion}
-                  placeholder="e.g. What was the name of your first pet?"
-                />
-              </View>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>Answer (not case-sensitive)</ThemedText>
-                <Input
-                  value={pvqAnswer}
-                  onChangeText={setPvqAnswer}
-                  placeholder="Your answer"
-                  autoCapitalize="none"
-                />
+              <View style={styles.fieldRow}>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>Security question</ThemedText>
+                  <Input
+                    value={pvqQuestion}
+                    onChangeText={setPvqQuestion}
+                    placeholder="e.g. What was the name of your first pet?"
+                  />
+                </View>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>Answer (not case-sensitive)</ThemedText>
+                  <Input
+                    value={pvqAnswer}
+                    onChangeText={setPvqAnswer}
+                    placeholder="Your answer"
+                    autoCapitalize="none"
+                  />
+                </View>
               </View>
               {msg && !msg.ok && <ThemedText style={styles.errorText}>{msg.text}</ThemedText>}
               <View style={styles.formActions}>
@@ -293,23 +297,25 @@ export function SecurityCard({
                   placeholder="••••••••"
                 />
               </View>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>New password</ThemedText>
-                <Input
-                  value={newPw}
-                  onChangeText={setNewPw}
-                  secureTextEntry
-                  placeholder="At least 6 characters"
-                />
-              </View>
-              <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>Confirm new password</ThemedText>
-                <Input
-                  value={confirmPw}
-                  onChangeText={setConfirmPw}
-                  secureTextEntry
-                  placeholder="Repeat password"
-                />
+              <View style={styles.fieldRow}>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>New password</ThemedText>
+                  <Input
+                    value={newPw}
+                    onChangeText={setNewPw}
+                    secureTextEntry
+                    placeholder="At least 6 characters"
+                  />
+                </View>
+                <View style={[styles.field, styles.fieldFlex]}>
+                  <ThemedText style={styles.fieldLabel}>Confirm new password</ThemedText>
+                  <Input
+                    value={confirmPw}
+                    onChangeText={setConfirmPw}
+                    secureTextEntry
+                    placeholder="Repeat password"
+                  />
+                </View>
               </View>
               {msg && (
                 <ThemedText style={msg.ok ? styles.successText : styles.errorText}>
