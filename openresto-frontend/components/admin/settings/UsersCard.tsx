@@ -417,8 +417,14 @@ export function UsersCard({
                     >
                       Cancel
                     </Button>
-                    <Button size="md" onPress={handleCreate} loading={busy}>
-                      Create user
+                    <Button
+                      size="md"
+                      icon="add"
+                      onPress={handleCreate}
+                      loading={busy}
+                      accessibilityLabel="Add this user"
+                    >
+                      {busy ? "Adding…" : "Add"}
                     </Button>
                   </ButtonRow>
                 </View>

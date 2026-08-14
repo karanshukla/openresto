@@ -30,11 +30,12 @@ export function AddRow({
   const [extra, setExtra] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Collapsed — the standing "add" CTA for the list it heads. Right-aligned per the settings
-  // table/section layout; keeps the verbatim label so callers' tests keep resolving it.
+  // Collapsed — the standing "add" CTA for the list it heads. Left-aligned so it sits flush with
+  // the rows it appends to, matching every other create CTA in the admin (footer links,
+  // highlights, users); keeps the verbatim label so callers' tests keep resolving it.
   if (!open) {
     return (
-      <ButtonRow>
+      <ButtonRow align="start">
         <Button size="md" icon="add" onPress={() => setOpen(true)} accessibilityLabel={label}>
           {label}
         </Button>

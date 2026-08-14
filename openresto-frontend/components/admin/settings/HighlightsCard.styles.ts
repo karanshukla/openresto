@@ -3,6 +3,9 @@ import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   list: { gap: theme.spacing.sm },
+  // Separates the section's own copy (heading/subheading, saved as brand settings) from the
+  // list of highlight cards below it, which each save themselves.
+  divider: { height: 1, marginVertical: theme.spacing.xs },
   // Unlike the other list tiles this one top-aligns: the body text wraps to several lines and
   // the icon square should sit level with the title, not float in the middle of the block.
   tileTop: { alignItems: "flex-start" },

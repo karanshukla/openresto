@@ -52,7 +52,7 @@ test.describe("Admin user management", () => {
     await card.getByPlaceholder("Alex Rivera").fill(INVITED_NAME);
     await card.getByPlaceholder("••••••••").fill(INVITED_PASSWORD);
     await card.getByLabel("New user role Manager").click();
-    await card.getByText("Create user").click();
+    await card.getByLabel("Add this user").click();
 
     await expect(card.getByText(`${invitedEmail} can now sign in.`)).toBeVisible({
       timeout: 10_000,

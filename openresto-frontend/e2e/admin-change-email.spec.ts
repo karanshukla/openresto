@@ -38,7 +38,7 @@ test.describe("Admin change email", () => {
     // sidebar's identity block shows the same address.
     await expectVisibleWithReload(page, securityCard.getByText(ADMIN_EMAIL), { timeout: 10_000 });
 
-    // Scoped by testID rather than DOM position — the Brand Identity card
+    // Scoped by testID rather than DOM position — the Homepage Header card
     // also renders a "Change" button (shown when a header image is already
     // configured), so a text-based locator would need to know which one
     // comes first on the page.

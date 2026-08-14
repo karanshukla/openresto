@@ -17,10 +17,11 @@ interface BrandDto {
 /**
  * UI-driven brand identity change — the existing brand-colour.spec.ts drives
  * the write through the admin API; this one exercises the Brand Identity card
- * on /settings itself (the inputs, the Save button, the optimistic update,
- * and the cross-page propagation to the customer-facing navbar).
+ * on /settings itself (the inputs, the card's autosave, and the cross-page
+ * propagation to the customer-facing navbar).
  *
- *   1. Change App Name + Primary Color via the settings form → Save.
+ *   1. Change App Name + Primary Color via the settings form → the card
+ *      autosaves and reports "Saved".
  *   2. The new name + colour render on the public home page navbar.
  *   3. Reload the home page → brand persists (proves it was saved server-side,
  *      not just held in BrandContext state).
@@ -54,8 +55,11 @@ test.describe("Brand identity (UI)", () => {
     await page.getByPlaceholder("Open Resto").fill(TEST_APP_NAME);
     await page.getByPlaceholder("#0a7ea4").fill(TEST_PRIMARY);
 
-    // The card's Save button (scoped by the card to avoid the Highlights card).
-    await page.getByText("Save", { exact: true }).click();
+    // There is no Save button: the card writes itself once typing stops, and its status
+    // corner is the only signal that the write landed.
+    await expect(page.getByTestId("brand-identity-save-status").getByText("Saved")).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Navigate to the customer-facing home page. BrandContext re-fetches
     // /api/brand on mount so the new name + colour are applied.

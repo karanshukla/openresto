@@ -66,6 +66,7 @@ export function SocialLinkEditForm({
   mutedColor,
   colors,
   error,
+  isNew = false,
 }: {
   state: EditState;
   onChange: (s: EditState) => void;
@@ -79,6 +80,8 @@ export function SocialLinkEditForm({
   colors: ThemeColors;
   /** Inline validation/server error shown above the action row. Null/undefined hides it. */
   error?: string | null;
+  /** Labels the commit as a create rather than a save — the same form serves both. */
+  isNew?: boolean;
 }) {
   return (
     <View style={[styles.editForm, { backgroundColor: surface2, borderColor }]}>
@@ -146,13 +149,13 @@ export function SocialLinkEditForm({
         </Button>
         <Button
           size="md"
-          icon="checkmark"
+          icon={isNew ? "add" : "checkmark"}
           onPress={onSave}
           disabled={saving || !state.label.trim() || !state.url.trim()}
           loading={saving}
-          accessibilityLabel="Save this link"
+          accessibilityLabel={isNew ? "Add this link" : "Save this link"}
         >
-          {saving ? "Saving…" : "Save"}
+          {isNew ? (saving ? "Adding…" : "Add") : saving ? "Saving…" : "Save"}
         </Button>
       </ButtonRow>
     </View>

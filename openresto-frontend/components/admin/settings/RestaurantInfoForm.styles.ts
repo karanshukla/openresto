@@ -52,7 +52,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.md,
   },
-  dirtyIndicator: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
-  dirtyDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.warning },
-  dirtyText: { fontSize: 12 },
+  // Why the autosave is paused, shown where the save status otherwise sits.
+  blockedRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
+  blockedText: { fontSize: 12 },
 });

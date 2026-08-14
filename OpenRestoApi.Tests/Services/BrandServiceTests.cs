@@ -151,6 +151,28 @@ public class BrandServiceTests
     }
 
     [Fact]
+    public async Task SaveAsync_Clears_FaviconIcon_WhenBlankPassed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Clears_FaviconIcon_WhenBlankPassed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, faviconIcon: "utensils");
+        await svc.SaveAsync(null, null, null, faviconIcon: "");
+        BrandSettings result = await svc.GetAsync();
+        Assert.Null(result.FaviconIcon);
+    }
+
+    [Fact]
+    public async Task SaveAsync_Keeps_FaviconIcon_WhenNullPassed()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Keeps_FaviconIcon_WhenNullPassed));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, faviconIcon: "utensils");
+        await svc.SaveAsync("Renamed", null, null);
+        BrandSettings result = await svc.GetAsync();
+        Assert.Equal("utensils", result.FaviconIcon);
+    }
+
+    [Fact]
     public async Task SaveAsync_Persists_WebsiteUrl_Trimmed()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Persists_WebsiteUrl_Trimmed));

@@ -781,7 +781,7 @@ describe("brand settings", () => {
 
     const result = await saveBrandSettings(brandData);
 
-    expect(result).toEqual({ message: "Saved" });
+    expect(result).toEqual({ ok: true, data: { message: "Saved" } });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/brand");
     expect(opts.method).toBe("PATCH");
@@ -795,7 +795,7 @@ describe("brand settings", () => {
     });
 
     const result = await saveBrandSettings(brandData);
-    expect(result).toEqual({ message: "Invalid color" });
+    expect(result).toEqual({ ok: false, message: "Invalid color" });
   });
 
   it("returns fallback message when json fails on non-ok response", async () => {
@@ -807,7 +807,7 @@ describe("brand settings", () => {
     });
 
     const result = await saveBrandSettings(brandData);
-    expect(result).toEqual({ message: "Failed to save." });
+    expect(result).toEqual({ ok: false, message: "Failed to save." });
   });
 
   it("returns null on network error", async () => {

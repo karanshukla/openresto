@@ -502,16 +502,22 @@ export interface BrandSettingsDto {
   headerImageFit?: string;
 }
 
+/**
+ * Result-typed rather than a bare `{ message }`: success and failure both come back as a
+ * message, and callers used to tell them apart by looking for "fail" in the text — which
+ * quietly reported every validation error ("Subtitle cannot exceed 160 characters.") as a
+ * successful save. Null still means the request never landed.
+ */
 export async function saveBrandSettings(
   data: BrandSettingsDto
-): Promise<{ message: string } | null> {
+): Promise<AdminMutationResult<{ message: string }> | null> {
   try {
     const res = await patch("/brand", data);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { message: err?.message ?? "Failed to save." };
+      return { ok: false, message: err?.message ?? "Failed to save." };
     }
-    return await res.json();
+    return { ok: true, data: await res.json() };
   } catch {
     return null;
   }

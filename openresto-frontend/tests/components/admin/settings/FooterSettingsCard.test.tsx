@@ -95,29 +95,31 @@ describe("FooterSettingsCard", () => {
     await waitFor(() => expect(screen.getByText("2 social links configured")).toBeTruthy());
   });
 
-  it("saves copyright text", async () => {
+  it("autosaves copyright text once editing stops", async () => {
     (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({
-      message: "Brand settings saved.",
+      ok: true,
+      data: { message: "Brand settings saved." },
     });
     render(<FooterSettingsCard {...baseProps} />);
     fireEvent.changeText(
       screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
       "© 2026 My Resto"
     );
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
-    });
-    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ copyrightText: "© 2026 My Resto" })
+    await waitFor(
+      () =>
+        expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+          expect.objectContaining({ copyrightText: "© 2026 My Resto" })
+        ),
+      { timeout: 2000 }
     );
-    await waitFor(() => {
-      expect(screen.getByText("Brand settings saved.")).toBeTruthy();
-    });
+    await waitFor(() => expect(screen.getByText("Saved")).toBeTruthy());
   });
 
-  it("disables the copyright Save button until the text changes", () => {
+  it("leaves the copyright field alone until it changes", async () => {
     render(<FooterSettingsCard {...baseProps} />);
-    expect(screen.getByText("Save")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("Copyright Text")).toBeTruthy());
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(adminApi.saveBrandSettings).not.toHaveBeenCalled();
   });
 
   it("shows error message when saveBrandSettings returns null", async () => {
@@ -127,11 +129,8 @@ describe("FooterSettingsCard", () => {
       screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
       "© 2026"
     );
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
-    });
-    await waitFor(() => {
-      expect(screen.getByText("Failed to save.")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("Couldn't reach the server.")).toBeTruthy(), {
+      timeout: 2000,
     });
   });
 
@@ -203,8 +202,7 @@ describe("FooterSettingsCard", () => {
       "https://facebook.com/resto"
     );
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Add this link"));
     });
     expect(adminApi.adminCreateSocialLink).toHaveBeenCalledWith(
       expect.objectContaining({ label: "Facebook", url: "https://facebook.com/resto" })
@@ -221,8 +219,7 @@ describe("FooterSettingsCard", () => {
     // Only fill the label — url stays empty
     fireEvent.changeText(screen.getByPlaceholderText("e.g. Instagram, Yelp, Menu PDF"), "Facebook");
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Add this link"));
     });
     expect(adminApi.adminCreateSocialLink).not.toHaveBeenCalled();
   });
@@ -258,8 +255,7 @@ describe("FooterSettingsCard", () => {
     await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Instagram"), "Instagram Official");
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Save this link"));
     });
     expect(adminApi.adminUpdateSocialLink).toHaveBeenCalledWith(
       1,
@@ -281,8 +277,7 @@ describe("FooterSettingsCard", () => {
       "https://example.com"
     );
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Add this link"));
     });
     expect(adminApi.adminCreateSocialLink).toHaveBeenCalled();
     expect(screen.queryByText("New Link")).toBeNull();
@@ -306,8 +301,7 @@ describe("FooterSettingsCard", () => {
       "https://valid-url.example.com"
     );
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Add this link"));
     });
     await waitFor(() => expect(screen.getByText(/valid absolute URL/)).toBeTruthy());
     // Form stays open so the admin can fix the field.
@@ -327,8 +321,7 @@ describe("FooterSettingsCard", () => {
       "javascript:alert(1)"
     );
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Add this link"));
     });
     await waitFor(() => expect(screen.getByText(/valid URL/)).toBeTruthy());
     // Pre-flight means the API was never called.
@@ -361,8 +354,8 @@ describe("FooterSettingsCard", () => {
     await waitFor(() => expect(screen.getByText("205/200")).toBeTruthy());
   });
 
-  it("shows a 'Saving…' label on the copyright button while the save is in flight", async () => {
-    let resolveSave: (value: { message: string }) => void = () => {};
+  it("reports 'Saving…' while the copyright save is in flight", async () => {
+    let resolveSave: (value: { ok: true; data: { message: string } }) => void = () => {};
     (adminApi.saveBrandSettings as jest.Mock).mockReturnValue(
       new Promise((resolve) => {
         resolveSave = resolve;
@@ -373,12 +366,11 @@ describe("FooterSettingsCard", () => {
       screen.getByPlaceholderText(`© ${new Date().getFullYear()} Open Resto. All rights reserved.`),
       "© 2026 In Flight"
     );
-    fireEvent.press(screen.getByText("Save"));
-    await waitFor(() => expect(screen.getByText("Saving…")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Saving…")).toBeTruthy(), { timeout: 2000 });
     await act(async () => {
-      resolveSave({ message: "Brand settings saved." });
+      resolveSave({ ok: true, data: { message: "Brand settings saved." } });
     });
-    await waitFor(() => expect(screen.getByText("Brand settings saved.")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Saved")).toBeTruthy());
   });
 
   it("keeps other links untouched when editing one of several succeeds", async () => {
@@ -391,8 +383,7 @@ describe("FooterSettingsCard", () => {
     await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Instagram"), "Instagram Official");
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Save this link"));
     });
     await waitFor(() => expect(screen.getByText("Instagram Official")).toBeTruthy());
     expect(screen.getByText("Yelp")).toBeTruthy();
@@ -409,8 +400,7 @@ describe("FooterSettingsCard", () => {
     fireEvent.press(screen.getByLabelText("Edit Instagram"));
     await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Save this link"));
     });
     await waitFor(() => expect(screen.getByText("That URL is already in use.")).toBeTruthy());
     expect(screen.getByDisplayValue("Instagram")).toBeTruthy();
@@ -424,8 +414,7 @@ describe("FooterSettingsCard", () => {
     fireEvent.press(screen.getByLabelText("Edit Instagram"));
     await waitFor(() => expect(screen.getByDisplayValue("Instagram")).toBeTruthy());
     await act(async () => {
-      const saveButtons = screen.getAllByText("Save");
-      fireEvent.press(saveButtons[saveButtons.length - 1]);
+      fireEvent.press(screen.getByLabelText("Save this link"));
     });
     await waitFor(() =>
       expect(screen.getByText("Couldn't reach the server. Please try again.")).toBeTruthy()

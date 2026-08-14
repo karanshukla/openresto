@@ -3,28 +3,29 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
-import Button from "@/components/common/Button";
-import { ButtonRow } from "@/components/common/ButtonRow";
 import { theme } from "@/theme/theme";
-import { saveBrandSettings, uploadHeroImage, deleteHeroImage } from "@/api/admin";
 import { useBrand } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAutosave } from "@/hooks/use-autosave";
 import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import {
-  styles as settingsStyles,
-  domStyles as settingsDomStyles,
-  themedSelect,
-} from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
 import { styles, domStyles } from "./BrandSettingsCard.styles";
+import { useBrandDraftPublish } from "./BrandDraftContext";
+import { saveBrandFields } from "./brandAutosave";
+import { SaveStatus } from "./SaveStatus";
 import { Icon } from "@/components/common/Icon";
 
-const MAX_HERO_MB = 5;
+const PRESET_COLORS = ["#0a7ea4", "#2563eb", "#7c3aed", "#059669", "#dc2626", "#d97706", "#475569"];
 
-// Mirrors the backend ContactLimits caps.
-const MAX_CONTACT_PHONE_LENGTH = 32;
-const MAX_CONTACT_EMAIL_LENGTH = 254;
+/** Mirrors BrandService.IsValidHexColor — a half-typed colour must not be autosaved. */
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/;
 
+/**
+ * Who the site says it is: the name, the tagline under it, the colour every accent is derived
+ * from, and the tab icon. The header image, contact details and highlight copy each have a card
+ * of their own — this one is the four fields the preview's chrome and hero are made of.
+ */
 export function BrandSettingsCard({
   borderColor,
   mutedColor,
@@ -35,119 +36,53 @@ export function BrandSettingsCard({
   cardBg: string;
 }) {
   const brand = useBrand();
-  const { primaryColor, colors } = useAppTheme();
+  const { primaryColor } = useAppTheme();
   const [appName, setAppName] = useState(brand.appName);
   const [brandPrimaryColor, setBrandPrimaryColor] = useState(brand.primaryColor);
   const [faviconIcon, setFaviconIcon] = useState<string | undefined>(brand.faviconIcon);
-  const [websiteUrl, setWebsiteUrl] = useState(brand.websiteUrl ?? "");
-  const [phoneNumber, setPhoneNumber] = useState(brand.phoneNumber ?? "");
-  const [emailAddress, setEmailAddress] = useState(brand.emailAddress ?? "");
   const [subtitle, setSubtitle] = useState(brand.subtitle ?? "");
-  const [highlightsHeading, setHighlightsHeading] = useState(brand.highlightsHeading ?? "");
-  const [highlightsSubheading, setHighlightsSubheading] = useState(
-    brand.highlightsSubheading ?? ""
-  );
-  const [headerImageFit, setHeaderImageFit] = useState(brand.headerImageFit ?? "Cover");
-  const [heroPreview, setHeroPreview] = useState<string | null>(brand.headerImageUrl ?? null);
-  const [heroUploading, setHeroUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [expanded, setExpanded] = usePersistedState("settings:brand:expanded", true);
 
-  const formIsDirty =
-    appName !== brand.appName ||
-    brandPrimaryColor !== brand.primaryColor ||
-    faviconIcon !== brand.faviconIcon ||
-    websiteUrl.trim() !== (brand.websiteUrl ?? "") ||
-    phoneNumber.trim() !== (brand.phoneNumber ?? "") ||
-    emailAddress.trim() !== (brand.emailAddress ?? "") ||
-    subtitle.trim() !== (brand.subtitle ?? "") ||
-    highlightsHeading.trim() !== (brand.highlightsHeading ?? "") ||
-    highlightsSubheading.trim() !== (brand.highlightsSubheading ?? "") ||
-    headerImageFit !== (brand.headerImageFit ?? "Cover") ||
-    heroPreview !== (brand.headerImageUrl ?? null);
+  useBrandDraftPublish({
+    appName,
+    primaryColor: brandPrimaryColor,
+    faviconIcon,
+    subtitle,
+  });
+
+  // A withheld save has to say why: with no button to disable, silence reads as a broken card.
+  const blockedReason = !appName.trim()
+    ? "Not saved: the app name can't be empty."
+    : !HEX_COLOR.test(brandPrimaryColor)
+      ? "Not saved: waiting for a full hex colour, like #0a7ea4."
+      : null;
+
+  const { status, error, retry } = useAutosave({
+    values: {
+      appName,
+      primaryColor: brandPrimaryColor,
+      // An omitted field means "leave it alone" to the API, so deselecting an icon has to send
+      // an explicit empty string for the server to clear it.
+      faviconIcon: faviconIcon ?? "",
+      subtitle: subtitle.trim(),
+    },
+    saved: {
+      appName: brand.appName,
+      primaryColor: brand.primaryColor,
+      faviconIcon: brand.faviconIcon ?? "",
+      subtitle: brand.subtitle ?? "",
+    },
+    save: saveBrandFields,
+    canSave: !blockedReason,
+  });
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAppName(brand.appName);
     setBrandPrimaryColor(brand.primaryColor);
     setFaviconIcon(brand.faviconIcon);
-    setWebsiteUrl(brand.websiteUrl ?? "");
-    setPhoneNumber(brand.phoneNumber ?? "");
-    setEmailAddress(brand.emailAddress ?? "");
     setSubtitle(brand.subtitle ?? "");
-    setHighlightsHeading(brand.highlightsHeading ?? "");
-    setHighlightsSubheading(brand.highlightsSubheading ?? "");
-    setHeaderImageFit(brand.headerImageFit ?? "Cover");
-    setHeroPreview(brand.headerImageUrl ?? null);
   }, [brand]);
-
-  /* istanbul ignore next */
-  const handlePickHero = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/png,image/jpeg,image/webp";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      if (file.size > MAX_HERO_MB * 1024 * 1024) {
-        setMsg({ text: `Image must be under ${MAX_HERO_MB} MB.`, ok: false });
-        return;
-      }
-      setHeroUploading(true);
-      setMsg(null);
-      const url = await uploadHeroImage(file);
-      setHeroUploading(false);
-      if (url) {
-        setHeroPreview(url);
-        setMsg({ text: "Header image uploaded.", ok: true });
-      } else {
-        setMsg({ text: "Failed to upload image.", ok: false });
-      }
-    };
-    input.click();
-  };
-
-  const handleDeleteHero = async () => {
-    setHeroUploading(true);
-    await deleteHeroImage();
-    setHeroUploading(false);
-    setHeroPreview(null);
-    setMsg({ text: "Header image removed.", ok: true });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMsg(null);
-    const result = await saveBrandSettings({
-      appName,
-      primaryColor: brandPrimaryColor,
-      faviconIcon,
-      websiteUrl: websiteUrl.trim() || undefined,
-      phoneNumber: phoneNumber.trim(),
-      emailAddress: emailAddress.trim(),
-      subtitle: subtitle.trim() || "",
-      highlightsHeading: highlightsHeading.trim() || "",
-      highlightsSubheading: highlightsSubheading.trim() || "",
-      headerImageFit,
-    });
-    setSaving(false);
-    if (result) {
-      setMsg({ text: result.message, ok: !result.message.toLowerCase().includes("fail") });
-    } else {
-      setMsg({ text: "Failed to save.", ok: false });
-    }
-  };
-
-  const PRESET_COLORS = [
-    "#0a7ea4",
-    "#2563eb",
-    "#7c3aed",
-    "#059669",
-    "#dc2626",
-    "#d97706",
-    "#475569",
-  ];
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
@@ -283,154 +218,14 @@ export function BrandSettingsCard({
             )}
           </View>
 
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Website URL</ThemedText>
-            <Input
-              value={websiteUrl}
-              onChangeText={setWebsiteUrl}
-              placeholder="https://bookings.example.com"
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Used in confirmation email links and images. Must be the public URL of this app.
-            </ThemedText>
-          </View>
-
-          <View style={settingsStyles.fieldRow}>
-            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Contact Phone</ThemedText>
-              <Input
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="+44 20 7946 0958"
-                autoCapitalize="none"
-                keyboardType="phone-pad"
-                maxLength={MAX_CONTACT_PHONE_LENGTH}
-              />
-              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Fallback contact shown when a location has no phone number of its own.
-              </ThemedText>
-            </View>
-
-            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Contact Email</ThemedText>
-              <Input
-                value={emailAddress}
-                onChangeText={setEmailAddress}
-                placeholder="bookings@example.com"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                maxLength={MAX_CONTACT_EMAIL_LENGTH}
-              />
-              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Fallback contact shown when a location has no email of its own.
-              </ThemedText>
-            </View>
-          </View>
-
-          <View style={settingsStyles.fieldRow}>
-            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Highlights Heading</ThemedText>
-              <Input
-                value={highlightsHeading}
-                onChangeText={setHighlightsHeading}
-                placeholder="Restaurant highlights"
-                maxLength={60}
-              />
-              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Heading above the highlights section. Leave blank for the default.
-              </ThemedText>
-            </View>
-
-            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Highlights Subheading</ThemedText>
-              <Input
-                value={highlightsSubheading}
-                onChangeText={setHighlightsSubheading}
-                placeholder="Curated by the owner"
-                maxLength={60}
-              />
-            </View>
-          </View>
-
-          <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>
-              Homepage Header Image (max {MAX_HERO_MB} MB)
-            </ThemedText>
-            <View style={styles.heroFitField}>
-              <ThemedText style={settingsStyles.fieldLabel}>Image fit</ThemedText>
-              <select
-                data-testid="header-image-fit-select"
-                value={headerImageFit}
-                onChange={/* istanbul ignore next */ (e) => setHeaderImageFit(e.target.value)}
-                style={{ ...settingsDomStyles.select, ...themedSelect(colors) }}
-              >
-                <option value="Cover">Cover (fill, may crop)</option>
-                <option value="Contain">Contain (show whole image)</option>
-              </select>
-              <ThemedText style={[styles.heroFitHint, { color: mutedColor }]}>
-                &quot;Contain&quot; avoids cropping on mobile; &quot;Cover&quot; fills the frame.
-              </ThemedText>
-            </View>
-            <View style={styles.heroBlock}>
-              {heroPreview ? (
-                <View style={[styles.heroFrame, { borderColor }]}>
-                  <img src={heroPreview} alt="Header" style={domStyles.heroImage} />
-                </View>
-              ) : (
-                <View style={[styles.heroPlaceholder, { borderColor }]}>
-                  <Icon name="image-outline" size="xxl" color={mutedColor} />
-                  <ThemedText style={[styles.heroPlaceholderText, { color: mutedColor }]}>
-                    No header image
-                  </ThemedText>
-                </View>
-              )}
-              <View style={styles.heroActions}>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  icon="cloud-upload-outline"
-                  onPress={handlePickHero}
-                  disabled={heroUploading}
-                  loading={heroUploading}
-                  accessibilityLabel={heroPreview ? "Change header image" : "Upload header image"}
-                >
-                  {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
-                </Button>
-                {heroPreview && (
-                  <Button
-                    variant="secondary"
-                    tone="danger"
-                    size="md"
-                    icon="trash-outline"
-                    onPress={handleDeleteHero}
-                    disabled={heroUploading}
-                    accessibilityLabel="Remove header image"
-                  >
-                    Remove
-                  </Button>
-                )}
-              </View>
-            </View>
-          </View>
-
-          {msg && (
-            <ThemedText style={msg.ok ? settingsStyles.successText : settingsStyles.errorText}>
-              {msg.text}
-            </ThemedText>
-          )}
-
-          <ButtonRow style={styles.saveBtn}>
-            <Button
-              size="md"
-              onPress={handleSave}
-              disabled={saving || !appName.trim() || formIsDirty === false}
-              loading={saving}
-            >
-              {saving ? "Saving…" : "Save"}
-            </Button>
-          </ButtonRow>
+          <SaveStatus
+            status={status}
+            error={error}
+            onRetry={retry}
+            mutedColor={mutedColor}
+            blockedReason={blockedReason}
+            testID="brand-identity-save-status"
+          />
         </View>
       </AnimatedAccordion>
     </View>
