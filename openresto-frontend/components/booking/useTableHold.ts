@@ -38,9 +38,17 @@ export interface UseTableHoldResult {
   /** Combinable-table group the server resolved for a group hold (null otherwise). */
   resolvedGroupId: number | null;
   setHoldStatus: (status: HoldStatus) => void;
-  releaseCurrentHold: () => void;
 }
 
+/**
+ * Owns the whole hold lifecycle for one booking form.
+ *
+ * Every param that identifies the held unit is a dependency of the effect below, so a hold never
+ * outlives the selection that produced it: the params either stop being holdable (released
+ * outright) or resolve to a different unit (replaced atomically, passing the old hold id so the
+ * server frees it in the same call). Callers therefore never release a hold themselves — changing
+ * what they pass in is the whole protocol.
+ */
 export function useTableHold({
   restaurantId,
   sections,
@@ -214,6 +222,5 @@ export function useTableHold({
     resolvedSectionId,
     resolvedGroupId,
     setHoldStatus,
-    releaseCurrentHold,
   };
 }

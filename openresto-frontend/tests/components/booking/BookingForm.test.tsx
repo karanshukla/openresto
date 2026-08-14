@@ -40,7 +40,6 @@ jest.mock("@/context/BrandContext", () => ({
 
 // Controllable hold status
 const mockSetHoldStatus = jest.fn();
-const mockReleaseCurrentHold = jest.fn();
 let mockHoldStatus = "idle";
 
 jest.mock("@/components/booking/useTableHold", () => ({
@@ -52,7 +51,6 @@ jest.mock("@/components/booking/useTableHold", () => ({
     resolvedTableId: null,
     resolvedSectionId: null,
     setHoldStatus: mockSetHoldStatus,
-    releaseCurrentHold: mockReleaseCurrentHold,
   }),
 }));
 

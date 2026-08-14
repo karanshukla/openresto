@@ -18,8 +18,6 @@ export interface UseBookingSeatingArgs {
   seats: number;
   /** The slot the diner has picked, if availability has loaded for it. */
   currentSlot: TimeSlotDto | undefined;
-  /** Drops any live hold when the seating choice changes out from under it. */
-  releaseCurrentHold: () => void;
 }
 
 /**
@@ -28,13 +26,11 @@ export interface UseBookingSeatingArgs {
  * "Any section" (id 0) is the default: the form hides the table dropdown and the server picks.
  * Otherwise the hook keeps a concrete table selected, re-picking whenever availability, party
  * size or section changes so the form never sits on a table the API would reject.
+ *
+ * Selection is all it owns. A live hold on the previous pick is invalidated by the new pick
+ * flowing into `useTableHold`, which releases or replaces it — never by this hook reaching back.
  */
-export function useBookingSeating({
-  restaurant,
-  seats,
-  currentSlot,
-  releaseCurrentHold,
-}: UseBookingSeatingArgs) {
+export function useBookingSeating({ restaurant, seats, currentSlot }: UseBookingSeatingArgs) {
   const [sectionId, setSectionId] = useState<number>(ANY_SECTION_ID);
   const [tableId, setTableId] = useState<number | undefined>();
   // Combinable-group selection (#274): when set, the diner picked a combined-table group from the
@@ -121,7 +117,6 @@ export function useBookingSeating({
   }, [availableTableIds, seats, isAutoAssign]);
 
   useEffect(() => {
-    releaseCurrentHold();
     if (isAutoAssign) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTableId(undefined);
