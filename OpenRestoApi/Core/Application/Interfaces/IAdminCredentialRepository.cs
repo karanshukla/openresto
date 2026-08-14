@@ -9,13 +9,6 @@ namespace OpenRestoApi.Core.Application.Interfaces;
 /// </summary>
 public interface IAdminCredentialRepository
 {
-    /// <summary>
-    /// The first credential row, or null if none exists yet. Only meaningful for
-    /// "has this instance been bootstrapped?" checks — never for identifying the caller,
-    /// which must go through <see cref="GetByIdAsync"/> with the JWT's user id.
-    /// </summary>
-    Task<AdminCredential?> GetAsync();
-
     /// <summary>The credential with the given id, or null.</summary>
     Task<AdminCredential?> GetByIdAsync(int id);
 

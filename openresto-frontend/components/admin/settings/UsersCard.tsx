@@ -69,7 +69,10 @@ export function UsersCard({
 
   useEffect(() => {
     adminListUsers().then((list) => {
+      // An empty list and a failed request both render as "no accounts", which is never true
+      // — the caller is signed in — so say which one happened.
       if (list) setUsers(list);
+      else setMsg({ text: "Could not load accounts. Reload to try again.", ok: false });
       setLoading(false);
     });
   }, []);
@@ -149,7 +152,10 @@ export function UsersCard({
   const isSelf = (u: AdminUserDto) => currentUser?.id === u.id;
 
   return (
-    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View
+      style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}
+      testID="users-card"
+    >
       <Pressable
         style={settingsStyles.secHeader}
         onPress={() => setExpanded((v) => !v)}
@@ -247,34 +253,39 @@ export function UsersCard({
                     </View>
                   </View>
 
-                  <View style={styles.roleChoices}>
-                    {ASSIGNABLE_ROLES.map((role) => {
-                      const selected = u.role.toLowerCase() === role.toLowerCase();
-                      return (
-                        <Pressable
-                          key={role}
-                          disabled={busy || selected}
-                          onPress={() => handleRoleChange(u, role)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Make ${u.email} ${role}`}
-                          accessibilityState={{ selected }}
-                          style={[
-                            styles.roleChoice,
-                            { borderColor: selected ? primaryColor : borderColor },
-                          ]}
-                        >
-                          <ThemedText
+                  {/* Your own role is shown as the badge above but not offered as a control:
+                      the server refuses a self-role-change for the same reason it refuses a
+                      self-deactivation. */}
+                  {!isSelf(u) && (
+                    <View style={styles.roleChoices}>
+                      {ASSIGNABLE_ROLES.map((role) => {
+                        const selected = u.role.toLowerCase() === role.toLowerCase();
+                        return (
+                          <Pressable
+                            key={role}
+                            disabled={busy || selected}
+                            onPress={() => handleRoleChange(u, role)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Make ${u.email} ${role}`}
+                            accessibilityState={{ selected }}
                             style={[
-                              styles.roleChoiceText,
-                              { color: selected ? primaryColor : mutedColor },
+                              styles.roleChoice,
+                              { borderColor: selected ? primaryColor : borderColor },
                             ]}
                           >
-                            {role}
-                          </ThemedText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                            <ThemedText
+                              style={[
+                                styles.roleChoiceText,
+                                { color: selected ? primaryColor : mutedColor },
+                              ]}
+                            >
+                              {role}
+                            </ThemedText>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
 
                   {resetForId === u.id && (
                     <View style={settingsStyles.addForm}>

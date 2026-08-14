@@ -96,6 +96,23 @@ public class SecurityQuestionsServiceTests
         Assert.Equal("Manager question?", (await ownerSvc.GetStatusAsync("manager@openresto.com")).Question);
     }
 
+    [Fact]
+    public async Task GetStatusAsync_Hides_The_Question_Of_A_Deactivated_Account()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetStatusAsync_Hides_The_Question_Of_A_Deactivated_Account));
+        AdminCredential dormant = SeedCredential(db, "dormant@openresto.com");
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(dormant));
+        await svc.SetupAsync("Dormant question?", "a");
+        dormant.IsActive = false;
+        await db.SaveChangesAsync();
+
+        // VerifyAsync would refuse this account, so offering its question would be a dead end.
+        PvqStatusDto status = await svc.GetStatusAsync("dormant@openresto.com");
+
+        Assert.False(status.IsConfigured);
+        Assert.Null(status.Question);
+    }
+
     // ── GetStatusForCurrentUserAsync ────────────────────────────────────────────
 
     [Fact]

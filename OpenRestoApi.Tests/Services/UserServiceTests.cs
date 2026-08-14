@@ -204,6 +204,22 @@ public class UserServiceTests
     }
 
     [Fact]
+    public async Task UpdateRoleAsync_Refuses_To_Change_The_Callers_Own_Role()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateRoleAsync_Refuses_To_Change_The_Callers_Own_Role));
+        AdminCredential caller = Seed(db, "owner1@example.com");
+        Seed(db, "owner2@example.com");
+        UserService svc = CreateService(db, FakeCurrentUser.For(caller));
+
+        // Another active Owner exists, so the last-Owner rule would allow this — it is the
+        // self-lockout rule that must refuse it.
+        var ex = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => svc.UpdateRoleAsync(caller.Id, new UpdateUserRoleRequest { Role = UserRoles.Manager }));
+        Assert.Contains("your own role", ex.Message);
+        Assert.Equal(UserRoles.Owner, (await db.AdminCredentials.SingleAsync(c => c.Id == caller.Id)).Role);
+    }
+
+    [Fact]
     public async Task UpdateRoleAsync_Refuses_To_Demote_The_Last_Active_Owner()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateRoleAsync_Refuses_To_Demote_The_Last_Active_Owner));

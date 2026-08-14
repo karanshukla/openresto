@@ -23,7 +23,10 @@ public sealed class SecurityQuestionsService(
         AdminCredential? cred = string.IsNullOrWhiteSpace(email)
             ? null
             : await _credentialRepository.GetByEmailAsync(email);
-        return ToStatus(cred);
+        // A deactivated account reports no question, matching what VerifyAsync would answer —
+        // offering the question and then refusing the answer would be a dead end, and it would
+        // tell an unauthenticated caller that the address exists.
+        return ToStatus(cred?.IsActive == true ? cred : null);
     }
 
     public async Task<PvqStatusDto> GetStatusForCurrentUserAsync()

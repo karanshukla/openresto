@@ -108,13 +108,14 @@ describe("UsersCard", () => {
     expect(screen.getByText("Deactivated")).toBeTruthy();
   });
 
-  it("survives a refused list without crashing", async () => {
+  it("says a refused list failed rather than showing zero accounts", async () => {
     (usersApi.adminListUsers as jest.Mock).mockResolvedValue(null);
     renderCard();
 
     await waitFor(() =>
-      expect(screen.getByText("0 accounts · Owners can manage users")).toBeTruthy()
+      expect(screen.getByText("Could not load accounts. Reload to try again.")).toBeTruthy()
     );
+    expect(screen.getByText("0 accounts · Owners can manage users")).toBeTruthy();
   });
 
   it("tells you which row is you", async () => {
@@ -186,7 +187,12 @@ describe("UsersCard", () => {
   });
 
   it("omits a blank display name rather than sending an empty string", async () => {
-    (usersApi.adminCreateUser as jest.Mock).mockResolvedValue({ ok: true, user: MANAGER });
+    // A fresh id: reusing MANAGER's would append a second row keyed the same as the one
+    // already listed.
+    (usersApi.adminCreateUser as jest.Mock).mockResolvedValue({
+      ok: true,
+      user: { ...MANAGER, id: 3, email: "new@test.com" },
+    });
     await renderLoaded();
     await openAddForm();
     fireEvent.changeText(screen.getByPlaceholderText("colleague@restaurant.com"), "new@test.com");
@@ -269,19 +275,36 @@ describe("UsersCard", () => {
   });
 
   it("surfaces the last-Owner guard on a demotion", async () => {
+    const secondOwner: AdminUserDto = {
+      ...MANAGER,
+      id: 3,
+      email: "owner2@test.com",
+      role: "Owner",
+    };
+    (usersApi.adminListUsers as jest.Mock).mockResolvedValue([OWNER, secondOwner]);
     (usersApi.adminUpdateUserRole as jest.Mock).mockResolvedValue({
       ok: false,
       message: "Cannot demote the last active Owner — promote another user first.",
     });
     await renderLoaded();
 
-    fireEvent.press(screen.getByLabelText("Make owner@test.com Manager"));
+    fireEvent.press(screen.getByLabelText("Make owner2@test.com Manager"));
 
     await waitFor(() =>
       expect(
         screen.getByText("Cannot demote the last active Owner — promote another user first.")
       ).toBeTruthy()
     );
+  });
+
+  it("offers no role controls on your own row", async () => {
+    await renderLoaded();
+
+    // The server refuses a self-role-change, so the card doesn't offer one; the badge above
+    // still says what you are.
+    expect(screen.queryByLabelText("Make owner@test.com Manager")).toBeNull();
+    expect(screen.queryByLabelText("Make owner@test.com Owner")).toBeNull();
+    expect(screen.getByLabelText("Make manager@test.com Owner")).toBeTruthy();
   });
 
   // ── Activation ───────────────────────────────────────────────────────────

@@ -216,7 +216,7 @@ public class UsersControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task Demoting_YourselfAsTheLastActiveOwner_Returns400()
+    public async Task Demoting_YourOwnAccount_Returns400()
     {
         HttpClient owner = OwnerClient();
         AdminCredential seeded = _factory.GetSeededAdmin();
@@ -227,7 +227,10 @@ public class UsersControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Contains("last active Owner", body.GetProperty("message").GetString());
+        // The self-lockout rule is checked before the last-Owner one, so that is the message
+        // here even though this caller is also the only Owner left. The last-Owner rule's own
+        // coverage is in UserServiceTests, where the caller can be someone else.
+        Assert.Contains("your own role", body.GetProperty("message").GetString());
         // And the instance is still administrable.
         Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync("/api/admin/users")).StatusCode);
     }

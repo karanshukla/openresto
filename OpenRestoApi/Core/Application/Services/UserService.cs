@@ -63,6 +63,13 @@ public class UserService(
 
         if (user.Role != role)
         {
+            // Same reasoning as deactivating yourself: dropping your own Owner role revokes
+            // your access to this very screen, so it takes another Owner to do it to you.
+            if (IsSelf(user))
+            {
+                throw new BusinessRuleException("You cannot change your own role.");
+            }
+
             await EnsureAnotherActiveOwnerRemainsAsync(user, "demote");
             user.Role = role;
             await _credentialRepository.SaveChangesAsync();

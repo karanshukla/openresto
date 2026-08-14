@@ -6,12 +6,12 @@
 # shared with purge-bookings.sh). This script only locates the database and
 # applies what the generator emits.
 #
-# AdminCredentials are wiped but NOT re-seeded — the API bootstraps the Owner
-# account from appsettings.Development.json at startup, so restart the backend
-# after a reseed and log in with the email/password defined there. No password
-# hashing needed here. (Login itself no longer creates accounts: it looks them
-# up, so a wiped database with a running server has nothing to log in to until
-# that restart.)
+# AdminCredentials are wiped and the single Owner account is re-seeded from the
+# same Admin:Email/Admin:Password the API bootstraps from, so a reseed leaves you
+# logged-in-able immediately and any extra users invited through the UI are gone.
+# It has to be re-seeded here rather than left to the API: login stopped creating
+# accounts when multi-user landed, and only startup bootstraps one — a wiped table
+# under a running dev server would otherwise have nothing to log in to.
 #
 # Usage:
 #   bash scripts/seed-local.sh
@@ -132,14 +132,60 @@ fi
 
 python3 "$GENERATOR" "$SECTION" "${MEDIA_ARGS[@]+"${MEDIA_ARGS[@]}"}" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
 
-# The API re-bootstraps the Owner account from appsettings at startup, so wiping
-# these keeps a reseeded database in sync with the configured login — restart the
-# backend afterwards, since only startup creates the account.
+# Wipe every account (including anyone invited through the Users card) and put back
+# exactly the Owner the API would have bootstrapped, so the configured login works
+# without restarting the backend. PBKDF2-SHA256, 100k iterations, 16-byte salt,
+# 32-byte key — matches PasswordService; CreatedAt matches demo_data.py's UTC format.
 if [[ $KEEP_ADMIN -eq 0 && "$SECTION" != "bookings" ]]; then
+  ADMIN_SQL="$(python3 - "$REPO_ROOT/OpenRestoApi/appsettings.Development.json" <<'PYEOF'
+import base64, datetime, hashlib, json, os, pathlib, sys
+
+settings = {}
+path = pathlib.Path(sys.argv[1])
+if path.is_file():
+    settings = json.loads(path.read_text(encoding="utf-8")).get("Admin", {}) or {}
+
+email = settings.get("Email") or os.environ.get("ADMIN_EMAIL") or "admin@openresto.com"
+password = settings.get("Password") or os.environ.get("ADMIN_PASSWORD")
+if not password:
+    # No configured password to hash — emit nothing and let the caller warn.
+    sys.exit(0)
+
+salt = os.urandom(16)
+key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000, dklen=32)
+created = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+def q(v):
+    return "'" + str(v).replace("'", "''") + "'"
+
+print(
+    "INSERT INTO AdminCredentials"
+    "(Email,PasswordHash,PasswordSalt,DisplayName,Role,IsActive,CreatedAt) VALUES("
+    + ",".join(
+        [
+            q(email.strip().lower()),
+            q(base64.b64encode(key).decode()),
+            q(base64.b64encode(salt).decode()),
+            "NULL",
+            q("Owner"),
+            "1",
+            q(created),
+        ]
+    )
+    + ");"
+)
+PYEOF
+  )"
+
   {
     echo "DELETE FROM AdminCredentials;"
     echo "DELETE FROM sqlite_sequence WHERE name = 'AdminCredentials';"
+    if [[ -n "$ADMIN_SQL" ]]; then
+      echo "$ADMIN_SQL"
+    fi
   } >> "$SQL_FILE"
+
+  [[ -n "$ADMIN_SQL" ]] || log "WARNING: no Admin:Password configured — accounts wiped without a replacement. Restart the backend with ADMIN_PASSWORD set to bootstrap one."
 fi
 
 if [[ $DRY_RUN -eq 1 ]]; then

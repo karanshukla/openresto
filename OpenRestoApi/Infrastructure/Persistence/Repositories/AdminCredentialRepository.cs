@@ -14,11 +14,6 @@ internal class AdminCredentialRepository(AppDbContext db) : IAdminCredentialRepo
 {
     private readonly AppDbContext _db = db;
 
-    public async Task<AdminCredential?> GetAsync()
-    {
-        return await _db.AdminCredentials.FirstOrDefaultAsync();
-    }
-
     public async Task<AdminCredential?> GetByIdAsync(int id)
     {
         return await _db.AdminCredentials.FirstOrDefaultAsync(c => c.Id == id);

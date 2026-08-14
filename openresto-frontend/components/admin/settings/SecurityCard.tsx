@@ -92,7 +92,7 @@ export function SecurityCard({
   };
 
   return (
-    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+    <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]} testID="security-card">
       <Pressable
         style={styles.secHeader}
         onPress={() => setExpanded((v) => !v)}
