@@ -228,10 +228,16 @@ openresto-frontend/
 
 ### Auth model
 
-Two roles via JWT:
+**Admin users** — `AdminCredential` holds one row per user (PBKDF2 hash, per-user PVQ, `Role`, `IsActive`); the table name predates multi-user support and stays put so the migration is additive. `POST /api/admin/auth/login` looks the account up by email and mints a JWT carrying `sub` (user id), email, and the account's own role.
 
-- **Admin** — obtained by `POST /api/auth/login`. Stored in `AdminCredential` (one row per restaurant, bcrypt password hash). Required for all `/admin/*` endpoints.
-- **Customer bookings** — no auth. Customers identify via `BookingRef` (short random string) or the encrypted recent-bookings cookie.
+- **Roles live in one allow-list** (`Core/Application/Utilities/UserRoles.cs`): `Owner` and `Manager`, plus `Admin` — the claim value minted before multi-user existed, honoured only so 30-day tokens issued by an older build keep working. No user row ever carries it.
+- **Gating goes through named policies** (`AuthPolicies` + `AddAuthorization` in `ServiceCollectionExtensions`), never raw role strings on controllers. `RequireAdmin` = any admin; `RequireOwner` = user management. Adding a role, or swapping roles for permission claims, is a change to those two places.
+- **The user id is the identity.** `ICurrentUserService` reads it off the claims and `CurrentUserResolver` turns it into the row; email is only a fallback for id-less legacy tokens. Self-service (change password/email, PVQ setup) always targets that row — never "the" credential.
+- **The first-run bootstrap lives only in `AdminBootstrap`** (called from `InitializeDatabase`) and creates an Owner. Login does not create accounts; an unknown email is just a failed login.
+- **Last-Owner protection** is a `UserService` business rule (`BusinessRuleException`), not an authorization check: the instance must always keep one active Owner, and you cannot deactivate yourself.
+- Frontend: `context/AuthContext.tsx` resolves `/admin/auth/me` once per admin-layout mount and is the only place the signed-in identity lives; role gating goes through `useCan(capability)` with the capability matrix in `constants/roles.ts` (mirrors the backend). Never inline a `role === "Owner"` check.
+
+**Customer bookings** — no auth. Customers identify via `BookingRef` (short random string) or the encrypted recent-bookings cookie.
 
 ### Brand / Favicon
 

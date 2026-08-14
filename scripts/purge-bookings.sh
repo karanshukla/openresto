@@ -119,12 +119,19 @@ PYEOF
 
     ESCAPED_EMAIL="${ADMIN_EMAIL//\'/\'\'}"
     log "Resetting admin credentials for $ADMIN_EMAIL..."
+    # The demo's admin password is public, so a visitor can invite themselves a colleague.
+    # Wipe every account except the lowest-id one (the bootstrap Owner) and reset that one,
+    # for the same reason visitor uploads don't survive a reset.
     docker exec "$CONTAINER" sqlite3 "$DB" \
-      "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL;"
+      "DELETE FROM AdminCredentials WHERE Id <> (SELECT MIN(Id) FROM AdminCredentials);" \
+      "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', DisplayName=NULL, Role='Owner', IsActive=1, PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL;"
 
     ACTUAL_EMAIL="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT Email FROM AdminCredentials LIMIT 1;')"
     [[ "$ACTUAL_EMAIL" == "$ADMIN_EMAIL" ]] \
       || die "AdminCredentials.Email is '$ACTUAL_EMAIL' after reset, expected '$ADMIN_EMAIL'."
+    ACCOUNT_COUNT="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM AdminCredentials;')"
+    [[ "$ACCOUNT_COUNT" == "1" ]] \
+      || die "Expected exactly one admin account after reset, found $ACCOUNT_COUNT."
     log "Credential reset done."
   fi
 fi

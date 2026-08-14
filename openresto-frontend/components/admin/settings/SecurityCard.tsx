@@ -6,14 +6,8 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
 import { validatePasswordChange } from "@/utils/validation";
-import {
-  getPvqStatus,
-  setupPvq,
-  changePassword,
-  changeEmail,
-  checkSession,
-  PvqStatus,
-} from "@/api/auth";
+import { getMyPvqStatus, setupPvq, changePassword, changeEmail, PvqStatus } from "@/api/auth";
+import { useAuth } from "@/context/AuthContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
@@ -29,7 +23,8 @@ export function SecurityCard({
   cardBg: string;
 }) {
   const [pvqStatus, setPvqStatus] = useState<PvqStatus | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
+  const { user, setUser } = useAuth();
+  const email = user?.email ?? null;
   const [showPvqForm, setShowPvqForm] = useState(false);
   const [showPwForm, setShowPwForm] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -46,11 +41,9 @@ export function SecurityCard({
 
   const { primaryColor } = useAppTheme();
 
+  // Identity comes from the auth context; only the security question still needs a fetch.
   useEffect(() => {
-    getPvqStatus().then(setPvqStatus);
-    checkSession().then((session) => {
-      if (session && session !== "rate-limited") setEmail(session.email);
-    });
+    getMyPvqStatus().then(setPvqStatus);
   }, []);
 
   const handleSavePvq = async () => {
@@ -73,7 +66,7 @@ export function SecurityCard({
     setSaving(false);
     setMsg({ text: result.message, ok: result.ok });
     if (result.ok) {
-      setEmail(result.email ?? newEmail.trim().toLowerCase());
+      if (user) setUser({ ...user, email: result.email ?? newEmail.trim().toLowerCase() });
       setShowEmailForm(false);
       setNewEmail("");
       setCurrentPwForEmail("");

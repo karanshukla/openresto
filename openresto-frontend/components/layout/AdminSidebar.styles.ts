@@ -119,4 +119,26 @@ export const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
   },
+  identity: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  identityName: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  roleBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
 });

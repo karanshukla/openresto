@@ -6,9 +6,12 @@
 # shared with purge-bookings.sh). This script only locates the database and
 # applies what the generator emits.
 #
-# AdminCredentials are wiped but NOT re-seeded — the API bootstraps them from
-# appsettings.Development.json on first login, so just log in with the
-# email/password defined there. No password hashing needed here.
+# AdminCredentials are wiped but NOT re-seeded — the API bootstraps the Owner
+# account from appsettings.Development.json at startup, so restart the backend
+# after a reseed and log in with the email/password defined there. No password
+# hashing needed here. (Login itself no longer creates accounts: it looks them
+# up, so a wiped database with a running server has nothing to log in to until
+# that restart.)
 #
 # Usage:
 #   bash scripts/seed-local.sh
@@ -129,8 +132,9 @@ fi
 
 python3 "$GENERATOR" "$SECTION" "${MEDIA_ARGS[@]+"${MEDIA_ARGS[@]}"}" "${GEN_ARGS[@]+"${GEN_ARGS[@]}"}" > "$SQL_FILE"
 
-# The API re-bootstraps admin credentials from appsettings on the next login,
-# so wiping them keeps a reseeded database in sync with the configured login.
+# The API re-bootstraps the Owner account from appsettings at startup, so wiping
+# these keeps a reseeded database in sync with the configured login — restart the
+# backend afterwards, since only startup creates the account.
 if [[ $KEEP_ADMIN -eq 0 && "$SECTION" != "bookings" ]]; then
   {
     echo "DELETE FROM AdminCredentials;"

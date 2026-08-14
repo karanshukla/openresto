@@ -5,6 +5,7 @@ import {
   changePassword,
   changeEmail,
   getPvqStatus,
+  getMyPvqStatus,
   setupPvq,
   verifyPvq,
   resetPassword,
@@ -203,18 +204,44 @@ describe("auth api", () => {
         ok: true,
         json: async () => data,
       });
-      const res = await getPvqStatus();
+      const res = await getPvqStatus("admin@test.com");
       expect(res).toEqual(data);
+    });
+
+    it("keys the lookup by the encoded email", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+      await getPvqStatus("a+b@test.com");
+      expect(mockFetch.mock.calls[0][0]).toContain("/admin/auth/pvq?email=a%2Bb%40test.com");
     });
 
     it("returns null on failure", async () => {
       mockFetch.mockResolvedValueOnce({ ok: false });
-      expect(await getPvqStatus()).toBeNull();
+      expect(await getPvqStatus("admin@test.com")).toBeNull();
     });
 
     it("returns null on network error", async () => {
       mockFetch.mockRejectedValueOnce(new Error("fail"));
-      expect(await getPvqStatus()).toBeNull();
+      expect(await getPvqStatus("admin@test.com")).toBeNull();
+    });
+  });
+
+  describe("getMyPvqStatus", () => {
+    it("returns the caller's own status on success", async () => {
+      const data = { isConfigured: true, question: "Mine?" };
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => data });
+
+      expect(await getMyPvqStatus()).toEqual(data);
+      expect(mockFetch.mock.calls[0][0]).toContain("/admin/auth/pvq/me");
+    });
+
+    it("returns null on failure", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      expect(await getMyPvqStatus()).toBeNull();
+    });
+
+    it("returns null on network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("fail"));
+      expect(await getMyPvqStatus()).toBeNull();
     });
   });
 

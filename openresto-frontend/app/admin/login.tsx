@@ -8,6 +8,7 @@ import { Pressable, ScrollView, TextInput, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuth } from "@/context/AuthContext";
 import { isValidEmail, validatePasswordChange } from "@/utils/validation";
 import { styles } from "@/styles/admin/login.styles";
 import { Icon } from "@/components/common/Icon";
@@ -34,6 +35,7 @@ export default function AdminLoginScreen() {
   const passwordRef = useRef<TextInput>(null);
 
   const router = useRouter();
+  const { refresh } = useAuth();
   const { colors, brand, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
 
@@ -43,6 +45,9 @@ export default function AdminLoginScreen() {
     const result = await login(email, password);
     setLoginLoading(false);
     if (result) {
+      // Pull the new identity into the auth context before navigating — the admin layout
+      // decides what to render from that status, and it still holds the pre-login one.
+      await refresh();
       router.replace("/admin/dashboard");
     } else {
       setLoginError("Invalid email or password. Please try again.");
@@ -52,7 +57,9 @@ export default function AdminLoginScreen() {
   const handleFetchQuestion = async () => {
     setFpError(null);
     setFpLoading(true);
-    const status = await getPvqStatus();
+    // The email collected in the previous step is what picks the account — before
+    // multi-user it was ignored and the server returned "the" question.
+    const status = await getPvqStatus(fpEmail.trim());
     setFpLoading(false);
     if (!status?.isConfigured || !status.question) {
       setFpError("No security question has been configured for this account.");

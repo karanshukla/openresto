@@ -8,6 +8,8 @@ import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard
 import { FooterSettingsCard } from "@/components/admin/settings/FooterSettingsCard";
 import { EmailSettingsCard } from "@/components/admin/settings/EmailSettingsCard";
 import { SecurityCard } from "@/components/admin/settings/SecurityCard";
+import { UsersCard } from "@/components/admin/settings/UsersCard";
+import { useCan } from "@/context/AuthContext";
 import { HighlightsCard } from "@/components/admin/settings/HighlightsCard";
 import { PushNotificationsCard } from "@/components/admin/settings/PushNotificationsCard";
 import { styles } from "@/components/admin/settings/settings.styles";
@@ -18,6 +20,9 @@ export default function AdminSettingsScreen() {
   const borderColor = colors.border;
   const cardBg = colors.card;
   const mutedColor = colors.muted;
+  // Hidden rather than disabled for a Manager: the API refuses these calls outright, so
+  // showing the card at all would just be a dead end.
+  const canManageUsers = useCan("manage:users");
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -56,6 +61,9 @@ export default function AdminSettingsScreen() {
           ACCOUNT SECURITY
         </ThemedText>
         <SecurityCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
+        {canManageUsers && (
+          <UsersCard borderColor={borderColor} mutedColor={mutedColor} cardBg={cardBg} />
+        )}
       </View>
     </ScrollView>
   );

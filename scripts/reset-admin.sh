@@ -4,6 +4,11 @@
 # answer, etc). Unlike purge-bookings.sh, this ONLY touches AdminCredentials —
 # bookings, restaurant config, and media are untouched.
 #
+# With multiple accounts it rewrites exactly one: the account matching --email if there is
+# one, otherwise the lowest-id account (the one the first-run bootstrap created). It is
+# forced back to an active Owner, so this also recovers an instance whose last Owner was
+# deactivated or demoted. Other accounts are left alone.
+#
 # Usage:
 #   scripts/reset-admin.sh                                # reads ADMIN_EMAIL/ADMIN_PASSWORD from .env
 #   scripts/reset-admin.sh --email a@b.com --password 'NewPass123'
@@ -84,11 +89,26 @@ PYEOF
 
 ESCAPED_EMAIL="${NEW_EMAIL//\'/\'\'}"
 
-log "Resetting admin credentials for $NEW_EMAIL..."
-docker exec "$CONTAINER" sqlite3 "$DB" \
-  "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL;"
+# There can be several accounts now, so pick exactly one row to rewrite rather than updating
+# them all (which would collide on the unique email index and clobber everyone else). The
+# account with that email if it exists, otherwise the lowest-id one — the bootstrap Owner.
+TARGET_ID="$(docker exec "$CONTAINER" sqlite3 "$DB" \
+  "SELECT COALESCE(
+     (SELECT Id FROM AdminCredentials WHERE lower(Email) = lower('$ESCAPED_EMAIL')),
+     (SELECT MIN(Id) FROM AdminCredentials));")"
 
-ACTUAL_EMAIL="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT Email FROM AdminCredentials LIMIT 1;')"
+if [[ -z "$TARGET_ID" ]]; then
+  log "ERROR: no admin accounts exist yet. Restart the backend so it bootstraps one from ADMIN_EMAIL/ADMIN_PASSWORD."
+  exit 1
+fi
+
+# Also forces the account back to an active Owner: being locked out because the last Owner
+# was deactivated or demoted is exactly the situation this script exists to undo.
+log "Resetting admin credentials for $NEW_EMAIL (account #$TARGET_ID)..."
+docker exec "$CONTAINER" sqlite3 "$DB" \
+  "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', Role='Owner', IsActive=1, PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL WHERE Id=$TARGET_ID;"
+
+ACTUAL_EMAIL="$(docker exec "$CONTAINER" sqlite3 "$DB" "SELECT Email FROM AdminCredentials WHERE Id=$TARGET_ID;")"
 if [[ "$ACTUAL_EMAIL" != "$NEW_EMAIL" ]]; then
   log "ERROR: AdminCredentials.Email is '$ACTUAL_EMAIL' after reset, expected '$NEW_EMAIL'."
   exit 1
