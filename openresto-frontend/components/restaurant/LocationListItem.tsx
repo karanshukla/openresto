@@ -292,7 +292,9 @@ export default function LocationListItem({
           {bookable ? slotRow : null}
 
           <View style={[styles.compactFoot, { borderTopColor: borderColor }]}>
-            {walkInLine ?? hoursMeta}
+            <View testID={`location-foot-lead-${restaurant.id}`} style={styles.compactFootLead}>
+              {walkInLine ?? hoursMeta}
+            </View>
             {headerActions}
           </View>
         </View>
