@@ -56,7 +56,17 @@ docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
 npm run test:e2e --prefix openresto-frontend
 ```
 
-Running against Development produces cascading 429s: pages that hydrate from rate-limited fetches (booking form, /locations, /settings) fail to render in time, booking POSTs exhaust their retries, and customer lookup returns null (rendered as a false "No booking found"). It looks like selector bugs and is purely rate-limit exhaustion. Verify with `docker compose exec backend printenv ASPNETCORE_ENVIRONMENT`. The config uses `workers: 1` and a `globalSetup` that logs in once to `e2e/.auth/admin.json`; specs still use `postWithRetry`/`getWithRetry` and `expectVisibleWithReload` for the rare in-Testing collision.
+Running against Development produces cascading 429s: pages that hydrate from rate-limited fetches (booking form, /locations, /settings) fail to render in time, booking POSTs exhaust their retries, and customer lookup returns null (rendered as a false "No booking found"). It looks like selector bugs and is purely rate-limit exhaustion.
+
+To verify the environment, **repeat both `-f` flags on the exec**:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml exec backend printenv ASPNETCORE_ENVIRONMENT
+```
+
+The bare `docker compose exec backend printenv ASPNETCORE_ENVIRONMENT` is not trustworthy here. Under podman-compose (the `docker` CLI on a Fedora host is usually a podman shim) `exec` re-injects the service environment as parsed from the compose files passed to _that_ invocation, so omitting the override re-applies `ASPNETCORE_ENVIRONMENT=Development` from `docker-compose.yml` to the exec session and shadows the container's real value. It reports `Development` for a container genuinely running `Testing` — which reads as "the override silently failed" and sends you rebuilding a stack that was already correct. `docker inspect <container> --format '{{range .Config.Env}}{{println .}}{{end}}'` always shows the truth. Plain Docker Compose doesn't rewrite env on exec, so the bare form is only misleading on podman.
+
+The config uses `workers: 1` and a `globalSetup` that logs in once to `e2e/.auth/admin.json`; specs still use `postWithRetry`/`getWithRetry` and `expectVisibleWithReload` for the rare in-Testing collision.
 
 **Smoke vs. extensive split**: a handful of `test.describe` blocks covering
 the golden paths (home browse, the full booking journey, booking
