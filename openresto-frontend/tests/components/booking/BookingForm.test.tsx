@@ -133,11 +133,20 @@ jest.mock("@/components/common/TimePicker", () => ({
 // date entirely (to exercise the "no date selected" fallback branches).
 jest.mock("@/components/common/DatePicker", () => ({
   __esModule: true,
-  default: ({ onSelect, openDays }: { onSelect: (date: string) => void; openDays?: number[] }) => {
+  default: ({
+    onSelect,
+    openDays,
+    unavailableDays,
+  }: {
+    onSelect: (date: string) => void;
+    openDays?: number[];
+    unavailableDays?: number[];
+  }) => {
     const { Pressable, Text, View } = require("react-native");
     return (
       <View>
         <Text testID="date-picker-days">{(openDays ?? []).join(",")}</Text>
+        <Text testID="date-picker-unavailable-days">{(unavailableDays ?? []).join(",")}</Text>
         <Pressable testID="date-picker-sat" onPress={() => onSelect("2026-06-20")}>
           <Text>Pick Saturday</Text>
         </Pressable>
@@ -347,10 +356,20 @@ describe("BookingForm", () => {
     expect(mockFetchAvailability).not.toHaveBeenCalled();
   });
 
-  it("leaves walk-in-only days out of the date picker", () => {
+  it("keeps walk-in-only days in the date picker, marked unpickable", () => {
+    // Dropping them left the picker unable to name the day the diner was already on, and
+    // left a walk-in-only location with an empty list. They stay, greyed out and labelled.
     const restaurant = { ...mockRestaurantAllDays, walkInDays: "6,7" };
     render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
-    expect(screen.getByTestId("date-picker-days").props.children).toBe("1,2,3,4,5");
+    expect(screen.getByTestId("date-picker-days").props.children).toBe("1,2,3,4,5,6,7");
+    expect(screen.getByTestId("date-picker-unavailable-days").props.children).toBe("6,7");
+  });
+
+  it("marks every open day unpickable for a walk-in-only location", () => {
+    const restaurant = { ...mockRestaurantAllDays, walkInOnly: true };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByTestId("date-picker-days").props.children).toBe("1,2,3,4,5,6,7");
+    expect(screen.getByTestId("date-picker-unavailable-days").props.children).toBe("1,2,3,4,5,6,7");
   });
 
   it("offers no way to book once a walk-in-only day is selected", async () => {
@@ -369,6 +388,26 @@ describe("BookingForm", () => {
     expect(screen.queryByTestId("submit-btn")).toBeNull();
     expect(screen.queryByTestId("time-picker")).toBeNull();
     expect(screen.queryByTestId("hold-banner")).toBeNull();
+  });
+
+  it("restores the full form when the diner picks their way off a walk-in day", async () => {
+    const restaurant = { ...mockRestaurantAllDays, walkInDays: "6" };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sat"));
+    });
+    await waitFor(() => expect(screen.getByTestId("walk-in-notice")).toBeTruthy());
+    expect(screen.queryByTestId("submit-btn")).toBeNull();
+
+    // The date control is the way out, so it has to survive the blocked state and work.
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sun"));
+    });
+
+    await waitFor(() => expect(screen.getByTestId("submit-btn")).toBeTruthy());
+    expect(screen.queryByTestId("walk-in-notice")).toBeNull();
+    expect(screen.getByTestId("time-picker")).toBeTruthy();
   });
 
   it("offers no way to book once a closed day is selected", async () => {

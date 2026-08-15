@@ -102,6 +102,80 @@ describe("DatePicker (web)", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  describe("walk-in-only days", () => {
+    const todayIso = () => {
+      const d = new Date();
+      return d.getDay() === 0 ? 7 : d.getDay();
+    };
+
+    it("does not call onSelect when pressing a walk-in-only day", () => {
+      const todayStr = localDateValue(new Date());
+      render(
+        <DatePickerWeb
+          onSelect={onSelect}
+          openDays={[1, 2, 3, 4, 5, 6, 7]}
+          unavailableDays={[todayIso()]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      fireEvent.press(screen.getByTestId("date-picker-trigger"));
+      fireEvent.press(screen.getByTestId(`date-picker-day-${todayStr}`));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("still lets a bookable day be picked while other days are walk-in only", () => {
+      // The regression this guards: folding walk-in days into openDays disabled the whole
+      // calendar for a location that is walk-in every day, and greyed the rest besides.
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = localDateValue(tomorrow);
+      render(
+        <DatePickerWeb
+          onSelect={onSelect}
+          openDays={[1, 2, 3, 4, 5, 6, 7]}
+          unavailableDays={[todayIso()]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      fireEvent.press(screen.getByTestId("date-picker-trigger"));
+      fireEvent.press(screen.getByTestId(`date-picker-day-${tomorrowStr}`));
+      expect(onSelect).toHaveBeenCalledWith(tomorrowStr);
+    });
+
+    it("does not claim the venue is closed on a walk-in-only day", () => {
+      // It is open — you just can't book it online. The red "normally closed" warning is
+      // for a day the doors are shut.
+      const todayStr = localDateValue(new Date());
+      render(
+        <DatePickerWeb
+          selectedDate={todayStr}
+          onSelect={onSelect}
+          openDays={[1, 2, 3, 4, 5, 6, 7]}
+          unavailableDays={[todayIso()]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      expect(screen.queryByText(/normally closed on this day/)).toBeNull();
+    });
+
+    it("announces the reason on the unpickable cell", () => {
+      const todayStr = localDateValue(new Date());
+      render(
+        <DatePickerWeb
+          onSelect={onSelect}
+          openDays={[1, 2, 3, 4, 5, 6, 7]}
+          unavailableDays={[todayIso()]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      fireEvent.press(screen.getByTestId("date-picker-trigger"));
+      expect(screen.getByTestId(`date-picker-day-${todayStr}`).props.accessibilityHint).toBe(
+        "Walk-ins only"
+      );
+    });
+  });
+
   it("does not call onSelect when pressing a cell outside the allowed range", () => {
     const today = new Date();
     render(<DatePickerWeb onSelect={onSelect} />);

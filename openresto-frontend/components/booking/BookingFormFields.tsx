@@ -47,19 +47,28 @@ export function GuestsField({
 
 export function DateField({
   date,
-  bookableDays,
+  openDays,
+  walkInDays,
   onChange,
 }: {
   date: string;
-  /** ISO days this location takes online bookings on — closed and walk-in-only days are absent. */
-  bookableDays?: number[];
+  /** ISO days the location is open. A closed day is not a candidate, so it is not listed. */
+  openDays?: number[];
+  /** Open days that take no online bookings. Listed but unpickable, so the reason is visible. */
+  walkInDays?: number[];
   onChange: (date: string) => void;
 }) {
   return (
     <Field label="Date">
       {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
           here — only the admin New Booking modal opts in to back-dating (#160). */}
-      <DatePicker selectedDate={date} onSelect={onChange} openDays={bookableDays} />
+      <DatePicker
+        selectedDate={date}
+        onSelect={onChange}
+        openDays={openDays}
+        unavailableDays={walkInDays}
+        unavailableReason="Walk-ins only"
+      />
     </Field>
   );
 }

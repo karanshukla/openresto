@@ -29,6 +29,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
+  /** Sizing lives here so the press-swallowing wrapper doesn't collapse the card. */
+  card: {
+    width: "100%",
+    maxWidth: 320,
+  },
   modalView: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
@@ -55,5 +60,9 @@ export const styles = StyleSheet.create({
   },
   checkmark: {
     fontWeight: "600",
+  },
+  /** Why a listed day can't be picked, e.g. "Walk-ins only". */
+  optionNote: {
+    fontSize: 12.5,
   },
 });
