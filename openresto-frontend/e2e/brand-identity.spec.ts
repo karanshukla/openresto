@@ -51,8 +51,11 @@ test.describe("Brand identity (UI)", () => {
     await page.goto("/admin/settings/brand");
     await expect(page.getByText("Brand Identity")).toBeVisible({ timeout: 15_000 });
 
-    // The Brand Identity card's App Name + Primary Color inputs.
-    await page.getByPlaceholder("Open Resto").fill(TEST_APP_NAME);
+    // The Brand Identity card's App Name + Primary Color inputs. `exact` matters on the app
+    // name: getByPlaceholder is a substring match, and the Footer card's copyright placeholder
+    // is built from the app name ("© 2026 Open Resto. All rights reserved."), so both inputs
+    // match once that card is expanded.
+    await page.getByPlaceholder("Open Resto", { exact: true }).fill(TEST_APP_NAME);
     await page.getByPlaceholder("#0a7ea4").fill(TEST_PRIMARY);
 
     // There is no Save button: the card writes itself once typing stops, and its status
