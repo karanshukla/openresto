@@ -121,10 +121,21 @@ test.describe("Restaurant detail redirect", () => {
     // fresh navigation picks up the flip.
     await page.goto(`/restaurant/${PASTA_PLACE_ID}`);
     await page.waitForURL(new RegExp(`.*/locations/${PASTA_PLACE_ID}`), { timeout: 15_000 });
-    await expect(page.getByText("Walk-ins only").first()).toBeVisible({ timeout: 15_000 });
+
+    // Scope every assertion to Pasta Place's own list item. The redirect target
+    // renders the whole Locations list, so a page-wide locator also picks up the
+    // seed's other locations — including its genuinely walk-in-only one (which
+    // would let "Walk-ins only" pass even if the flip silently failed) and any
+    // bookable one currently inside its opening hours (which made the
+    // no-slots assertion depend on the wall-clock hour of the CI run).
+    const pastaPlace = page.getByTestId(`location-item-${PASTA_PLACE_ID}`);
+    await expect(pastaPlace.getByText("Walk-ins only").first()).toBeVisible({ timeout: 15_000 });
 
     // No bookable time is offered at all when walk-in only.
-    await expect(page.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+    await expect(pastaPlace.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+
+    // The drawer is mounted by LocationsScreen, not by the row, so this one
+    // stays page-wide — it only ever opens on a slot press.
     await expect(page.getByTestId("booking-drawer")).toHaveCount(0);
   });
 
