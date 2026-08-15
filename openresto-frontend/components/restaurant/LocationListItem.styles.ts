@@ -46,9 +46,19 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
     paddingTop: theme.spacing.xs,
     borderTopWidth: 1,
     borderStyle: "dashed",
+  },
+  /**
+   * The status line shares this row with Details and Book now, and it is the only one of the
+   * three that can give ground. Without a shrinking box around it the walk-in sentence takes
+   * its full intrinsic width and pushes the buttons clean off the card.
+   */
+  compactFootLead: {
+    flex: 1,
+    minWidth: 0,
   },
 
   thumb: {
@@ -177,6 +187,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   walkInText: {
+    flexShrink: 1,
     fontSize: 12.5,
     fontStyle: "italic",
   },

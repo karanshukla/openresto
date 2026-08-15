@@ -8,7 +8,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import { fetchAvailability } from "@/api/availability";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
@@ -449,6 +449,26 @@ describe("LocationListItem", () => {
       expect(screen.getAllByText("No reservations required, first come first served")).toHaveLength(
         1
       );
+    });
+
+    it("lets the footer's status line shrink so the actions stay on the card", async () => {
+      // The compact footer holds three things on one row and only the status line can give
+      // ground. Without this the walk-in sentence took its full intrinsic width and pushed
+      // Details and Book now clean off the right edge of the card.
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          compact
+          restaurant={{ ...utcRestaurant, walkInDays: String(THURSDAY) } as any}
+        />
+      );
+      await waitFor(() => expect(screen.getByTestId("location-foot-lead-1")).toBeTruthy());
+
+      const lead = StyleSheet.flatten(screen.getByTestId("location-foot-lead-1").props.style);
+      expect(lead.flex).toBe(1);
+      expect(lead.minWidth).toBe(0);
+      // Its neighbour must not give ground in turn, or the buttons would squash instead.
+      expect(screen.getByTestId("location-book-now-1")).toBeTruthy();
     });
 
     it("falls back to the hours line in the footer for a bookable location", async () => {
