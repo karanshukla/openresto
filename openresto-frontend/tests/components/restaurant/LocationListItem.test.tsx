@@ -226,11 +226,52 @@ describe("LocationListItem", () => {
       expect(screen.queryByText("Seating & tables")).toBeNull();
     });
 
-    it("hides Book now on a day the location takes no online bookings", async () => {
+    it("keeps Book now on a walk-in day, so a future date is still reachable", async () => {
+      // Today being walk-in only says nothing about next Tuesday. The panel opens on this
+      // day's notice and its date picker is the way on.
       renderWithProviders(
         <LocationListItem
           {...baseProps}
           restaurant={{ ...utcRestaurant, walkInDays: String(THURSDAY) } as any}
+        />
+      );
+      await waitFor(() =>
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
+      );
+      expect(screen.getByTestId("location-book-now-1")).toBeTruthy();
+    });
+
+    it("keeps Book now on a closed day, for the same reason", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={{ ...utcRestaurant, openDays: String(FRIDAY) } as any}
+        />
+      );
+      await waitFor(() => expect(screen.getByTestId("location-book-now-1")).toBeTruthy());
+    });
+
+    it("hides Book now only when no day takes online bookings", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={{ ...utcRestaurant, walkInOnly: true } as any}
+        />
+      );
+      await waitFor(() =>
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
+      );
+      expect(screen.queryByTestId("location-book-now-1")).toBeNull();
+    });
+
+    it("hides Book now when every open day is walk-in only", async () => {
+      // Same dead end as walkInOnly, reached the per-day way.
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={
+            { ...utcRestaurant, openDays: "4,5", walkInDays: `${THURSDAY},${FRIDAY}` } as any
+          }
         />
       );
       await waitFor(() =>
