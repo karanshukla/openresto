@@ -133,10 +133,11 @@ jest.mock("@/components/common/TimePicker", () => ({
 // date entirely (to exercise the "no date selected" fallback branches).
 jest.mock("@/components/common/DatePicker", () => ({
   __esModule: true,
-  default: ({ onSelect }: { onSelect: (date: string) => void }) => {
+  default: ({ onSelect, openDays }: { onSelect: (date: string) => void; openDays?: number[] }) => {
     const { Pressable, Text, View } = require("react-native");
     return (
       <View>
+        <Text testID="date-picker-days">{(openDays ?? []).join(",")}</Text>
         <Pressable testID="date-picker-sat" onPress={() => onSelect("2026-06-20")}>
           <Text>Pick Saturday</Text>
         </Pressable>
@@ -344,6 +345,45 @@ describe("BookingForm", () => {
     expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
     expect(screen.getByText(/doesn't take online bookings on Saturdays/)).toBeTruthy();
     expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("leaves walk-in-only days out of the date picker", () => {
+    const restaurant = { ...mockRestaurantAllDays, walkInDays: "6,7" };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByTestId("date-picker-days").props.children).toBe("1,2,3,4,5");
+  });
+
+  it("offers no way to book once a walk-in-only day is selected", async () => {
+    const restaurant = { ...mockRestaurantAllDays, walkInDays: "6" };
+    render(<BookingForm restaurant={restaurant} onSubmit={jest.fn()} />);
+    expect(screen.getByTestId("submit-btn")).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sat"));
+    });
+
+    await waitFor(() => expect(screen.getByTestId("walk-in-notice")).toBeTruthy());
+    // Party size and date stay live so the diner can pick their way out of the day;
+    // everything that would take a booking is gone.
+    expect(screen.getByTestId("guests-select")).toBeTruthy();
+    expect(screen.queryByTestId("submit-btn")).toBeNull();
+    expect(screen.queryByTestId("time-picker")).toBeNull();
+    expect(screen.queryByTestId("hold-banner")).toBeNull();
+  });
+
+  it("offers no way to book once a closed day is selected", async () => {
+    render(<BookingForm restaurant={mockRestaurantWeekdays} onSubmit={jest.fn()} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sun"));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("The restaurant is closed on this day. Please select a different date.")
+      ).toBeTruthy()
+    );
+    expect(screen.queryByTestId("submit-btn")).toBeNull();
   });
 
   it("shows a persistent banner naming the walk-in days regardless of the selected date", () => {

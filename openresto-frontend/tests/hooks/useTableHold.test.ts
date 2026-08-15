@@ -476,4 +476,46 @@ describe("useTableHold", () => {
     expect(result.current.resolvedTableId).toBeNull();
     expect(result.current.resolvedSectionId).toBeNull();
   });
+
+  it("places no hold on a day the location takes no online bookings", async () => {
+    // The walk-in/closed-day guard: the server would reject this hold anyway, and the
+    // rejection would surface as an error on a form that has already explained itself.
+    const params: UseTableHoldParams = {
+      ...defaultParams,
+      autoAssign: true,
+      seats: 2,
+      enabled: false,
+    };
+    const { result } = renderHook(() => useTableHold(params));
+
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+
+    expect(mockCreateHold).not.toHaveBeenCalled();
+    expect(result.current.holdStatus).toBe("idle");
+  });
+
+  it("releases a held table when the selected day stops taking online bookings", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: { holdId: "hold-9", expiresAt: new Date(Date.now() + 120_000).toISOString() },
+    });
+
+    const { result, rerender } = renderHook((props: UseTableHoldParams) => useTableHold(props), {
+      initialProps: { ...defaultParams, tableId: 100, enabled: true } as UseTableHoldParams,
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(result.current.holdStatus).toBe("held");
+
+    await act(async () => {
+      rerender({ ...defaultParams, tableId: 100, enabled: false } as UseTableHoldParams);
+    });
+
+    expect(mockReleaseHold).toHaveBeenCalledWith("hold-9");
+    expect(result.current.holdStatus).toBe("idle");
+  });
 });

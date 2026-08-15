@@ -202,6 +202,43 @@ describe("LocationListItem", () => {
       expect(onBook).toHaveBeenCalledWith(utcRestaurant, "18:00");
     });
 
+    it("offers Book now even when no slot fits the current filters", async () => {
+      // Nothing on the strip to press, but the location is open — the CTA is the only way
+      // into the panel, where the diner can widen the date or party size.
+      (fetchAvailability as jest.Mock).mockResolvedValue({ slots: [] });
+      renderWithProviders(<LocationListItem {...baseProps} restaurant={utcRestaurant as any} />);
+      await waitFor(() => expect(screen.getByTestId("location-book-now-1")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("location-book-now-1"));
+      expect(onBook).toHaveBeenCalledWith(utcRestaurant, "09:00");
+    });
+
+    it("seeds Book now with the earliest slot on offer", async () => {
+      (fetchAvailability as jest.Mock).mockResolvedValue({
+        slots: ["18:00", "19:00"].map((time) => ({ time, isAvailable: true, category: "Dinner" })),
+      });
+      renderWithProviders(<LocationListItem {...baseProps} restaurant={utcRestaurant as any} />);
+      await waitFor(() => expect(screen.getByText("18:00")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("location-book-now-1"));
+      expect(onBook).toHaveBeenCalledWith(utcRestaurant, "18:00");
+      // The CTA opens the panel; it must not also toggle the card body underneath it.
+      expect(screen.queryByText("Seating & tables")).toBeNull();
+    });
+
+    it("hides Book now on a day the location takes no online bookings", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={{ ...utcRestaurant, walkInDays: String(THURSDAY) } as any}
+        />
+      );
+      await waitFor(() =>
+        expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
+      );
+      expect(screen.queryByTestId("location-book-now-1")).toBeNull();
+    });
+
     it("explains an empty slot row rather than leaving it blank", async () => {
       (fetchAvailability as jest.Mock).mockResolvedValue(null);
       renderWithProviders(<LocationListItem {...baseProps} restaurant={utcRestaurant as any} />);
@@ -487,6 +524,26 @@ describe("LocationListItem", () => {
       fireEvent.press(screen.getByText("Details"));
       await waitFor(() => expect(screen.queryByText("Seating & tables")).toBeNull());
       expect(onExpandLocal).toHaveBeenCalledTimes(1);
+    });
+
+    it("expands and collapses from a press on the card body itself", async () => {
+      const onExpandLocal = jest.fn();
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={mockRestaurant as any}
+          onExpand={onExpandLocal}
+        />
+      );
+      await waitFor(() => expect(screen.getByTestId("location-body-1")).toBeTruthy());
+      expect(screen.queryByText("Seating & tables")).toBeNull();
+
+      fireEvent.press(screen.getByTestId("location-body-1"));
+      await waitFor(() => expect(screen.getByText("Seating & tables")).toBeTruthy());
+      expect(onExpandLocal).toHaveBeenCalledWith(1);
+
+      fireEvent.press(screen.getByTestId("location-body-1"));
+      await waitFor(() => expect(screen.queryByText("Seating & tables")).toBeNull());
     });
 
     it("expands without crashing when no onExpand callback is provided", async () => {

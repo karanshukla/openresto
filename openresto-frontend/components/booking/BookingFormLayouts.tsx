@@ -36,6 +36,12 @@ export interface BookingFormParts {
 interface LayoutProps {
   restaurant: RestaurantDto;
   parts: BookingFormParts;
+  /**
+   * The selected day takes no online bookings (closed, or walk-in only). Everything past the
+   * party/date row is left out rather than shown inert: a form the diner can fill in and a
+   * button they can press reads as bookable however clearly the notice above says otherwise.
+   */
+  bookingBlocked: boolean;
   mutedColor: string;
   primaryColor: string;
   borderColor: string;
@@ -48,6 +54,7 @@ interface LayoutProps {
 export function BookingFormDrawerLayout({
   restaurant,
   parts,
+  bookingBlocked,
   mutedColor,
   primaryColor,
   borderColor,
@@ -61,26 +68,43 @@ export function BookingFormDrawerLayout({
 }) {
   const divider = <View style={[styles.divider, { backgroundColor: borderColor }]} />;
 
+  const partyAndDate = (
+    <View style={styles.drawerSection}>
+      <SectionHeading
+        label="Party & date"
+        busy={loadingAvailability}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+      />
+      <View style={styles.drawerRow}>
+        <View style={styles.drawerRowHalf}>{parts.guestsField()}</View>
+        <View style={styles.drawerRowHalf}>{parts.dateField}</View>
+      </View>
+      {parts.timesContent}
+      {!bookingBlocked && (
+        <>
+          {parts.timezoneHint}
+          {parts.timePickerField("Exact time")}
+          {parts.largePartyBanner}
+        </>
+      )}
+    </View>
+  );
+
+  if (bookingBlocked) {
+    return (
+      <View style={styles.drawerForm}>
+        <WalkInDaysBanner restaurant={restaurant} />
+        {partyAndDate}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.drawerForm}>
       <WalkInDaysBanner restaurant={restaurant} />
 
-      <View style={styles.drawerSection}>
-        <SectionHeading
-          label="Party & date"
-          busy={loadingAvailability}
-          mutedColor={mutedColor}
-          primaryColor={primaryColor}
-        />
-        <View style={styles.drawerRow}>
-          <View style={styles.drawerRowHalf}>{parts.guestsField()}</View>
-          <View style={styles.drawerRowHalf}>{parts.dateField}</View>
-        </View>
-        {parts.timesContent}
-        {parts.timezoneHint}
-        {parts.timePickerField("Exact time")}
-        {parts.largePartyBanner}
-      </View>
+      {partyAndDate}
 
       {divider}
 
@@ -146,21 +170,36 @@ export function BookingFormDrawerLayout({
 export function BookingFormInlineLayout({
   restaurant,
   parts,
+  bookingBlocked,
   mutedColor,
   isTwoColumn,
 }: Omit<LayoutProps, "primaryColor" | "borderColor"> & { isTwoColumn: boolean }) {
   const half = isTwoColumn ? styles.fieldHalf : undefined;
   const rowStyle = isTwoColumn ? styles.fieldRow : styles.fieldRowStacked;
 
+  const partyAndDate = (
+    <View testID="booking-field-row" style={rowStyle}>
+      <View style={half}>{parts.guestsField("Number of Guests")}</View>
+      <View style={half}>{parts.dateField}</View>
+    </View>
+  );
+
+  if (bookingBlocked) {
+    return (
+      <View style={styles.form}>
+        <WalkInDaysBanner restaurant={restaurant} />
+        {parts.timesBlock("Popular Times")}
+        {partyAndDate}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.form}>
       <WalkInDaysBanner restaurant={restaurant} />
       {parts.timesBlock("Popular Times")}
 
-      <View testID="booking-field-row" style={rowStyle}>
-        <View style={half}>{parts.guestsField("Number of Guests")}</View>
-        <View style={half}>{parts.dateField}</View>
-      </View>
+      {partyAndDate}
 
       {parts.largePartyBanner}
 

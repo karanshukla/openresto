@@ -72,10 +72,10 @@ public sealed class HoldPolicyService(
             return HoldPolicyResult.Rejected("Cannot hold a table for a past time.");
         }
 
-        // 4. Pause window.
-        if (restaurant.IsPaused())
+        // 4. Pause window — scoped to the sittings inside it, not to every future date.
+        if (restaurant.IsPausedFor(bookingDate))
         {
-            return HoldPolicyResult.Rejected("Bookings are currently paused for this restaurant.");
+            return HoldPolicyResult.Rejected(PauseHelper.RejectionMessage(restaurant));
         }
 
         // 5. Walk-in-only policy (location-wide or per ISO day).

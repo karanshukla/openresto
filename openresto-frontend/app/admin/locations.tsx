@@ -214,7 +214,7 @@ export default function AdminLocationsScreen() {
             accessibilityLabel={
               isPaused
                 ? `Resume bookings for ${selectedRestaurant.name}`
-                : `Pause bookings for ${selectedRestaurant.name} for an hour`
+                : `Pause the next hour of bookings at ${selectedRestaurant.name}`
             }
             onPress={async () => {
               setPausing(true);
@@ -244,8 +244,8 @@ export default function AdminLocationsScreen() {
             {pausing
               ? "Saving…"
               : isPaused
-                ? `Resume New Bookings now (Paused until ${pausedUntilText})`
-                : "Pause New Bookings for 60m"}
+                ? `Resume New Bookings now (paused up to ${pausedUntilText})`
+                : "Pause New Bookings for the next 60m"}
           </Button>
 
           <Button

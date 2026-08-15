@@ -10,8 +10,9 @@ const PASTA_PLACE_ID = 1;
 
 /**
  * Admin pauses bookings for a restaurant.
- * The customer-facing booking form should show no available time slots when paused,
- * and slots should return after unpausing.
+ *
+ * A pause closes the sittings inside its window, not the whole book: a slot the window
+ * covers offers no times, a slot beyond it stays bookable, and unpausing restores both.
  *
  * We pause/unpause via direct API calls (authenticated via storageState) and verify
  * the customer-facing UI effect.  The pause modal UI itself is covered by the fact
@@ -29,8 +30,10 @@ test.describe("Admin pause bookings", () => {
     await gotoAdminDashboard(page);
 
     // ── Pause via API (authenticated via storageState cookie) ─────────────────
+    // Three days, so the window covers every one of tomorrow's slots whatever time
+    // of day the suite runs.
     const pauseRes = await page.request.post(`/api/admin/restaurants/${PASTA_PLACE_ID}/pause`, {
-      data: { minutes: 60 },
+      data: { minutes: 3 * 24 * 60 },
     });
     expect(pauseRes.ok()).toBeTruthy();
 
@@ -55,6 +58,24 @@ test.describe("Admin pause bookings", () => {
       pausedCard.getByText("No times available, try another date or party size")
     ).toBeVisible({ timeout: 20_000 });
     await expect(pausedCard.getByLabel(/^Book .+ at \d{2}:\d{2}$/)).toHaveCount(0);
+  });
+
+  test("a pause leaves dates beyond its window bookable", async ({ page }) => {
+    await gotoAdminDashboard(page);
+
+    const pauseRes = await page.request.post(`/api/admin/restaurants/${PASTA_PLACE_ID}/pause`, {
+      data: { minutes: 60 },
+    });
+    expect(pauseRes.ok()).toBeTruthy();
+
+    // A one-hour pause is about tonight's service. Next week is untouched.
+    const nextWeek = futureDateStr(7);
+    const res = await page.request.get(
+      `/api/restaurants/${PASTA_PLACE_ID}/availability?date=${nextWeek}&seats=2`
+    );
+    expect(res.ok()).toBeTruthy();
+    const { slots } = await res.json();
+    expect((slots as { isAvailable: boolean }[]).some((s) => s.isAvailable)).toBeTruthy();
   });
 
   test("unpausing a restaurant restores available slots", async ({ page }) => {

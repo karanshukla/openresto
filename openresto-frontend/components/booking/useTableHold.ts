@@ -23,6 +23,12 @@ export interface UseTableHoldParams {
    * tables as one hold. Takes precedence over tableId (mutually exclusive in the UI).
    */
   tableGroupId?: number;
+  /**
+   * False when the selected day takes no online bookings at all (closed, or walk-in only).
+   * The server would reject the hold anyway; not asking keeps the form from reporting a
+   * failure for a day it has already explained is unbookable.
+   */
+  enabled?: boolean;
 }
 
 export interface UseTableHoldResult {
@@ -59,6 +65,7 @@ export function useTableHold({
   autoAssign = false,
   seats,
   tableGroupId,
+  enabled = true,
 }: UseTableHoldParams): UseTableHoldResult {
   const [hold, setHold] = useState<HoldResponse | null>(null);
   const [holdStatus, setHoldStatus] = useState<HoldStatus>("idle");
@@ -119,7 +126,7 @@ export function useTableHold({
     // Auto-assign fires without a table; explicit mode requires a tableId; a group hold requires a
     // tableGroupId.
     const hasTableForHold = autoAssign || (!!tableId && tableId > 0) || !!tableGroupId;
-    if (!hasTableForHold || !date || !time || !isValidEmail(email)) {
+    if (!enabled || !hasTableForHold || !date || !time || !isValidEmail(email)) {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
       }
@@ -197,7 +204,7 @@ export function useTableHold({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableId, date, time, email, autoAssign, seats, tableGroupId]);
+  }, [tableId, date, time, email, autoAssign, seats, tableGroupId, enabled]);
 
   // Cleanup on unmount
   useEffect(() => {

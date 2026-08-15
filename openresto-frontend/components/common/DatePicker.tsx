@@ -41,7 +41,11 @@ export default function DatePicker({
 }: {
   selectedDate?: string;
   onSelect: (date: string) => void;
-  /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
+  /**
+   * ISO day numbers offered in the list (1=Mon..7=Sun); every other weekday is left out.
+   * If omitted, all days are allowed. The booking form narrows this further than the
+   * location's opening days — a walk-in-only day is open but not bookable.
+   */
   openDays?: number[];
   /**
    * Opt-in: also offer past dates (today-365 .. today). Default false keeps the

@@ -10,7 +10,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
 import { isValidEmail } from "@/utils/validation";
 import { getHoursForDate } from "@/utils/openingHours";
-import { isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
+import { isWalkInOnlyOnDay, isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
 import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
@@ -106,6 +106,17 @@ export default function BookingForm({
   const changeDate = (value: string) => (onDateChange ? onDateChange(value) : setDate(value));
   const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
+  const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
+  const selectedJsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
+  const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
+  const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
+  const isWalkInDay = date ? isWalkInOnlyOnDate(restaurant, date) : false;
+  // A day the location is open on but takes no online bookings on is not a bookable day, so it
+  // never reaches the date picker; the notice the form shows instead only has to cover a day
+  // arrived at from outside it (a deep link, or the locations page's own date filter).
+  const bookableDays = openDaysList.filter((day) => !isWalkInOnlyOnDay(restaurant, day));
+  const bookingBlocked = isClosedDay || isWalkInDay;
+
   const [restaurantCurrentTime, setRestaurantCurrentTime] = useState(() =>
     formatCurrentTimeInTimezone(timezone)
   );
@@ -158,6 +169,7 @@ export default function BookingForm({
       autoAssign: isAutoAssign,
       seats,
       tableGroupId,
+      enabled: !bookingBlocked,
     });
 
   // When the party size exceeds the largest table, surface the contact-restaurant
@@ -175,12 +187,6 @@ export default function BookingForm({
     value: i + 1,
   }));
 
-  const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
-  const selectedJsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
-  const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
-  const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
-  const isWalkInDay = date ? isWalkInOnlyOnDate(restaurant, date) : false;
-
   // Hours for the selected date's day of week (falls back to uniform hours).
   // For after-midnight closing (close <= open) let the picker run to end of day.
   const selectedDayHours = getHoursForDate(restaurant, date || getNowInTimezone(timezone).dateStr);
@@ -196,8 +202,7 @@ export default function BookingForm({
     customerName.trim().length > 0 &&
     isValidEmail(customerEmail) &&
     holdStatus === "held" &&
-    !isClosedDay &&
-    !isWalkInDay;
+    !bookingBlocked;
 
   const handleSubmit = async () => {
     if (!isValid || submitting) return;
@@ -265,13 +270,7 @@ export default function BookingForm({
     <GuestsField label={label} seats={seats} options={seatOptions} onChange={changeSeats} />
   );
 
-  const dateField = (
-    <DateField
-      date={date}
-      openDays={restaurant.openDays?.split(",").map(Number)}
-      onChange={changeDate}
-    />
-  );
+  const dateField = <DateField date={date} bookableDays={bookableDays} onChange={changeDate} />;
 
   const timePickerField = (label = "Time") => (
     <TimeField
@@ -416,6 +415,7 @@ export default function BookingForm({
       <BookingFormDrawerLayout
         restaurant={restaurant}
         parts={parts}
+        bookingBlocked={bookingBlocked}
         mutedColor={colors.muted}
         primaryColor={PRIMARY}
         borderColor={colors.border}
@@ -430,6 +430,7 @@ export default function BookingForm({
     <BookingFormInlineLayout
       restaurant={restaurant}
       parts={parts}
+      bookingBlocked={bookingBlocked}
       mutedColor={colors.muted}
       isTwoColumn={isTwoColumn}
     />

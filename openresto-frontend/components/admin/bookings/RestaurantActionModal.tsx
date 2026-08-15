@@ -88,7 +88,9 @@ export default function RestaurantActionModal({
           onSuccess?.(`Bookings for ${restaurantName} have been resumed.`);
         } else {
           await pauseRestaurantBookings(restaurantId, 60);
-          onSuccess?.(`Bookings for ${restaurantName} have been paused for 1 hour.`);
+          onSuccess?.(
+            `Bookings for ${restaurantName} up to ${willPauseUntil} are paused. Later times stay open.`
+          );
         }
         onClose();
       }
@@ -139,7 +141,7 @@ export default function RestaurantActionModal({
             {extendedBookings
               ? `The following ${extendedBookings.length} bookings have been extended by 1 hour:`
               : actionType === "pause"
-                ? "Select a restaurant to pause or resume its bookings."
+                ? "Pausing turns away new bookings for the next hour of service. Later times stay bookable."
                 : "Select a restaurant to extend all active bookings by 1 hour."}
           </ThemedText>
 
@@ -228,9 +230,9 @@ export default function RestaurantActionModal({
                       </View>
                       <ThemedText style={[styles.itemMeta, { color: colors.muted }]}>
                         {isPaused
-                          ? `Paused until ${new Date(r.bookingsPausedUntil!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                          ? `Bookings up to ${new Date(r.bookingsPausedUntil!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} are paused`
                           : actionType === "pause"
-                            ? `Will pause for 1 hour (until ${willPauseUntil})`
+                            ? `Will pause bookings up to ${willPauseUntil}`
                             : `${r.activeBookingsCount ?? 0} active bookings`}
                       </ThemedText>
                     </View>

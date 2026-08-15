@@ -39,16 +39,11 @@ public class BookingService(
     /// <exception cref="InvalidOperationException">Thrown when the table is unavailable.</exception>
     public virtual async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
-        // 1. Validate restaurant-level pause first
+        // 1. Resolve the restaurant first — its timezone normalizes every check below.
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId);
         if (restaurant == null)
         {
             throw new NotFoundException("Restaurant not found.");
-        }
-
-        if (restaurant.IsPaused())
-        {
-            throw new ConflictException("Bookings for this restaurant are currently paused. Please try again later.");
         }
 
         // 2. Normalize date: if Unspecified, treat as restaurant local and convert to UTC
@@ -58,6 +53,13 @@ public class BookingService(
         if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
         {
             throw new ConflictException("Cannot create a booking in the past.");
+        }
+
+        // A pause only closes the sittings inside its window, so this is checked against the
+        // requested time rather than against "now".
+        if (restaurant.IsPausedFor(bookingDate))
+        {
+            throw new ConflictException(PauseHelper.RejectionMessage(restaurant));
         }
 
         // Walk-in-only locations (or walk-in-only days) never take online bookings.

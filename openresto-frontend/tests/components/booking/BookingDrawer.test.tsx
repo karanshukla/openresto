@@ -155,6 +155,35 @@ describe("BookingDrawer", () => {
     expect(screen.getByText("2 guests · Today · 19:30")).toBeTruthy();
   });
 
+  it("keeps the location a plain heading when there is nowhere else to switch to", () => {
+    renderWithProviders(
+      <BookingDrawer
+        {...baseProps}
+        restaurants={[mockRestaurant as any]}
+        onRestaurantChange={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Toronto Resto")).toBeTruthy();
+    expect(screen.queryByLabelText(/^Location,/)).toBeNull();
+  });
+
+  it("switches location from the panel header when the page lists more than one", () => {
+    const otherRestaurant = { ...mockRestaurant, id: 2, name: "Ottawa Resto" };
+    const onRestaurantChange = jest.fn();
+    renderWithProviders(
+      <BookingDrawer
+        {...baseProps}
+        restaurants={[mockRestaurant as any, otherRestaurant as any]}
+        onRestaurantChange={onRestaurantChange}
+      />
+    );
+
+    fireEvent.press(screen.getByLabelText("Location, Toronto Resto"));
+    fireEvent.press(screen.getByLabelText("Ottawa Resto"));
+
+    expect(onRestaurantChange).toHaveBeenCalledWith(otherRestaurant);
+  });
+
   it("names the day when booking a date other than today", () => {
     // The header formats with the runtime locale, so pinning "Fri, Apr 17" would only hold
     // on an en-US machine — derive the same string rather than assert one locale's order.

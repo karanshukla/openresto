@@ -789,8 +789,8 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         HttpClient client = _factory.CreateAuthenticatedClient();
         (int r, int s, int t) = GetSeededIds();
 
-        // Pause restaurant
-        await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+        // Pause for three days, so tomorrow's sitting is unambiguously inside the window.
+        await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 3 * 24 * 60 });
 
         // Try to book (non-admin booking route)
         HttpResponseMessage response = await _factory.CreateClient().PostAsJsonAsync("/api/bookings", new
@@ -798,7 +798,7 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
             restaurantId = r,
             sectionId = s,
             tableId = t,
-            date = DateTime.UtcNow.AddHours(2).ToString("yyyy-MM-ddT12:00:00"),
+            date = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-ddT12:00:00"),
             customerEmail = "blocked@test.com",
             seats = 2
         });
@@ -810,27 +810,67 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task CreateBooking_WhenRestaurantPaused_StillAcceptsATimeBeyondThePauseWindow()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, int s, int t) = GetSeededIds();
+
+        await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        HttpResponseMessage response = await _factory.CreateClient().PostAsJsonAsync("/api/bookings", new
+        {
+            restaurantId = r,
+            sectionId = s,
+            tableId = t,
+            date = DateTime.UtcNow.AddDays(5).ToString("yyyy-MM-ddT12:00:00"),
+            customerEmail = "later@test.com",
+            seats = 2
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetAvailability_WhenRestaurantPaused_ReturnsNoAvailableSlots()
     {
         HttpClient client = _factory.CreateClient();
         (int r, _, _) = GetSeededIds();
 
-        // 1. Pause restaurant via admin
+        // 1. Pause restaurant via admin, for a window that covers the whole of tomorrow.
         HttpClient adminClient = _factory.CreateAuthenticatedClient();
-        await adminClient.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+        await adminClient.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 2 * 24 * 60 });
 
         // 2. Check availability (Note: Correct path is api/availability/{r})
-        string date = DateTime.UtcNow.AddHours(2).ToString("yyyy-MM-dd");
+        string date = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
         HttpResponseMessage response = await client.GetAsync($"/api/restaurants/{r}/availability?date={date}&seats=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         JsonElement slots = body.GetProperty("slots");
-        
+
         // All slots should be unavailable
         foreach (JsonElement slot in slots.EnumerateArray())
         {
             Assert.False(slot.GetProperty("isAvailable").GetBoolean());
         }
+    }
+
+    [Fact]
+    public async Task GetAvailability_WhenRestaurantPaused_StillOffersSlotsBeyondThePauseWindow()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int r, _, _) = GetSeededIds();
+
+        HttpClient adminClient = _factory.CreateAuthenticatedClient();
+        await adminClient.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 60 });
+
+        string date = DateTime.UtcNow.AddDays(5).ToString("yyyy-MM-dd");
+        HttpResponseMessage response = await client.GetAsync($"/api/restaurants/{r}/availability?date={date}&seats=2");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        JsonElement slots = body.GetProperty("slots");
+
+        Assert.Contains(slots.EnumerateArray(), s => s.GetProperty("isAvailable").GetBoolean());
     }
 }

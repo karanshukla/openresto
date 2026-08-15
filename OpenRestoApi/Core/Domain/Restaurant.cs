@@ -139,6 +139,15 @@ public class Restaurant
         => BookingsPausedUntil.HasValue && BookingsPausedUntil.Value > DateTime.UtcNow;
 
     /// <summary>
+    /// True when a sitting starting at <paramref name="bookingUtc"/> falls inside the active
+    /// pause window. Pausing is a "stop seating new arrivals for the next X hours" switch, so
+    /// it blocks the sittings inside that window only — next Saturday stays bookable while
+    /// tonight's service is paused.
+    /// </summary>
+    public bool IsPausedFor(DateTime bookingUtc)
+        => IsPaused() && bookingUtc < BookingsPausedUntil!.Value;
+
+    /// <summary>
     /// True when the restaurant does not take online bookings on the local day of
     /// <paramref name="utc"/> — either globally (<see cref="WalkInOnly"/>) or because the
     /// resolved local ISO day is in <see cref="WalkInDays"/>. Delegates to
