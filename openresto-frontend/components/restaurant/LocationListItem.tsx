@@ -76,7 +76,15 @@ export default function LocationListItem({
   const walkInLocation = !!restaurant.walkInOnly;
   const walkInOnDate = !walkInLocation && isWalkInOnlyOnDay(restaurant, selectedIsoDay);
   const walkInBadgeText = walkInBadgeLabel(restaurant);
+  /** Whether the selected date can be booked — governs the slot strip. */
   const bookable = !closedOnDate && !walkInLocation && !walkInOnDate;
+  /**
+   * Whether the location takes online bookings on *any* day — governs the Book now CTA.
+   * Today being shut, or walk-in only, is no reason to withhold the route to next Tuesday;
+   * the panel opens on the notice for this day and its date picker moves the diner on. Only
+   * a location with no bookable day anywhere has nothing behind the button.
+   */
+  const takesOnlineBookings = openDaysList.some((day) => !isWalkInOnlyOnDay(restaurant, day));
 
   useEffect(() => {
     registerRef(restaurant.id, itemRef.current);
@@ -153,7 +161,7 @@ export default function LocationListItem({
   // Opens the booking panel without going through a time chip — the diner may want a time
   // that isn't on the strip, and a location with nothing free today has no chip to press at
   // all. The panel's own pickers take it from here, so the earliest slot is only a seed.
-  const bookNowButton = bookable ? (
+  const bookNowButton = takesOnlineBookings ? (
     <Button
       testID={`location-book-now-${restaurant.id}`}
       size="sm"

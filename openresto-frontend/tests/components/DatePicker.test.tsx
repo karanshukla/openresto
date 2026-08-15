@@ -78,6 +78,62 @@ describe("DatePicker (native)", () => {
     expect(screen.getByText("Select a date")).toBeTruthy();
   });
 
+  describe("days that are listed but cannot be picked", () => {
+    // The ISO day of today, so the fixtures below always hit the currently-selected date.
+    const isoDayOf = (d: Date) => (d.getDay() === 0 ? 7 : d.getDay());
+
+    it("still names the selected date on the trigger when that day isn't offered", () => {
+      // A walk-in-only day or a closed day can arrive from a deep link or a list-wide date
+      // filter. Answering "Select a date" for a date the caller has selected reads as a
+      // control that lost its value.
+      render(
+        <DatePicker
+          selectedDate={todayStr}
+          onSelect={jest.fn()}
+          openDays={[isoDayOf(today) === 7 ? 1 : isoDayOf(today) + 1]}
+        />
+      );
+      expect(screen.getByLabelText(`Change date, currently ${todayLabel}`)).toBeTruthy();
+    });
+
+    it("lists an unavailable day with its reason instead of dropping it", () => {
+      render(
+        <DatePicker
+          onSelect={jest.fn()}
+          unavailableDays={[isoDayOf(today)]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      fireEvent.press(screen.getByText("Select a date"));
+      expect(screen.getByLabelText(`${todayLabel}, Walk-ins only`)).toBeTruthy();
+    });
+
+    it("neither selects nor dismisses when an unavailable day is pressed", () => {
+      // The press has to die on the row. Left to bubble, the backdrop's dismiss handler
+      // closes the picker, which looks like the date control refusing to work at all.
+      const onSelect = jest.fn();
+      render(
+        <DatePicker
+          onSelect={onSelect}
+          unavailableDays={[isoDayOf(today)]}
+          unavailableReason="Walk-ins only"
+        />
+      );
+      fireEvent.press(screen.getByText("Select a date"));
+      fireEvent.press(screen.getByLabelText(`${todayLabel}, Walk-ins only`));
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByLabelText(`${todayLabel}, Walk-ins only`)).toBeTruthy();
+    });
+
+    it("keeps the picker open when its own chrome is pressed", () => {
+      render(<DatePicker onSelect={jest.fn()} />);
+      fireEvent.press(screen.getByText("Select a date"));
+      fireEvent.press(screen.getByRole("header", { name: "Select a date" }));
+      expect(screen.getByLabelText(todayLabel)).toBeTruthy();
+    });
+  });
+
   it("shows selected item styling when modal is open with pre-selected date", () => {
     render(<DatePicker selectedDate={todayStr} onSelect={jest.fn()} />);
     // Trigger shows the date label (not "Select a date")

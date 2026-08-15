@@ -111,10 +111,11 @@ export default function BookingForm({
   const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
   const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
   const isWalkInDay = date ? isWalkInOnlyOnDate(restaurant, date) : false;
-  // A day the location is open on but takes no online bookings on is not a bookable day, so it
-  // never reaches the date picker; the notice the form shows instead only has to cover a day
-  // arrived at from outside it (a deep link, or the locations page's own date filter).
-  const bookableDays = openDaysList.filter((day) => !isWalkInOnlyOnDay(restaurant, day));
+  // Walk-in days stay in the date picker, greyed out and labelled: the location is open on
+  // them, so "you can't book, but you can walk in" is the useful thing to say. Dropping them
+  // outright also left the picker with nothing to show for a walk-in-only location, and left
+  // the trigger unable to name the day the diner was already on.
+  const walkInIsoDays = openDaysList.filter((day) => isWalkInOnlyOnDay(restaurant, day));
   const bookingBlocked = isClosedDay || isWalkInDay;
 
   const [restaurantCurrentTime, setRestaurantCurrentTime] = useState(() =>
@@ -270,7 +271,14 @@ export default function BookingForm({
     <GuestsField label={label} seats={seats} options={seatOptions} onChange={changeSeats} />
   );
 
-  const dateField = <DateField date={date} bookableDays={bookableDays} onChange={changeDate} />;
+  const dateField = (
+    <DateField
+      date={date}
+      openDays={openDaysList}
+      walkInDays={walkInIsoDays}
+      onChange={changeDate}
+    />
+  );
 
   const timePickerField = (label = "Time") => (
     <TimeField

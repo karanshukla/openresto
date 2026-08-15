@@ -35,6 +35,8 @@ export default function DatePicker({
   selectedDate,
   onSelect,
   openDays,
+  unavailableDays,
+  unavailableReason,
   allowPast,
   icon,
   triggerLabel,
@@ -43,10 +45,18 @@ export default function DatePicker({
   onSelect: (date: string) => void;
   /**
    * ISO day numbers offered in the list (1=Mon..7=Sun); every other weekday is left out.
-   * If omitted, all days are allowed. The booking form narrows this further than the
-   * location's opening days — a walk-in-only day is open but not bookable.
+   * If omitted, all days are allowed. A day the venue is shut is not a candidate at all,
+   * which is why it is absent rather than disabled.
    */
   openDays?: number[];
+  /**
+   * ISO days that stay in the list but cannot be picked, with `unavailableReason` printed
+   * beside them. For a day the venue is open on and simply takes no bookings for (walk-in
+   * only), "listed but refused, and here's why" tells the diner something that leaving the
+   * day out cannot: they can still turn up.
+   */
+  unavailableDays?: number[];
+  unavailableReason?: string;
   /**
    * Opt-in: also offer past dates (today-365 .. today). Default false keeps the
    * customer flow restricted to today and later. Used by the admin New Booking modal.
@@ -63,15 +73,21 @@ export default function DatePicker({
   const placeholderColor = colors.muted;
   const backgroundColor = colors.input;
 
+  const isoDayOf = (date: string) => {
+    const jsDay = new Date(date + "T12:00:00").getDay();
+    return jsDay === 0 ? 7 : jsDay;
+  };
+
   const allOptions = generateDateOptions({ allowPast });
   const options = openDays
-    ? allOptions.filter((o) => {
-        const jsDay = new Date(o.value + "T12:00:00").getDay();
-        const isoDay = jsDay === 0 ? 7 : jsDay;
-        return openDays.includes(isoDay);
-      })
+    ? allOptions.filter((o) => openDays.includes(isoDayOf(o.value)))
     : allOptions;
-  const selected = options.find((o) => o.value === selectedDate);
+  const isUnavailable = (date: string) => !!unavailableDays?.includes(isoDayOf(date));
+  // Resolved against the full list, not the offered one: the caller can hand us a date that
+  // is closed or unbookable (a deep link, or a date filter that spans several locations), and
+  // a trigger that answers "Select a date" for a date already selected reads as a control
+  // that has lost its value rather than one holding a value it won't offer again.
+  const selected = allOptions.find((o) => o.value === selectedDate);
 
   return (
     <>
@@ -87,55 +103,88 @@ export default function DatePicker({
           accessibilityRole="button"
           accessibilityLabel="Close the date picker"
         >
-          <ThemedView
-            style={[styles.modalView, { borderColor }]}
-            role="dialog"
-            aria-modal
-            accessibilityViewIsModal
-            accessibilityLabel="Select a date"
-          >
-            <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
-              Select a date
-            </ThemedText>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.value}
-              style={styles.list}
-              role="menu"
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedDate && { backgroundColor: `${primaryColor}14` },
-                  ]}
-                  onPress={() => {
-                    onSelect(item.value);
-                    setModalVisible(false);
-                  }}
-                  role="menuitem"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: item.value === selectedDate }}
-                >
-                  <ThemedText
-                    style={
-                      item.value === selectedDate && { color: primaryColor, fontWeight: "600" }
-                    }
-                  >
-                    {item.label}
-                  </ThemedText>
-                  {item.value === selectedDate && (
-                    <ThemedText
-                      style={[styles.checkmark, { color: primaryColor }]}
-                      accessibilityElementsHidden
-                      importantForAccessibility="no"
+          {/* The card swallows its own presses. Without this, anything inside it that does
+              not consume a press — the title, or a day that can't be picked — reaches the
+              backdrop and dismisses the picker, which reads as the date control refusing to
+              work rather than refusing that one day. */}
+          <Pressable accessible={false} focusable={false} onPress={() => {}} style={styles.card}>
+            <ThemedView
+              style={[styles.modalView, { borderColor }]}
+              role="dialog"
+              aria-modal
+              accessibilityViewIsModal
+              accessibilityLabel="Select a date"
+            >
+              <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
+                Select a date
+              </ThemedText>
+              <FlatList
+                data={options}
+                keyExtractor={(item) => item.value}
+                style={styles.list}
+                role="menu"
+                renderItem={({ item }) => {
+                  const unavailable = isUnavailable(item.value);
+                  const isSelected = item.value === selectedDate;
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.option,
+                        isSelected && { backgroundColor: `${primaryColor}14` },
+                      ]}
+                      // An unpickable row stays pressable so the press dies here. Marking it
+                      // `disabled` instead leaves the press to bubble to the backdrop, which
+                      // dismisses the picker — tapping a greyed-out day would then look like
+                      // the date control refusing to work rather than refusing that one day.
+                      onPress={(event) => {
+                        if (unavailable) {
+                          event?.stopPropagation?.();
+                          return;
+                        }
+                        onSelect(item.value);
+                        setModalVisible(false);
+                      }}
+                      role="menuitem"
+                      accessibilityLabel={
+                        unavailable && unavailableReason
+                          ? `${item.label}, ${unavailableReason}`
+                          : item.label
+                      }
+                      accessibilityState={{ selected: isSelected, disabled: unavailable }}
                     >
-                      ✓
-                    </ThemedText>
-                  )}
-                </TouchableOpacity>
-              )}
-            />
-          </ThemedView>
+                      <ThemedText
+                        style={[
+                          unavailable && { color: placeholderColor },
+                          isSelected && !unavailable && { color: primaryColor, fontWeight: "600" },
+                        ]}
+                      >
+                        {item.label}
+                      </ThemedText>
+                      {unavailable && unavailableReason ? (
+                        <ThemedText
+                          style={[styles.optionNote, { color: placeholderColor }]}
+                          accessibilityElementsHidden
+                          importantForAccessibility="no"
+                        >
+                          {unavailableReason}
+                        </ThemedText>
+                      ) : (
+                        isSelected && (
+                          <ThemedText
+                            style={[styles.checkmark, { color: primaryColor }]}
+                            accessibilityElementsHidden
+                            importantForAccessibility="no"
+                          >
+                            ✓
+                          </ThemedText>
+                        )
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </ThemedView>
+          </Pressable>
         </Pressable>
       </Modal>
 

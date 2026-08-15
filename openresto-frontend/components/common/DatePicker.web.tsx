@@ -45,6 +45,8 @@ export default function DatePicker({
   selectedDate,
   onSelect,
   openDays,
+  unavailableDays,
+  unavailableReason,
   allowPast,
   icon,
   triggerLabel,
@@ -53,6 +55,15 @@ export default function DatePicker({
   onSelect: (date: string) => void;
   /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
+  /**
+   * ISO days the venue is open on but takes no bookings for (walk-in only). Their cells are
+   * unpickable like a closed day's, but they are NOT closed: folding them into `openDays`
+   * turns the trigger red and claims the venue is shut, and for a location that is walk-in
+   * every day it leaves a calendar with no pickable date at all.
+   */
+  unavailableDays?: number[];
+  /** Announced on an unavailable day's cell, e.g. "Walk-ins only". */
+  unavailableReason?: string;
   /** Optional leading glyph, for compact filter bars where the label alone is ambiguous. */
   icon?: IconName;
   /** Overrides the trigger label, e.g. a filter bar that says "Today" instead of the date. */
@@ -290,7 +301,8 @@ export default function DatePicker({
                   const cellStr = toDateStr(cellDate);
                   const outOfRange = cellStr < minDateStr || cellStr > maxDateStr;
                   const closedWeekday = !!openDays && !openDays.includes(isoDayOf(cellDate));
-                  const disabled = outOfRange || closedWeekday;
+                  const unbookableWeekday = !!unavailableDays?.includes(isoDayOf(cellDate));
+                  const disabled = outOfRange || closedWeekday || unbookableWeekday;
                   const isSelected = cellStr === selectedDate;
                   return (
                     <Pressable
@@ -303,7 +315,13 @@ export default function DatePicker({
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={describeDate(cellDate)}
-                      accessibilityHint={closedWeekday ? "Normally closed" : undefined}
+                      accessibilityHint={
+                        closedWeekday
+                          ? "Normally closed"
+                          : unbookableWeekday
+                            ? unavailableReason
+                            : undefined
+                      }
                       accessibilityState={{ disabled, selected: isSelected }}
                       style={[
                         styles.cell,
