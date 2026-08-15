@@ -45,10 +45,11 @@ export function HeaderImageCard({
 
   useBrandDraftPublish({ headerImageUrl: heroPreview, headerImageFit });
 
-  const { status, error, retry } = useAutosave({
+  const { status, error, retry, undo } = useAutosave({
     values: { headerImageFit },
     saved: { headerImageFit: brand.headerImageFit ?? "Cover" },
     save: saveBrandFields,
+    onRestore: (previous) => setHeaderImageFit(previous.headerImageFit),
   });
 
   useEffect(() => {
@@ -186,6 +187,7 @@ export function HeaderImageCard({
             status={status}
             error={error}
             onRetry={retry}
+            onUndo={undo}
             mutedColor={mutedColor}
             testID="header-image-save-status"
           />

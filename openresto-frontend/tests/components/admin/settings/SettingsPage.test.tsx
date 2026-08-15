@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { Text,useWindowDimensions } from "react-native";
+import { Text, useWindowDimensions } from "react-native";
 import { render, screen } from "@testing-library/react-native";
 
 // Mock useWindowDimensions by targeting the internal module (same approach as admin-layout.test).

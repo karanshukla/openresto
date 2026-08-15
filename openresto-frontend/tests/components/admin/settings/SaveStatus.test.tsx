@@ -67,4 +67,32 @@ describe("SaveStatus", () => {
     expect(screen.getByText("Saving…")).toBeTruthy();
     expect(screen.queryByText("Not saved: fix the colour.")).toBeNull();
   });
+
+  it("offers an undo alongside a completed save when one is available", () => {
+    const onUndo = jest.fn();
+    render(<SaveStatus status="saved" onRetry={jest.fn()} onUndo={onUndo} mutedColor="#888" />);
+    expect(screen.getByText("Saved")).toBeTruthy();
+    fireEvent.press(screen.getByLabelText("Undo the last save"));
+    expect(onUndo).toHaveBeenCalled();
+  });
+
+  it("shows no undo when there is nothing to put back", () => {
+    render(<SaveStatus status="saved" onRetry={jest.fn()} onUndo={null} mutedColor="#888" />);
+    expect(screen.getByText("Saved")).toBeTruthy();
+    expect(screen.queryByText("Undo")).toBeNull();
+  });
+
+  it("does not offer an undo next to a failure", () => {
+    render(
+      <SaveStatus
+        status="error"
+        error="Nope."
+        onRetry={jest.fn()}
+        onUndo={jest.fn()}
+        mutedColor="#888"
+      />
+    );
+    expect(screen.getByText("Nope.")).toBeTruthy();
+    expect(screen.queryByText("Undo")).toBeNull();
+  });
 });

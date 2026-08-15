@@ -30,6 +30,39 @@ function Harness({
 
 const state = () => screen.getByTestId("state").props.children.join("");
 
+/** Owns the value it edits, so an undo has real form state to put back. */
+function UndoHarness({
+  save,
+  initial = "before",
+}: {
+  save: AutosaveSaver<{ name: string }>;
+  initial?: string;
+}) {
+  const [name, setName] = React.useState(initial);
+  const { status, undo } = useAutosave({
+    values: { name },
+    saved: { name: initial },
+    save,
+    onRestore: (previous) => setName(previous.name),
+  });
+  return (
+    <>
+      <Text testID="state">
+        {status}:{undo ? "undoable" : "-"}
+      </Text>
+      <Text testID="name">{name}</Text>
+      <Text testID="edit" onPress={() => setName("after")}>
+        edit
+      </Text>
+      <Text testID="undo" onPress={() => undo?.()}>
+        undo
+      </Text>
+    </>
+  );
+}
+
+const nameShown = () => screen.getByTestId("name").props.children;
+
 describe("useAutosave", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -100,5 +133,91 @@ describe("useAutosave", () => {
 
     rerender(<Harness values={{ name: "bc" }} saved={saved} save={save} />);
     expect(state()).toBe("idle:-");
+  });
+
+  it("offers an undo once a save lands, and puts the old value back on both sides", async () => {
+    const save = jest.fn<Promise<string | null>, [{ name: string }]>(async () => null);
+    render(<UndoHarness save={save} />);
+
+    await act(async () => {
+      screen.getByTestId("edit").props.onPress();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(save).toHaveBeenCalledWith({ name: "after" });
+    expect(state()).toBe("saved:undoable");
+
+    await act(async () => {
+      screen.getByTestId("undo").props.onPress();
+    });
+    // The form is back where it started, and the server was told so rather than left holding
+    // the value the admin just took back.
+    expect(nameShown()).toBe("before");
+    expect(save).toHaveBeenLastCalledWith({ name: "before" });
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not re-save the restored value a second time through the debounce", async () => {
+    const save = jest.fn<Promise<string | null>, [{ name: string }]>(async () => null);
+    render(<UndoHarness save={save} />);
+
+    await act(async () => {
+      screen.getByTestId("edit").props.onPress();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await act(async () => {
+      screen.getByTestId("undo").props.onPress();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("withdraws the offer once the window passes", async () => {
+    const save = jest.fn<Promise<string | null>, [{ name: string }]>(async () => null);
+    render(<UndoHarness save={save} />);
+
+    await act(async () => {
+      screen.getByTestId("edit").props.onPress();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(state()).toBe("saved:undoable");
+
+    await act(async () => {
+      jest.advanceTimersByTime(10_000);
+    });
+    expect(state()).toBe("saved:-");
+  });
+
+  it("offers nothing to undo when the save failed", async () => {
+    const save = jest.fn<Promise<string | null>, [{ name: string }]>(async () => "Nope.");
+    render(<UndoHarness save={save} />);
+
+    await act(async () => {
+      screen.getByTestId("edit").props.onPress();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(state()).toBe("error:-");
+  });
+
+  it("has no undo at all when the caller cannot restore its own state", async () => {
+    const save = jest.fn<Promise<string | null>, [{ name: string }]>(async () => null);
+    const { rerender } = render(
+      <Harness values={{ name: "a" }} saved={{ name: "a" }} save={save} />
+    );
+    rerender(<Harness values={{ name: "b" }} saved={{ name: "a" }} save={save} />);
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    // Harness passes no onRestore, so the save lands but nothing is on offer to put back.
+    expect(state()).toBe("saved:-");
   });
 });

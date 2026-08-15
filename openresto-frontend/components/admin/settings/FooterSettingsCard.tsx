@@ -59,6 +59,7 @@ export function FooterSettingsCard({
     values: { copyrightText: copyrightText.trim() },
     saved: { copyrightText: brand.copyrightText ?? "" },
     save: saveBrandFields,
+    onRestore: (previous) => setCopyrightText(previous.copyrightText),
   });
 
   useEffect(() => {
@@ -217,6 +218,7 @@ export function FooterSettingsCard({
               status={copyrightAutosave.status}
               error={copyrightAutosave.error}
               onRetry={copyrightAutosave.retry}
+              onUndo={copyrightAutosave.undo}
               mutedColor={mutedColor}
               testID="copyright-save-status"
             />

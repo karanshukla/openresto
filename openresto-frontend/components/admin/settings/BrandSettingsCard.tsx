@@ -57,7 +57,7 @@ export function BrandSettingsCard({
       ? "Not saved: waiting for a full hex colour, like #0a7ea4."
       : null;
 
-  const { status, error, retry } = useAutosave({
+  const { status, error, retry, undo } = useAutosave({
     values: {
       appName,
       primaryColor: brandPrimaryColor,
@@ -74,6 +74,12 @@ export function BrandSettingsCard({
     },
     save: saveBrandFields,
     canSave: !blockedReason,
+    onRestore: (previous) => {
+      setAppName(previous.appName);
+      setBrandPrimaryColor(previous.primaryColor);
+      setFaviconIcon(previous.faviconIcon || undefined);
+      setSubtitle(previous.subtitle);
+    },
   });
 
   useEffect(() => {
@@ -222,6 +228,7 @@ export function BrandSettingsCard({
             status={status}
             error={error}
             onRetry={retry}
+            onUndo={undo}
             mutedColor={mutedColor}
             blockedReason={blockedReason}
             testID="brand-identity-save-status"

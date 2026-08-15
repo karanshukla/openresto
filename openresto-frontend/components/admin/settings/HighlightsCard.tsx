@@ -119,6 +119,10 @@ export function HighlightsCard({
       highlightsSubheading: brand.highlightsSubheading ?? "",
     },
     save: saveBrandFields,
+    onRestore: (previous) => {
+      setHeading(previous.highlightsHeading);
+      setSubheading(previous.highlightsSubheading);
+    },
   });
 
   useEffect(() => {
@@ -280,6 +284,7 @@ export function HighlightsCard({
             status={copyAutosave.status}
             error={copyAutosave.error}
             onRetry={copyAutosave.retry}
+            onUndo={copyAutosave.undo}
             mutedColor={mutedColor}
             testID="highlights-copy-save-status"
           />

@@ -49,7 +49,7 @@ export function ContactSettingsCard({
       ? "Not saved: that isn't a valid email address yet."
       : null;
 
-  const { status, error, retry } = useAutosave({
+  const { status, error, retry, undo } = useAutosave({
     values: {
       websiteUrl: websiteUrl.trim(),
       phoneNumber: phoneNumber.trim(),
@@ -63,6 +63,11 @@ export function ContactSettingsCard({
     save: saveBrandFields,
     // A half-typed address is a 400 from the server; blank is a deliberate clear, so it saves.
     canSave: !blockedReason,
+    onRestore: (previous) => {
+      setWebsiteUrl(previous.websiteUrl);
+      setPhoneNumber(previous.phoneNumber);
+      setEmailAddress(previous.emailAddress);
+    },
   });
 
   useEffect(() => {
@@ -149,6 +154,7 @@ export function ContactSettingsCard({
             status={status}
             error={error}
             onRetry={retry}
+            onUndo={undo}
             mutedColor={mutedColor}
             blockedReason={blockedReason}
             testID="contact-save-status"

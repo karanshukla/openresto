@@ -52,7 +52,4 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.md,
   },
-  // Why the autosave is paused, shown where the save status otherwise sits.
-  blockedRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
-  blockedText: { fontSize: 12 },
 });

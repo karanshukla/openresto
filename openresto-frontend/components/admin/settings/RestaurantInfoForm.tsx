@@ -356,7 +356,7 @@ export function RestaurantInfoForm({
     return null;
   })();
 
-  const { status, error, retry } = useAutosave({
+  const { status, error, retry, undo } = useAutosave({
     values,
     saved,
     canSave: !blockedReason,
@@ -384,6 +384,39 @@ export function RestaurantInfoForm({
         tags: result.tags,
       });
       return null;
+    },
+    // The payload is derived from this form's state rather than mirroring it (days and tags are
+    // joined into strings, hours into a 7-entry list), so putting one back means running that
+    // derivation backwards. Anything the payload doesn't carry is left alone.
+    onRestore: (previous) => {
+      setName(previous.name);
+      setAddress(previous.address ?? "");
+      setDescription(previous.description);
+      if (!menuUrlIsServedFile) setMenuUrl(previous.menuUrl ?? "");
+      setPhoneNumber(previous.phoneNumber);
+      setEmailAddress(previous.emailAddress);
+      setOpenDays(previous.openDays ? previous.openDays.split(",").map(Number) : []);
+      setWalkInOnly(previous.walkInOnly);
+      setWalkInDays(previous.walkInDays ? previous.walkInDays.split(",").map(Number) : []);
+      setTimezone(previous.timezone);
+      setDefaultBookingDurationMinutes(previous.defaultBookingDurationMinutes);
+      setBookingSlotIntervalMinutes(previous.bookingSlotIntervalMinutes);
+      setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
+      setBookingRefFormat(previous.bookingRefFormat);
+      setTags(previous.tags ? previous.tags.split(",") : []);
+      const restored: WeekHours = {};
+      for (const entry of previous.openHours) {
+        restored[entry.day] = { open: entry.open, close: entry.close };
+      }
+      setWeekHours(restored);
+      const uniform = previous.openHours.every(
+        (h) => h.open === previous.openHours[0].open && h.close === previous.openHours[0].close
+      );
+      setCustomHours(!uniform);
+      if (uniform && previous.openHours[0]) {
+        setOpenTime(previous.openHours[0].open);
+        setCloseTime(previous.openHours[0].close);
+      }
     },
   });
 
@@ -704,22 +737,15 @@ export function RestaurantInfoForm({
       <View style={[styles.divider, { borderColor }]} />
 
       <View style={styles.footer}>
-        {blockedReason ? (
-          <View style={styles.blockedRow}>
-            <Icon name="warning-outline" size={13} color={theme.colors.warning} />
-            <ThemedText style={[styles.blockedText, { color: theme.colors.warning }]}>
-              {blockedReason}
-            </ThemedText>
-          </View>
-        ) : (
-          <SaveStatus
-            status={status}
-            error={error}
-            onRetry={retry}
-            mutedColor={mutedColor}
-            testID="location-save-status"
-          />
-        )}
+        <SaveStatus
+          status={status}
+          error={error}
+          onRetry={retry}
+          onUndo={undo}
+          mutedColor={mutedColor}
+          blockedReason={blockedReason}
+          testID="location-save-status"
+        />
       </View>
     </View>
   );

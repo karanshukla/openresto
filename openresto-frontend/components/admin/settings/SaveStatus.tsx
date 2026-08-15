@@ -16,6 +16,7 @@ export function SaveStatus({
   status,
   error,
   onRetry,
+  onUndo,
   mutedColor,
   blockedReason,
   testID = "save-status",
@@ -23,6 +24,12 @@ export function SaveStatus({
   status: AutosaveStatus;
   error?: string | null;
   onRetry: () => void;
+  /**
+   * Puts back what the last save replaced. Null when there is nothing to undo, which is the
+   * usual state — the offer only stands for a few seconds after a write lands. This is the
+   * closest thing an autosaved form has to the Discard button it no longer needs.
+   */
+  onUndo?: (() => void) | null;
   mutedColor: string;
   /**
    * Why the card is holding the write back (a `canSave` that is currently false). Without it a
@@ -56,6 +63,17 @@ export function SaveStatus({
         <>
           <Icon name="checkmark-circle" size="sm" color={theme.colors.success} />
           <ThemedText style={[styles.text, { color: theme.colors.success }]}>Saved</ThemedText>
+          {onUndo && (
+            <Button
+              variant="ghost"
+              tone="neutral"
+              size="sm"
+              onPress={onUndo}
+              accessibilityLabel="Undo the last save"
+            >
+              Undo
+            </Button>
+          )}
         </>
       )}
       {status === "error" && (
