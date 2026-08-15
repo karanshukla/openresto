@@ -60,6 +60,45 @@ public class RestaurantTests
         Assert.False(r.IsPaused() && r.BookingsPausedUntil!.Value > DateTime.UtcNow);
     }
 
+    // ── IsPausedFor ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsPausedFor_True_WhenTheSittingStartsInsideThePauseWindow()
+    {
+        Restaurant r = NewRestaurant(bookingsPausedUntil: DateTime.UtcNow.AddHours(2));
+        Assert.True(r.IsPausedFor(DateTime.UtcNow.AddHours(1)));
+    }
+
+    [Fact]
+    public void IsPausedFor_False_WhenTheSittingStartsAfterThePauseWindow()
+    {
+        Restaurant r = NewRestaurant(bookingsPausedUntil: DateTime.UtcNow.AddHours(2));
+        Assert.False(r.IsPausedFor(DateTime.UtcNow.AddHours(3)));
+    }
+
+    [Fact]
+    public void IsPausedFor_False_WhenTheSittingStartsExactlyAtTheWindowEnd()
+    {
+        DateTime until = DateTime.UtcNow.AddHours(2);
+        Restaurant r = NewRestaurant(bookingsPausedUntil: until);
+        Assert.False(r.IsPausedFor(until));
+    }
+
+    [Fact]
+    public void IsPausedFor_False_WhenNoPauseIsRunning()
+    {
+        Restaurant r = NewRestaurant(bookingsPausedUntil: null);
+        Assert.False(r.IsPausedFor(DateTime.UtcNow.AddHours(1)));
+    }
+
+    [Fact]
+    public void IsPausedFor_False_WhenThePauseHasAlreadyExpired()
+    {
+        // An expired pause has no window left, so even a past-looking sitting is unblocked.
+        Restaurant r = NewRestaurant(bookingsPausedUntil: DateTime.UtcNow.AddHours(-1));
+        Assert.False(r.IsPausedFor(DateTime.UtcNow.AddHours(-2)));
+    }
+
     // ── IsWalkInOnlyAt ─────────────────────────────────────────────────────────
 
     [Fact]

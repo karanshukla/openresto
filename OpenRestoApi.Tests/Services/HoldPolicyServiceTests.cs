@@ -63,7 +63,24 @@ public class HoldPolicyServiceTests
         HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
-        Assert.Equal("Bookings are currently paused for this restaurant.", result.FailureMessage);
+        Assert.Contains("paused until", result.FailureMessage);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsEligible_WhenRequestedTimeIsAfterThePauseWindow()
+    {
+        // A pause closes the sittings inside its window only, so a table beyond the window
+        // is still holdable while the pause is running.
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsEligible_WhenRequestedTimeIsAfterThePauseWindow));
+        SeedRestaurant(db);
+        Restaurant restaurant = db.Restaurants.First();
+        restaurant.BookingsPausedUntil = DateTime.UtcNow.AddHours(1);
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.Date.AddDays(1).AddHours(12));
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
 
     [Fact]
@@ -340,10 +357,27 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(2));
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(2));
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("paused", result.FailureMessage);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsEligible_BeyondThePauseWindow()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsEligible_BeyondThePauseWindow));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddDays(1)
+        });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(2));
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
 
     [Fact]

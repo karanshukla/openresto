@@ -22,9 +22,6 @@ public sealed class AvailabilityService(
 
         TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 
-        // Check if restaurant is paused
-        bool isPaused = restaurant.IsPaused();
-
         // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, bookingDate);
 
@@ -182,7 +179,9 @@ public sealed class AvailabilityService(
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
             var availableTableIds = new List<int>();
 
-            if (!isPaused)
+            // A pause closes the slots inside its window only; later sittings — including
+            // later today — stay bookable.
+            if (!restaurant.IsPausedFor(slotUtc))
             {
                 // A slot is available if AT LEAST ONE eligible table is free for the
                 // restaurant's configured booking duration.

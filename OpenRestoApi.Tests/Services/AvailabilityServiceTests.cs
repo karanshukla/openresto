@@ -274,16 +274,40 @@ public class AvailabilityServiceTests
     public async Task GetAvailabilityAsync_ReturnsNoSlots_WhenPaused()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_WhenPaused));
-        db.Restaurants.Add(new Restaurant 
-        { 
+        db.Restaurants.Add(new Restaurant
+        {
             Id = 1, Name = "T", OpenTime = "09:00", CloseTime = "10:00", Timezone = "UTC",
-            BookingsPausedUntil = DateTime.UtcNow.AddHours(1) 
+            // Long enough that every one of tomorrow's slots sits inside the pause window
+            // whatever time of day the suite runs.
+            BookingsPausedUntil = DateTime.UtcNow.AddDays(2)
         });
         db.SaveChanges();
         var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
 
-        var result = await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date, 2);
+        var result = await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date.AddDays(1), 2);
+        Assert.NotEmpty(result.Slots);
         Assert.All(result.Slots, s => Assert.False(s.IsAvailable));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_KeepsSlotsAfterThePauseWindow_Available()
+    {
+        // A pause is "stop seating new arrivals for the next X hours", so it must not
+        // close a sitting that starts after the window ends.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_KeepsSlotsAfterThePauseWindow_Available));
+        var section = new Section { Id = 1, Name = "S", Tables = new List<Table> { new() { Id = 1, Name = "T1", Seats = 4 } } };
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddHours(1),
+            Sections = new List<Section> { section }
+        });
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        var result = await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date.AddDays(3), 2);
+
+        Assert.All(result.Slots, s => Assert.True(s.IsAvailable));
     }
 
     [Fact]

@@ -20,6 +20,7 @@ import { createBooking } from "@/api/bookings";
 import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
+import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import { styles } from "./BookingDrawer.styles";
 import { Icon } from "@/components/common/Icon";
@@ -54,6 +55,8 @@ function summaryLine(seats: number, date: string, time: string, today: string): 
  */
 export default function BookingDrawer({
   restaurant,
+  restaurants,
+  onRestaurantChange,
   seats,
   onSeatsChange,
   date,
@@ -64,6 +67,13 @@ export default function BookingDrawer({
   onClose,
 }: {
   restaurant: RestaurantDto;
+  /**
+   * Every location the page is showing. More than one turns the panel's title into a picker,
+   * so a diner who opened the wrong branch — or wants to compare two — switches in place
+   * instead of closing the panel and hunting down the other card.
+   */
+  restaurants?: RestaurantDto[];
+  onRestaurantChange?: (restaurant: RestaurantDto) => void;
   seats: number;
   /** Party size and date are the page's, so changing either in here re-filters the list. */
   onSeatsChange: (seats: number) => void;
@@ -209,13 +219,29 @@ export default function BookingDrawer({
     }
   };
 
+  const switchableLocations = onRestaurantChange && restaurants && restaurants.length > 1;
+
+  const heading = switchableLocations ? (
+    <Select
+      accessibilityLabel="Location"
+      selectedValue={restaurant.id}
+      options={restaurants.map((r) => ({ label: r.name, value: r.id }))}
+      onSelect={(value) => {
+        const next = restaurants.find((r) => r.id === value);
+        if (next) onRestaurantChange(next);
+      }}
+    />
+  ) : (
+    <ThemedText style={styles.title} numberOfLines={1}>
+      {restaurant.name}
+    </ThemedText>
+  );
+
   const body = (headerHandlers: Partial<GestureResponderHandlers> = {}) => (
     <>
       <View {...headerHandlers} style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerText}>
-          <ThemedText style={styles.title} numberOfLines={1}>
-            {restaurant.name}
-          </ThemedText>
+          {heading}
           <ThemedText style={[styles.summary, { color: colors.muted }]}>
             {summaryLine(seats, date, time, today)}
           </ThemedText>

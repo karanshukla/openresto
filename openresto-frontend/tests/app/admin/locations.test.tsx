@@ -305,7 +305,9 @@ describe("AdminLocationsScreen", () => {
 
   it("renders booking action buttons when a location is selected", async () => {
     renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Pause New Bookings for 60m")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("Pause New Bookings for the next 60m")).toBeTruthy()
+    );
     expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy();
   });
 
@@ -329,11 +331,13 @@ describe("AdminLocationsScreen", () => {
     await waitFor(() => expect(screen.getByText(/Resume New Bookings now/)).toBeTruthy());
   });
 
-  it("pauses bookings when Pause New Bookings for 60m is pressed", async () => {
+  it("pauses bookings when Pause New Bookings for the next 60m is pressed", async () => {
     renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Pause New Bookings for 60m")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("Pause New Bookings for the next 60m")).toBeTruthy()
+    );
     await act(async () => {
-      fireEvent.press(screen.getByText("Pause New Bookings for 60m"));
+      fireEvent.press(screen.getByText("Pause New Bookings for the next 60m"));
     });
     expect(pauseRestaurantBookings).toHaveBeenCalledWith(1, 60);
   });

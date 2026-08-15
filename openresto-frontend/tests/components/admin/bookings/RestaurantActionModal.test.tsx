@@ -46,7 +46,11 @@ describe("RestaurantActionModal", () => {
     });
 
     expect(getByText("Pause Bookings")).toBeTruthy();
-    expect(getByText("Select a restaurant to pause or resume its bookings.")).toBeTruthy();
+    expect(
+      getByText(
+        "Pausing turns away new bookings for the next hour of service. Later times stay bookable."
+      )
+    ).toBeTruthy();
     expect(getByText("Test Restaurant 1")).toBeTruthy();
     expect(getByText("Test Restaurant 2")).toBeTruthy();
   });
@@ -87,7 +91,9 @@ describe("RestaurantActionModal", () => {
     await waitFor(() => {
       expect(adminApi.pauseRestaurantBookings).toHaveBeenCalledWith(1, 60);
       expect(onSuccess).toHaveBeenCalledWith(
-        "Bookings for Test Restaurant 1 have been paused for 1 hour."
+        expect.stringMatching(
+          /^Bookings for Test Restaurant 1 up to .+ are paused\. Later times stay open\.$/
+        )
       );
       expect(onClose).toHaveBeenCalled();
     });

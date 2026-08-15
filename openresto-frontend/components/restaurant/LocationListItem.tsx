@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Linking, Pressable, View } from "react-native";
+import { GestureResponderEvent, Linking, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -22,6 +22,7 @@ import { LocationThumbnail } from "./LocationThumbnail";
 import { useLocationSlots } from "./useLocationSlots";
 import { styles } from "./LocationListItem.styles";
 import { Icon } from "@/components/common/Icon";
+import Button from "@/components/common/Button";
 
 const SLOTS_SHOWN_WIDE = 5;
 const SLOTS_SHOWN_COMPACT = 3;
@@ -103,13 +104,25 @@ export default function LocationListItem({
     ? getNextOpening(restaurant, selectedIsoDay, openDaysList)
     : null;
 
-  const toggleExpanded = () => {
+  const toggleExpanded = (event?: GestureResponderEvent) => {
+    // The card body is the toggle, so the controls sitting on top of it (the menu link, the
+    // Details and Book now buttons) have to keep their press from reaching it.
+    event?.stopPropagation?.();
     Haptics.selectionAsync();
     setExpanded((prev) => {
       const next = !prev;
       if (next && onExpand) onExpand(restaurant.id);
       return next;
     });
+  };
+
+  const bodyPressProps = {
+    onPress: toggleExpanded,
+    accessibilityRole: "button" as const,
+    accessibilityState: { expanded },
+    accessibilityLabel: expanded
+      ? `Hide details for ${restaurant.name}`
+      : `Show details for ${restaurant.name}`,
   };
 
   const walkInBadge = walkInBadgeText ? (
@@ -135,6 +148,31 @@ export default function LocationListItem({
       <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>Details</ThemedText>
       <Icon name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
     </Pressable>
+  );
+
+  // Opens the booking panel without going through a time chip — the diner may want a time
+  // that isn't on the strip, and a location with nothing free today has no chip to press at
+  // all. The panel's own pickers take it from here, so the earliest slot is only a seed.
+  const bookNowButton = bookable ? (
+    <Button
+      testID={`location-book-now-${restaurant.id}`}
+      size="sm"
+      accessibilityLabel={`Book a table at ${restaurant.name}`}
+      onPress={(event) => {
+        // Button fires its own haptic; this only has to keep the press off the card body.
+        event?.stopPropagation?.();
+        onBook(restaurant, usableSlots[0]?.time ?? dayHours.open);
+      }}
+    >
+      Book now
+    </Button>
+  ) : null;
+
+  const headerActions = (
+    <View style={styles.headerActions}>
+      {detailsToggle}
+      {bookNowButton}
+    </View>
   );
 
   const thumbnail = (
@@ -187,7 +225,10 @@ export default function LocationListItem({
   const menuLink = restaurant.menuUrl ? (
     <Pressable
       style={styles.metaItem}
-      onPress={() => Linking.openURL(restaurant.menuUrl!)}
+      onPress={(event) => {
+        event?.stopPropagation?.();
+        Linking.openURL(restaurant.menuUrl!);
+      }}
       accessibilityRole="link"
       accessibilityLabel="View menu"
     >
@@ -225,7 +266,11 @@ export default function LocationListItem({
     >
       {compact ? (
         <View style={styles.compactHeader}>
-          <View style={styles.compactTopRow}>
+          <Pressable
+            {...bodyPressProps}
+            testID={`location-body-${restaurant.id}`}
+            style={styles.compactTopRow}
+          >
             {thumbnail}
             <View style={styles.compactIdentity}>
               <ThemedText style={styles.name} numberOfLines={1}>
@@ -234,13 +279,13 @@ export default function LocationListItem({
               {addressMeta}
               {walkInBadge ? <View style={styles.badgeRow}>{walkInBadge}</View> : null}
             </View>
-          </View>
+          </Pressable>
 
           {bookable ? slotRow : null}
 
           <View style={[styles.compactFoot, { borderTopColor: borderColor }]}>
             {walkInLine ?? hoursMeta}
-            {detailsToggle}
+            {headerActions}
           </View>
         </View>
       ) : (
@@ -248,7 +293,11 @@ export default function LocationListItem({
           {thumbnail}
           <View style={styles.wideContent}>
             <View style={styles.wideTopRow}>
-              <View style={styles.wideIdentity}>
+              <Pressable
+                {...bodyPressProps}
+                testID={`location-body-${restaurant.id}`}
+                style={styles.wideIdentity}
+              >
                 <View style={styles.badgeRow}>
                   <ThemedText style={styles.name} numberOfLines={1}>
                     {restaurant.name}
@@ -260,8 +309,8 @@ export default function LocationListItem({
                   {hoursMeta}
                   {menuLink}
                 </View>
-              </View>
-              {detailsToggle}
+              </Pressable>
+              {headerActions}
             </View>
             {slotRow}
           </View>

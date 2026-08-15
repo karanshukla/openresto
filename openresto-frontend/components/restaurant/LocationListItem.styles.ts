@@ -104,6 +104,13 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
     minHeight: 36,
   },
+  /** Details beside Book now: source order is reading order, so the filled CTA lands last. */
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    flexShrink: 0,
+  },
 
   slotRow: {
     flexDirection: "row",

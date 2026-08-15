@@ -146,6 +146,12 @@ export default function LocationsScreen({
     setDrawer({ restaurant, time });
   }, []);
 
+  // Switching location keeps the time the diner was looking at; the form re-asks for
+  // availability and moves to the nearest bookable slot when the new location can't take it.
+  const handleDrawerRestaurantChange = useCallback((restaurant: RestaurantDto) => {
+    setDrawer((current) => (current ? { ...current, restaurant } : current));
+  }, []);
+
   const closeDrawer = useCallback(() => setDrawer(null), []);
 
   // Deep link: scroll the highlighted location into view, and when the link carried a
@@ -276,6 +282,8 @@ export default function LocationsScreen({
         {drawer && (
           <BookingDrawer
             restaurant={drawer.restaurant}
+            restaurants={restaurants}
+            onRestaurantChange={handleDrawerRestaurantChange}
             seats={seats}
             date={date}
             time={drawer.time}
