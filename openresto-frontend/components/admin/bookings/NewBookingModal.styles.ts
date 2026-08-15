@@ -2,6 +2,7 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
+  submitBtn: { marginTop: theme.spacing.sm },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

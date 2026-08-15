@@ -12,12 +12,19 @@ jest.mock("@/api/admin", () => ({
   adminCreateHighlight: jest.fn(),
   adminUpdateHighlight: jest.fn(),
   adminDeleteHighlight: jest.fn(),
+  saveBrandSettings: jest.fn(),
 }));
 
-jest.mock("@/context/BrandContext", () => {
-  const brand = { primaryColor: "#0a7ea4", appName: "Open Resto" };
-  return { useBrand: () => brand };
-});
+let mockBrandData: {
+  primaryColor: string;
+  appName: string;
+  highlightsHeading?: string;
+  highlightsSubheading?: string;
+} = { primaryColor: "#0a7ea4", appName: "Open Resto" };
+
+jest.mock("@/context/BrandContext", () => ({
+  useBrand: () => mockBrandData,
+}));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -56,6 +63,7 @@ const mockHighlights = [
 describe("HighlightsCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockBrandData = { primaryColor: "#0a7ea4", appName: "Open Resto" };
     (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([]);
   });
 
@@ -153,7 +161,7 @@ describe("HighlightsCard", () => {
     );
     fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "New");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     expect(adminApi.adminCreateHighlight).toHaveBeenCalledWith(
       expect.objectContaining({ title: "New" })
@@ -164,9 +172,9 @@ describe("HighlightsCard", () => {
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Add")).toBeTruthy());
     fireEvent.press(screen.getByText("Add"));
-    await waitFor(() => expect(screen.getByText("Save")).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText("Add this highlight")).toBeTruthy());
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     expect(adminApi.adminCreateHighlight).not.toHaveBeenCalled();
   });
@@ -176,10 +184,8 @@ describe("HighlightsCard", () => {
     (adminApi.adminDeleteHighlight as jest.Mock).mockResolvedValue(true);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], LiveMusic-edit[6,7], LiveMusic-delete[8,9], Add[10,11]
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[4]);
+      fireEvent.press(screen.getByLabelText("Delete highlight Great Food"));
     });
     expect(adminApi.adminDeleteHighlight).toHaveBeenCalledWith(1);
   });
@@ -189,10 +195,8 @@ describe("HighlightsCard", () => {
     (adminApi.adminDeleteHighlight as jest.Mock).mockResolvedValue(false);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], Add[6,7]
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
     await act(async () => {
-      fireEvent.press(accessible[4]);
+      fireEvent.press(screen.getByLabelText("Delete highlight Great Food"));
     });
     expect(screen.getByText("Great Food")).toBeTruthy();
   });
@@ -201,9 +205,7 @@ describe("HighlightsCard", () => {
     (adminApi.adminGetHighlights as jest.Mock).mockResolvedValue([mockHighlights[0]]);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    // Layout: Header[0,1], GreatFood-edit[2,3], GreatFood-delete[4,5], Add[6,7]
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[2]);
+    fireEvent.press(screen.getByLabelText("Edit highlight Great Food"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("Great Food")).toBeTruthy();
     });
@@ -215,12 +217,11 @@ describe("HighlightsCard", () => {
     (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue({ ok: true, data: updated });
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[2]);
+    fireEvent.press(screen.getByLabelText("Edit highlight Great Food"));
     await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Great Food"), "Amazing Food");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Save this highlight"));
     });
     expect(adminApi.adminUpdateHighlight).toHaveBeenCalledWith(
       1,
@@ -233,12 +234,11 @@ describe("HighlightsCard", () => {
     (adminApi.adminUpdateHighlight as jest.Mock).mockResolvedValue(null);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[2]);
+    fireEvent.press(screen.getByLabelText("Edit highlight Great Food"));
     await waitFor(() => expect(screen.getByDisplayValue("Great Food")).toBeTruthy());
     fireEvent.changeText(screen.getByDisplayValue("Great Food"), "New Title");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Save this highlight"));
     });
     expect(adminApi.adminUpdateHighlight).toHaveBeenCalled();
   });
@@ -253,7 +253,7 @@ describe("HighlightsCard", () => {
     );
     fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "New");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     expect(adminApi.adminCreateHighlight).toHaveBeenCalled();
     expect(screen.queryByText("New")).toBeNull();
@@ -305,7 +305,7 @@ describe("HighlightsCard", () => {
       "https://example.com/menu"
     );
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     expect(adminApi.adminCreateHighlight).toHaveBeenCalledWith(
       expect.objectContaining({ link: "https://example.com/menu" })
@@ -330,7 +330,7 @@ describe("HighlightsCard", () => {
     );
     fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Plain");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     expect(adminApi.adminCreateHighlight).toHaveBeenCalledWith(
       expect.objectContaining({ link: null })
@@ -343,8 +343,7 @@ describe("HighlightsCard", () => {
     ]);
     render(<HighlightsCard {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Great Food")).toBeTruthy());
-    const accessible = screen.UNSAFE_getAllByProps({ accessible: true });
-    fireEvent.press(accessible[2]);
+    fireEvent.press(screen.getByLabelText("Edit highlight Great Food"));
     await waitFor(() => {
       expect(screen.getByDisplayValue("https://example.com/book")).toBeTruthy();
     });
@@ -363,7 +362,7 @@ describe("HighlightsCard", () => {
       "javascript:alert(1)"
     );
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     await waitFor(() => expect(screen.getByText(/valid link URL/)).toBeTruthy());
     // Pre-flight means the API was never called.
@@ -383,10 +382,74 @@ describe("HighlightsCard", () => {
     );
     fireEvent.changeText(screen.getByPlaceholderText("e.g. Wood-fired kitchen"), "Too long");
     await act(async () => {
-      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(screen.getByLabelText("Add this highlight"));
     });
     await waitFor(() => expect(screen.getByText(/cannot exceed 60/)).toBeTruthy());
     // Form stays open so the admin can fix the field.
     expect(screen.getByDisplayValue("Too long")).toBeTruthy();
+  });
+
+  // ── Section copy (heading/subheading), moved here from the Brand Identity card ──────
+
+  it("renders the section heading and subheading fields", async () => {
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Section Heading")).toBeTruthy());
+    expect(screen.getByText("Section Subheading")).toBeTruthy();
+  });
+
+  it("pre-fills the section copy from brand context", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      highlightsHeading: "What we love",
+      highlightsSubheading: "Hand-picked",
+    };
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByDisplayValue("What we love")).toBeTruthy());
+    expect(screen.getByDisplayValue("Hand-picked")).toBeTruthy();
+  });
+
+  it("autosaves the section copy once editing stops", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Section Heading")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("Restaurant highlights"), " Why visit us ");
+    fireEvent.changeText(screen.getByPlaceholderText("Curated by the owner"), "Our picks");
+    await waitFor(
+      () =>
+        expect(adminApi.saveBrandSettings).toHaveBeenCalledWith({
+          highlightsHeading: "Why visit us",
+          highlightsSubheading: "Our picks",
+        }),
+      { timeout: 2000 }
+    );
+    await waitFor(() => expect(screen.getByText("Saved")).toBeTruthy());
+  });
+
+  it("shows an error when saving the section copy fails", async () => {
+    (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue(null);
+    render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Section Heading")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("Restaurant highlights"), "Why visit us");
+    await waitFor(() => expect(screen.getByText("Couldn't reach the server.")).toBeTruthy(), {
+      timeout: 2000,
+    });
+  });
+
+  it("syncs the section copy when brand context updates", async () => {
+    const { rerender } = render(<HighlightsCard {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Section Heading")).toBeTruthy());
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      highlightsHeading: "Fresh copy",
+    };
+    await act(async () => {
+      rerender(<HighlightsCard {...baseProps} />);
+    });
+    expect(screen.getByDisplayValue("Fresh copy")).toBeTruthy();
   });
 });

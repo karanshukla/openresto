@@ -41,8 +41,25 @@ jest.mock("@/components/admin/settings/FooterSettingsCard", () => ({
 jest.mock("@/components/admin/settings/HighlightsCard", () => ({
   HighlightsCard: stub("HighlightsCard"),
 }));
+jest.mock("@/components/admin/settings/HeaderImageCard", () => ({
+  HeaderImageCard: stub("HeaderImageCard"),
+}));
+jest.mock("@/components/admin/settings/ContactSettingsCard", () => ({
+  ContactSettingsCard: stub("ContactSettingsCard"),
+}));
+jest.mock("@/components/admin/settings/BrandPreview", () => ({
+  BrandPreview: stub("BrandPreview"),
+}));
 jest.mock("@/components/admin/settings/EmailSettingsCard", () => ({
   EmailSettingsCard: stub("EmailSettingsCard"),
+}));
+jest.mock("@/components/admin/settings/EmailDeliveryPanel", () => ({
+  EmailDeliveryPanel: stub("EmailDeliveryPanel"),
+}));
+// The email route owns the SMTP state both its halves share; the cards are stubbed, so the
+// route only needs the hook to exist, not to reach the API.
+jest.mock("@/hooks/use-email-settings", () => ({
+  useEmailSettings: () => ({}),
 }));
 jest.mock("@/components/admin/settings/PushNotificationsCard", () => ({
   PushNotificationsCard: stub("PushNotificationsCard"),
@@ -84,8 +101,11 @@ describe("admin settings routes", () => {
     await waitFor(() => {
       expect(screen.getByText("Brand")).toBeTruthy();
       expect(screen.getByText("BrandSettingsCard")).toBeTruthy();
-      expect(screen.getByText("FooterSettingsCard")).toBeTruthy();
+      expect(screen.getByText("HeaderImageCard")).toBeTruthy();
+      expect(screen.getByText("ContactSettingsCard")).toBeTruthy();
       expect(screen.getByText("HighlightsCard")).toBeTruthy();
+      expect(screen.getByText("FooterSettingsCard")).toBeTruthy();
+      expect(screen.getByText("BrandPreview")).toBeTruthy();
     });
   });
 
@@ -94,6 +114,7 @@ describe("admin settings routes", () => {
     await waitFor(() => {
       expect(screen.getByText("Email & Push")).toBeTruthy();
       expect(screen.getByText("EmailSettingsCard")).toBeTruthy();
+      expect(screen.getByText("EmailDeliveryPanel")).toBeTruthy();
       expect(screen.getByText("PushNotificationsCard")).toBeTruthy();
     });
   });

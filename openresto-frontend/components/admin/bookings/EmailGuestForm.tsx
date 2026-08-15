@@ -1,8 +1,8 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
-import { useAppTheme } from "@/hooks/use-app-theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
+import Button from "@/components/common/Button";
 import { Icon } from "@/components/common/Icon";
 
 interface ThemeColors {
@@ -40,7 +40,6 @@ export function EmailGuestForm({
   setEmailBody,
   onSendEmail,
 }: EmailGuestFormProps) {
-  const { primaryColor: PRIMARY } = useAppTheme();
   return (
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
@@ -93,22 +92,16 @@ export function EmailGuestForm({
         }
       />
       <View style={styles.emailActions}>
-        <Pressable
-          style={[
-            styles.emailSendBtn,
-            { backgroundColor: PRIMARY },
-            (!emailSubject.trim() || !emailBody.trim() || emailSending) && { opacity: 0.5 },
-          ]}
+        <Button
+          size="md"
+          icon="send-outline"
           onPress={onSendEmail}
-          accessibilityRole="button"
           accessibilityLabel="Send email to guest"
           disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
+          loading={emailSending}
         >
-          <Icon name="send-outline" size="sm" color="#fff" />
-          <ThemedText style={styles.emailSendBtnText}>
-            {emailSending ? "Sending…" : "Send Email"}
-          </ThemedText>
-        </Pressable>
+          {emailSending ? "Sending…" : "Send Email"}
+        </Button>
         {emailResult && (
           <ThemedText
             style={[

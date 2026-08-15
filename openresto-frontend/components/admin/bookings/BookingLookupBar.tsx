@@ -1,8 +1,7 @@
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
-import { styles } from "@/components/admin/bookings/bookings.styles";
-import { Icon } from "@/components/common/Icon";
 
 export type LookupStatus = "idle" | "not_found" | "multiple";
 
@@ -59,27 +58,16 @@ export function BookingLookupBar({
           returnKeyType="search"
           onSubmitEditing={onSubmit}
         />
-        <Pressable
+        <Button
+          size="md"
+          icon="search-outline"
           onPress={onSubmit}
           disabled={loading || !query.trim()}
-          accessibilityRole="button"
+          loading={loading}
           accessibilityLabel="Find booking"
-          accessibilityState={{ disabled: loading || !query.trim(), busy: loading }}
-          style={[
-            styles.newBookingBtn,
-            { backgroundColor: primaryColor },
-            (!query.trim() || loading) && { opacity: 0.5 },
-          ]}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Icon name="search-outline" size={15} color="#fff" />
-              <ThemedText style={styles.newBookingBtnText}>Find</ThemedText>
-            </>
-          )}
-        </Pressable>
+          Find
+        </Button>
       </View>
 
       {status === "not_found" && (

@@ -41,11 +41,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  connectionBlock: { gap: theme.spacing.xxs },
-  fieldRow: { flexDirection: "row", gap: theme.spacing.xsm },
-  fieldRowSpaced: { marginTop: theme.spacing.xs },
-  fieldFlex: { flex: 1 },
-  fieldSpaced: { marginTop: theme.spacing.xs },
+  connectionBlock: { gap: theme.spacing.sm },
   portRow: { flexDirection: "row", gap: theme.spacing.xxs, alignItems: "center" },
   portInput: { width: 80 },
   portPresets: { flexDirection: "row", gap: theme.spacing.xs, flex: 1 },
@@ -74,18 +70,13 @@ export const styles = StyleSheet.create({
   passwordRow: { flexDirection: "row", gap: theme.spacing.sm, alignItems: "center" },
   passwordInput: { flex: 1 },
   passwordToggle: { padding: theme.spacing.sm },
-  blockGap: { height: theme.spacing.sm },
 
-  rightColumn: { gap: 14 },
   form: { gap: theme.spacing.xl },
-  columnsWide: { flexDirection: "row", gap: 22, alignItems: "flex-start" },
-  columnsNarrow: { gap: theme.spacing.xl },
-  rightColumnWide: { width: 340 },
 
+  // Layout and padding come from settingsStyles.successBanner; this adds only the tinted frame.
   saveBanner: {
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    padding: theme.spacing.xsm,
   },
   saveBannerText: { flex: 1 },
   footer: {

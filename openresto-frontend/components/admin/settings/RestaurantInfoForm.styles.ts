@@ -52,23 +52,4 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.md,
   },
-  dirtyIndicator: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
-  dirtyDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.warning },
-  dirtyText: { fontSize: 12 },
-  footerActions: { flexDirection: "row", gap: theme.spacing.sm },
-  discardBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.xsm,
-    borderRadius: theme.borderRadius.lg,
-  },
-  discardText: { fontSize: 14, fontWeight: "500" },
-  saveBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.xsm,
-    borderRadius: theme.borderRadius.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-  },
-  saveText: { fontSize: 14, fontWeight: "600", color: theme.colors.white },
 });

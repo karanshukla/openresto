@@ -1,6 +1,6 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { styles as settingsStyles } from "./settings.styles";
+import Button from "@/components/common/Button";
 import { styles } from "./SmtpTestPanel.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -15,7 +15,6 @@ export interface SmtpTestPanelProps {
   onTest: () => void;
   borderColor: string;
   mutedColor: string;
-  primaryColor: string;
   cardBg: string;
   surface2: string;
   okColor: string;
@@ -40,7 +39,6 @@ export function SmtpTestPanel({
   onTest,
   borderColor,
   mutedColor,
-  primaryColor,
   cardBg,
   surface2,
   okColor,
@@ -94,24 +92,19 @@ export function SmtpTestPanel({
         </ThemedText>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
+      <Button
+        variant="secondary"
+        size="md"
+        icon="flash-outline"
         accessibilityLabel="Send a test email"
+        disabled={!host || !username}
+        loading={testState === "testing"}
         onPress={() => {
           if (testState !== "testing" && host && username) onTest();
         }}
-        style={[
-          settingsStyles.secBtn,
-          styles.testBtn,
-          { borderColor },
-          (!host || !username) && styles.testBtnDisabled,
-        ]}
       >
-        <Icon name="flash-outline" size="sm" color={primaryColor} />
-        <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
-          {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
-        </ThemedText>
-      </Pressable>
+        {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
+      </Button>
     </View>
   );
 }

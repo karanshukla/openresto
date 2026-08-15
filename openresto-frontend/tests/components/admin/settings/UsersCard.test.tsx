@@ -155,7 +155,7 @@ describe("UsersCard", () => {
     await openAddForm();
     fillNewUser("new@test.com", "temp-password");
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() => expect(screen.getByText("new@test.com can now sign in.")).toBeTruthy());
     expect(usersApi.adminCreateUser).toHaveBeenCalledWith({
@@ -177,7 +177,7 @@ describe("UsersCard", () => {
     fillNewUser("new@test.com", "temp-password");
     fireEvent.press(screen.getByLabelText("New user role Owner"));
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() =>
       expect(usersApi.adminCreateUser).toHaveBeenCalledWith(
@@ -199,7 +199,7 @@ describe("UsersCard", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Alex Rivera"), "   ");
     fireEvent.changeText(screen.getByPlaceholderText("••••••••"), "temp-password");
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() =>
       expect(usersApi.adminCreateUser).toHaveBeenCalledWith(
@@ -213,7 +213,7 @@ describe("UsersCard", () => {
     await openAddForm();
     fillNewUser("not-an-email", "temp-password");
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() => expect(screen.getByText("Enter a valid email address.")).toBeTruthy());
     expect(usersApi.adminCreateUser).not.toHaveBeenCalled();
@@ -224,7 +224,7 @@ describe("UsersCard", () => {
     await openAddForm();
     fillNewUser("new@test.com", "123");
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() =>
       expect(screen.getByText("Password must be at least 6 characters.")).toBeTruthy()
@@ -241,7 +241,7 @@ describe("UsersCard", () => {
     await openAddForm();
     fillNewUser("owner@test.com", "temp-password");
 
-    fireEvent.press(screen.getByText("Create user"));
+    fireEvent.press(screen.getByLabelText("Add this user"));
 
     await waitFor(() =>
       expect(screen.getByText("An account with that email address already exists.")).toBeTruthy()

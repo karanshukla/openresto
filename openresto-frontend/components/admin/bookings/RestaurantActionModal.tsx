@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, View, ScrollView, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   adminGetRestaurants,
@@ -173,16 +175,11 @@ export default function RestaurantActionModal({
                   </View>
                 ))}
               </ScrollView>
-              <View style={styles.footer}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Done"
-                  onPress={onClose}
-                  style={[styles.doneBtn, { backgroundColor: primaryColor }]}
-                >
-                  <ThemedText style={styles.doneBtnText}>Done</ThemedText>
-                </Pressable>
-              </View>
+              <ButtonRow style={styles.footer}>
+                <Button size="md" onPress={onClose}>
+                  Done
+                </Button>
+              </ButtonRow>
             </>
           ) : restaurants.length === 0 ? (
             <View style={styles.empty}>

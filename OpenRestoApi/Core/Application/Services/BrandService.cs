@@ -86,7 +86,10 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
             throw new ValidationException("Invalid accent color hex code.");
         }
 
-        if (faviconIcon != null && LucideIconPaths.Get(faviconIcon) == null)
+        // Blank clears the icon (the picker's deselect); a non-blank value must be one we can draw.
+        if (faviconIcon != null
+            && !string.IsNullOrWhiteSpace(faviconIcon)
+            && LucideIconPaths.Get(faviconIcon) == null)
         {
             throw new ValidationException("Invalid favicon icon.");
         }
@@ -134,7 +137,7 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
         brand.AccentColor = accentColor;
         if (faviconIcon != null)
         {
-            brand.FaviconIcon = faviconIcon;
+            brand.FaviconIcon = string.IsNullOrWhiteSpace(faviconIcon) ? null : faviconIcon;
         }
         if (websiteUrl != null)
         {

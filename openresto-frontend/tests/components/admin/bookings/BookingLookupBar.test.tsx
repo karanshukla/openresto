@@ -90,18 +90,23 @@ describe("BookingLookupBar", () => {
     expect(screen.getByText("Showing all matches…")).toBeTruthy();
   });
 
-  it("shows an ActivityIndicator (no Find text) while loading", () => {
+  it("marks the Find button busy and inert while loading", () => {
+    const onSubmit = jest.fn();
     render(
       <BookingLookupBar
         query="x"
         loading
         status="idle"
         onQueryChange={() => {}}
-        onSubmit={() => {}}
+        onSubmit={onSubmit}
         {...theme}
       />
     );
-    // While loading, the "Find" text node is replaced by the spinner.
-    expect(screen.queryByText("Find")).toBeNull();
+    // The button keeps its name while busy — the spinner sits beside the label rather
+    // than replacing it, so the control never goes anonymous mid-request.
+    const find = screen.getByLabelText("Find booking");
+    expect(find.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+    fireEvent.press(find);
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

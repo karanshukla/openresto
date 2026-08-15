@@ -26,6 +26,7 @@ import { ExtendBookingActions } from "./ExtendBookingActions";
 import { EmailGuestForm } from "./EmailGuestForm";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { isPast } from "./StatusBadge";
+import Button from "@/components/common/Button";
 import { Icon } from "@/components/common/Icon";
 
 export function BookingDetailPopup({
@@ -345,43 +346,38 @@ export function BookingDetailPopup({
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               {editing ? (
                 <>
-                  <Pressable
-                    style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
+                  <Button
+                    variant="secondary"
+                    tone="neutral"
+                    size="md"
                     onPress={handleCancelEdit}
                     disabled={editLoading}
-                    accessibilityRole="button"
                     accessibilityLabel="Discard changes"
-                    accessibilityState={{ disabled: editLoading }}
                   >
-                    <ThemedText style={[styles.actionBtnText, { color: colors.text }]}>
-                      Cancel
-                    </ThemedText>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.actionBtn, { backgroundColor: PRIMARY }]}
+                    Cancel
+                  </Button>
+                  <Button
+                    size="md"
                     onPress={handleSaveEdit}
                     disabled={editLoading}
-                    accessibilityRole="button"
+                    loading={editLoading}
                     accessibilityLabel="Save changes"
-                    accessibilityState={{ disabled: editLoading, busy: editLoading }}
                   >
-                    <ThemedText style={[styles.actionBtnText, { color: "#fff" }]}>
-                      {editLoading ? "Saving…" : "Save Changes"}
-                    </ThemedText>
-                  </Pressable>
+                    {editLoading ? "Saving…" : "Save Changes"}
+                  </Button>
                 </>
               ) : (
                 booking &&
                 !booking.isCancelled && (
-                  <Pressable
-                    style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    icon="create-outline"
                     onPress={() => setEditing(true)}
-                    accessibilityRole="button"
                     accessibilityLabel="Edit booking"
                   >
-                    <Icon name="create-outline" size="md" color={PRIMARY} />
-                    <ThemedText style={[styles.actionBtnText, { color: PRIMARY }]}>Edit</ThemedText>
-                  </Pressable>
+                    Edit
+                  </Button>
                 )
               )}
               <Pressable
@@ -478,7 +474,6 @@ export function BookingDetailPopup({
                   isPast={isPast(booking.date)}
                   uncancelling={uncancelling}
                   deleting={deleting}
-                  mutedColor={mutedColor}
                   onUncancel={() => setShowUncancelConfirm(true)}
                   onCancel={() => setShowDeleteConfirm(true)}
                   onPurge={() => setShowPurgeConfirm(true)}

@@ -1,5 +1,5 @@
-import { Pressable, TextInput, View } from "react-native";
-import { ThemedText } from "@/components/themed-text";
+import { TextInput, View } from "react-native";
+import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
 import { Icon } from "@/components/common/Icon";
 
@@ -32,6 +32,7 @@ export function AddLocationForm({
       style={{
         flexDirection: "row",
         alignItems: "center",
+        flexWrap: "wrap",
         gap: 10,
         padding: 14,
         borderWidth: 1,
@@ -53,33 +54,25 @@ export function AddLocationForm({
           color: isDark ? "#fff" : "#111",
         }}
       />
-      <Pressable
-        disabled={saving || !value.trim()}
-        onPress={onSubmit}
-        accessibilityRole="button"
-        accessibilityLabel="Add location"
-        style={{
-          backgroundColor: primaryColor,
-          borderRadius: theme.borderRadius.md,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          opacity: saving || !value.trim() ? 0.45 : 1,
-        }}
-      >
-        <ThemedText style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-          {saving ? "Adding…" : "Add"}
-        </ThemedText>
-      </Pressable>
-      <Pressable
+      <Button
         testID="add-location-cancel"
+        variant="secondary"
+        tone="neutral"
+        size="md"
         onPress={onCancel}
-        style={{ padding: 6 }}
-        accessibilityRole="button"
         accessibilityLabel="Cancel adding a location"
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
-        <Icon name="close-outline" size="xl" color={mutedColor} />
-      </Pressable>
+        Cancel
+      </Button>
+      <Button
+        size="md"
+        disabled={saving || !value.trim()}
+        loading={saving}
+        onPress={onSubmit}
+        accessibilityLabel="Add location"
+      >
+        {saving ? "Adding…" : "Add"}
+      </Button>
     </View>
   );
 }

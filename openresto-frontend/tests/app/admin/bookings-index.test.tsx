@@ -603,7 +603,7 @@ describe("AdminBookingsScreen", () => {
     fireEvent.press(await screen.findByText("List"));
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
 
-    const cancelBtns = screen.queryAllByLabelText("Cancel booking");
+    const cancelBtns = screen.queryAllByLabelText(/^Cancel booking for /);
     if (cancelBtns.length > 0) {
       // Provide a synthetic event with stopPropagation to avoid TypeError
       fireEvent.press(cancelBtns[0], { stopPropagation: jest.fn() });
@@ -621,7 +621,7 @@ describe("AdminBookingsScreen", () => {
     fireEvent.press(await screen.findByText("List"));
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
 
-    const cancelBtns = screen.queryAllByLabelText("Cancel booking");
+    const cancelBtns = screen.queryAllByLabelText(/^Cancel booking for /);
     if (cancelBtns.length > 0) {
       fireEvent.press(cancelBtns[0], { stopPropagation: jest.fn() });
       const confirmBtns = await screen.findAllByText("Cancel Booking");
@@ -639,7 +639,7 @@ describe("AdminBookingsScreen", () => {
     fireEvent.press(await screen.findByText("List"));
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
 
-    expect(screen.queryAllByLabelText("Cancel booking").length).toBe(0);
+    expect(screen.queryAllByLabelText(/^Cancel booking for /).length).toBe(0);
   });
 
   it("pressing grid booking triggers onBookingPress callback", async () => {
@@ -758,7 +758,7 @@ describe("AdminBookingsScreen refresh after mutation", () => {
     await waitFor(() => expect(screen.getByText("john@example.com")).toBeTruthy());
 
     const callsBefore = (getAdminBookings as jest.Mock).mock.calls.length;
-    const cancelBtns = screen.queryAllByLabelText("Cancel booking");
+    const cancelBtns = screen.queryAllByLabelText(/^Cancel booking for /);
     expect(cancelBtns.length).toBeGreaterThan(0);
     fireEvent.press(cancelBtns[0], { stopPropagation: jest.fn() });
     const confirmBtns = await screen.findAllByText("Cancel Booking");

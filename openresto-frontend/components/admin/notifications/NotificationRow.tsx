@@ -7,6 +7,7 @@ import type { AdminNotificationDto } from "@/api/notifications";
 import { TYPE_ICONS, TYPE_LABELS, formatBookingDate, relativeTime } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
 import { Icon } from "@/components/common/Icon";
+import { RowTextButton } from "@/components/common/RowTextButton";
 
 export interface NotificationRowProps {
   notification: AdminNotificationDto;
@@ -125,78 +126,42 @@ export function NotificationRow({
           <ThemedText style={[styles.notifMeta, { color: mutedColor }]}>{meta}</ThemedText>
         </View>
 
-        {/* Action buttons — nested Pressables so they don't trigger row navigation */}
+        {/* Row actions — the same named pills the settings rows use, nested inside the row
+            Pressable so they act on the notification rather than navigating to it. */}
         <View style={styles.rowActions}>
-          <Pressable
+          <RowTextButton
+            label={isPinned ? "Unpin" : "Pin"}
+            icon={isPinned ? "bookmark" : "bookmark-outline"}
+            color={primaryColor}
+            selected={isPinned}
             onPress={() => onTogglePin(n.id)}
-            accessibilityRole="button"
             accessibilityLabel={isPinned ? "Unpin notification" : "Pin notification"}
-            accessibilityState={{ selected: isPinned }}
-            hitSlop={6}
-            style={[
-              styles.actionPinBtn,
-              {
-                backgroundColor: isPinned
-                  ? primaryColor
-                  : isDark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.06)",
-              },
-            ]}
-          >
-            <ThemedText style={[styles.actionText, { color: isPinned ? "#fff" : mutedColor }]}>
-              {isPinned ? "Unpin" : "Pin"}
-            </ThemedText>
-          </Pressable>
+          />
           {n.isRead ? (
-            <Pressable
+            <RowTextButton
+              label="Mark Unread"
+              icon="mail-unread-outline"
+              color={mutedColor}
               onPress={() => onMarkUnread(n.id)}
-              accessibilityRole="button"
               accessibilityLabel="Mark notification unread"
-              hitSlop={6}
-              style={[
-                styles.actionToggleBtn,
-                {
-                  backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-                },
-              ]}
-            >
-              <ThemedText style={[styles.actionText, { color: mutedColor }]}>
-                Mark Unread
-              </ThemedText>
-            </Pressable>
+            />
           ) : (
-            <Pressable
+            <RowTextButton
+              label="Mark Read"
+              icon="mail-open-outline"
+              color={mutedColor}
               onPress={() => onMarkRead(n.id)}
-              accessibilityRole="button"
               accessibilityLabel="Mark notification read"
-              hitSlop={6}
-              style={[
-                styles.actionToggleBtn,
-                {
-                  backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-                },
-              ]}
-            >
-              <ThemedText style={[styles.actionText, { color: mutedColor }]}>Mark Read</ThemedText>
-            </Pressable>
+            />
           )}
-          <Pressable
+          <RowTextButton
             testID={`delete-notif-${n.id}`}
+            label="Delete"
+            icon="trash-outline"
+            color={theme.colors.error}
             onPress={() => onRequestDelete(n.id)}
-            accessibilityRole="button"
             accessibilityLabel="Delete notification"
-            hitSlop={6}
-            style={[
-              styles.actionDeleteBtn,
-              { backgroundColor: hexToRgba(theme.colors.error, 0.12) },
-            ]}
-          >
-            <Icon name="trash-outline" size={13} color={theme.colors.error} />
-            <ThemedText style={[styles.actionText, { color: theme.colors.error }]}>
-              Delete
-            </ThemedText>
-          </Pressable>
+          />
         </View>
 
         {(n.bookingId != null || n.type === "RestaurantNearlyFull") && (

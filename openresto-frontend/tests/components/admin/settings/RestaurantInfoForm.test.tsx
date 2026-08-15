@@ -60,6 +60,17 @@ const mockRestaurant = {
   sections: [],
 };
 
+/**
+ * Waits out the autosave debounce and lets the save promise settle. Real timers rather than
+ * `jest.advanceTimersByTime`: this file also drives promise-based UI (the menu upload/delete
+ * flows), and RNTL's `waitFor` cannot make progress against a faked clock.
+ */
+const flushAutosave = async () => {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+  });
+};
+
 describe("RestaurantInfoForm", () => {
   const onSaved = jest.fn();
 
@@ -89,20 +100,19 @@ describe("RestaurantInfoForm", () => {
     expect(screen.getByText("italian")).toBeTruthy();
   });
 
-  it("shows Save button", () => {
+  it("shows the autosave status row instead of a Save button", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(screen.getByText("Save changes")).toBeTruthy();
+    expect(screen.getByTestId("location-save-status")).toBeTruthy();
+    expect(screen.queryByText("Save changes")).toBeNull();
   });
 
   it("shows All changes saved status by default", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(screen.getByText("All changes saved")).toBeTruthy();
   });
 
   it("shows Unsaved changes when form is dirty", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "New Name");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
   });
 
   it("calls updateRestaurant when Save is pressed after editing", async () => {
@@ -112,9 +122,7 @@ describe("RestaurantInfoForm", () => {
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ name: "Updated Resto" })
@@ -177,16 +185,7 @@ describe("RestaurantInfoForm", () => {
     expect(screen.getByText("italian")).toBeTruthy();
   });
 
-  it("discards changes when Discard is pressed", () => {
-    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Changed Name");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    fireEvent.press(screen.getByText("Discard"));
-    expect(screen.getByDisplayValue("Test Resto")).toBeTruthy();
-    expect(screen.getByText("All changes saved")).toBeTruthy();
-  });
-
-  it("flushes pending tag input when saving", async () => {
+  it("autosaves a tag committed from the tag input", async () => {
     (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
       ...mockRestaurant,
       name: "Updated Resto",
@@ -196,9 +195,8 @@ describe("RestaurantInfoForm", () => {
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
     const tagInput = screen.getByPlaceholderText("Add tag (press Enter)");
     fireEvent.changeText(tagInput, "tapas");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    fireEvent(tagInput, "submitEditing");
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ tags: expect.stringContaining("tapas") })
@@ -210,9 +208,7 @@ describe("RestaurantInfoForm", () => {
     (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(null);
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(onSaved).not.toHaveBeenCalled();
   });
 
@@ -249,9 +245,7 @@ describe("RestaurantInfoForm", () => {
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ defaultBookingDurationMinutes: 90 })
@@ -262,7 +256,6 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getDurationSelect();
     fireEvent(select, "change", { target: { value: "120" } });
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect(getDurationSelect().props.value).toBe(120);
   });
 
@@ -274,9 +267,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getDurationSelect();
     fireEvent(select, "change", { target: { value: "120" } });
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ defaultBookingDurationMinutes: 120 })
@@ -284,15 +275,6 @@ describe("RestaurantInfoForm", () => {
     expect(onSaved).toHaveBeenCalledWith(
       expect.objectContaining({ defaultBookingDurationMinutes: 120 })
     );
-  });
-
-  it("reverts the booking duration to the saved value when Discard is pressed", () => {
-    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getDurationSelect();
-    fireEvent(select, "change", { target: { value: "120" } });
-    expect(getDurationSelect().props.value).toBe(120);
-    fireEvent.press(screen.getByText("Discard"));
-    expect(getDurationSelect().props.value).toBe(90);
   });
 
   // ── Booking start-time interval (#245) ──────────────────────────────────
@@ -323,7 +305,6 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getIntervalSelect();
     fireEvent(select, "change", { target: { value: "15" } });
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect(getIntervalSelect().props.value).toBe(15);
   });
 
@@ -334,9 +315,7 @@ describe("RestaurantInfoForm", () => {
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ bookingSlotIntervalMinutes: 30 })
@@ -351,9 +330,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getIntervalSelect();
     fireEvent(select, "change", { target: { value: "60" } });
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ bookingSlotIntervalMinutes: 60 })
@@ -361,16 +338,6 @@ describe("RestaurantInfoForm", () => {
     expect(onSaved).toHaveBeenCalledWith(
       expect.objectContaining({ bookingSlotIntervalMinutes: 60 })
     );
-  });
-
-  it("reverts the slot interval to the saved value when Discard is pressed", () => {
-    const withCustomInterval = { ...mockRestaurant, bookingSlotIntervalMinutes: 15 };
-    render(<RestaurantInfoForm restaurant={withCustomInterval} onSaved={onSaved} />);
-    const select = getIntervalSelect();
-    expect(getIntervalSelect().props.value).toBe(15);
-    fireEvent(select, "change", { target: { value: "60" } });
-    fireEvent.press(screen.getByText("Discard"));
-    expect(getIntervalSelect().props.value).toBe(15);
   });
 
   // ── Max table oversize (#244) ───────────────────────────────────────────
@@ -398,7 +365,6 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getOversizeSelect();
     fireEvent(select, "change", { target: { value: "1" } });
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect(getOversizeSelect().props.value).toBe(1);
   });
 
@@ -410,9 +376,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const select = getOversizeSelect();
     fireEvent(select, "change", { target: { value: "1" } });
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ maxTableOversizeSeats: 1 })
@@ -433,27 +397,11 @@ describe("RestaurantInfoForm", () => {
     );
     const select = getOversizeSelect();
     fireEvent(select, "change", { target: { value: "" } });
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ maxTableOversizeSeats: null })
     );
-  });
-
-  it("reverts the oversize select to the saved value when Discard is pressed", () => {
-    render(
-      <RestaurantInfoForm
-        restaurant={{ ...mockRestaurant, maxTableOversizeSeats: 1 }}
-        onSaved={onSaved}
-      />
-    );
-    const select = getOversizeSelect();
-    fireEvent(select, "change", { target: { value: "3" } });
-    expect(getOversizeSelect().props.value).toBe(3);
-    fireEvent.press(screen.getByText("Discard"));
-    expect(getOversizeSelect().props.value).toBe(1);
   });
 
   // ── Booking reference format (#179) ─────────────────────────────────────
@@ -480,7 +428,6 @@ describe("RestaurantInfoForm", () => {
   it("marks the form dirty and updates the selection when the ref format changes", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect(getRefFormatSelect().props.value).toBe("Numeric");
   });
 
@@ -491,27 +438,12 @@ describe("RestaurantInfoForm", () => {
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ bookingRefFormat: "Numeric" })
     );
     expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ bookingRefFormat: "Numeric" }));
-  });
-
-  it("reverts the ref format select to the saved value when Discard is pressed", () => {
-    render(
-      <RestaurantInfoForm
-        restaurant={{ ...mockRestaurant, bookingRefFormat: "Numeric" as const }}
-        onSaved={onSaved}
-      />
-    );
-    fireEvent(getRefFormatSelect(), "change", { target: { value: "AlphaNumeric" } });
-    expect(getRefFormatSelect().props.value).toBe("AlphaNumeric");
-    fireEvent.press(screen.getByText("Discard"));
-    expect(getRefFormatSelect().props.value).toBe("Numeric");
   });
 
   // ── Per-day opening hours (#175) ─────────────────────────────────────────
@@ -561,13 +493,11 @@ describe("RestaurantInfoForm", () => {
     fireEvent.press(screen.getByTestId("hours-mode-custom"));
     fireEvent.press(screen.getByTestId("day-toggle-6"));
     expect(screen.getAllByText("Closed")).toHaveLength(1); // only Sunday left
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
   });
 
   it("does not mark the form dirty when only the mode is toggled", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.press(screen.getByTestId("hours-mode-custom"));
-    expect(screen.getByText("All changes saved")).toBeTruthy();
   });
 
   it("saves per-day hours after editing a single day", async () => {
@@ -579,9 +509,7 @@ describe("RestaurantInfoForm", () => {
     fireEvent.press(screen.getByTestId("hours-mode-custom"));
     // Mock TimePicker's "Pick Time" sets 10:00; first picker is Monday's opening time
     fireEvent.press(screen.getAllByText("Pick Time")[0]);
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
     expect(payload.openHours).toHaveLength(7);
     expect(payload.openHours[0]).toEqual({ day: 1, open: "10:00", close: "22:00" });
@@ -594,9 +522,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     // First picker in uniform mode is "Opens"; the mock sets it to 10:00
     fireEvent.press(screen.getAllByText("Pick Time")[0]);
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
     expect(payload.openTime).toBe("10:00");
     expect(payload.openHours).toHaveLength(7);
@@ -610,27 +536,13 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={withSaturday} onSaved={onSaved} />);
     // Saturday (day 6) has 11:00–23:00; copy it everywhere
     fireEvent.press(screen.getByTestId("copy-hours-6"));
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
     expect(
       payload.openHours.every(
         (h: { open: string; close: string }) => h.open === "11:00" && h.close === "23:00"
       )
     ).toBe(true);
-  });
-
-  it("discard restores the original per-day hours and mode", () => {
-    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    fireEvent.press(screen.getByTestId("hours-mode-custom"));
-    fireEvent.press(screen.getByTestId("day-toggle-6"));
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    fireEvent.press(screen.getByText("Discard"));
-    expect(screen.getByText("All changes saved")).toBeTruthy();
-    // Back to uniform mode chips
-    expect(screen.getByText("Monday")).toBeTruthy();
-    expect(screen.queryByTestId("day-toggle-1")).toBeNull();
   });
 
   it("shows the after-midnight hint when closing time is before opening", () => {
@@ -655,7 +567,6 @@ describe("RestaurantInfoForm", () => {
     it("switching to walk-ins only hides the day chips and marks the form dirty", () => {
       render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
       fireEvent.press(screen.getByTestId("walkin-mode-walkin"));
-      expect(screen.getByText("Unsaved changes")).toBeTruthy();
       expect(screen.getByText("Walk-ins only, online booking is off")).toBeTruthy();
       expect(screen.queryByTestId("walkin-day-1")).toBeNull();
     });
@@ -668,9 +579,7 @@ describe("RestaurantInfoForm", () => {
       });
       render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
       fireEvent.press(screen.getByTestId("walkin-mode-walkin"));
-      await act(async () => {
-        fireEvent.press(screen.getByText("Save changes"));
-      });
+      await flushAutosave();
       expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ walkInOnly: true, walkInDays: "" })
@@ -687,9 +596,7 @@ describe("RestaurantInfoForm", () => {
       fireEvent.press(screen.getByTestId("walkin-day-6"));
       fireEvent.press(screen.getByTestId("walkin-day-7"));
       expect(screen.getByText("Walk-ins only on 2 days")).toBeTruthy();
-      await act(async () => {
-        fireEvent.press(screen.getByText("Save changes"));
-      });
+      await flushAutosave();
       expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ walkInOnly: false, walkInDays: "6,7" })
@@ -702,17 +609,6 @@ describe("RestaurantInfoForm", () => {
       expect(screen.getByText("Walk-ins only on 1 day")).toBeTruthy();
       fireEvent.press(screen.getByTestId("walkin-day-6"));
       expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
-      expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    });
-
-    it("discard restores the saved walk-in policy", () => {
-      const withWalkIn = { ...mockRestaurant, walkInOnly: true };
-      render(<RestaurantInfoForm restaurant={withWalkIn} onSaved={onSaved} />);
-      fireEvent.press(screen.getByTestId("walkin-mode-bookings"));
-      expect(screen.getByText("Unsaved changes")).toBeTruthy();
-      fireEvent.press(screen.getByText("Discard"));
-      expect(screen.getByText("All changes saved")).toBeTruthy();
-      expect(screen.getByText("Walk-ins only, online booking is off")).toBeTruthy();
     });
   });
 
@@ -739,16 +635,6 @@ describe("RestaurantInfoForm", () => {
     expect(getDurationSelect().props.value).toBe(60);
     expect(getIntervalSelect().props.value).toBe(30);
     expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
-    expect(screen.getByText("All changes saved")).toBeTruthy();
-  });
-
-  it("discard restores fallback defaults when optional restaurant fields are unset", () => {
-    render(<RestaurantInfoForm restaurant={sparseRestaurant} onSaved={onSaved} />);
-    fireEvent.changeText(screen.getByDisplayValue("Sparse Resto"), "Changed Name");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    fireEvent.press(screen.getByText("Discard"));
-    expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();
-    expect(screen.getByText("All changes saved")).toBeTruthy();
   });
 
   it("saves address as null when the address field is cleared to blank", async () => {
@@ -758,9 +644,7 @@ describe("RestaurantInfoForm", () => {
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("123 Main St"), "   ");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ address: null })
@@ -773,7 +657,7 @@ describe("RestaurantInfoForm", () => {
     expect(screen.getByDisplayValue("Test Resto")).toBeTruthy();
   });
 
-  it("shows the Saving… label while the update request is in flight", async () => {
+  it("reports Saving… while the request is in flight, then Saved", async () => {
     let resolveUpdate: (value: unknown) => void = () => {};
     (restaurantsApi.updateRestaurant as jest.Mock).mockImplementation(
       () =>
@@ -783,12 +667,29 @@ describe("RestaurantInfoForm", () => {
     );
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
-    fireEvent.press(screen.getByText("Save changes"));
+    await flushAutosave();
     expect(await screen.findByText("Saving…")).toBeTruthy();
     await act(async () => {
       resolveUpdate({ ...mockRestaurant, name: "Updated Resto" });
     });
-    expect(screen.getByText("Save changes")).toBeTruthy();
+    expect(screen.getByText("Saved")).toBeTruthy();
+  });
+
+  it("reports the failure and offers a retry when the save is rejected", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(null);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Updated Resto");
+    await flushAutosave();
+    expect(screen.getByText("Couldn't reach the server.")).toBeTruthy();
+
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      name: "Updated Resto",
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Retry"));
+    });
+    expect(screen.getByText("Saved")).toBeTruthy();
   });
 
   // ── Description blurb (#184) ──────────────────────────────────────────────
@@ -824,10 +725,7 @@ describe("RestaurantInfoForm", () => {
       ),
       "Our little place"
     );
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ description: "Our little place" })
@@ -849,28 +747,12 @@ describe("RestaurantInfoForm", () => {
       />
     );
     fireEvent.changeText(screen.getByDisplayValue("Existing blurb"), "   ");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
       // "" clears server-side; null would be read as "leave untouched" and the blurb would stick.
       expect.objectContaining({ description: "" })
     );
-  });
-
-  it("discard restores the original description", () => {
-    render(
-      <RestaurantInfoForm
-        restaurant={{ ...mockRestaurant, description: "Saved blurb" }}
-        onSaved={onSaved}
-      />
-    );
-    fireEvent.changeText(screen.getByDisplayValue("Saved blurb"), "Typed something");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-    fireEvent.press(screen.getByText("Discard"));
-    expect(screen.getByDisplayValue("Saved blurb")).toBeTruthy();
-    expect(screen.getByText("All changes saved")).toBeTruthy();
   });
 
   // ── Menu file upload (#246) ──────────────────────────────────────────────
@@ -1070,9 +952,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     const menuInput = screen.getByPlaceholderText("https://your-menu-url.com/menu.pdf");
     fireEvent.changeText(menuInput, "javascript:alert(1)");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     await waitFor(() => expect(screen.getByText(/valid http\(s\) link/)).toBeTruthy());
     // Pre-flight means the API was never called.
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
@@ -1107,9 +987,7 @@ describe("RestaurantInfoForm", () => {
       screen.getByPlaceholderText("e.g. bookings@example.com"),
       " hi@example.com "
     );
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
 
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -1132,9 +1010,7 @@ describe("RestaurantInfoForm", () => {
     );
 
     fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
 
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -1145,34 +1021,15 @@ describe("RestaurantInfoForm", () => {
   it("blocks save with an inline error when the contact email is malformed (pre-flight)", async () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByPlaceholderText("e.g. bookings@example.com"), "not-an-email");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     await waitFor(() => expect(screen.getByText(/valid email address/)).toBeTruthy());
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
   });
 
-  it("discards edited contact fields back to the stored values", () => {
-    render(
-      <RestaurantInfoForm
-        restaurant={{ ...mockRestaurant, phoneNumber: "+1 555 0100" }}
-        onSaved={onSaved}
-      />
-    );
-    fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "+1 555 9999");
-    expect(screen.getByText("Unsaved changes")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("Discard"));
-
-    expect(screen.getByDisplayValue("+1 555 0100")).toBeTruthy();
-    expect(screen.getByText("All changes saved")).toBeTruthy();
-  });
   it("blocks save with an inline error when the contact phone exceeds the cap", async () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     fireEvent.changeText(screen.getByPlaceholderText("e.g. +44 20 7946 0958"), "9".repeat(33));
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
     await waitFor(() => expect(screen.getByText(/cannot exceed 32 characters/)).toBeTruthy());
     expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
   });
@@ -1189,9 +1046,7 @@ describe("RestaurantInfoForm", () => {
     );
 
     fireEvent.changeText(screen.getByDisplayValue("https://example.com/menu.pdf"), "");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
 
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -1212,9 +1067,7 @@ describe("RestaurantInfoForm", () => {
     // The upload flow leaves local menuUrl blank while the served path is stored; sending ""
     // here would wipe the freshly-uploaded file, so this save must leave the field untouched.
     fireEvent.changeText(screen.getByDisplayValue("Test Resto"), "Renamed Resto");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Save changes"));
-    });
+    await flushAutosave();
 
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,

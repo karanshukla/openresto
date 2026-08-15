@@ -41,24 +41,7 @@ export const styles = StyleSheet.create({
     color: "#fff",
     lineHeight: 14,
   },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  markAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: theme.borderRadius.md,
-    minHeight: 44,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  headerActions: { gap: theme.spacing.md },
 
   // ── Push banner
   pushBanner: {
@@ -72,16 +55,6 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   pushBannerText: { fontSize: 13, flex: 1, lineHeight: 18 },
-  pushBannerBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: theme.borderRadius.md,
-    minWidth: 68,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pushBannerBtnText: { fontSize: 13, fontWeight: "700", color: "#fff" },
 
   // ── Filters
   filtersSection: { gap: 8 },
@@ -163,34 +136,9 @@ export const styles = StyleSheet.create({
   rowActions: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
     gap: 6,
-  },
-  actionPinBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.borderRadius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 30,
-    minWidth: 52,
-  },
-  actionToggleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.borderRadius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 30,
-    width: 106,
-  },
-  actionDeleteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    height: 30,
-    paddingHorizontal: 10,
-    borderRadius: theme.borderRadius.full,
   },
   swipeDeleteBg: {
     backgroundColor: theme.colors.error,
@@ -214,10 +162,6 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 13,
     fontWeight: "600" as const,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: "600",
   },
 
   // ── Empty / error states
@@ -249,13 +193,5 @@ export const styles = StyleSheet.create({
   },
 
   // ── Load more
-  loadMoreBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-  },
-  loadMoreText: { fontSize: 13, fontWeight: "500" },
+  loadMoreBtn: { borderTopWidth: 1, borderRadius: 0 },
 });

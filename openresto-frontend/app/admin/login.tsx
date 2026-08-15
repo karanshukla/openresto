@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, TextInput, View, Platform } from "react-native";
@@ -151,8 +152,10 @@ export default function AdminLoginScreen() {
               {loginLoading ? "Signing in…" : "Sign In"}
             </Button>
 
-            <Pressable
-              accessibilityRole="button"
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
               accessibilityLabel="Forgot password?"
               onPress={() => {
                 setFpEmail(email);
@@ -160,10 +163,8 @@ export default function AdminLoginScreen() {
                 setFpError(null);
               }}
             >
-              <ThemedText style={[styles.forgotLink, { color: primaryColor }]}>
-                Forgot password?
-              </ThemedText>
-            </Pressable>
+              Forgot password?
+            </Button>
           </View>
         </>
       );
@@ -373,16 +374,18 @@ export default function AdminLoginScreen() {
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
-  const { colors } = useAppTheme();
   return (
-    <Pressable
-      style={styles.backBtn}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Back"
-    >
-      <Icon name="arrow-back" size="md" color={colors.muted} />
-      <ThemedText style={[styles.backBtnText, { color: colors.muted }]}>Back</ThemedText>
-    </Pressable>
+    <ButtonRow align="start" style={styles.backBtn}>
+      <Button
+        variant="ghost"
+        tone="neutral"
+        size="sm"
+        icon="arrow-back"
+        onPress={onPress}
+        accessibilityLabel="Back"
+      >
+        Back
+      </Button>
+    </ButtonRow>
   );
 }

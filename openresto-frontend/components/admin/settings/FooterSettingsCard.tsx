@@ -3,10 +3,11 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import {
-  saveBrandSettings,
   adminGetSocialLinks,
   adminCreateSocialLink,
   adminUpdateSocialLink,
@@ -19,6 +20,10 @@ import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./FooterSettingsCard.styles";
 import { SocialLinkEditForm, emptyEdit, type EditState, type IconKey } from "./SocialLinkEditForm";
 import { SocialLinkRow } from "./SocialLinkRow";
+import { useBrandDraftPublish } from "./BrandDraftContext";
+import { saveBrandFields } from "./brandAutosave";
+import { SaveStatus } from "./SaveStatus";
+import { useAutosave } from "@/hooks/use-autosave";
 import { Icon } from "@/components/common/Icon";
 
 export function FooterSettingsCard({
@@ -34,8 +39,6 @@ export function FooterSettingsCard({
   const surface2 = isDark ? "#252729" : "#f9fafb";
 
   const [copyrightText, setCopyrightText] = useState(brand.copyrightText ?? "");
-  const [savingCopyright, setSavingCopyright] = useState(false);
-  const [copyrightMsg, setCopyrightMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const [links, setLinks] = useState<AdminSocialLinkDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +46,21 @@ export function FooterSettingsCard({
   const [editState, setEditState] = useState<EditState>(emptyEdit());
   const [saving, setSaving] = useState(false);
   const [linkMsg, setLinkMsg] = useState<string | null>(null);
-  const [expanded, setExpanded] = usePersistedState("settings:footer:expanded", false);
+  // Key is versioned because the default flipped to expanded: without it, a stored `false`
+  // from the collapsed-by-default build would keep the card shut for anyone who saw that one.
+  const [expanded, setExpanded] = usePersistedState("settings:footer:expanded:v2", true);
 
-  const copyrightIsDirty = copyrightText.trim() !== (brand.copyrightText ?? "");
+  useBrandDraftPublish({
+    copyrightText,
+    socialLinks: links.map((l) => ({ id: l.id, label: l.label, iconKey: l.iconKey })),
+  });
+
+  const copyrightAutosave = useAutosave({
+    values: { copyrightText: copyrightText.trim() },
+    saved: { copyrightText: brand.copyrightText ?? "" },
+    save: saveBrandFields,
+    onRestore: (previous) => setCopyrightText(previous.copyrightText),
+  });
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -58,18 +73,6 @@ export function FooterSettingsCard({
       setLoading(false);
     });
   }, []);
-
-  const handleSaveCopyright = async () => {
-    setSavingCopyright(true);
-    setCopyrightMsg(null);
-    const result = await saveBrandSettings({ copyrightText: copyrightText.trim() });
-    setSavingCopyright(false);
-    if (result) {
-      setCopyrightMsg({ text: result.message, ok: !result.message.toLowerCase().includes("fail") });
-    } else {
-      setCopyrightMsg({ text: "Failed to save.", ok: false });
-    }
-  };
 
   const startEdit = (link: AdminSocialLinkDto) => {
     setEditingId(link.id);
@@ -131,8 +134,8 @@ export function FooterSettingsCard({
       }
       // Unreachable: save() only ever runs while a form is open, which means editingId
       // is always "new" or a link id here, never null.
-    } else /* istanbul ignore else */ if (editingId != null) {
-      const result = await adminUpdateSocialLink(editingId, {
+    } else if (editingId != null) {
+      /* istanbul ignore else */ const result = await adminUpdateSocialLink(editingId, {
         label: editState.label.trim(),
         url: editState.url.trim(),
         iconKey: editState.iconKey,
@@ -153,8 +156,8 @@ export function FooterSettingsCard({
       cancelEdit();
       // Unreachable: every `ok = false` assignment above always pairs with a `message`
       // assignment, so message is guaranteed truthy here.
-    } else /* istanbul ignore else */ if (message) {
-      setLinkMsg(message);
+    } else if (message) {
+      /* istanbul ignore else */ setLinkMsg(message);
     }
   };
 
@@ -211,32 +214,14 @@ export function FooterSettingsCard({
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               Shown in the site footer. Leave blank to use the default above.
             </ThemedText>
-            {copyrightMsg && (
-              <ThemedText
-                style={[
-                  copyrightMsg.ok ? settingsStyles.successText : settingsStyles.errorText,
-                  styles.saveMsg,
-                ]}
-              >
-                {copyrightMsg.text}
-              </ThemedText>
-            )}
-            <Pressable
-              onPress={handleSaveCopyright}
-              disabled={savingCopyright || !copyrightIsDirty}
-              accessibilityLabel="Save copyright text"
-              style={[
-                styles.saveBtn,
-                {
-                  opacity: savingCopyright || !copyrightIsDirty ? 0.5 : 1,
-                  backgroundColor: primaryColor,
-                },
-              ]}
-            >
-              <ThemedText style={styles.saveBtnText}>
-                {savingCopyright ? "Saving…" : "Save"}
-              </ThemedText>
-            </Pressable>
+            <SaveStatus
+              status={copyrightAutosave.status}
+              error={copyrightAutosave.error}
+              onRetry={copyrightAutosave.retry}
+              onUndo={copyrightAutosave.undo}
+              mutedColor={mutedColor}
+              testID="copyright-save-status"
+            />
           </View>
 
           <View style={[styles.divider, { backgroundColor: borderColor }]} />
@@ -304,21 +289,21 @@ export function FooterSettingsCard({
                     // Same redundant-but-type-narrowing condition as above: this block only
                     // renders when `editingId === "new"`.
                     error={editingId === "new" ? linkMsg : /* istanbul ignore next */ null}
+                    isNew
                   />
                 )}
 
                 {editingId !== "new" && (
-                  <Pressable
-                    onPress={startNew}
-                    style={[
-                      settingsStyles.addPill,
-                      styles.addPillLeft,
-                      { backgroundColor: primaryColor },
-                    ]}
-                  >
-                    <Icon name="add" size="md" color="#fff" />
-                    <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
-                  </Pressable>
+                  <ButtonRow align="start">
+                    <Button
+                      size="md"
+                      icon="add"
+                      onPress={startNew}
+                      accessibilityLabel="Add social link"
+                    >
+                      Add
+                    </Button>
+                  </ButtonRow>
                 )}
               </View>
             )}

@@ -1,6 +1,5 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
-import { hexToRgba } from "@/utils/colors";
 
 export const bookingDetailStyles = StyleSheet.create({
   twoCol: {
@@ -42,14 +41,7 @@ export const bookingDetailStyles = StyleSheet.create({
   fieldHalf: { flex: 1 },
 
   extendBtns: { flexDirection: "row", gap: theme.spacing.sm },
-  extendBtn: {
-    flex: 1,
-    borderRadius: theme.borderRadius.md,
-    paddingVertical: 10,
-    alignItems: "center",
-    cursor: "pointer" as const,
-  },
-  extendBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  extendBtn: { flex: 1 },
 
   emailTo: { fontSize: 13, marginBottom: 4 },
   emailActions: {
@@ -58,58 +50,5 @@ export const bookingDetailStyles = StyleSheet.create({
     gap: theme.spacing.md,
     flexWrap: "wrap",
   },
-  emailSendBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 10,
-    borderRadius: theme.borderRadius.md,
-  },
-  emailSendBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   emailResultText: { fontSize: 13, fontWeight: "500" },
-
-  actionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    ...theme.buttonSizes.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  actionBtnText: { ...theme.typography.label },
-
-  uncancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    ...theme.buttonSizes.md,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: hexToRgba(theme.colors.success, 0.1),
-    cursor: "pointer" as const,
-  },
-  uncancelBtnText: { color: theme.colors.success, fontSize: 14, fontWeight: "700" },
-  cancelBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    ...theme.buttonSizes.md,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: hexToRgba(theme.colors.error, 0.1),
-    cursor: "pointer" as const,
-  },
-  cancelBtnText: { color: theme.colors.error, fontSize: 14, fontWeight: "700" },
-  purgeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    ...theme.buttonSizes.md,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-  purgeBtnText: { fontSize: 13, fontWeight: "600" },
 });

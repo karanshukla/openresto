@@ -64,7 +64,7 @@ describe("BookingsWideTable", () => {
         {...theme}
       />
     );
-    expect(screen.getByLabelText("Cancel booking")).toBeTruthy();
+    expect(screen.getByLabelText("Cancel booking for Alice Wong")).toBeTruthy();
   });
 
   it("omits the cancel button for a cancelled booking", () => {
@@ -80,7 +80,7 @@ describe("BookingsWideTable", () => {
         {...theme}
       />
     );
-    expect(screen.queryByLabelText("Cancel booking")).toBeNull();
+    expect(screen.queryByLabelText("Cancel booking for Alice Wong")).toBeNull();
     expect(screen.getByText("Cancelled")).toBeTruthy();
   });
 
@@ -114,7 +114,7 @@ describe("BookingsWideTable", () => {
         {...theme}
       />
     );
-    fireEvent.press(screen.getByLabelText("Cancel booking"));
+    fireEvent.press(screen.getByLabelText("Cancel booking for Alice Wong"));
     expect(onCancel).toHaveBeenCalledWith(activeBooking);
   });
 

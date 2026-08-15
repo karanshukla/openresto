@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { View, Pressable } from "react-native";
-import { ThemedText } from "@/components/themed-text";
+import { View } from "react-native";
 import Input from "@/components/common/Input";
 import Select, { type SelectOption } from "@/components/common/Select";
-import { theme } from "@/theme/theme";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./AddRow.styles";
-import { Icon } from "@/components/common/Icon";
 
 export function AddRow({
   label,
@@ -32,27 +30,20 @@ export function AddRow({
   const [extra, setExtra] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { primaryColor } = useAppTheme();
-
-  // Collapsed — a self-sized filled-primary pill, aligned right (matches the Add CTA pattern in
-  // HighlightsCard: `alignSelf: flex-start` there is left; here we right-align per the settings
-  // table/section layout). Keeps the verbatim label so callers' tests keep resolving it.
+  // Collapsed — the standing "add" CTA for the list it heads. Left-aligned so it sits flush with
+  // the rows it appends to, matching every other create CTA in the admin (footer links,
+  // highlights, users); keeps the verbatim label so callers' tests keep resolving it.
   if (!open) {
     return (
-      <Pressable
-        style={[settingsStyles.addPill, styles.addPillRight, { backgroundColor: primaryColor }]}
-        onPress={() => setOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        <Icon name="add" size="md" color="#fff" />
-        <ThemedText style={settingsStyles.addPillText}>{label}</ThemedText>
-      </Pressable>
+      <ButtonRow align="start">
+        <Button size="md" icon="add" onPress={() => setOpen(true)} accessibilityLabel={label}>
+          {label}
+        </Button>
+      </ButtonRow>
     );
   }
 
-  // Expanded — inputs + a right-aligned footer: filled-primary text Add and a bordered close (X)
-  // icon so the dismiss affordance is consistent with the rest of the row actions.
+  // Expanded — inputs, then the standard dismiss-then-commit action row.
   return (
     <View style={settingsStyles.addForm}>
       <View style={styles.fields}>
@@ -84,8 +75,23 @@ export function AddRow({
           </View>
         )}
       </View>
-      <View style={styles.footer}>
-        <Pressable
+      <ButtonRow>
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
+          onPress={() => {
+            setOpen(false);
+            setName("");
+            setExtra("");
+          }}
+          accessibilityLabel="Cancel add"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="md"
+          disabled={saving || !name.trim()}
           onPress={async () => {
             if (!name.trim()) return;
             setSaving(true);
@@ -95,30 +101,10 @@ export function AddRow({
             setExtra("");
             setOpen(false);
           }}
-          disabled={saving || !name.trim()}
-          style={[
-            settingsStyles.actionBtn,
-            { backgroundColor: primaryColor, opacity: saving ? 0.6 : 1 },
-          ]}
         >
-          <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
-            {saving ? "Adding…" : "Add"}
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          style={styles.cancelBtn}
-          onPress={() => {
-            setOpen(false);
-            setName("");
-            setExtra("");
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Cancel add"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Icon name="close" size="md" color={theme.colors.muted.light} />
-        </Pressable>
-      </View>
+          {saving ? "Adding…" : "Add"}
+        </Button>
+      </ButtonRow>
     </View>
   );
 }

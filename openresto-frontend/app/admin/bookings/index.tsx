@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
+import Button from "@/components/common/Button";
 import {
   getAdminBookings,
   adminDeleteBooking,
@@ -340,25 +341,25 @@ export default function AdminBookingsScreen() {
           />
 
           {searchQuery ? (
-            <Pressable
-              style={[styles.newBookingBtn, { backgroundColor: mutedColor }]}
+            <Button
+              variant="secondary"
+              tone="neutral"
+              size="md"
+              icon="close-outline"
               onPress={() => router.replace("/admin/bookings")}
-              accessibilityRole="button"
               accessibilityLabel="Clear search"
             >
-              <Icon name="close-outline" size="md" color="#fff" />
-              <ThemedText style={styles.newBookingBtnText}>Clear</ThemedText>
-            </Pressable>
+              Clear
+            </Button>
           ) : (
-            <Pressable
-              style={[styles.newBookingBtn, { backgroundColor: PRIMARY }]}
+            <Button
+              size="md"
+              icon="add-outline"
               onPress={() => setShowNewModal(true)}
-              accessibilityRole="button"
               accessibilityLabel="New booking"
             >
-              <Icon name="add-outline" size="md" color="#fff" />
-              <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
-            </Pressable>
+              New Booking
+            </Button>
           )}
         </View>
       </View>
@@ -563,13 +564,15 @@ export default function AdminBookingsScreen() {
           <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
             No bookings found
           </ThemedText>
-          <Pressable
-            style={[styles.newBookingBtn, { backgroundColor: PRIMARY, marginTop: 8 }]}
+          <Button
+            size="md"
+            icon="add-outline"
+            style={styles.emptyStateAction}
             onPress={() => setShowNewModal(true)}
+            accessibilityLabel="New booking"
           >
-            <Icon name="add-outline" size="md" color="#fff" />
-            <ThemedText style={styles.newBookingBtnText}>New Booking</ThemedText>
-          </Pressable>
+            New Booking
+          </Button>
         </View>
       ) : isWide ? (
         <BookingsWideTable

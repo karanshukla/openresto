@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { View, Pressable, ActivityIndicator } from "react-native";
+import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import {
   SectionDto,
@@ -16,8 +16,10 @@ import {
 import { TableRow, TableRowGroupContext } from "./TableRow";
 import { AddRow } from "./AddRow";
 import { RowIconButton } from "./RowIconButton";
-import { RowTextButton } from "./RowTextButton";
-import { theme, getThemeColors } from "@/theme/theme";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
+import { RowTextButton } from "@/components/common/RowTextButton";
+import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { buildSeatOptions } from "@/utils/seatOptions";
@@ -70,7 +72,6 @@ export function SectionBlock({
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
   const totalSeats = section.tables.reduce((s, t) => s + t.seats, 0);
-  const colors = getThemeColors(isDark);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(section.name);
@@ -263,9 +264,20 @@ export function SectionBlock({
         <View style={styles.headerActions}>
           {editing ? (
             <>
-              <Pressable
-                style={[settingsStyles.actionBtn, { backgroundColor: primaryColor }]}
+              <Button
+                variant="secondary"
+                tone="neutral"
+                size="md"
+                onPress={() => setEditing(false)}
+                accessibilityLabel={`Cancel renaming ${section.name} section`}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="md"
                 disabled={saving}
+                loading={saving}
+                accessibilityLabel={`Save ${section.name} section name`}
                 onPress={async () => {
                   if (!draft.trim()) return;
                   setSaving(true);
@@ -275,15 +287,8 @@ export function SectionBlock({
                   setEditing(false);
                 }}
               >
-                <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
-                  {saving ? "…" : "Save"}
-                </ThemedText>
-              </Pressable>
-              <Pressable style={settingsStyles.smallBtn} onPress={() => setEditing(false)}>
-                <ThemedText style={[settingsStyles.smallBtnText, { color: colors.muted }]}>
-                  Cancel
-                </ThemedText>
-              </Pressable>
+                Save
+              </Button>
             </>
           ) : (
             <>
@@ -367,31 +372,28 @@ export function SectionBlock({
               This cannot be undone.
             </ThemedText>
           </View>
-          <View style={settingsStyles.confirmActions}>
-            <Pressable
+          <ButtonRow>
+            <Button
               testID="section-delete-cancel-btn"
-              style={[settingsStyles.smallBtn, { borderColor, opacity: deleting ? 0.5 : 1 }]}
+              variant="secondary"
+              tone="neutral"
+              size="md"
               onPress={cancelSectionDelete}
               disabled={deleting}
             >
-              <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
-                Cancel
-              </ThemedText>
-            </Pressable>
-            <Pressable
+              Cancel
+            </Button>
+            <Button
               testID="section-delete-confirm-btn"
+              tone="danger"
+              size="md"
               disabled={deleting}
+              loading={deleting}
               onPress={confirmSectionDelete}
-              style={[settingsStyles.confirmDeleteBtn, { opacity: deleting ? 0.7 : 1 }]}
             >
-              {deleting && <ActivityIndicator size="small" color="#fff" />}
-              <ThemedText
-                style={[settingsStyles.smallBtnText, settingsStyles.confirmDeleteBtnText]}
-              >
-                {deleting ? "Deleting…" : "Yes, delete"}
-              </ThemedText>
-            </Pressable>
-          </View>
+              {deleting ? "Deleting…" : "Yes, delete"}
+            </Button>
+          </ButtonRow>
         </View>
       )}
 
@@ -414,31 +416,25 @@ export function SectionBlock({
             {section.tables.find((t) => t.id === linkingFromId)?.name ?? `T${linkingFromId}`}
             &rdquo; ({selectedIds.size} selected)
           </ThemedText>
-          <Pressable style={settingsStyles.smallBtn} onPress={cancelLink} disabled={combining}>
-            <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
-              Cancel
-            </ThemedText>
-          </Pressable>
-          <Pressable
+          <Button
+            variant="secondary"
+            tone="neutral"
+            size="md"
+            onPress={cancelLink}
+            disabled={combining}
+            accessibilityLabel="Cancel combining tables"
+          >
+            Cancel
+          </Button>
+          <Button
             testID="section-combine-btn"
-            style={[
-              settingsStyles.actionBtn,
-              {
-                backgroundColor: primaryColor,
-                opacity: selectedIds.size < 2 || combining ? 0.5 : 1,
-              },
-            ]}
+            size="md"
             disabled={selectedIds.size < 2 || combining}
+            loading={combining}
             onPress={confirmCombine}
           >
-            {combining ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
-                Combine
-              </ThemedText>
-            )}
-          </Pressable>
+            Combine
+          </Button>
         </View>
       )}
 
@@ -474,20 +470,22 @@ export function SectionBlock({
                     placeholder={String(g.combinedSeats)}
                   />
                 </View>
-                <Pressable style={settingsStyles.smallBtn} onPress={() => setEditingGroupId(null)}>
-                  <ThemedText style={[settingsStyles.smallBtnText, { color: mutedColor }]}>
-                    Cancel
-                  </ThemedText>
-                </Pressable>
-                <Pressable
+                <Button
+                  variant="secondary"
+                  tone="neutral"
+                  size="md"
+                  onPress={() => setEditingGroupId(null)}
+                  accessibilityLabel="Cancel editing combined seats"
+                >
+                  Cancel
+                </Button>
+                <Button
                   testID="group-save-combined-btn"
-                  style={[settingsStyles.actionBtn, { backgroundColor: primaryColor }]}
+                  size="md"
                   onPress={() => saveCombinedSeats(g.id)}
                 >
-                  <ThemedText style={[settingsStyles.actionBtnText, { color: "#fff" }]}>
-                    Save
-                  </ThemedText>
-                </Pressable>
+                  Save
+                </Button>
               </View>
             </View>
           );

@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
+import Button from "@/components/common/Button";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "./SaveStatus";
 import {
   BookingRefFormat,
   DayHoursDto,
@@ -190,8 +193,6 @@ export function RestaurantInfoForm({
   const [tagInput, setTagInput] = useState("");
   const [menuUploading, setMenuUploading] = useState(false);
   const [menuMsg, setMenuMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [contactMsg, setContactMsg] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const addTag = (raw: string) => {
     const trimmed = raw.trim().replace(/,+$/, "");
@@ -239,8 +240,6 @@ export function RestaurantInfoForm({
     restaurant.openTime ?? "09:00",
     restaurant.closeTime ?? "22:00"
   );
-  const hoursDirty = JSON.stringify(openHoursPayload) !== JSON.stringify(initialOpenHours);
-
   const menuUrlIsServedFile = isServedMenuFile(restaurant.menuUrl);
 
   const handlePickMenu = () => {
@@ -283,112 +282,87 @@ export function RestaurantInfoForm({
     }
   };
 
-  const dirty =
-    name !== restaurant.name ||
-    address !== (restaurant.address ?? "") ||
-    description !== (restaurant.description ?? "") ||
-    menuUrl !== (restaurant.menuUrl ?? "") ||
-    phoneNumber !== (restaurant.phoneNumber ?? "") ||
-    emailAddress !== (restaurant.emailAddress ?? "") ||
-    hoursDirty ||
-    openDays.join(",") !== parseOpenDays(restaurant.openDays).join(",") ||
-    walkInOnly !== !!restaurant.walkInOnly ||
-    walkInDays.join(",") !== parseWalkInDays(restaurant.walkInDays).join(",") ||
-    timezone !== (restaurant.timezone ?? "UTC") ||
-    defaultBookingDurationMinutes !== (restaurant.defaultBookingDurationMinutes ?? 60) ||
-    bookingSlotIntervalMinutes !== (restaurant.bookingSlotIntervalMinutes ?? 30) ||
-    maxTableOversizeSeats !== (restaurant.maxTableOversizeSeats ?? null) ||
-    bookingRefFormat !== (restaurant.bookingRefFormat ?? "AlphaNumeric") ||
-    tags.join(",") !== (restaurant.tags ?? []).join(",");
-
-  const discard = () => {
-    setName(restaurant.name);
-    setAddress(restaurant.address ?? "");
-    setDescription(restaurant.description ?? "");
-    setMenuUrl(restaurant.menuUrl ?? "");
-    setPhoneNumber(restaurant.phoneNumber ?? "");
-    setEmailAddress(restaurant.emailAddress ?? "");
-    setOpenTime(restaurant.openTime ?? "09:00");
-    setCloseTime(restaurant.closeTime ?? "22:00");
-    setCustomHours(hasCustomHours(restaurant));
-    setWeekHours(initialWeekHours(restaurant));
-    setOpenDays(parseOpenDays(restaurant.openDays));
-    setWalkInOnly(!!restaurant.walkInOnly);
-    setWalkInDays(parseWalkInDays(restaurant.walkInDays));
-    setTimezone(restaurant.timezone ?? "UTC");
-    setDefaultBookingDurationMinutes(restaurant.defaultBookingDurationMinutes ?? 60);
-    setBookingSlotIntervalMinutes(restaurant.bookingSlotIntervalMinutes ?? 30);
-    setMaxTableOversizeSeats(restaurant.maxTableOversizeSeats ?? null);
-    setBookingRefFormat(restaurant.bookingRefFormat ?? "AlphaNumeric");
-    setTags(restaurant.tags ?? []);
-    setTagInput("");
-    setContactMsg(null);
+  // The payload as it would be sent right now, and what the server already holds. The autosave
+  // hook compares the two, so a change anywhere in this form is a change to `values`.
+  const values = {
+    name: name.trim(),
+    address: address.trim() || null,
+    // Blank must go over the wire as "" — the backend's PATCH convention reads null as
+    // "leave untouched", so sending null here made clearing an existing blurb a no-op.
+    description: description.trim(),
+    // Same "" clears / null leaves untouched convention as description, with one carve-out:
+    // while a served file is the stored menu the text input isn't rendered and the local
+    // menuUrl is deliberately blank (the upload flow clears it), so null keeps this save from
+    // wiping the file. Otherwise blank must reach the server as "" to clear a pasted link.
+    menuUrl: menuUrlIsServedFile ? null : menuUrl.trim(),
+    phoneNumber: phoneNumber.trim(),
+    emailAddress: emailAddress.trim(),
+    openTime: customHours ? undefined : openTime,
+    closeTime: customHours ? undefined : closeTime,
+    openHours: openHoursPayload,
+    openDays: openDays.join(","),
+    walkInOnly,
+    walkInDays: walkInDays.join(","),
+    timezone,
+    defaultBookingDurationMinutes,
+    bookingSlotIntervalMinutes,
+    maxTableOversizeSeats,
+    bookingRefFormat,
+    tags: tags.join(","),
   };
 
-  const commitPendingTag = () => {
-    const pending = tagInput.trim();
-    if (!pending) return tags;
-    setTagInput("");
-    return [...new Set([...tags, pending])];
+  const saved = {
+    name: restaurant.name,
+    address: restaurant.address ?? null,
+    description: restaurant.description ?? "",
+    menuUrl: menuUrlIsServedFile ? null : (restaurant.menuUrl ?? ""),
+    phoneNumber: restaurant.phoneNumber ?? "",
+    emailAddress: restaurant.emailAddress ?? "",
+    openTime: customHours ? undefined : (restaurant.openTime ?? "09:00"),
+    closeTime: customHours ? undefined : (restaurant.closeTime ?? "22:00"),
+    openHours: initialOpenHours,
+    openDays: parseOpenDays(restaurant.openDays).join(","),
+    walkInOnly: !!restaurant.walkInOnly,
+    walkInDays: parseWalkInDays(restaurant.walkInDays).join(","),
+    timezone: restaurant.timezone ?? "UTC",
+    defaultBookingDurationMinutes: restaurant.defaultBookingDurationMinutes ?? 60,
+    bookingSlotIntervalMinutes: restaurant.bookingSlotIntervalMinutes ?? 30,
+    maxTableOversizeSeats: restaurant.maxTableOversizeSeats ?? null,
+    bookingRefFormat: restaurant.bookingRefFormat ?? "AlphaNumeric",
+    tags: (restaurant.tags ?? []).join(","),
   };
 
-  const save = async () => {
-    if (!name.trim()) return;
-    // MenuUrl pre-flight (mirrors backend UrlValidator): an external link must be a valid
-    // absolute http(s) URL. The instance's own served-menu path (/media/...) is exempt and
-    // never reaches here as a typed value (it's set by the upload flow), but guard anyway.
+  /**
+   * Why the save is paused, or null when it can go. These mirror the backend's own validators
+   * (UrlValidator, ContactFields): with no Save button to disable there is nothing to grey out,
+   * so the reason is stated in the footer instead of the write being silently withheld.
+   */
+  const blockedReason = ((): string | null => {
+    if (!name.trim()) return "Add a name to save.";
     const trimmedMenuUrl = menuUrl.trim();
     if (
       trimmedMenuUrl &&
       !isServedMenuFile(trimmedMenuUrl) &&
       !isValidUrl(trimmedMenuUrl, WEB_SCHEMES)
     ) {
-      setMenuMsg({ text: "Menu URL must be a valid http(s) link.", ok: false });
-      return;
+      return "Menu URL must be a valid http(s) link.";
     }
-    // Contact pre-flight (mirrors backend ContactFields): a blank field clears, a filled one
-    // must be within the shared caps and — for email — a plausible address.
-    const trimmedPhone = phoneNumber.trim();
-    const trimmedEmail = emailAddress.trim();
-    if (trimmedPhone.length > MAX_PHONE_LENGTH) {
-      setContactMsg(`Phone number cannot exceed ${MAX_PHONE_LENGTH} characters.`);
-      return;
+    if (phoneNumber.trim().length > MAX_PHONE_LENGTH) {
+      return `Phone number cannot exceed ${MAX_PHONE_LENGTH} characters.`;
     }
-    if (trimmedEmail && !isValidEmail(trimmedEmail)) {
-      setContactMsg("Contact email must be a valid email address.");
-      return;
+    if (emailAddress.trim() && !isValidEmail(emailAddress.trim())) {
+      return "Contact email must be a valid email address.";
     }
-    setContactMsg(null);
-    const finalTags = commitPendingTag();
-    setSaving(true);
-    const result = await updateRestaurant(restaurant.id, {
-      name: name.trim(),
-      address: address.trim() || null,
-      // Blank must go over the wire as "" — the backend's PATCH convention reads null as
-      // "leave untouched", so sending null here made clearing an existing blurb a no-op.
-      description: description.trim(),
-      // Same "" clears / null leaves untouched convention as description, with one carve-out:
-      // while a served file is the stored menu the text input isn't rendered and the local
-      // menuUrl is deliberately blank (the upload flow clears it), so null keeps this save from
-      // wiping the file. Otherwise blank must reach the server as "" to clear a pasted link.
-      menuUrl: menuUrlIsServedFile ? null : menuUrl.trim(),
-      phoneNumber: phoneNumber.trim() || "",
-      emailAddress: emailAddress.trim() || "",
-      openTime: customHours ? undefined : openTime,
-      closeTime: customHours ? undefined : closeTime,
-      openHours: openHoursPayload,
-      openDays: openDays.join(","),
-      walkInOnly,
-      walkInDays: walkInDays.join(","),
-      timezone,
-      defaultBookingDurationMinutes,
-      bookingSlotIntervalMinutes,
-      maxTableOversizeSeats,
-      bookingRefFormat,
-      tags: finalTags.join(","),
-    });
-    setSaving(false);
-    if (result) {
+    return null;
+  })();
+
+  const { status, error, retry, undo } = useAutosave({
+    values,
+    saved,
+    canSave: !blockedReason,
+    save: async (payload) => {
+      const result = await updateRestaurant(restaurant.id, payload);
+      if (!result) return "Couldn't reach the server.";
       onSaved({
         name: result.name,
         address: result.address,
@@ -409,8 +383,42 @@ export function RestaurantInfoForm({
         bookingRefFormat: result.bookingRefFormat,
         tags: result.tags,
       });
-    }
-  };
+      return null;
+    },
+    // The payload is derived from this form's state rather than mirroring it (days and tags are
+    // joined into strings, hours into a 7-entry list), so putting one back means running that
+    // derivation backwards. Anything the payload doesn't carry is left alone.
+    onRestore: (previous) => {
+      setName(previous.name);
+      setAddress(previous.address ?? "");
+      setDescription(previous.description);
+      if (!menuUrlIsServedFile) setMenuUrl(previous.menuUrl ?? "");
+      setPhoneNumber(previous.phoneNumber);
+      setEmailAddress(previous.emailAddress);
+      setOpenDays(previous.openDays ? previous.openDays.split(",").map(Number) : []);
+      setWalkInOnly(previous.walkInOnly);
+      setWalkInDays(previous.walkInDays ? previous.walkInDays.split(",").map(Number) : []);
+      setTimezone(previous.timezone);
+      setDefaultBookingDurationMinutes(previous.defaultBookingDurationMinutes);
+      setBookingSlotIntervalMinutes(previous.bookingSlotIntervalMinutes);
+      setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
+      setBookingRefFormat(previous.bookingRefFormat);
+      setTags(previous.tags ? previous.tags.split(",") : []);
+      const restored: WeekHours = {};
+      for (const entry of previous.openHours) {
+        restored[entry.day] = { open: entry.open, close: entry.close };
+      }
+      setWeekHours(restored);
+      const uniform = previous.openHours.every(
+        (h) => h.open === previous.openHours[0].open && h.close === previous.openHours[0].close
+      );
+      setCustomHours(!uniform);
+      if (uniform && previous.openHours[0]) {
+        setOpenTime(previous.openHours[0].open);
+        setCloseTime(previous.openHours[0].close);
+      }
+    },
+  });
 
   const anyOvernight = customHours
     ? openDays.some((d) => isOvernight(weekHours[d].open, weekHours[d].close))
@@ -469,18 +477,18 @@ export function RestaurantInfoForm({
               <ThemedText style={styles.menuFileName} numberOfLines={1}>
                 Uploaded menu PDF
               </ThemedText>
-              <Pressable
-                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+              <Button
+                variant="secondary"
+                tone="danger"
+                size="md"
+                icon="trash-outline"
                 onPress={handleDeleteMenu}
                 disabled={menuUploading}
-                accessibilityRole="button"
+                loading={menuUploading}
                 accessibilityLabel="Remove the uploaded menu PDF"
-                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
-                <ThemedText style={[sharedStyles.secBtnText, { color: theme.colors.error }]}>
-                  {menuUploading ? "Removing…" : "Remove file"}
-                </ThemedText>
-              </Pressable>
+                {menuUploading ? "Removing…" : "Remove file"}
+              </Button>
             </View>
           ) : (
             <Input
@@ -497,18 +505,17 @@ export function RestaurantInfoForm({
           )}
           <View style={styles.menuActions}>
             {!menuUrlIsServedFile && (
-              <Pressable
-                style={[sharedStyles.secBtn, { borderColor, opacity: menuUploading ? 0.5 : 1 }]}
+              <Button
+                variant="secondary"
+                size="md"
+                icon="cloud-upload-outline"
                 onPress={handlePickMenu}
                 disabled={menuUploading}
-                accessibilityRole="button"
+                loading={menuUploading}
                 accessibilityLabel="Upload a menu PDF"
-                accessibilityState={{ disabled: menuUploading, busy: menuUploading }}
               >
-                <ThemedText style={[sharedStyles.secBtnText, { color: primaryColor }]}>
-                  {menuUploading ? "Uploading…" : "Upload PDF"}
-                </ThemedText>
-              </Pressable>
+                {menuUploading ? "Uploading…" : "Upload PDF"}
+              </Button>
             )}
             {menuMsg && (
               <ThemedText
@@ -534,10 +541,7 @@ export function RestaurantInfoForm({
             </ThemedText>
             <Input
               value={phoneNumber}
-              onChangeText={(v) => {
-                setPhoneNumber(v);
-                setContactMsg(null);
-              }}
+              onChangeText={setPhoneNumber}
               placeholder="e.g. +44 20 7946 0958"
               autoCapitalize="none"
               autoCorrect={false}
@@ -551,10 +555,7 @@ export function RestaurantInfoForm({
             </ThemedText>
             <Input
               value={emailAddress}
-              onChangeText={(v) => {
-                setEmailAddress(v);
-                setContactMsg(null);
-              }}
+              onChangeText={setEmailAddress}
               placeholder="e.g. bookings@example.com"
               autoCapitalize="none"
               autoCorrect={false}
@@ -563,7 +564,6 @@ export function RestaurantInfoForm({
             />
           </View>
         </View>
-        {contactMsg && <ThemedText style={styles.contactError}>{contactMsg}</ThemedText>}
         <ThemedText style={[styles.contactHint, { color: mutedColor }]}>
           Shown to diners who need to arrange a booking directly (e.g. a large party). Leave blank
           to use the brand-wide contact details from Settings.
@@ -730,7 +730,6 @@ export function RestaurantInfoForm({
           onRemoveTag={removeTag}
           borderColor={borderColor}
           mutedColor={mutedColor}
-          primaryColor={primaryColor}
           surface2={surface2}
         />
       </View>
@@ -738,51 +737,15 @@ export function RestaurantInfoForm({
       <View style={[styles.divider, { borderColor }]} />
 
       <View style={styles.footer}>
-        <View style={styles.dirtyIndicator}>
-          {dirty ? (
-            <>
-              <View style={styles.dirtyDot} />
-              <ThemedText style={[styles.dirtyText, { color: mutedColor }]}>
-                Unsaved changes
-              </ThemedText>
-            </>
-          ) : (
-            <>
-              <Icon name="checkmark" size={13} color={mutedColor} />
-              <ThemedText style={[styles.dirtyText, { color: mutedColor }]}>
-                All changes saved
-              </ThemedText>
-            </>
-          )}
-        </View>
-        <View style={styles.footerActions}>
-          <Pressable
-            onPress={discard}
-            disabled={!dirty}
-            accessibilityRole="button"
-            accessibilityLabel="Discard unsaved changes"
-            accessibilityState={{ disabled: !dirty }}
-            style={[styles.discardBtn, { opacity: dirty ? 1 : 0.4 }]}
-          >
-            <ThemedText style={[styles.discardText, { color: mutedColor }]}>Discard</ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={save}
-            disabled={!dirty || saving || !name.trim()}
-            accessibilityRole="button"
-            accessibilityLabel="Save location details"
-            accessibilityState={{ disabled: !dirty || saving || !name.trim(), busy: saving }}
-            style={[
-              styles.saveBtn,
-              {
-                opacity: !dirty || saving || !name.trim() ? 0.5 : 1,
-                backgroundColor: primaryColor,
-              },
-            ]}
-          >
-            <ThemedText style={styles.saveText}>{saving ? "Saving…" : "Save changes"}</ThemedText>
-          </Pressable>
-        </View>
+        <SaveStatus
+          status={status}
+          error={error}
+          onRetry={retry}
+          onUndo={undo}
+          mutedColor={mutedColor}
+          blockedReason={blockedReason}
+          testID="location-save-status"
+        />
       </View>
     </View>
   );

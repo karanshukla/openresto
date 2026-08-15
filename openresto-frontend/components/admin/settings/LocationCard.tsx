@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import {
   RestaurantDto,
@@ -15,7 +15,7 @@ import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { summarizeHours } from "@/utils/openingHours";
-import { styles as settingsStyles } from "./settings.styles";
+import Button from "@/components/common/Button";
 import { styles, domStyles } from "./LocationCard.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -212,39 +212,33 @@ export function LocationCard({
             Shown on the restaurant card. JPEG, PNG or WebP, max 2 MB.
           </ThemedText>
           <View style={styles.imageActions}>
-            <Pressable
-              style={[settingsStyles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
+            <Button
+              variant="secondary"
+              size="md"
+              icon="cloud-upload-outline"
               onPress={handlePickImage}
               disabled={imgUploading}
-              accessibilityRole="button"
+              loading={imgUploading}
               accessibilityLabel={
                 restaurant.imageUrl
                   ? `Change image for ${restaurant.name}`
                   : `Upload image for ${restaurant.name}`
               }
-              accessibilityState={{ disabled: imgUploading, busy: imgUploading }}
             >
-              <ThemedText style={[settingsStyles.secBtnText, { color: primaryColor }]}>
-                {imgUploading
-                  ? "Uploading…"
-                  : restaurant.imageUrl
-                    ? "Change image"
-                    : "Upload image"}
-              </ThemedText>
-            </Pressable>
+              {imgUploading ? "Uploading…" : restaurant.imageUrl ? "Change image" : "Upload image"}
+            </Button>
             {restaurant.imageUrl && (
-              <Pressable
-                style={[settingsStyles.secBtn, { borderColor, opacity: imgUploading ? 0.5 : 1 }]}
+              <Button
+                variant="secondary"
+                tone="danger"
+                size="md"
+                icon="trash-outline"
                 onPress={handleDeleteImage}
                 disabled={imgUploading}
-                accessibilityRole="button"
                 accessibilityLabel={`Remove image for ${restaurant.name}`}
-                accessibilityState={{ disabled: imgUploading }}
               >
-                <ThemedText style={[settingsStyles.secBtnText, { color: theme.colors.error }]}>
-                  Remove
-                </ThemedText>
-              </Pressable>
+                Remove
+              </Button>
             )}
             {imgMsg && (
               <ThemedText

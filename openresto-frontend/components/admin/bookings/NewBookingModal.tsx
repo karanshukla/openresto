@@ -18,7 +18,6 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { isValidEmail } from "@/utils/validation";
 import { adminCreateBooking } from "@/api/admin";
-import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "./NewBookingModal.styles";
 import { Icon } from "@/components/common/Icon";
@@ -307,9 +306,12 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   </View>
 
                   <Button
+                    size="md"
+                    fullWidth
+                    style={styles.submitBtn}
                     onPress={handleSubmit}
                     disabled={!isValid || submitting}
-                    style={{ marginTop: theme.spacing.sm }}
+                    loading={submitting}
                   >
                     {submitting ? "Creating…" : "Create Booking"}
                   </Button>

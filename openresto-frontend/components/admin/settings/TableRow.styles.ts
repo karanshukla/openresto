@@ -32,7 +32,13 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.xsm,
   },
   rowSeatsRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs, marginTop: 2 },
-  rowActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  rowActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
+  },
   editCard: {
     width: "100%",
     borderWidth: 1,
@@ -45,8 +51,5 @@ export const styles = StyleSheet.create({
   editNameField: { flex: 2, gap: theme.spacing.xs },
   editSeatsField: { flex: 1, gap: theme.spacing.xs },
   editFieldLabel: { fontSize: 11, fontWeight: "600" },
-  editActions: { flexDirection: "row", gap: theme.spacing.sm, justifyContent: "flex-end" },
-  editCancelText: { fontSize: 13, fontWeight: "600" },
-  editSaveBtn: { paddingHorizontal: theme.spacing.lg },
-  editSaveText: { color: theme.colors.white, fontWeight: "700" },
+  editActions: { marginTop: theme.spacing.xs },
 });

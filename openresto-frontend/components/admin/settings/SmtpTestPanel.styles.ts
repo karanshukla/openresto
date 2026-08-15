@@ -25,6 +25,4 @@ export const styles = StyleSheet.create({
   copy: { flex: 1 },
   title: { fontSize: 13.5, fontWeight: "600" },
   subtitle: { fontSize: 12, marginTop: 2 },
-  testBtn: { flexDirection: "row", gap: theme.spacing.xxs, paddingHorizontal: 14, flexShrink: 0 },
-  testBtnDisabled: { opacity: 0.4 },
 });

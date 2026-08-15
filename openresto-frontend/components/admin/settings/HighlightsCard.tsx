@@ -12,11 +12,18 @@ import {
   adminDeleteHighlight,
   AdminHighlightDto,
 } from "@/api/admin";
+import { useBrand } from "@/context/BrandContext";
+import { useAutosave } from "@/hooks/use-autosave";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./HighlightsCard.styles";
-import { RowTextButton } from "./RowTextButton";
+import { useBrandDraftPublish } from "./BrandDraftContext";
+import { saveBrandFields } from "./brandAutosave";
+import { SaveStatus } from "./SaveStatus";
+import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
+import { RowTextButton } from "@/components/common/RowTextButton";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 const ICON_OPTIONS = [
@@ -76,6 +83,7 @@ export function HighlightsCard({
   cardBg: string;
 }) {
   const { colors, isDark, primaryColor } = useAppTheme();
+  const brand = useBrand();
   const surface2 = isDark ? "#252729" : "#f9fafb";
 
   const [highlights, setHighlights] = useState<AdminHighlightDto[]>([]);
@@ -85,6 +93,43 @@ export function HighlightsCard({
   const [saving, setSaving] = useState(false);
   const [highlightMsg, setHighlightMsg] = useState<string | null>(null);
   const [expanded, setExpanded] = usePersistedState("settings:highlights:expanded", true);
+
+  const [heading, setHeading] = useState(brand.highlightsHeading ?? "");
+  const [subheading, setSubheading] = useState(brand.highlightsSubheading ?? "");
+
+  useBrandDraftPublish({
+    highlightsHeading: heading,
+    highlightsSubheading: subheading,
+    highlights: highlights.map((h) => ({
+      id: h.id,
+      title: h.title,
+      body: h.body,
+      iconKey: h.iconKey,
+      link: h.link,
+    })),
+  });
+
+  const copyAutosave = useAutosave({
+    values: {
+      highlightsHeading: heading.trim(),
+      highlightsSubheading: subheading.trim(),
+    },
+    saved: {
+      highlightsHeading: brand.highlightsHeading ?? "",
+      highlightsSubheading: brand.highlightsSubheading ?? "",
+    },
+    save: saveBrandFields,
+    onRestore: (previous) => {
+      setHeading(previous.highlightsHeading);
+      setSubheading(previous.highlightsSubheading);
+    },
+  });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHeading(brand.highlightsHeading ?? "");
+    setSubheading(brand.highlightsSubheading ?? "");
+  }, [brand]);
 
   useEffect(() => {
     adminGetHighlights().then((data) => {
@@ -210,6 +255,42 @@ export function HighlightsCard({
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
+          <View style={settingsStyles.fieldRow}>
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Section Heading</ThemedText>
+              <Input
+                value={heading}
+                onChangeText={setHeading}
+                placeholder="Restaurant highlights"
+                maxLength={60}
+              />
+              <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+                Shown above the cards below. Leave blank for the default.
+              </ThemedText>
+            </View>
+
+            <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
+              <ThemedText style={settingsStyles.fieldLabel}>Section Subheading</ThemedText>
+              <Input
+                value={subheading}
+                onChangeText={setSubheading}
+                placeholder="Curated by the owner"
+                maxLength={60}
+              />
+            </View>
+          </View>
+
+          <SaveStatus
+            status={copyAutosave.status}
+            error={copyAutosave.error}
+            onRetry={copyAutosave.retry}
+            onUndo={copyAutosave.undo}
+            mutedColor={mutedColor}
+            testID="highlights-copy-save-status"
+          />
+
+          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
           {loading ? (
             <ActivityIndicator color={primaryColor} />
           ) : (
@@ -302,23 +383,21 @@ export function HighlightsCard({
                   mutedColor={mutedColor}
                   colors={colors}
                   error={editingId === "new" ? highlightMsg : null}
+                  isNew
                 />
               )}
 
               {editingId !== "new" && (
-                <Pressable
-                  onPress={startNew}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add highlight"
-                  style={[
-                    settingsStyles.addPill,
-                    styles.addPillLeft,
-                    { backgroundColor: primaryColor },
-                  ]}
-                >
-                  <Icon name="add" size="md" color="#fff" />
-                  <ThemedText style={settingsStyles.addPillText}>Add</ThemedText>
-                </Pressable>
+                <ButtonRow align="start">
+                  <Button
+                    size="md"
+                    icon="add"
+                    onPress={startNew}
+                    accessibilityLabel="Add highlight"
+                  >
+                    Add
+                  </Button>
+                </ButtonRow>
               )}
             </View>
           )}
@@ -340,6 +419,7 @@ function HighlightEditForm({
   mutedColor,
   colors,
   error,
+  isNew = false,
 }: {
   state: EditState;
   onChange: (s: EditState) => void;
@@ -353,6 +433,8 @@ function HighlightEditForm({
   colors: ThemeColors;
   /** Inline validation/server error shown above the action row. Null/undefined hides it. */
   error?: string | null;
+  /** Labels the commit as a create rather than a save — the same form serves both. */
+  isNew?: boolean;
 }) {
   return (
     <View style={[settingsStyles.editForm, { backgroundColor: surface2, borderColor }]}>
@@ -429,37 +511,27 @@ function HighlightEditForm({
         </ThemedText>
       ) : null}
 
-      <View style={settingsStyles.editFormActions}>
-        <Pressable
+      <ButtonRow>
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
           onPress={onCancel}
-          accessibilityRole="button"
           accessibilityLabel="Cancel editing this highlight"
-          style={settingsStyles.editFormCancelBtn}
         >
-          <ThemedText style={[settingsStyles.editFormCancelText, { color: mutedColor }]}>
-            Cancel
-          </ThemedText>
-        </Pressable>
-        <Pressable
+          Cancel
+        </Button>
+        <Button
+          size="md"
+          icon={isNew ? "add" : "checkmark"}
           onPress={onSave}
           disabled={saving || !state.title.trim()}
-          accessibilityRole="button"
-          accessibilityLabel="Save this highlight"
-          accessibilityState={{ disabled: saving || !state.title.trim(), busy: saving }}
-          style={[
-            settingsStyles.editFormSaveBtn,
-            {
-              opacity: saving || !state.title.trim() ? 0.5 : 1,
-              backgroundColor: primaryColor,
-            },
-          ]}
+          loading={saving}
+          accessibilityLabel={isNew ? "Add this highlight" : "Save this highlight"}
         >
-          <Icon name="checkmark" size="sm" color="#fff" />
-          <ThemedText style={settingsStyles.editFormSaveText}>
-            {saving ? "Saving…" : "Save"}
-          </ThemedText>
-        </Pressable>
-      </View>
+          {isNew ? (saving ? "Adding…" : "Add") : saving ? "Saving…" : "Save"}
+        </Button>
+      </ButtonRow>
     </View>
   );
 }

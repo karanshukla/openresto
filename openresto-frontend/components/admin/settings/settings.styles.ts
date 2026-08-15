@@ -20,6 +20,20 @@ export const domStyles = {
   },
 } as const;
 
+/**
+ * Below this the preview column would squeeze the form narrower than its own 480px fields, so
+ * the two stack instead. 1100 = the 1200px page cap minus its padding, split as 560 form +
+ * 400 preview + the gap between them.
+ */
+export const SPLIT_MIN_WIDTH = 1100;
+
+/**
+ * `position: sticky` keeps the preview in view while the admin scrolls a long form past it.
+ * It has no React Native equivalent, so it lives outside StyleSheet as a plain DOM style and is
+ * only applied on web.
+ */
+export const stickyAside = { position: "sticky", top: theme.spacing.xxl } as const;
+
 export const themedSelect = (colors: { border: string; input: string; text: string }) => ({
   borderColor: colors.border,
   backgroundColor: colors.input,
@@ -46,6 +60,16 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   section: { gap: theme.spacing.lg },
+  // The aside column deliberately stretches to the row's full height: `position: sticky` moves
+  // within its own parent, so a column shrink-wrapped to the preview would have nowhere to go
+  // and the preview would scroll away with the form.
+  split: { flexDirection: "row", gap: theme.spacing.xl },
+  splitForm: { flex: 1, minWidth: 0 },
+  splitAside: { width: 500, flexShrink: 0 },
+  // The pair of location-wide bulk actions (pause bookings, extend bookings) under the page
+  // header: two equal columns rather than a right-aligned cluster, because neither is secondary.
+  bulkActions: { flexDirection: "row", gap: theme.spacing.sm },
+  bulkAction: { flex: 1 },
   sectionHeading: {
     ...theme.typography.labelSmall,
     letterSpacing: 0.8,
@@ -59,31 +83,7 @@ export const styles = StyleSheet.create({
     ...theme.shadows.sm,
   },
   editableValue: { ...theme.typography.bodyBold, flex: 1, fontSize: 16 },
-  smallBtn: {
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    ...theme.buttonSizes.sm,
-  },
-  smallBtnText: { ...theme.typography.label, fontWeight: "600" },
   addForm: { gap: theme.spacing.sm, paddingTop: theme.spacing.sm },
-  actionBtn: {
-    ...theme.buttonSizes.md,
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionBtnText: { ...theme.typography.label },
-  // The filled-primary "+ Add" pill. Callers pick the side it hangs off with alignSelf.
-  addPill: {
-    borderRadius: theme.borderRadius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-  },
-  addPillText: { fontSize: 13, fontWeight: "600", color: theme.colors.white },
   sectionBlock: {
     paddingBottom: theme.spacing.md,
   },
@@ -132,11 +132,8 @@ export const styles = StyleSheet.create({
   secRowSub: { ...theme.typography.caption, marginTop: 1 },
   // The title/subtitle column of a row, next to its trailing action button.
   secRowCopy: { flex: 1 },
-  // Save + Cancel sitting under an expanded row form; the primary button takes the slack.
-  formActions: { flexDirection: "row", gap: theme.spacing.sm, marginTop: theme.spacing.xs },
-  formActionPrimary: { flex: 1 },
-  secBtn: { ...theme.buttonSizes.md, borderWidth: 1, borderRadius: theme.borderRadius.md },
-  secBtnText: { ...theme.typography.label },
+  // Spacing above a <ButtonRow> that closes an expanded row form.
+  formActions: { marginTop: theme.spacing.xs },
   // The surface tile that list entries (social links, tables, highlights) all render as:
   // a leading icon square, a title/subtitle column, then a trailing action cluster.
   tile: {
@@ -219,19 +216,8 @@ export const styles = StyleSheet.create({
   confirmIcon: { marginTop: 1 },
   confirmText: { flex: 1, fontSize: 12, lineHeight: 17 },
   confirmTextStrong: { fontWeight: "700" },
-  confirmActions: { flexDirection: "row", gap: theme.spacing.sm, justifyContent: "flex-end" },
-  confirmDeleteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xxs,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.error,
-  },
-  confirmDeleteBtnText: { color: theme.colors.white, fontWeight: "700" },
   // The inline create/edit form used by the social-link and highlight lists: an icon picker
-  // above the text fields, then right-aligned Cancel / filled-primary Save.
+  // above the text fields, then a <ButtonRow> of Cancel / Save.
   editForm: {
     padding: 14,
     borderWidth: 1,
@@ -250,29 +236,17 @@ export const styles = StyleSheet.create({
   },
   editFormField: { gap: theme.spacing.xs },
   editFormError: { marginTop: 2 },
-  editFormActions: { flexDirection: "row", justifyContent: "flex-end", gap: theme.spacing.sm },
-  editFormCancelBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.xsm,
-    borderRadius: theme.borderRadius.lg,
-  },
-  editFormCancelText: { fontSize: 14 },
-  editFormSaveBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: theme.spacing.xsm,
-    borderRadius: theme.borderRadius.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-  },
-  editFormSaveText: { fontSize: 14, fontWeight: "600", color: theme.colors.white },
+  // A settings card's inline status line — a test result, a save outcome, a footer hint.
+  statusText: { ...theme.typography.label },
   errorText: { ...theme.typography.label, color: theme.colors.error },
   successText: { ...theme.typography.label, color: theme.colors.success },
+  // Padding stays even on all four sides. A `paddingTop: 0` here used to survive the consumer's
+  // own `padding` (longhand beats shorthand however they are ordered), so the one banner that
+  // uses this sat with its text against the top edge and a full gap underneath.
   successBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.sm,
     padding: theme.spacing.md,
-    paddingTop: 0,
   },
 });

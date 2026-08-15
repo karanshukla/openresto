@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, View, Platform, Pressable } from "react-
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { theme } from "@/theme/theme";
+import Button from "@/components/common/Button";
 import { fetchRestaurants, createRestaurant, RestaurantDto } from "@/api/restaurants";
 import {
   adminGetRestaurants,
@@ -122,29 +122,15 @@ export default function AdminLocationsScreen() {
               : `${restaurants.length} location${restaurants.length !== 1 ? "s" : ""} · all active`}
           </ThemedText>
         </View>
-        <Pressable
+        <Button
+          size="md"
+          icon="add"
           onPress={() => setAddingLocation(true)}
           disabled={addingLocation}
-          accessibilityRole="button"
           accessibilityLabel="Add location"
-          accessibilityState={{ disabled: addingLocation }}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 7,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderRadius: theme.borderRadius.md,
-            backgroundColor: primaryColor,
-            minHeight: 44,
-            opacity: addingLocation ? 0.5 : 1,
-          }}
         >
-          <Icon name="add" size="md" color="#fff" />
-          <ThemedText style={{ fontSize: 14, fontWeight: "600", color: "#fff" }}>
-            Add location
-          </ThemedText>
-        </Pressable>
+          Add location
+        </Button>
       </View>
 
       {addingLocation && (
@@ -216,16 +202,20 @@ export default function AdminLocationsScreen() {
       )}
 
       {selectedRestaurant && (
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Pressable
+        <View style={styles.bulkActions}>
+          <Button
+            variant="secondary"
+            tone={isPaused ? "success" : "warning"}
+            size="md"
+            style={styles.bulkAction}
+            icon={isPaused ? "play-circle-outline" : "pause-circle-outline"}
             disabled={pausing}
-            accessibilityRole="button"
+            loading={pausing}
             accessibilityLabel={
               isPaused
                 ? `Resume bookings for ${selectedRestaurant.name}`
                 : `Pause bookings for ${selectedRestaurant.name} for an hour`
             }
-            accessibilityState={{ disabled: pausing, busy: pausing }}
             onPress={async () => {
               setPausing(true);
               if (isPaused) {
@@ -250,46 +240,22 @@ export default function AdminLocationsScreen() {
               }
               setPausing(false);
             }}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              paddingVertical: 10,
-              borderRadius: theme.borderRadius.md,
-              borderWidth: 1,
-              borderColor: isPaused ? "#16a34a" : "#ca8a04",
-              backgroundColor: isPaused ? "rgba(22,163,74,0.08)" : "rgba(234,179,8,0.08)",
-              opacity: pausing ? 0.5 : 1,
-              minHeight: 44,
-            }}
           >
-            <Icon
-              name={isPaused ? "play-circle-outline" : "pause-circle-outline"}
-              size={15}
-              color={isPaused ? "#16a34a" : "#ca8a04"}
-            />
-            <ThemedText
-              style={{ fontSize: 13, fontWeight: "600", color: isPaused ? "#16a34a" : "#ca8a04" }}
-            >
-              {pausing
-                ? "Saving…"
-                : isPaused
-                  ? `Resume New Bookings now (Paused until ${pausedUntilText})`
-                  : "Pause New Bookings for 60m"}
-            </ThemedText>
-          </Pressable>
+            {pausing
+              ? "Saving…"
+              : isPaused
+                ? `Resume New Bookings now (Paused until ${pausedUntilText})`
+                : "Pause New Bookings for 60m"}
+          </Button>
 
-          <Pressable
+          <Button
+            variant="secondary"
+            size="md"
+            style={styles.bulkAction}
+            icon="timer-outline"
             disabled={extending || extendedBookings !== null || extendNoActive || activeCount === 0}
-            accessibilityRole="button"
+            loading={extending}
             accessibilityLabel={`Extend all active bookings at ${selectedRestaurant.name} by an hour`}
-            accessibilityState={{
-              disabled:
-                extending || extendedBookings !== null || extendNoActive || activeCount === 0,
-              busy: extending,
-            }}
             onPress={async () => {
               setExtending(true);
               const result = await extendRestaurantBookings(selectedRestaurant.id, 60);
@@ -302,50 +268,17 @@ export default function AdminLocationsScreen() {
                 }
               }
             }}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              paddingVertical: 10,
-              borderRadius: theme.borderRadius.md,
-              borderWidth: 1,
-              borderColor: borderColor,
-              opacity:
-                extending || extendedBookings !== null || extendNoActive || activeCount === 0
-                  ? 0.4
-                  : 1,
-              minHeight: 44,
-            }}
           >
-            <Icon
-              name="timer-outline"
-              size={15}
-              color={
-                extendedBookings !== null || extendNoActive || activeCount === 0
-                  ? mutedColor
-                  : primaryColor
-              }
-            />
-            <ThemedText
-              style={{
-                fontSize: 13,
-                fontWeight: "600",
-                color: extendedBookings !== null || extendNoActive ? mutedColor : primaryColor,
-              }}
-            >
-              {extending
-                ? "Extending…"
-                : extendedBookings !== null
-                  ? `Extended ${extendedBookings.length} active bookings +60m`
-                  : extendNoActive
-                    ? "No active bookings to extend"
-                    : activeCount > 0
-                      ? `Extend ${activeCount} active Bookings by 60m`
-                      : "No active bookings"}
-            </ThemedText>
-          </Pressable>
+            {extending
+              ? "Extending…"
+              : extendedBookings !== null
+                ? `Extended ${extendedBookings.length} active bookings +60m`
+                : extendNoActive
+                  ? "No active bookings to extend"
+                  : activeCount > 0
+                    ? `Extend ${activeCount} active Bookings by 60m`
+                    : "No active bookings"}
+          </Button>
         </View>
       )}
 

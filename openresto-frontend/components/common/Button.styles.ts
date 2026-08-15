@@ -7,6 +7,9 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // Opt-in stretch, for a button that is the only control in a form column and inside a
+  // ButtonRow, whose `alignItems: center` otherwise sizes children to their content.
+  fullWidth: { alignSelf: "stretch", width: "100%" },
   content: {
     flexDirection: "row",
     alignItems: "center",
@@ -18,5 +21,11 @@ export const styles = StyleSheet.create({
   },
   buttonText: {
     ...theme.typography.bodyBold,
+    textAlign: "center",
+  },
+  // The dense end of the scale keeps the row-level 13px label so a list row's action cluster
+  // does not outgrow the row it sits in.
+  buttonTextSm: {
+    ...theme.typography.label,
   },
 });
