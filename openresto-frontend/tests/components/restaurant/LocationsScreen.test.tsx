@@ -214,21 +214,20 @@ describe("LocationsScreen", () => {
 
     const style = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
     expect(style.zIndex).toBe(5);
-    // The band is only a surface once pinned; at rest it must not paint over the page.
+    // The band paints nothing until the bar pins: at rest the bar is one row of the list.
     expect(style.backgroundColor).toBeUndefined();
-    expect(style.borderBottomColor).toBe("transparent");
-    // The band — top gap, bottom gap and its edge — costs the resting list no height.
+    expect(style.backgroundImage).toBeUndefined();
+    // Its top and bottom gaps cost the resting list no height.
     expect(style.paddingTop + style.marginTop).toBe(0);
-    expect(style.paddingBottom + style.marginBottom + style.borderBottomWidth).toBe(0);
+    expect(style.paddingBottom + style.marginBottom).toBe(0);
 
-    // And the bar keeps its own card treatment while it is one row of the list.
+    // The bar sits in the page rather than over it, so it takes no shadow.
     const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
-    expect(bar.backgroundColor).toBeTruthy();
-    expect(bar.backgroundColor).not.toBe("transparent");
     expect(bar.borderRadius).toBeGreaterThan(0);
+    expect(bar.shadowOpacity).toBeUndefined();
   });
 
-  it("hands the bar's surface to the band once it pins, so only one shape is drawn", async () => {
+  it("floats the pinned bar over the list instead of boxing it into a header", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     renderWithProviders(<LocationsScreen />);
     await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
@@ -240,15 +239,18 @@ describe("LocationsScreen", () => {
       nativeEvent: { contentOffset: { y: 400 } },
     });
 
+    // A mask, not a surface: it hides the list in the gap above the pill and fades out
+    // rather than ending on an edge, which is what made the old band read as a header.
     const band = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
-    expect(band.backgroundColor).toBeTruthy();
-    expect(band.borderBottomColor).not.toBe("transparent");
+    expect(band.backgroundImage).toContain("linear-gradient");
+    expect(band.backgroundColor).toBeUndefined();
+    expect(band.borderBottomWidth).toBeUndefined();
 
-    // The bar gives up its card treatment at the same moment, leaving the band as the only
-    // surface: a rounded card inside the square band is the two-shape bug this replaced.
+    // The bar keeps its pill shape throughout and lifts off the page to earn the overlap.
     const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
-    expect(bar.backgroundColor).toBe("transparent");
-    expect(bar.borderRadius).toBe(0);
+    expect(bar.borderRadius).toBeGreaterThan(0);
+    expect(bar.backgroundColor).not.toBe("transparent");
+    expect(bar.shadowOpacity).toBeGreaterThan(0);
   });
 
   it("drives every card from the same party size, date and meal window", async () => {
@@ -480,26 +482,23 @@ describe("LocationsScreen", () => {
     );
   });
 
-  it("draws the filter bar's edge once the list has scrolled under it", async () => {
+  it("lifts the filter bar only once the list has scrolled under it", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     renderWithProviders(<LocationsScreen />);
     await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
     const band = screen.getByTestId("locations-filter-sticky");
     fireEvent(band, "layout", { nativeEvent: { layout: { y: 120 } } });
+    const barStyle = () =>
+      StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
 
     const scrollView = screen.UNSAFE_getByType(ScrollView);
+    // Scrolled, but not yet past the bar: still sitting in the list, still unlifted.
     fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 60 } } });
-    expect(
-      StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style)
-        .borderBottomColor
-    ).toBe("transparent");
+    expect(barStyle().shadowOpacity).toBeUndefined();
 
     fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
-    expect(
-      StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style)
-        .borderBottomColor
-    ).not.toBe("transparent");
+    expect(barStyle().shadowOpacity).toBeGreaterThan(0);
   });
 
   it("onScroll handler updates scrollY", async () => {

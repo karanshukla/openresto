@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Platform,
   ScrollView,
   View,
   useWindowDimensions,
@@ -22,7 +21,8 @@ import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
 import Button from "@/components/common/Button";
-import { styles } from "./LocationsScreen.styles";
+import { hexToRgb } from "@/utils/colors";
+import { styles, pinnedMask } from "./LocationsScreen.styles";
 
 /** What the user is currently booking: a location plus the time they tapped. */
 interface DrawerTarget {
@@ -67,6 +67,7 @@ export default function LocationsScreen({
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = isMobileWidth(width);
+  const pageRgb = useMemo(() => hexToRgb(colors.page), [colors.page]);
 
   const [seats, setSeats] = useState(initialSeats ?? 2);
   const [dateOverride, setDateOverride] = useState<string | null>(null);
@@ -190,8 +191,6 @@ export default function LocationsScreen({
 
   const summary = availabilitySummary(availability, restaurants.length);
   const sideDrawer = drawer && !isCompact;
-  // Whether the sticky filter band may run the full width of the viewport. See `filterBleed`.
-  const bleedBand = Platform.OS === "web" && !sideDrawer;
   // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
   // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
   // either side. Matching it is what puts the drawer's edge under the overflow menu.
@@ -233,36 +232,20 @@ export default function LocationsScreen({
                     onLayout={(e) => {
                       filterTop.current = e.nativeEvent.layout.y;
                     }}
-                    style={[
-                      styles.filterSticky,
-                      bleedBand && styles.filterBleed,
-                      filterPinned && {
-                        backgroundColor: colors.card,
-                        borderBottomColor: colors.border,
-                      },
-                    ]}
+                    style={[styles.filterSticky, filterPinned && pinnedMask(pageRgb)]}
                   >
-                    <View
-                      style={
-                        bleedBand && [
-                          styles.filterBandInner,
-                          isCompact && styles.filterBandInnerCompact,
-                        ]
-                      }
-                    >
-                      <LocationsFilterBar
-                        seats={seats}
-                        onSeatsChange={setSeats}
-                        date={date}
-                        onDateChange={setDateOverride}
-                        today={today}
-                        meal={meal}
-                        onMealChange={setMeal}
-                        summary={summary}
-                        compact={isCompact}
-                        flat={filterPinned}
-                      />
-                    </View>
+                    <LocationsFilterBar
+                      seats={seats}
+                      onSeatsChange={setSeats}
+                      date={date}
+                      onDateChange={setDateOverride}
+                      today={today}
+                      meal={meal}
+                      onMealChange={setMeal}
+                      summary={summary}
+                      compact={isCompact}
+                      raised={filterPinned}
+                    />
                   </View>
 
                   <View style={styles.list}>

@@ -1,12 +1,22 @@
 import { StyleSheet, Platform } from "react-native";
 import { theme } from "@/theme/theme";
+import type { RgbColor } from "@/utils/colors";
 
 /**
- * The list's own column, narrower than PageContainer's default. The sticky band mirrors it
- * from outside the column, so the two have to read from one value or the pinned controls
- * drift off the cards below them.
+ * The mask behind the pinned filter pill: the page colour under the pill, fading out over the
+ * band's bottom padding. Solid to the pill's lower edge is what stops cards appearing in the
+ * gap above it, and fading rather than stopping is what keeps the band from reading as a
+ * square header around a rounded pill — the shape this page had before.
+ *
+ * The last stop is the page colour at zero alpha, not `transparent`: Safari resolves the
+ * keyword to transparent *black*, which greys the fade on a light page.
  */
-export const PAGE_MAX_WIDTH = 820;
+export function pinnedMask({ r, g, b }: RgbColor): object {
+  const page = `rgba(${r},${g},${b},1)`;
+  return {
+    backgroundImage: `linear-gradient(to bottom, ${page} 0, ${page} calc(100% - ${theme.spacing.md}px), rgba(${r},${g},${b},0) 100%)`,
+  };
+}
 
 export const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -38,7 +48,7 @@ export const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   page: {
-    maxWidth: PAGE_MAX_WIDTH,
+    maxWidth: 820,
     gap: theme.spacing.lg,
   },
   header: {
@@ -58,44 +68,12 @@ export const styles = StyleSheet.create({
     // Both paddings are cancelled by matching negative margins: the band only exists once
     // the bar is pinned, and at rest the list should sit exactly where it did before. The
     // top half is what keeps the pinned bar off the navbar's underside instead of welded
-    // to it, and it hides the cards passing through that gap.
+    // to it; the bottom half is the run the mask needs to fade out over.
     paddingTop: theme.spacing.md,
     marginTop: -theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-    marginBottom: -(theme.spacing.sm + 1),
-    // Always present and transparent so pinning only changes the colour: a border that
-    // appeared with the pin would push the whole list down a pixel as it landed.
-    borderBottomWidth: 1,
-    borderBottomColor: "transparent",
+    paddingBottom: theme.spacing.md,
+    marginBottom: -theme.spacing.md,
     ...(Platform.OS === "web" ? ({ position: "sticky", top: 0 } as object) : null),
-  },
-  /**
-   * Pinned, the band is page chrome and runs the full width of the viewport, matching the
-   * navbar directly above it. It lives inside the page's content column, so it has to break
-   * out of one: `100vw` plus the centring margin is the standard full-bleed escape.
-   *
-   * Applied together with `filterBandInner`, and only when `LocationsScreen` decides the band
-   * may bleed. Never on native, where `position: sticky` doesn't apply either, and never
-   * while the booking drawer is open, since the list column is then narrower than the
-   * viewport and a viewport-wide band would run on underneath the drawer.
-   */
-  filterBleed: {
-    width: "100vw",
-    marginLeft: "calc(50% - 50vw)",
-    marginRight: "calc(50% - 50vw)",
-  } as object,
-  /**
-   * Puts the content column back inside a bled band so the controls stay over the cards.
-   * The padding mirrors PageContainer's, which is what the cards below are inset by.
-   */
-  filterBandInner: {
-    width: "100%",
-    maxWidth: PAGE_MAX_WIDTH,
-    alignSelf: "center",
-    paddingHorizontal: theme.spacing.xxl,
-  },
-  filterBandInnerCompact: {
-    paddingHorizontal: theme.spacing.lg,
   },
   list: {
     gap: theme.spacing.md,

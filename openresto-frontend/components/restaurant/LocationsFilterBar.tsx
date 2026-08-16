@@ -56,7 +56,7 @@ export default function LocationsFilterBar({
   onMealChange,
   summary,
   compact,
-  flat,
+  raised,
 }: {
   seats: number;
   onSeatsChange: (seats: number) => void;
@@ -69,12 +69,8 @@ export default function LocationsFilterBar({
   /** e.g. "2 of 3 locations have tables". Hidden on the compact bar. */
   summary?: string | null;
   compact?: boolean;
-  /**
-   * Set while the bar is pinned to the top of the page. The band behind it becomes the
-   * surface at that point, so the bar drops its own card treatment rather than sitting on
-   * the band as a second, rounded shape inside a square one.
-   */
-  flat?: boolean;
+  /** Set while the bar is pinned, where it floats over the list rather than sitting in it. */
+  raised?: boolean;
 }) {
   const { colors } = useAppTheme();
 
@@ -84,7 +80,8 @@ export default function LocationsFilterBar({
       style={[
         styles.bar,
         compact && styles.barCompact,
-        flat ? styles.barFlat : { backgroundColor: colors.card },
+        { backgroundColor: colors.card },
+        raised && styles.barRaised,
       ]}
     >
       <View
