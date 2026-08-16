@@ -21,7 +21,8 @@ import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
 import Button from "@/components/common/Button";
-import { styles } from "./LocationsScreen.styles";
+import { hexToRgb } from "@/utils/colors";
+import { styles, pinnedMask } from "./LocationsScreen.styles";
 
 /** What the user is currently booking: a location plus the time they tapped. */
 interface DrawerTarget {
@@ -66,6 +67,7 @@ export default function LocationsScreen({
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = isMobileWidth(width);
+  const pageRgb = useMemo(() => hexToRgb(colors.page), [colors.page]);
 
   const [seats, setSeats] = useState(initialSeats ?? 2);
   const [dateOverride, setDateOverride] = useState<string | null>(null);
@@ -230,13 +232,7 @@ export default function LocationsScreen({
                     onLayout={(e) => {
                       filterTop.current = e.nativeEvent.layout.y;
                     }}
-                    style={[
-                      styles.filterSticky,
-                      {
-                        backgroundColor: colors.page,
-                        borderBottomColor: filterPinned ? colors.border : "transparent",
-                      },
-                    ]}
+                    style={[styles.filterSticky, filterPinned && pinnedMask(pageRgb)]}
                   >
                     <LocationsFilterBar
                       seats={seats}
@@ -248,6 +244,7 @@ export default function LocationsScreen({
                       onMealChange={setMeal}
                       summary={summary}
                       compact={isCompact}
+                      raised={filterPinned}
                     />
                   </View>
 

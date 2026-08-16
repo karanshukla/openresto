@@ -18,6 +18,12 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     padding: theme.spacing.xsm,
   },
+  // Pinned, the bar is the only thing between the diner and the list scrolling under it, so
+  // it lifts off the page rather than resting in it. The shadow is the whole cue: without it
+  // a pill sitting over cards reads as one that failed to scroll away.
+  barRaised: {
+    ...theme.shadows.lg,
+  },
   controlSeats: {
     minWidth: 132,
   },

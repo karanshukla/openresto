@@ -56,6 +56,7 @@ export default function LocationsFilterBar({
   onMealChange,
   summary,
   compact,
+  raised,
 }: {
   seats: number;
   onSeatsChange: (seats: number) => void;
@@ -68,13 +69,20 @@ export default function LocationsFilterBar({
   /** e.g. "2 of 3 locations have tables". Hidden on the compact bar. */
   summary?: string | null;
   compact?: boolean;
+  /** Set while the bar is pinned, where it floats over the list rather than sitting in it. */
+  raised?: boolean;
 }) {
   const { colors } = useAppTheme();
 
   return (
     <View
       testID="locations-filter-bar"
-      style={[styles.bar, compact && styles.barCompact, { backgroundColor: colors.card }]}
+      style={[
+        styles.bar,
+        compact && styles.barCompact,
+        { backgroundColor: colors.card },
+        raised && styles.barRaised,
+      ]}
     >
       <View
         testID="filter-control-seats"

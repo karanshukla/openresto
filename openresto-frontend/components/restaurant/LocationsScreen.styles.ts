@@ -1,5 +1,22 @@
 import { StyleSheet, Platform } from "react-native";
 import { theme } from "@/theme/theme";
+import type { RgbColor } from "@/utils/colors";
+
+/**
+ * The mask behind the pinned filter pill: the page colour under the pill, fading out over the
+ * band's bottom padding. Solid to the pill's lower edge is what stops cards appearing in the
+ * gap above it, and fading rather than stopping is what keeps the band from reading as a
+ * square header around a rounded pill — the shape this page had before.
+ *
+ * The last stop is the page colour at zero alpha, not `transparent`: Safari resolves the
+ * keyword to transparent *black*, which greys the fade on a light page.
+ */
+export function pinnedMask({ r, g, b }: RgbColor): object {
+  const page = `rgba(${r},${g},${b},1)`;
+  return {
+    backgroundImage: `linear-gradient(to bottom, ${page} 0, ${page} calc(100% - ${theme.spacing.md}px), rgba(${r},${g},${b},0) 100%)`,
+  };
+}
 
 export const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -45,23 +62,17 @@ export const styles = StyleSheet.create({
     ...theme.typography.body,
   },
   // The explicit zIndex is required: react-native-web stamps `zIndex: 0` on every View
-  // and a later sibling would otherwise paint straight over the pinned bar. The
-  // page-coloured band (set at the call site, where the theme is) fills the bar's
-  // rounded corners so cards don't show through them on the way past.
+  // and a later sibling would otherwise paint straight over the pinned bar.
   filterSticky: {
     zIndex: 5,
     // Both paddings are cancelled by matching negative margins: the band only exists once
     // the bar is pinned, and at rest the list should sit exactly where it did before. The
     // top half is what keeps the pinned bar off the navbar's underside instead of welded
-    // to it, and it hides the cards passing through that gap.
+    // to it; the bottom half is the run the mask needs to fade out over.
     paddingTop: theme.spacing.md,
     marginTop: -theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-    marginBottom: -(theme.spacing.sm + 1),
-    // Always present and transparent so pinning only changes the colour: a border that
-    // appeared with the pin would push the whole list down a pixel as it landed.
-    borderBottomWidth: 1,
-    borderBottomColor: "transparent",
+    paddingBottom: theme.spacing.md,
+    marginBottom: -theme.spacing.md,
     ...(Platform.OS === "web" ? ({ position: "sticky", top: 0 } as object) : null),
   },
   list: {
