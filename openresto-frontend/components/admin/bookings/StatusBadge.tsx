@@ -3,20 +3,14 @@ import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { styles } from "./bookings.styles";
 import { BookingDetailDto } from "@/api/admin";
+import { isPast } from "@/utils/bookingStatus";
 
 export type BadgeVariant = "arrived" | "seated" | "upcoming" | "scheduled" | "completed";
 
-/**
- * Whether a booking's date/time has already passed, using the same 5-minute
- * clock-skew grace window as the backend's create/cancel guards
- * (BookingService.cs and AdminService.cs both enforce this independently —
- * keep all three in sync if the window ever changes). Distinct from the
- * 90-minute "Completed" cosmetic bucket in getStatus below, which serves a
- * different purpose (list bucketing, not action-gating).
- */
-export function isPast(date: string): boolean {
-  return new Date(date).getTime() < Date.now() - 5 * 60 * 1000;
-}
+// Re-exported for the admin modules that already import isPast from here.
+// isPast itself lives in utils/bookingStatus so the customer-facing lookup
+// and booking-confirmation screens don't have to reach into components/admin.
+export { isPast };
 
 export function getStatus(date: string): { label: string; variant: BadgeVariant } {
   const d = new Date(date);

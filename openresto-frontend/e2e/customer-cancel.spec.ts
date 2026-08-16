@@ -37,7 +37,7 @@ async function purgeCancelTestBookings(browser: Browser) {
  * confirm dialog, but no spec actually walks through the real "I changed my
  * mind, cancel my upcoming booking" journey end-to-end through the /lookup UI.
  * This does: look up → confirm → booking flips to Cancelled in the UI and in
- * the DB, and a second lookup shows the now-disabled "Already Cancelled" state.
+ * the DB, and a second lookup shows the cancel action gone rather than disabled.
  *
  * Runs under the public "chromium" project (no admin auth) — the booking is
  * seeded via the public hold+booking APIs the same way a real customer would.
@@ -126,7 +126,7 @@ test.describe("Customer cancels an upcoming booking", () => {
     expect(booking.isCancelled).toBe(true);
   });
 
-  test("a cancelled booking shows 'Already Cancelled' and cannot be cancelled again", async ({
+  test("a cancelled booking stays titled 'Booking Cancelled' and offers no way to cancel again", async ({
     page,
   }) => {
     expect(bookingRef).toBeTruthy();
@@ -138,15 +138,13 @@ test.describe("Customer cancels an upcoming booking", () => {
 
     await expect(page.getByText("Booking Cancelled")).toBeVisible({ timeout: 10_000 });
 
-    // The button label switched to the disabled-state copy.
-    const alreadyCancelled = page.getByText("Already Cancelled", { exact: true });
-    await expect(alreadyCancelled).toBeVisible({ timeout: 10_000 });
-
-    // Functional check (mirrors cancel-past-booking.spec.ts): the Pressable is
-    // `disabled` in lookup.tsx, so clicking it must NOT re-open the confirm
-    // dialog — proving a re-cancel is impossible, not just that the label
-    // changed.
-    await alreadyCancelled.click({ force: true });
+    // Functional check (mirrors cancel-past-booking.spec.ts): a cancelled booking drops
+    // the cancel action entirely (BookingResultPanel.tsx) rather than rendering a disabled
+    // "Already Cancelled" button — there is nothing left to click that could re-open the
+    // confirm dialog, proving a re-cancel is impossible, not just that the label changed.
+    await expect(page.getByText("Cancel This Booking")).toHaveCount(0);
+    await expect(page.getByText("Already Cancelled")).toHaveCount(0);
+    await expect(page.getByText("This booking has been cancelled.")).toBeVisible();
     await expect(page.getByText("Cancel Reservation")).toHaveCount(0);
   });
 });

@@ -70,4 +70,28 @@ describe("BookingConfirmationSkeleton", () => {
     expect(toJSON()).toBeTruthy();
     RN.Platform.OS = original;
   });
+
+  it("renders just the cards, without the page hero or its own scroll/page chrome, when inline", () => {
+    const { getByLabelText, queryByLabelText } = render(
+      <AppThemeProvider>
+        <BookingConfirmationSkeleton inline />
+      </AppThemeProvider>
+    );
+    expect(getByLabelText("Loading booking")).toBeTruthy();
+    expect(queryByLabelText("Loading your booking")).toBeNull();
+  });
+
+  it("stays single-column when inline even on a wide web viewport", () => {
+    const RN = require("react-native");
+    const original = RN.Platform.OS;
+    RN.Platform.OS = "web";
+    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1400, height: 900 });
+    const { toJSON } = render(
+      <AppThemeProvider>
+        <BookingConfirmationSkeleton inline />
+      </AppThemeProvider>
+    );
+    expect(toJSON()).toBeTruthy();
+    RN.Platform.OS = original;
+  });
 });

@@ -3,10 +3,13 @@ import { postWithRetry, futureDateStr } from "./helpers";
 import { ADMIN_STATE_FILE } from "./global-setup";
 
 /**
- * Booking confirmation page (`/booking-confirmation/[bookingRef]`). Covers:
- *   - invalid ref → "Booking not found." fallback + Back to Home button
- *   - valid ref (created via API, email used as query param) → header, booking
- *     reference, detail rows (Email / Name / Date / Guests) all render
+ * Booking confirmation page (`/booking-confirmation/[bookingRef]`) — a door into the
+ * /lookup screen rather than a page of its own: it mounts the same LookupScreen with the
+ * ref/email prefilled and `justBooked` set, so it shows the "Find My Booking" form beside
+ * a result panel instead of a dedicated confirmation hero. Covers:
+ *   - invalid ref (and no email) → the same not-found card /lookup shows
+ *   - valid ref (created via API, email used as query param) → "Booking Confirmed"
+ *     header, booking reference, detail rows (Email / Name / Date / Guests) all render
  *
  * Public "chromium" project — the page only reads by ref+email, no auth.
  * Self-cleaning: beforeAll purges any leftover bookings targeted at
@@ -45,19 +48,15 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
     await purgeConfirmBookings(browser);
   });
 
-  test("invalid reference shows the not-found fallback and a Back to Home link", async ({
-    page,
-  }) => {
-    // No email param means getBookingByRef will 404; the page renders its
-    // !booking branch.
+  test("invalid reference shows the same not-found card /lookup shows", async ({ page }) => {
+    // No email param and a non-numeric ref means there's no ref+email lookup to run and
+    // no legacy id to fall back to — LookupScreen resolves straight to notFound.
     await page.goto("/booking-confirmation/definitely-not-a-real-ref");
 
-    await expect(page.getByText("Booking not found.")).toBeVisible({ timeout: 15_000 });
-
-    const backHome = page.getByText("Back to Home");
-    await expect(backHome).toBeVisible();
-    await backHome.click();
-    await page.waitForURL("**/", { timeout: 10_000 });
+    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("No booking found matching that reference and email.")).toBeVisible(
+      { timeout: 15_000 }
+    );
   });
 
   test("valid booking reference renders confirmation header, ref, and detail rows", async ({
@@ -110,8 +109,9 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
       `/booking-confirmation/${bookingRef}?email=${encodeURIComponent(CONFIRM_EMAIL)}`
     );
 
-    // The header uses "{guests} guests at {restaurant name}".
-    await expect(page.getByText(/2 guests at/)).toBeVisible({ timeout: 15_000 });
+    // The result panel titles itself "Booking Confirmed" for a justBooked link (as opposed
+    // to "Booking Found" for a plain /lookup search of the same booking).
+    await expect(page.getByText("Booking Confirmed")).toBeVisible({ timeout: 15_000 });
 
     // Booking reference echoes back somewhere on the page.
     await expect(page.getByText(bookingRef, { exact: true })).toBeVisible();

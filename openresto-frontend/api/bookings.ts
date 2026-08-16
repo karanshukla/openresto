@@ -90,18 +90,22 @@ export async function getBookingById(id: number): Promise<BookingDto | null> {
   }
 }
 
+/**
+ * Looks up a booking by reference and email. Returns null only for a genuine
+ * "no booking matches" (the backend 404s for both an unknown ref and a
+ * ref/email mismatch, deliberately not distinguishing the two). Anything
+ * else — a 5xx, a timeout, a network failure — throws instead of also
+ * collapsing to null, so callers can tell "this booking doesn't exist" apart
+ * from "we couldn't check" rather than showing the same not-found copy for both.
+ */
 export async function getBookingByRef(
   bookingRef: string,
   email: string
 ): Promise<BookingDto | null> {
-  try {
-    const res = await get(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
-    if (!res.ok) throw new Error("Failed to fetch booking");
-    return normalizeBooking(await res.json());
-  } catch (err) {
-    console.error("getBookingByRef error:", err);
-    return null;
-  }
+  const res = await get(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch booking");
+  return normalizeBooking(await res.json());
 }
 
 export async function getBookingsByRestaurant(restaurantId: number): Promise<BookingDto[]> {
