@@ -17,7 +17,7 @@ export interface ArchiveLocationRowProps {
 }
 
 function archiveMessage(name: string, upcoming: number): string {
-  const base = `${name} comes off the public site — customers can no longer find or book it.`;
+  const base = `${name} comes off the public site, and customers can no longer find or book it.`;
   const bookings =
     upcoming > 0
       ? ` Its ${upcoming} upcoming booking${upcoming === 1 ? "" : "s"} stay intact in the admin, but the guests can no longer look them up on the site.`
