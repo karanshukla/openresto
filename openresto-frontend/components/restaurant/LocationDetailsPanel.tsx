@@ -5,6 +5,7 @@ import { LinkedText } from "@/components/common/LinkedText";
 import OpeningHoursTable from "@/components/restaurant/OpeningHoursTable";
 import WalkInNotice from "@/components/booking/WalkInNotice";
 import type { RestaurantDto } from "@/api/restaurants";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { LocationSeatingMap } from "./LocationSeatingMap";
 import { styles } from "./LocationListItem.styles";
 
@@ -22,15 +23,17 @@ export interface LocationDetailsPanelProps {
 }
 
 function MapLink({
-  label,
+  provider,
   url,
+  textColor,
   mutedColor,
   borderColor,
   primaryColor,
   surface2,
 }: {
-  label: string;
+  provider: string;
   url: string;
+  textColor: string;
   mutedColor: string;
   borderColor: string;
   primaryColor: string;
@@ -47,10 +50,10 @@ function MapLink({
       ]}
       onPress={() => Linking.openURL(url)}
       accessibilityRole="link"
-      accessibilityLabel={`Open in ${label}`}
+      accessibilityLabel={`Open in ${provider} Maps`}
     >
       <Icon name="navigate-outline" size="xs" color={mutedColor} />
-      <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>{label}</ThemedText>
+      <ThemedText style={[styles.mapLinkText, { color: textColor }]}>{provider}</ThemedText>
     </Pressable>
   );
 }
@@ -67,27 +70,14 @@ export function LocationDetailsPanel({
   accentSoft,
   accentBorder,
 }: LocationDetailsPanelProps) {
-  const tags = restaurant.tags ?? [];
-  const mapLinkTheme = { mutedColor, borderColor, primaryColor, surface2 };
+  const { colors } = useAppTheme();
+  const mapLinkTheme = { textColor: colors.text, mutedColor, borderColor, primaryColor, surface2 };
 
   return (
     <View style={[styles.expandedBody, { borderTopColor: borderColor }]}>
       {restaurant.description ? (
         <LinkedText text={restaurant.description} style={styles.description} />
       ) : null}
-
-      {tags.length > 0 && (
-        <View style={styles.tags}>
-          {tags.map((t) => (
-            <View
-              key={t}
-              style={[styles.tag, { backgroundColor: accentSoft, borderColor: accentBorder }]}
-            >
-              <ThemedText style={[styles.tagText, { color: primaryColor }]}>{t}</ThemedText>
-            </View>
-          ))}
-        </View>
-      )}
 
       {restaurant.menuUrl ? (
         <Pressable
@@ -111,17 +101,22 @@ export function LocationDetailsPanel({
       ) : null}
 
       {restaurant.address && (
-        <View style={styles.mapLinks}>
-          <MapLink
-            label="Google Maps"
-            url={`https://maps.google.com/?q=${encodeURIComponent(restaurant.address)}`}
-            {...mapLinkTheme}
-          />
-          <MapLink
-            label="Apple Maps"
-            url={`https://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`}
-            {...mapLinkTheme}
-          />
+        <View style={styles.subSection}>
+          <ThemedText type="defaultSemiBold" style={styles.subHeading}>
+            Directions
+          </ThemedText>
+          <View style={styles.mapLinks}>
+            <MapLink
+              provider="Google"
+              url={`https://maps.google.com/?q=${encodeURIComponent(restaurant.address)}`}
+              {...mapLinkTheme}
+            />
+            <MapLink
+              provider="Apple"
+              url={`https://maps.apple.com/?q=${encodeURIComponent(restaurant.address)}`}
+              {...mapLinkTheme}
+            />
+          </View>
         </View>
       )}
 

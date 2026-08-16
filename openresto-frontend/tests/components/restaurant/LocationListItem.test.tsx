@@ -639,11 +639,10 @@ describe("LocationListItem", () => {
       openURLSpy.mockRestore();
     });
 
-    it("renders tag chips inside Details", async () => {
+    it("renders tag chips in the row header, without expanding Details", async () => {
       renderWithProviders(
         <LocationListItem
           {...baseProps}
-          defaultExpanded
           restaurant={{ ...mockRestaurant, tags: ["Vegan", "Patio"] } as any}
         />
       );

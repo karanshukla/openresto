@@ -14,6 +14,7 @@ import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/re
 import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
+import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
 
 function opensLaterToday(restaurant: RestaurantDto): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -117,8 +118,6 @@ export default function RestaurantCard({
   const tags = restaurant.tags ?? [];
 
   const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
-  const accentSoft = `rgba(${accentR},${accentG},${accentB},0.12)`;
-  const accentBorder = `rgba(${accentR},${accentG},${accentB},0.3)`;
 
   const cardBg = colors.card;
   const borderColor = colors.border;
@@ -238,50 +237,6 @@ export default function RestaurantCard({
               <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
                 {restaurant.address || "Multiple areas"}
               </ThemedText>
-              <View style={styles.mapLinks}>
-                <Pressable
-                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                    styles.mapLink,
-                    {
-                      backgroundColor: surface2,
-                      borderColor: hovered || pressed ? primaryColor : borderColor,
-                    },
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    Linking.openURL(
-                      `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
-                    );
-                  }}
-                  accessibilityRole="link"
-                  accessibilityLabel="Open in Google Maps"
-                >
-                  <Icon name="navigate-outline" size={11} color={mutedColor} />
-                  <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>
-                    Google
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                    styles.mapLink,
-                    {
-                      backgroundColor: surface2,
-                      borderColor: hovered || pressed ? primaryColor : borderColor,
-                    },
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    Linking.openURL(
-                      `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
-                    );
-                  }}
-                  accessibilityRole="link"
-                  accessibilityLabel="Open in Apple Maps"
-                >
-                  <Icon name="navigate-outline" size={11} color={mutedColor} />
-                  <ThemedText style={[styles.mapLinkText, { color: mutedColor }]}>Apple</ThemedText>
-                </Pressable>
-              </View>
             </View>
           </View>
           <Pressable
@@ -301,18 +256,51 @@ export default function RestaurantCard({
           </Pressable>
         </View>
 
-        {tags.length > 0 && (
-          <View style={styles.tags}>
-            {tags.map((t) => (
-              <View
-                key={t}
-                style={[styles.tag, { backgroundColor: accentSoft, borderColor: accentBorder }]}
-              >
-                <ThemedText style={[styles.tagText, { color: primaryColor }]}>{t}</ThemedText>
-              </View>
-            ))}
-          </View>
-        )}
+        <RestaurantTags tags={tags} />
+
+        <View style={styles.mapLinks}>
+          <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>Directions</ThemedText>
+          <Pressable
+            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+              styles.mapLink,
+              {
+                backgroundColor: surface2,
+                borderColor: hovered || pressed ? primaryColor : borderColor,
+              },
+            ]}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              Linking.openURL(
+                `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
+              );
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Open in Google Maps"
+          >
+            <Icon name="navigate-outline" size={11} color={mutedColor} />
+            <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Google</ThemedText>
+          </Pressable>
+          <Pressable
+            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+              styles.mapLink,
+              {
+                backgroundColor: surface2,
+                borderColor: hovered || pressed ? primaryColor : borderColor,
+              },
+            ]}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              Linking.openURL(
+                `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
+              );
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Open in Apple Maps"
+          >
+            <Icon name="navigate-outline" size={11} color={mutedColor} />
+            <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Apple</ThemedText>
+          </Pressable>
+        </View>
 
         {/* Time slots (or a no-reservations-needed empty state when bookings are disabled).
             Wrapped in a fixed-min-height area so cards line up whether or not they show slots. */}

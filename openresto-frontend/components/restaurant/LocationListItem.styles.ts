@@ -201,23 +201,13 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  tags: {
-    flexDirection: "row",
-    gap: theme.spacing.xxs,
-    flexWrap: "wrap",
-  },
-  tag: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-  },
-  tagText: {
-    fontSize: 11.5,
+  tagRow: {
+    marginTop: theme.spacing.xs,
   },
   mapLinks: {
     flexDirection: "row",
-    gap: theme.spacing.sm,
+    alignItems: "center",
+    gap: theme.spacing.xsm,
     flexWrap: "wrap",
   },
   mapLink: {
@@ -226,12 +216,11 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.xxs,
     paddingHorizontal: theme.spacing.xsm,
     paddingVertical: 7,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
   },
   mapLinkText: {
     fontSize: 12.5,
-    fontWeight: "500",
   },
   menuButton: {
     flexDirection: "row",

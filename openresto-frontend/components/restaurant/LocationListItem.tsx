@@ -17,6 +17,7 @@ import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { cardStyles } from "@/components/restaurant/cardStyles";
 import type { MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import { LocationDetailsPanel } from "./LocationDetailsPanel";
+import { RestaurantTags } from "./RestaurantTags";
 import { LocationSlotRow } from "./LocationSlotRow";
 import { LocationThumbnail } from "./LocationThumbnail";
 import { useLocationSlots } from "./useLocationSlots";
@@ -78,6 +79,7 @@ export default function LocationListItem({
   const walkInBadgeText = walkInBadgeLabel(restaurant);
   /** Whether the selected date can be booked — governs the slot strip. */
   const bookable = !closedOnDate && !walkInLocation && !walkInOnDate;
+  const tags = restaurant.tags ?? [];
   /**
    * Whether the location takes online bookings on *any* day — governs the Book now CTA.
    * Today being shut, or walk-in only, is no reason to withhold the route to next Tuesday;
@@ -285,6 +287,7 @@ export default function LocationListItem({
                 {restaurant.name}
               </ThemedText>
               {addressMeta}
+              <RestaurantTags tags={tags} style={styles.tagRow} />
               {walkInBadge ? <View style={styles.badgeRow}>{walkInBadge}</View> : null}
             </View>
           </Pressable>
@@ -319,6 +322,7 @@ export default function LocationListItem({
                   {hoursMeta}
                   {menuLink}
                 </View>
+                <RestaurantTags tags={tags} style={styles.tagRow} />
               </Pressable>
               {headerActions}
             </View>

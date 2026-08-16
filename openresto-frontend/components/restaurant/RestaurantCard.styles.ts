@@ -83,29 +83,35 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    flexWrap: "wrap",
   },
   metaText: {
     fontSize: 12.5,
+    flexShrink: 1,
   },
   mapLinks: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 6,
-    marginLeft: 2,
     flexWrap: "wrap",
+  },
+  mapLinksLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    fontWeight: "600",
+    marginRight: 2,
   },
   mapLink: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
   },
   mapLinkText: {
-    fontSize: 11.5,
-    fontWeight: "500",
+    fontSize: 12,
   },
   iconBtn: {
     width: 32,
@@ -123,13 +129,13 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
-    borderWidth: 1,
   },
   tagText: {
-    fontSize: 11.5,
+    fontSize: 12,
+    fontWeight: "500",
   },
 
   slotLabel: {
