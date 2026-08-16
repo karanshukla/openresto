@@ -205,12 +205,6 @@ export default function DatePicker({
         </ThemedText>
       </Pressable>
 
-      {isClosedDay && (
-        <ThemedText style={styles.closedWarning} role="alert" accessibilityLiveRegion="polite">
-          Note: This restaurant is normally closed on this day. Please double-check another date.
-        </ThemedText>
-      )}
-
       <Modal
         animationType="fade"
         transparent

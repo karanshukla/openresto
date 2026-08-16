@@ -2,8 +2,10 @@
  * @jest-environment jsdom
  */
 import React from "react";
+import { StyleSheet } from "react-native";
 import { render, fireEvent, screen } from "@testing-library/react-native";
 import DatePickerWeb from "@/components/common/DatePicker.web";
+import { theme } from "@/theme/theme";
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -48,30 +50,34 @@ describe("DatePicker (web)", () => {
     expect(screen.getByTestId("date-picker-trigger")).toBeTruthy();
   });
 
-  it("shows closed day warning when selected date is a closed day", () => {
+  it("reddens the trigger border when selected date is a closed day", () => {
     // 2026-10-05 is a Monday (ISO day 1); openDays=[2,3,4,5,6] excludes Monday
     render(
       <DatePickerWeb selectedDate="2026-10-05" onSelect={onSelect} openDays={[2, 3, 4, 5, 6]} />
     );
-    expect(screen.getByText(/normally closed on this day/)).toBeTruthy();
+    const trigger = screen.getByTestId("date-picker-trigger");
+    expect(StyleSheet.flatten(trigger.props.style).borderColor).toBe(theme.colors.error);
   });
 
-  it("does not show closed day warning when selected date is an open day", () => {
+  it("does not redden the trigger border when selected date is an open day", () => {
     // 2026-10-06 is a Tuesday (ISO day 2) — open
     render(
       <DatePickerWeb selectedDate="2026-10-06" onSelect={onSelect} openDays={[2, 3, 4, 5, 6]} />
     );
-    expect(screen.queryByText(/normally closed on this day/)).toBeNull();
+    const trigger = screen.getByTestId("date-picker-trigger");
+    expect(StyleSheet.flatten(trigger.props.style).borderColor).not.toBe(theme.colors.error);
   });
 
-  it("does not show closed day warning when openDays is not provided", () => {
+  it("does not redden the trigger border when openDays is not provided", () => {
     render(<DatePickerWeb selectedDate="2026-10-05" onSelect={onSelect} />);
-    expect(screen.queryByText(/normally closed on this day/)).toBeNull();
+    const trigger = screen.getByTestId("date-picker-trigger");
+    expect(StyleSheet.flatten(trigger.props.style).borderColor).not.toBe(theme.colors.error);
   });
 
-  it("does not show closed day warning when no date is selected", () => {
+  it("does not redden the trigger border when no date is selected", () => {
     render(<DatePickerWeb onSelect={onSelect} openDays={[2, 3]} />);
-    expect(screen.queryByText(/normally closed on this day/)).toBeNull();
+    const trigger = screen.getByTestId("date-picker-trigger");
+    expect(StyleSheet.flatten(trigger.props.style).borderColor).not.toBe(theme.colors.error);
   });
 
   it("opens the calendar when the trigger is pressed", () => {
@@ -144,8 +150,8 @@ describe("DatePicker (web)", () => {
     });
 
     it("does not claim the venue is closed on a walk-in-only day", () => {
-      // It is open — you just can't book it online. The red "normally closed" warning is
-      // for a day the doors are shut.
+      // It is open — you just can't book it online. The red border is for a day the
+      // doors are shut, not a day that's open but unbookable online.
       const todayStr = localDateValue(new Date());
       render(
         <DatePickerWeb
@@ -156,7 +162,8 @@ describe("DatePicker (web)", () => {
           unavailableReason="Walk-ins only"
         />
       );
-      expect(screen.queryByText(/normally closed on this day/)).toBeNull();
+      const trigger = screen.getByTestId("date-picker-trigger");
+      expect(StyleSheet.flatten(trigger.props.style).borderColor).not.toBe(theme.colors.error);
     });
 
     it("announces the reason on the unpickable cell", () => {

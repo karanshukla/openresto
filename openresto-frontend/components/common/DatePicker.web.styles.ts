@@ -25,11 +25,6 @@ export const styles = StyleSheet.create({
   chevron: {
     fontSize: 14,
   },
-  closedWarning: {
-    ...theme.typography.caption,
-    color: theme.colors.error,
-    marginTop: 4,
-  },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

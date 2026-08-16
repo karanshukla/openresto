@@ -326,23 +326,27 @@ export default function LookupScreen({
 
       <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
 
-      <ConfirmModal
-        visible={showCancelConfirm}
-        title="Cancel Reservation"
-        message="Are you sure you want to cancel this booking? This action cannot be undone."
-        confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
-        cancelLabel="Keep Booking"
-        destructive
-        onConfirm={cancelBooking}
-        onCancel={() => !cancelling && setShowCancelConfirm(false)}
-      />
+      {showCancelConfirm && (
+        <ConfirmModal
+          visible={showCancelConfirm}
+          title="Cancel Reservation"
+          message="Are you sure you want to cancel this booking? This action cannot be undone."
+          confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
+          cancelLabel="Keep Booking"
+          destructive
+          onConfirm={cancelBooking}
+          onCancel={() => !cancelling && setShowCancelConfirm(false)}
+        />
+      )}
 
-      <AlertModal
-        visible={errorMessage !== null}
-        title="Error"
-        message={errorMessage ?? ""}
-        onClose={clearError}
-      />
+      {errorMessage !== null && (
+        <AlertModal
+          visible={errorMessage !== null}
+          title="Error"
+          message={errorMessage}
+          onClose={clearError}
+        />
+      )}
     </ThemedView>
   );
 }
