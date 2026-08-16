@@ -232,12 +232,16 @@ export default function LookupScreen({
                 </ThemedText>
               </View>
 
-              <RecentBookingsList
-                cached={cached}
-                colors={colors}
-                style={{ marginTop: 20 }}
-                onSelect={handleRecentSelect}
-              />
+              {/* Idle only: once a result is showing, the just-looked-up booking would
+                  otherwise also be sitting right here in its own recent-bookings row. */}
+              {!showPanel && (
+                <RecentBookingsList
+                  cached={cached}
+                  colors={colors}
+                  style={{ marginTop: 20 }}
+                  onSelect={handleRecentSelect}
+                />
+              )}
             </View>
 
             {twoColumn && (

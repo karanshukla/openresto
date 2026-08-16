@@ -238,6 +238,31 @@ describe("LookupScreen", () => {
         expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("CACHED1")
       );
     });
+
+    it("hides the recent-bookings list once a result is showing, so a just-looked-up ref doesn't render twice", async () => {
+      const mockCached = [
+        {
+          bookingRef: "REF123",
+          email: "test@test.com",
+          restaurantName: "Cached Resto",
+          date: "2026-01-01",
+          seats: 4,
+        },
+      ];
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen />);
+      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+
+      fireEvent.press(screen.getByText("REF123"));
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      expect(screen.queryByText("YOUR RECENT BOOKINGS")).toBeNull();
+      // The ref now appears exactly once (inside the result panel), not once there and
+      // once in a recent-bookings row underneath the form.
+      expect(screen.getAllByText("REF123")).toHaveLength(1);
+    });
   });
 
   describe("cancelling", () => {
