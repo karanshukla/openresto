@@ -14,6 +14,7 @@ export const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
+    lineHeight: 16,
     fontWeight: "500",
   },
 });
