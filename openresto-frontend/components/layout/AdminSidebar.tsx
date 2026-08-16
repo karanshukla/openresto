@@ -337,7 +337,7 @@ export default function AdminSidebar() {
         {user && (
           <View style={styles.identity} testID="sidebar-identity">
             <ThemedText style={styles.identityName} numberOfLines={1}>
-              {user.displayName ?? user.email.split("@")[0]}
+              {user.displayName ?? user.email}
             </ThemedText>
             <View style={[styles.roleBadge, { backgroundColor: hexToRgba(PRIMARY, 0.12) }]}>
               <ThemedText style={[styles.roleBadgeText, { color: PRIMARY }]}>
