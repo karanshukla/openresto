@@ -10,5 +10,6 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   start: { justifyContent: "flex-start" },
+  center: { justifyContent: "center" },
   between: { justifyContent: "space-between" },
 });

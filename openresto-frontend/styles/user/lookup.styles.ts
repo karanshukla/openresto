@@ -49,6 +49,7 @@ export const styles = StyleSheet.create({
   },
   label: { ...theme.typography.label, letterSpacing: 0.2 },
   helpText: { ...theme.typography.caption, textAlign: "center", lineHeight: 18, marginTop: 4 },
+  contactRow: { marginTop: -2 },
   msgCard: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,

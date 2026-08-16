@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import ButtonRow from "@/components/common/ButtonRow";
 import { Icon } from "@/components/common/Icon";
 import PageContainer from "@/components/layout/PageContainer";
 import Footer from "@/components/layout/Footer";
@@ -20,6 +21,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
+import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
+import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
 import { styles } from "@/styles/user/lookup.styles";
 
@@ -67,6 +70,8 @@ export default function LookupScreen({
 
   const { width } = useWindowDimensions();
   const { colors } = useAppTheme();
+  const brand = useBrand();
+  const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
   const showPanel = status !== "idle";
@@ -229,6 +234,38 @@ export default function LookupScreen({
                 <ThemedText style={[styles.helpText, { color: colors.muted }]}>
                   Can&apos;t find your booking? Contact the restaurant directly.
                 </ThemedText>
+                {/* Telling someone to get in touch without saying how is half an
+                    instruction. Falls back to the brand's details until a lookup names a
+                    location, which is the same per-field resolution the rest of the app
+                    uses, so a location listing only a phone still shows the global email. */}
+                {hasContact(contact) && (
+                  <ButtonRow align="center" style={styles.contactRow}>
+                    {contact.phone && (
+                      <Button
+                        variant="ghost"
+                        tone="brand"
+                        size="sm"
+                        icon="call-outline"
+                        onPress={() => Linking.openURL(telHref(contact.phone!))}
+                        accessibilityLabel={`Call ${contact.phone}`}
+                      >
+                        {contact.phone}
+                      </Button>
+                    )}
+                    {contact.email && (
+                      <Button
+                        variant="ghost"
+                        tone="brand"
+                        size="sm"
+                        icon="mail-outline"
+                        onPress={() => Linking.openURL(mailtoHref(contact.email!))}
+                        accessibilityLabel={`Email ${contact.email}`}
+                      >
+                        {contact.email}
+                      </Button>
+                    )}
+                  </ButtonRow>
+                )}
               </View>
 
               {/* Stays put while a result is showing — the panel is a column over, not on

@@ -18,4 +18,9 @@ export const styles = StyleSheet.create({
   cardRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.md },
   ref: { fontSize: 14, fontWeight: "700", letterSpacing: -0.2, flex: 1 },
   meta: { ...theme.typography.caption },
+  storageNote: {
+    ...theme.typography.caption,
+    lineHeight: 17,
+    marginTop: theme.spacing.xs,
+  },
 });

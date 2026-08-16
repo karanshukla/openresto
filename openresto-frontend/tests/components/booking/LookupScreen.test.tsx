@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
+import { Linking } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
 import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
@@ -103,6 +104,49 @@ describe("LookupScreen", () => {
     expect(screen.getByText("Test Resto")).toBeTruthy();
     // The form stays put beside the panel — a second lookup costs no navigation.
     expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("REF123");
+  });
+
+  describe("contact details under the help text", () => {
+    it("renders nothing when neither the location nor the brand lists any", async () => {
+      renderWithProviders(<LookupScreen />);
+      await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+      expect(screen.queryByLabelText(/^Call /)).toBeNull();
+      // Anchored on the address so this doesn't match the "Email address" input above it.
+      expect(screen.queryByLabelText(/^Email .+@/)).toBeNull();
+    });
+
+    it("offers the location's phone and email once a lookup names one", async () => {
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue({
+        ...mockRestaurant,
+        phoneNumber: "+1 555 0142",
+        emailAddress: "hi@testresto.com",
+      });
+      renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      expect(screen.getByLabelText("Call +1 555 0142")).toBeTruthy();
+      expect(screen.getByLabelText("Email hi@testresto.com")).toBeTruthy();
+    });
+
+    it("dials the phone with formatting stripped, and mailtos the email", async () => {
+      const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue({
+        ...mockRestaurant,
+        phoneNumber: "+1 555 0142",
+        emailAddress: "hi@testresto.com",
+      });
+      renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
+
+      await waitFor(() => expect(screen.getByLabelText("Call +1 555 0142")).toBeTruthy());
+      fireEvent.press(screen.getByLabelText("Call +1 555 0142"));
+      expect(openURL).toHaveBeenCalledWith("tel:+15550142");
+
+      fireEvent.press(screen.getByLabelText("Email hi@testresto.com"));
+      expect(openURL).toHaveBeenCalledWith("mailto:hi@testresto.com");
+      openURL.mockRestore();
+    });
   });
 
   it("does not trigger a lookup when submitting the form with empty fields", async () => {
