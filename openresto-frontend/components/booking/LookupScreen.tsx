@@ -66,7 +66,7 @@ export default function LookupScreen({
   } = useBookingLookup();
 
   const { width } = useWindowDimensions();
-  const { colors, primaryColor } = useAppTheme();
+  const { colors } = useAppTheme();
   const isCompact = isMobileWidth(width);
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
   const showPanel = status !== "idle";
@@ -179,17 +179,16 @@ export default function LookupScreen({
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
       >
-        <PageContainer>
+        <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
           <View style={styles.header}>
-            <Icon name="search-outline" size={32} color={primaryColor} />
-            <ThemedText style={styles.title}>Find My Booking</ThemedText>
+            <ThemedText style={styles.title}>Find my booking</ThemedText>
             <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
               Enter your booking reference and email to look up your reservation.
             </ThemedText>
           </View>
 
           <View style={twoColumn ? styles.wideRow : styles.singleCol}>
-            <View style={twoColumn ? styles.wideCol : undefined}>
+            <View style={twoColumn ? styles.formCol : undefined}>
               <View
                 style={[
                   styles.searchCard,
@@ -232,20 +231,20 @@ export default function LookupScreen({
                 </ThemedText>
               </View>
 
-              {/* Idle only: once a result is showing, the just-looked-up booking would
-                  otherwise also be sitting right here in its own recent-bookings row. */}
-              {!showPanel && (
-                <RecentBookingsList
-                  cached={cached}
-                  colors={colors}
-                  style={{ marginTop: 20 }}
-                  onSelect={handleRecentSelect}
-                />
-              )}
+              {/* Stays put while a result is showing — the panel is a column over, not on
+                  top of this list, so the diner can switch between their bookings without
+                  dismissing anything. The one on screen is marked rather than removed, so
+                  the list doesn't reshuffle under the press that opened it. */}
+              <RecentBookingsList
+                cached={cached}
+                colors={colors}
+                activeRef={status === "found" ? (booking?.bookingRef ?? null) : null}
+                onSelect={handleRecentSelect}
+              />
             </View>
 
             {twoColumn && (
-              <View style={styles.wideCol}>
+              <View style={styles.resultCol}>
                 <SlidePanel variant="side" onDismiss={reset} accessibilityLabel="Booking result">
                   {panelContent}
                 </SlidePanel>

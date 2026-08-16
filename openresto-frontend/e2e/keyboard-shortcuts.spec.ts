@@ -290,7 +290,7 @@ test.describe("Admin keyboard shortcuts", () => {
     // window keydown listener stays silent here, and the user layout's
     // listener is the one that responds instead.
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 10_000 });
 
     // Admin-only shortcuts must be silent on this (user)-scoped route.
     await page.keyboard.press("c");

@@ -80,7 +80,7 @@ describe("LookupScreen", () => {
 
   it("renders the idle search form with no result panel", async () => {
     renderWithProviders(<LookupScreen />);
-    expect(screen.getByText("Find My Booking")).toBeTruthy();
+    expect(screen.getByText("Find my booking")).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
   });
@@ -239,7 +239,7 @@ describe("LookupScreen", () => {
       );
     });
 
-    it("hides the recent-bookings list once a result is showing, so a just-looked-up ref doesn't render twice", async () => {
+    it("keeps the recent-bookings list up while a result is showing, marking the open one", async () => {
       const mockCached = [
         {
           bookingRef: "REF123",
@@ -247,6 +247,13 @@ describe("LookupScreen", () => {
           restaurantName: "Cached Resto",
           date: "2026-01-01",
           seats: 4,
+        },
+        {
+          bookingRef: "OTHER9",
+          email: "test@test.com",
+          restaurantName: "Other Resto",
+          date: "2026-02-02",
+          seats: 2,
         },
       ];
       (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
@@ -258,10 +265,15 @@ describe("LookupScreen", () => {
       fireEvent.press(screen.getByText("REF123"));
 
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
-      expect(screen.queryByText("YOUR RECENT BOOKINGS")).toBeNull();
-      // The ref now appears exactly once (inside the result panel), not once there and
-      // once in a recent-bookings row underneath the form.
-      expect(screen.getAllByText("REF123")).toHaveLength(1);
+      // The list stays put — the panel is a column over, not on top of it — so the diner
+      // can go straight to another booking without dismissing the result first.
+      expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy();
+      expect(screen.getByText("OTHER9")).toBeTruthy();
+
+      const openRow = screen.getByLabelText("Look up booking REF123 at Cached Resto");
+      expect(openRow.props.accessibilityState).toEqual({ selected: true });
+      const otherRow = screen.getByLabelText("Look up booking OTHER9 at Other Resto");
+      expect(otherRow.props.accessibilityState).toEqual({ selected: false });
     });
   });
 
@@ -359,7 +371,7 @@ describe("LookupScreen", () => {
         await new Promise((resolve) => setTimeout(resolve, 400));
       });
       expect(screen.queryByTestId("result-panel")).toBeNull();
-      expect(screen.getByText("Find My Booking")).toBeTruthy();
+      expect(screen.getByText("Find my booking")).toBeTruthy();
     });
   });
 
@@ -389,6 +401,6 @@ describe("LookupScreen", () => {
     const { ScrollView } = require("react-native");
     const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
     fireEvent.scroll(scrollViews[0], { nativeEvent: { contentOffset: { y: 400 } } });
-    expect(screen.getByText("Find My Booking")).toBeTruthy();
+    expect(screen.getByText("Find my booking")).toBeTruthy();
   });
 });

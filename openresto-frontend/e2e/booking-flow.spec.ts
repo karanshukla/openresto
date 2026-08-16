@@ -83,6 +83,6 @@ test.describe("Customer booking end to end", { tag: "@smoke" }, () => {
     await page.goto("/");
     await page.getByRole("link", { name: "My Bookings" }).click();
     await page.waitForURL(/.*lookup.*/, { timeout: 10_000 });
-    await expect(page.getByText("Find My Booking")).toBeVisible();
+    await expect(page.getByText("Find my booking")).toBeVisible();
   });
 });

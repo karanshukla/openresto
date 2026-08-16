@@ -115,7 +115,7 @@ test.describe("Booking lookup", { tag: "@smoke" }, () => {
     expect(bookingRef).toBeTruthy();
 
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible();
+    await expect(page.getByText("Find my booking")).toBeVisible();
 
     await page.getByPlaceholder("e.g. crispy-basil-thyme").fill(bookingRef);
     await page.getByPlaceholder("The email used when booking").fill(lookupEmail);

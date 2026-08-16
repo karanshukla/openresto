@@ -5,7 +5,7 @@ import { ADMIN_STATE_FILE } from "./global-setup";
 /**
  * Booking confirmation page (`/booking-confirmation/[bookingRef]`) — a door into the
  * /lookup screen rather than a page of its own: it mounts the same LookupScreen with the
- * ref/email prefilled and `justBooked` set, so it shows the "Find My Booking" form beside
+ * ref/email prefilled and `justBooked` set, so it shows the "Find my booking" form beside
  * a result panel instead of a dedicated confirmation hero. Covers:
  *   - invalid ref (and no email) → the same not-found card /lookup shows
  *   - valid ref (created via API, email used as query param) → "Booking Confirmed"
@@ -53,7 +53,7 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
     // no legacy id to fall back to — LookupScreen resolves straight to notFound.
     await page.goto("/booking-confirmation/definitely-not-a-real-ref");
 
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("No booking found matching that reference and email.")).toBeVisible(
       { timeout: 15_000 }
     );

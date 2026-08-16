@@ -10,6 +10,8 @@ interface BookingDetailRowsProps {
   restaurant: RestaurantDto | null;
   mutedColor: string;
   borderColor: string;
+  /** Phone-width sheet: stack each value under its label instead of sharing the line. */
+  compact?: boolean;
 }
 
 type RowData = {
@@ -87,6 +89,7 @@ export default function BookingDetailRows({
   restaurant,
   mutedColor,
   borderColor,
+  compact = false,
 }: BookingDetailRowsProps) {
   const rows = buildRows(booking, restaurant);
 
@@ -95,13 +98,27 @@ export default function BookingDetailRows({
       {rows.map(({ icon, label, value }, i) => (
         <View key={label}>
           {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
-          <View style={styles.row}>
-            <Icon name={icon} size={15} color={mutedColor} />
-            <View style={styles.content}>
-              <ThemedText style={[styles.label, { color: mutedColor }]}>{label}</ThemedText>
+          {compact ? (
+            <View style={[styles.row, styles.compactRow]}>
+              <View style={styles.compactIcon}>
+                <Icon name={icon} size={15} color={mutedColor} />
+              </View>
+              <View style={styles.compactContent}>
+                <ThemedText style={[styles.compactLabel, { color: mutedColor }]}>
+                  {label}
+                </ThemedText>
+                <ThemedText style={styles.compactValue}>{value}</ThemedText>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.row}>
+              <View style={styles.labelSide}>
+                <Icon name={icon} size={15} color={mutedColor} />
+                <ThemedText style={[styles.label, { color: mutedColor }]}>{label}</ThemedText>
+              </View>
               <ThemedText style={styles.value}>{value}</ThemedText>
             </View>
-          </View>
+          )}
         </View>
       ))}
     </>

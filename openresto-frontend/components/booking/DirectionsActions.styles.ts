@@ -2,10 +2,10 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
-  compactWrap: { padding: 16, gap: 10 },
+  compactWrap: { padding: theme.spacing.lg, gap: 10 },
   compactTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
   compactRow: { flexDirection: "row", gap: 8 },
-  wideWrap: { padding: theme.spacing.lg, gap: theme.spacing.xsm },
+  wideWrap: { padding: theme.spacing.lg, gap: 10 },
   wideTitle: {
     ...theme.typography.labelSmall,
     fontWeight: "700",

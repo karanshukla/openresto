@@ -24,12 +24,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
 
   if (props.variant === "compact") {
     return (
-      <View
-        style={[
-          styles.compactWrap,
-          { backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" },
-        ]}
-      >
+      <View style={styles.compactWrap}>
         <ThemedText style={[styles.sectionTitle, { color: colors.muted }]}>
           ADD TO CALENDAR
         </ThemedText>

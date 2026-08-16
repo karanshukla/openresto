@@ -98,7 +98,7 @@ test.describe("Customer cancels an upcoming booking", () => {
     expect(bookingRef).toBeTruthy();
 
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 10_000 });
 
     await page.getByPlaceholder("e.g. crispy-basil-thyme").fill(bookingRef);
     await page.getByPlaceholder("The email used when booking").fill(CANCEL_TEST_EMAIL);

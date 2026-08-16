@@ -14,9 +14,9 @@ import { styles } from "./BookingConfirmationSkeleton.styles";
  */
 export default function BookingConfirmationSkeleton({ inline = false }: { inline?: boolean }) {
   const { width } = useWindowDimensions();
-  // Inline mode is always confined to the lookup result panel's fixed (narrow) column
-  // width, regardless of how wide the viewport around it is, so it always uses the
-  // single-column skeleton rather than reading its own layout off the window.
+  // Inline mode sits in the lookup result column, which is a fraction of the viewport
+  // however wide that viewport is, so it always uses the single-column skeleton rather
+  // than reading its own layout off the window.
   const isWide = !inline && Platform.OS === "web" && width >= MOBILE_BREAKPOINT;
 
   const content = (

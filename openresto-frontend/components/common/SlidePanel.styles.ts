@@ -3,13 +3,12 @@ import { theme } from "@/theme/theme";
 
 const ownsTheGesture = Platform.OS === "web" ? ({ touchAction: "none" } as object) : null;
 
-/** Width of the side panel; the sheet variant uses the full width instead. */
-export const RESULT_PANEL_WIDTH = 360;
-
 export const styles = StyleSheet.create({
+  // The side panel fills whatever column the caller gives it. It used to carry its own
+  // fixed width, which left a dead gutter between the panel and the edge of a wider
+  // column — sizing is the layout's business, not the panel's.
   side: {
-    width: RESULT_PANEL_WIDTH,
-    flexShrink: 0,
+    width: "100%",
     gap: theme.spacing.sm,
   },
   sheetRoot: { flex: 1, justifyContent: "flex-end" },

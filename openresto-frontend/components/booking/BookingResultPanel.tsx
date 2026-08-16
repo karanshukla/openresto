@@ -11,7 +11,7 @@ import { isPast } from "@/utils/bookingStatus";
 import BookingDetailRows from "@/components/booking/BookingDetailRows";
 import CalendarActions from "@/components/booking/CalendarActions";
 import DirectionsActions from "@/components/booking/DirectionsActions";
-import { styles } from "./BookingResultPanel.styles";
+import { mapFrameStyle, styles } from "./BookingResultPanel.styles";
 
 interface BookingResultPanelProps {
   booking: BookingDto;
@@ -27,12 +27,12 @@ interface BookingResultPanelProps {
 }
 
 /**
- * The found/cancelled/past booking card: header, reference + copy, detail rows, calendar
- * actions, a directions card with an embedded map, and the cancel action. Shared by every
- * door into the lookup screen — the plain form, a deep link, and /booking-confirmation —
- * which used to render this independently in two places. The header line is the only
- * thing that changes between them, so it's the one prop (`justBooked`) this component
- * takes on top of the booking itself.
+ * The found/cancelled/past booking: one card whose sections — header, reference + copy,
+ * detail rows, calendar actions, map + directions, and the cancel action — are separated
+ * by hairlines. Shared by every door into the lookup screen: the plain form, a deep link,
+ * and /booking-confirmation, which used to render this independently in two places. The
+ * header line is the only thing that changes between them, so it's the one prop
+ * (`justBooked`) this component takes on top of the booking itself.
  */
 export default function BookingResultPanel({
   booking,
@@ -100,53 +100,55 @@ export default function BookingResultPanel({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
+
   return (
-    <View style={styles.stack}>
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.headerRow}>
-            <Icon name={headerIcon} size="xl" color={headerColor} />
-            <ThemedText style={styles.title}>{headerTitle}</ThemedText>
-          </View>
-          <View style={styles.refRow}>
-            <View
-              style={[
-                styles.refBadge,
-                { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
-              ]}
-            >
-              <ThemedText style={[styles.refText, { color: primaryColor }]}>{ref}</ThemedText>
-            </View>
-            {Platform.OS === "web" && ref && (
-              <Button
-                variant="ghost"
-                size="sm"
-                tone="neutral"
-                icon={copied ? "checkmark" : "copy-outline"}
-                onPress={handleCopy}
-                accessibilityLabel={copied ? "Booking reference copied" : "Copy booking reference"}
-              >
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            )}
-          </View>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.headerRow}>
+          <Icon name={headerIcon} size="xl" color={headerColor} />
+          <ThemedText style={styles.title}>{headerTitle}</ThemedText>
         </View>
-
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-        <BookingDetailRows
-          booking={booking}
-          restaurant={restaurant}
-          mutedColor={colors.muted}
-          borderColor={colors.border}
-        />
+        <View style={styles.refRow}>
+          <View
+            style={[
+              styles.refBadge,
+              { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
+            ]}
+          >
+            <ThemedText style={[styles.refText, { color: primaryColor }]}>{ref}</ThemedText>
+          </View>
+          {Platform.OS === "web" && ref && (
+            <Button
+              variant="ghost"
+              size="sm"
+              tone="neutral"
+              icon={copied ? "checkmark" : "copy-outline"}
+              onPress={handleCopy}
+              accessibilityLabel={copied ? "Booking reference copied" : "Copy booking reference"}
+            >
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          )}
+        </View>
       </View>
+
+      {divider}
+
+      <BookingDetailRows
+        booking={booking}
+        restaurant={restaurant}
+        mutedColor={colors.muted}
+        borderColor={colors.border}
+        compact={compact}
+      />
 
       {/* Calendar links rely on window.open, so — like the rest of this app's calendar
           actions — they stay web-only; directions below use Linking.openURL, which works
           on native, so they render on every platform. */}
       {Platform.OS === "web" && ref && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <>
+          {divider}
           <CalendarActions
             bookingRef={ref}
             date={booking.date}
@@ -159,57 +161,55 @@ export default function BookingResultPanel({
             tableName={booking.tableName}
             variant={compact ? "compact" : "full"}
           />
-        </View>
+        </>
       )}
 
       {restaurant?.address && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.mapCard}>
-            {Platform.OS === "web" &&
-              mapCoords &&
-              React.createElement("iframe", {
+        <>
+          {divider}
+          {/* The address itself is already a detail row above, so the map carries only the
+              marker — no caption repeating what's two rows up. */}
+          {Platform.OS === "web" && mapCoords && (
+            <View style={styles.mapSection}>
+              {React.createElement("iframe", {
+                title: `Map of ${restaurant.name}`,
                 src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
-                style: styles.mapFrame,
+                style: mapFrameStyle,
                 loading: "lazy",
               })}
-            <View style={styles.mapAddressRow}>
-              <Icon name="location-outline" size={13} color={colors.muted} />
-              <ThemedText style={[styles.mapAddress, { color: colors.muted }]} numberOfLines={2}>
-                {restaurant.address}
-              </ThemedText>
             </View>
-          </View>
+          )}
           <DirectionsActions address={restaurant.address} compact={compact} />
-        </View>
+        </>
       )}
 
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cancelCard}>
-          {actionable ? (
-            <>
-              <Button
-                variant="secondary"
-                tone="danger"
-                size="md"
-                icon="trash-outline"
-                loading={cancelling}
-                onPress={onCancelPress}
-                accessibilityLabel="Cancel this booking"
-              >
-                Cancel This Booking
-              </Button>
-              <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-                This booking cannot be modified. However, feel free to cancel and rebook if need be.
-              </ThemedText>
-            </>
-          ) : (
+      {divider}
+
+      <View style={styles.cancelSection}>
+        {actionable ? (
+          <>
+            <Button
+              variant="secondary"
+              tone="danger"
+              size="md"
+              icon="trash-outline"
+              loading={cancelling}
+              onPress={onCancelPress}
+              accessibilityLabel="Cancel this booking"
+            >
+              Cancel This Booking
+            </Button>
             <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-              {booking.isCancelled
-                ? "This booking has been cancelled."
-                : "This booking has already passed and can no longer be cancelled."}
+              This booking cannot be modified. However, feel free to cancel and rebook if need be.
             </ThemedText>
-          )}
-        </View>
+          </>
+        ) : (
+          <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
+            {booking.isCancelled
+              ? "This booking has been cancelled."
+              : "This booking has already passed and can no longer be cancelled."}
+          </ThemedText>
+        )}
       </View>
     </View>
   );
