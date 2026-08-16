@@ -207,20 +207,48 @@ describe("LocationsScreen", () => {
     expect(screen.getByTestId("locations-filter-bar")).toBeTruthy();
   });
 
-  it("pins the filter bar over the cards rather than letting them paint across it", async () => {
+  it("leaves the resting filter bar part of the list rather than a toolbar", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     renderWithProviders(<LocationsScreen />);
     await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
     const style = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
     expect(style.zIndex).toBe(5);
-    // An opaque band, or the cards show through the bar's rounded corners on the way past.
-    expect(style.backgroundColor).toBeTruthy();
+    // The band is only a surface once pinned; at rest it must not paint over the page.
+    expect(style.backgroundColor).toBeUndefined();
+    expect(style.borderBottomColor).toBe("transparent");
     // The band — top gap, bottom gap and its edge — costs the resting list no height.
     expect(style.paddingTop + style.marginTop).toBe(0);
     expect(style.paddingBottom + style.marginBottom + style.borderBottomWidth).toBe(0);
-    // At rest the bar is part of the list, not a toolbar: no edge until it pins.
-    expect(style.borderBottomColor).toBe("transparent");
+
+    // And the bar keeps its own card treatment while it is one row of the list.
+    const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+    expect(bar.backgroundColor).toBeTruthy();
+    expect(bar.backgroundColor).not.toBe("transparent");
+    expect(bar.borderRadius).toBeGreaterThan(0);
+  });
+
+  it("hands the bar's surface to the band once it pins, so only one shape is drawn", async () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    fireEvent(screen.getByTestId("locations-filter-sticky"), "layout", {
+      nativeEvent: { layout: { y: 120 } },
+    });
+    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), {
+      nativeEvent: { contentOffset: { y: 400 } },
+    });
+
+    const band = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
+    expect(band.backgroundColor).toBeTruthy();
+    expect(band.borderBottomColor).not.toBe("transparent");
+
+    // The bar gives up its card treatment at the same moment, leaving the band as the only
+    // surface: a rounded card inside the square band is the two-shape bug this replaced.
+    const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+    expect(bar.backgroundColor).toBe("transparent");
+    expect(bar.borderRadius).toBe(0);
   });
 
   it("drives every card from the same party size, date and meal window", async () => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   ScrollView,
   View,
   useWindowDimensions,
@@ -189,6 +190,8 @@ export default function LocationsScreen({
 
   const summary = availabilitySummary(availability, restaurants.length);
   const sideDrawer = drawer && !isCompact;
+  // Whether the sticky filter band may run the full width of the viewport. See `filterBleed`.
+  const bleedBand = Platform.OS === "web" && !sideDrawer;
   // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
   // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
   // either side. Matching it is what puts the drawer's edge under the overflow menu.
@@ -232,23 +235,34 @@ export default function LocationsScreen({
                     }}
                     style={[
                       styles.filterSticky,
-                      {
-                        backgroundColor: colors.page,
-                        borderBottomColor: filterPinned ? colors.border : "transparent",
+                      bleedBand && styles.filterBleed,
+                      filterPinned && {
+                        backgroundColor: colors.card,
+                        borderBottomColor: colors.border,
                       },
                     ]}
                   >
-                    <LocationsFilterBar
-                      seats={seats}
-                      onSeatsChange={setSeats}
-                      date={date}
-                      onDateChange={setDateOverride}
-                      today={today}
-                      meal={meal}
-                      onMealChange={setMeal}
-                      summary={summary}
-                      compact={isCompact}
-                    />
+                    <View
+                      style={
+                        bleedBand && [
+                          styles.filterBandInner,
+                          isCompact && styles.filterBandInnerCompact,
+                        ]
+                      }
+                    >
+                      <LocationsFilterBar
+                        seats={seats}
+                        onSeatsChange={setSeats}
+                        date={date}
+                        onDateChange={setDateOverride}
+                        today={today}
+                        meal={meal}
+                        onMealChange={setMeal}
+                        summary={summary}
+                        compact={isCompact}
+                        flat={filterPinned}
+                      />
+                    </View>
                   </View>
 
                   <View style={styles.list}>
