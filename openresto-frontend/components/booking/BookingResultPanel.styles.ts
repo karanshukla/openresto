@@ -22,30 +22,20 @@ export const styles = StyleSheet.create({
     width: "100%",
     ...theme.shadows.md,
   },
-  // The outcome line is the one centred thing in the card — everything below it is a
-  // left-read list — because it's the answer the diner came for.
-  cardHeader: {
-    alignItems: "center",
-    gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.lg,
-  },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
-  title: { ...theme.typography.h3, flexShrink: 1 },
-  refRow: {
+  // The reference gets its own recessed strip with the copy affordance beside it, rather
+  // than a badge floating in the header — it's the one value here that exists to be read
+  // back to the restaurant, so it sits where a receipt would print it.
+  refStrip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.sm,
-    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
-  refBadge: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 7,
-    borderRadius: theme.borderRadius.md,
-  },
-  refText: { ...theme.typography.bodyBold, fontWeight: "700", letterSpacing: 0.3 },
+  refTextGroup: { flexShrink: 1, minWidth: 0, gap: 3 },
+  refLabel: { ...theme.typography.labelSmall, textTransform: "uppercase", letterSpacing: 0.6 },
+  refValue: { ...theme.typography.bodyBold, fontWeight: "700", letterSpacing: 0.3 },
   divider: { height: 1 },
   mapSection: { padding: theme.spacing.lg, paddingBottom: 0 },
   cancelSection: {

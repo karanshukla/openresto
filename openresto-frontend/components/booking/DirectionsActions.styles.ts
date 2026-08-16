@@ -9,6 +9,4 @@ export const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
-  row: { flexDirection: "row", gap: 8 },
-  btn: { flex: 1 },
 });

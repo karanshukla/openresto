@@ -116,11 +116,11 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
     // Booking reference echoes back somewhere on the page.
     await expect(page.getByText(bookingRef, { exact: true })).toBeVisible();
 
-    // Detail rows built by BookingDetailRows.tsx — assert a representative subset.
-    await expect(page.getByText("Email").first()).toBeVisible();
-    await expect(page.getByText(CONFIRM_EMAIL).first()).toBeVisible();
-    await expect(page.getByText("Name").first()).toBeVisible();
-    await expect(page.getByText("E2E Confirmation").first()).toBeVisible();
+    // The card's four zones, one assertion each: the facts band (BookingFactsBand.tsx) and
+    // the guest line (BookingGuestDetails.tsx), which together replaced the flat list of
+    // label/value rows this used to walk.
     await expect(page.getByText("Guests").first()).toBeVisible();
+    await expect(page.getByText("Booked under E2E Confirmation")).toBeVisible();
+    await expect(page.getByText(CONFIRM_EMAIL).first()).toBeVisible();
   });
 });
