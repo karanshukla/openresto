@@ -68,7 +68,7 @@ export function TableRow({
   const [draftName, setDraftName] = useState(table.name ?? "");
   const [draftSeats, setDraftSeats] = useState(table.seats);
   const [saving, setSaving] = useState(false);
-  // Two-step delete friction (#270) — mirrors DangerZone's deleteStep pattern. `Delete…` reveals
+  // Two-step delete friction (#270). `Delete…` reveals
   // an inline confirmation (not a center-screen modal) that names the consequence and requires a
   // second explicit tap to destroy. `impact` is the best-effort count of future bookings that would
   // lose their table reference; null = still loading or unavailable → generic copy fallback.

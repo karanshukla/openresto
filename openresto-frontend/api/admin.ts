@@ -356,15 +356,17 @@ export async function adminGetTables(restaurantId: number): Promise<SectionWithT
   }
 }
 
-export async function adminGetRestaurants(): Promise<
-  {
-    id: number;
-    name: string;
-    bookingsPausedUntil?: string;
-    activeBookingsCount?: number;
-    isArchived?: boolean;
-  }[]
-> {
+/** A location as the admin lists it — archived rows included, unlike `fetchRestaurants`. */
+export interface AdminRestaurantSummary {
+  id: number;
+  name: string;
+  bookingsPausedUntil?: string;
+  activeBookingsCount?: number;
+  upcomingBookingsCount?: number;
+  isArchived?: boolean;
+}
+
+export async function adminGetRestaurants(): Promise<AdminRestaurantSummary[]> {
   try {
     const res = await get("/admin/restaurants");
     if (!res.ok) return [];
@@ -372,6 +374,31 @@ export async function adminGetRestaurants(): Promise<
   } catch (err) {
     console.error("adminGetRestaurants error:", err);
     return [];
+  }
+}
+
+/** What deleting a location would destroy. Owner-only, like the delete itself. */
+export interface RestaurantDeletePreview {
+  id: number;
+  name: string;
+  isArchived: boolean;
+  sectionCount: number;
+  tableCount: number;
+  tableGroupCount: number;
+  bookingCount: number;
+  upcomingBookingCount: number;
+}
+
+export async function adminGetRestaurantDeletePreview(
+  id: number
+): Promise<RestaurantDeletePreview | null> {
+  try {
+    const res = await get(`/admin/restaurants/${id}/delete-preview`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("adminGetRestaurantDeletePreview error:", err);
+    return null;
   }
 }
 

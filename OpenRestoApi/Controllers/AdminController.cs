@@ -89,7 +89,17 @@ public class AdminController(AdminService adminService) : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("restaurants/{id}/delete-preview")]
+    [Authorize(Policy = AuthPolicies.RequireOwner)]
+    public async Task<IActionResult> GetRestaurantDeletePreview(int id)
+    {
+        RestaurantDeletePreviewDto? preview = await _adminService.GetRestaurantDeletePreviewAsync(id);
+        return preview == null ? NotFound() : Ok(preview);
+    }
+
+    // Owner-only: the one irreversible cascade in the admin, gated like user management.
     [HttpDelete("restaurants/{id}")]
+    [Authorize(Policy = AuthPolicies.RequireOwner)]
     public async Task<IActionResult> DeleteRestaurant(int id)
         => await _adminService.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 

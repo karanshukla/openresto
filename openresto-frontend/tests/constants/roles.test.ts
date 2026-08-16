@@ -14,6 +14,12 @@ describe("roles", () => {
       expect(roleCan(ROLES.manager, "manage:users")).toBe(false);
     });
 
+    it("lets only an Owner delete a location", () => {
+      expect(roleCan(ROLES.owner, "delete:location")).toBe(true);
+      expect(roleCan(ROLES.legacyAdmin, "delete:location")).toBe(true);
+      expect(roleCan(ROLES.manager, "delete:location")).toBe(false);
+    });
+
     it("treats the retired Admin claim as an Owner", () => {
       // A session started before multi-user existed belongs to what is now an Owner.
       expect(roleCan(ROLES.legacyAdmin, "manage:users")).toBe(true);

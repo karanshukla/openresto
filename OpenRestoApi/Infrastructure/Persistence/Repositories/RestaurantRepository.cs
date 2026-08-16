@@ -96,8 +96,29 @@ internal class RestaurantRepository(AppDbContext db) : IRestaurantRepository
                     b.RestaurantId == r.Id &&
                     !b.IsCancelled &&
                     b.Date <= nowUtc &&
-                    (b.EndTime.HasValue ? b.EndTime.Value > nowUtc : b.Date.AddMinutes(r.DefaultBookingDurationMinutes) > nowUtc))
+                    (b.EndTime.HasValue ? b.EndTime.Value > nowUtc : b.Date.AddMinutes(r.DefaultBookingDurationMinutes) > nowUtc)),
+                UpcomingBookingsCount = _db.Bookings.Count(b =>
+                    b.RestaurantId == r.Id && !b.IsCancelled && b.Date > nowUtc)
             })
             .ToListAsync();
+    }
+
+    public async Task<RestaurantDeletePreviewDto?> GetDeletePreviewAsync(int id, DateTime nowUtc)
+    {
+        return await _db.Restaurants
+            .Where(r => r.Id == id)
+            .Select(r => new RestaurantDeletePreviewDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                IsArchived = r.IsArchived,
+                SectionCount = _db.Sections.Count(s => s.RestaurantId == r.Id),
+                TableCount = _db.Tables.Count(t => t.Section!.RestaurantId == r.Id),
+                TableGroupCount = _db.TableGroups.Count(g => g.RestaurantId == r.Id),
+                BookingCount = _db.Bookings.Count(b => b.RestaurantId == r.Id),
+                UpcomingBookingCount = _db.Bookings.Count(b =>
+                    b.RestaurantId == r.Id && !b.IsCancelled && b.Date > nowUtc)
+            })
+            .FirstOrDefaultAsync();
     }
 }

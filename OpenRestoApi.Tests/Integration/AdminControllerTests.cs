@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -578,15 +579,70 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
-    public async Task DeleteRestaurant_Succeeds()
+    public async Task DeleteRestaurant_Succeeds_AfterArchiving()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();
-        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/restaurants", new { name = "To Delete", address = "Addr" });
-        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        int id = created.GetProperty("id").GetInt32();
+        int id = await CreateRestaurantAsync(client, "To Delete");
+        await client.PatchAsJsonAsync($"/api/admin/restaurants/{id}", new { isArchived = true });
 
         HttpResponseMessage response = await client.DeleteAsync($"/api/admin/restaurants/{id}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteRestaurant_ReturnsBadRequest_WhenNotArchived()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        int id = await CreateRestaurantAsync(client, "Still Live");
+
+        HttpResponseMessage response = await client.DeleteAsync($"/api/admin/restaurants/{id}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/admin/restaurants/{id}/delete-preview")).StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteRestaurant_ReturnsForbidden_ForAManager()
+    {
+        HttpClient owner = _factory.CreateAuthenticatedClient();
+        int id = await CreateRestaurantAsync(owner, "Manager Cannot Delete");
+        await owner.PatchAsJsonAsync($"/api/admin/restaurants/{id}", new { isArchived = true });
+
+        HttpClient manager = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(999, "manager@test.com", UserRoles.Manager));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await manager.DeleteAsync($"/api/admin/restaurants/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync($"/api/admin/restaurants/{id}/delete-preview")).StatusCode);
+    }
+
+    [Fact]
+    public async Task GetRestaurantDeletePreview_ReturnsCounts()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        int id = await CreateRestaurantAsync(client, "Preview Me");
+
+        HttpResponseMessage response = await client.GetAsync($"/api/admin/restaurants/{id}/delete-preview");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement preview = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Preview Me", preview.GetProperty("name").GetString());
+        Assert.False(preview.GetProperty("isArchived").GetBoolean());
+        Assert.Equal(0, preview.GetProperty("bookingCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetRestaurantDeletePreview_ReturnsNotFound_ForUnknownRestaurant()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage response = await client.GetAsync("/api/admin/restaurants/99999/delete-preview");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<int> CreateRestaurantAsync(HttpClient client, string name)
+    {
+        HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/restaurants", new { name, address = "Addr" });
+        JsonElement created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        return created.GetProperty("id").GetInt32();
     }
 
     [Fact]

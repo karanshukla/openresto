@@ -129,7 +129,7 @@ describe("TableRow", () => {
   //
   // `Delete…` reveals an inline confirmation that names the consequence (incl. the count of future
   // bookings that lose their table reference) and requires a second explicit tap to destroy. Cancel
-  // returns to the row. Mirrors DangerZone's deleteStep pattern.
+  // returns to the row.
 
   it("reveals an inline confirmation and fetches the impact count when Delete… is pressed", async () => {
     (restaurantsApi.fetchTableDeleteImpact as jest.Mock).mockResolvedValue({ bookings: 3 });
