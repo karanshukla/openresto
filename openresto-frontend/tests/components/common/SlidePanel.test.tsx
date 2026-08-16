@@ -1,0 +1,115 @@
+/**
+ * @jest-environment jsdom
+ */
+import React from "react";
+import { screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { Text } from "react-native";
+import SlidePanel from "@/components/common/SlidePanel";
+import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+
+jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
+
+// The sheet variant renders inside a Modal; render its children inline so tests can reach them.
+jest.mock("react-native", () => {
+  const rn = jest.requireActual("react-native");
+  rn.Modal = ({ children, visible }: any) => (visible ? children : null);
+  return rn;
+});
+
+jest.mock("@/utils/webAnimation", () => ({
+  ...jest.requireActual("@/utils/webAnimation"),
+  animateNode: jest.fn(() => null),
+}));
+const mockAnimateNode = jest.requireMock("@/utils/webAnimation").animateNode as jest.Mock;
+
+describe("SlidePanel", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("side variant", () => {
+    it("renders its children with no backdrop or grabber", () => {
+      renderWithProviders(
+        <SlidePanel variant="side" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      expect(screen.getByText("Panel content")).toBeTruthy();
+      expect(screen.queryByTestId("result-panel-backdrop")).toBeNull();
+      expect(screen.queryByTestId("result-panel-grabber")).toBeNull();
+    });
+
+    it("plays the entrance animation once on mount", () => {
+      renderWithProviders(
+        <SlidePanel variant="side" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      expect(mockAnimateNode).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("sheet variant", () => {
+    it("renders inside the sheet shell with a grabber and backdrop", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      expect(screen.getByTestId("result-panel")).toBeTruthy();
+      expect(screen.getByText("Panel content")).toBeTruthy();
+      expect(
+        screen.getByTestId("result-panel-grabber", { includeHiddenElements: true })
+      ).toBeTruthy();
+    });
+
+    it("does not replay the side entrance animation", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      expect(mockAnimateNode).not.toHaveBeenCalled();
+    });
+
+    it("dismisses when the backdrop is tapped, after the sheet has slid away", async () => {
+      const onDismiss = jest.fn();
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={onDismiss} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      fireEvent.press(screen.getByTestId("result-panel-backdrop", { includeHiddenElements: true }));
+      await waitFor(() => expect(onDismiss).toHaveBeenCalled());
+    });
+
+    it("wires the grabber to a pan responder, hidden from assistive tech", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      const grabber = screen.getByTestId("result-panel-grabber", { includeHiddenElements: true });
+      expect(grabber.props.onStartShouldSetResponder).toBeDefined();
+      expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
+      expect(grabber.props.accessibilityElementsHidden).toBe(true);
+    });
+
+    it("uses a custom testID prefix when given one", () => {
+      renderWithProviders(
+        <SlidePanel
+          variant="sheet"
+          onDismiss={jest.fn()}
+          accessibilityLabel="Booking result"
+          testID="custom-panel"
+        >
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      expect(screen.getByTestId("custom-panel")).toBeTruthy();
+      expect(
+        screen.getByTestId("custom-panel-backdrop", { includeHiddenElements: true })
+      ).toBeTruthy();
+    });
+  });
+});

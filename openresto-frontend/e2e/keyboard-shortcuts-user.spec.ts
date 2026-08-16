@@ -143,6 +143,6 @@ test.describe("End-user keyboard shortcuts", () => {
     // than confirming the cancellation (this is the spec's own example of
     // "Esc closes cancel-confirmation dialog" for the end-user UI).
     await expect(page.getByText("Cancel This Booking", { exact: true })).toBeVisible();
-    await expect(page.getByText("Already Cancelled")).not.toBeVisible();
+    await expect(page.getByText("Booking Cancelled")).not.toBeVisible();
   });
 });

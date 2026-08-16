@@ -135,8 +135,10 @@ test.describe("Cancel a past booking (#159)", () => {
     await page.goto("/lookup");
     await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
 
-    const foundHeading = page.getByText("Booking Found");
-    const passedLabel = page.getByText("Booking Has Passed");
+    // A past (non-cancelled) booking's result panel titles itself "Booking Has Passed"
+    // instead of "Booking Found" — the two are mutually exclusive, not a heading plus a
+    // separate status label (BookingResultPanel.tsx).
+    const passedHeading = page.getByText("Booking Has Passed");
 
     await expect(async () => {
       // Each pass: clear any prior error state by reloading, then re-search.
@@ -144,15 +146,14 @@ test.describe("Cancel a past booking (#159)", () => {
       await page.getByPlaceholder("e.g. crispy-basil-thyme").fill(bookingRef);
       await page.getByPlaceholder("The email used when booking").fill(PAST_BOOKING_EMAIL);
       await page.getByText("Look Up", { exact: true }).click();
-      // Require BOTH the success heading and the past-booking label so a
-      // transient/empty render can't satisfy the assertion mid-hydration.
-      await expect(foundHeading).toBeVisible({ timeout: 5_000 });
-      await expect(passedLabel).toBeVisible({ timeout: 5_000 });
+      await expect(passedHeading).toBeVisible({ timeout: 5_000 });
     }).toPass({ timeout: 90_000, intervals: [5_000, 10_000, 10_000] });
 
-    // Functional check, not just copy: pressing it must not open the
-    // "Cancel Reservation" confirmation dialog (disabled={... isPast(...)} in lookup.tsx).
-    await passedLabel.click({ force: true });
-    await expect(page.getByText("Are you sure you want to cancel this booking?")).toHaveCount(0);
+    // Functional check, not just copy: a past booking drops the cancel action entirely
+    // rather than rendering it disabled (BookingResultPanel.tsx).
+    await expect(page.getByText("Cancel This Booking")).toHaveCount(0);
+    await expect(
+      page.getByText("This booking has already passed and can no longer be cancelled.")
+    ).toBeVisible();
   });
 });

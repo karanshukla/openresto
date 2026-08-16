@@ -118,14 +118,19 @@ describe("getBookingByRef", () => {
     expect(url).toContain("email=u%40x.com");
   });
 
-  it("returns null on failure", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
+  it("returns null on a 404 (no such booking, or a ref/email mismatch)", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
     expect(await getBookingByRef("no-exist", "a@b.com")).toBeNull();
   });
 
-  it("returns null on network error", async () => {
+  it("throws on a non-404 failure instead of also returning null", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+    await expect(getBookingByRef("ref", "a@b.com")).rejects.toThrow("Failed to fetch booking");
+  });
+
+  it("throws on network error rather than swallowing it into a false not-found", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await getBookingByRef("ref", "a@b.com")).toBeNull();
+    await expect(getBookingByRef("ref", "a@b.com")).rejects.toThrow("offline");
   });
 });
 

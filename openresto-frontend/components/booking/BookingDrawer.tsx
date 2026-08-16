@@ -22,28 +22,19 @@ import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
 import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
+import {
+  SHEET_EXIT_DISTANCE,
+  SIDE_ENTER_DISTANCE,
+  SIDE_ENTER_MS,
+  SIDE_EXIT_MS,
+  shouldDismissSheet,
+} from "@/utils/panelMotion";
 import { styles } from "./BookingDrawer.styles";
 import { Icon } from "@/components/common/Icon";
 
-/** How far the sheet animates before it is considered gone. */
-const SHEET_EXIT_DISTANCE = 800;
-/** How far the side panel travels as it fades in and out. */
-const SIDE_ENTER_DISTANCE = 28;
-/**
- * Short on purpose. The list column beside the panel does not animate — the panel takes
- * its 460px of layout the instant it mounts — so a long entrance leaves the diner looking
- * at the gap where the panel is about to be.
- */
-const SIDE_ENTER_MS = 150;
-const SIDE_EXIT_MS = 120;
-
-/**
- * Whether a drag on the sheet's handle should dismiss it: either dragged far enough to
- * read as deliberate, or flicked down hard enough that a short drag still means "go away".
- */
-export function shouldDismissSheet(dy: number, vy: number): boolean {
-  return dy > 120 || (dy > 40 && vy > 0.7);
-}
+// Re-exported so existing imports of these from BookingDrawer (this module used to define
+// them) keep working; utils/panelMotion is the source of truth, shared with SlidePanel.
+export { shouldDismissSheet };
 
 function summaryLine(seats: number, date: string, time: string, today: string): string {
   const when = date === today ? "Today" : fmtDateString(date);
