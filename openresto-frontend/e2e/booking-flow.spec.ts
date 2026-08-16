@@ -76,7 +76,9 @@ test.describe("Customer booking end to end", { tag: "@smoke" }, () => {
 
     const bookingRef = page.url().split("/booking-confirmation/")[1].split("?")[0];
     expect(bookingRef.length).toBeGreaterThan(0);
-    await expect(page.getByText(bookingRef)).toBeVisible();
+    // Scoped to the result panel: the freshly-confirmed booking is cached, so its ref also
+    // shows up in the recent-bookings sidebar next to it, and a bare getByText matches both.
+    await expect(page.getByTestId("result-panel").getByText(bookingRef)).toBeVisible();
   });
 
   test("My Bookings link in navbar navigates to the lookup page", async ({ page }) => {
