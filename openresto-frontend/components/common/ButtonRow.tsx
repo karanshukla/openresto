@@ -1,14 +1,15 @@
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { styles } from "./ButtonRow.styles";
 
-export type ButtonRowAlign = "end" | "start" | "between";
+export type ButtonRowAlign = "end" | "start" | "center" | "between";
 
 export interface ButtonRowProps {
   children: React.ReactNode;
   /**
    * `end` (default) is the action cluster that closes a form or a confirmation — the primary
    * button sits last, nearest the edge the eye finishes on. `start` is for a standing CTA that
-   * opens something ("Add user"). `between` pairs a status line with its action.
+   * opens something ("Add user"). `center` sits a cluster under centred prose it belongs to.
+   * `between` pairs a status line with its action.
    */
   align?: ButtonRowAlign;
   style?: StyleProp<ViewStyle>;
@@ -30,6 +31,7 @@ export function ButtonRow({ children, align = "end", style, testID }: ButtonRowP
       style={[
         styles.row,
         align === "start" && styles.start,
+        align === "center" && styles.center,
         align === "between" && styles.between,
         style,
       ]}

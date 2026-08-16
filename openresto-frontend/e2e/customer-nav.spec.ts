@@ -44,14 +44,14 @@ test.describe("Customer navigation", () => {
     await page.getByRole("link", { name: "My Bookings" }).click();
 
     await page.waitForURL(/.*\/lookup$/, { timeout: 10_000 });
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
   });
 
   test("brand wordmark on a non-home route links back home", async ({ page }) => {
     // /lookup is a non-home route: Navbar renders the wordmark as a <Link href="/">
     // (showBack is true; onScrollToTop is only passed on the home route).
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
 
     // The brand wordmark in the navbar — click it to go home.
     await page.getByRole("link", { name: "Open Resto" }).first().click();

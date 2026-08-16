@@ -1,6 +1,7 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
-import { Icon, type IconName } from "@/components/common/Icon";
+import Button from "@/components/common/Button";
+import ButtonRow from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { buildCalendarUrls } from "@/utils/calendar";
 import { styles } from "./CalendarActions.styles";
@@ -15,150 +16,55 @@ interface CalendarActionsProps {
   restaurantAddress: string;
   sectionName?: string;
   tableName?: string;
-  variant?: "compact" | "full";
 }
 
+/**
+ * Add-to-calendar pills, one row, at every width. These were three full-width rows carrying
+ * their own tinted backgrounds — hand-rolled Pressables the size of a form's submit for what
+ * is a side errand, and three of them stacked read as the most important thing on the card.
+ * As `Button`s in a `ButtonRow` they take their natural width, wrap when the column is too
+ * narrow, and inherit the same treatment as the directions pills directly below them.
+ */
 export default function CalendarActions(props: CalendarActionsProps) {
-  const { isDark, colors, primaryColor } = useAppTheme();
+  const { colors } = useAppTheme();
   const { googleUrl, outlookUrl, downloadIcs } = buildCalendarUrls(props);
 
-  if (props.variant === "compact") {
-    return (
-      <View
-        style={[
-          styles.compactWrap,
-          { backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)" },
-        ]}
-      >
-        <ThemedText style={[styles.sectionTitle, { color: colors.muted }]}>
-          ADD TO CALENDAR
-        </ThemedText>
-        <View style={styles.compactRow}>
-          <CalBtn
-            label="Google"
-            icon="logo-google"
-            color={primaryColor}
-            isDark={isDark}
-            onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
-          />
-          <CalBtn
-            label="Outlook"
-            icon="calendar-outline"
-            color={primaryColor}
-            isDark={isDark}
-            onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
-          />
-          <CalBtn
-            label=".ics"
-            icon="download-outline"
-            color={colors.muted}
-            isDark={isDark}
-            onPress={downloadIcs}
-          />
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.fullWrap}>
-      <ThemedText style={[styles.sectionTitle, { color: colors.muted }]}>
-        ADD TO CALENDAR
-      </ThemedText>
-      <FullCalBtn
-        label="Google Calendar"
-        sub=""
-        icon="logo-google"
-        color={primaryColor}
-        isDark={isDark}
-        onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
-        trailingIcon="open-outline"
-        mutedColor={colors.muted}
-      />
-      <FullCalBtn
-        label="Outlook Calendar"
-        sub=""
-        icon="calendar-outline"
-        color={primaryColor}
-        isDark={isDark}
-        onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
-        trailingIcon="open-outline"
-        mutedColor={colors.muted}
-      />
-      <FullCalBtn
-        label="Download .ics"
-        sub="Apple Calendar, Thunderbird, etc."
-        icon="download-outline"
-        isDark={isDark}
-        onPress={downloadIcs}
-        trailingIcon="chevron-forward"
-        mutedColor={colors.muted}
-      />
+    <View style={styles.wrap}>
+      <ThemedText style={[styles.title, { color: colors.muted }]}>ADD TO CALENDAR</ThemedText>
+      <ButtonRow align="start">
+        <Button
+          testID="calendar-google-btn"
+          variant="secondary"
+          tone="neutral"
+          size="sm"
+          icon="logo-google"
+          onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
+        >
+          Google
+        </Button>
+        <Button
+          testID="calendar-outlook-btn"
+          variant="secondary"
+          tone="neutral"
+          size="sm"
+          icon="calendar-outline"
+          onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
+        >
+          Outlook
+        </Button>
+        <Button
+          testID="calendar-ics-btn"
+          variant="secondary"
+          tone="neutral"
+          size="sm"
+          icon="download-outline"
+          onPress={downloadIcs}
+          accessibilityLabel="Download .ics for Apple Calendar, Thunderbird and others"
+        >
+          Download .ics
+        </Button>
+      </ButtonRow>
     </View>
-  );
-}
-
-function CalBtn({
-  label,
-  icon,
-  color,
-  isDark,
-  onPress,
-}: {
-  label: string;
-  icon: IconName;
-  color: string;
-  isDark: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      style={[styles.compactBtn, { backgroundColor: isDark ? `${color}19` : `${color}0F` }]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Icon name={icon} size="md" color={color} />
-      <ThemedText style={[styles.compactBtnText, { color }]}>{label}</ThemedText>
-    </Pressable>
-  );
-}
-
-function FullCalBtn({
-  label,
-  sub,
-  icon,
-  color,
-  isDark,
-  onPress,
-  trailingIcon,
-  mutedColor,
-}: {
-  label: string;
-  sub: string;
-  icon: IconName;
-  color?: string;
-  isDark: boolean;
-  onPress: () => void;
-  trailingIcon: IconName;
-  mutedColor: string;
-}) {
-  const textColor = color || mutedColor;
-  return (
-    <Pressable
-      style={[styles.fullBtn, { backgroundColor: isDark ? `${textColor}1F` : `${textColor}0F` }]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={sub ? `${label}. ${sub}` : label}
-    >
-      <Icon name={icon} size="lg" color={textColor} />
-      <View style={styles.fullBtnContent}>
-        <ThemedText style={[styles.fullBtnText, color ? { color } : undefined]}>{label}</ThemedText>
-        {sub ? (
-          <ThemedText style={[styles.fullBtnSub, { color: mutedColor }]}>{sub}</ThemedText>
-        ) : null}
-      </View>
-      <Icon name={trailingIcon} size="sm" color={mutedColor} />
-    </Pressable>
   );
 }

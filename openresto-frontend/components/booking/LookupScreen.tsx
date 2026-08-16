@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
+import ButtonRow from "@/components/common/ButtonRow";
 import { Icon } from "@/components/common/Icon";
 import PageContainer from "@/components/layout/PageContainer";
 import Footer from "@/components/layout/Footer";
@@ -20,6 +21,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
+import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
+import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
 import { styles } from "@/styles/user/lookup.styles";
 
@@ -50,6 +53,7 @@ export default function LookupScreen({
   const scrollRef = useRef<ScrollView>(null);
   const refInputRef = useRef<TextInput>(null);
   const didDeepLink = useRef(false);
+  const hasTyped = useRef(false);
 
   const {
     booking,
@@ -66,11 +70,17 @@ export default function LookupScreen({
   } = useBookingLookup();
 
   const { width } = useWindowDimensions();
-  const { colors, primaryColor } = useAppTheme();
+  const { colors } = useAppTheme();
+  const brand = useBrand();
+  const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
   const showPanel = status !== "idle";
   const twoColumn = !isCompact && showPanel;
+
+  // Read once, at mount, because the auto-open below fires once: a diner who rotates their
+  // phone mid-session shouldn't have a booking opened at them for it.
+  const wideOnArrival = useRef(!isCompact);
 
   useEffect(() => {
     registerFocusTarget("user-lookup", refInputRef);
@@ -78,8 +88,23 @@ export default function LookupScreen({
   }, []);
 
   useEffect(() => {
-    fetchCachedBookings().then(setCached);
-  }, []);
+    fetchCachedBookings().then((list) => {
+      setCached(list);
+      // A returning diner almost always wants the booking they just made, so the page
+      // opens on it rather than on an empty panel beside a form they'd have to fill from
+      // a reference they don't have to hand. Three things it must not trample. A ref in
+      // the URL: /booking-confirmation and a shared /lookup link name their own booking,
+      // and the effect below is already fetching it. Anything already typed: the cookie
+      // read is async, so someone who beats it to the keyboard would lose what they
+      // entered. And a compact width, where the result is a sheet over the whole viewport
+      // rather than a column beside the form — opening one on arrival would bury the
+      // search this page exists for behind something to dismiss.
+      if (initialRef || !wideOnArrival.current || hasTyped.current || list.length === 0) return;
+      setRefInput(list[0].bookingRef);
+      setEmailInput(list[0].email);
+      lookup(list[0].bookingRef, list[0].email);
+    });
+  }, [initialRef, lookup]);
 
   useEffect(() => {
     if (didDeepLink.current || !initialRef) return;
@@ -111,6 +136,11 @@ export default function LookupScreen({
     const email = emailInput.trim();
     if (!ref || !email) return;
     lookup(ref, email);
+  };
+
+  const handleTypedChange = (setter: (value: string) => void) => (value: string) => {
+    hasTyped.current = true;
+    setter(value);
   };
 
   const handleRecentSelect = (c: CachedBooking) => {
@@ -179,17 +209,16 @@ export default function LookupScreen({
         onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
       >
-        <PageContainer>
+        <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
           <View style={styles.header}>
-            <Icon name="search-outline" size={32} color={primaryColor} />
-            <ThemedText style={styles.title}>Find My Booking</ThemedText>
+            <ThemedText style={styles.title}>Find my booking</ThemedText>
             <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
               Enter your booking reference and email to look up your reservation.
             </ThemedText>
           </View>
 
           <View style={twoColumn ? styles.wideRow : styles.singleCol}>
-            <View style={twoColumn ? styles.wideCol : undefined}>
+            <View style={twoColumn ? styles.formCol : undefined}>
               <View
                 style={[
                   styles.searchCard,
@@ -202,7 +231,7 @@ export default function LookupScreen({
                   placeholder="e.g. crispy-basil-thyme"
                   accessibilityLabel="Booking reference"
                   value={refInput}
-                  onChangeText={setRefInput}
+                  onChangeText={handleTypedChange(setRefInput)}
                   autoCapitalize="none"
                 />
                 <ThemedText style={styles.label}>Email Address</ThemedText>
@@ -210,7 +239,7 @@ export default function LookupScreen({
                   placeholder="The email used when booking"
                   accessibilityLabel="Email address"
                   value={emailInput}
-                  onChangeText={setEmailInput}
+                  onChangeText={handleTypedChange(setEmailInput)}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   returnKeyType="go"
@@ -230,22 +259,54 @@ export default function LookupScreen({
                 <ThemedText style={[styles.helpText, { color: colors.muted }]}>
                   Can&apos;t find your booking? Contact the restaurant directly.
                 </ThemedText>
+                {/* Telling someone to get in touch without saying how is half an
+                    instruction. Falls back to the brand's details until a lookup names a
+                    location, which is the same per-field resolution the rest of the app
+                    uses, so a location listing only a phone still shows the global email. */}
+                {hasContact(contact) && (
+                  <ButtonRow align="center" style={styles.contactRow}>
+                    {contact.phone && (
+                      <Button
+                        variant="ghost"
+                        tone="brand"
+                        size="sm"
+                        icon="call-outline"
+                        onPress={() => Linking.openURL(telHref(contact.phone!))}
+                        accessibilityLabel={`Call ${contact.phone}`}
+                      >
+                        {contact.phone}
+                      </Button>
+                    )}
+                    {contact.email && (
+                      <Button
+                        variant="ghost"
+                        tone="brand"
+                        size="sm"
+                        icon="mail-outline"
+                        onPress={() => Linking.openURL(mailtoHref(contact.email!))}
+                        accessibilityLabel={`Email ${contact.email}`}
+                      >
+                        {contact.email}
+                      </Button>
+                    )}
+                  </ButtonRow>
+                )}
               </View>
 
-              {/* Idle only: once a result is showing, the just-looked-up booking would
-                  otherwise also be sitting right here in its own recent-bookings row. */}
-              {!showPanel && (
-                <RecentBookingsList
-                  cached={cached}
-                  colors={colors}
-                  style={{ marginTop: 20 }}
-                  onSelect={handleRecentSelect}
-                />
-              )}
+              {/* Stays put while a result is showing — the panel is a column over, not on
+                  top of this list, so the diner can switch between their bookings without
+                  dismissing anything. The one on screen is marked rather than removed, so
+                  the list doesn't reshuffle under the press that opened it. */}
+              <RecentBookingsList
+                cached={cached}
+                colors={colors}
+                activeRef={status === "found" ? (booking?.bookingRef ?? null) : null}
+                onSelect={handleRecentSelect}
+              />
             </View>
 
             {twoColumn && (
-              <View style={styles.wideCol}>
+              <View style={styles.resultCol}>
                 <SlidePanel variant="side" onDismiss={reset} accessibilityLabel="Booking result">
                   {panelContent}
                 </SlidePanel>

@@ -1,5 +1,7 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./WalkInPolicySection.styles";
@@ -18,7 +20,6 @@ export interface WalkInPolicySectionProps {
   primaryColor: string;
   cardBg: string;
   textColor: string;
-  surface2: string;
   isDark: boolean;
 }
 
@@ -38,97 +39,114 @@ export function WalkInPolicySection({
   primaryColor,
   cardBg,
   textColor,
-  surface2,
   isDark,
 }: WalkInPolicySectionProps) {
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
+  const [expanded, setExpanded] = usePersistedState("locations:walkIn:expanded", true);
+  const subtitle = walkInOnly
+    ? "Walk-ins only, online booking is off"
+    : walkInDays.length > 0
+      ? `Walk-ins only on ${walkInDays.length} ${walkInDays.length === 1 ? "day" : "days"}`
+      : "Online bookings on every open day";
 
   return (
-    <View style={[settingsStyles.policyCard, { borderColor, backgroundColor: surface2 }]}>
-      <View style={settingsStyles.policyHeader}>
-        <View style={settingsStyles.policyHeaderCopy}>
-          <ThemedText style={settingsStyles.policyTitle}>Reservations</ThemedText>
-          <ThemedText style={[settingsStyles.policySub, { color: mutedColor }]}>
-            {walkInOnly
-              ? "Walk-ins only, online booking is off"
-              : walkInDays.length > 0
-                ? `Walk-ins only on ${walkInDays.length} ${walkInDays.length === 1 ? "day" : "days"}`
-                : "Online bookings on every open day"}
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
+      <Pressable
+        style={settingsStyles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Walk-in Policy"
+        accessibilityState={{ expanded }}
+      >
+        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}18` }]}>
+          <Icon name="walk-outline" size="xl" color={primaryColor} />
+        </View>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Walk-in Policy</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
+            {subtitle}
           </ThemedText>
         </View>
-        <View
-          style={[
-            settingsStyles.policyModeGroup,
-            { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
-          ]}
-        >
-          {modeButton(
-            "Online bookings",
-            !walkInOnly,
-            () => onSetWalkInOnly(false),
-            "walkin-mode-bookings",
-            modeTheme
-          )}
-          {modeButton(
-            "Walk-ins only",
-            walkInOnly,
-            () => onSetWalkInOnly(true),
-            "walkin-mode-walkin",
-            modeTheme
-          )}
-        </View>
-      </View>
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
+      </Pressable>
 
-      {walkInOnly ? (
-        <View style={settingsStyles.policyNote}>
-          <Icon name="walk-outline" size="xs" color={mutedColor} />
-          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-            The location stays listed publicly, but guests can't book online. They'll see a walk-in
-            notice instead. Toggle back anytime; nothing is deleted or archived.
-          </ThemedText>
-        </View>
-      ) : (
-        <View style={settingsStyles.policyField}>
-          <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-            Walk-in only days
-          </ThemedText>
-          <View style={settingsStyles.dayGrid}>
-            {DAY_SHORT.map((label, i) => {
-              const day = i + 1;
-              const active = walkInDays.includes(day);
-              const closed = !openDays.includes(day);
-              return (
-                <Pressable
-                  key={day}
-                  onPress={() => onToggleWalkInDay(day)}
-                  testID={`walkin-day-${day}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "walk-ins only" : "online bookings"}. Tap to toggle.`}
-                  style={[
-                    settingsStyles.dayBtn,
-                    {
-                      backgroundColor: active ? primaryColor : cardBg,
-                      borderColor: active ? primaryColor : borderColor,
-                    },
-                    closed && styles.dayBtnClosed,
-                  ]}
-                >
-                  <ThemedText
-                    style={[settingsStyles.dayBtnLabel, { color: active ? "#fff" : textColor }]}
-                  >
-                    {label}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
+      <AnimatedAccordion expanded={expanded}>
+        <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+          <View
+            style={[
+              settingsStyles.policyModeGroup,
+              styles.modeGroupStandalone,
+              { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
+            ]}
+          >
+            {modeButton(
+              "Online bookings",
+              !walkInOnly,
+              () => onSetWalkInOnly(false),
+              "walkin-mode-bookings",
+              modeTheme
+            )}
+            {modeButton(
+              "Walk-ins only",
+              walkInOnly,
+              () => onSetWalkInOnly(true),
+              "walkin-mode-walkin",
+              modeTheme
+            )}
           </View>
-          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-            Highlighted days stay open but only take walk-ins. The booking form is disabled for
-            those dates. Dimmed days are currently marked closed.
-          </ThemedText>
+
+          {walkInOnly ? (
+            <View style={settingsStyles.policyNote}>
+              <Icon name="walk-outline" size="xs" color={mutedColor} />
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                The location stays listed publicly, but guests can't book online. They'll see a
+                walk-in notice instead. Toggle back anytime; nothing is deleted or archived.
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={settingsStyles.policyField}>
+              <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                Walk-in only days
+              </ThemedText>
+              <View style={settingsStyles.dayGrid}>
+                {DAY_SHORT.map((label, i) => {
+                  const day = i + 1;
+                  const active = walkInDays.includes(day);
+                  const closed = !openDays.includes(day);
+                  return (
+                    <Pressable
+                      key={day}
+                      onPress={() => onToggleWalkInDay(day)}
+                      testID={`walkin-day-${day}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "walk-ins only" : "online bookings"}. Tap to toggle.`}
+                      style={[
+                        settingsStyles.dayBtn,
+                        {
+                          backgroundColor: active ? primaryColor : cardBg,
+                          borderColor: active ? primaryColor : borderColor,
+                        },
+                        closed && styles.dayBtnClosed,
+                      ]}
+                    >
+                      <ThemedText
+                        style={[settingsStyles.dayBtnLabel, { color: active ? "#fff" : textColor }]}
+                      >
+                        {label}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                Highlighted days stay open but only take walk-ins. The booking form is disabled for
+                those dates. Dimmed days are currently marked closed.
+              </ThemedText>
+            </View>
+          )}
         </View>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

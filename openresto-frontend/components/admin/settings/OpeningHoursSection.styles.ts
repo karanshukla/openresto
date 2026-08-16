@@ -2,6 +2,7 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
+  modeGroupStandalone: { alignSelf: "flex-start" },
   uniformTimes: { flexDirection: "row", gap: 14 },
   uniformTimeField: { flex: 1, gap: theme.spacing.xxs },
   perDayList: { gap: theme.spacing.sm },

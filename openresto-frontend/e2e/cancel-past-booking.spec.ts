@@ -133,7 +133,7 @@ test.describe("Cancel a past booking (#159)", () => {
     // saturated here. Cool down for a full 60s window reset before the first
     // attempt, then retry the lookup with reloads until it genuinely succeeds.
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 10_000 });
 
     // A past (non-cancelled) booking's result panel titles itself "Booking Has Passed"
     // instead of "Booking Found" — the two are mutually exclusive, not a heading plus a

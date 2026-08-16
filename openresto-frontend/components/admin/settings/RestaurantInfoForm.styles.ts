@@ -2,18 +2,6 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 14,
-    marginBottom: 18,
-  },
-  headerCopy: { flex: 1 },
-  headerTitle: { fontSize: 16, fontWeight: "600", letterSpacing: -0.2, marginBottom: 4 },
-  headerSub: { fontSize: 13 },
-
-  body: { gap: 14 },
   field: { gap: theme.spacing.xxs },
   fieldHint: { fontSize: 11 },
   descriptionInput: { height: 96, paddingTop: theme.spacing.xsm, paddingBottom: theme.spacing.xsm },
@@ -39,14 +27,11 @@ export const styles = StyleSheet.create({
 
   fieldGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
   gridField: { flex: 1, minWidth: 220, gap: theme.spacing.xxs },
-  contactError: { fontSize: 12, color: theme.colors.error },
   // Pulled back up under the two-column contact row, which already carries its own gap.
   contactHint: { fontSize: 11, marginTop: -8 },
 
-  divider: { marginTop: theme.spacing.xl, borderTopWidth: 1, borderStyle: "dashed" },
-
   footer: {
-    paddingTop: 14,
+    padding: theme.spacing.lg,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

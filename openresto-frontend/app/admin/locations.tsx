@@ -357,7 +357,7 @@ export default function AdminLocationsScreen() {
           />
         </View>
       ) : selectedRestaurant ? (
-        <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+        <View style={styles.section}>
           <LocationCard
             key={selectedRestaurant.id}
             restaurant={selectedRestaurant}
@@ -365,14 +365,17 @@ export default function AdminLocationsScreen() {
             isDark={isDark}
             borderColor={borderColor}
             mutedColor={mutedColor}
+            cardBg={cardBg}
           />
-          <ArchiveLocationRow
-            name={selectedRestaurant.name}
-            upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
-            archiving={archiving}
-            failed={archiveFailed}
-            onArchive={() => handleSetArchived(selectedRestaurant.id, true)}
-          />
+          <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+            <ArchiveLocationRow
+              name={selectedRestaurant.name}
+              upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
+              archiving={archiving}
+              failed={archiveFailed}
+              onArchive={() => handleSetArchived(selectedRestaurant.id, true)}
+            />
+          </View>
         </View>
       ) : null}
     </ScrollView>

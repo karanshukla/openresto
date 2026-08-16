@@ -10,39 +10,38 @@ import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 
 describe("DirectionsActions", () => {
-  it("renders an icon strip labelled MAPS when compact", () => {
-    renderWithProviders(<DirectionsActions address="123 Main St" compact />);
-    expect(screen.getByText("MAPS")).toBeTruthy();
-    expect(screen.getByLabelText("Open in Google Maps")).toBeTruthy();
-    expect(screen.getByLabelText("Open in Apple Maps")).toBeTruthy();
-  });
-
-  it("renders labelled Google/Apple buttons under GET DIRECTIONS when wide", () => {
-    renderWithProviders(<DirectionsActions address="123 Main St" compact={false} />);
+  it("renders named Google/Apple buttons under GET DIRECTIONS", () => {
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
     expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
     expect(screen.getByText("Google")).toBeTruthy();
     expect(screen.getByText("Apple")).toBeTruthy();
   });
 
-  it("opens Google Maps with the encoded address, compact", () => {
+  it("names both buttons for screen readers", () => {
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
+    expect(screen.getByLabelText("Google")).toBeTruthy();
+    expect(screen.getByLabelText("Apple")).toBeTruthy();
+  });
+
+  it("opens Google Maps with the encoded address", () => {
     const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    renderWithProviders(<DirectionsActions address="123 Main St" compact />);
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
     fireEvent.press(screen.getByTestId("maps-google-btn"));
     expect(openURLSpy).toHaveBeenCalledWith("https://maps.google.com/?q=123%20Main%20St");
     openURLSpy.mockRestore();
   });
 
-  it("opens Apple Maps with the encoded address, compact", () => {
+  it("opens Apple Maps with the encoded address", () => {
     const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    renderWithProviders(<DirectionsActions address="123 Main St" compact />);
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
     fireEvent.press(screen.getByTestId("maps-apple-btn"));
     expect(openURLSpy).toHaveBeenCalledWith("https://maps.apple.com/?q=123%20Main%20St");
     openURLSpy.mockRestore();
   });
 
-  it("opens Google/Apple Maps from the wide labelled buttons", () => {
+  it("opens both services from their labels", () => {
     const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    renderWithProviders(<DirectionsActions address="456 Ocean Ave" compact={false} />);
+    renderWithProviders(<DirectionsActions address="456 Ocean Ave" />);
     fireEvent.press(screen.getByText("Google"));
     expect(openURLSpy).toHaveBeenCalledWith("https://maps.google.com/?q=456%20Ocean%20Ave");
     fireEvent.press(screen.getByText("Apple"));
@@ -55,7 +54,7 @@ describe("DirectionsActions", () => {
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
     const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 
-    renderWithProviders(<DirectionsActions address="123 Main St" compact />);
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
     fireEvent.press(screen.getByTestId("maps-google-btn"));
     expect(openURLSpy).toHaveBeenCalled();
 

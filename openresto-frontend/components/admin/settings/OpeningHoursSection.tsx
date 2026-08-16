@@ -1,6 +1,8 @@
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import TimePicker from "@/components/common/TimePicker";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
 import { styles } from "./OpeningHoursSection.styles";
@@ -29,7 +31,6 @@ export interface OpeningHoursSectionProps {
   primaryColor: string;
   cardBg: string;
   textColor: string;
-  surface2: string;
   isDark: boolean;
 }
 
@@ -56,195 +57,216 @@ export function OpeningHoursSection({
   primaryColor,
   cardBg,
   textColor,
-  surface2,
   isDark,
 }: OpeningHoursSectionProps) {
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
+  const [expanded, setExpanded] = usePersistedState("locations:hours:expanded", true);
 
   return (
-    <View style={[settingsStyles.policyCard, { borderColor, backgroundColor: surface2 }]}>
-      <View style={settingsStyles.policyHeader}>
-        <View style={settingsStyles.policyHeaderCopy}>
-          <ThemedText style={settingsStyles.policyTitle}>Opening hours</ThemedText>
-          <ThemedText style={[settingsStyles.policySub, { color: mutedColor }]}>
-            {openDays.length} of 7 days open
+    <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
+      <Pressable
+        style={settingsStyles.secHeader}
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel="Opening Hours"
+        accessibilityState={{ expanded }}
+      >
+        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}18` }]}>
+          <Icon name="time-outline" size="xl" color={primaryColor} />
+        </View>
+        <View style={settingsStyles.secHeaderCopy}>
+          <ThemedText style={settingsStyles.secTitle}>Opening Hours</ThemedText>
+          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
+            {openDays.length} of 7 days open · {customHours ? "Custom per day" : "Same every day"}
           </ThemedText>
         </View>
-        <View
-          style={[
-            settingsStyles.policyModeGroup,
-            { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
-          ]}
-        >
-          {modeButton(
-            "Same every day",
-            !customHours,
-            () => onSetCustomHours(false),
-            "hours-mode-uniform",
-            modeTheme
-          )}
-          {modeButton(
-            "Custom per day",
-            customHours,
-            () => onSetCustomHours(true),
-            "hours-mode-custom",
-            modeTheme
-          )}
-        </View>
-      </View>
+        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
+      </Pressable>
 
-      {!customHours ? (
-        <>
-          <View style={styles.uniformTimes}>
-            <View style={styles.uniformTimeField}>
-              <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                Opens
-              </ThemedText>
-              <TimePicker
-                selectedTime={openTime}
-                onSelect={onSetOpenTime}
-                minTime="00:00"
-                maxTime="23:45"
-              />
-            </View>
-            <View style={styles.uniformTimeField}>
-              <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                Closes
-              </ThemedText>
-              <TimePicker
-                selectedTime={closeTime}
-                onSelect={onSetCloseTime}
-                minTime="00:00"
-                maxTime="23:45"
-              />
-            </View>
+      <AnimatedAccordion expanded={expanded}>
+        <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+          <View
+            style={[
+              settingsStyles.policyModeGroup,
+              styles.modeGroupStandalone,
+              { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
+            ]}
+          >
+            {modeButton(
+              "Same every day",
+              !customHours,
+              () => onSetCustomHours(false),
+              "hours-mode-uniform",
+              modeTheme
+            )}
+            {modeButton(
+              "Custom per day",
+              customHours,
+              () => onSetCustomHours(true),
+              "hours-mode-custom",
+              modeTheme
+            )}
           </View>
 
-          <View style={settingsStyles.policyField}>
-            <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-              Open days
-            </ThemedText>
-            <View style={settingsStyles.dayGrid}>
-              {DAY_LABELS.map((label, i) => {
+          {!customHours ? (
+            <>
+              <View style={styles.uniformTimes}>
+                <View style={styles.uniformTimeField}>
+                  <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                    Opens
+                  </ThemedText>
+                  <TimePicker
+                    selectedTime={openTime}
+                    onSelect={onSetOpenTime}
+                    minTime="00:00"
+                    maxTime="23:45"
+                  />
+                </View>
+                <View style={styles.uniformTimeField}>
+                  <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                    Closes
+                  </ThemedText>
+                  <TimePicker
+                    selectedTime={closeTime}
+                    onSelect={onSetCloseTime}
+                    minTime="00:00"
+                    maxTime="23:45"
+                  />
+                </View>
+              </View>
+
+              <View style={settingsStyles.policyField}>
+                <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                  Open days
+                </ThemedText>
+                <View style={settingsStyles.dayGrid}>
+                  {DAY_LABELS.map((label, i) => {
+                    const day = i + 1;
+                    const active = openDays.includes(day);
+                    return (
+                      <Pressable
+                        key={day}
+                        onPress={() => onToggleDay(day)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        style={[
+                          settingsStyles.dayBtn,
+                          {
+                            backgroundColor: active ? primaryColor : cardBg,
+                            borderColor: active ? primaryColor : borderColor,
+                          },
+                        ]}
+                      >
+                        <ThemedText
+                          style={[
+                            settingsStyles.dayBtnLabel,
+                            { color: active ? "#fff" : textColor },
+                          ]}
+                        >
+                          {label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                  Tap a day to mark it open or closed.
+                </ThemedText>
+              </View>
+            </>
+          ) : (
+            <View style={styles.perDayList}>
+              {DAY_SHORT.map((label, i) => {
                 const day = i + 1;
                 const active = openDays.includes(day);
+                const hours = weekHours[day];
                 return (
-                  <Pressable
-                    key={day}
-                    onPress={() => onToggleDay(day)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    style={[
-                      settingsStyles.dayBtn,
-                      {
-                        backgroundColor: active ? primaryColor : cardBg,
-                        borderColor: active ? primaryColor : borderColor,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      style={[settingsStyles.dayBtnLabel, { color: active ? "#fff" : textColor }]}
-                    >
-                      {label}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-              Tap a day to mark it open or closed.
-            </ThemedText>
-          </View>
-        </>
-      ) : (
-        <View style={styles.perDayList}>
-          {DAY_SHORT.map((label, i) => {
-            const day = i + 1;
-            const active = openDays.includes(day);
-            const hours = weekHours[day];
-            return (
-              <View key={day} style={[styles.perDayRow, !active && styles.perDayRowClosed]}>
-                <Pressable
-                  onPress={() => onToggleDay(day)}
-                  testID={`day-toggle-${day}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "open" : "closed"}. Tap to toggle.`}
-                  style={[
-                    styles.dayChip,
-                    {
-                      backgroundColor: active ? primaryColor : cardBg,
-                      borderColor: active ? primaryColor : borderColor,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    style={[styles.dayChipLabel, { color: active ? "#fff" : mutedColor }]}
-                  >
-                    {label}
-                  </ThemedText>
-                </Pressable>
-
-                {active ? (
-                  <>
-                    <View style={styles.timeField}>
-                      <TimePicker
-                        selectedTime={hours.open}
-                        onSelect={(t) => onSetDayHours(day, { open: t })}
-                        minTime="00:00"
-                        maxTime="23:45"
-                      />
-                    </View>
-                    <ThemedText style={[styles.timeSeparator, { color: mutedColor }]}>–</ThemedText>
-                    <View style={styles.timeField}>
-                      <TimePicker
-                        selectedTime={hours.close}
-                        onSelect={(t) => onSetDayHours(day, { close: t })}
-                        minTime="00:00"
-                        maxTime="23:45"
-                      />
-                    </View>
+                  <View key={day} style={[styles.perDayRow, !active && styles.perDayRowClosed]}>
                     <Pressable
-                      onPress={() => onCopyHoursToAllDays(day)}
-                      testID={`copy-hours-${day}`}
-                      accessibilityLabel={`Copy ${DAY_LABELS[i]}'s hours to every day`}
-                      style={(state) => [
-                        styles.copyBtn,
+                      onPress={() => onToggleDay(day)}
+                      testID={`day-toggle-${day}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "open" : "closed"}. Tap to toggle.`}
+                      style={[
+                        styles.dayChip,
                         {
-                          borderColor: (state as { hovered?: boolean }).hovered
-                            ? primaryColor
-                            : borderColor,
-                          backgroundColor: cardBg,
+                          backgroundColor: active ? primaryColor : cardBg,
+                          borderColor: active ? primaryColor : borderColor,
                         },
                       ]}
                     >
-                      <Icon name="copy-outline" size="sm" color={mutedColor} />
+                      <ThemedText
+                        style={[styles.dayChipLabel, { color: active ? "#fff" : mutedColor }]}
+                      >
+                        {label}
+                      </ThemedText>
                     </Pressable>
-                  </>
-                ) : (
-                  <ThemedText style={[styles.closedLabel, { color: mutedColor }]}>
-                    Closed
-                  </ThemedText>
-                )}
-              </View>
-            );
-          })}
-          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-            Tap a day to mark it open or closed. Use{" "}
-            <Icon name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours to
-            the whole week.
-          </ThemedText>
-        </View>
-      )}
 
-      {anyOvernight && (
-        <View style={settingsStyles.policyNote}>
-          <Icon name="moon-outline" size="xs" color={mutedColor} />
-          <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-            A closing time at or before opening means the restaurant closes after midnight.
-          </ThemedText>
+                    {active ? (
+                      <>
+                        <View style={styles.timeField}>
+                          <TimePicker
+                            selectedTime={hours.open}
+                            onSelect={(t) => onSetDayHours(day, { open: t })}
+                            minTime="00:00"
+                            maxTime="23:45"
+                          />
+                        </View>
+                        <ThemedText style={[styles.timeSeparator, { color: mutedColor }]}>
+                          –
+                        </ThemedText>
+                        <View style={styles.timeField}>
+                          <TimePicker
+                            selectedTime={hours.close}
+                            onSelect={(t) => onSetDayHours(day, { close: t })}
+                            minTime="00:00"
+                            maxTime="23:45"
+                          />
+                        </View>
+                        <Pressable
+                          onPress={() => onCopyHoursToAllDays(day)}
+                          testID={`copy-hours-${day}`}
+                          accessibilityLabel={`Copy ${DAY_LABELS[i]}'s hours to every day`}
+                          style={(state) => [
+                            styles.copyBtn,
+                            {
+                              borderColor: (state as { hovered?: boolean }).hovered
+                                ? primaryColor
+                                : borderColor,
+                              backgroundColor: cardBg,
+                            },
+                          ]}
+                        >
+                          <Icon name="copy-outline" size="sm" color={mutedColor} />
+                        </Pressable>
+                      </>
+                    ) : (
+                      <ThemedText style={[styles.closedLabel, { color: mutedColor }]}>
+                        Closed
+                      </ThemedText>
+                    )}
+                  </View>
+                );
+              })}
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                Tap a day to mark it open or closed. Use{" "}
+                <Icon name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours
+                to the whole week.
+              </ThemedText>
+            </View>
+          )}
+
+          {anyOvernight && (
+            <View style={settingsStyles.policyNote}>
+              <Icon name="moon-outline" size="xs" color={mutedColor} />
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                A closing time at or before opening means the restaurant closes after midnight.
+              </ThemedText>
+            </View>
+          )}
         </View>
-      )}
+      </AnimatedAccordion>
     </View>
   );
 }

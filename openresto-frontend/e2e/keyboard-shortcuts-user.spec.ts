@@ -59,7 +59,7 @@ test.describe("End-user keyboard shortcuts", () => {
     await page.keyboard.press("l");
 
     await page.waitForURL(/.*\/lookup.*/, { timeout: 10_000 });
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 10_000 });
     // focusTarget("user-lookup") races the navigating-to screen's own mount —
     // utils/focusRegistry.ts resolves this with a pending-request handoff
     // rather than a fixed delay, so this should already be focused by now.
@@ -70,7 +70,7 @@ test.describe("End-user keyboard shortcuts", () => {
     page,
   }) => {
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 10_000 });
 
     await page.keyboard.press("?");
     const helpText = page.getByText("Keyboard shortcuts");

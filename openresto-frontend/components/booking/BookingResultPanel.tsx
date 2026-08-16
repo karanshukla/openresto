@@ -2,16 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
-import { Icon } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
 import { isPast } from "@/utils/bookingStatus";
-import BookingDetailRows from "@/components/booking/BookingDetailRows";
+import BookingSummaryHeader from "@/components/booking/BookingSummaryHeader";
+import BookingFactsBand from "@/components/booking/BookingFactsBand";
+import BookingGuestDetails from "@/components/booking/BookingGuestDetails";
 import CalendarActions from "@/components/booking/CalendarActions";
 import DirectionsActions from "@/components/booking/DirectionsActions";
-import { styles } from "./BookingResultPanel.styles";
+import { mapFrameStyle, styles } from "./BookingResultPanel.styles";
 
 interface BookingResultPanelProps {
   booking: BookingDto;
@@ -19,7 +20,7 @@ interface BookingResultPanelProps {
   /** Compact (phone-width) layout vs. the wide two-column layout. */
   compact: boolean;
   /** Arrived via /booking-confirmation, fresh off creating the booking — the only thing
-   * that changes is the header line ("Booking Confirmed" instead of "Booking Found"). A
+   * that changes is the status line ("Booking Confirmed" instead of "Booking Found"). A
    * cancelled or past booking overrides this the same way it overrides "Booking Found". */
   justBooked?: boolean;
   cancelling: boolean;
@@ -27,12 +28,13 @@ interface BookingResultPanelProps {
 }
 
 /**
- * The found/cancelled/past booking card: header, reference + copy, detail rows, calendar
- * actions, a directions card with an embedded map, and the cancel action. Shared by every
- * door into the lookup screen — the plain form, a deep link, and /booking-confirmation —
- * which used to render this independently in two places. The header line is the only
- * thing that changes between them, so it's the one prop (`justBooked`) this component
- * takes on top of the booking itself.
+ * The found/cancelled/past booking, as one card in four zones: the answer (where, and its
+ * state), the facts (date, time, party), the reference, then who it's under. Actions —
+ * calendar, map, directions, cancel — follow below, each behind a hairline. Shared by every
+ * door into the lookup screen: the plain form, a deep link, and /booking-confirmation,
+ * which used to render this independently in two places. The status line is the only thing
+ * that changes between them, so it's the one prop (`justBooked`) this takes on top of the
+ * booking itself.
  */
 export default function BookingResultPanel({
   booking,
@@ -51,24 +53,32 @@ export default function BookingResultPanel({
   const actionable = !booking.isCancelled && !bookingIsPast;
 
   // Cancelled and past override justBooked the same way they override "Booking Found" —
-  // a booking that's already cancelled or over doesn't get a celebratory header.
-  const headerTitle = booking.isCancelled
+  // a booking that's already cancelled or over doesn't get a celebratory status.
+  const statusLabel = booking.isCancelled
     ? "Booking Cancelled"
     : bookingIsPast
       ? "Booking Has Passed"
       : justBooked
         ? "Booking Confirmed"
         : "Booking Found";
-  const headerIcon = booking.isCancelled
+  const statusIcon = booking.isCancelled
     ? "close-circle"
     : bookingIsPast
       ? "time-outline"
       : "checkmark-circle";
-  const headerColor = booking.isCancelled
+  const statusColor = booking.isCancelled
     ? theme.colors.error
     : bookingIsPast
       ? colors.muted
       : primaryColor;
+
+  // A status demoted to an eyebrow would under-weight the two outcomes that change what
+  // the diner does next, so those two wash the whole header instead.
+  const headerTint = booking.isCancelled
+    ? `${theme.colors.error}${isDark ? "1F" : "12"}`
+    : bookingIsPast
+      ? colors.surfaceAlt
+      : null;
 
   useEffect(() => {
     if (!restaurant?.address) {
@@ -100,24 +110,41 @@ export default function BookingResultPanel({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const divider = <View style={[styles.divider, { backgroundColor: colors.border }]} />;
+
   return (
-    <View style={styles.stack}>
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.headerRow}>
-            <Icon name={headerIcon} size="xl" color={headerColor} />
-            <ThemedText style={styles.title}>{headerTitle}</ThemedText>
-          </View>
-          <View style={styles.refRow}>
-            <View
-              style={[
-                styles.refBadge,
-                { backgroundColor: isDark ? `${primaryColor}22` : `${primaryColor}14` },
-              ]}
-            >
-              <ThemedText style={[styles.refText, { color: primaryColor }]}>{ref}</ThemedText>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <BookingSummaryHeader
+        booking={booking}
+        restaurant={restaurant}
+        statusLabel={statusLabel}
+        statusIcon={statusIcon}
+        statusColor={statusColor}
+        mutedColor={colors.muted}
+        tint={headerTint}
+      />
+
+      {divider}
+
+      <BookingFactsBand
+        booking={booking}
+        compact={compact}
+        mutedColor={colors.muted}
+        borderColor={colors.border}
+        negated={booking.isCancelled}
+      />
+
+      {/* Stated once. The reference used to appear as a badge in the header and again as a
+          detail row, which read as two different things to quote back to the restaurant. */}
+      {ref ? (
+        <>
+          {divider}
+          <View style={[styles.refStrip, { backgroundColor: colors.surfaceAlt }]}>
+            <View style={styles.refTextGroup}>
+              <ThemedText style={[styles.refLabel, { color: colors.muted }]}>Reference</ThemedText>
+              <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
             </View>
-            {Platform.OS === "web" && ref && (
+            {Platform.OS === "web" && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -130,23 +157,19 @@ export default function BookingResultPanel({
               </Button>
             )}
           </View>
-        </View>
+        </>
+      ) : null}
 
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+      {divider}
 
-        <BookingDetailRows
-          booking={booking}
-          restaurant={restaurant}
-          mutedColor={colors.muted}
-          borderColor={colors.border}
-        />
-      </View>
+      <BookingGuestDetails booking={booking} mutedColor={colors.muted} />
 
       {/* Calendar links rely on window.open, so — like the rest of this app's calendar
           actions — they stay web-only; directions below use Linking.openURL, which works
           on native, so they render on every platform. */}
       {Platform.OS === "web" && ref && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <>
+          {divider}
           <CalendarActions
             bookingRef={ref}
             date={booking.date}
@@ -157,59 +180,59 @@ export default function BookingResultPanel({
             restaurantAddress={restaurant?.address ?? ""}
             sectionName={booking.sectionName}
             tableName={booking.tableName}
-            variant={compact ? "compact" : "full"}
           />
-        </View>
+        </>
       )}
 
       {restaurant?.address && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.mapCard}>
-            {Platform.OS === "web" &&
-              mapCoords &&
-              React.createElement("iframe", {
+        <>
+          {divider}
+          {/* The address is already the header's subline, so the map carries only the
+              marker — no caption repeating what's at the top of the card. */}
+          {Platform.OS === "web" && mapCoords && (
+            <View style={styles.mapSection}>
+              {React.createElement("iframe", {
+                title: `Map of ${restaurant.name}`,
                 src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
-                style: styles.mapFrame,
+                style: mapFrameStyle,
                 loading: "lazy",
               })}
-            <View style={styles.mapAddressRow}>
-              <Icon name="location-outline" size={13} color={colors.muted} />
-              <ThemedText style={[styles.mapAddress, { color: colors.muted }]} numberOfLines={2}>
-                {restaurant.address}
-              </ThemedText>
             </View>
-          </View>
-          <DirectionsActions address={restaurant.address} compact={compact} />
-        </View>
+          )}
+          <DirectionsActions address={restaurant.address} />
+        </>
       )}
 
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cancelCard}>
-          {actionable ? (
-            <>
-              <Button
-                variant="secondary"
-                tone="danger"
-                size="md"
-                icon="trash-outline"
-                loading={cancelling}
-                onPress={onCancelPress}
-                accessibilityLabel="Cancel this booking"
-              >
-                Cancel This Booking
-              </Button>
-              <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-                This booking cannot be modified. However, feel free to cancel and rebook if need be.
-              </ThemedText>
-            </>
-          ) : (
+      {divider}
+
+      <View style={styles.cancelSection}>
+        {actionable ? (
+          <>
+            {/* Filled: cancelling a booking is the one thing on this card that can't be
+                walked back, and it's the only control here at that weight — the calendar
+                and directions pills above it are side errands at the row scale. */}
+            <Button
+              variant="primary"
+              tone="danger"
+              size="md"
+              icon="trash-outline"
+              loading={cancelling}
+              onPress={onCancelPress}
+              accessibilityLabel="Cancel this booking"
+            >
+              Cancel This Booking
+            </Button>
             <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-              {booking.isCancelled
-                ? "This booking has been cancelled."
-                : "This booking has already passed and can no longer be cancelled."}
+              This booking cannot be modified. However, feel free to cancel and rebook if need be.
             </ThemedText>
-          )}
-        </View>
+          </>
+        ) : (
+          <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
+            {booking.isCancelled
+              ? "This booking has been cancelled."
+              : "This booking has already passed and can no longer be cancelled."}
+          </ThemedText>
+        )}
       </View>
     </View>
   );

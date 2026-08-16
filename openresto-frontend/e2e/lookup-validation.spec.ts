@@ -16,7 +16,7 @@ test.describe("Lookup form validation", () => {
     page,
   }) => {
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
 
     const refInput = page.getByPlaceholder("e.g. crispy-basil-thyme");
     const emailInput = page.getByPlaceholder("The email used when booking");
@@ -46,7 +46,7 @@ test.describe("Lookup form validation", () => {
 
   test("both fields empty keeps Look Up inert (no card, inputs unchanged)", async ({ page }) => {
     await page.goto("/lookup");
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
 
     const lookUpBtn = page.getByText("Look Up", { exact: true });
     await lookUpBtn.click({ force: true });

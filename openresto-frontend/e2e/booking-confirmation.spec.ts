@@ -5,7 +5,7 @@ import { ADMIN_STATE_FILE } from "./global-setup";
 /**
  * Booking confirmation page (`/booking-confirmation/[bookingRef]`) — a door into the
  * /lookup screen rather than a page of its own: it mounts the same LookupScreen with the
- * ref/email prefilled and `justBooked` set, so it shows the "Find My Booking" form beside
+ * ref/email prefilled and `justBooked` set, so it shows the "Find my booking" form beside
  * a result panel instead of a dedicated confirmation hero. Covers:
  *   - invalid ref (and no email) → the same not-found card /lookup shows
  *   - valid ref (created via API, email used as query param) → "Booking Confirmed"
@@ -53,7 +53,7 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
     // no legacy id to fall back to — LookupScreen resolves straight to notFound.
     await page.goto("/booking-confirmation/definitely-not-a-real-ref");
 
-    await expect(page.getByText("Find My Booking")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Find my booking")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("No booking found matching that reference and email.")).toBeVisible(
       { timeout: 15_000 }
     );
@@ -116,11 +116,11 @@ test.describe("Booking confirmation page", { tag: "@smoke" }, () => {
     // Booking reference echoes back somewhere on the page.
     await expect(page.getByText(bookingRef, { exact: true })).toBeVisible();
 
-    // Detail rows built by BookingDetailRows.tsx — assert a representative subset.
-    await expect(page.getByText("Email").first()).toBeVisible();
-    await expect(page.getByText(CONFIRM_EMAIL).first()).toBeVisible();
-    await expect(page.getByText("Name").first()).toBeVisible();
-    await expect(page.getByText("E2E Confirmation").first()).toBeVisible();
+    // The card's four zones, one assertion each: the facts band (BookingFactsBand.tsx) and
+    // the guest line (BookingGuestDetails.tsx), which together replaced the flat list of
+    // label/value rows this used to walk.
     await expect(page.getByText("Guests").first()).toBeVisible();
+    await expect(page.getByText("Booked under E2E Confirmation")).toBeVisible();
+    await expect(page.getByText(CONFIRM_EMAIL).first()).toBeVisible();
   });
 });

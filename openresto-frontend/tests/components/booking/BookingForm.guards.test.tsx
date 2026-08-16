@@ -1,5 +1,10 @@
 /**
  * @jest-environment jsdom
+ *
+ * The guards around booking, kept apart from BookingForm.test.tsx (which covers the
+ * form's own layout, hold and availability behaviour): the per-table capacity confirm,
+ * the large-party ceiling and its contact modal, the table-label fallbacks, and what a
+ * slot's availableTableIds do to the dropdown.
  */
 import React from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react-native";

@@ -193,7 +193,7 @@ describe("BookingResultPanel", () => {
     expect(screen.queryByText("GET DIRECTIONS")).toBeNull();
   });
 
-  it("switches the calendar/directions layout with the compact prop", () => {
+  it("switches the calendar layout with the compact prop, keeping named directions", () => {
     renderWithProviders(
       <BookingResultPanel
         booking={mockBooking}
@@ -203,8 +203,12 @@ describe("BookingResultPanel", () => {
         onCancelPress={jest.fn()}
       />
     );
-    expect(screen.getByText("MAPS")).toBeTruthy();
-    expect(screen.queryByText("GET DIRECTIONS")).toBeNull();
+    // Only the calendar section has a compact layout: its rows collapse to short pills
+    // ("Outlook", not "Outlook Calendar"). Directions stay named at every width.
+    expect(screen.getByText("Outlook")).toBeTruthy();
+    expect(screen.queryByText("Outlook Calendar")).toBeNull();
+    expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
+    expect(screen.getByText("Apple")).toBeTruthy();
   });
 
   it("shows a spinner via the loading prop while cancelling", () => {

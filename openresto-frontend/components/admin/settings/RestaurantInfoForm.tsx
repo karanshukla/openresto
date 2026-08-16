@@ -5,6 +5,9 @@ import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAutosave } from "@/hooks/use-autosave";
+import { usePersistedState } from "@/hooks/use-persisted-state";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { SaveStatus } from "./SaveStatus";
 import {
   BookingRefFormat,
@@ -424,329 +427,402 @@ export function RestaurantInfoForm({
     ? openDays.some((d) => isOvernight(weekHours[d].open, weekHours[d].close))
     : isOvernight(openTime, closeTime);
 
+  const [basicInfoExpanded, setBasicInfoExpanded] = usePersistedState(
+    "locations:basicInfo:expanded",
+    true
+  );
+  const [menuExpanded, setMenuExpanded] = usePersistedState("locations:menu:expanded", true);
+  const [contactExpanded, setContactExpanded] = usePersistedState(
+    "locations:contact:expanded",
+    true
+  );
+  const [bookingExpanded, setBookingExpanded] = usePersistedState(
+    "locations:booking:expanded",
+    true
+  );
+
+  const basicInfoSubtitle = [name.trim() || "Untitled location", address.trim()]
+    .filter(Boolean)
+    .join(" · ");
+  const menuSubtitle = menuUrlIsServedFile
+    ? "PDF uploaded"
+    : menuUrl.trim()
+      ? "Link set"
+      : "Not set";
+  const contactSubtitle =
+    [phoneNumber.trim(), emailAddress.trim()].filter(Boolean).join(" · ") ||
+    "Uses brand-wide contact details";
+  const bookingSubtitle = `${timezone} · ${formatDurationLabel(defaultBookingDurationMinutes)} bookings`;
+
   return (
-    <View>
-      <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <ThemedText style={styles.headerTitle}>Restaurant info</ThemedText>
-          <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
-            Name, address, hours and timezone for this location.
-          </ThemedText>
-        </View>
-      </View>
-
-      <View style={styles.body}>
-        <View style={styles.field}>
-          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-            Restaurant name
-          </ThemedText>
-          <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
-        </View>
-
-        <View style={styles.field}>
-          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>Address</ThemedText>
-          <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
-        </View>
-
-        <View style={styles.field}>
-          <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-            Description (optional)
-          </ThemedText>
-          <Input
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Short blurb shown on the location page. Supports links like [menu](https://example.com)."
-            multiline
-            numberOfLines={4}
-            style={styles.descriptionInput}
-          />
-          <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-            Shown on the public location page. Use [label](https://url) for links.
-          </ThemedText>
-        </View>
-
-        <View style={styles.field}>
-          <View style={styles.menuLabelRow}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Menu (optional)
-            </ThemedText>
-          </View>
-          {menuUrlIsServedFile ? (
-            <View style={[styles.menuFileRow, { borderColor, backgroundColor: surface2 }]}>
-              <Icon name="document-text-outline" size="lg" color={primaryColor} />
-              <ThemedText style={styles.menuFileName} numberOfLines={1}>
-                Uploaded menu PDF
+    <>
+      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
+        <AccordionCardHeader
+          icon="storefront-outline"
+          title="Basic Info"
+          subtitle={basicInfoSubtitle}
+          expanded={basicInfoExpanded}
+          onToggle={() => setBasicInfoExpanded((v) => !v)}
+          primaryColor={primaryColor}
+          mutedColor={mutedColor}
+        />
+        <AnimatedAccordion expanded={basicInfoExpanded}>
+          <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
+            <View style={styles.field}>
+              <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                Restaurant name
               </ThemedText>
-              <Button
-                variant="secondary"
-                tone="danger"
-                size="md"
-                icon="trash-outline"
-                onPress={handleDeleteMenu}
-                disabled={menuUploading}
-                loading={menuUploading}
-                accessibilityLabel="Remove the uploaded menu PDF"
-              >
-                {menuUploading ? "Removing…" : "Remove file"}
-              </Button>
+              <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
             </View>
-          ) : (
-            <Input
-              value={menuUrl}
-              onChangeText={(v) => {
-                setMenuUrl(v);
-                if (menuMsg && !menuMsg.ok) setMenuMsg(null);
-              }}
-              placeholder="https://your-menu-url.com/menu.pdf"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
-          )}
-          <View style={styles.menuActions}>
-            {!menuUrlIsServedFile && (
-              <Button
-                variant="secondary"
-                size="md"
-                icon="cloud-upload-outline"
-                onPress={handlePickMenu}
-                disabled={menuUploading}
-                loading={menuUploading}
-                accessibilityLabel="Upload a menu PDF"
-              >
-                {menuUploading ? "Uploading…" : "Upload PDF"}
-              </Button>
-            )}
-            {menuMsg && (
-              <ThemedText
-                style={[
-                  styles.menuMsg,
-                  { color: menuMsg.ok ? theme.colors.success : theme.colors.error },
-                ]}
-              >
-                {menuMsg.text}
+
+            <View style={styles.field}>
+              <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                Address
               </ThemedText>
+              <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                Description (optional)
+              </ThemedText>
+              <Input
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Short blurb shown on the location page. Supports links like [menu](https://example.com)."
+                multiline
+                numberOfLines={4}
+                style={styles.descriptionInput}
+              />
+              <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                Shown on the public location page. Use [label](https://url) for links.
+              </ThemedText>
+            </View>
+          </View>
+        </AnimatedAccordion>
+      </View>
+
+      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
+        <AccordionCardHeader
+          icon="document-text-outline"
+          title="Menu"
+          subtitle={menuSubtitle}
+          expanded={menuExpanded}
+          onToggle={() => setMenuExpanded((v) => !v)}
+          primaryColor={primaryColor}
+          mutedColor={mutedColor}
+        />
+        <AnimatedAccordion expanded={menuExpanded}>
+          <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
+            {menuUrlIsServedFile ? (
+              <View style={[styles.menuFileRow, { borderColor, backgroundColor: surface2 }]}>
+                <Icon name="document-text-outline" size="lg" color={primaryColor} />
+                <ThemedText style={styles.menuFileName} numberOfLines={1}>
+                  Uploaded menu PDF
+                </ThemedText>
+                <Button
+                  variant="secondary"
+                  tone="danger"
+                  size="md"
+                  icon="trash-outline"
+                  onPress={handleDeleteMenu}
+                  disabled={menuUploading}
+                  loading={menuUploading}
+                  accessibilityLabel="Remove the uploaded menu PDF"
+                >
+                  {menuUploading ? "Removing…" : "Remove file"}
+                </Button>
+              </View>
+            ) : (
+              <Input
+                value={menuUrl}
+                onChangeText={(v) => {
+                  setMenuUrl(v);
+                  if (menuMsg && !menuMsg.ok) setMenuMsg(null);
+                }}
+                placeholder="https://your-menu-url.com/menu.pdf"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
             )}
-          </View>
-          <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-            Upload a PDF (max 10 MB) or paste a link to your menu. Shown as a &quot;View menu&quot;
-            button on the location page.
-          </ThemedText>
-        </View>
-
-        <View style={styles.fieldGrid}>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Contact phone (optional)
-            </ThemedText>
-            <Input
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="e.g. +44 20 7946 0958"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="phone-pad"
-              maxLength={MAX_PHONE_LENGTH}
-            />
-          </View>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Contact email (optional)
-            </ThemedText>
-            <Input
-              value={emailAddress}
-              onChangeText={setEmailAddress}
-              placeholder="e.g. bookings@example.com"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              maxLength={MAX_EMAIL_LENGTH}
-            />
-          </View>
-        </View>
-        <ThemedText style={[styles.contactHint, { color: mutedColor }]}>
-          Shown to diners who need to arrange a booking directly (e.g. a large party). Leave blank
-          to use the brand-wide contact details from Settings.
-        </ThemedText>
-
-        <View style={styles.fieldGrid}>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Timezone
-            </ThemedText>
-            <select
-              value={timezone}
-              onChange={/* istanbul ignore next */ (e) => setTimezone(e.target.value)}
-              style={{ ...domStyles.select, ...themedSelect(colors) }}
-            >
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            <View style={styles.menuActions}>
+              {!menuUrlIsServedFile && (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  icon="cloud-upload-outline"
+                  onPress={handlePickMenu}
+                  disabled={menuUploading}
+                  loading={menuUploading}
+                  accessibilityLabel="Upload a menu PDF"
+                >
+                  {menuUploading ? "Uploading…" : "Upload PDF"}
+                </Button>
+              )}
+              {menuMsg && (
+                <ThemedText
+                  style={[
+                    styles.menuMsg,
+                    { color: menuMsg.ok ? theme.colors.success : theme.colors.error },
+                  ]}
+                >
+                  {menuMsg.text}
+                </ThemedText>
+              )}
+            </View>
             <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              If this value differs from the customer's device timezone, a note will appear on the
-              booking page.
+              Upload a PDF (max 10 MB) or paste a link to your menu. Shown as a &quot;View
+              menu&quot; button on the location page.
             </ThemedText>
           </View>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Default Booking duration
-            </ThemedText>
-            <select
-              data-testid="booking-duration-select"
-              value={defaultBookingDurationMinutes}
-              onChange={
-                /* istanbul ignore next */ (e) =>
-                  setDefaultBookingDurationMinutes(Number(e.target.value))
-              }
-              style={{ ...domStyles.select, ...themedSelect(colors) }}
-            >
-              {DURATION_OPTIONS.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {formatDurationLabel(minutes)}
-                </option>
-              ))}
-            </select>
-            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              How long each new booking occupies a table by default
-            </ThemedText>
-          </View>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Booking start-time interval
-            </ThemedText>
-            <select
-              data-testid="booking-slot-interval-select"
-              value={bookingSlotIntervalMinutes}
-              onChange={
-                /* istanbul ignore next */ (e) =>
-                  setBookingSlotIntervalMinutes(Number(e.target.value))
-              }
-              style={{ ...domStyles.select, ...themedSelect(colors) }}
-            >
-              {SLOT_INTERVAL_OPTIONS.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {formatDurationLabel(minutes)}
-                </option>
-              ))}
-            </select>
-            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              How far apart selectable start times are (independent of booking duration)
-            </ThemedText>
-          </View>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Max table oversize
-            </ThemedText>
-            <select
-              data-testid="max-table-oversize-select"
-              value={maxTableOversizeSeats ?? ""}
-              onChange={
-                /* istanbul ignore next */ (e) =>
-                  setMaxTableOversizeSeats(e.target.value === "" ? null : Number(e.target.value))
-              }
-              style={{ ...domStyles.select, ...themedSelect(colors) }}
-            >
-              <option value="">Off</option>
-              {OVERSIZE_OPTIONS.map((seats) => (
-                <option key={seats} value={seats}>
-                  +{seats} seat{seats === 1 ? "" : "s"}
-                </option>
-              ))}
-            </select>
-            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              Don&apos;t offer tables more than this many seats larger than the party size
-            </ThemedText>
-          </View>
-          <View style={styles.gridField}>
-            <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-              Booking reference format
-            </ThemedText>
-            <select
-              data-testid="booking-ref-format-select"
-              value={bookingRefFormat}
-              onChange={
-                /* istanbul ignore next */ (e) =>
-                  setBookingRefFormat(e.target.value as BookingRefFormat)
-              }
-              style={{ ...domStyles.select, ...themedSelect(colors) }}
-            >
-              {BOOKING_REF_FORMAT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              What new booking references look like. Existing bookings keep theirs.
-            </ThemedText>
-          </View>
-        </View>
-
-        <OpeningHoursSection
-          customHours={customHours}
-          openTime={openTime}
-          closeTime={closeTime}
-          weekHours={weekHours}
-          openDays={openDays}
-          anyOvernight={anyOvernight}
-          onSetCustomHours={setCustomHours}
-          onSetOpenTime={setOpenTime}
-          onSetCloseTime={setCloseTime}
-          onSetDayHours={setDayHours}
-          onCopyHoursToAllDays={copyHoursToAllDays}
-          onToggleDay={toggleDay}
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          primaryColor={primaryColor}
-          cardBg={colors.card}
-          textColor={colors.text}
-          surface2={surface2}
-          isDark={isDark}
-        />
-
-        <WalkInPolicySection
-          walkInOnly={walkInOnly}
-          walkInDays={walkInDays}
-          openDays={openDays}
-          onSetWalkInOnly={setWalkInOnly}
-          onToggleWalkInDay={toggleWalkInDay}
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          primaryColor={primaryColor}
-          cardBg={colors.card}
-          textColor={colors.text}
-          surface2={surface2}
-          isDark={isDark}
-        />
-
-        <LocationTagsSection
-          tags={tags}
-          tagInput={tagInput}
-          onSetTagInput={setTagInput}
-          onAddTag={addTag}
-          onRemoveTag={removeTag}
-          borderColor={borderColor}
-          mutedColor={mutedColor}
-          surface2={surface2}
-        />
+        </AnimatedAccordion>
       </View>
 
-      <View style={[styles.divider, { borderColor }]} />
-
-      <View style={styles.footer}>
-        <SaveStatus
-          status={status}
-          error={error}
-          onRetry={retry}
-          onUndo={undo}
+      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
+        <AccordionCardHeader
+          icon="call-outline"
+          title="Contact"
+          subtitle={contactSubtitle}
+          expanded={contactExpanded}
+          onToggle={() => setContactExpanded((v) => !v)}
+          primaryColor={primaryColor}
           mutedColor={mutedColor}
-          blockedReason={blockedReason}
-          testID="location-save-status"
         />
+        <AnimatedAccordion expanded={contactExpanded}>
+          <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
+            <View style={styles.fieldGrid}>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Contact phone (optional)
+                </ThemedText>
+                <Input
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="e.g. +44 20 7946 0958"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="phone-pad"
+                  maxLength={MAX_PHONE_LENGTH}
+                />
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Contact email (optional)
+                </ThemedText>
+                <Input
+                  value={emailAddress}
+                  onChangeText={setEmailAddress}
+                  placeholder="e.g. bookings@example.com"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  maxLength={MAX_EMAIL_LENGTH}
+                />
+              </View>
+            </View>
+            <ThemedText style={[styles.contactHint, { color: mutedColor }]}>
+              Shown to diners who need to arrange a booking directly (e.g. a large party). Leave
+              blank to use the brand-wide contact details from Settings.
+            </ThemedText>
+          </View>
+        </AnimatedAccordion>
       </View>
-    </View>
+
+      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
+        <AccordionCardHeader
+          icon="options-outline"
+          title="Booking Settings"
+          subtitle={bookingSubtitle}
+          expanded={bookingExpanded}
+          onToggle={() => setBookingExpanded((v) => !v)}
+          primaryColor={primaryColor}
+          mutedColor={mutedColor}
+        />
+        <AnimatedAccordion expanded={bookingExpanded}>
+          <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
+            <View style={styles.fieldGrid}>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Timezone
+                </ThemedText>
+                <select
+                  value={timezone}
+                  onChange={/* istanbul ignore next */ (e) => setTimezone(e.target.value)}
+                  style={{ ...domStyles.select, ...themedSelect(colors) }}
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  If this value differs from the customer's device timezone, a note will appear on
+                  the booking page.
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Default Booking duration
+                </ThemedText>
+                <select
+                  data-testid="booking-duration-select"
+                  value={defaultBookingDurationMinutes}
+                  onChange={
+                    /* istanbul ignore next */ (e) =>
+                      setDefaultBookingDurationMinutes(Number(e.target.value))
+                  }
+                  style={{ ...domStyles.select, ...themedSelect(colors) }}
+                >
+                  {DURATION_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {formatDurationLabel(minutes)}
+                    </option>
+                  ))}
+                </select>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  How long each new booking occupies a table by default
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Booking start-time interval
+                </ThemedText>
+                <select
+                  data-testid="booking-slot-interval-select"
+                  value={bookingSlotIntervalMinutes}
+                  onChange={
+                    /* istanbul ignore next */ (e) =>
+                      setBookingSlotIntervalMinutes(Number(e.target.value))
+                  }
+                  style={{ ...domStyles.select, ...themedSelect(colors) }}
+                >
+                  {SLOT_INTERVAL_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {formatDurationLabel(minutes)}
+                    </option>
+                  ))}
+                </select>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  How far apart selectable start times are (independent of booking duration)
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Max table oversize
+                </ThemedText>
+                <select
+                  data-testid="max-table-oversize-select"
+                  value={maxTableOversizeSeats ?? ""}
+                  onChange={
+                    /* istanbul ignore next */ (e) =>
+                      setMaxTableOversizeSeats(
+                        e.target.value === "" ? null : Number(e.target.value)
+                      )
+                  }
+                  style={{ ...domStyles.select, ...themedSelect(colors) }}
+                >
+                  <option value="">Off</option>
+                  {OVERSIZE_OPTIONS.map((seats) => (
+                    <option key={seats} value={seats}>
+                      +{seats} seat{seats === 1 ? "" : "s"}
+                    </option>
+                  ))}
+                </select>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  Don&apos;t offer tables more than this many seats larger than the party size
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  Booking reference format
+                </ThemedText>
+                <select
+                  data-testid="booking-ref-format-select"
+                  value={bookingRefFormat}
+                  onChange={
+                    /* istanbul ignore next */ (e) =>
+                      setBookingRefFormat(e.target.value as BookingRefFormat)
+                  }
+                  style={{ ...domStyles.select, ...themedSelect(colors) }}
+                >
+                  {BOOKING_REF_FORMAT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  What new booking references look like. Existing bookings keep theirs.
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        </AnimatedAccordion>
+      </View>
+
+      <OpeningHoursSection
+        customHours={customHours}
+        openTime={openTime}
+        closeTime={closeTime}
+        weekHours={weekHours}
+        openDays={openDays}
+        anyOvernight={anyOvernight}
+        onSetCustomHours={setCustomHours}
+        onSetOpenTime={setOpenTime}
+        onSetCloseTime={setCloseTime}
+        onSetDayHours={setDayHours}
+        onCopyHoursToAllDays={copyHoursToAllDays}
+        onToggleDay={toggleDay}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={colors.card}
+        textColor={colors.text}
+        isDark={isDark}
+      />
+
+      <WalkInPolicySection
+        walkInOnly={walkInOnly}
+        walkInDays={walkInDays}
+        openDays={openDays}
+        onSetWalkInOnly={setWalkInOnly}
+        onToggleWalkInDay={toggleWalkInDay}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={colors.card}
+        textColor={colors.text}
+        isDark={isDark}
+      />
+
+      <LocationTagsSection
+        tags={tags}
+        tagInput={tagInput}
+        onSetTagInput={setTagInput}
+        onAddTag={addTag}
+        onRemoveTag={removeTag}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={colors.card}
+        surface2={surface2}
+      />
+
+      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
+        <View style={styles.footer}>
+          <SaveStatus
+            status={status}
+            error={error}
+            onRetry={retry}
+            onUndo={undo}
+            mutedColor={mutedColor}
+            blockedReason={blockedReason}
+            testID="location-save-status"
+          />
+        </View>
+      </View>
+    </>
   );
 }

@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
+import { Linking } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
 import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
@@ -80,7 +81,7 @@ describe("LookupScreen", () => {
 
   it("renders the idle search form with no result panel", async () => {
     renderWithProviders(<LookupScreen />);
-    expect(screen.getByText("Find My Booking")).toBeTruthy();
+    expect(screen.getByText("Find my booking")).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
   });
@@ -103,6 +104,49 @@ describe("LookupScreen", () => {
     expect(screen.getByText("Test Resto")).toBeTruthy();
     // The form stays put beside the panel — a second lookup costs no navigation.
     expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("REF123");
+  });
+
+  describe("contact details under the help text", () => {
+    it("renders nothing when neither the location nor the brand lists any", async () => {
+      renderWithProviders(<LookupScreen />);
+      await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+      expect(screen.queryByLabelText(/^Call /)).toBeNull();
+      // Anchored on the address so this doesn't match the "Email address" input above it.
+      expect(screen.queryByLabelText(/^Email .+@/)).toBeNull();
+    });
+
+    it("offers the location's phone and email once a lookup names one", async () => {
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue({
+        ...mockRestaurant,
+        phoneNumber: "+1 555 0142",
+        emailAddress: "hi@testresto.com",
+      });
+      renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      expect(screen.getByLabelText("Call +1 555 0142")).toBeTruthy();
+      expect(screen.getByLabelText("Email hi@testresto.com")).toBeTruthy();
+    });
+
+    it("dials the phone with formatting stripped, and mailtos the email", async () => {
+      const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue({
+        ...mockRestaurant,
+        phoneNumber: "+1 555 0142",
+        emailAddress: "hi@testresto.com",
+      });
+      renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
+
+      await waitFor(() => expect(screen.getByLabelText("Call +1 555 0142")).toBeTruthy());
+      fireEvent.press(screen.getByLabelText("Call +1 555 0142"));
+      expect(openURL).toHaveBeenCalledWith("tel:+15550142");
+
+      fireEvent.press(screen.getByLabelText("Email hi@testresto.com"));
+      expect(openURL).toHaveBeenCalledWith("mailto:hi@testresto.com");
+      openURL.mockRestore();
+    });
   });
 
   it("does not trigger a lookup when submitting the form with empty fields", async () => {
@@ -224,6 +268,13 @@ describe("LookupScreen", () => {
           date: "2026-01-01",
           seats: 4,
         },
+        {
+          bookingRef: "CACHED2",
+          email: "second@test.com",
+          restaurantName: "Second Resto",
+          date: "2026-03-03",
+          seats: 2,
+        },
       ];
       (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
@@ -231,15 +282,17 @@ describe("LookupScreen", () => {
       renderWithProviders(<LookupScreen />);
 
       await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
-      fireEvent.press(screen.getByText("CACHED1"));
+      // The second row, so the press is doing the work rather than the auto-open that
+      // already took the first.
+      fireEvent.press(screen.getByText("CACHED2"));
 
-      expect(getBookingByRef).toHaveBeenCalledWith("CACHED1", "cached@test.com");
+      expect(getBookingByRef).toHaveBeenCalledWith("CACHED2", "second@test.com");
       await waitFor(() =>
-        expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("CACHED1")
+        expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("CACHED2")
       );
     });
 
-    it("hides the recent-bookings list once a result is showing, so a just-looked-up ref doesn't render twice", async () => {
+    it("keeps the recent-bookings list up while a result is showing, marking the open one", async () => {
       const mockCached = [
         {
           bookingRef: "REF123",
@@ -248,20 +301,112 @@ describe("LookupScreen", () => {
           date: "2026-01-01",
           seats: 4,
         },
+        {
+          bookingRef: "OTHER9",
+          email: "test@test.com",
+          restaurantName: "Other Resto",
+          date: "2026-02-02",
+          seats: 2,
+        },
       ];
       (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
 
       renderWithProviders(<LookupScreen />);
-      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      // The list stays put — the panel is a column over, not on top of it — so the diner
+      // can go straight to another booking without dismissing the result first.
+      expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy();
+      expect(screen.getByText("OTHER9")).toBeTruthy();
 
-      fireEvent.press(screen.getByText("REF123"));
+      const openRow = screen.getByLabelText("Look up booking REF123 at Cached Resto");
+      expect(openRow.props.accessibilityState).toEqual({ selected: true });
+      const otherRow = screen.getByLabelText("Look up booking OTHER9 at Other Resto");
+      expect(otherRow.props.accessibilityState).toEqual({ selected: false });
+    });
+  });
+
+  describe("opening the most recent booking on arrival", () => {
+    const twoCached = [
+      {
+        bookingRef: "REF123",
+        email: "test@test.com",
+        restaurantName: "Cached Resto",
+        date: "2026-01-01",
+        seats: 4,
+      },
+      {
+        bookingRef: "OTHER9",
+        email: "other@test.com",
+        restaurantName: "Other Resto",
+        date: "2026-02-02",
+        seats: 2,
+      },
+    ];
+
+    it("looks the first cached booking up and fills the form with it", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen />);
 
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      expect(getBookingByRef).toHaveBeenCalledWith("REF123", "test@test.com");
+      expect(getBookingByRef).not.toHaveBeenCalledWith("OTHER9", "other@test.com");
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("REF123");
+    });
+
+    it("stays idle when there is nothing cached", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue([]);
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(screen.getByText("Find my booking")).toBeTruthy());
+      expect(getBookingByRef).not.toHaveBeenCalled();
       expect(screen.queryByText("YOUR RECENT BOOKINGS")).toBeNull();
-      // The ref now appears exactly once (inside the result panel), not once there and
-      // once in a recent-bookings row underneath the form.
-      expect(screen.getAllByText("REF123")).toHaveLength(1);
+    });
+
+    it("defers to a deep link rather than opening a cached booking over it", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen initialRef="LINKED" initialEmail="linked@test.com" />);
+
+      await waitFor(() => expect(getBookingByRef).toHaveBeenCalled());
+      // The booking named in the URL is the only one looked up — a /booking-confirmation
+      // arrival must not be bumped off its own booking by whatever is in the cookie.
+      expect(getBookingByRef).toHaveBeenCalledWith("LINKED", "linked@test.com");
+      expect(getBookingByRef).toHaveBeenCalledTimes(1);
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("LINKED");
+    });
+
+    it("stays out of the way on a phone, where the result would cover the form", async () => {
+      setWidth(400);
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+      expect(getBookingByRef).not.toHaveBeenCalled();
+    });
+
+    it("leaves a reference already being typed alone", async () => {
+      let release: (value: unknown) => void = () => {};
+      (fetchCachedBookings as jest.Mock).mockReturnValue(
+        new Promise((resolve) => {
+          release = resolve;
+        })
+      );
+
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "MY-OWN-REF");
+
+      release(twoCached);
+      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+
+      expect(getBookingByRef).not.toHaveBeenCalled();
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("MY-OWN-REF");
     });
   });
 
@@ -359,7 +504,7 @@ describe("LookupScreen", () => {
         await new Promise((resolve) => setTimeout(resolve, 400));
       });
       expect(screen.queryByTestId("result-panel")).toBeNull();
-      expect(screen.getByText("Find My Booking")).toBeTruthy();
+      expect(screen.getByText("Find my booking")).toBeTruthy();
     });
   });
 
@@ -389,6 +534,6 @@ describe("LookupScreen", () => {
     const { ScrollView } = require("react-native");
     const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
     fireEvent.scroll(scrollViews[0], { nativeEvent: { contentOffset: { y: 400 } } });
-    expect(screen.getByText("Find My Booking")).toBeTruthy();
+    expect(screen.getByText("Find my booking")).toBeTruthy();
   });
 });
