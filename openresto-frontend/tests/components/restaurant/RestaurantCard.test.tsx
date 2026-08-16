@@ -389,4 +389,79 @@ describe("RestaurantCard", () => {
       expect(el).toBeTruthy();
     });
   });
+
+  it("renders no tags when tags is empty", async () => {
+    render(<RestaurantCard restaurant={{ ...mockRestaurant, tags: [] }} />);
+    await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
+    expect(screen.queryByText("Dog friendly")).toBeNull();
+  });
+
+  describe("walk-in only", () => {
+    // Today's ISO day in UTC (the card's timezone in these fixtures).
+    const jsDay = new Date().getUTCDay();
+    const todayIso = jsDay === 0 ? 7 : jsDay;
+
+    beforeEach(() => {
+      (fetchAvailability as jest.Mock).mockResolvedValue({
+        restaurantId: 1,
+        date: "2026-05-25",
+        slots: [{ time: "19:00", isAvailable: true, availableTableIds: [1], category: "Dinner" }],
+      });
+    });
+
+    it("shows an empty state instead of slots and skips availability", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInOnly: true }} />);
+      expect(screen.getByTestId("walk-in-slot-notice")).toBeTruthy();
+      expect(screen.getByText("No reservations required")).toBeTruthy();
+      expect(screen.queryByText("Available slots")).toBeNull();
+      expect(fetchAvailability).not.toHaveBeenCalled();
+    });
+
+    it("shows the walk-in badge for walk-in only locations", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInOnly: true }} />);
+      expect(screen.getByTestId("walk-in-badge")).toBeTruthy();
+      expect(screen.getByText("Walk-ins only")).toBeTruthy();
+    });
+
+    it("shows an empty state when today is a walk-in day", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInDays: String(todayIso) }} />);
+      expect(screen.getByTestId("walk-in-slot-notice")).toBeTruthy();
+      expect(screen.getByText("No reservations required")).toBeTruthy();
+      expect(fetchAvailability).not.toHaveBeenCalled();
+    });
+
+    it("keeps normal slots when the walk-in day is not today", async () => {
+      const otherDay = todayIso === 7 ? 1 : todayIso + 1;
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInDays: String(otherDay) }} />);
+      await waitFor(() => expect(screen.getByText("Available slots")).toBeTruthy());
+      expect(screen.queryByTestId("walk-in-slot-notice")).toBeNull();
+      expect(fetchAvailability).toHaveBeenCalled();
+    });
+
+    it("always shows the walk-in badge, even on a non-walk-in day", async () => {
+      const otherDay = todayIso === 7 ? 1 : todayIso + 1;
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInDays: String(otherDay) }} />);
+      expect(screen.getByTestId("walk-in-badge")).toBeTruthy();
+      // Slots still render normally for today alongside the badge.
+      await waitFor(() => expect(screen.getByText("Available slots")).toBeTruthy());
+    });
+
+    it("lists multiple walk-in days by name in the badge", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInDays: "6,7" }} />);
+      expect(screen.getByText("Walk-ins on Saturdays and Sundays")).toBeTruthy();
+    });
+
+    it("shows the plain 'Walk-ins only' badge for a fully walk-in location, ignoring walkInDays", () => {
+      render(
+        <RestaurantCard restaurant={{ ...mockRestaurant, walkInOnly: true, walkInDays: "6,7" }} />
+      );
+      expect(screen.getByText("Walk-ins only")).toBeTruthy();
+      expect(screen.queryByText("Walk-ins on Saturdays and Sundays")).toBeNull();
+    });
+
+    it("does not show the walk-in badge when no walk-in policy is configured", () => {
+      render(<RestaurantCard restaurant={mockRestaurant} />);
+      expect(screen.queryByTestId("walk-in-badge")).toBeNull();
+    });
+  });
 });

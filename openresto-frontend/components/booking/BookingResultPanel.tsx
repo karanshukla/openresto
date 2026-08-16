@@ -179,7 +179,7 @@ export default function BookingResultPanel({
               })}
             </View>
           )}
-          <DirectionsActions address={restaurant.address} compact={compact} />
+          <DirectionsActions address={restaurant.address} />
         </>
       )}
 

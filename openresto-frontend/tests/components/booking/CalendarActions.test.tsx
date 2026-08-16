@@ -28,6 +28,10 @@ const baseProps = {
 };
 
 describe("CalendarActions", () => {
+  beforeEach(() => {
+    (window as unknown as { open: jest.Mock }).open = jest.fn();
+  });
+
   it("renders full variant by default", () => {
     render(<CalendarActions {...baseProps} />);
     expect(screen.getByText("Google Calendar")).toBeTruthy();
@@ -82,6 +86,22 @@ describe("CalendarActions", () => {
     render(<CalendarActions {...baseProps} />);
     fireEvent.press(screen.getByText("Download .ics"));
     expect(downloadIcs).toHaveBeenCalled();
+  });
+
+  it("opens the Google and Outlook URLs in a new tab, compact variant", () => {
+    render(<CalendarActions {...baseProps} variant="compact" />);
+    fireEvent.press(screen.getByText("Google"));
+    expect(window.open).toHaveBeenCalledWith("https://calendar.google.com/test", "_blank");
+    fireEvent.press(screen.getByText("Outlook"));
+    expect(window.open).toHaveBeenCalledWith("https://outlook.com/test", "_blank");
+  });
+
+  it("opens the Google and Outlook URLs in a new tab, full variant", () => {
+    render(<CalendarActions {...baseProps} />);
+    fireEvent.press(screen.getByText("Google Calendar"));
+    expect(window.open).toHaveBeenCalledWith("https://calendar.google.com/test", "_blank");
+    fireEvent.press(screen.getByText("Outlook Calendar"));
+    expect(window.open).toHaveBeenCalledWith("https://outlook.com/test", "_blank");
   });
 
   it("renders with specialRequests prop", () => {
