@@ -129,7 +129,7 @@ export default function Select({
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Icon name={icon} size={15} color={placeholderColor} />
+            <Icon name={icon} size="md" color={placeholderColor} />
             <ThemedText
               numberOfLines={1}
               style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
@@ -142,13 +142,7 @@ export default function Select({
             {selectedOption?.label ?? placeholder}
           </ThemedText>
         )}
-        <ThemedText
-          style={[styles.chevron, { color: placeholderColor }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          ▾
-        </ThemedText>
+        <Icon name="chevron-down" size="md" color={placeholderColor} />
       </Pressable>
     </>
   );

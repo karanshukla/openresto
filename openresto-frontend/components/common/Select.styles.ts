@@ -22,9 +22,6 @@ export const styles = StyleSheet.create({
   triggerText: {
     fontSize: theme.formSizes.inputFontSize,
   },
-  chevron: {
-    fontSize: 14,
-  },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

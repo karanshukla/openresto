@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
+import { Icon } from "@/components/common/Icon";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, FlatList, TouchableOpacity } from "react-native";
 import { useState } from "react";
@@ -105,16 +106,10 @@ export default function TimePicker({
         accessibilityLabel={selected ? `Change time, currently ${selected.label}` : "Select a time"}
         accessibilityState={{ expanded: modalVisible }}
       >
-        <ThemedText style={!selected && { color: placeholderColor }}>
+        <ThemedText style={[styles.triggerText, !selected && { color: placeholderColor }]}>
           {selected?.label ?? "Select a time"}
         </ThemedText>
-        <ThemedText
-          style={[styles.chevron, { color: placeholderColor }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          ▾
-        </ThemedText>
+        <Icon name="chevron-down" size="md" color={placeholderColor} />
       </Pressable>
     </>
   );

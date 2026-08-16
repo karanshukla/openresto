@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import { Icon } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { generateTimeOptions } from "@/utils/timeOptions";
@@ -41,16 +42,12 @@ export default function TimePicker({
           { borderColor: open ? primaryColor : borderColor, backgroundColor: bg },
         ]}
       >
-        <ThemedText style={{ color: selectedTime ? textColor : placeholderColor, fontSize: 15 }}>
+        <ThemedText
+          style={[styles.triggerText, { color: selectedTime ? textColor : placeholderColor }]}
+        >
           {selectedTime ?? "Select a time"}
         </ThemedText>
-        <ThemedText
-          style={[styles.chevron, { color: placeholderColor }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          ▾
-        </ThemedText>
+        <Icon name="chevron-down" size="md" color={placeholderColor} />
       </Pressable>
 
       <Modal

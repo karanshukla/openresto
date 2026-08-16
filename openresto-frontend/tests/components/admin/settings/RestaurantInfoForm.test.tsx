@@ -220,16 +220,17 @@ describe("RestaurantInfoForm", () => {
   });
 
   // ── Booking duration (#135) ────────────────────────────────────────────
-  // The duration control is a raw web `<select>`, not a React Native primitive, so `testID`
-  // does not forward to a queryable DOM attribute the way it does for View/Text (see
-  // TimePicker.web.tsx's `data-testid` convention for the same reason). Query it via
-  // UNSAFE_getByProps against the `data-testid` prop instead of getByTestId.
-  const getDurationSelect = () =>
-    screen.UNSAFE_getByProps({ "data-testid": "booking-duration-select" });
+  // The booking controls are the shared `Select`: its trigger renders the selected option's
+  // label, so a selection is asserted by that label and changed by pressing the trigger and
+  // then the option inside the modal.
+  const chooseOption = (currentLabel: string, nextLabel: string) => {
+    fireEvent.press(screen.getByText(currentLabel));
+    fireEvent.press(screen.getByText(nextLabel));
+  };
 
   it("renders the booking duration select at the restaurant's saved value", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(getDurationSelect().props.value).toBe(90);
+    expect(screen.getByText("1h 30m")).toBeTruthy();
   });
 
   it("defaults the booking duration to 1h (60 minutes) when the restaurant has none set", () => {
@@ -242,7 +243,7 @@ describe("RestaurantInfoForm", () => {
         onSaved={onSaved}
       />
     );
-    expect(getDurationSelect().props.value).toBe(60);
+    expect(screen.getByText("1h")).toBeTruthy();
   });
 
   it("includes the saved defaultBookingDurationMinutes in the save payload", async () => {
@@ -261,9 +262,8 @@ describe("RestaurantInfoForm", () => {
 
   it("marks the form dirty and updates the selection when the booking duration changes", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getDurationSelect();
-    fireEvent(select, "change", { target: { value: "120" } });
-    expect(getDurationSelect().props.value).toBe(120);
+    chooseOption("1h 30m", "2h");
+    expect(screen.getByText("2h")).toBeTruthy();
   });
 
   it("saves the newly selected booking duration", async () => {
@@ -272,8 +272,7 @@ describe("RestaurantInfoForm", () => {
       defaultBookingDurationMinutes: 120,
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getDurationSelect();
-    fireEvent(select, "change", { target: { value: "120" } });
+    chooseOption("1h 30m", "2h");
     await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -285,14 +284,10 @@ describe("RestaurantInfoForm", () => {
   });
 
   // ── Booking start-time interval (#245) ──────────────────────────────────
-  // Same raw-<select>/data-testid caveat as the duration control above — query via
-  // UNSAFE_getByProps since testID doesn't forward to a queryable DOM attribute.
-  const getIntervalSelect = () =>
-    screen.UNSAFE_getByProps({ "data-testid": "booking-slot-interval-select" });
 
   it("renders the slot interval select at the restaurant's saved value", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(getIntervalSelect().props.value).toBe(30);
+    expect(screen.getByText("30m")).toBeTruthy();
   });
 
   it("defaults the slot interval to 30 minutes when the restaurant has none set", () => {
@@ -305,14 +300,13 @@ describe("RestaurantInfoForm", () => {
         onSaved={onSaved}
       />
     );
-    expect(getIntervalSelect().props.value).toBe(30);
+    expect(screen.getByText("30m")).toBeTruthy();
   });
 
   it("marks the form dirty and updates the selection when the slot interval changes", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getIntervalSelect();
-    fireEvent(select, "change", { target: { value: "15" } });
-    expect(getIntervalSelect().props.value).toBe(15);
+    chooseOption("30m", "15m");
+    expect(screen.getByText("15m")).toBeTruthy();
   });
 
   it("includes the slot interval in the save payload", async () => {
@@ -335,8 +329,7 @@ describe("RestaurantInfoForm", () => {
       bookingSlotIntervalMinutes: 60,
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getIntervalSelect();
-    fireEvent(select, "change", { target: { value: "60" } });
+    chooseOption("30m", "1h");
     await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -348,14 +341,12 @@ describe("RestaurantInfoForm", () => {
   });
 
   // ── Max table oversize (#244) ───────────────────────────────────────────
-  // Same raw-<select>/data-testid caveat as the duration control above. The "Off" option
-  // maps to "" in the DOM and null in state; selecting a number sends that integer.
-  const getOversizeSelect = () =>
-    screen.UNSAFE_getByProps({ "data-testid": "max-table-oversize-select" });
+  // "Off" is the sentinel the picker carries for the API's null; selecting a number sends
+  // that integer.
 
   it("renders the oversize select at Off when the restaurant has none set", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(getOversizeSelect().props.value).toBe("");
+    expect(screen.getByText("Off")).toBeTruthy();
   });
 
   it("renders the oversize select at the restaurant's saved value", () => {
@@ -365,14 +356,13 @@ describe("RestaurantInfoForm", () => {
         onSaved={onSaved}
       />
     );
-    expect(getOversizeSelect().props.value).toBe(2);
+    expect(screen.getByText("+2 seats")).toBeTruthy();
   });
 
   it("marks the form dirty and updates the selection when the oversize changes", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getOversizeSelect();
-    fireEvent(select, "change", { target: { value: "1" } });
-    expect(getOversizeSelect().props.value).toBe(1);
+    chooseOption("Off", "+1 seat");
+    expect(screen.getByText("+1 seat")).toBeTruthy();
   });
 
   it("saves the newly selected oversize cap", async () => {
@@ -381,8 +371,7 @@ describe("RestaurantInfoForm", () => {
       maxTableOversizeSeats: 1,
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    const select = getOversizeSelect();
-    fireEvent(select, "change", { target: { value: "1" } });
+    chooseOption("Off", "+1 seat");
     await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -402,8 +391,7 @@ describe("RestaurantInfoForm", () => {
         onSaved={onSaved}
       />
     );
-    const select = getOversizeSelect();
-    fireEvent(select, "change", { target: { value: "" } });
+    chooseOption("+2 seats", "Off");
     await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -412,14 +400,13 @@ describe("RestaurantInfoForm", () => {
   });
 
   // ── Booking reference format (#179) ─────────────────────────────────────
-  // Same raw-<select>/data-testid caveat as the controls above. Values are the backend
-  // BookingRefFormat member names, sent verbatim.
-  const getRefFormatSelect = () =>
-    screen.UNSAFE_getByProps({ "data-testid": "booking-ref-format-select" });
+  // Option values are the backend BookingRefFormat member names, sent verbatim.
+  const WORDS_FORMAT = "Words (crispy-basil-saffron)";
+  const NUMBERS_FORMAT = "Numbers (48273910)";
 
   it("renders the booking ref format select at AlphaNumeric when the restaurant has none set", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    expect(getRefFormatSelect().props.value).toBe("AlphaNumeric");
+    expect(screen.getByText(WORDS_FORMAT)).toBeTruthy();
   });
 
   it("renders the booking ref format select at the restaurant's saved value", () => {
@@ -429,13 +416,13 @@ describe("RestaurantInfoForm", () => {
         onSaved={onSaved}
       />
     );
-    expect(getRefFormatSelect().props.value).toBe("Numeric");
+    expect(screen.getByText(NUMBERS_FORMAT)).toBeTruthy();
   });
 
   it("marks the form dirty and updates the selection when the ref format changes", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
-    expect(getRefFormatSelect().props.value).toBe("Numeric");
+    chooseOption(WORDS_FORMAT, NUMBERS_FORMAT);
+    expect(screen.getByText(NUMBERS_FORMAT)).toBeTruthy();
   });
 
   it("saves the newly selected ref format", async () => {
@@ -444,7 +431,7 @@ describe("RestaurantInfoForm", () => {
       bookingRefFormat: "Numeric",
     });
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-    fireEvent(getRefFormatSelect(), "change", { target: { value: "Numeric" } });
+    chooseOption(WORDS_FORMAT, NUMBERS_FORMAT);
     await flushAutosave();
     expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
       1,
@@ -639,8 +626,8 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={sparseRestaurant} onSaved={onSaved} />);
     expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();
     expect(screen.getByPlaceholderText("e.g. 123 Main St")).toBeTruthy();
-    expect(getDurationSelect().props.value).toBe(60);
-    expect(getIntervalSelect().props.value).toBe(30);
+    expect(screen.getByText("1h")).toBeTruthy();
+    expect(screen.getByText("30m")).toBeTruthy();
     expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
   });
 
@@ -1106,9 +1093,9 @@ describe("RestaurantInfoForm", () => {
 
     it("collapses the Booking Settings card when its header is pressed", () => {
       render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-      expect(screen.getByText("Default Booking duration")).toBeTruthy();
+      expect(screen.getByText("Default booking duration")).toBeTruthy();
       fireEvent.press(screen.getByText("Booking Settings"));
-      expect(screen.queryByText("Default Booking duration")).toBeNull();
+      expect(screen.queryByText("Default booking duration")).toBeNull();
     });
   });
 });

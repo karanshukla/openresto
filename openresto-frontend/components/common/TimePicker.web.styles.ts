@@ -9,14 +9,12 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 44,
+    height: theme.formSizes.inputHeight,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: theme.formSizes.inputBorderRadius,
+    paddingHorizontal: theme.formSizes.inputPaddingH,
   },
-  chevron: {
-    fontSize: 14,
-  },
+  triggerText: { fontSize: theme.formSizes.inputFontSize },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

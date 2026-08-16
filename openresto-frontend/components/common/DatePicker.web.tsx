@@ -183,26 +183,22 @@ export default function DatePicker({
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Icon name={icon} size={15} color={placeholderColor} />
+            <Icon name={icon} size="md" color={placeholderColor} />
             <ThemedText
               numberOfLines={1}
-              style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}
+              style={[styles.triggerText, { color: selectedDate ? textColor : placeholderColor }]}
             >
               {triggerLabel ?? selectedLabel ?? "Select a date"}
             </ThemedText>
           </View>
         ) : (
-          <ThemedText style={{ color: selectedDate ? textColor : placeholderColor, fontSize: 15 }}>
+          <ThemedText
+            style={[styles.triggerText, { color: selectedDate ? textColor : placeholderColor }]}
+          >
             {triggerLabel ?? selectedLabel ?? "Select a date"}
           </ThemedText>
         )}
-        <ThemedText
-          style={[styles.chevron, { color: placeholderColor }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          ▾
-        </ThemedText>
+        <Icon name="chevron-down" size="md" color={placeholderColor} />
       </Pressable>
 
       <Modal

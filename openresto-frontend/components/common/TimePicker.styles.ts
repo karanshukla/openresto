@@ -11,9 +11,7 @@ export const styles = StyleSheet.create({
     borderRadius: theme.formSizes.inputBorderRadius,
     paddingHorizontal: theme.formSizes.inputPaddingH,
   },
-  chevron: {
-    fontSize: 14,
-  },
+  triggerText: { fontSize: theme.formSizes.inputFontSize },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

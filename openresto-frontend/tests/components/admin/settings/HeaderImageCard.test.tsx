@@ -193,12 +193,18 @@ describe("HeaderImageCard", () => {
     });
   });
 
+  // The fit control is the shared `Select`: its trigger renders the selected option's label,
+  // and choosing a value means pressing that trigger then the option inside the modal.
+  const COVER_FIT = "Cover (fill, may crop)";
+  const CONTAIN_FIT = "Contain (show whole image)";
+  const chooseContainFit = () => {
+    fireEvent.press(screen.getByText(COVER_FIT));
+    fireEvent.press(screen.getByText(CONTAIN_FIT));
+  };
+
   it("renders the image fit select defaulting to Cover", () => {
     render(<HeaderImageCard {...baseProps} />);
-    // Raw web <select> forwards `data-testid` not `testID` (same as the booking-duration
-    // select in RestaurantInfoForm), so query via UNSAFE_getByProps.
-    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
-    expect(select.props.value).toBe("Cover");
+    expect(screen.getByText(COVER_FIT)).toBeTruthy();
   });
 
   it("pre-fills headerImageFit from brand context", () => {
@@ -209,14 +215,12 @@ describe("HeaderImageCard", () => {
       headerImageFit: "Contain",
     };
     render(<HeaderImageCard {...baseProps} />);
-    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
-    expect(select.props.value).toBe("Contain");
+    expect(screen.getByText(CONTAIN_FIT)).toBeTruthy();
   });
 
   it("autosaves the image fit when it changes", async () => {
     render(<HeaderImageCard {...baseProps} />);
-    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
-    fireEvent(select, "change", { target: { value: "Contain" } });
+    chooseContainFit();
     // The save is debounced past the last change, so it lands inside the waitFor window.
     await waitFor(
       () => expect(adminApi.saveBrandSettings).toHaveBeenCalledWith({ headerImageFit: "Contain" }),
@@ -228,8 +232,7 @@ describe("HeaderImageCard", () => {
   it("reports an unreachable server", async () => {
     (adminApi.saveBrandSettings as jest.Mock).mockResolvedValue(null);
     render(<HeaderImageCard {...baseProps} />);
-    const select = screen.UNSAFE_getByProps({ "data-testid": "header-image-fit-select" });
-    fireEvent(select, "change", { target: { value: "Contain" } });
+    chooseContainFit();
     await waitFor(() => expect(screen.getByText("Couldn't reach the server.")).toBeTruthy(), {
       timeout: 2000,
     });

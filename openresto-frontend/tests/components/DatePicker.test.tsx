@@ -68,11 +68,6 @@ describe("DatePicker (native)", () => {
     expect(onSelect).toHaveBeenCalledWith(todayStr);
   });
 
-  it("renders chevron indicator", () => {
-    render(<DatePicker onSelect={jest.fn()} />);
-    expect(screen.getByText("▾", { includeHiddenElements: true })).toBeTruthy();
-  });
-
   it("filters date options to open days only", () => {
     render(<DatePicker onSelect={jest.fn()} openDays={[1, 2, 3, 4, 5]} />);
     expect(screen.getByText("Select a date")).toBeTruthy();

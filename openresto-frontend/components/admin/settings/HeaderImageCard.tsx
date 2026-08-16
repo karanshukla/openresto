@@ -8,11 +8,8 @@ import { useBrand } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAutosave } from "@/hooks/use-autosave";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import {
-  styles as settingsStyles,
-  domStyles as settingsDomStyles,
-  themedSelect,
-} from "./settings.styles";
+import { styles as settingsStyles } from "./settings.styles";
+import Select, { type SelectOption } from "@/components/common/Select";
 import { styles, domStyles } from "./HeaderImageCard.styles";
 import { useBrandDraftPublish } from "./BrandDraftContext";
 import { saveBrandFields } from "./brandAutosave";
@@ -20,6 +17,11 @@ import { SaveStatus } from "./SaveStatus";
 import { Icon } from "@/components/common/Icon";
 
 const MAX_HERO_MB = 5;
+
+const IMAGE_FIT_OPTIONS: SelectOption[] = [
+  { value: "Cover", label: "Cover (fill, may crop)" },
+  { value: "Contain", label: "Contain (show whole image)" },
+];
 
 /**
  * The home page's header image and how it fills its frame. Upload and removal take effect
@@ -36,7 +38,7 @@ export function HeaderImageCard({
   cardBg: string;
 }) {
   const brand = useBrand();
-  const { primaryColor, colors } = useAppTheme();
+  const { primaryColor } = useAppTheme();
   const [headerImageFit, setHeaderImageFit] = useState(brand.headerImageFit ?? "Cover");
   const [heroPreview, setHeroPreview] = useState<string | null>(brand.headerImageUrl ?? null);
   const [heroUploading, setHeroUploading] = useState(false);
@@ -163,15 +165,12 @@ export function HeaderImageCard({
 
           <View style={settingsStyles.field}>
             <ThemedText style={settingsStyles.fieldLabel}>Image fit</ThemedText>
-            <select
-              data-testid="header-image-fit-select"
-              value={headerImageFit}
-              onChange={/* istanbul ignore next */ (e) => setHeaderImageFit(e.target.value)}
-              style={{ ...settingsDomStyles.select, ...themedSelect(colors) }}
-            >
-              <option value="Cover">Cover (fill, may crop)</option>
-              <option value="Contain">Contain (show whole image)</option>
-            </select>
+            <Select
+              accessibilityLabel="Image fit"
+              options={IMAGE_FIT_OPTIONS}
+              selectedValue={headerImageFit}
+              onSelect={(value) => setHeaderImageFit(String(value))}
+            />
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
               &quot;Contain&quot; avoids cropping on mobile; &quot;Cover&quot; fills the frame.
             </ThemedText>

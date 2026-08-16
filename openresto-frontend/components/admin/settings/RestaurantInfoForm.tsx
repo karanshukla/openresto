@@ -25,7 +25,8 @@ import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
-import { styles as sharedStyles, domStyles, themedSelect } from "./settings.styles";
+import { styles as sharedStyles } from "./settings.styles";
+import Select, { type SelectOption } from "@/components/common/Select";
 import { styles } from "./RestaurantInfoForm.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -84,16 +85,34 @@ const TIMEZONES = [
   "Africa/Nairobi",
 ];
 
-const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
+const TIMEZONE_OPTIONS: SelectOption[] = TIMEZONES.map((tz) => ({
+  value: tz,
+  label: tz.replace(/_/g, " "),
+}));
+
+const DURATION_OPTIONS: SelectOption[] = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480].map(
+  (minutes) => ({ value: minutes, label: formatDurationLabel(minutes) })
+);
 
 // Allowed start-time intervals — must match the server-side allow-list
 // (RestaurantManagementService._allowedBookingSlotIntervalsMinutes). Kept small so
 // availability slot generation can't be sent into a degenerate spin.
-const SLOT_INTERVAL_OPTIONS = [15, 30, 60];
+const SLOT_INTERVAL_OPTIONS: SelectOption[] = [15, 30, 60].map((minutes) => ({
+  value: minutes,
+  label: formatDurationLabel(minutes),
+}));
 
-// Max spare-seats options for MaxTableOversizeSeats. null = "Off" (unrestricted); the cap
-// rejects a table when (table.seats - partySize) exceeds the selected value.
-const OVERSIZE_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+// Max spare-seats options for MaxTableOversizeSeats. The API models "unrestricted" as null,
+// which a Select option value can't hold, so it travels through the picker as this sentinel.
+// The cap rejects a table when (table.seats - partySize) exceeds the selection.
+const OVERSIZE_OFF = "off";
+const OVERSIZE_OPTIONS: SelectOption[] = [
+  { value: OVERSIZE_OFF, label: "Off" },
+  ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((seats) => ({
+    value: seats,
+    label: `+${seats} seat${seats === 1 ? "" : "s"}`,
+  })),
+];
 
 // Booking reference formats — values must match the backend BookingRefFormat member names,
 // which is what the API accepts and returns.
@@ -452,7 +471,7 @@ export function RestaurantInfoForm({
   const contactSubtitle =
     [phoneNumber.trim(), emailAddress.trim()].filter(Boolean).join(" · ") ||
     "Uses brand-wide contact details";
-  const bookingSubtitle = `${timezone} · ${formatDurationLabel(defaultBookingDurationMinutes)} bookings`;
+  const bookingSubtitle = `${timezone.replace(/_/g, " ")} · ${formatDurationLabel(defaultBookingDurationMinutes)} bookings`;
 
   return (
     <>
@@ -646,113 +665,71 @@ export function RestaurantInfoForm({
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
                   Timezone
                 </ThemedText>
-                <select
-                  value={timezone}
-                  onChange={/* istanbul ignore next */ (e) => setTimezone(e.target.value)}
-                  style={{ ...domStyles.select, ...themedSelect(colors) }}
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  accessibilityLabel="Timezone"
+                  options={TIMEZONE_OPTIONS}
+                  selectedValue={timezone}
+                  onSelect={(value) => setTimezone(String(value))}
+                />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  If this value differs from the customer's device timezone, a note will appear on
-                  the booking page.
+                  If this value differs from the customer&apos;s device timezone, a note will appear
+                  on the booking page.
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Default Booking duration
+                  Default booking duration
                 </ThemedText>
-                <select
-                  data-testid="booking-duration-select"
-                  value={defaultBookingDurationMinutes}
-                  onChange={
-                    /* istanbul ignore next */ (e) =>
-                      setDefaultBookingDurationMinutes(Number(e.target.value))
-                  }
-                  style={{ ...domStyles.select, ...themedSelect(colors) }}
-                >
-                  {DURATION_OPTIONS.map((minutes) => (
-                    <option key={minutes} value={minutes}>
-                      {formatDurationLabel(minutes)}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  accessibilityLabel="Default booking duration"
+                  options={DURATION_OPTIONS}
+                  selectedValue={defaultBookingDurationMinutes}
+                  onSelect={(value) => setDefaultBookingDurationMinutes(Number(value))}
+                />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  How long each new booking occupies a table by default
+                  How long each new booking occupies a table by default.
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
                   Booking start-time interval
                 </ThemedText>
-                <select
-                  data-testid="booking-slot-interval-select"
-                  value={bookingSlotIntervalMinutes}
-                  onChange={
-                    /* istanbul ignore next */ (e) =>
-                      setBookingSlotIntervalMinutes(Number(e.target.value))
-                  }
-                  style={{ ...domStyles.select, ...themedSelect(colors) }}
-                >
-                  {SLOT_INTERVAL_OPTIONS.map((minutes) => (
-                    <option key={minutes} value={minutes}>
-                      {formatDurationLabel(minutes)}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  accessibilityLabel="Booking start-time interval"
+                  options={SLOT_INTERVAL_OPTIONS}
+                  selectedValue={bookingSlotIntervalMinutes}
+                  onSelect={(value) => setBookingSlotIntervalMinutes(Number(value))}
+                />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  How far apart selectable start times are (independent of booking duration)
+                  How far apart selectable start times are, independent of booking duration.
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
                   Max table oversize
                 </ThemedText>
-                <select
-                  data-testid="max-table-oversize-select"
-                  value={maxTableOversizeSeats ?? ""}
-                  onChange={
-                    /* istanbul ignore next */ (e) =>
-                      setMaxTableOversizeSeats(
-                        e.target.value === "" ? null : Number(e.target.value)
-                      )
+                <Select
+                  accessibilityLabel="Max table oversize"
+                  options={OVERSIZE_OPTIONS}
+                  selectedValue={maxTableOversizeSeats ?? OVERSIZE_OFF}
+                  onSelect={(value) =>
+                    setMaxTableOversizeSeats(value === OVERSIZE_OFF ? null : Number(value))
                   }
-                  style={{ ...domStyles.select, ...themedSelect(colors) }}
-                >
-                  <option value="">Off</option>
-                  {OVERSIZE_OPTIONS.map((seats) => (
-                    <option key={seats} value={seats}>
-                      +{seats} seat{seats === 1 ? "" : "s"}
-                    </option>
-                  ))}
-                </select>
+                />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  Don&apos;t offer tables more than this many seats larger than the party size
+                  Don&apos;t offer tables more than this many seats larger than the party size.
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
                   Booking reference format
                 </ThemedText>
-                <select
-                  data-testid="booking-ref-format-select"
-                  value={bookingRefFormat}
-                  onChange={
-                    /* istanbul ignore next */ (e) =>
-                      setBookingRefFormat(e.target.value as BookingRefFormat)
-                  }
-                  style={{ ...domStyles.select, ...themedSelect(colors) }}
-                >
-                  {BOOKING_REF_FORMAT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  accessibilityLabel="Booking reference format"
+                  options={BOOKING_REF_FORMAT_OPTIONS}
+                  selectedValue={bookingRefFormat}
+                  onSelect={(value) => setBookingRefFormat(value as BookingRefFormat)}
+                />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
                   What new booking references look like. Existing bookings keep theirs.
                 </ThemedText>
