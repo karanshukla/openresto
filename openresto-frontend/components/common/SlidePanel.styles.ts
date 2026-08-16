@@ -21,6 +21,9 @@ export const styles = StyleSheet.create({
     ...ownsTheGesture,
   },
   sheet: {
+    // The sheet grows with its content up to the cap, then the body scrolls inside it.
+    // flexShrink on the scroller is what lets it give way at the cap instead of forcing
+    // the sheet past it.
     maxHeight: "88%",
     borderTopWidth: 1,
     borderTopLeftRadius: theme.borderRadius.modal,
@@ -34,6 +37,7 @@ export const styles = StyleSheet.create({
     ...ownsTheGesture,
   },
   grabber: { width: 40, height: 4, borderRadius: 2 },
+  sheetScroll: { flexShrink: 1 },
   sheetBody: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,

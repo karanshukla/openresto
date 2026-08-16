@@ -12,7 +12,7 @@ jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 describe("DirectionsActions", () => {
   it("renders an icon strip labelled MAPS when compact", () => {
     renderWithProviders(<DirectionsActions address="123 Main St" compact />);
-    expect(screen.getByText("MAPS")).toBeTruthy();
+    expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
     expect(screen.getByLabelText("Open in Google Maps")).toBeTruthy();
     expect(screen.getByLabelText("Open in Apple Maps")).toBeTruthy();
   });

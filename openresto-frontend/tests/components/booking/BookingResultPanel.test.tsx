@@ -203,8 +203,11 @@ describe("BookingResultPanel", () => {
         onCancelPress={jest.fn()}
       />
     );
-    expect(screen.getByText("MAPS")).toBeTruthy();
-    expect(screen.queryByText("GET DIRECTIONS")).toBeNull();
+    // Same section heading either way — the layout below it is what changes: compact
+    // gets the icon strip, wide gets labelled Google/Apple buttons.
+    expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
+    expect(screen.getByTestId("maps-google-btn")).toBeTruthy();
+    expect(screen.queryByText("Apple")).toBeNull();
   });
 
   it("shows a spinner via the loading prop while cancelling", () => {

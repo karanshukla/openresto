@@ -28,7 +28,9 @@ export default function DirectionsActions({
   if (compact) {
     return (
       <View style={styles.compactWrap}>
-        <ThemedText style={[styles.compactTitle, { color: colors.muted }]}>MAPS</ThemedText>
+        <ThemedText style={[styles.compactTitle, { color: colors.muted }]}>
+          GET DIRECTIONS
+        </ThemedText>
         <View style={styles.compactRow}>
           <IconButton
             testID="maps-google-btn"

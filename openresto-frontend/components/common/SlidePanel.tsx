@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Animated, Modal, PanResponder, Pressable, View } from "react-native";
+import { Animated, Modal, PanResponder, Pressable, ScrollView, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { animateNode, EASE_ENTER, prefersReducedMotion } from "@/utils/webAnimation";
@@ -132,7 +132,18 @@ export default function SlidePanel({
                 ]}
               />
             </View>
-            <View style={styles.sheetBody}>{children}</View>
+            {/* Scrollable, not a plain View: the sheet is capped at a fraction of the
+                viewport and clips its overflow, so a booking taller than that cap loses
+                everything past the fold with no way to reach it. */}
+            <ScrollView
+              testID={`${testID}-body`}
+              style={styles.sheetScroll}
+              contentContainerStyle={styles.sheetBody}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
           </Animated.View>
         </View>
       </Modal>
