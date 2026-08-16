@@ -26,6 +26,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: jest.fn(() => "light"),
 }));
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 jest.mock("@/components/common/TimePicker", () => {
   const { View, Text, Pressable } = require("react-native");
   return {
@@ -147,7 +154,7 @@ describe("RestaurantInfoForm", () => {
     render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
     // Monday (day 1) is active in "1,2,3,4,5" — pressing it deselects it
     fireEvent.press(screen.getByText("Monday"));
-    expect(screen.getByText("4 of 7 days open")).toBeTruthy();
+    expect(screen.getByText(/4 of 7 days open/)).toBeTruthy();
   });
 
   it("adds a tag via onSubmitEditing", () => {
@@ -558,7 +565,7 @@ describe("RestaurantInfoForm", () => {
   describe("reservations / walk-in policy", () => {
     it("shows the online-bookings mode and day chips by default", () => {
       render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
-      expect(screen.getByText("Reservations")).toBeTruthy();
+      expect(screen.getByText("Walk-in Policy")).toBeTruthy();
       expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
       expect(screen.getByTestId("walkin-day-1")).toBeTruthy();
       expect(screen.getByTestId("walkin-day-7")).toBeTruthy();
@@ -1073,5 +1080,35 @@ describe("RestaurantInfoForm", () => {
       1,
       expect.objectContaining({ menuUrl: null })
     );
+  });
+
+  describe("card accordions", () => {
+    it("collapses the Basic Info card when its header is pressed", () => {
+      render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+      expect(screen.getByDisplayValue("Test Resto")).toBeTruthy();
+      fireEvent.press(screen.getByText("Basic Info"));
+      expect(screen.queryByDisplayValue("Test Resto")).toBeNull();
+    });
+
+    it("collapses the Menu card when its header is pressed", () => {
+      render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+      expect(screen.getByText("Upload PDF")).toBeTruthy();
+      fireEvent.press(screen.getByText("Menu"));
+      expect(screen.queryByText("Upload PDF")).toBeNull();
+    });
+
+    it("collapses the Contact card when its header is pressed", () => {
+      render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+      expect(screen.getByPlaceholderText("e.g. +44 20 7946 0958")).toBeTruthy();
+      fireEvent.press(screen.getByText("Contact"));
+      expect(screen.queryByPlaceholderText("e.g. +44 20 7946 0958")).toBeNull();
+    });
+
+    it("collapses the Booking Settings card when its header is pressed", () => {
+      render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+      expect(screen.getByText("Default Booking duration")).toBeTruthy();
+      fireEvent.press(screen.getByText("Booking Settings"));
+      expect(screen.queryByText("Default Booking duration")).toBeNull();
+    });
   });
 });

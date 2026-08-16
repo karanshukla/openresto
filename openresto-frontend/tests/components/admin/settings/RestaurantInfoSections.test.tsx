@@ -37,6 +37,13 @@ jest.mock("@/components/common/Input", () => {
   };
 });
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 const theme = {
   borderColor: "#ddd",
   mutedColor: "#888",
@@ -76,8 +83,8 @@ describe("OpeningHoursSection", () => {
 
   it("renders the section header and day count", () => {
     render(<OpeningHoursSection {...baseProps} />);
-    expect(screen.getByText("Opening hours")).toBeTruthy();
-    expect(screen.getByText("5 of 7 days open")).toBeTruthy();
+    expect(screen.getByText("Opening Hours")).toBeTruthy();
+    expect(screen.getByText(/5 of 7 days open/)).toBeTruthy();
   });
 
   it("renders both mode toggle buttons in uniform mode", () => {
@@ -112,6 +119,13 @@ describe("OpeningHoursSection", () => {
       )
     ).toBeTruthy();
   });
+
+  it("collapses when the header is pressed", () => {
+    render(<OpeningHoursSection {...baseProps} />);
+    expect(screen.getByText("Same every day")).toBeTruthy();
+    fireEvent.press(screen.getByText("Opening Hours"));
+    expect(screen.queryByText("Same every day")).toBeNull();
+  });
 });
 
 describe("WalkInPolicySection", () => {
@@ -128,7 +142,7 @@ describe("WalkInPolicySection", () => {
 
   it("renders the reservations header and default status", () => {
     render(<WalkInPolicySection {...baseProps} />);
-    expect(screen.getByText("Reservations")).toBeTruthy();
+    expect(screen.getByText("Walk-in Policy")).toBeTruthy();
     expect(screen.getByText("Online bookings on every open day")).toBeTruthy();
   });
 
@@ -154,6 +168,13 @@ describe("WalkInPolicySection", () => {
     fireEvent.press(screen.getByTestId("walkin-day-6"));
     expect(baseProps.onToggleWalkInDay).toHaveBeenCalledWith(6);
   });
+
+  it("collapses when the header is pressed", () => {
+    render(<WalkInPolicySection {...baseProps} />);
+    expect(screen.getByText("Online bookings")).toBeTruthy();
+    fireEvent.press(screen.getByText("Walk-in Policy"));
+    expect(screen.queryByText("Online bookings")).toBeNull();
+  });
 });
 
 describe("LocationTagsSection", () => {
@@ -166,6 +187,7 @@ describe("LocationTagsSection", () => {
     borderColor: theme.borderColor,
     mutedColor: theme.mutedColor,
     primaryColor: theme.primaryColor,
+    cardBg: theme.cardBg,
     surface2: theme.surface2,
   };
 
@@ -173,7 +195,7 @@ describe("LocationTagsSection", () => {
 
   it("renders the header and existing tag chips", () => {
     render(<LocationTagsSection {...baseProps} />);
-    expect(screen.getByText("Location tags")).toBeTruthy();
+    expect(screen.getByText("Location Tags")).toBeTruthy();
     expect(screen.getByText("pizza")).toBeTruthy();
     expect(screen.getByText("italian")).toBeTruthy();
   });
@@ -205,5 +227,17 @@ describe("LocationTagsSection", () => {
     const input = screen.getByPlaceholderText("Add tag (press Enter)");
     fireEvent(input, "blur"); // onBlur also triggers add when input has a value
     expect(baseProps.onAddTag).toHaveBeenCalledWith("ramen");
+  });
+
+  it("collapses when the header is pressed", () => {
+    render(<LocationTagsSection {...baseProps} />);
+    expect(screen.getByText("pizza")).toBeTruthy();
+    fireEvent.press(screen.getByText("Location Tags"));
+    expect(screen.queryByText("pizza")).toBeNull();
+  });
+
+  it("shows a no-tags subtitle when the list is empty", () => {
+    render(<LocationTagsSection {...baseProps} tags={[]} />);
+    expect(screen.getByText("No tags yet")).toBeTruthy();
   });
 });

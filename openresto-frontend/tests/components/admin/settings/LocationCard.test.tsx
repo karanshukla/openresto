@@ -30,6 +30,13 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
+jest.mock("@/hooks/use-persisted-state", () => ({
+  usePersistedState: (_key: string, defaultValue: unknown) => {
+    const { useState } = require("react");
+    return useState(defaultValue);
+  },
+}));
+
 jest.mock("@/components/admin/settings/RestaurantInfoForm", () => ({
   RestaurantInfoForm: ({ restaurant }: { restaurant: { name: string } }) => {
     const { Text } = require("react-native");
@@ -174,21 +181,6 @@ describe("LocationCard", () => {
     expect(screen.getAllByText("Test Restaurant").length).toBeGreaterThan(0);
   });
 
-  it("renders restaurant address", () => {
-    render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("123 Main St")).toBeTruthy();
-  });
-
-  it("renders opening hours", () => {
-    render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("09:00–22:00")).toBeTruthy();
-  });
-
-  it("renders timezone", () => {
-    render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("America/New_York")).toBeTruthy();
-  });
-
   it("shows section and table counts as stats", () => {
     render(<LocationCard {...baseProps} />);
     expect(screen.getByText("Sections")).toBeTruthy();
@@ -212,9 +204,9 @@ describe("LocationCard", () => {
     expect(screen.getByText("No sections yet.")).toBeTruthy();
   });
 
-  it("shows Sections & tables section header", () => {
+  it("shows Sections & Tables section header", () => {
     render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("Sections & tables")).toBeTruthy();
+    expect(screen.getByText("Sections & Tables")).toBeTruthy();
   });
 
   it("shows Add Section button", () => {
@@ -224,7 +216,7 @@ describe("LocationCard", () => {
 
   it("shows image section when no imageUrl", () => {
     render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("Location image")).toBeTruthy();
+    expect(screen.getByText("No image set")).toBeTruthy();
   });
 
   it("shows Upload image button when no imageUrl", () => {
@@ -500,7 +492,7 @@ describe("LocationCard", () => {
 
   it("renders Location Image section label", () => {
     render(<LocationCard {...baseProps} />);
-    expect(screen.getByText("Location image")).toBeTruthy();
+    expect(screen.getByText("Location Image")).toBeTruthy();
   });
 
   it("renders restaurant without address", () => {
@@ -526,20 +518,6 @@ describe("LocationCard", () => {
   it("renders in dark mode without error", () => {
     render(<LocationCard {...baseProps} isDark />);
     expect(screen.getAllByText("Test Restaurant").length).toBeGreaterThan(0);
-  });
-
-  it("uses default hours when openTime/closeTime not set", () => {
-    render(
-      <LocationCard
-        {...baseProps}
-        restaurant={{
-          ...baseRestaurant,
-          openTime: undefined as unknown as string,
-          closeTime: undefined as unknown as string,
-        }}
-      />
-    );
-    expect(screen.getByText("09:00–22:00")).toBeTruthy();
   });
 
   it("calls onSaved with updated sections when section is renamed", () => {
@@ -720,5 +698,19 @@ describe("LocationCard", () => {
       fireEvent.press(screen.getByTestId("move-down-10"));
     });
     expect(adminApi.reorderSections).not.toHaveBeenCalled();
+  });
+
+  it("collapses the Location Image card when its header is pressed", () => {
+    render(<LocationCard {...baseProps} />);
+    expect(screen.getByText("Upload image")).toBeTruthy();
+    fireEvent.press(screen.getByText("Location Image"));
+    expect(screen.queryByText("Upload image")).toBeNull();
+  });
+
+  it("collapses the Sections & Tables card when its header is pressed", () => {
+    render(<LocationCard {...baseProps} />);
+    expect(screen.getByTestId("section-Indoor")).toBeTruthy();
+    fireEvent.press(screen.getByText("Sections & Tables"));
+    expect(screen.queryByTestId("section-Indoor")).toBeNull();
   });
 });

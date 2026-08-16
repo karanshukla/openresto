@@ -14,8 +14,11 @@ import { RestaurantInfoForm } from "./RestaurantInfoForm";
 import { SectionBlock } from "./SectionBlock";
 import { AddRow } from "./AddRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { summarizeHours } from "@/utils/openingHours";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import Button from "@/components/common/Button";
+import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
+import { AccordionCardHeader } from "./AccordionCardHeader";
+import { styles as settingsStyles } from "./settings.styles";
 import { styles, domStyles } from "./LocationCard.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -47,19 +50,25 @@ export function LocationCard({
   isDark,
   borderColor,
   mutedColor,
+  cardBg,
 }: {
   restaurant: RestaurantDto;
   onSaved: (patch: Partial<RestaurantDto>) => void;
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
+  cardBg: string;
 }) {
   const { primaryColor } = useAppTheme();
-  const accentSoft = `${primaryColor}18`;
 
   const [imgUploading, setImgUploading] = useState(false);
   const [imgMsg, setImgMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [imageExpanded, setImageExpanded] = usePersistedState("locations:image:expanded", true);
+  const [sectionsExpanded, setSectionsExpanded] = usePersistedState(
+    "locations:sections:expanded",
+    true
+  );
 
   const handlePickImage = () => {
     const input = document.createElement("input");
@@ -122,222 +131,216 @@ export function LocationCard({
     (acc, s) => acc + s.tables.reduce((a, t) => a + t.seats, 0),
     0
   );
-  const hoursText = summarizeHours(restaurant);
+  const sectionCount = restaurant.sections.length;
+  const sectionsSubtitle =
+    sectionCount === 0
+      ? "No sections yet"
+      : `${sectionCount} section${sectionCount === 1 ? "" : "s"} · ${tableCount} table${tableCount === 1 ? "" : "s"}`;
 
   return (
-    <View>
-      <View style={[styles.header, { borderBottomColor: borderColor }]}>
-        <View style={[styles.headerIcon, { backgroundColor: accentSoft }]}>
-          <Icon name="storefront-outline" size={22} color={primaryColor} />
-        </View>
-
-        <View style={styles.headerCopy}>
-          <ThemedText style={styles.headerName} numberOfLines={1}>
-            {restaurant.name}
-          </ThemedText>
-          <View style={styles.metaRow}>
-            {restaurant.address ? (
-              <>
-                <View style={styles.metaItem}>
-                  <Icon name="location-outline" size="xs" color={mutedColor} />
-                  <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
-                    {restaurant.address}
-                  </ThemedText>
-                </View>
-                <View style={[styles.metaDot, { backgroundColor: mutedColor }]} />
-              </>
-            ) : null}
-            <View style={styles.metaItem}>
-              <Icon name="time-outline" size="xs" color={mutedColor} />
-              <ThemedText style={[styles.metaText, { color: mutedColor }]}>{hoursText}</ThemedText>
-            </View>
-            {restaurant.timezone ? (
-              <>
-                <View style={[styles.metaDot, { backgroundColor: mutedColor }]} />
-                <ThemedText style={[styles.metaText, { color: mutedColor }]}>
-                  {restaurant.timezone}
-                </ThemedText>
-              </>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.stats}>
-          <View style={styles.statsRow}>
-            <StatChip
-              label="Sections"
-              value={restaurant.sections.length}
-              isDark={isDark}
-              borderColor={borderColor}
-              mutedColor={mutedColor}
-            />
-            <StatChip
-              label="Tables"
-              value={tableCount}
-              isDark={isDark}
-              borderColor={borderColor}
-              mutedColor={mutedColor}
-            />
-            <StatChip
-              label="Seats"
-              value={seatCount}
-              isDark={isDark}
-              borderColor={borderColor}
-              mutedColor={mutedColor}
-            />
-          </View>
-        </View>
+    <>
+      <View style={styles.statsRow}>
+        <StatChip
+          label="Sections"
+          value={restaurant.sections.length}
+          isDark={isDark}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+        />
+        <StatChip
+          label="Tables"
+          value={tableCount}
+          isDark={isDark}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+        />
+        <StatChip
+          label="Seats"
+          value={seatCount}
+          isDark={isDark}
+          borderColor={borderColor}
+          mutedColor={mutedColor}
+        />
       </View>
 
-      <View style={[styles.imageRow, { borderBottomColor: borderColor }]}>
-        <View
-          style={[
-            styles.imageFrame,
-            { borderStyle: restaurant.imageUrl ? "solid" : "dashed", borderColor },
-          ]}
-        >
-          {restaurant.imageUrl ? (
-            <img src={restaurant.imageUrl} alt="Location" style={domStyles.image} />
-          ) : (
-            <Icon name="image-outline" size="xl" color={mutedColor} />
-          )}
-        </View>
+      <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
 
-        <View style={styles.imageCopy}>
-          <View style={styles.imageTitleRow}>
-            <ThemedText style={styles.imageTitle}>Location image</ThemedText>
-            <ThemedText style={[styles.imageOptional, { color: mutedColor }]}>optional</ThemedText>
-          </View>
-          <ThemedText style={[styles.imageHint, { color: mutedColor }]}>
-            Shown on the restaurant card. JPEG, PNG or WebP, max 2 MB.
-          </ThemedText>
-          <View style={styles.imageActions}>
-            <Button
-              variant="secondary"
-              size="md"
-              icon="cloud-upload-outline"
-              onPress={handlePickImage}
-              disabled={imgUploading}
-              loading={imgUploading}
-              accessibilityLabel={
-                restaurant.imageUrl
-                  ? `Change image for ${restaurant.name}`
-                  : `Upload image for ${restaurant.name}`
-              }
-            >
-              {imgUploading ? "Uploading…" : restaurant.imageUrl ? "Change image" : "Upload image"}
-            </Button>
-            {restaurant.imageUrl && (
-              <Button
-                variant="secondary"
-                tone="danger"
-                size="md"
-                icon="trash-outline"
-                onPress={handleDeleteImage}
-                disabled={imgUploading}
-                accessibilityLabel={`Remove image for ${restaurant.name}`}
-              >
-                Remove
-              </Button>
-            )}
-            {imgMsg && (
-              <ThemedText
+      <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
+        <AccordionCardHeader
+          icon="image-outline"
+          title="Location Image"
+          subtitle={restaurant.imageUrl ? "Image set" : "No image set"}
+          expanded={imageExpanded}
+          onToggle={() => setImageExpanded((v) => !v)}
+          primaryColor={primaryColor}
+          mutedColor={mutedColor}
+        />
+
+        <AnimatedAccordion expanded={imageExpanded}>
+          <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+            <View style={styles.imageRow}>
+              <View
                 style={[
-                  styles.imageMsg,
-                  { color: imgMsg.ok ? theme.colors.success : theme.colors.error },
+                  styles.imageFrame,
+                  { borderStyle: restaurant.imageUrl ? "solid" : "dashed", borderColor },
                 ]}
               >
-                {imgMsg.text}
-              </ThemedText>
-            )}
+                {restaurant.imageUrl ? (
+                  <img src={restaurant.imageUrl} alt="Location" style={domStyles.image} />
+                ) : (
+                  <Icon name="image-outline" size="xl" color={mutedColor} />
+                )}
+              </View>
+
+              <View style={styles.imageCopy}>
+                <ThemedText style={[styles.imageHint, { color: mutedColor }]}>
+                  Shown on the restaurant card. JPEG, PNG or WebP, max 2 MB.
+                </ThemedText>
+                <View style={styles.imageActions}>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    icon="cloud-upload-outline"
+                    onPress={handlePickImage}
+                    disabled={imgUploading}
+                    loading={imgUploading}
+                    accessibilityLabel={
+                      restaurant.imageUrl
+                        ? `Change image for ${restaurant.name}`
+                        : `Upload image for ${restaurant.name}`
+                    }
+                  >
+                    {imgUploading
+                      ? "Uploading…"
+                      : restaurant.imageUrl
+                        ? "Change image"
+                        : "Upload image"}
+                  </Button>
+                  {restaurant.imageUrl && (
+                    <Button
+                      variant="secondary"
+                      tone="danger"
+                      size="md"
+                      icon="trash-outline"
+                      onPress={handleDeleteImage}
+                      disabled={imgUploading}
+                      accessibilityLabel={`Remove image for ${restaurant.name}`}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                  {imgMsg && (
+                    <ThemedText
+                      style={[
+                        styles.imageMsg,
+                        { color: imgMsg.ok ? theme.colors.success : theme.colors.error },
+                      ]}
+                    >
+                      {imgMsg.text}
+                    </ThemedText>
+                  )}
+                </View>
+              </View>
+            </View>
           </View>
-        </View>
+        </AnimatedAccordion>
       </View>
 
-      <View style={[styles.infoBlock, { borderBottomColor: borderColor }]}>
-        <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
-      </View>
+      <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
+        <AccordionCardHeader
+          icon="grid-outline"
+          title="Sections & Tables"
+          subtitle={sectionsSubtitle}
+          expanded={sectionsExpanded}
+          onToggle={() => setSectionsExpanded((v) => !v)}
+          primaryColor={primaryColor}
+          mutedColor={mutedColor}
+        />
 
-      <View style={styles.sectionsBlock}>
-        <ThemedText style={styles.sectionsTitle}>Sections & tables</ThemedText>
-        <ThemedText style={[styles.sectionsSub, { color: mutedColor }]}>
-          Group tables into dining areas. Guests can book by section.
-        </ThemedText>
-
-        <View style={styles.sectionsList}>
-          {restaurant.sections.map((section, index) => (
-            <SectionBlock
-              key={section.id}
-              section={section}
-              restaurantId={restaurant.id}
-              isDark={isDark}
-              borderColor={borderColor}
-              mutedColor={mutedColor}
-              groups={restaurant.groups ?? []}
-              isFirst={index === 0}
-              isLast={index === restaurant.sections.length - 1}
-              moveDisabled={reordering}
-              onMoveUp={() => handleMove(index, -1)}
-              onMoveDown={() => handleMove(index, 1)}
-              onSectionRenamed={(name) =>
-                onSaved({
-                  sections: restaurant.sections.map((s) =>
-                    s.id === section.id ? { ...s, name } : s
-                  ),
-                })
-              }
-              onSectionDeleted={() =>
-                onSaved({
-                  sections: restaurant.sections.filter((s) => s.id !== section.id),
-                })
-              }
-              onTableAdded={(t: TableDto) =>
-                onSaved({
-                  sections: restaurant.sections.map((s) =>
-                    s.id === section.id ? { ...s, tables: [...s.tables, t] } : s
-                  ),
-                })
-              }
-              onTableUpdated={(t: TableDto) =>
-                onSaved({
-                  sections: restaurant.sections.map((s) =>
-                    s.id === section.id
-                      ? { ...s, tables: s.tables.map((x) => (x.id === t.id ? t : x)) }
-                      : s
-                  ),
-                })
-              }
-              onTableDeleted={(id: number) =>
-                onSaved({
-                  sections: restaurant.sections.map((s) =>
-                    s.id === section.id ? { ...s, tables: s.tables.filter((x) => x.id !== id) } : s
-                  ),
-                })
-              }
-              onGroupsChanged={(updatedGroups) => onSaved({ groups: updatedGroups })}
-            />
-          ))}
-          {restaurant.sections.length === 0 && (
-            <ThemedText style={[styles.sectionsEmpty, { color: mutedColor }]}>
-              No sections yet.
+        <AnimatedAccordion expanded={sectionsExpanded}>
+          <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
+            <ThemedText style={[styles.sectionsSub, { color: mutedColor }]}>
+              Group tables into dining areas. Guests can book by section.
             </ThemedText>
-          )}
-        </View>
 
-        <View style={styles.addSectionRow}>
-          <AddRow
-            label="Add Section"
-            placeholder="e.g. Indoor, Patio, Bar"
-            onAdd={async (name) => {
-              const result = await addSection(restaurant.id, name);
-              if (result)
-                onSaved({
-                  sections: [...restaurant.sections, { ...result, tables: [] }],
-                });
-            }}
-          />
-        </View>
+            <View style={styles.sectionsList}>
+              {restaurant.sections.map((section, index) => (
+                <SectionBlock
+                  key={section.id}
+                  section={section}
+                  restaurantId={restaurant.id}
+                  isDark={isDark}
+                  borderColor={borderColor}
+                  mutedColor={mutedColor}
+                  groups={restaurant.groups ?? []}
+                  isFirst={index === 0}
+                  isLast={index === restaurant.sections.length - 1}
+                  moveDisabled={reordering}
+                  onMoveUp={() => handleMove(index, -1)}
+                  onMoveDown={() => handleMove(index, 1)}
+                  onSectionRenamed={(name) =>
+                    onSaved({
+                      sections: restaurant.sections.map((s) =>
+                        s.id === section.id ? { ...s, name } : s
+                      ),
+                    })
+                  }
+                  onSectionDeleted={() =>
+                    onSaved({
+                      sections: restaurant.sections.filter((s) => s.id !== section.id),
+                    })
+                  }
+                  onTableAdded={(t: TableDto) =>
+                    onSaved({
+                      sections: restaurant.sections.map((s) =>
+                        s.id === section.id ? { ...s, tables: [...s.tables, t] } : s
+                      ),
+                    })
+                  }
+                  onTableUpdated={(t: TableDto) =>
+                    onSaved({
+                      sections: restaurant.sections.map((s) =>
+                        s.id === section.id
+                          ? { ...s, tables: s.tables.map((x) => (x.id === t.id ? t : x)) }
+                          : s
+                      ),
+                    })
+                  }
+                  onTableDeleted={(id: number) =>
+                    onSaved({
+                      sections: restaurant.sections.map((s) =>
+                        s.id === section.id
+                          ? { ...s, tables: s.tables.filter((x) => x.id !== id) }
+                          : s
+                      ),
+                    })
+                  }
+                  onGroupsChanged={(updatedGroups) => onSaved({ groups: updatedGroups })}
+                />
+              ))}
+              {restaurant.sections.length === 0 && (
+                <ThemedText style={[styles.sectionsEmpty, { color: mutedColor }]}>
+                  No sections yet.
+                </ThemedText>
+              )}
+            </View>
+
+            <View style={styles.addSectionRow}>
+              <AddRow
+                label="Add Section"
+                placeholder="e.g. Indoor, Patio, Bar"
+                onAdd={async (name) => {
+                  const result = await addSection(restaurant.id, name);
+                  if (result)
+                    onSaved({
+                      sections: [...restaurant.sections, { ...result, tables: [] }],
+                    });
+                }}
+              />
+            </View>
+          </View>
+        </AnimatedAccordion>
       </View>
-    </View>
+    </>
   );
 }
