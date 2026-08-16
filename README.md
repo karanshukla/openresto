@@ -22,19 +22,17 @@ A self-hosted, zero-dependency restaurant booking system. Customers browse resta
 
 The Restaurant business has changed. Indie restaurants run on razor thin margins, and the cost of SaaS booking platforms only adds to the burden. Users don't want to install another app, give up their phone number to the cloud, or create another account to remember. OpenResto was designed to be as simple as possible for both customers and restaurant owners, while still being fully self-hosted, secure and customisable. Owners can manage bookings easily without friction. Customers book instantly without giving up any personal information, and can easily save their reservations to their calendar. Nothing in between.
 
-## Screenshots
+## Screenshots & Video
 
 ### Desktop
 
-<img src="https://github.com/user-attachments/assets/5e6d1099-8c4b-4163-b037-d71816726136" width="700" alt="Dashboard overview">
+https://github.com/user-attachments/assets/56bb85b8-1d00-4084-8a7d-c7974484340c
 
-<img src="https://github.com/user-attachments/assets/ce52d6ed-6989-490c-b950-81777eefa14a" width="750" alt="Booking interface">
+https://github.com/user-attachments/assets/95e84bfe-0d5c-46a4-be00-e7d9501558ee
 
-<img width="1973" height="1372" alt="image" src="https://github.com/user-attachments/assets/5dd1446f-40d8-4304-8eb7-fe231690539c" />
+<img width="2464" height="1371" alt="image" src="https://github.com/user-attachments/assets/605cce7a-dee3-472a-897b-291b6f23afe4" />
 
-<img src="https://github.com/user-attachments/assets/3b5b5892-869f-413d-89ef-ee96d78aaa99" width="700" alt="Restaurant search">
-
-<img width="700" alt="Screenshot 2026-06-26 154244" src="https://github.com/user-attachments/assets/72242735-468b-42a3-9f3a-7a1261bc70c4" />
+<img width="2464" height="1371" alt="image" src="https://github.com/user-attachments/assets/dd9d34ea-3305-471f-a20c-5614ac7e2000" />
 
 ### Mobile
 
