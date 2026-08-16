@@ -26,7 +26,7 @@ export const styles = StyleSheet.create({
   wideIdentity: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
+    gap: theme.spacing.xxs,
   },
 
   compactHeader: {
@@ -91,10 +91,16 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
 
+  /**
+   * Column and row gaps are deliberately different. Address, hours and menu wrap against the
+   * card's width, and at the column gap a wrapped line reads as a new block rather than as a
+   * continuation of the one above it.
+   */
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    columnGap: 14,
+    rowGap: theme.spacing.xs,
     flexWrap: "wrap",
   },
   metaItem: {
@@ -105,6 +111,7 @@ export const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
+    lineHeight: 18,
   },
   metaLink: {
     fontWeight: "500",
@@ -161,15 +168,18 @@ export const styles = StyleSheet.create({
   },
   slotText: {
     fontSize: 13,
+    lineHeight: 16,
     fontWeight: "500",
     textAlign: "center",
   },
   slotMoreText: {
     fontSize: 13,
+    lineHeight: 16,
     fontWeight: "600",
   },
   slotMoreInline: {
     fontSize: 12.5,
+    lineHeight: 17,
     marginLeft: theme.spacing.xs,
   },
   slotsLoading: {
@@ -178,6 +188,7 @@ export const styles = StyleSheet.create({
   },
   noSlotsText: {
     fontSize: 12.5,
+    lineHeight: 17,
     fontStyle: "italic",
   },
   walkInRow: {
@@ -189,11 +200,17 @@ export const styles = StyleSheet.create({
   walkInText: {
     flexShrink: 1,
     fontSize: 12.5,
+    lineHeight: 17,
     fontStyle: "italic",
   },
 
+  /**
+   * Horizontal padding matches the header's, so the panel's text starts on the same line as
+   * the thumbnail above it rather than 4px inside it.
+   */
   expandedBody: {
-    padding: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
     gap: theme.spacing.xxl,
     borderTopWidth: 1,
   },
@@ -202,7 +219,7 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tagRow: {
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
   },
   mapLinks: {
     flexDirection: "row",
