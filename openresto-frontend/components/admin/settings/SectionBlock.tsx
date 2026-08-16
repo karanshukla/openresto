@@ -76,7 +76,7 @@ export function SectionBlock({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(section.name);
   const [saving, setSaving] = useState(false);
-  // Two-step delete friction (#270) — same inline pattern as TableRow/DangerZone. `Delete…` reveals
+  // Two-step delete friction (#270) — same inline pattern as TableRow. `Delete…` reveals
   // an inline confirmation naming the consequence (incl. the count of future bookings that would lose
   // their section/table reference); a second explicit tap destroys. `impact` is best-effort.
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");

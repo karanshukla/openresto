@@ -8,6 +8,7 @@ import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
 import {
   adminGetRestaurants,
   adminDeleteRestaurant,
+  adminGetRestaurantDeletePreview,
   adminSetRestaurantArchived,
   pauseRestaurantBookings,
   unpauseRestaurantBookings,
@@ -19,6 +20,7 @@ jest.mock("@/api/restaurants");
 jest.mock("@/api/admin", () => ({
   adminGetRestaurants: jest.fn(),
   adminDeleteRestaurant: jest.fn(),
+  adminGetRestaurantDeletePreview: jest.fn(),
   adminSetRestaurantArchived: jest.fn(),
   pauseRestaurantBookings: jest.fn(),
   unpauseRestaurantBookings: jest.fn(),
@@ -26,6 +28,10 @@ jest.mock("@/api/admin", () => ({
 }));
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
+}));
+jest.mock("@/api/auth", () => ({
+  checkSession: jest.fn(),
+  logout: jest.fn(),
 }));
 
 jest.mock("@/components/admin/settings/LocationCard", () => ({
@@ -43,11 +49,22 @@ jest.mock("@/components/admin/settings/LocationCard", () => ({
 
 jest.setTimeout(15000);
 
+const signedInAs = (role: string) =>
+  (require("@/api/auth").checkSession as jest.Mock).mockResolvedValue({
+    id: 1,
+    email: "admin@test.com",
+    displayName: null,
+    role,
+  });
+
+const renderScreen = () => renderWithProviders(<AdminLocationsScreen />, { withAuth: true });
+
 describe("AdminLocationsScreen", () => {
   const mockRestaurants = [{ id: 1, name: "Resto 1", sections: [], activeBookingsCount: 2 }];
 
   beforeEach(() => {
     jest.clearAllMocks();
+    signedInAs("Owner");
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (adminGetRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (pauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
@@ -56,25 +73,35 @@ describe("AdminLocationsScreen", () => {
   });
 
   it("renders locations after loading", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.queryByText(/1 location/)).toBeTruthy());
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("1 active")).toBeTruthy());
+  });
+
+  it("counts archived locations separately in the header", async () => {
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1" },
+      { id: 2, name: "Resto 2", isArchived: true },
+    ]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("1 active · 1 archived")).toBeTruthy());
   });
 
   it("handles empty locations list", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue([]);
-    renderWithProviders(<AdminLocationsScreen />);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([]);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("No locations yet")).toBeTruthy());
   });
 
   it("patches restaurant when LocationCard onSaved is triggered", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => screen.getByTestId("trigger-save"));
     fireEvent.press(screen.getByTestId("trigger-save"));
     await waitFor(() => expect(screen.queryByText("Patched Name")).toBeTruthy());
   });
 
   it("shows add location form when Add location is pressed", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => screen.getByText("Add location"));
     fireEvent.press(screen.getByText("Add location"));
     await waitFor(() =>
@@ -88,7 +115,7 @@ describe("AdminLocationsScreen", () => {
       name: "New Location",
       sections: [],
     });
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => screen.getByText("Add location"));
     fireEvent.press(screen.getByText("Add location"));
     await waitFor(() =>
@@ -102,11 +129,13 @@ describe("AdminLocationsScreen", () => {
       fireEvent.press(screen.getByText("Add"));
     });
     expect(createRestaurant).toHaveBeenCalledWith("New Location");
+    // The new location joins the one selector, so its pill is selectable immediately.
+    await waitFor(() => expect(screen.getByText("2 active")).toBeTruthy());
   });
 
   it("closes add location form when createRestaurant fails", async () => {
     (createRestaurant as jest.Mock).mockResolvedValue(null);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => screen.getByText("Add location"));
     fireEvent.press(screen.getByText("Add location"));
     await waitFor(() =>
@@ -124,170 +153,29 @@ describe("AdminLocationsScreen", () => {
     );
   });
 
+  it("closes the add location form on cancel", async () => {
+    renderScreen();
+    await waitFor(() => screen.getByText("Add location"));
+    fireEvent.press(screen.getByText("Add location"));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeTruthy()
+    );
+    fireEvent.press(screen.getByText("Cancel"));
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText("Location name (e.g. Downtown, Westside)")).toBeNull()
+    );
+  });
+
   it("shows location pills without requiring any toggle", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
   });
 
   it("shows 0 locations configured when empty", async () => {
     (fetchRestaurants as jest.Mock).mockResolvedValue([]);
     (adminGetRestaurants as jest.Mock).mockResolvedValue([]);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("No locations configured")).toBeTruthy());
-  });
-
-  it("expands danger zone and shows select-a-location placeholder", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-  });
-
-  it("collapses danger zone and resets step", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.queryByText("Select a location above to see options.")).toBeNull()
-    );
-  });
-
-  it("selects a location in the danger zone", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Archive Location")).toBeTruthy());
-  });
-
-  it("archives a restaurant successfully", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(true);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Archive…")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Archive…"));
-    });
-    expect(adminSetRestaurantArchived).toHaveBeenCalledWith(1, true);
-  });
-
-  it("shows archive error when archiving fails", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(false);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Archive…")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Archive…"));
-    });
-    await waitFor(() => expect(screen.getByText("Failed. Please try again.")).toBeTruthy());
-  });
-
-  it("restores an archived restaurant successfully", async () => {
-    (fetchRestaurants as jest.Mock).mockResolvedValue([]);
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([
-      { id: 1, name: "Resto 1", isArchived: true },
-    ]);
-    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(true);
-    (fetchRestaurants as jest.Mock)
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ id: 1, name: "Resto 1", sections: [] }]);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Restore")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Restore"));
-    });
-    expect(adminSetRestaurantArchived).toHaveBeenCalledWith(1, false);
-  });
-
-  it("moves to delete confirm step and cancels", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
-    fireEvent.press(screen.getByText("Delete…"));
-    await waitFor(() => expect(screen.getByText("Yes, delete permanently")).toBeTruthy());
-    fireEvent.press(screen.getByText("Cancel"));
-    await waitFor(() => expect(screen.queryByText("Yes, delete permanently")).toBeNull());
-  });
-
-  it("deletes a restaurant successfully", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    (adminDeleteRestaurant as jest.Mock).mockResolvedValue(true);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
-    fireEvent.press(screen.getByText("Delete…"));
-    await waitFor(() => expect(screen.getByText("Yes, delete permanently")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Yes, delete permanently"));
-    });
-    expect(adminDeleteRestaurant).toHaveBeenCalledWith(1);
-  });
-
-  it("shows delete error when deletion fails", async () => {
-    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
-    (adminDeleteRestaurant as jest.Mock).mockResolvedValue(false);
-    renderWithProviders(<AdminLocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Archive or delete a location")).toBeTruthy());
-    fireEvent.press(screen.getByText("Archive or delete a location"));
-    await waitFor(() =>
-      expect(screen.getByText("Select a location above to see options.")).toBeTruthy()
-    );
-    const restoPills = screen.getAllByText("Resto 1");
-    fireEvent.press(restoPills[restoPills.length - 1]);
-    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
-    fireEvent.press(screen.getByText("Delete…"));
-    await waitFor(() => expect(screen.getByText("Yes, delete permanently")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Yes, delete permanently"));
-    });
-    await waitFor(() =>
-      expect(screen.getByText("Failed to delete. Please try again.")).toBeTruthy()
-    );
   });
 
   it("selects a different location pill to update settings", async () => {
@@ -297,14 +185,14 @@ describe("AdminLocationsScreen", () => {
     ];
     (fetchRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);
     (adminGetRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Resto 2")).toBeTruthy());
     fireEvent.press(screen.getByText("Resto 2"));
     expect(screen.getByText("Resto 2")).toBeTruthy();
   });
 
   it("renders booking action buttons when a location is selected", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() =>
       expect(screen.getByText("Pause New Bookings for the next 60m")).toBeTruthy()
     );
@@ -315,7 +203,7 @@ describe("AdminLocationsScreen", () => {
     (adminGetRestaurants as jest.Mock).mockResolvedValue([
       { id: 1, name: "Resto 1", sections: [], activeBookingsCount: 0 },
     ]);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("No active bookings")).toBeTruthy());
     // Button must not call the API when disabled
     fireEvent.press(screen.getByText("No active bookings"));
@@ -327,12 +215,12 @@ describe("AdminLocationsScreen", () => {
     (adminGetRestaurants as jest.Mock).mockResolvedValue([
       { id: 1, name: "Resto 1", bookingsPausedUntil: futureDate },
     ]);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText(/Resume New Bookings now/)).toBeTruthy());
   });
 
   it("pauses bookings when Pause New Bookings for the next 60m is pressed", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() =>
       expect(screen.getByText("Pause New Bookings for the next 60m")).toBeTruthy()
     );
@@ -347,7 +235,7 @@ describe("AdminLocationsScreen", () => {
     (adminGetRestaurants as jest.Mock).mockResolvedValue([
       { id: 1, name: "Resto 1", bookingsPausedUntil: futureDate },
     ]);
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText(/Resume New Bookings now/)).toBeTruthy());
     await act(async () => {
       fireEvent.press(screen.getByText(/Resume New Bookings now/));
@@ -357,7 +245,7 @@ describe("AdminLocationsScreen", () => {
 
   it("shows No active bookings to extend when extend returns empty", async () => {
     (extendRestaurantBookings as jest.Mock).mockResolvedValue({ ok: true, extendedBookings: [] });
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy());
     await act(async () => {
       fireEvent.press(screen.getByText("Extend 2 active Bookings by 60m"));
@@ -385,7 +273,7 @@ describe("AdminLocationsScreen", () => {
         },
       ],
     });
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy());
     await act(async () => {
       fireEvent.press(screen.getByText("Extend 2 active Bookings by 60m"));
@@ -423,7 +311,7 @@ describe("AdminLocationsScreen", () => {
         },
       ],
     });
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy());
     await act(async () => {
       fireEvent.press(screen.getByText("Extend 2 active Bookings by 60m"));
@@ -431,6 +319,210 @@ describe("AdminLocationsScreen", () => {
     await waitFor(() => expect(screen.getByText("Extended 1 active bookings +60m")).toBeTruthy());
     fireEvent.press(screen.getByText("Resto 2"));
     await waitFor(() => expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy());
+  });
+});
+
+describe("AdminLocationsScreen archive and delete", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    signedInAs("Owner");
+    (fetchRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1", sections: [], activeBookingsCount: 0 },
+    ]);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([{ id: 1, name: "Resto 1" }]);
+    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(true);
+    (extendRestaurantBookings as jest.Mock).mockResolvedValue({ ok: true, extendedBookings: [] });
+  });
+
+  const archivedOnly = () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue([]);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1", isArchived: true },
+    ]);
+  };
+
+  it("archives the selected location after confirming", async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText("Archive Resto 1?")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Yes, archive"));
+    });
+    expect(adminSetRestaurantArchived).toHaveBeenCalledWith(1, true);
+  });
+
+  it("does not archive when the confirmation is cancelled", async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText("Archive Resto 1?")).toBeTruthy());
+    fireEvent.press(screen.getByText("Cancel"));
+    await waitFor(() => expect(screen.queryByText("Archive Resto 1?")).toBeNull());
+    expect(adminSetRestaurantArchived).not.toHaveBeenCalled();
+  });
+
+  it("names the upcoming bookings the archive would take off the site", async () => {
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1", upcomingBookingsCount: 3 },
+    ]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText(/3 upcoming bookings/)).toBeTruthy());
+  });
+
+  it("phrases a single upcoming booking in the singular", async () => {
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1", upcomingBookingsCount: 1 },
+    ]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText(/1 upcoming booking stay/)).toBeTruthy());
+  });
+
+  it("reports progress while archiving and restoring", async () => {
+    (adminSetRestaurantArchived as jest.Mock).mockReturnValue(new Promise(() => {}));
+    const { unmount } = renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText("Yes, archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Yes, archive"));
+    await waitFor(() => expect(screen.getByText("Archiving…")).toBeTruthy());
+    unmount();
+
+    archivedOnly();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Restore")).toBeTruthy());
+    fireEvent.press(screen.getByText("Restore"));
+    await waitFor(() => expect(screen.getByText("Restoring…")).toBeTruthy());
+  });
+
+  it("surfaces an archive failure", async () => {
+    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(false);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    fireEvent.press(screen.getByText("Archive"));
+    await waitFor(() => expect(screen.getByText("Archive Resto 1?")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Yes, archive"));
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Failed to archive. Please try again.")).toBeTruthy()
+    );
+  });
+
+  it("shows the archived panel with a restore action and no editable card", async () => {
+    archivedOnly();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archived")).toBeTruthy());
+    expect(screen.queryByTestId("trigger-save")).toBeNull();
+    expect(screen.queryByText("Archive")).toBeNull();
+  });
+
+  it("restores an archived location in one press", async () => {
+    archivedOnly();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Restore")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Restore"));
+    });
+    expect(adminSetRestaurantArchived).toHaveBeenCalledWith(1, false);
+  });
+
+  it("surfaces a restore failure", async () => {
+    archivedOnly();
+    (adminSetRestaurantArchived as jest.Mock).mockResolvedValue(false);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Restore")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Restore"));
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Failed to restore. Please try again.")).toBeTruthy()
+    );
+  });
+
+  it("offers delete only on an archived location", async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Archive")).toBeTruthy());
+    expect(screen.queryByText("Delete…")).toBeNull();
+  });
+
+  it("hides delete from a Manager", async () => {
+    archivedOnly();
+    signedInAs("Manager");
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Restore")).toBeTruthy());
+    expect(screen.queryByText("Delete…")).toBeNull();
+  });
+
+  it("deletes an archived location once its name is typed", async () => {
+    archivedOnly();
+    (adminGetRestaurantDeletePreview as jest.Mock).mockResolvedValue({
+      id: 1,
+      name: "Resto 1",
+      isArchived: true,
+      sectionCount: 2,
+      tableCount: 8,
+      tableGroupCount: 1,
+      bookingCount: 40,
+      upcomingBookingCount: 3,
+    });
+    (adminDeleteRestaurant as jest.Mock).mockResolvedValue(true);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    await waitFor(() => expect(screen.getByText("40 bookings, 3 still upcoming")).toBeTruthy());
+    expect(adminGetRestaurantDeletePreview).toHaveBeenCalledWith(1);
+    expect(screen.getByText("1 combinable group")).toBeTruthy();
+
+    // The destroy button is inert until the name matches.
+    fireEvent.press(screen.getByText("Delete permanently"));
+    expect(adminDeleteRestaurant).not.toHaveBeenCalled();
+
+    fireEvent.changeText(screen.getByTestId("delete-location-name-input"), "resto 1");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete permanently"));
+    });
+    expect(adminDeleteRestaurant).toHaveBeenCalledWith(1);
+    await waitFor(() => expect(screen.getByText("Resto 1 was permanently deleted.")).toBeTruthy());
+  });
+
+  it("closes the delete modal without deleting when cancelled", async () => {
+    archivedOnly();
+    (adminGetRestaurantDeletePreview as jest.Mock).mockResolvedValue(null);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    await waitFor(() => expect(screen.getByTestId("delete-location-name-input")).toBeTruthy());
+    fireEvent.press(screen.getByText("Cancel"));
+    await waitFor(() => expect(screen.queryByTestId("delete-location-name-input")).toBeNull());
+    expect(adminDeleteRestaurant).not.toHaveBeenCalled();
+  });
+
+  it("keeps the modal open and reports a failed delete", async () => {
+    archivedOnly();
+    (adminGetRestaurantDeletePreview as jest.Mock).mockResolvedValue(null);
+    (adminDeleteRestaurant as jest.Mock).mockResolvedValue(false);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Delete…")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete…"));
+    });
+    await waitFor(() => expect(screen.getByTestId("delete-location-name-input")).toBeTruthy());
+    fireEvent.changeText(screen.getByTestId("delete-location-name-input"), "Resto 1");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Delete permanently"));
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Failed to delete. Please try again.")).toBeTruthy()
+    );
   });
 });
 
@@ -444,6 +536,7 @@ describe("AdminLocationsScreen selected-location persistence", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    signedInAs("Owner");
     Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
     localStorage.clear();
     (fetchRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);
@@ -459,7 +552,7 @@ describe("AdminLocationsScreen selected-location persistence", () => {
 
   it("honours a persisted selected-location id on mount", async () => {
     localStorage.setItem("locations:selectedId", JSON.stringify(2));
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
     // Persisted value (2) was honoured, not overwritten to the first restaurant (1).
     expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(2);
@@ -467,18 +560,30 @@ describe("AdminLocationsScreen selected-location persistence", () => {
 
   it("falls back to the first restaurant when the persisted id no longer exists", async () => {
     localStorage.setItem("locations:selectedId", JSON.stringify(999));
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() =>
       expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(1)
     );
   });
 
   it("writes the selected id to localStorage when a location pill is pressed", async () => {
-    renderWithProviders(<AdminLocationsScreen />);
+    renderScreen();
     await waitFor(() => expect(screen.getByText("Resto 2")).toBeTruthy());
     fireEvent.press(screen.getByText("Resto 2"));
     await waitFor(() =>
       expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(2)
     );
+  });
+
+  it("keeps an archived location selectable from the one pill row", async () => {
+    (fetchRestaurants as jest.Mock).mockResolvedValue([twoRestaurants[0]]);
+    (adminGetRestaurants as jest.Mock).mockResolvedValue([
+      { id: 1, name: "Resto 1" },
+      { id: 2, name: "Resto 2", isArchived: true },
+    ]);
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Resto 2")).toBeTruthy());
+    fireEvent.press(screen.getByText("Resto 2"));
+    await waitFor(() => expect(screen.getByText("Archived")).toBeTruthy());
   });
 });

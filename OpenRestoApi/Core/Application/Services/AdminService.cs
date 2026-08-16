@@ -514,12 +514,25 @@ public class AdminService(
         return true;
     }
 
+    public virtual async Task<RestaurantDeletePreviewDto?> GetRestaurantDeletePreviewAsync(int id)
+    {
+        return await _restaurantRepository.GetDeletePreviewAsync(id, DateTime.UtcNow);
+    }
+
     public virtual async Task<bool> DeleteRestaurantAsync(int id)
     {
         Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null)
         {
             return false;
+        }
+
+        // Archive-then-purge is a rule, not a UI convention: a live location's bookings are
+        // reachable by the guests who made them, and this cascade destroys them irreversibly.
+        if (!restaurant.IsArchived)
+        {
+            throw new BusinessRuleException(
+                "Archive this location before deleting it. Archiving takes it off the public site and can be undone; deleting cannot.");
         }
 
         // Cascade-delete all bookings for this restaurant (cancelled and active alike), then the restaurant row,

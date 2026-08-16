@@ -38,4 +38,12 @@ public interface IRestaurantRepository
     /// Centralizes the correlated-subquery projection previously inlined in AdminService.GetRestaurantsAsync.
     /// </summary>
     Task<List<LookupDto>> GetAllWithActiveBookingsCountAsync(DateTime nowUtc);
+
+    /// <summary>
+    /// Counts everything <c>AdminService.DeleteRestaurantAsync</c> would cascade away — sections,
+    /// tables, table groups and bookings (total plus the not-yet-started ones). Null when no
+    /// restaurant has this id. Archived rows are included: the preview exists to be read before
+    /// deleting one.
+    /// </summary>
+    Task<RestaurantDeletePreviewDto?> GetDeletePreviewAsync(int id, DateTime nowUtc);
 }

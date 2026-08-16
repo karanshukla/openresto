@@ -9,6 +9,7 @@ import {
   adminPurgeBooking,
   adminCreateRestaurant,
   adminDeleteRestaurant,
+  adminGetRestaurantDeletePreview,
   adminSetRestaurantArchived,
   adminGetTables,
   adminGetRestaurants,
@@ -518,6 +519,26 @@ describe("adminDeleteRestaurant", () => {
   it("returns false on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await adminDeleteRestaurant(3)).toBe(false);
+  });
+});
+
+describe("adminGetRestaurantDeletePreview", () => {
+  it("fetches the delete preview", async () => {
+    const preview = { id: 3, name: "R3", isArchived: true, sectionCount: 1 };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => preview });
+
+    expect(await adminGetRestaurantDeletePreview(3)).toEqual(preview);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/admin/restaurants/3/delete-preview");
+  });
+
+  it("returns null on failure", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await adminGetRestaurantDeletePreview(3)).toBeNull();
+  });
+
+  it("returns null on network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await adminGetRestaurantDeletePreview(3)).toBeNull();
   });
 });
 

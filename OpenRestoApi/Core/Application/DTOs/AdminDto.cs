@@ -140,7 +140,25 @@ public class LookupDto
     public string Name { get; set; } = null!;
     public DateTime? BookingsPausedUntil { get; set; }
     public int ActiveBookingsCount { get; set; }
+    /// <summary>Non-cancelled bookings that have not started yet — what archiving takes off the public site.</summary>
+    public int UpcomingBookingsCount { get; set; }
     public bool IsArchived { get; set; }
+}
+
+/// <summary>
+/// Blast radius of <c>DELETE /api/admin/restaurants/{id}</c>, so the confirmation names what
+/// the cascade destroys instead of describing it in the abstract.
+/// </summary>
+public class RestaurantDeletePreviewDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public bool IsArchived { get; set; }
+    public int SectionCount { get; set; }
+    public int TableCount { get; set; }
+    public int TableGroupCount { get; set; }
+    public int BookingCount { get; set; }
+    public int UpcomingBookingCount { get; set; }
 }
 
 public class AdminRestaurantPatchRequest

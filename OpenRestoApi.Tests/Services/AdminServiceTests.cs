@@ -1194,6 +1194,25 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetRestaurantsAsync_UpcomingBookingsCount_CountsOnlyFutureUncancelledBookings()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+
+        DateTime nowUtc = DateTime.UtcNow;
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddHours(-2), EndTime = nowUtc.AddHours(-1), BookingRef = "PAST" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddMinutes(-15), EndTime = nowUtc.AddMinutes(45), BookingRef = "INPROGRESS" });
+        _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddDays(1), BookingRef = "FUTURE" });
+        _db.Bookings.Add(new Booking { Id = 4, RestaurantId = 1, SectionId = 1, TableId = 1, Date = nowUtc.AddDays(2), BookingRef = "CANCELLED", IsCancelled = true });
+        await _db.SaveChangesAsync();
+
+        List<LookupDto> list = await svc.GetRestaurantsAsync();
+
+        Assert.Equal(1, list[0].UpcomingBookingsCount);
+    }
+
+    [Fact]
     public async Task GetRestaurantsAsync_ActiveBookingsCount_ExcludesPastBookings()
     {
         AdminService svc = CreateService();
@@ -1448,6 +1467,92 @@ public class AdminServiceTests : IDisposable
         AdminService svc = CreateService();
         Assert.False(await svc.DeleteRestaurantAsync(999));
     }
+
+    [Fact]
+    public async Task DeleteRestaurantAsync_Throws_WhenNotArchived()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Live", Timezone = "UTC" });
+        await _db.SaveChangesAsync();
+
+        BusinessRuleException ex = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => svc.DeleteRestaurantAsync(1));
+
+        Assert.Contains("Archive this location", ex.Message, StringComparison.Ordinal);
+        Assert.True(await _db.Restaurants.AnyAsync(r => r.Id == 1));
+    }
+
+    [Fact]
+    public async Task DeleteRestaurantAsync_DeletesRestaurantAndBookings_WhenArchived()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Gone", Timezone = "UTC", IsArchived = true });
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1,
+            RestaurantId = 1,
+            Date = DateTime.UtcNow.AddDays(1),
+            Seats = 2,
+            CustomerName = "A",
+            CustomerEmail = "a@example.com",
+        });
+        await _db.SaveChangesAsync();
+
+        Assert.True(await svc.DeleteRestaurantAsync(1));
+        Assert.False(await _db.Restaurants.AnyAsync(r => r.Id == 1));
+        Assert.False(await _db.Bookings.AnyAsync(b => b.RestaurantId == 1));
+    }
+
+    [Fact]
+    public async Task GetRestaurantDeletePreviewAsync_ReturnsNull_WhenNotFound()
+    {
+        AdminService svc = CreateService();
+        Assert.Null(await svc.GetRestaurantDeletePreviewAsync(999));
+    }
+
+    [Fact]
+    public async Task GetRestaurantDeletePreviewAsync_CountsTheFullCascade()
+    {
+        AdminService svc = CreateService();
+        DateTime nowUtc = DateTime.UtcNow;
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Downtown", Timezone = "UTC", IsArchived = true });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "Other", Timezone = "UTC" });
+        _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        _db.Sections.Add(new Section { Id = 2, Name = "Patio", RestaurantId = 1 });
+        _db.Sections.Add(new Section { Id = 3, Name = "Elsewhere", RestaurantId = 2 });
+        _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        _db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 2, SectionId = 1 });
+        _db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 4, SectionId = 3 });
+        _db.TableGroups.Add(new TableGroup { Id = 1, RestaurantId = 1, CombinedSeats = 4 });
+        _db.Bookings.Add(NewBooking(1, 1, nowUtc.AddDays(1), cancelled: false));
+        _db.Bookings.Add(NewBooking(2, 1, nowUtc.AddDays(2), cancelled: false));
+        _db.Bookings.Add(NewBooking(3, 1, nowUtc.AddDays(3), cancelled: true));
+        _db.Bookings.Add(NewBooking(4, 1, nowUtc.AddDays(-1), cancelled: false));
+        _db.Bookings.Add(NewBooking(5, 2, nowUtc.AddDays(1), cancelled: false));
+        await _db.SaveChangesAsync();
+
+        RestaurantDeletePreviewDto preview = (await svc.GetRestaurantDeletePreviewAsync(1))!;
+
+        Assert.Equal("Downtown", preview.Name);
+        Assert.True(preview.IsArchived);
+        Assert.Equal(2, preview.SectionCount);
+        Assert.Equal(2, preview.TableCount);
+        Assert.Equal(1, preview.TableGroupCount);
+        Assert.Equal(4, preview.BookingCount);
+        // Cancelled and past bookings are in the cascade but are not "upcoming".
+        Assert.Equal(2, preview.UpcomingBookingCount);
+    }
+
+    private static Booking NewBooking(int id, int restaurantId, DateTime dateUtc, bool cancelled) => new()
+    {
+        Id = id,
+        RestaurantId = restaurantId,
+        Date = dateUtc,
+        Seats = 2,
+        CustomerName = "Guest",
+        CustomerEmail = "guest@example.com",
+        IsCancelled = cancelled,
+    };
 
     [Fact]
     public async Task SetArchivedAsync_ReturnsFalse_WhenNotFound()

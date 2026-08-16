@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View, Platform, Pressable } from "react-native";
+import { ActivityIndicator, ScrollView, View, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -7,20 +7,30 @@ import Button from "@/components/common/Button";
 import { fetchRestaurants, createRestaurant, RestaurantDto } from "@/api/restaurants";
 import {
   adminGetRestaurants,
+  adminSetRestaurantArchived,
   pauseRestaurantBookings,
   unpauseRestaurantBookings,
   extendRestaurantBookings,
+  AdminRestaurantSummary,
   BookingDetailDto,
 } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
+import { useCan } from "@/context/AuthContext";
 
 import { LocationCard } from "@/components/admin/settings/LocationCard";
 import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
-import { DangerZone } from "@/components/admin/locations/DangerZone";
+import { LocationPills } from "@/components/admin/locations/LocationPills";
+import { ArchiveLocationRow } from "@/components/admin/locations/ArchiveLocationRow";
+import { ArchivedLocationPanel } from "@/components/admin/locations/ArchivedLocationPanel";
 import { styles } from "@/components/admin/settings/settings.styles";
-import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { Icon } from "@/components/common/Icon";
+
+function locationCountSummary(activeCount: number, archivedCount: number): string {
+  if (activeCount + archivedCount === 0) return "No locations configured";
+  const active = `${activeCount} active`;
+  return archivedCount > 0 ? `${active} · ${archivedCount} archived` : active;
+}
 
 export default function AdminLocationsScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -33,27 +43,30 @@ export default function AdminLocationsScreen() {
   const [addingLocation, setAddingLocation] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [savingLocation, setSavingLocation] = useState(false);
-  const [allRestaurants, setAllRestaurants] = useState<
-    {
-      id: number;
-      name: string;
-      isArchived?: boolean;
-      bookingsPausedUntil?: string;
-      activeBookingsCount?: number;
-    }[]
-  >([]);
+  const [allRestaurants, setAllRestaurants] = useState<AdminRestaurantSummary[]>([]);
   const [pausing, setPausing] = useState(false);
   const [extending, setExtending] = useState(false);
   const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
   const [extendNoActive, setExtendNoActive] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveFailed, setArchiveFailed] = useState(false);
+  const [deletedName, setDeletedName] = useState<string | null>(null);
 
   const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const cardBg = colors.card;
   const mutedColor = colors.muted;
+  const canDeleteLocation = useCan("delete:location");
 
   function patchRestaurant(id: number, patch: Partial<RestaurantDto>) {
     setRestaurants((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    // The pills read the admin list, so a rename has to reach it or the selector keeps
+    // showing the old name until the next load.
+    if (patch.name !== undefined) {
+      setAllRestaurants((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, name: patch.name as string } : r))
+      );
+    }
   }
 
   useEffect(() => {
@@ -62,8 +75,8 @@ export default function AdminLocationsScreen() {
       if (cancelled) return;
       setRestaurants(active);
       const persistedMatch =
-        persistedSelectedId != null ? active.find((r) => r.id === persistedSelectedId) : undefined;
-      const nextId = persistedMatch ? persistedMatch.id : (active[0]?.id ?? null);
+        persistedSelectedId != null ? all.find((r) => r.id === persistedSelectedId) : undefined;
+      const nextId = persistedMatch ? persistedMatch.id : (all[0]?.id ?? null);
       if (nextId !== null) setSelectedId(nextId);
       setPersistedSelectedId(nextId);
       setAllRestaurants(all);
@@ -77,19 +90,25 @@ export default function AdminLocationsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedRestaurant = restaurants.find((r) => r.id === selectedId) ?? null;
-  const selectedAdminData = allRestaurants.find((r) => r.id === selectedId) ?? null;
-  const activeCount = selectedAdminData?.activeBookingsCount ?? 0;
-  const isPaused = selectedAdminData?.bookingsPausedUntil
-    ? new Date(selectedAdminData.bookingsPausedUntil) > new Date()
+  const selectedSummary = allRestaurants.find((r) => r.id === selectedId) ?? null;
+  const isArchived = selectedSummary?.isArchived ?? false;
+  // Archived locations are absent from the editable list, so this is null for them by design.
+  const selectedRestaurant = isArchived
+    ? null
+    : (restaurants.find((r) => r.id === selectedId) ?? null);
+  const activeCount = selectedSummary?.activeBookingsCount ?? 0;
+  const isPaused = selectedSummary?.bookingsPausedUntil
+    ? new Date(selectedSummary.bookingsPausedUntil) > new Date()
     : false;
   const pausedUntilText =
-    isPaused && selectedAdminData?.bookingsPausedUntil
-      ? new Date(selectedAdminData.bookingsPausedUntil).toLocaleTimeString([], {
+    isPaused && selectedSummary?.bookingsPausedUntil
+      ? new Date(selectedSummary.bookingsPausedUntil).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         })
       : null;
+  const archivedCount = allRestaurants.filter((r) => r.isArchived).length;
+
   const selectAndRemember = (id: number | null) => {
     setSelectedId(id);
     setPersistedSelectedId(id);
@@ -99,6 +118,36 @@ export default function AdminLocationsScreen() {
     selectAndRemember(id);
     setExtendedBookings(null);
     setExtendNoActive(false);
+    setArchiveFailed(false);
+    setDeletedName(null);
+  }
+
+  async function handleSetArchived(id: number, archived: boolean) {
+    setArchiving(true);
+    setArchiveFailed(false);
+    const ok = await adminSetRestaurantArchived(id, archived);
+    if (!ok) {
+      setArchiving(false);
+      setArchiveFailed(true);
+      return;
+    }
+    setAllRestaurants((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isArchived: archived } : r))
+    );
+    // The editable list is active-only, so both directions need it back from the server:
+    // archiving drops the row, restoring brings back a record this screen never held.
+    const active = await fetchRestaurants();
+    setRestaurants(active);
+    setArchiving(false);
+  }
+
+  function handleDeleted(id: number) {
+    const deleted = allRestaurants.find((r) => r.id === id);
+    const remaining = allRestaurants.filter((r) => r.id !== id);
+    setAllRestaurants(remaining);
+    setRestaurants((prev) => prev.filter((r) => r.id !== id));
+    selectAndRemember(remaining.length > 0 ? remaining[0].id : null);
+    setDeletedName(deleted?.name ?? null);
   }
 
   if (loading) {
@@ -117,9 +166,7 @@ export default function AdminLocationsScreen() {
         <View style={{ gap: 2 }}>
           <ThemedText type="h1">Locations</ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-            {restaurants.length === 0
-              ? "No locations configured"
-              : `${restaurants.length} location${restaurants.length !== 1 ? "s" : ""} · all active`}
+            {locationCountSummary(allRestaurants.length - archivedCount, archivedCount)}
           </ThemedText>
         </View>
         <Button
@@ -132,6 +179,15 @@ export default function AdminLocationsScreen() {
           Add location
         </Button>
       </View>
+
+      {deletedName && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Icon name="checkmark-circle-outline" size="lg" color={colors.success} />
+          <ThemedText style={{ fontSize: 13, color: mutedColor }}>
+            {deletedName} was permanently deleted.
+          </ThemedText>
+        </View>
+      )}
 
       {addingLocation && (
         <AddLocationForm
@@ -148,6 +204,7 @@ export default function AdminLocationsScreen() {
             setSavingLocation(false);
             if (created) {
               setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
+              setAllRestaurants((prev) => [...prev, { id: created.id, name: created.name }]);
               selectAndRemember(created.id);
             }
             setNewLocationName("");
@@ -160,45 +217,12 @@ export default function AdminLocationsScreen() {
         />
       )}
 
-      {restaurants.length > 0 && (
-        <HorizontalScroller
-          label="Locations"
-          contentContainerStyle={{ flexDirection: "row", gap: 6, alignItems: "center" }}
-        >
-          {restaurants.map((r) => {
-            const active = selectedId === r.id;
-            return (
-              <Pressable
-                key={r.id}
-                onPress={() => handleSelectLocation(r.id)}
-                accessibilityRole="radio"
-                accessibilityLabel={r.name}
-                accessibilityState={{ checked: active }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 7,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 9999,
-                  borderWidth: 1,
-                  borderColor: active ? primaryColor : borderColor,
-                  backgroundColor: active ? primaryColor : "transparent",
-                }}
-              >
-                <ThemedText
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: active ? "#fff" : mutedColor,
-                  }}
-                >
-                  {r.name}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </HorizontalScroller>
+      {allRestaurants.length > 0 && (
+        <LocationPills
+          restaurants={allRestaurants}
+          selectedId={selectedId}
+          onSelect={handleSelectLocation}
+        />
       )}
 
       {selectedRestaurant && (
@@ -282,7 +306,7 @@ export default function AdminLocationsScreen() {
         </View>
       )}
 
-      {restaurants.length === 0 ? (
+      {allRestaurants.length === 0 ? (
         <View
           style={{
             alignItems: "center",
@@ -320,6 +344,18 @@ export default function AdminLocationsScreen() {
             Add your first location to start accepting bookings.
           </ThemedText>
         </View>
+      ) : selectedSummary && isArchived ? (
+        <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+          <ArchivedLocationPanel
+            id={selectedSummary.id}
+            name={selectedSummary.name}
+            restoring={archiving}
+            restoreFailed={archiveFailed}
+            onRestore={() => handleSetArchived(selectedSummary.id, false)}
+            canDelete={canDeleteLocation}
+            onDeleted={handleDeleted}
+          />
+        </View>
       ) : selectedRestaurant ? (
         <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
           <LocationCard
@@ -330,45 +366,15 @@ export default function AdminLocationsScreen() {
             borderColor={borderColor}
             mutedColor={mutedColor}
           />
+          <ArchiveLocationRow
+            name={selectedRestaurant.name}
+            upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
+            archiving={archiving}
+            failed={archiveFailed}
+            onArchive={() => handleSetArchived(selectedRestaurant.id, true)}
+          />
         </View>
       ) : null}
-
-      <DangerZone
-        restaurants={allRestaurants}
-        borderColor={borderColor}
-        cardBg={cardBg}
-        mutedColor={mutedColor}
-        isDark={isDark}
-        onArchived={async (id, archived) => {
-          setAllRestaurants((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, isArchived: archived } : r))
-          );
-          if (archived) {
-            // Archiving: drop from active list; relocate selection if it was the deleted one.
-            setRestaurants((prev) => {
-              const remaining = prev.filter((r) => r.id !== id);
-              if (selectedId === id) {
-                selectAndRemember(remaining.length > 0 ? remaining[0].id : null);
-              }
-              return remaining;
-            });
-          } else {
-            // Restoring: re-fetch active list + select the restored restaurant.
-            fetchRestaurants().then((active) => {
-              setRestaurants(active);
-              selectAndRemember(id);
-            });
-          }
-        }}
-        onDeleted={async (id) => {
-          setAllRestaurants((prev) => prev.filter((r) => r.id !== id));
-          setRestaurants((prev) => {
-            const remaining = prev.filter((r) => r.id !== id);
-            selectAndRemember(remaining.length > 0 ? remaining[0].id : null);
-            return remaining;
-          });
-        }}
-      />
     </ScrollView>
   );
 }
