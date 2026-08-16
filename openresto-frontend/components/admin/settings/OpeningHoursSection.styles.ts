@@ -3,8 +3,16 @@ import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   modeGroupStandalone: { alignSelf: "flex-start" },
-  uniformTimes: { flexDirection: "row", gap: 14 },
-  uniformTimeField: { flex: 1, gap: theme.spacing.xxs },
+  uniformTimes: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
+  // Capped to the same column width the Booking Settings pickers take, so a two-field row
+  // doesn't stretch one time picker across half the card.
+  uniformTimeField: {
+    flexGrow: 1,
+    flexBasis: 240,
+    minWidth: 220,
+    maxWidth: 420,
+    gap: theme.spacing.xxs,
+  },
   perDayList: { gap: theme.spacing.sm },
   perDayRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xsm },
   perDayRowClosed: { opacity: 0.75 },
