@@ -380,6 +380,17 @@ describe("LookupScreen", () => {
       expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("LINKED");
     });
 
+    it("stays out of the way on a phone, where the result would cover the form", async () => {
+      setWidth(400);
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+      expect(getBookingByRef).not.toHaveBeenCalled();
+    });
+
     it("leaves a reference already being typed alone", async () => {
       let release: (value: unknown) => void = () => {};
       (fetchCachedBookings as jest.Mock).mockReturnValue(

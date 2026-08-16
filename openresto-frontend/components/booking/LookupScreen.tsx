@@ -78,6 +78,10 @@ export default function LookupScreen({
   const showPanel = status !== "idle";
   const twoColumn = !isCompact && showPanel;
 
+  // Read once, at mount, because the auto-open below fires once: a diner who rotates their
+  // phone mid-session shouldn't have a booking opened at them for it.
+  const wideOnArrival = useRef(!isCompact);
+
   useEffect(() => {
     registerFocusTarget("user-lookup", refInputRef);
     return () => unregisterFocusTarget("user-lookup");
@@ -88,11 +92,14 @@ export default function LookupScreen({
       setCached(list);
       // A returning diner almost always wants the booking they just made, so the page
       // opens on it rather than on an empty panel beside a form they'd have to fill from
-      // a reference they don't have to hand. Skipped when a ref arrived in the URL —
-      // /booking-confirmation and a shared /lookup link name their own booking, and the
-      // effect below is already looking it up. Skipped too if they beat the fetch to the
-      // keyboard, so an auto-open can never overwrite what someone is typing.
-      if (initialRef || hasTyped.current || list.length === 0) return;
+      // a reference they don't have to hand. Three things it must not trample. A ref in
+      // the URL: /booking-confirmation and a shared /lookup link name their own booking,
+      // and the effect below is already fetching it. Anything already typed: the cookie
+      // read is async, so someone who beats it to the keyboard would lose what they
+      // entered. And a compact width, where the result is a sheet over the whole viewport
+      // rather than a column beside the form — opening one on arrival would bury the
+      // search this page exists for behind something to dismiss.
+      if (initialRef || !wideOnArrival.current || hasTyped.current || list.length === 0) return;
       setRefInput(list[0].bookingRef);
       setEmailInput(list[0].email);
       lookup(list[0].bookingRef, list[0].email);
