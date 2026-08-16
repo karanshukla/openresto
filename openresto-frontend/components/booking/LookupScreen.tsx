@@ -53,6 +53,7 @@ export default function LookupScreen({
   const scrollRef = useRef<ScrollView>(null);
   const refInputRef = useRef<TextInput>(null);
   const didDeepLink = useRef(false);
+  const hasTyped = useRef(false);
 
   const {
     booking,
@@ -83,8 +84,20 @@ export default function LookupScreen({
   }, []);
 
   useEffect(() => {
-    fetchCachedBookings().then(setCached);
-  }, []);
+    fetchCachedBookings().then((list) => {
+      setCached(list);
+      // A returning diner almost always wants the booking they just made, so the page
+      // opens on it rather than on an empty panel beside a form they'd have to fill from
+      // a reference they don't have to hand. Skipped when a ref arrived in the URL —
+      // /booking-confirmation and a shared /lookup link name their own booking, and the
+      // effect below is already looking it up. Skipped too if they beat the fetch to the
+      // keyboard, so an auto-open can never overwrite what someone is typing.
+      if (initialRef || hasTyped.current || list.length === 0) return;
+      setRefInput(list[0].bookingRef);
+      setEmailInput(list[0].email);
+      lookup(list[0].bookingRef, list[0].email);
+    });
+  }, [initialRef, lookup]);
 
   useEffect(() => {
     if (didDeepLink.current || !initialRef) return;
@@ -116,6 +129,11 @@ export default function LookupScreen({
     const email = emailInput.trim();
     if (!ref || !email) return;
     lookup(ref, email);
+  };
+
+  const handleTypedChange = (setter: (value: string) => void) => (value: string) => {
+    hasTyped.current = true;
+    setter(value);
   };
 
   const handleRecentSelect = (c: CachedBooking) => {
@@ -206,7 +224,7 @@ export default function LookupScreen({
                   placeholder="e.g. crispy-basil-thyme"
                   accessibilityLabel="Booking reference"
                   value={refInput}
-                  onChangeText={setRefInput}
+                  onChangeText={handleTypedChange(setRefInput)}
                   autoCapitalize="none"
                 />
                 <ThemedText style={styles.label}>Email Address</ThemedText>
@@ -214,7 +232,7 @@ export default function LookupScreen({
                   placeholder="The email used when booking"
                   accessibilityLabel="Email address"
                   value={emailInput}
-                  onChangeText={setEmailInput}
+                  onChangeText={handleTypedChange(setEmailInput)}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   returnKeyType="go"

@@ -268,6 +268,13 @@ describe("LookupScreen", () => {
           date: "2026-01-01",
           seats: 4,
         },
+        {
+          bookingRef: "CACHED2",
+          email: "second@test.com",
+          restaurantName: "Second Resto",
+          date: "2026-03-03",
+          seats: 2,
+        },
       ];
       (fetchCachedBookings as jest.Mock).mockResolvedValue(mockCached);
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
@@ -275,11 +282,13 @@ describe("LookupScreen", () => {
       renderWithProviders(<LookupScreen />);
 
       await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
-      fireEvent.press(screen.getByText("CACHED1"));
+      // The second row, so the press is doing the work rather than the auto-open that
+      // already took the first.
+      fireEvent.press(screen.getByText("CACHED2"));
 
-      expect(getBookingByRef).toHaveBeenCalledWith("CACHED1", "cached@test.com");
+      expect(getBookingByRef).toHaveBeenCalledWith("CACHED2", "second@test.com");
       await waitFor(() =>
-        expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("CACHED1")
+        expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("CACHED2")
       );
     });
 
@@ -304,10 +313,6 @@ describe("LookupScreen", () => {
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
 
       renderWithProviders(<LookupScreen />);
-      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
-
-      fireEvent.press(screen.getByText("REF123"));
-
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
       // The list stays put — the panel is a column over, not on top of it — so the diner
       // can go straight to another booking without dismissing the result first.
@@ -318,6 +323,79 @@ describe("LookupScreen", () => {
       expect(openRow.props.accessibilityState).toEqual({ selected: true });
       const otherRow = screen.getByLabelText("Look up booking OTHER9 at Other Resto");
       expect(otherRow.props.accessibilityState).toEqual({ selected: false });
+    });
+  });
+
+  describe("opening the most recent booking on arrival", () => {
+    const twoCached = [
+      {
+        bookingRef: "REF123",
+        email: "test@test.com",
+        restaurantName: "Cached Resto",
+        date: "2026-01-01",
+        seats: 4,
+      },
+      {
+        bookingRef: "OTHER9",
+        email: "other@test.com",
+        restaurantName: "Other Resto",
+        date: "2026-02-02",
+        seats: 2,
+      },
+    ];
+
+    it("looks the first cached booking up and fills the form with it", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      expect(getBookingByRef).toHaveBeenCalledWith("REF123", "test@test.com");
+      expect(getBookingByRef).not.toHaveBeenCalledWith("OTHER9", "other@test.com");
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("REF123");
+    });
+
+    it("stays idle when there is nothing cached", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue([]);
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(screen.getByText("Find my booking")).toBeTruthy());
+      expect(getBookingByRef).not.toHaveBeenCalled();
+      expect(screen.queryByText("YOUR RECENT BOOKINGS")).toBeNull();
+    });
+
+    it("defers to a deep link rather than opening a cached booking over it", async () => {
+      (fetchCachedBookings as jest.Mock).mockResolvedValue(twoCached);
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+
+      renderWithProviders(<LookupScreen initialRef="LINKED" initialEmail="linked@test.com" />);
+
+      await waitFor(() => expect(getBookingByRef).toHaveBeenCalled());
+      // The booking named in the URL is the only one looked up — a /booking-confirmation
+      // arrival must not be bumped off its own booking by whatever is in the cookie.
+      expect(getBookingByRef).toHaveBeenCalledWith("LINKED", "linked@test.com");
+      expect(getBookingByRef).toHaveBeenCalledTimes(1);
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("LINKED");
+    });
+
+    it("leaves a reference already being typed alone", async () => {
+      let release: (value: unknown) => void = () => {};
+      (fetchCachedBookings as jest.Mock).mockReturnValue(
+        new Promise((resolve) => {
+          release = resolve;
+        })
+      );
+
+      renderWithProviders(<LookupScreen />);
+      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "MY-OWN-REF");
+
+      release(twoCached);
+      await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+
+      expect(getBookingByRef).not.toHaveBeenCalled();
+      expect(screen.getByPlaceholderText("e.g. crispy-basil-thyme").props.value).toBe("MY-OWN-REF");
     });
   });
 
