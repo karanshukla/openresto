@@ -1,7 +1,5 @@
 import { get, post, patch, del, put, buildUrl } from "./client";
 
-// ---------- Types ----------
-
 export interface AdminOverviewDto {
   totalRestaurants: number;
   totalBookings: number;
@@ -122,8 +120,6 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
     return null;
   }
 }
-
-// ---------- Bookings ----------
 
 export type BookingStatusFilter = "active" | "past" | "cancelled" | "all";
 
@@ -579,8 +575,6 @@ export async function deleteHeroImage(): Promise<boolean> {
   }
 }
 
-// ---------- Highlights ----------
-
 export interface AdminHighlightDto {
   id: number;
   title: string;
@@ -667,8 +661,6 @@ export async function adminDeleteHighlight(id: number): Promise<boolean> {
     return false;
   }
 }
-
-// ---------- Social Links ----------
 
 export interface AdminSocialLinkDto {
   id: number;

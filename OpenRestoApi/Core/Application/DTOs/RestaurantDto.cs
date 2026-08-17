@@ -190,8 +190,8 @@ public class DayHoursDto
 {
     /// <summary>ISO 8601 day number: 1=Monday … 7=Sunday.</summary>
     public int Day { get; set; }
-    public string Open { get; set; } = "09:00";
-    public string Close { get; set; } = "22:00";
+    public string Open { get; set; } = OpeningHourDefaults.Open;
+    public string Close { get; set; } = OpeningHourDefaults.Close;
 }
 
 public class RestaurantDto
@@ -199,8 +199,8 @@ public class RestaurantDto
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
-    public string OpenTime { get; set; } = "09:00";
-    public string CloseTime { get; set; } = "22:00";
+    public string OpenTime { get; set; } = OpeningHourDefaults.Open;
+    public string CloseTime { get; set; } = OpeningHourDefaults.Close;
 
     /// <summary>Resolved hours for every day of the week (always 7 entries).</summary>
     public List<DayHoursDto> OpenHours { get; set; } = new();

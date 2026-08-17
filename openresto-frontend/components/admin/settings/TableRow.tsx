@@ -26,6 +26,14 @@ export interface TableRowGroupContext {
   combinedSeats: number;
 }
 
+/**
+ * One table in the admin's section list, in four mutually exclusive modes: selection (picking
+ * tables to combine), delete confirmation, edit, and the default row.
+ *
+ * Destroying a table is two taps, and the confirmation replaces the row in place rather than
+ * opening a centre-screen modal, so the consequence it names — the count of future bookings that
+ * would lose their table reference — is read next to the table it applies to.
+ */
 export function TableRow({
   table,
   restaurantId,
@@ -68,11 +76,8 @@ export function TableRow({
   const [draftName, setDraftName] = useState(table.name ?? "");
   const [draftSeats, setDraftSeats] = useState(table.seats);
   const [saving, setSaving] = useState(false);
-  // Two-step delete friction (#270). `Delete…` reveals
-  // an inline confirmation (not a center-screen modal) that names the consequence and requires a
-  // second explicit tap to destroy. `impact` is the best-effort count of future bookings that would
-  // lose their table reference; null = still loading or unavailable → generic copy fallback.
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
+  /** Null while loading, and when the read fails — the confirmation falls back to generic copy. */
   const [impact, setImpact] = useState<number | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -81,8 +86,8 @@ export function TableRow({
   const { primaryColor } = useAppTheme();
 
   const tableName = table.name ?? `Table ${table.id}`;
-  // Surface tokens shared with SocialLinkRow / HighlightsCard so the table tiles are visually
-  // indistinguishable from the rest of the settings cards.
+  // Shared with SocialLinkRow / HighlightsCard so the table tiles are indistinguishable from the
+  // rest of the settings cards.
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
 
@@ -91,8 +96,7 @@ export function TableRow({
     setImpact(null);
     setImpactLoading(true);
     const result = await fetchTableDeleteImpact(restaurantId, sectionId, table.id);
-    // Best-effort: a failure/404 leaves impact at null and the UI falls back to generic copy
-    // rather than blocking the destructive action.
+    // Best-effort: a failed read must not block the destructive action behind a count.
     setImpact(result?.bookings ?? null);
     setImpactLoading(false);
   };
@@ -110,8 +114,7 @@ export function TableRow({
     if (success) onDeleted();
   };
 
-  // Selection mode (#273): render a checkable tile for combining tables into a group. Already-grouped
-  // tables (disabledInSelection) are shown disabled with their chip; standalone tiles are selectable.
+  // A table already in a group keeps its chip but is locked: a table belongs to one group.
   if (selectionMode) {
     const isGrouped = !!group || disabledInSelection;
     return (
@@ -163,8 +166,6 @@ export function TableRow({
     );
   }
 
-  // Inline two-step delete confirmation (#270) — a tinted tile that replaces the row so the
-  // consequence is visible in context. Cancel returns to the row without destroying.
   if (!editing && deleteStep === "confirm") {
     return (
       <View
@@ -223,9 +224,6 @@ export function TableRow({
     );
   }
 
-  // Default row — a surface tile (matches SocialLinkRow / HighlightsCard): leading icon square,
-  // name + seats subtitle, trailing cluster of icon actions. Grouped rows append a remove-on-the-chip
-  // and skip the combine action.
   if (!editing) {
     return (
       <View style={[settingsStyles.tile, { backgroundColor: surface2, borderColor }]}>
@@ -308,7 +306,6 @@ export function TableRow({
     );
   }
 
-  // Edit mode — full-width inline form (kept intact; Save/Cancel are text buttons by design).
   return (
     <View
       style={[

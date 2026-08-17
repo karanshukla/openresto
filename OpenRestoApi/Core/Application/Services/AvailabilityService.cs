@@ -22,234 +22,55 @@ public sealed class AvailabilityService(
 
         TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 
-        // 1. Fetch all active bookings for this restaurant on this date (broad UTC range)
         IEnumerable<Booking> activeBookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurantId, bookingDate);
 
-        // 2. Define the local operating hours for the requested date.
-        // bookingDate is sent as YYYY-MM-DD from the frontend (already the local date in the
-        // restaurant's timezone), so use it directly rather than converting from UTC — converting
-        // from UTC would shift midnight into the previous day for any UTC-negative timezone.
+        // bookingDate arrives as YYYY-MM-DD, already the local date in the restaurant's
+        // timezone. Converting it from UTC would shift midnight into the previous day for any
+        // UTC-negative timezone.
         DateTime localDate = bookingDate.Date;
+        int isoDay = IsoDay.Of(localDate);
 
-        int jsDay = (int)localDate.DayOfWeek; // 0=Sun…6=Sat
-        int isoDay = jsDay == 0 ? 7 : jsDay;  // 1=Mon…7=Sun
-
-        // Walk-in-only locations/days take no online bookings, so expose no slots.
-        if (WalkInHelper.IsWalkInOnlyOn(restaurant, isoDay))
+        if (WalkInHelper.IsWalkInOnlyOn(restaurant, isoDay) || !IsOpenOn(restaurant, isoDay))
         {
-            return new AvailabilityResponseDto
-            {
-                RestaurantId = restaurantId,
-                Date = bookingDate,
-                Slots = new List<TimeSlotDto>()
-            };
+            return NoSlots(restaurantId, bookingDate);
         }
 
-        // Check if this day of week is an open day
-        if (!string.IsNullOrEmpty(restaurant.OpenDays))
-        {
-            var openDaysList = restaurant.OpenDays
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(d => ParseDayOfWeek(d.Trim()))
-                .Where(d => d > 0)
-                .ToHashSet();
-            if (openDaysList.Count > 0 && !openDaysList.Contains(isoDay))
-            {
-                return new AvailabilityResponseDto
-                {
-                    RestaurantId = restaurantId,
-                    Date = bookingDate,
-                    Slots = new List<TimeSlotDto>()
-                };
-            }
-        }
+        (DateTime localStart, DateTime localEnd) = ServiceWindowOn(restaurant, localDate, isoDay);
+        var reservations = new UnitReservations(restaurant, activeBookings);
+        List<Table> eligibleTables = EligibleTables(restaurant, seats);
+        List<TableGroup> eligibleGroups = EligibleGroups(restaurant, seats);
 
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
-        {
-            openHour = 9; openMin = 0;
-        }
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
-        {
-            closeHour = 22; closeMin = 0;
-        }
-
-        DateTime localStart = localDate.AddHours(openHour).AddMinutes(openMin);
-        DateTime localEnd = localDate.AddHours(closeHour).AddMinutes(closeMin);
-        if (localEnd <= localStart)
-        {
-            localEnd = localEnd.AddDays(1);
-        }
-
-        // 3. Generate slots stepping by the restaurant's configured interval
-        // (decoupled from DefaultBookingDurationMinutes — see Restaurant.BookingSlotIntervalMinutes).
-        // Fall back to 30 min if the stored value is somehow degenerate (0/negative), which
-        // would otherwise spin the while-loop below forever — server-side validation keeps
-        // this to 15/30/60, but we defend against stale/corrupt rows regardless.
-        int slotIntervalMinutes = restaurant.BookingSlotIntervalMinutes > 0
-            ? restaurant.BookingSlotIntervalMinutes
-            : 30;
         var slots = new List<TimeSlotDto>();
-        DateTime current = localStart;
-
-        // Fetch all tables for the restaurant to check capacity. The lower bound keeps a
-        // party off a too-small table; the optional upper bound (Restaurant.MaxTableOversizeSeats)
-        // keeps a small party off a much larger table a restaurant would rather hold for a
-        // bigger group. Mirrored in BookingService and TableAutoAssigner so the customer-facing
-        // options always match what the server will accept.
-        var eligibleTables = restaurant.Sections
-            ?.SelectMany(s => s.Tables ?? new List<Table>())
-            .Where(t => t != null && t.Seats >= seats
-                && (restaurant.MaxTableOversizeSeats == null
-                    || t.Seats - seats <= restaurant.MaxTableOversizeSeats.Value))
-            .ToList() ?? new List<Table>();
-
-        // Combinable-table groups (#272): a group is bookable when its CombinedSeats fits the party
-        // and the same optional oversize cap is satisfied. Per slot, a group is free iff ALL of its
-        // members are free. Member tables stay in AvailableTableIds — tables 8 and 9 still seat 4
-        // each on their own (#242) — and the member/group mutual exclusion is enforced per slot by
-        // IsTableReserved/IsGroupReserved rather than by hiding the members.
-        var eligibleGroups = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
-            .Where(g => g.CombinedSeats >= seats
-                && (restaurant.MaxTableOversizeSeats == null
-                    || g.CombinedSeats - seats <= restaurant.MaxTableOversizeSeats.Value))
-            .ToList();
-
-        // Optimize: index single-table bookings by table id and group bookings by group id. A group
-        // booking stores TableId = null, so it would be invisible to a table-only lookup — index it by
-        // its group id and resolve member table ids from the restaurant's loaded groups so the per-slot
-        // loops can detect it (otherwise a group/member reserved by a group booking would be advertised
-        // as available).
-        var bookingsByTable = activeBookings
-            .Where(b => b.TableId.HasValue)
-            .GroupBy(b => b.TableId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var groupBookings = activeBookings.Where(b => b.TableGroupId.HasValue).ToList();
-
-        // groupId → set of member table ids, from the restaurant's loaded combinable groups.
-        var groupMemberTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
-            .ToDictionary(g => g.Id, g => g.Members.Select(m => m.TableId).ToHashSet());
-
-        // All physical table ids reserved by any group booking (the booked group's members). A standalone
-        // table in this set is effectively taken for the relevant slots even though no row sets its TableId.
-        var groupBookedTableIdsByGroup = groupBookings
-            .Where(b => b.TableGroupId.HasValue && groupMemberTableIds.ContainsKey(b.TableGroupId!.Value))
-            .SelectMany(b => groupMemberTableIds[b.TableGroupId!.Value].Select(id => (id, b)))
-            .ToList();
-
-        bool Overlaps(Booking b, DateTime slotUtc, DateTime slotEndUtc) =>
-            b.Date < slotEndUtc &&
-            (b.EndTime ?? b.Date.AddMinutes(restaurant.DefaultBookingDurationMinutes)) > slotUtc;
-
-        bool IsTableReserved(int tableId, DateTime slotUtc, DateTime slotEndUtc)
-        {
-            if (bookingsByTable.TryGetValue(tableId, out List<Booking>? tableBookings)
-                && tableBookings.Any(b => Overlaps(b, slotUtc, slotEndUtc)))
-            {
-                return true;
-            }
-
-            // Reserved by a group booking whose group counts this table as a member.
-            return groupBookedTableIdsByGroup.Any(x => x.id == tableId && Overlaps(x.b, slotUtc, slotEndUtc));
-        }
-
-        bool IsGroupReserved(TableGroup group, DateTime slotUtc, DateTime slotEndUtc)
-        {
-            // The group itself already booked for this slot.
-            if (groupBookings.Any(b => b.TableGroupId == group.Id && Overlaps(b, slotUtc, slotEndUtc)))
-            {
-                return true;
-            }
-
-            // Any member reserved individually, or by a sibling group booking, makes the group unavailable.
-            foreach (TableGroupMembership member in group.Members)
-            {
-                if (IsTableReserved(member.TableId, slotUtc, slotEndUtc))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        while (current < localEnd)
+        for (DateTime current = localStart; current < localEnd; current = current.AddMinutes(SlotInterval(restaurant)))
         {
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
-            var availableTableIds = new List<int>();
 
             // A pause closes the slots inside its window only; later sittings — including
             // later today — stay bookable.
-            if (!restaurant.IsPausedFor(slotUtc))
+            if (restaurant.IsPausedFor(slotUtc))
             {
-                // A slot is available if AT LEAST ONE eligible table is free for the
-                // restaurant's configured booking duration.
-                DateTime slotEndUtc = slotUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes);
-
-                foreach (Table? table in eligibleTables)
-                {
-                    // Group-aware booking check (catches single-table + group bookings reserving it).
-                    if (IsTableReserved(table.Id, slotUtc, slotEndUtc))
-                    {
-                        continue;
-                    }
-
-                    // Check holds
-                    if (_holdService.IsTableHeld(table.Id, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes))
-                    {
-                        continue;
-                    }
-
-                    availableTableIds.Add(table.Id);
-                }
-
-                // Combinable groups: a group is free iff it isn't already booked and ALL members are free.
-                var availableGroupIds = new List<int>();
-                foreach (TableGroup group in eligibleGroups)
-                {
-                    if (IsGroupReserved(group, slotUtc, slotEndUtc))
-                    {
-                        continue;
-                    }
-
-                    bool allMembersFreeOfHolds = true;
-                    foreach (TableGroupMembership member in group.Members)
-                    {
-                        if (_holdService.IsTableHeld(member.TableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes))
-                        {
-                            allMembersFreeOfHolds = false;
-                            break;
-                        }
-                    }
-
-                    if (allMembersFreeOfHolds)
-                    {
-                        availableGroupIds.Add(group.Id);
-                    }
-                }
-
-                slots.Add(new TimeSlotDto
-                {
-                    Time = current.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
-                    IsAvailable = availableTableIds.Count > 0 || availableGroupIds.Count > 0,
-                    AvailableTableIds = availableTableIds,
-                    AvailableGroupIds = availableGroupIds,
-                    Category = GetCategory(current)
-                });
-            }
-            else
-            {
-                slots.Add(new TimeSlotDto
-                {
-                    Time = current.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
-                    IsAvailable = false,
-                    AvailableTableIds = availableTableIds,
-                    Category = GetCategory(current)
-                });
+                slots.Add(ClosedSlot(current));
+                continue;
             }
 
-            current = current.AddMinutes(slotIntervalMinutes);
+            DateTime slotEndUtc = slotUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes);
+            List<int> availableTableIds = eligibleTables
+                .Where(t => IsTableFree(t.Id, restaurant, reservations, slotUtc, slotEndUtc))
+                .Select(t => t.Id)
+                .ToList();
+            List<int> availableGroupIds = eligibleGroups
+                .Where(g => IsGroupFree(g, restaurant, reservations, slotUtc, slotEndUtc))
+                .Select(g => g.Id)
+                .ToList();
+
+            slots.Add(new TimeSlotDto
+            {
+                Time = FormatSlotTime(current),
+                IsAvailable = availableTableIds.Count > 0 || availableGroupIds.Count > 0,
+                AvailableTableIds = availableTableIds,
+                AvailableGroupIds = availableGroupIds,
+                Category = GetCategory(current)
+            });
         }
 
         return new AvailabilityResponseDto
@@ -260,9 +81,138 @@ public sealed class AvailabilityService(
         };
     }
 
-    // Category windows are calibrated to North American restaurant data (Toast/Square/Yelp):
-    // Lunch peak is 12–1 PM; 2 PM begins the afternoon dead zone.
-    // Dinner now peaks at 6 PM (22% at 5 PM, 37% at 6 PM, drops sharply after 9 PM).
+    private static AvailabilityResponseDto NoSlots(int restaurantId, DateTime bookingDate) => new()
+    {
+        RestaurantId = restaurantId,
+        Date = bookingDate,
+        Slots = new List<TimeSlotDto>()
+    };
+
+    private static TimeSlotDto ClosedSlot(DateTime local) => new()
+    {
+        Time = FormatSlotTime(local),
+        IsAvailable = false,
+        AvailableTableIds = new List<int>(),
+        Category = GetCategory(local)
+    };
+
+    private static string FormatSlotTime(DateTime local)
+        => local.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static bool IsOpenOn(Restaurant restaurant, int isoDay)
+    {
+        HashSet<int> openDays = IsoDay.ParseList(restaurant.OpenDays);
+        return openDays.Count == 0 || openDays.Contains(isoDay);
+    }
+
+    private static (DateTime Start, DateTime End) ServiceWindowOn(Restaurant restaurant, DateTime localDate, int isoDay)
+    {
+        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
+        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
+        {
+            (openHour, openMin) = OpeningHourDefaults.OpenAt;
+        }
+        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
+        {
+            (closeHour, closeMin) = OpeningHourDefaults.CloseAt;
+        }
+
+        DateTime start = localDate.AddHours(openHour).AddMinutes(openMin);
+        DateTime end = localDate.AddHours(closeHour).AddMinutes(closeMin);
+        bool closesAfterMidnight = end <= start;
+        return (start, closesAfterMidnight ? end.AddDays(1) : end);
+    }
+
+    /// <summary>
+    /// A zero or negative stored interval would spin the slot loop forever. Validation keeps
+    /// the column to 15/30/60, so this only ever catches a stale or hand-edited row.
+    /// </summary>
+    private static int SlotInterval(Restaurant restaurant)
+        => restaurant.BookingSlotIntervalMinutes > 0 ? restaurant.BookingSlotIntervalMinutes : 30;
+
+    private static List<Table> EligibleTables(Restaurant restaurant, int seats)
+        => restaurant.Sections
+            ?.SelectMany(s => s.Tables ?? new List<Table>())
+            .Where(t => t != null && restaurant.CanSeat(t.Seats, seats))
+            .ToList() ?? new List<Table>();
+
+    /// <summary>
+    /// Combinable groups are bookable units alongside the individual tables. Member tables
+    /// stay in the eligible set — grouping a table does not stop it being booked on its own —
+    /// so the mutual exclusion between a member and its group is resolved per slot by
+    /// <see cref="UnitReservations"/> rather than by hiding the members here.
+    /// </summary>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_StillOffersGroupMembers_Individually</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking</seealso>
+    private static List<TableGroup> EligibleGroups(Restaurant restaurant, int seats)
+        => (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+            .Where(g => restaurant.CanSeat(g.CombinedSeats, seats))
+            .ToList();
+
+    private bool IsTableFree(int tableId, Restaurant restaurant, UnitReservations reservations, DateTime slotUtc, DateTime slotEndUtc)
+        => !reservations.IsTableReserved(tableId, slotUtc, slotEndUtc)
+            && !_holdService.IsTableHeld(tableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes);
+
+    private bool IsGroupFree(TableGroup group, Restaurant restaurant, UnitReservations reservations, DateTime slotUtc, DateTime slotEndUtc)
+        => !reservations.IsGroupReserved(group, slotUtc, slotEndUtc)
+            && group.Members.All(m => !_holdService.IsTableHeld(m.TableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes));
+
+    /// <summary>
+    /// Indexes the day's bookings so each slot can be answered without rescanning them. A
+    /// group booking stores <c>TableId = null</c>, so it is invisible to a table-keyed lookup;
+    /// its members' table ids are resolved up front, or a table reserved by its group's
+    /// booking would be advertised as available.
+    /// </summary>
+    private sealed class UnitReservations
+    {
+        private readonly int _defaultDurationMinutes;
+        private readonly Dictionary<int, List<Booking>> _byTable;
+        private readonly List<Booking> _groupBookings;
+        private readonly List<(int TableId, Booking Booking)> _tablesHeldByGroupBookings;
+
+        public UnitReservations(Restaurant restaurant, IEnumerable<Booking> activeBookings)
+        {
+            _defaultDurationMinutes = restaurant.DefaultBookingDurationMinutes;
+
+            _byTable = activeBookings
+                .Where(b => b.TableId.HasValue)
+                .GroupBy(b => b.TableId!.Value)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            _groupBookings = activeBookings.Where(b => b.TableGroupId.HasValue).ToList();
+
+            Dictionary<int, HashSet<int>> memberTableIdsByGroup = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+                .ToDictionary(g => g.Id, g => g.Members.Select(m => m.TableId).ToHashSet());
+
+            _tablesHeldByGroupBookings = _groupBookings
+                .Where(b => memberTableIdsByGroup.ContainsKey(b.TableGroupId!.Value))
+                .SelectMany(b => memberTableIdsByGroup[b.TableGroupId!.Value].Select(id => (id, b)))
+                .ToList();
+        }
+
+        public bool IsTableReserved(int tableId, DateTime slotUtc, DateTime slotEndUtc)
+        {
+            if (_byTable.TryGetValue(tableId, out List<Booking>? tableBookings)
+                && tableBookings.Any(b => Overlaps(b, slotUtc, slotEndUtc)))
+            {
+                return true;
+            }
+
+            return _tablesHeldByGroupBookings.Any(x => x.TableId == tableId && Overlaps(x.Booking, slotUtc, slotEndUtc));
+        }
+
+        public bool IsGroupReserved(TableGroup group, DateTime slotUtc, DateTime slotEndUtc)
+            => _groupBookings.Any(b => b.TableGroupId == group.Id && Overlaps(b, slotUtc, slotEndUtc))
+                || group.Members.Any(m => IsTableReserved(m.TableId, slotUtc, slotEndUtc));
+
+        private bool Overlaps(Booking booking, DateTime slotUtc, DateTime slotEndUtc)
+            => booking.Date < slotEndUtc
+                && (booking.EndTime ?? booking.Date.AddMinutes(_defaultDurationMinutes)) > slotUtc;
+    }
+
+    // Windows are calibrated to North American restaurant data (Toast/Square/Yelp): lunch
+    // peaks 12–1 PM with 2 PM starting the afternoon dead zone, dinner peaks at 6 PM (22% at
+    // 5 PM, 37% at 6 PM) and drops sharply after 9 PM.
     private static string GetCategory(DateTime time)
     {
         TimeSpan t = time.TimeOfDay;
@@ -275,23 +225,5 @@ public sealed class AvailabilityService(
             return "Dinner";
         }
         return "Off-Peak";
-    }
-
-    private static int ParseDayOfWeek(string day)
-    {
-        if (int.TryParse(day, out int dayNum) && dayNum >= 1 && dayNum <= 7)
-            return dayNum;
-
-        return day.ToLowerInvariant() switch
-        {
-            "mon" or "monday" => 1,
-            "tue" or "tues" or "tuesday" => 2,
-            "wed" or "wednesday" => 3,
-            "thu" or "thurs" or "thursday" => 4,
-            "fri" or "friday" => 5,
-            "sat" or "saturday" => 6,
-            "sun" or "sunday" => 7,
-            _ => 0
-        };
     }
 }

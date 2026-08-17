@@ -64,12 +64,8 @@ public class RestaurantManagementService(
         {
             Name = dto.Name,
             Address = dto.Address,
-            // Honor the hours/days/timezone the client sent (previously dropped here, which
-            // silently reverted every new restaurant to the entity's old 00:00 default and is
-            // what surfaced as "00:00" in the booking time picker). Guard the empty case so a
-            // create call that omits them still lands on the sensible 09:00–22:00 default.
-            OpenTime = string.IsNullOrWhiteSpace(dto.OpenTime) ? "09:00" : dto.OpenTime,
-            CloseTime = string.IsNullOrWhiteSpace(dto.CloseTime) ? "22:00" : dto.CloseTime,
+            OpenTime = string.IsNullOrWhiteSpace(dto.OpenTime) ? OpeningHourDefaults.Open : dto.OpenTime,
+            CloseTime = string.IsNullOrWhiteSpace(dto.CloseTime) ? OpeningHourDefaults.Close : dto.CloseTime,
             OpenDays = string.IsNullOrWhiteSpace(dto.OpenDays) ? "1,2,3,4,5,6,7" : dto.OpenDays,
             Timezone = string.IsNullOrWhiteSpace(dto.Timezone) ? "UTC" : dto.Timezone,
             PhoneNumber = dto.PhoneNumber == null ? null : ContactFields.NormalizePhone(dto.PhoneNumber),
@@ -88,9 +84,8 @@ public class RestaurantManagementService(
             }).ToList()
         };
 
-        // Apply per-day overrides (same helper UpdateAsync uses) so create supports non-uniform
-        // hours too. Runs after the entity is populated so ApplyOpenHours can collapse identical
-        // days back into OpenTime/CloseTime or store the JSON otherwise.
+        // After the entity is populated, so ApplyOpenHours can collapse identical days back
+        // into OpenTime/CloseTime rather than storing redundant JSON.
         if (dto.OpenHours is { Count: > 0 })
         {
             OpeningHoursHelper.ApplyOpenHours(entity, dto.OpenHours);
@@ -197,10 +192,8 @@ public class RestaurantManagementService(
             r.BookingSlotIntervalMinutes = req.BookingSlotIntervalMinutes.Value;
         }
 
-        // MaxTableOversizeSeats is nullable where null means "off/unrestricted". The settings
-        // form always sends the field (number or null), so it's assigned unconditionally —
-        // like Name/Address above — which is the only way selecting "Off" can clear a
-        // previously-set cap. Validate the non-null case is non-negative.
+        // Assigned unconditionally: null means "off", and the settings form always sends the
+        // field, so a conditional write would make selecting "Off" unable to clear a set cap.
         if (req.MaxTableOversizeSeats.HasValue && req.MaxTableOversizeSeats.Value < 0)
         {
             throw new ValidationException("MaxTableOversizeSeats must be zero or greater, or null to disable.");
@@ -293,8 +286,7 @@ public class RestaurantManagementService(
             return false;
         }
 
-        // FK-null affected bookings before removing the section. All entities share the same scoped
-        // DbContext, so the booking mutations + the section removal below flush in a single SaveChanges.
+        // FK-nulled before the section goes: bookings outlive the section they were seated in.
         var tableIds = section.Tables.Select(t => t.Id).ToList();
         List<Booking> affected = await _bookingRepository.GetBySectionOrTablesAsync(sectionId, tableIds);
         foreach (Booking b in affected)
@@ -346,9 +338,7 @@ public class RestaurantManagementService(
         table.Seats = seats;
         await _tableRepository.SaveChangesAsync();
 
-        // Resizing a member table changes what its combinable group can actually hold, so bring the
-        // group's stored CombinedSeats back inside the bounds ValidateCombinedSeats enforces on write.
-        // Runs after the save so the reconcile reads the new capacity, not the pre-edit one.
+        // After the save, so the reconcile reads the new capacity rather than the pre-edit one.
         await ReconcileTableGroupsAsync(restaurantId, Array.Empty<int>());
         await _tableRepository.SaveChangesAsync();
 
@@ -455,7 +445,6 @@ public class RestaurantManagementService(
             return false;
         }
 
-        // FK-null bookings on this table before removing it (same single-save pattern as DeleteSection).
         List<Booking> affected = await _bookingRepository.GetByTableAsync(tableId);
         foreach (Booking b in affected)
             b.TableId = null;
@@ -598,9 +587,7 @@ public class RestaurantManagementService(
             return false;
         }
 
-        // FK-null bookings referencing this group before removing it (same single-save pattern as
-        // DeleteSectionAsync/DeleteTableAsync). Bookings keep their other details; only the group
-        // reference is cleared.
+        // Bookings keep every other detail; only the group reference is cleared.
         List<Booking> affected = await _bookingRepository.GetByTableGroupAsync(groupId);
         foreach (Booking b in affected)
         {

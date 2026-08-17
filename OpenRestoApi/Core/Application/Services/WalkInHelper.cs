@@ -14,24 +14,7 @@ namespace OpenRestoApi.Core.Application.Services;
 /// </summary>
 public static class WalkInHelper
 {
-    public static HashSet<int> ParseWalkInDays(string? walkInDays)
-    {
-        var result = new HashSet<int>();
-        if (string.IsNullOrWhiteSpace(walkInDays))
-        {
-            return result;
-        }
-
-        foreach (string part in walkInDays.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            if (int.TryParse(part, out int day) && day >= 1 && day <= 7)
-            {
-                result.Add(day);
-            }
-        }
-
-        return result;
-    }
+    public static HashSet<int> ParseWalkInDays(string? walkInDays) => IsoDay.ParseList(walkInDays);
 
     /// <summary>True when the restaurant does not take bookings on the given ISO day.</summary>
     public static bool IsWalkInOnlyOn(Restaurant restaurant, int isoDay)
@@ -52,13 +35,7 @@ public static class WalkInHelper
         }
 
         DateTime local = TimeZoneHelper.ConvertUtcToLocal(utc, restaurant.Timezone);
-        int isoDay = (int)local.DayOfWeek;
-        if (isoDay == 0)
-        {
-            isoDay = 7; // Sunday: 0 -> 7
-        }
-
-        return days.Contains(isoDay);
+        return days.Contains(IsoDay.Of(local));
     }
 
     /// <summary>

@@ -73,25 +73,8 @@ public class AdminService(
             }
         }
 
-        // Calculate Occupancy Data (Last 7 days) — raw counts first, then normalize to 0-100
-        // relative to the peak day so the busiest day fills the chart and others are proportional.
-        // OccupancyDates carries the ISO calendar date (yyyy-MM-dd) for each bar so the client can
-        // toggle between the T-x relative labels and actual calendar dates (see issue #180).
-        List<int> rawCounts = [];
-        List<string> occupancyDates = [];
-        for (int i = 6; i >= 0; i--)
-        {
-            DateTime dayStart = DateTime.SpecifyKind(nowUtc.Date.AddDays(-i), DateTimeKind.Utc);
-            DateTime dayEnd = dayStart.AddDays(1);
-            int dayBookings = await _bookingRepository.CountActiveByDayAsync(dayStart, dayEnd);
-            rawCounts.Add(dayBookings);
-            occupancyDates.Add(dayStart.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
-        }
-
-        int maxCount = MaxOrZero(rawCounts);
-        List<int> occupancyData = rawCounts
-            .Select(count => maxCount > 0 ? (int)Math.Round((double)count / maxCount * 100) : 0)
-            .ToList();
+        (List<int> rawCounts, List<string> occupancyDates) = await CountBookingsPerDayAsync(nowUtc, OccupancyChartDays);
+        List<int> occupancyData = AsPercentagesOfPeak(rawCounts);
 
         return new AdminOverviewDto
         {
@@ -108,10 +91,43 @@ public class AdminService(
         };
     }
 
-    // The loop that builds rawCounts always runs exactly 7 times (i = 6..0), so it can never
-    // be empty here — the `Count > 0` guard is unreachable defensive coding for a scenario
-    // (an empty rawCounts) that this call site can't produce. Isolated into its own method so
-    // the exclusion doesn't hide coverage on GetOverviewAsync's other, genuinely-tested branches.
+    private const int OccupancyChartDays = 7;
+
+    /// <summary>
+    /// Booking counts for the <paramref name="days"/> ending on <paramref name="nowUtc"/>, oldest
+    /// first, alongside each day's ISO calendar date — the client toggles its bar labels between
+    /// those and relative T-x ones, so both have to come back from the same walk.
+    /// </summary>
+    private async Task<(List<int> Counts, List<string> Dates)> CountBookingsPerDayAsync(DateTime nowUtc, int days)
+    {
+        List<int> counts = [];
+        List<string> dates = [];
+
+        for (int daysAgo = days - 1; daysAgo >= 0; daysAgo--)
+        {
+            DateTime dayStart = DateTime.SpecifyKind(nowUtc.Date.AddDays(-daysAgo), DateTimeKind.Utc);
+            counts.Add(await _bookingRepository.CountActiveByDayAsync(dayStart, dayStart.AddDays(1)));
+            dates.Add(dayStart.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        return (counts, dates);
+    }
+
+    /// <summary>
+    /// Scales relative to the busiest day rather than to an absolute ceiling, so the peak day
+    /// always fills the chart and quiet weeks still read as a shape.
+    /// </summary>
+    private static List<int> AsPercentagesOfPeak(List<int> counts)
+    {
+        int peak = MaxOrZero(counts);
+        return counts
+            .Select(count => peak > 0 ? (int)Math.Round((double)count / peak * 100) : 0)
+            .ToList();
+    }
+
+    // CountBookingsPerDayAsync always appends OccupancyChartDays entries, so the empty-list guard
+    // is unreachable from this call site. Isolated into its own method so excluding it doesn't
+    // hide coverage on the branches around it.
     [ExcludeFromCodeCoverage(Justification = "Unreachable: the 7-iteration loop above always populates rawCounts, so Count is never 0 at this call site.")]
     private static int MaxOrZero(List<int> counts) => counts.Count > 0 ? counts.Max() : 0;
 
@@ -145,7 +161,6 @@ public class AdminService(
             throw new ValidationException("Section does not belong to this restaurant.");
         }
 
-        // Normalize date: if Unspecified, treat as restaurant local and convert to UTC
         DateTime newStart = TimeZoneHelper.ConvertLocalToUtc(req.Date, table.Section.Restaurant!.Timezone);
 
         int durationMinutes = table.Section!.Restaurant!.DefaultBookingDurationMinutes;
@@ -178,7 +193,6 @@ public class AdminService(
 
         await _bookingRepository.AddAsync(booking);
 
-        // Reload via the eager-loading GetByIdAsync to populate names and ensure UTC consistency.
         Booking? reloaded = await _bookingRepository.GetByIdAsync(booking.Id);
         if (reloaded != null)
         {
@@ -202,8 +216,6 @@ public class AdminService(
             return null;
         }
 
-        // Use EndTime if it's valid (after Date), otherwise fall back to the
-        // restaurant's configured booking duration.
         DateTime from;
         if (booking.EndTime.HasValue && booking.EndTime.Value > booking.Date)
         {
@@ -287,7 +299,6 @@ public class AdminService(
             return null;
         }
 
-        // Validate restaurant exists if changing
         Restaurant? restaurant = booking.Restaurant;
         if (req.RestaurantId.HasValue && req.RestaurantId.Value != booking.RestaurantId)
         {
@@ -302,7 +313,6 @@ public class AdminService(
 
         int durationMinutes = restaurant?.DefaultBookingDurationMinutes ?? 60;
 
-        // Validate table exists and belongs to the (possibly new) restaurant
         if (req.TableId.HasValue && req.TableId.Value != booking.TableId)
         {
             Table? table = await _tableRepository.GetWithSectionForRestaurantAsync(req.TableId.Value, booking.RestaurantId);
@@ -319,38 +329,20 @@ public class AdminService(
             throw new ValidationException("Provide tableId when reassigning to a different section.");
         }
 
-        // Update other fields
         if (req.Date.HasValue && req.Date.Value != booking.Date)
         {
-            // If date changed, we should also shift EndTime by the same amount to keep duration
-            if (booking.EndTime.HasValue)
-            {
-                TimeSpan duration = booking.EndTime.Value - booking.Date;
-                booking.EndTime = req.Date.Value + duration;
-            }
-            else
-            {
-                // Default to the restaurant's configured booking duration if EndTime was missing for some reason
-                booking.EndTime = req.Date.Value.AddMinutes(durationMinutes);
-            }
-            booking.Date = req.Date.Value;
+            RescheduleKeepingDuration(booking, req.Date.Value, durationMinutes);
         }
 
-        // Final safety check: EndTime should never be before Date
         if (booking.EndTime.HasValue && booking.EndTime.Value < booking.Date)
         {
             booking.EndTime = booking.Date.AddMinutes(durationMinutes);
         }
 
-        // --- CONFLICT CHECK ---
-        // If either the Date or Table changed, verify that the new slot doesn't conflict with existing bookings.
-        // NOTE: booking.Date/booking.TableId are mutated above before this guard runs, so both
-        // comparisons inside it are always false and it is unreachable dead code today
-        // (pre-existing, out of scope here — see
-        // AdminServiceTests.AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug,
-        // which pins the current behaviour). Extracted to its own method and excluded from
-        // coverage rather than chased with a contrived test; the real fix (compare against
-        // the pre-mutation values) is a separate, unrelated follow-up.
+        // Dead code today: booking.Date/booking.TableId are mutated above, so this guard's
+        // comparisons are always false. Pinned as-is by
+        // AdminServiceTests.AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug;
+        // the fix — comparing against the pre-mutation values — is an unrelated follow-up.
         await CheckSlotConflictIfChangedAsync(booking, req, id, durationMinutes);
 
         if (req.Seats.HasValue)
@@ -381,14 +373,20 @@ public class AdminService(
 
         await _bookingRepository.UpdateAsync(booking);
 
-        // Reload via the eager-loading GetByIdAsync to get updated names.
+        // Reloaded through the eager-loading read so the DTO carries the updated names.
         Booking? reloaded = await _bookingRepository.GetByIdAsync(id);
         return reloaded == null ? ToDetailDto(booking) : ToDetailDto(reloaded);
     }
 
-    // Unreachable with the current call site: booking.Date/booking.TableId are already
-    // mutated to req.Date/req.TableId by the time this runs, so both comparisons below are
-    // always false. See AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug.
+    /// <summary>Moves the sitting while keeping its length, so a reschedule never silently resizes it.</summary>
+    private static void RescheduleKeepingDuration(Booking booking, DateTime newDate, int fallbackDurationMinutes)
+    {
+        booking.EndTime = booking.EndTime.HasValue
+            ? newDate + (booking.EndTime.Value - booking.Date)
+            : newDate.AddMinutes(fallbackDurationMinutes);
+        booking.Date = newDate;
+    }
+
     [ExcludeFromCodeCoverage(Justification = "Pre-existing dead code: caller mutates booking.Date/TableId before calling this, so the guard never trips. Kept as-is; not fixed here.")]
     private async Task CheckSlotConflictIfChangedAsync(Booking booking, AdminUpdateBookingRequest req, int id, int durationMinutes)
     {
@@ -470,7 +468,6 @@ public class AdminService(
 
         DateTime nowUtc = DateTime.UtcNow;
 
-        // Active bookings are those that are currently in progress and not cancelled
         List<Booking> activeBookings = await _bookingRepository.GetInProgressForRestaurantAsync(restaurantId, nowUtc, restaurant.DefaultBookingDurationMinutes);
 
         foreach (Booking? booking in activeBookings)
@@ -603,7 +600,6 @@ public class AdminService(
 
     private static BookingDetailDto ToDetailDto(Booking b)
     {
-        // Force UTC kind to ensure JSON serializer adds the 'Z' suffix
         DateTime dateUtc = b.Date.Kind == DateTimeKind.Unspecified
             ? DateTime.SpecifyKind(b.Date, DateTimeKind.Utc)
             : b.Date.ToUniversalTime();

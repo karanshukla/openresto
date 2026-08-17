@@ -91,6 +91,24 @@ jobs:
       - name: Check Route Manifest
         run: npm run routes:check
 
+  doc-links:
+    name: Doc Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # The comment policy lets a test carry a business rule in place of prose, which
+      # only holds while the code still points at that test. A link has no compiler
+      # behind it, so a renamed test rots it silently and the rule goes undocumented.
+      - name: Check Doc Links
+        run: npm run check:doc-links
+
   backend:
     name: Backend CI
     runs-on: ubuntu-latest

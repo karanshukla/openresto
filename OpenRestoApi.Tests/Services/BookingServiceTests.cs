@@ -1309,6 +1309,70 @@ public partial class BookingServiceTests
         Assert.NotEmpty(result.BookingRef!);
     }
 
+    // ── CreateBookingAsync — booking pause ────────────────────────────────────
+    //
+    // A pause closes the sittings that start inside its window, not booking as a whole. The
+    // pair is what states that: a single "rejects while paused" test passes just as happily
+    // against a service that refuses every booking until the pause expires.
+
+    [Fact]
+    public async Task CreateBookingAsync_RejectsBooking_InsideThePauseWindow()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsBooking_InsideThePauseWindow));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Paused Bistro",
+            Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddHours(4)
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+
+        await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddHours(2)
+        }));
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AllowsBooking_AfterThePauseWindow()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AllowsBooking_AfterThePauseWindow));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Paused Bistro",
+            Timezone = "UTC",
+            BookingsPausedUntil = DateTime.UtcNow.AddHours(4)
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddHours(6)
+        });
+
+        Assert.NotEmpty(result.BookingRef!);
+    }
+
     // ── CreateBookingAsync — auto-assign ("Any section") ──────────────────────
     //
     // When TableId/SectionId are both null, the service picks the smallest fitting free

@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 
@@ -9,13 +8,8 @@ public class Restaurant
     public int Id { get; set; }
     public string Name { get; set; } = null!;
     public string? Address { get; set; }
-    // Defaults mirror RestaurantDto / DayHoursDto / UpdateRestaurantRequest so a restaurant
-    // constructed without explicit hours lands on a sensible 09:00–22:00 service window rather
-    // than 00:00, which previously leaked into the booking time picker (00:00 was the lone
-    // outlier default — every sibling used 09:00). "00:00"/"23:59" remain valid *values* for
-    // a 24h venue; only the default changes.
-    public string OpenTime { get; set; } = "09:00";
-    public string CloseTime { get; set; } = "22:00";
+    public string OpenTime { get; set; } = OpeningHourDefaults.Open;
+    public string CloseTime { get; set; } = OpeningHourDefaults.Close;
 
     /// <summary>
     /// Comma-separated day numbers (ISO 8601: 1=Monday, 7=Sunday).
@@ -36,14 +30,12 @@ public class Restaurant
     /// </summary>
     public string Timezone { get; set; } = "UTC";
 
-    // A restaurant can have multiple sections (e.g., indoor, patio)
     public ICollection<Section> Sections { get; set; } = new List<Section>();
 
-    /// <summary>Combinable-table groups defined for this restaurant (see <see cref="TableGroup"/>).</summary>
     public ICollection<TableGroup> Groups { get; set; } = new List<TableGroup>();
 
     /// <summary>
-    /// If set, new bookings are disabled until this time (UTC).
+    /// If set, sittings that start before this instant (UTC) are closed to new bookings.
     /// </summary>
     public DateTime? BookingsPausedUntil { get; set; }
 
@@ -100,116 +92,119 @@ public class Restaurant
     public int DefaultBookingDurationMinutes { get; set; } = 60;
 
     /// <summary>
-    /// Step, in minutes, between selectable booking start times in
-    /// <see cref="Application.Services.AvailabilityService.GetAvailabilityAsync"/>.
-    /// Decoupled from <see cref="DefaultBookingDurationMinutes"/> so a restaurant can
-    /// offer, say, 90-minute bookings while still letting diners start every 15 minutes.
-    /// Constrained to a small set (15/30/60) server-side; defaults to 30 to preserve the
-    /// pre-setting behaviour (the old hardcoded slot step).
+    /// Step, in minutes, between selectable booking start times. Deliberately independent of
+    /// <see cref="DefaultBookingDurationMinutes"/>, so a restaurant can offer 90-minute
+    /// sittings that still start every 15 minutes. Constrained to 15/30/60 server-side.
     /// </summary>
     public int BookingSlotIntervalMinutes { get; set; } = 30;
 
     /// <summary>
-    /// When set, the largest number of "spare" seats a table may have over the party size
-    /// and still be offered/booked — i.e. a table may be selected when
-    /// <c>table.Seats - partySize &lt;= MaxTableOversizeSeats</c>. Null means unrestricted
-    /// (a 2-top can be seated at a 10-top), preserving the pre-setting behaviour. Applied
-    /// symmetrically in availability, booking creation/update, and auto-assign so the
-    /// customer-facing options always match what the server will accept. Admin-recorded
-    /// walk-in bookings are intentionally exempt.
+    /// When set, the largest number of spare seats a table may carry over the party size and
+    /// still be offered — a table qualifies while
+    /// <c>table.Seats - partySize &lt;= MaxTableOversizeSeats</c>. Null is unrestricted. It has
+    /// to be applied identically in availability, booking creation/update and auto-assign, or
+    /// the customer is offered a table the server will then refuse. Admin-recorded walk-ins
+    /// are intentionally exempt.
     /// </summary>
     public int? MaxTableOversizeSeats { get; set; }
 
     /// <summary>
-    /// Shape of the booking references handed to this location's customers. Defaults to
-    /// <see cref="Domain.BookingRefFormat.AlphaNumeric"/> so existing locations keep the
-    /// word-based format. Only consulted when a reference is minted — changing it leaves
-    /// already-issued references alone.
+    /// True when a bookable unit of <paramref name="unitSeats"/> seats — a table or a
+    /// combinable group — may take a party of <paramref name="partySize"/>: large enough to
+    /// seat them, and not so much larger that <see cref="MaxTableOversizeSeats"/> would rather
+    /// hold it for a bigger group.
+    /// </summary>
+    /// <seealso>RestaurantTests.CanSeat_True_WhenTheUnitIsExactlyAtTheOversizeCap</seealso>
+    /// <seealso>RestaurantTests.CanSeat_False_WhenTheUnitIsOneSeatOverTheCap</seealso>
+    public bool CanSeat(int unitSeats, int partySize)
+        => unitSeats >= partySize && !ExceedsOversizeCap(unitSeats, partySize);
+
+    /// <summary>
+    /// The upper half of <see cref="CanSeat"/>, for the paths that reject a too-small unit
+    /// with their own message and only need the cap. Availability, holds, booking
+    /// creation/update and auto-assign must all answer this identically: a path that is more
+    /// permissive offers the customer a table the next one then refuses.
+    /// </summary>
+    public bool ExceedsOversizeCap(int unitSeats, int partySize)
+        => MaxTableOversizeSeats.HasValue && unitSeats - partySize > MaxTableOversizeSeats.Value;
+
+    /// <summary>
+    /// Shape of the booking references handed to this location's customers. Only consulted
+    /// when a reference is minted, so changing it leaves already-issued references alone.
     /// </summary>
     public BookingRefFormat BookingRefFormat { get; set; } = BookingRefFormat.AlphaNumeric;
 
-    /// <summary>
-    /// True when online bookings are paused: a future <see cref="BookingsPausedUntil"/>
-    /// is set. Consolidates the previously-inlined
-    /// <c>BookingsPausedUntil.HasValue &amp;&amp; BookingsPausedUntil.Value &gt; DateTime.UtcNow</c>
-    /// check that was duplicated across BookingService, HoldPolicyService, AvailabilityService,
-    /// and AdminService.GetOverview.
-    /// </summary>
+    /// <summary>True while a pause is running — for badges and counts, not as a booking gate.</summary>
     public bool IsPaused()
         => BookingsPausedUntil.HasValue && BookingsPausedUntil.Value > DateTime.UtcNow;
 
     /// <summary>
-    /// True when a sitting starting at <paramref name="bookingUtc"/> falls inside the active
-    /// pause window. Pausing is a "stop seating new arrivals for the next X hours" switch, so
-    /// it blocks the sittings inside that window only — next Saturday stays bookable while
-    /// tonight's service is paused.
+    /// The booking gate: true when a sitting starting at <paramref name="bookingUtc"/> falls
+    /// inside the active pause window. Pausing means "stop seating new arrivals for the next
+    /// X hours", so next Saturday stays bookable while tonight's service is paused.
     /// </summary>
+    /// <seealso>RestaurantTests.IsPausedFor_True_WhenTheSittingStartsInsideThePauseWindow</seealso>
+    /// <seealso>RestaurantTests.IsPausedFor_False_WhenTheSittingStartsAfterThePauseWindow</seealso>
     public bool IsPausedFor(DateTime bookingUtc)
         => IsPaused() && bookingUtc < BookingsPausedUntil!.Value;
 
-    /// <summary>
-    /// True when the restaurant does not take online bookings on the local day of
-    /// <paramref name="utc"/> — either globally (<see cref="WalkInOnly"/>) or because the
-    /// resolved local ISO day is in <see cref="WalkInDays"/>. Delegates to
-    /// <see cref="WalkInHelper.IsWalkInOnlyAt"/> for the timezone + ISO-day resolution.
-    /// </summary>
     public bool IsWalkInOnlyAt(DateTime utc)
         => WalkInHelper.IsWalkInOnlyAt(this, utc);
 
     /// <summary>
-    /// True when the restaurant is open at the given UTC instant. Resolves the local time
-    /// via <see cref="Timezone"/>, checks <see cref="OpenDays"/> membership, and consults
-    /// the per-day opening hours (with past-midnight wrap and 24h handling). Handles an
-    /// unparseable <see cref="Timezone"/> by falling back to UTC. Mirrors the logic
-    /// previously inlined as <c>HoldPolicyService.IsTimeWithinOpeningHours</c>.
+    /// True when the restaurant is open at the given UTC instant, resolved through
+    /// <see cref="Timezone"/> — which falls back to UTC when it is not a known IANA id.
     /// </summary>
+    /// <seealso>RestaurantTests.IsOpenAt_True_ForOvernightWindow_AfterMidnightClose</seealso>
+    /// <seealso>RestaurantTests.IsOpenAt_False_ForOvernightWindow_OutsideBothSegments</seealso>
     public bool IsOpenAt(DateTime utc)
     {
         DateTime localTime = TimeZoneHelper.ConvertUtcToLocal(utc, Timezone);
+        int isoDay = IsoDay.Of(localTime);
 
-        int isoDay = (int)localTime.DayOfWeek;
-        if (isoDay == 0)
+        if (!IsOpenOn(isoDay))
         {
-            isoDay = 7; // Sunday: 0 -> 7
+            return false;
         }
 
-        // Check OpenDays
-        if (!string.IsNullOrEmpty(OpenDays))
-        {
-            var openDaysList = OpenDays.Split(',').Select(s => s.Trim());
-            if (!openDaysList.Contains(isoDay.ToString(CultureInfo.InvariantCulture)))
-            {
-                return false;
-            }
-        }
+        (TimeSpan open, TimeSpan close) = ServiceWindowOn(isoDay);
+        return Covers(open, close, localTime.TimeOfDay);
+    }
 
+    private bool IsOpenOn(int isoDay)
+    {
+        HashSet<int> openDays = IsoDay.ParseList(OpenDays);
+        return openDays.Count == 0 || openDays.Contains(isoDay);
+    }
+
+    private (TimeSpan Open, TimeSpan Close) ServiceWindowOn(int isoDay)
+    {
         (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(this, isoDay);
+
         if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
         {
-            openHour = 9; openMin = 0;
+            (openHour, openMin) = OpeningHourDefaults.OpenAt;
         }
+
         if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
         {
-            closeHour = 22; closeMin = 0;
+            (closeHour, closeMin) = OpeningHourDefaults.CloseAt;
         }
 
-        TimeSpan open = new TimeSpan(openHour, openMin, 0);
-        TimeSpan close = new TimeSpan(closeHour, closeMin, 0);
-        TimeSpan current = localTime.TimeOfDay;
+        return (new TimeSpan(openHour, openMin, 0), new TimeSpan(closeHour, closeMin, 0));
+    }
 
-        if (close > open)
+    private static bool Covers(TimeSpan open, TimeSpan close, TimeSpan timeOfDay)
+    {
+        bool openAllDay = open == close;
+        if (openAllDay)
         {
-            return current >= open && current < close;
-        }
-        else if (close < open)
-        {
-            // Closes after midnight (e.g. 18:00 to 02:00)
-            return current >= open || current < close;
-        }
-        else
-        {
-            // close == open usually means 24h
             return true;
         }
+
+        bool closesAfterMidnight = close < open;
+        return closesAfterMidnight
+            ? timeOfDay >= open || timeOfDay < close
+            : timeOfDay >= open && timeOfDay < close;
     }
 }

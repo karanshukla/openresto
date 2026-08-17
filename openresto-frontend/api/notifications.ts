@@ -1,7 +1,5 @@
 import { get, post, patch, del } from "./client";
 
-// ---------- Types ----------
-
 export type NotificationType = "BookingCreated" | "BookingCancelled" | "RestaurantNearlyFull";
 
 export interface AdminNotificationDto {
@@ -30,8 +28,6 @@ export interface PushSubscribeRequest {
   p256dh: string;
   auth: string;
 }
-
-// ---------- Functions ----------
 
 export async function getNotifications(params: {
   restaurantId?: number;

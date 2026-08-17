@@ -19,19 +19,18 @@ public interface IBookingRepository
     Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate, int durationMinutes = 60);
 
     /// <summary>
-    /// Group-aware conflict check used wherever a table OR a combinable-table group is being booked.
-    /// A physical <paramref name="tableId"/> is considered reserved for the window when ANY of these
-    /// overlap it:
-    /// <list type="bullet">
-    /// <item>a single-table booking on that table (<c>Booking.TableId == tableId</c>);</item>
-    /// <item>a group booking on the group that the table belongs to — because booking the group
-    /// reserves every member. The membership is resolved from <c>TableGroupMemberships</c>.</item>
-    /// </list>
-    /// A <paramref name="tableGroupId"/> (the unit being booked) is considered reserved when ANY
-    /// booking overlaps that targets the same group <em>or</em> any of its member tables individually.
-    /// This closes the double-booking gap: a persisted group booking stores <c>TableId = null</c>, so
-    /// the table-only <see cref="IsTableBookedOnDateAsync"/> cannot see it; this method can.
+    /// The conflict check every booking path uses, because a table and the group it belongs to
+    /// reserve the same physical furniture. A <paramref name="tableId"/> is reserved by a booking
+    /// on that table <em>or</em> by a booking on its group; a <paramref name="tableGroupId"/> is
+    /// reserved by a booking on the group <em>or</em> on any member individually.
+    /// <para>
+    /// A group booking stores <c>TableId = null</c>, so
+    /// <see cref="IsTableBookedOnDateAsync"/> cannot see it — reaching for that one instead is
+    /// how the same table gets booked twice.
+    /// </para>
     /// </summary>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_GroupBooking_RejectsWhenMemberIsBooked</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_SingleTable_RejectsWhenItsGroupAlreadyBooked</seealso>
     Task<bool> IsUnitBookedOnDateAsync(
         int? tableId,
         int? tableGroupId,
