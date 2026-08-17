@@ -116,19 +116,6 @@ export const styles = StyleSheet.create({
     borderRadius: theme.formSizes.inputBorderRadius,
     borderWidth: 1,
   },
-  lookupBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: theme.formSizes.inputSmHeight,
-    borderRadius: theme.formSizes.inputBorderRadius,
-  },
-  lookupBtnText: {
-    color: theme.colors.white,
-    fontSize: 13,
-    fontWeight: "600",
-  },
   lookupHint: {
     ...theme.typography.captionSmall,
     paddingLeft: 2,

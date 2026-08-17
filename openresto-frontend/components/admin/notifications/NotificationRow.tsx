@@ -139,7 +139,7 @@ export function NotificationRow({
           />
           {n.isRead ? (
             <RowTextButton
-              label="Mark Unread"
+              label="Mark unread"
               icon="mail-unread-outline"
               color={mutedColor}
               onPress={() => onMarkUnread(n.id)}
@@ -147,7 +147,7 @@ export function NotificationRow({
             />
           ) : (
             <RowTextButton
-              label="Mark Read"
+              label="Mark read"
               icon="mail-open-outline"
               color={mutedColor}
               onPress={() => onMarkRead(n.id)}

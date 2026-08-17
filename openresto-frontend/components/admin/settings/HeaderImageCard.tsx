@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { uploadHeroImage, deleteHeroImage } from "@/api/admin";
@@ -9,6 +9,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAutosave } from "@/hooks/use-autosave";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import Select, { type SelectOption } from "@/components/common/Select";
 import { styles, domStyles } from "./HeaderImageCard.styles";
 import { useBrandDraftPublish } from "./BrandDraftContext";
@@ -96,24 +97,15 @@ export function HeaderImageCard({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Homepage Header"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Icon name="image-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Homepage Header</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {heroPreview ? `Image set · ${headerImageFit}` : "No image · brand gradient"}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="image-outline"
+        title="Homepage Header"
+        subtitle={heroPreview ? `Image set · ${headerImageFit}` : "No image · brand gradient"}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { View, Pressable, Platform, ActivityIndicator } from "react-native";
+import { View, Platform, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { hexToRgba } from "@/utils/colors";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
 import { fetchRestaurants } from "@/api/restaurants";
 import Button from "@/components/common/Button";
 import { ButtonRow } from "@/components/common/ButtonRow";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./PushNotificationsCard.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -138,10 +138,6 @@ export function PushNotificationsCard() {
   const isUnconfigured = pushState === "unconfigured";
 
   const iconColor = isDenied || isUnconfigured ? theme.colors.warning : primaryColor;
-  const iconBg =
-    isDenied || isUnconfigured
-      ? hexToRgba(theme.colors.warning, 0.1)
-      : hexToRgba(primaryColor, 0.1);
   const stateIcon: "notifications-outline" | "notifications-off-outline" = isDenied
     ? "notifications-off-outline"
     : "notifications-outline";
@@ -152,7 +148,7 @@ export function PushNotificationsCard() {
       : isActive
         ? "Push notifications active for all locations"
         : isDenied
-          ? "Notifications blocked - enable in browser settings"
+          ? "Notifications are blocked. Enable them in your browser settings."
           : isUnconfigured
             ? "VAPID keys not configured"
             : pushState === "unavailable"
@@ -161,33 +157,22 @@ export function PushNotificationsCard() {
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Push Notifications"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: iconBg }]}>
-          <Icon name={stateIcon} size="xl" color={iconColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Push Notifications</ThemedText>
-          <ThemedText
-            style={[
-              settingsStyles.secSub,
-              { color: isUnconfigured || isDenied ? theme.colors.warning : mutedColor },
-            ]}
-          >
-            {stateSub}
-          </ThemedText>
-        </View>
-        {pushState === "loading" ? (
-          <ActivityIndicator size="small" color={primaryColor} />
-        ) : (
-          <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-        )}
-      </Pressable>
+      <AccordionCardHeader
+        icon={stateIcon}
+        iconColor={iconColor}
+        title="Push Notifications"
+        subtitle={stateSub}
+        subtitleColor={isUnconfigured || isDenied ? theme.colors.warning : undefined}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+        trailing={
+          pushState === "loading" ? (
+            <ActivityIndicator size="small" color={primaryColor} />
+          ) : undefined
+        }
+      />
 
       <AnimatedAccordion expanded={expanded}>
         {pushState !== "loading" && (

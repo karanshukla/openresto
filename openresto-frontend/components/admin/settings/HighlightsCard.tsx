@@ -17,6 +17,7 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { isValidUrl } from "@/utils/validation";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./HighlightsCard.styles";
 import { useBrandDraftPublish } from "./BrandDraftContext";
 import { saveBrandFields } from "./brandAutosave";
@@ -230,28 +231,21 @@ export function HighlightsCard({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Highlights"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Icon name="sparkles-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Highlights</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]}>
-            {loading
-              ? "Loading…"
-              : highlights.length > 0
-                ? `${highlights.length} highlight${highlights.length !== 1 ? "s" : ""} · Home page`
-                : "None configured · Home page"}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="sparkles-outline"
+        title="Highlights"
+        subtitle={
+          loading
+            ? "Loading…"
+            : highlights.length > 0
+              ? `${highlights.length} highlight${highlights.length !== 1 ? "s" : ""} · Home page`
+              : "None configured · Home page"
+        }
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor, gap: 12 }]}>

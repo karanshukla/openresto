@@ -19,9 +19,9 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     minWidth: 0,
   },
-  triggerText: {
-    fontSize: theme.formSizes.inputFontSize,
-  },
+  // Flexible so a label longer than the trigger (a long timezone, a wordy ref format)
+  // truncates inside the control instead of pushing the chevron past its border.
+  triggerText: { flex: 1, minWidth: 0, fontSize: theme.formSizes.inputFontSize },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

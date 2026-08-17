@@ -49,9 +49,15 @@ export function useBookingLookup() {
       }
       setBooking(result);
       setStatus("found");
+      // The booking is already in hand, so the location lookup gets its own catch: it only
+      // supplies the address, map and calendar detail, and letting it throw here would drop a
+      // booking we successfully fetched onto the "couldn't reach the booking system" screen.
       if (result.restaurantId) {
-        const r = await fetchRestaurantById(result.restaurantId);
-        setRestaurant(r);
+        try {
+          setRestaurant(await fetchRestaurantById(result.restaurantId));
+        } catch {
+          setRestaurant(null);
+        }
       }
       return { status: "found", booking: result } satisfies LookupOutcome;
     } catch {

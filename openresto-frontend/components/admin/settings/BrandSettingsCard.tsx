@@ -10,11 +10,11 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { FAVICON_ICONS, buildFaviconDataUri } from "@/constants/faviconIcons";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles, domStyles } from "./BrandSettingsCard.styles";
 import { useBrandDraftPublish } from "./BrandDraftContext";
 import { saveBrandFields } from "./brandAutosave";
 import { SaveStatus } from "./SaveStatus";
-import { Icon } from "@/components/common/Icon";
 
 const PRESET_COLORS = ["#0a7ea4", "#2563eb", "#7c3aed", "#059669", "#dc2626", "#d97706", "#475569"];
 
@@ -90,29 +90,25 @@ export function BrandSettingsCard({
     setSubtitle(brand.subtitle ?? "");
   }, [brand]);
 
+  const identitySummary = [
+    appName,
+    brandPrimaryColor,
+    faviconIcon && (FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label ?? faviconIcon),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Brand Identity"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Icon name="brush-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Brand Identity</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {appName} · {brandPrimaryColor}
-            {faviconIcon
-              ? ` · ${FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label ?? faviconIcon}`
-              : ""}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="brush-outline"
+        title="Brand Identity"
+        subtitle={identitySummary}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

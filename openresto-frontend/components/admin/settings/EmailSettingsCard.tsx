@@ -10,6 +10,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { EMAIL_PROVIDERS, type EmailSettingsState } from "@/hooks/use-email-settings";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./EmailSettingsCard.styles";
 import { SubLabel } from "./settingsShared";
 import { BookingConfirmationToggle } from "./BookingConfirmationToggle";
@@ -77,24 +78,15 @@ export function EmailSettingsCard({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Email (SMTP)"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: accentSoft }]}>
-          <Icon name="mail-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Email (SMTP)</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]}>
-            {isConfigured ? `Connected · ${host}` : "Setup required"}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="mail-outline"
+        title="Email (SMTP)"
+        subtitle={isConfigured ? `Connected · ${host}` : "Setup required"}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, styles.form, { borderTopColor: borderColor }]}>

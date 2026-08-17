@@ -211,7 +211,10 @@ export default function DatePicker({
             </ThemedText>
           </View>
         ) : (
-          <ThemedText style={[styles.triggerText, !selected && { color: placeholderColor }]}>
+          <ThemedText
+            numberOfLines={1}
+            style={[styles.triggerText, !selected && { color: placeholderColor }]}
+          >
             {triggerLabel ?? selected?.label ?? "Select a date"}
           </ThemedText>
         )}

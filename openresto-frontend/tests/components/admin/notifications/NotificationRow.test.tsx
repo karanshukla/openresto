@@ -73,7 +73,7 @@ describe("NotificationRow", () => {
         {...theme}
       />
     );
-    expect(screen.getByText("Mark Read")).toBeTruthy();
+    expect(screen.getByText("Mark read")).toBeTruthy();
   });
 
   it("shows 'Mark Unread' for a read row", () => {
@@ -92,7 +92,7 @@ describe("NotificationRow", () => {
         {...theme}
       />
     );
-    expect(screen.getByText("Mark Unread")).toBeTruthy();
+    expect(screen.getByText("Mark unread")).toBeTruthy();
   });
 
   it("fires onTogglePin when Pin is pressed", () => {

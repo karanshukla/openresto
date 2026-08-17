@@ -138,7 +138,10 @@ export default function Select({
             </ThemedText>
           </View>
         ) : (
-          <ThemedText style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}>
+          <ThemedText
+            numberOfLines={1}
+            style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
+          >
             {selectedOption?.label ?? placeholder}
           </ThemedText>
         )}

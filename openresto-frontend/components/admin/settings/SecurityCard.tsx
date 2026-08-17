@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { Icon } from "@/components/common/Icon";
 
 export function SecurityCard({
@@ -94,24 +95,15 @@ export function SecurityCard({
 
   return (
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]} testID="security-card">
-      <Pressable
-        style={styles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Account Security"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[styles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
-          <Icon name="shield-checkmark-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={styles.secHeaderCopy}>
-          <ThemedText style={styles.secTitle}>Account Security</ThemedText>
-          <ThemedText style={[styles.secSub, { color: mutedColor }]}>
-            Manage your password and identity verification
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="shield-checkmark-outline"
+        title="Account Security"
+        subtitle="Manage your password and identity verification"
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <>
