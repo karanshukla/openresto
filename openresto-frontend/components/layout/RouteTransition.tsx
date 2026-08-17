@@ -47,8 +47,10 @@ export default function RouteTransition({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <View ref={ref} testID="route-transition" style={styles.root}>
-      {children}
+    <View style={styles.clip}>
+      <View ref={ref} testID="route-transition" style={styles.root}>
+        {children}
+      </View>
     </View>
   );
 }
