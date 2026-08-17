@@ -49,6 +49,22 @@ describe("useBookingLookup", () => {
     expect(outcome).toEqual({ status: "found", booking: mockBooking });
   });
 
+  it("keeps a found booking when the restaurant fetch fails", async () => {
+    (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+    (fetchRestaurantById as jest.Mock).mockRejectedValue(new Error("429"));
+    const { result } = renderHook(() => useBookingLookup());
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.lookup("REF123", "test@test.com");
+    });
+
+    expect(result.current.status).toBe("found");
+    expect(result.current.booking).toEqual(mockBooking);
+    expect(result.current.restaurant).toBeNull();
+    expect(outcome).toEqual({ status: "found", booking: mockBooking });
+  });
+
   it("skips the restaurant fetch when the booking has no restaurantId", async () => {
     (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, restaurantId: undefined });
     const { result } = renderHook(() => useBookingLookup());

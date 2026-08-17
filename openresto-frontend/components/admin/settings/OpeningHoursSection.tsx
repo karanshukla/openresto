@@ -5,6 +5,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./OpeningHoursSection.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -64,24 +65,15 @@ export function OpeningHoursSection({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Opening Hours"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}18` }]}>
-          <Icon name="time-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Opening Hours</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {openDays.length} of 7 days open · {customHours ? "Custom per day" : "Same every day"}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="time-outline"
+        title="Opening Hours"
+        subtitle={`${openDays.length} of 7 days open · ${customHours ? "Custom per day" : "Same every day"}`}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

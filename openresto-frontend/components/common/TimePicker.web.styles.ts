@@ -9,12 +9,15 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: theme.spacing.sm,
     height: theme.formSizes.inputHeight,
     borderWidth: 1,
     borderRadius: theme.formSizes.inputBorderRadius,
     paddingHorizontal: theme.formSizes.inputPaddingH,
   },
-  triggerText: { fontSize: theme.formSizes.inputFontSize },
+  // Flexible so a label longer than the trigger (a long timezone, a wordy ref format)
+  // truncates inside the control instead of pushing the chevron past its border.
+  triggerText: { flex: 1, minWidth: 0, fontSize: theme.formSizes.inputFontSize },
   backdrop: {
     flex: 1,
     backgroundColor: theme.colors.overlay.light,

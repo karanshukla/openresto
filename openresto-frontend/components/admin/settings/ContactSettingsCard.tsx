@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useBrand } from "@/context/BrandContext";
@@ -9,10 +9,10 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { isValidEmail } from "@/utils/validation";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { useBrandDraftPublish } from "./BrandDraftContext";
 import { saveBrandFields } from "./brandAutosave";
 import { SaveStatus } from "./SaveStatus";
-import { Icon } from "@/components/common/Icon";
 
 // Mirrors the backend ContactLimits caps.
 const MAX_CONTACT_PHONE_LENGTH = 32;
@@ -83,24 +83,15 @@ export function ContactSettingsCard({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Contact & Website"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Icon name="call-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Contact &amp; Website</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {summary}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="call-outline"
+        title="Contact & Website"
+        subtitle={summary}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

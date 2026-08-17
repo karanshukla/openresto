@@ -43,6 +43,7 @@ export default function TimePicker({
         ]}
       >
         <ThemedText
+          numberOfLines={1}
           style={[styles.triggerText, { color: selectedTime ? textColor : placeholderColor }]}
         >
           {selectedTime ?? "Select a time"}

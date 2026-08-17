@@ -48,7 +48,15 @@ export default function ConfirmModal({
     >
       <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
       <View style={[styles.actions, { borderTopColor: colors.border }]}>
-        <Button variant="secondary" size="md" onPress={onCancel} style={styles.action}>
+        {/* Neutral, like every other dismissing action in the app: a brand-toned Cancel
+            competes with the button it is meant to sit beside. */}
+        <Button
+          variant="secondary"
+          tone="neutral"
+          size="md"
+          onPress={onCancel}
+          style={styles.action}
+        >
           {cancelLabel}
         </Button>
         <Button

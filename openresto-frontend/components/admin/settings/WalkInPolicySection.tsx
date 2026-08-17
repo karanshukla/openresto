@@ -4,6 +4,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./WalkInPolicySection.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -51,24 +52,15 @@ export function WalkInPolicySection({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Walk-in Policy"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}18` }]}>
-          <Icon name="walk-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Walk-in Policy</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {subtitle}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="walk-outline"
+        title="Walk-in Policy"
+        subtitle={subtitle}
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

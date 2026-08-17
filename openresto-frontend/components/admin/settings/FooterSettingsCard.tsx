@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
-import { View, Pressable, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -17,6 +17,7 @@ import {
 import { isValidUrl } from "@/utils/validation";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./FooterSettingsCard.styles";
 import { SocialLinkEditForm, emptyEdit, type EditState, type IconKey } from "./SocialLinkEditForm";
 import { SocialLinkRow } from "./SocialLinkRow";
@@ -168,28 +169,21 @@ export function FooterSettingsCard({
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Footer"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}20` }]}>
-          <Icon name="link-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Footer</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]} numberOfLines={1}>
-            {loading
-              ? "Loading…"
-              : links.length > 0
-                ? `${links.length} social link${links.length !== 1 ? "s" : ""} configured`
-                : "Copyright text and social links"}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="link-outline"
+        title="Footer"
+        subtitle={
+          loading
+            ? "Loading…"
+            : links.length > 0
+              ? `${links.length} social link${links.length !== 1 ? "s" : ""} configured`
+              : "Copyright text and social links"
+        }
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>

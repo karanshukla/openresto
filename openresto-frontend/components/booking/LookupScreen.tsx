@@ -331,7 +331,7 @@ export default function LookupScreen({
           visible={showCancelConfirm}
           title="Cancel Reservation"
           message="Are you sure you want to cancel this booking? This action cannot be undone."
-          confirmLabel={cancelling ? "Cancelling..." : "Cancel Booking"}
+          confirmLabel={cancelling ? "Cancelling…" : "Cancel Booking"}
           cancelLabel="Keep Booking"
           destructive
           onConfirm={cancelBooking}

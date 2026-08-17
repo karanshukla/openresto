@@ -106,7 +106,10 @@ export default function TimePicker({
         accessibilityLabel={selected ? `Change time, currently ${selected.label}` : "Select a time"}
         accessibilityState={{ expanded: modalVisible }}
       >
-        <ThemedText style={[styles.triggerText, !selected && { color: placeholderColor }]}>
+        <ThemedText
+          numberOfLines={1}
+          style={[styles.triggerText, !selected && { color: placeholderColor }]}
+        >
           {selected?.label ?? "Select a time"}
         </ThemedText>
         <Icon name="chevron-down" size="md" color={placeholderColor} />

@@ -7,7 +7,6 @@ import { ButtonRow } from "@/components/common/ButtonRow";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { Icon } from "@/components/common/Icon";
 import { useAuth } from "@/context/AuthContext";
 import { ASSIGNABLE_ROLES, ROLES, roleLabel, type AssignableRole } from "@/constants/roles";
 import { isValidEmail } from "@/utils/validation";
@@ -23,6 +22,7 @@ import {
 import { theme } from "@/theme/theme";
 import { RowTextButton } from "@/components/common/RowTextButton";
 import { styles as settingsStyles } from "./settings.styles";
+import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./UsersCard.styles";
 
 const MIN_PASSWORD_LENGTH = 6;
@@ -167,26 +167,19 @@ export function UsersCard({
       style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}
       testID="users-card"
     >
-      <Pressable
-        style={settingsStyles.secHeader}
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityRole="button"
-        accessibilityLabel="Users"
-        accessibilityState={{ expanded }}
-      >
-        <View style={[settingsStyles.secIcon, { backgroundColor: `${primaryColor}14` }]}>
-          <Icon name="people-outline" size="xl" color={primaryColor} />
-        </View>
-        <View style={settingsStyles.secHeaderCopy}>
-          <ThemedText style={settingsStyles.secTitle}>Users</ThemedText>
-          <ThemedText style={[settingsStyles.secSub, { color: mutedColor }]}>
-            {loading
-              ? "Loading…"
-              : `${users.length} account${users.length !== 1 ? "s" : ""} · Owners can manage users`}
-          </ThemedText>
-        </View>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} size="lg" color={mutedColor} />
-      </Pressable>
+      <AccordionCardHeader
+        icon="people-outline"
+        title="Users"
+        subtitle={
+          loading
+            ? "Loading…"
+            : `${users.length} account${users.length !== 1 ? "s" : ""} · Owners can manage users`
+        }
+        expanded={expanded}
+        onToggle={() => setExpanded((v) => !v)}
+        primaryColor={primaryColor}
+        mutedColor={mutedColor}
+      />
 
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
@@ -224,8 +217,10 @@ export function UsersCard({
                             </View>
                           )}
                           {!u.isActive && (
-                            <View style={[styles.badge, { backgroundColor: "#ef444422" }]}>
-                              <ThemedText style={[styles.badgeText, { color: "#ef4444" }]}>
+                            <View
+                              style={[styles.badge, { backgroundColor: `${theme.colors.error}22` }]}
+                            >
+                              <ThemedText style={[styles.badgeText, { color: theme.colors.error }]}>
                                 Deactivated
                               </ThemedText>
                             </View>
@@ -253,9 +248,9 @@ export function UsersCard({
                                   key={role}
                                   disabled={busy || selected}
                                   onPress={() => handleRoleChange(u, role)}
-                                  accessibilityRole="button"
+                                  accessibilityRole="radio"
                                   accessibilityLabel={`Make ${u.email} ${role}`}
-                                  accessibilityState={{ selected }}
+                                  accessibilityState={{ checked: selected, disabled: busy }}
                                   style={[
                                     styles.roleChoice,
                                     { borderColor: selected ? primaryColor : borderColor },

@@ -1,11 +1,4 @@
-import {
-  View,
-  Pressable,
-  Platform,
-  TextInput,
-  ActivityIndicator,
-  type ViewStyle,
-} from "react-native";
+import { View, Pressable, Platform, TextInput, type ViewStyle } from "react-native";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/themed-view";
@@ -22,6 +15,7 @@ import { adminLookupBookings } from "@/api/admin";
 import { getUnreadCount } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
+import Button from "@/components/common/Button";
 import { styles } from "./AdminSidebar.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
@@ -285,30 +279,17 @@ export default function AdminSidebar() {
           returnKeyType="search"
           onSubmitEditing={handleLookup}
         />
-        <Pressable
+        <Button
+          size="sm"
+          fullWidth
+          icon="search-outline"
           onPress={handleLookup}
-          disabled={lookupLoading || !lookupQuery.trim()}
-          accessibilityRole="button"
+          disabled={!lookupQuery.trim()}
+          loading={lookupLoading}
           accessibilityLabel="Search bookings"
-          accessibilityState={{
-            disabled: lookupLoading || !lookupQuery.trim(),
-            busy: lookupLoading,
-          }}
-          style={[
-            styles.lookupBtn,
-            { backgroundColor: PRIMARY },
-            (!lookupQuery.trim() || lookupLoading) && { opacity: 0.5 },
-          ]}
         >
-          {lookupLoading ? (
-            <ActivityIndicator size="small" color={theme.colors.white} />
-          ) : (
-            <>
-              <Icon name="search-outline" size={15} color={theme.colors.white} />
-              <ThemedText style={styles.lookupBtnText}>Search</ThemedText>
-            </>
-          )}
-        </Pressable>
+          Search
+        </Button>
         {lookupStatus === "not_found" && (
           <ThemedText style={[styles.lookupHint, { color: theme.colors.error }]}>
             No booking found.

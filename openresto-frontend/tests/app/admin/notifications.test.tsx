@@ -259,10 +259,10 @@ describe("NotificationsScreen", () => {
 
   it("pressing Mark Read on unread notification marks it read", async () => {
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getByText("Mark Read")).toBeTruthy());
-    fireEvent.press(screen.getByText("Mark Read"));
+    await waitFor(() => expect(screen.getByText("Mark read")).toBeTruthy());
+    fireEvent.press(screen.getByText("Mark read"));
     await waitFor(() => expect(mockMarkRead).toHaveBeenCalledWith(1));
-    await waitFor(() => expect(screen.getByText("Mark Unread")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Mark unread")).toBeTruthy());
   });
 
   it("pressing Mark Unread on read notification marks it unread locally", async () => {
@@ -271,9 +271,9 @@ describe("NotificationsScreen", () => {
       totalCount: 1,
     });
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getByText("Mark Unread")).toBeTruthy());
-    fireEvent.press(screen.getByText("Mark Unread"));
-    await waitFor(() => expect(screen.getByText("Mark Read")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Mark unread")).toBeTruthy());
+    fireEvent.press(screen.getByText("Mark unread"));
+    await waitFor(() => expect(screen.getByText("Mark read")).toBeTruthy());
   });
 
   it("pressing Pin pins the notification", async () => {
@@ -724,17 +724,17 @@ describe("NotificationsScreen", () => {
     };
     mockGetNotifications.mockResolvedValueOnce(twoReadItems).mockResolvedValueOnce(twoReadItems);
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getAllByText("Mark Unread")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("Mark unread")).toHaveLength(2));
 
-    fireEvent.press(screen.getAllByText("Mark Unread")[0]);
-    await waitFor(() => expect(screen.getByText("Mark Read")).toBeTruthy());
+    fireEvent.press(screen.getAllByText("Mark unread")[0]);
+    await waitFor(() => expect(screen.getByText("Mark read")).toBeTruthy());
 
     fireEvent.press(screen.getByText("New Bookings"));
     await waitFor(() => expect(mockGetNotifications).toHaveBeenCalledTimes(2));
 
     await waitFor(() => {
-      expect(screen.getAllByText("Mark Read")).toHaveLength(1);
-      expect(screen.getAllByText("Mark Unread")).toHaveLength(1);
+      expect(screen.getAllByText("Mark read")).toHaveLength(1);
+      expect(screen.getAllByText("Mark unread")).toHaveLength(1);
     });
   });
 
@@ -821,10 +821,10 @@ describe("NotificationsScreen", () => {
     });
 
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getAllByText("Mark Unread")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("Mark unread")).toHaveLength(2));
 
-    fireEvent.press(screen.getAllByText("Mark Unread")[0]);
-    await waitFor(() => expect(screen.getByText("Mark Read")).toBeTruthy());
+    fireEvent.press(screen.getAllByText("Mark unread")[0]);
+    await waitFor(() => expect(screen.getByText("Mark read")).toBeTruthy());
 
     mockGetNotifications.mockResolvedValueOnce({
       items: [
@@ -840,8 +840,8 @@ describe("NotificationsScreen", () => {
 
     await waitFor(() => {
       // id 1's override survives the merge; id 2 and the newly-merged id 3 stay read.
-      expect(screen.getAllByText("Mark Read")).toHaveLength(1);
-      expect(screen.getAllByText("Mark Unread")).toHaveLength(2);
+      expect(screen.getAllByText("Mark read")).toHaveLength(1);
+      expect(screen.getAllByText("Mark unread")).toHaveLength(2);
     });
 
     setIntervalSpy.mockRestore();
@@ -874,8 +874,8 @@ describe("NotificationsScreen", () => {
     await waitFor(() => expect(mockMarkRead).toHaveBeenCalledWith(1));
     expect(mockMarkRead).not.toHaveBeenCalledWith(2);
     await waitFor(() => {
-      expect(screen.getAllByText("Mark Read")).toHaveLength(1);
-      expect(screen.getAllByText("Mark Unread")).toHaveLength(1);
+      expect(screen.getAllByText("Mark read")).toHaveLength(1);
+      expect(screen.getAllByText("Mark unread")).toHaveLength(1);
     });
   });
 
@@ -888,12 +888,12 @@ describe("NotificationsScreen", () => {
       totalCount: 2,
     });
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getAllByText("Mark Read")).toHaveLength(2));
-    fireEvent.press(screen.getAllByText("Mark Read")[0]);
+    await waitFor(() => expect(screen.getAllByText("Mark read")).toHaveLength(2));
+    fireEvent.press(screen.getAllByText("Mark read")[0]);
     await waitFor(() => expect(mockMarkRead).toHaveBeenCalledTimes(1));
     await waitFor(() => {
-      expect(screen.getAllByText("Mark Read")).toHaveLength(1);
-      expect(screen.getAllByText("Mark Unread")).toHaveLength(1);
+      expect(screen.getAllByText("Mark read")).toHaveLength(1);
+      expect(screen.getAllByText("Mark unread")).toHaveLength(1);
     });
   });
 
@@ -906,11 +906,11 @@ describe("NotificationsScreen", () => {
       totalCount: 2,
     });
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getAllByText("Mark Unread")).toHaveLength(2));
-    fireEvent.press(screen.getAllByText("Mark Unread")[0]);
+    await waitFor(() => expect(screen.getAllByText("Mark unread")).toHaveLength(2));
+    fireEvent.press(screen.getAllByText("Mark unread")[0]);
     await waitFor(() => {
-      expect(screen.getAllByText("Mark Read")).toHaveLength(1);
-      expect(screen.getAllByText("Mark Unread")).toHaveLength(1);
+      expect(screen.getAllByText("Mark read")).toHaveLength(1);
+      expect(screen.getAllByText("Mark unread")).toHaveLength(1);
     });
   });
 
