@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -100,7 +99,7 @@ public class NotificationService(
     {
         await _notificationRepository.DeleteByIdAsync(notificationId);
         _audit.Describe(AuditActions.NotificationDelete, AuditTargets.Notification,
-            notificationId.ToString(CultureInfo.InvariantCulture), summary: "Deleted 1 notification");
+            AuditTargets.IdOf(notificationId), summary: "Deleted 1 notification");
     }
 
     public async Task DeleteByIdsAsync(List<int> notificationIds)

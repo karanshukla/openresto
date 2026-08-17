@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -125,8 +124,8 @@ public class AuthService(
         => _audit.AttributeTo(cred.Id, cred.Email, cred.DisplayName, cred.Role);
 
     private void Describe(string action, AdminCredential cred, string summary)
-        => _audit.Describe(action, AuditTargets.User, cred.Id.ToString(CultureInfo.InvariantCulture),
-            cred.DisplayName ?? cred.Email, summary: summary);
+        => _audit.Describe(action, AuditTargets.User, AuditTargets.IdOf(cred.Id),
+            UserFields.PersonLabel(cred.DisplayName, cred.Email), summary: summary);
 
     private Task<AdminCredential?> ResolveCurrentUserAsync()
         => CurrentUserResolver.ResolveAsync(_currentUser, _credentialRepository);

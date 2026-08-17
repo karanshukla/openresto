@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -142,10 +141,11 @@ public class UserService(
     }
 
     private void Describe(string action, AdminCredential user, string summary)
-        => _audit.Describe(action, AuditTargets.User, user.Id.ToString(CultureInfo.InvariantCulture), DisplayNameOf(user),
+        => _audit.Describe(action, AuditTargets.User, AuditTargets.IdOf(user.Id), DisplayNameOf(user),
             summary: summary);
 
-    private static string DisplayNameOf(AdminCredential user) => user.DisplayName ?? user.Email;
+    private static string DisplayNameOf(AdminCredential user)
+        => UserFields.PersonLabel(user.DisplayName, user.Email);
 
     private async Task<AdminCredential> RequireUserAsync(int id)
         => await _credentialRepository.GetByIdAsync(id)

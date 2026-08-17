@@ -15,8 +15,9 @@ export const REDACTED_MARKER = "[redacted]";
 export const PAGE_SIZE = 25;
 
 /**
- * The filter pills. Each `value` is a prefix the API matches against the dotted action key,
- * so one pill covers every verb in its group; `""` drops the filter entirely.
+ * The activity-type filter's options. Each `value` is a prefix the API matches against the
+ * dotted action key, so one option covers every verb in its group; `""` drops the filter
+ * entirely, which is already a value a `Select` can hold and so needs no sentinel.
  */
 export const ACTION_GROUPS: readonly { label: string; value: string }[] = [
   { label: "All activity", value: "" },
@@ -216,4 +217,23 @@ export function formatChangeValue(value: string | null): string {
 
 export function isRedacted(value: string | null): boolean {
   return value === REDACTED_MARKER;
+}
+
+/**
+ * A `Select` value is `string | number`, but an unset id filter is `null` — the shape the API
+ * and the persisted filter state both speak. This is the value that stands in for it inside a
+ * `Select`, so the location and person filters convert at that one boundary instead of each
+ * carrying its own ternary.
+ *
+ * @see [audit.test.ts](../tests/utils/audit.test.ts) — pins that an id survives the round trip
+ * and that the catch-all option comes back as `null` rather than as `NaN`.
+ */
+export const ANY_ID = "any";
+
+export function toIdFilter(id: number | null): string | number {
+  return id ?? ANY_ID;
+}
+
+export function fromIdFilter(value: string | number): number | null {
+  return value === ANY_ID ? null : Number(value);
 }

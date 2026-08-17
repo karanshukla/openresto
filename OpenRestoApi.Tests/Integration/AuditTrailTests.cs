@@ -340,6 +340,109 @@ public class AuditTrailTests(TestWebAppFactory factory) : IClassFixture<TestWebA
         });
     }
 
+    private async Task<Booking> SeedBookingAsync(string customerName, string customerEmail, string specialRequests)
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var restaurant = new Restaurant { Name = "Guest Detail Cafe" };
+        db.Restaurants.Add(restaurant);
+        await db.SaveChangesAsync();
+
+        var section = new Section { Name = "Main", RestaurantId = restaurant.Id };
+        db.Sections.Add(section);
+        await db.SaveChangesAsync();
+
+        var table = new Table { Name = "T1", Seats = 4, SectionId = section.Id };
+        db.Tables.Add(table);
+        await db.SaveChangesAsync();
+
+        DateTime start = DateTime.UtcNow.AddDays(1);
+        var booking = new Booking
+        {
+            RestaurantId = restaurant.Id,
+            SectionId = section.Id,
+            TableId = table.Id,
+            Date = start,
+            EndTime = start.AddHours(2),
+            Seats = 2,
+            BookingRef = $"AUD{Guid.NewGuid():N}"[..8].ToUpperInvariant(),
+            CustomerName = customerName,
+            CustomerEmail = customerEmail,
+            SpecialRequests = specialRequests,
+        };
+        db.Bookings.Add(booking);
+        await db.SaveChangesAsync();
+        return booking;
+    }
+
+    /// <summary>
+    /// The inside of the boundary: a booking entry has to identify the booking, and the reference
+    /// is the identifier that survives a GDPR purge.
+    /// </summary>
+    [Fact]
+    public async Task BookingEntry_PointsAtTheBookingByItsReference()
+    {
+        Booking booking = await SeedBookingAsync("Dana Diner", "dana@example.com", "Window seat");
+        HttpClient owner = _factory.CreateAuthenticatedClient();
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await owner.PostAsync($"/api/admin/bookings/{booking.Id}/cancel", null)).StatusCode);
+
+        AdminAuditEntry entry = (await EntriesAsync()).Last(e => e.Action == AuditActions.BookingCancel);
+        Assert.Equal(booking.BookingRef, entry.TargetLabel);
+        Assert.Contains(booking.BookingRef, entry.Summary!, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The outside of it, and the reason the summaries name a reference rather than a guest.
+    /// Booking history is deliberately GDPR-purgeable, so an entry holding the guest's name,
+    /// address or free-text note would re-create what the purge is meant to remove — and unlike a
+    /// recorded field, <c>SpecialRequests</c> has nothing masking it, which is why the diff never
+    /// names it at all. The sweep covers every booking path an admin can reach for the same reason
+    /// the secrets sweep does: the guarantee is a property of the surface, not of one endpoint.
+    /// </summary>
+    [Fact]
+    public async Task NoGuestDetailOnABooking_EverReachesTheTrail()
+    {
+        const string stamp = "gu3stdeta1l";
+        Booking booking = await SeedBookingAsync(
+            $"{stamp}-name", $"{stamp}-before@example.com", $"{stamp}-allergic-to-peanuts");
+        HttpClient owner = _factory.CreateAuthenticatedClient();
+
+        await owner.PutAsJsonAsync($"/api/admin/bookings/{booking.Id}", new
+        {
+            customerName = $"{stamp}-renamed",
+            customerEmail = $"{stamp}-after@example.com",
+            specialRequests = $"{stamp}-now-a-birthday",
+        });
+        await owner.PostAsJsonAsync($"/api/admin/bookings/{booking.Id}/extend", new { minutes = 30 });
+        await owner.PostAsJsonAsync($"/api/admin/bookings/{booking.Id}/email",
+            new { subject = $"{stamp}-subject", body = $"{stamp}-message-body" });
+        await owner.PostAsync($"/api/admin/bookings/{booking.Id}/cancel", null);
+        await owner.PostAsync($"/api/admin/bookings/{booking.Id}/restore", null);
+        await owner.DeleteAsync($"/api/admin/bookings/{booking.Id}");
+
+        List<AdminAuditEntry> entries = await EntriesAsync();
+
+        // Every one of those requests landed a row — the sweep would pass vacuously otherwise.
+        foreach (string action in new[]
+        {
+            AuditActions.BookingUpdate, AuditActions.BookingExtend, AuditActions.BookingEmail,
+            AuditActions.BookingCancel, AuditActions.BookingRestore, AuditActions.BookingPurge,
+        })
+        {
+            Assert.Contains(entries, e => e.Action == action);
+        }
+
+        Assert.All(entries, e =>
+        {
+            string haystack = string.Join(' ', e.ChangesJson, e.Summary, e.TargetLabel, e.Path);
+            Assert.DoesNotContain(stamp, haystack, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
     private sealed class RestaurantIdResponse
     {
         public int Id { get; set; }

@@ -12,6 +12,9 @@ namespace OpenRestoApi.Infrastructure.Auditing;
 /// The two intervals are constructor parameters with production defaults so a test can drive
 /// the loop in milliseconds; nothing else supplies them, and DI fills in the defaults.
 /// </para>
+/// <seealso>AuditRetentionWorkerTests.PrunesRepeatedly_RatherThanOnceAtStartup</seealso>
+/// <seealso>AuditRetentionWorkerTests.SurvivesAFailedPass_AndTriesAgainOnTheNextTick</seealso>
+/// <seealso>AuditRetentionWorkerTests.WaitsBeforeItsFirstPass_AndStopsCleanlyDuringTheWait</seealso>
 /// </summary>
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.AuditRetentionWorkerTests")]

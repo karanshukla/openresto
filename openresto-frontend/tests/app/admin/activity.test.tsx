@@ -25,6 +25,11 @@ jest.mock("expo-router", () => {
   return { Stack: { Screen }, Redirect };
 });
 
+jest.mock("expo-haptics", () => ({
+  selectionAsync: jest.fn(),
+  impactAsync: jest.fn(),
+  ImpactFeedbackStyle: { Light: "light" },
+}));
 jest.mock("@/api/audit", () => ({ getAuditEntries: jest.fn() }));
 jest.mock("@/api/restaurants", () => ({ fetchRestaurants: jest.fn() }));
 jest.mock("@/api/users", () => ({ adminListUsers: jest.fn() }));
@@ -42,6 +47,15 @@ const asRole = (role: string) =>
     displayName: null,
     role,
   });
+
+/** Opens one of the three filter dropdowns by its accessible name, whatever it currently reads. */
+const openFilter = (name: string) =>
+  fireEvent.press(screen.getByLabelText(new RegExp(`^${name}, `)));
+
+const chooseFilter = (name: string, option: string) => {
+  openFilter(name);
+  fireEvent.press(screen.getByRole("menuitem", { name: option }));
+};
 
 const entry = (over: Partial<auditApi.AdminAuditEntryDto> = {}): auditApi.AdminAuditEntryDto => ({
   id: 1,
@@ -183,72 +197,108 @@ describe("ActivityScreen", () => {
   it("says the filters are what emptied the list once one is applied", async () => {
     mockGetAuditEntries.mockResolvedValueOnce(page([entry()])).mockResolvedValueOnce(page([]));
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
-    fireEvent.press(screen.getByText("Bookings"));
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    chooseFilter("Filter by activity", "Bookings");
     await waitFor(() => expect(screen.getByText("Nothing matches these filters")).toBeTruthy());
     expect(screen.getByText("Try a wider location, activity type or person.")).toBeTruthy();
   });
+});
 
-  it("refetches with the action prefix when an activity-type pill is pressed", async () => {
+describe("ActivityScreen filters", () => {
+  it("names each dropdown for a screen reader alongside what it is currently set to", async () => {
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("Sign-ins")).toBeTruthy());
-    fireEvent.press(screen.getByText("Sign-ins"));
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    expect(screen.getByLabelText("Filter by location, All locations")).toBeTruthy();
+    expect(screen.getByLabelText("Filter by activity, All activity")).toBeTruthy();
+    expect(screen.getByLabelText("Filter by person, Anyone")).toBeTruthy();
+  });
+
+  it("refetches with the action prefix when an activity type is chosen", async () => {
+    renderWithProviders(<ActivityScreen />, { withAuth: true });
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    chooseFilter("Filter by activity", "Sign-ins");
     await waitFor(() =>
       expect(mockGetAuditEntries).toHaveBeenCalledWith(expect.objectContaining({ action: "auth" }))
     );
+    expect(screen.getByLabelText("Filter by activity, Sign-ins")).toBeTruthy();
   });
 
-  it("refetches for one location when its pill is pressed", async () => {
+  it("refetches for one location when it is chosen", async () => {
     mockFetchRestaurants.mockResolvedValue([
       { id: 1, name: "Resto A" },
       { id: 2, name: "Resto B" },
     ]);
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("Resto B")).toBeTruthy());
-    fireEvent.press(screen.getByText("Resto B"));
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    chooseFilter("Filter by location", "Resto B");
     await waitFor(() =>
       expect(mockGetAuditEntries).toHaveBeenCalledWith(expect.objectContaining({ restaurantId: 2 }))
     );
   });
 
-  it("refetches for one actor when their pill is pressed", async () => {
+  it("refetches for one person when they are chosen", async () => {
     mockAdminListUsers.mockResolvedValue([
       { id: 7, email: "sam@test.com", displayName: null, role: "Manager", isActive: true },
     ]);
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("sam@test.com")).toBeTruthy());
-    fireEvent.press(screen.getByText("sam@test.com"));
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    chooseFilter("Filter by person", "sam@test.com");
     await waitFor(() =>
       expect(mockGetAuditEntries).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 7 }))
     );
   });
 
-  it("clears a filter again when the catch-all pill is pressed", async () => {
+  it("drops a filter again when its catch-all option is chosen", async () => {
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
-    fireEvent.press(screen.getByText("Bookings"));
-    await waitFor(() =>
-      expect(mockGetAuditEntries).toHaveBeenCalledWith(
-        expect.objectContaining({ action: "booking" })
-      )
-    );
-    fireEvent.press(screen.getByText("All activity"));
-    fireEvent.press(screen.getByText("All locations"));
-    fireEvent.press(screen.getByText("Anyone"));
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+
+    chooseFilter("Filter by activity", "Bookings");
+    chooseFilter("Filter by location", "Resto A");
     await waitFor(() =>
       expect(mockGetAuditEntries).toHaveBeenLastCalledWith(
-        expect.objectContaining({ action: undefined, restaurantId: undefined })
+        expect.objectContaining({ action: "booking", restaurantId: 1 })
+      )
+    );
+
+    chooseFilter("Filter by activity", "All activity");
+    chooseFilter("Filter by location", "All locations");
+    chooseFilter("Filter by person", "Anyone");
+    await waitFor(() =>
+      expect(mockGetAuditEntries).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          action: undefined,
+          restaurantId: undefined,
+          actorUserId: undefined,
+        })
       )
     );
   });
 
-  it("leaves the actor pills alone when the user list cannot be read", async () => {
+  it("offers only the catch-all person when the user list cannot be read", async () => {
     mockAdminListUsers.mockResolvedValue(null);
     renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(screen.getByText("Anyone")).toBeTruthy());
-    expect(screen.queryByText("Dana")).toBeNull();
+    await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
+    openFilter("Filter by person");
+    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.getByRole("menuitem", { name: "Anyone" })).toBeTruthy();
   });
 
+  it("honours a persisted filter on mount", async () => {
+    localStorage.setItem("activity:action", JSON.stringify("auth"));
+    renderWithProviders(<ActivityScreen />, { withAuth: true });
+    await waitFor(() => expect(mockGetAuditEntries).toHaveBeenCalled());
+    expect(mockGetAuditEntries.mock.calls[0][0].action).toBe("auth");
+  });
+
+  it("honours a persisted location id on mount, restored as the chosen option", async () => {
+    localStorage.setItem("activity:restaurantId", JSON.stringify(1));
+    renderWithProviders(<ActivityScreen />, { withAuth: true });
+    await waitFor(() => expect(screen.getByLabelText("Filter by location, Resto A")).toBeTruthy());
+    expect(mockGetAuditEntries.mock.calls[0][0].restaurantId).toBe(1);
+  });
+});
+
+describe("ActivityScreen list", () => {
   it("appends the next page when Show more is pressed", async () => {
     mockGetAuditEntries
       .mockResolvedValueOnce(page([entry()], 26))
@@ -262,7 +312,7 @@ describe("ActivityScreen", () => {
     await waitFor(() => expect(screen.getByText("Created REF002")).toBeTruthy());
   });
 
-  it("expands a row to its changes and the raw request, and collapses it again", async () => {
+  it("expands a row to a labelled Changes block and request detail, and collapses it again", async () => {
     mockGetAuditEntries.mockResolvedValue(
       page([
         entry({
@@ -279,17 +329,33 @@ describe("ActivityScreen", () => {
 
     fireEvent.press(screen.getAllByTestId("activity-row")[0]);
     await waitFor(() => expect(screen.getByTestId("activity-detail-1")).toBeTruthy());
+
+    expect(screen.getByText("Changes")).toBeTruthy();
     expect(screen.getByText("seats")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
     expect(screen.getByText("4")).toBeTruthy();
     expect(screen.getByText("—")).toBeTruthy();
     expect(screen.getByText("(empty)")).toBeTruthy();
+
+    expect(screen.getByText("When")).toBeTruthy();
+    expect(screen.getByText("Request")).toBeTruthy();
     expect(screen.getByText("POST /api/admin/bookings/42/cancel → 200")).toBeTruthy();
-    expect(screen.getByText("IP 10.0.0.4")).toBeTruthy();
+    expect(screen.getByText("From")).toBeTruthy();
+    expect(screen.getByText("10.0.0.4")).toBeTruthy();
+    expect(screen.getByText("Device")).toBeTruthy();
     expect(screen.getByText("Mozilla/5.0")).toBeTruthy();
 
     fireEvent.press(screen.getAllByTestId("activity-row")[0]);
     await waitFor(() => expect(screen.queryByTestId("activity-detail-1")).toBeNull());
+  });
+
+  it("leaves the Changes block out entirely when nothing was diffed", async () => {
+    renderWithProviders(<ActivityScreen />, { withAuth: true });
+    await waitFor(() => expect(screen.getAllByTestId("activity-row")[0]).toBeTruthy());
+    fireEvent.press(screen.getAllByTestId("activity-row")[0]);
+    await waitFor(() => expect(screen.getByTestId("activity-detail-1")).toBeTruthy());
+    expect(screen.queryByText("Changes")).toBeNull();
+    expect(screen.getByText("Request")).toBeTruthy();
   });
 
   it("renders a masked value as-is rather than hiding the row", async () => {
@@ -329,8 +395,9 @@ describe("ActivityScreen", () => {
     expect(screen.getByText("403")).toBeTruthy();
 
     fireEvent.press(screen.getAllByTestId("activity-row")[0]);
-    await waitFor(() => expect(screen.getByText("IP unknown")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("unknown")).toBeTruthy());
     expect(screen.getAllByText("POST /api/admin/bookings/42/cancel → 403")).toHaveLength(2);
+    expect(screen.queryByText("Device")).toBeNull();
     expect(screen.queryByText("Mozilla/5.0")).toBeNull();
   });
 
@@ -341,13 +408,6 @@ describe("ActivityScreen", () => {
     fireEvent.press(screen.getAllByTestId("activity-row")[1]);
     await waitFor(() => expect(screen.getByTestId("activity-detail-2")).toBeTruthy());
     expect(screen.queryByTestId("activity-detail-1")).toBeNull();
-  });
-
-  it("honours a persisted filter on mount", async () => {
-    localStorage.setItem("activity:action", JSON.stringify("auth"));
-    renderWithProviders(<ActivityScreen />, { withAuth: true });
-    await waitFor(() => expect(mockGetAuditEntries).toHaveBeenCalled());
-    expect(mockGetAuditEntries.mock.calls[0][0].action).toBe("auth");
   });
 
   it("renders the native stack title off web", async () => {

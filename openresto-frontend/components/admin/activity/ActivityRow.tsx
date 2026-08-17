@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
@@ -24,11 +25,80 @@ export interface ActivityRowProps {
   isLast: boolean;
   borderColor: string;
   cardBg: string;
+  /** The recessed surface the expanded detail sits on, a step back from `cardBg`. */
+  detailBg: string;
   mutedColor: string;
   textColor: string;
 }
 
-function ChangeLine({
+/** One line of the expanded detail: a muted label beside whatever the value is made of. */
+function DetailRow({
+  label,
+  mutedColor,
+  children,
+}: {
+  label: string;
+  mutedColor: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.detailRow}>
+      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>{label}</ThemedText>
+      <View style={styles.detailValue}>{children}</View>
+    </View>
+  );
+}
+
+function DetailTextRow({
+  label,
+  value,
+  mutedColor,
+  textColor,
+}: {
+  label: string;
+  value: string;
+  mutedColor: string;
+  textColor: string;
+}) {
+  return (
+    <DetailRow label={label} mutedColor={mutedColor}>
+      <ThemedText style={[styles.detailValueText, { color: textColor }]}>{value}</ThemedText>
+    </DetailRow>
+  );
+}
+
+/**
+ * One side of a diff. A masked value is deliberately not styled like the real ones it sits
+ * beside — it takes a padlock and the muted italic of an annotation, so a reviewer reads it as
+ * "this was withheld" rather than as the string that was actually stored.
+ */
+function ChangeValue({
+  value,
+  color,
+  mutedColor,
+}: {
+  value: string | null;
+  color: string;
+  mutedColor: string;
+}) {
+  const masked = isRedacted(value);
+  return (
+    <View style={styles.changeValue}>
+      {masked ? <Icon name="lock-closed-outline" size="xs" color={mutedColor} /> : null}
+      <ThemedText
+        style={[
+          styles.detailValueText,
+          { color: masked ? mutedColor : color },
+          masked && styles.redacted,
+        ]}
+      >
+        {formatChangeValue(value)}
+      </ThemedText>
+    </View>
+  );
+}
+
+function ChangeRow({
   change,
   mutedColor,
   textColor,
@@ -37,19 +107,12 @@ function ChangeLine({
   mutedColor: string;
   textColor: string;
 }) {
-  const valueStyle = (value: string | null) => [
-    styles.changeValue,
-    { color: isRedacted(value) ? mutedColor : textColor },
-    isRedacted(value) && styles.redacted,
-  ];
-
   return (
-    <View style={styles.changeRow}>
-      <ThemedText style={[styles.changeField, { color: mutedColor }]}>{change.field}</ThemedText>
-      <ThemedText style={valueStyle(change.before)}>{formatChangeValue(change.before)}</ThemedText>
-      <ThemedText style={[styles.changeArrow, { color: mutedColor }]}>→</ThemedText>
-      <ThemedText style={valueStyle(change.after)}>{formatChangeValue(change.after)}</ThemedText>
-    </View>
+    <DetailRow label={change.field} mutedColor={mutedColor}>
+      <ChangeValue value={change.before} color={mutedColor} mutedColor={mutedColor} />
+      <ThemedText style={[styles.detailValueText, { color: mutedColor }]}>→</ThemedText>
+      <ChangeValue value={change.after} color={textColor} mutedColor={mutedColor} />
+    </DetailRow>
   );
 }
 
@@ -64,8 +127,9 @@ function ChangeLine({
  * or for an entry audited only by the middleware floor (`http.post`), the path itself.
  *
  * @see [activity.test.tsx](../../../tests/app/admin/activity.test.tsx) — pins that a summary
- * replaces the action label rather than stacking under it, and that a summary-less row falls
- * back to its target label and then to the request line.
+ * replaces the action label rather than stacking under it, that a summary-less row falls back
+ * to its target label and then to the request line, and that the expanded detail reads as
+ * labelled When/Request/From/Device rows with Device dropped when there is no user agent.
  */
 export function ActivityRow({
   entry,
@@ -74,6 +138,7 @@ export function ActivityRow({
   isLast,
   borderColor,
   cardBg,
+  detailBg,
   mutedColor,
   textColor,
 }: ActivityRowProps) {
@@ -131,17 +196,15 @@ export function ActivityRow({
       {expanded && (
         <View
           testID={`activity-detail-${entry.id}`}
-          style={[styles.detail, { borderTopColor: borderColor }]}
+          style={[styles.detail, { borderTopColor: borderColor, backgroundColor: detailBg }]}
         >
-          <ThemedText style={[styles.detailHeading, { color: mutedColor }]}>
-            {formatExactTime(entry.occurredAt)}
-          </ThemedText>
-
           {entry.changes.length > 0 && (
-            <View style={styles.detailBlock}>
-              <ThemedText style={[styles.detailHeading, { color: mutedColor }]}>Changes</ThemedText>
+            <View style={[styles.changesBlock, { borderBottomColor: borderColor }]}>
+              <ThemedText style={[styles.changesHeading, { color: mutedColor }]}>
+                Changes
+              </ThemedText>
               {entry.changes.map((change) => (
-                <ChangeLine
+                <ChangeRow
                   key={change.field}
                   change={change}
                   mutedColor={mutedColor}
@@ -151,18 +214,32 @@ export function ActivityRow({
             </View>
           )}
 
-          <View style={styles.detailBlock}>
-            <ThemedText style={[styles.detailHeading, { color: mutedColor }]}>Request</ThemedText>
-            <ThemedText style={[styles.monoLine, { color: textColor }]}>
-              {httpLine(entry)}
-            </ThemedText>
-            <ThemedText style={[styles.monoLine, { color: mutedColor }]}>
-              {`IP ${entry.ipAddress ?? "unknown"}`}
-            </ThemedText>
+          <View style={styles.metaBlock}>
+            <DetailTextRow
+              label="When"
+              value={formatExactTime(entry.occurredAt)}
+              mutedColor={mutedColor}
+              textColor={textColor}
+            />
+            <DetailTextRow
+              label="Request"
+              value={httpLine(entry)}
+              mutedColor={mutedColor}
+              textColor={textColor}
+            />
+            <DetailTextRow
+              label="From"
+              value={entry.ipAddress ?? "unknown"}
+              mutedColor={mutedColor}
+              textColor={textColor}
+            />
             {entry.userAgent ? (
-              <ThemedText style={[styles.monoLine, { color: mutedColor }]}>
-                {entry.userAgent}
-              </ThemedText>
+              <DetailTextRow
+                label="Device"
+                value={entry.userAgent}
+                mutedColor={mutedColor}
+                textColor={textColor}
+              />
             ) : null}
           </View>
         </View>

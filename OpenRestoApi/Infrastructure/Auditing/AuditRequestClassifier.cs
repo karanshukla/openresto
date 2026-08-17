@@ -13,6 +13,8 @@ namespace OpenRestoApi.Infrastructure.Auditing;
 /// </para>
 /// <seealso>AuditCoverageTests.EveryAuthorizedMutatingAction_IsGatedByANamedAdminPolicy</seealso>
 /// <seealso>AuditCoverageTests.EveryMutatingAdminEndpoint_IsGatedOrAnAuthenticationPath</seealso>
+/// <seealso>AuditRequestClassifierTests.RequiresAdminPolicy_RecognisesBothAdminPolicies</seealso>
+/// <seealso>AuditRequestClassifierTests.RequiresAdminPolicy_RejectsAGateThatNamesNoPolicy</seealso>
 /// </summary>
 public static class AuditRequestClassifier
 {
@@ -22,7 +24,11 @@ public static class AuditRequestClassifier
     private static readonly HashSet<string> AdminPolicies =
         new(StringComparer.Ordinal) { AuthPolicies.RequireAdmin, AuthPolicies.RequireOwner };
 
-    /// <summary>Reads are out of scope: every dashboard poll would otherwise be a row.</summary>
+    /// <summary>
+    /// Reads are out of scope: every dashboard poll would otherwise be a row.
+    /// <seealso>AuditRequestClassifierTests.IsMutatingMethod_IsTrueForWrites</seealso>
+    /// <seealso>AuditRequestClassifierTests.IsMutatingMethod_IsFalseForReads</seealso>
+    /// </summary>
     public static bool IsMutatingMethod(string? method)
         => !string.IsNullOrEmpty(method) && !ReadOnlyMethods.Contains(method);
 

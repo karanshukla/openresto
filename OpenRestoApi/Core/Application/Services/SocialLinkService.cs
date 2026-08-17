@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -74,7 +73,7 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository, IAudi
     }
 
     private void Describe(string action, SocialLink entity, string summary)
-        => _audit.Describe(action, AuditTargets.SocialLink, entity.Id.ToString(CultureInfo.InvariantCulture), entity.Label,
+        => _audit.Describe(action, AuditTargets.SocialLink, AuditTargets.IdOf(entity.Id), entity.Label,
             summary: summary);
 
     private static SocialLinkDto ToDto(SocialLink s) => new()

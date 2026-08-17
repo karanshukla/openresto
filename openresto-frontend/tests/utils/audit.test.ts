@@ -1,5 +1,6 @@
 import {
   ACTION_GROUPS,
+  ANY_ID,
   PAGE_SIZE,
   REDACTED_MARKER,
   actionGroup,
@@ -8,11 +9,13 @@ import {
   actorName,
   formatChangeValue,
   formatExactTime,
+  fromIdFilter,
   httpLine,
   isRedacted,
   personLabel,
   statusColor,
   statusTone,
+  toIdFilter,
 } from "@/utils/audit";
 import { theme } from "@/theme/theme";
 
@@ -148,8 +151,24 @@ describe("isRedacted", () => {
   });
 });
 
+describe("id filter conversion", () => {
+  it("carries an id into a Select value and back unchanged", () => {
+    expect(toIdFilter(7)).toBe(7);
+    expect(fromIdFilter(toIdFilter(7))).toBe(7);
+  });
+
+  it("reads the catch-all option as no filter rather than as an id", () => {
+    expect(toIdFilter(null)).toBe(ANY_ID);
+    expect(fromIdFilter(ANY_ID)).toBeNull();
+  });
+
+  it("takes an id the Select handed back as a string", () => {
+    expect(fromIdFilter("7")).toBe(7);
+  });
+});
+
 describe("filter constants", () => {
-  it("offers an unfiltered pill plus one prefix per group", () => {
+  it("offers an unfiltered option plus one prefix per group", () => {
     expect(ACTION_GROUPS[0]).toEqual({ label: "All activity", value: "" });
     expect(ACTION_GROUPS.map((g) => g.value)).toEqual([
       "",

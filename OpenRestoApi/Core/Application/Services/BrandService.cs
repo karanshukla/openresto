@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -199,7 +198,7 @@ public class BrandService(
         }
 
         RecordBrandChanges(before, BrandFields.From(brand));
-        _audit.Describe(AuditActions.BrandUpdate, AuditTargets.Brand, brand.Id.ToString(CultureInfo.InvariantCulture),
+        _audit.Describe(AuditActions.BrandUpdate, AuditTargets.Brand, AuditTargets.IdOf(brand.Id),
             brand.AppName, summary: "Updated the brand settings");
     }
 

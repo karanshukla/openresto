@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -48,8 +47,8 @@ public sealed class SecurityQuestionsService(
 
         // Neither the question nor the answer is recorded: together they are a credential, and the
         // question alone narrows a guess at the answer.
-        _audit.Describe(AuditActions.AuthPvqSetup, AuditTargets.User, cred.Id.ToString(CultureInfo.InvariantCulture),
-            cred.DisplayName ?? cred.Email, summary: "Configured a security question");
+        _audit.Describe(AuditActions.AuthPvqSetup, AuditTargets.User, AuditTargets.IdOf(cred.Id),
+            UserFields.PersonLabel(cred.DisplayName, cred.Email), summary: "Configured a security question");
     }
 
     public async Task<PvqVerifyOutcome> VerifyAsync(string email, string answer)

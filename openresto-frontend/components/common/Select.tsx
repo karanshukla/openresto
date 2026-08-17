@@ -1,11 +1,32 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, ScrollView, View } from "react-native";
-import { useState } from "react";
+import { Modal, Platform, Pressable, ScrollView, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { useCloseOnViewportChange } from "@/hooks/use-close-on-viewport-change";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import * as Haptics from "expo-haptics";
-import { styles } from "./Select.styles";
+import { measureAnchor, type AnchoredPanel } from "@/utils/selectAnchor";
+import { backdropStyleFor, panelStyleFor, styles } from "./Select.styles";
+
+/**
+ * Where the options panel should sit, or null to fall back to the centred sheet — which is what
+ * native always gets, and what web gets when the trigger cannot be measured.
+ *
+ * `Modal` portals its content to the document root on web, escaping whatever container the
+ * trigger sits in, so the panel cannot be positioned relative to its parent — the trigger's real
+ * viewport rect is the only thing it can hang off. Read synchronously rather than through RNW's
+ * `measureInWindow`, which defers a tick and would flash the panel at a stale position.
+ *
+ * @see [selectAnchor.test.ts](../../tests/utils/selectAnchor.test.ts) — pins the measuring and
+ * the clamping. The browser half (that a React ref really is a DOM node there) is only true in
+ * a browser, so it is pinned by `e2e/admin-activity.spec.ts` instead.
+ */
+function panelFor(trigger: View | null): AnchoredPanel | null {
+  if (Platform.OS !== "web") return null;
+
+  return measureAnchor(trigger, { width: window.innerWidth, height: window.innerHeight });
+}
 
 export interface SelectOption {
   label: string;
@@ -29,6 +50,11 @@ export default function Select({
   accessibilityLabel?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
+  const [panel, setPanel] = useState<AnchoredPanel | null>(null);
+  const triggerRef = useRef<View>(null);
+  const close = useCallback(() => setModalVisible(false), []);
+  // Only the anchored panel goes stale when the viewport moves; the centred sheet does not care.
+  useCloseOnViewportChange(modalVisible && panel !== null, close);
   const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const placeholderColor = colors.muted;
@@ -39,21 +65,18 @@ export default function Select({
 
   return (
     <>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={close}>
         <Pressable
           testID="select-backdrop"
-          style={styles.backdrop}
-          onPress={() => setModalVisible(false)}
+          // A dropdown hanging off its trigger doesn't dim the page behind it; a centred sheet
+          // does. The backdrop still covers the screen either way, so a press outside closes.
+          style={backdropStyleFor(panel !== null)}
+          onPress={close}
           accessibilityRole="button"
           accessibilityLabel="Close the options list"
         >
           <ThemedView
-            style={[styles.modalView, { borderColor }]}
+            style={panelStyleFor(panel, borderColor)}
             role="dialog"
             aria-modal
             accessibilityViewIsModal
@@ -78,7 +101,7 @@ export default function Select({
                     onPress={() => {
                       Haptics.selectionAsync();
                       onSelect(item.value);
-                      setModalVisible(false);
+                      close();
                     }}
                     role="menuitem"
                     accessibilityLabel={item.label}
@@ -113,12 +136,16 @@ export default function Select({
       </Modal>
 
       <Pressable
+        ref={triggerRef}
         style={(state) => [
           styles.trigger,
           { borderColor, backgroundColor },
           (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setPanel(panelFor(triggerRef.current));
+          setModalVisible(true);
+        }}
         accessibilityRole="button"
         accessibilityLabel={
           accessibilityLabel

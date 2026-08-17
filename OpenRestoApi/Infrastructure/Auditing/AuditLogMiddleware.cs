@@ -40,17 +40,23 @@ internal sealed class AuditLogMiddleware(
         catch (Exception ex)
         {
             // The response has already gone out; there is nothing to fail. Losing the entry is
-            // bad, so it is logged loudly rather than swallowed.
+            // bad, so it is logged loudly rather than swallowed. Both values are caller-supplied
+            // and reach the log verbatim, so they go through the same sanitizer the entry uses —
+            // Kestrel percent-decodes %0A into Request.Path, which would otherwise forge a line.
             logger.LogError(ex, "[Audit] Failed to record {Method} {Path}",
-                context.Request.Method, context.Request.Path);
+                AuditFields.Sanitize(context.Request.Method, AuditFields.MaxHttpMethodLength),
+                AuditFields.Sanitize(context.Request.Path.Value, AuditFields.MaxPathLength));
         }
     }
 
+    /// <summary>
+    /// The read early-out is first so the overwhelming majority of requests leave without
+    /// resolving anything; auditing reads would mean lifting it.
+    /// <seealso>AuditTrailTests.ReadRequest_LandsNoEntry</seealso>
+    /// <seealso>AuditTrailTests.MutatingAdminRequest_LandsAnEntryCarryingTheActorAndTheHttpFacts</seealso>
+    /// </summary>
     private async Task RecordAsync(HttpContext context)
     {
-        // Reads are out of scope for v1 and nothing describes one, so the overwhelming
-        // majority of requests leave here without resolving anything. Auditing a read would
-        // mean lifting this first.
         if (!AuditRequestClassifier.IsMutatingMethod(context.Request.Method)) return;
 
         AuditScope? scope = context.RequestServices.GetService<AuditScope>();
@@ -114,26 +120,26 @@ internal sealed class AuditLogMiddleware(
         {
             OccurredAt = occurredAt,
             ActorUserId = actor.UserId,
-            ActorEmail = AuditFields.Truncate(actor.Email, AuditFields.MaxActorEmailLength)!,
-            ActorDisplayName = AuditFields.Truncate(actor.DisplayName, AuditFields.MaxActorDisplayNameLength),
-            ActorRole = AuditFields.Truncate(actor.Role, AuditFields.MaxRoleLength)!,
-            Action = AuditFields.Truncate(
+            ActorEmail = AuditFields.Sanitize(actor.Email, AuditFields.MaxActorEmailLength)!,
+            ActorDisplayName = AuditFields.Sanitize(actor.DisplayName, AuditFields.MaxActorDisplayNameLength),
+            ActorRole = AuditFields.Sanitize(actor.Role, AuditFields.MaxRoleLength)!,
+            Action = AuditFields.Sanitize(
             scope.Action ?? AuditActions.ForUndescribedRequest(context.Request.Method),
             AuditFields.MaxActionLength)!,
-            TargetType = AuditFields.Truncate(scope.TargetType, AuditFields.MaxTargetTypeLength),
-            TargetId = AuditFields.Truncate(scope.TargetId, AuditFields.MaxTargetIdLength),
-            TargetLabel = AuditFields.Truncate(scope.TargetLabel, AuditFields.MaxTargetLabelLength),
+            TargetType = AuditFields.Sanitize(scope.TargetType, AuditFields.MaxTargetTypeLength),
+            TargetId = AuditFields.Sanitize(scope.TargetId, AuditFields.MaxTargetIdLength),
+            TargetLabel = AuditFields.Sanitize(scope.TargetLabel, AuditFields.MaxTargetLabelLength),
             RestaurantId = scope.RestaurantId,
-            Summary = AuditFields.Truncate(scope.Summary, AuditFields.MaxSummaryLength),
+            Summary = AuditFields.Sanitize(scope.Summary, AuditFields.MaxSummaryLength),
             ChangesJson = scope.ChangesJson(),
-            HttpMethod = AuditFields.Truncate(context.Request.Method, AuditFields.MaxHttpMethodLength)!,
+            HttpMethod = AuditFields.Sanitize(context.Request.Method, AuditFields.MaxHttpMethodLength)!,
             // Path only. Admin list screens filter by customer email through the query string, and
             // an audit row is not allowed to hold customer PII.
-            Path = AuditFields.Truncate(context.Request.Path.Value ?? string.Empty, AuditFields.MaxPathLength)!,
+            Path = AuditFields.Sanitize(context.Request.Path.Value ?? string.Empty, AuditFields.MaxPathLength)!,
             StatusCode = context.Response.StatusCode,
-            IpAddress = AuditFields.Truncate(
+            IpAddress = AuditFields.Sanitize(
             context.Connection.RemoteIpAddress?.ToString(), AuditFields.MaxIpAddressLength),
-            UserAgent = AuditFields.Truncate(
+            UserAgent = AuditFields.Sanitize(
             context.Request.Headers.UserAgent.ToString() is { Length: > 0 } ua ? ua : null,
             AuditFields.MaxUserAgentLength),
         };

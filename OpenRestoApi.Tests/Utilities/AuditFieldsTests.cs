@@ -90,18 +90,38 @@ public class AuditFieldsTests
     }
 
     [Fact]
-    public void Truncate_ClipsToTheColumnCap()
+    public void Sanitize_ClipsToTheColumnCap()
     {
         string value = new('x', AuditFields.MaxUserAgentLength + 50);
 
-        Assert.Equal(AuditFields.MaxUserAgentLength, AuditFields.Truncate(value, AuditFields.MaxUserAgentLength)!.Length);
+        Assert.Equal(AuditFields.MaxUserAgentLength, AuditFields.Sanitize(value, AuditFields.MaxUserAgentLength)!.Length);
     }
 
     [Fact]
-    public void Truncate_LeavesShorterValuesAndNullsAlone()
+    public void Sanitize_LeavesShorterValuesAndNullsAlone()
     {
-        Assert.Equal("short", AuditFields.Truncate("short", 100));
-        Assert.Null(AuditFields.Truncate(null, 100));
-        Assert.Equal("", AuditFields.Truncate("", 100));
+        Assert.Equal("short", AuditFields.Sanitize("short", 100));
+        Assert.Null(AuditFields.Sanitize(null, 100));
+        Assert.Equal("", AuditFields.Sanitize("", 100));
     }
+
+    /// <summary>
+    /// Kestrel percent-decodes <c>%0A</c> straight into <c>Request.Path</c>, and the path, the
+    /// user agent and a rejected sign-in's attempted address all reach an entry unfiltered. A
+    /// newline left in one forges a line break in the log and renders in the trail as a second,
+    /// convincing row — aimed squarely at the person reading the record to find out what happened.
+    /// </summary>
+    [Theory]
+    [InlineData("/api/admin/x\nPOST /api/admin/y", "/api/admin/x POST /api/admin/y")]
+    [InlineData("/api/admin/x\r\nfake", "/api/admin/x  fake")]
+    [InlineData("agent\tname", "agent name")]
+    [InlineData("nul\0byte", "nul byte")]
+    public void Sanitize_StripsControlCharactersThatWouldForgeALine(string value, string expected)
+        => Assert.Equal(expected, AuditFields.Sanitize(value, 512));
+
+    [Fact]
+    public void Sanitize_LeavesOrdinaryPunctuationAndUnicodeAlone()
+        => Assert.Equal(
+            "Mozilla/5.0 (Macintosh) — Café",
+            AuditFields.Sanitize("Mozilla/5.0 (Macintosh) — Café", 512));
 }

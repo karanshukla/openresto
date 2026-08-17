@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -312,7 +311,7 @@ public class RestaurantManagementService(
     }
 
     private void DescribeRestaurant(string action, Restaurant restaurant, string summary)
-        => _audit.Describe(action, AuditTargets.Restaurant, restaurant.Id.ToString(CultureInfo.InvariantCulture),
+        => _audit.Describe(action, AuditTargets.Restaurant, AuditTargets.IdOf(restaurant.Id),
             restaurant.Name, restaurant.Id, summary);
 
     // ── Sections ────────────────────────────────────────────────────────────
@@ -383,7 +382,7 @@ public class RestaurantManagementService(
     }
 
     private void DescribeSection(string action, Section section, int restaurantId, string summary)
-        => _audit.Describe(action, AuditTargets.Section, section.Id.ToString(CultureInfo.InvariantCulture), section.Name,
+        => _audit.Describe(action, AuditTargets.Section, AuditTargets.IdOf(section.Id), section.Name,
             restaurantId, summary);
 
     // ── Tables ──────────────────────────────────────────────────────────────
@@ -551,7 +550,7 @@ public class RestaurantManagementService(
     }
 
     private void DescribeTable(string action, Table table, int restaurantId, string summary)
-        => _audit.Describe(action, AuditTargets.Table, table.Id.ToString(CultureInfo.InvariantCulture), TableLabel(table),
+        => _audit.Describe(action, AuditTargets.Table, AuditTargets.IdOf(table.Id), TableLabel(table),
             restaurantId, summary);
 
     private static string TableLabel(Table table) => table.Name ?? $"Table {table.Id}";
@@ -710,7 +709,7 @@ public class RestaurantManagementService(
     }
 
     private void DescribeTableGroup(string action, TableGroup group, string summary)
-        => _audit.Describe(action, AuditTargets.TableGroup, group.Id.ToString(CultureInfo.InvariantCulture),
+        => _audit.Describe(action, AuditTargets.TableGroup, AuditTargets.IdOf(group.Id),
             BookingMapper.GroupLabel(group), group.RestaurantId, summary);
 
     private static string MemberIdList(IEnumerable<int> tableIds)

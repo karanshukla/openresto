@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -82,7 +81,7 @@ public class HighlightService(IHighlightRepository highlightRepository, IAuditSc
     }
 
     private void Describe(string action, RestaurantHighlight entity, string summary)
-        => _audit.Describe(action, AuditTargets.Highlight, entity.Id.ToString(CultureInfo.InvariantCulture), entity.Title,
+        => _audit.Describe(action, AuditTargets.Highlight, AuditTargets.IdOf(entity.Id), entity.Title,
             summary: summary);
 
     private static HighlightDto ToDto(RestaurantHighlight h) => new()

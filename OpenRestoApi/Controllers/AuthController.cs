@@ -32,13 +32,16 @@ public class AuthController(
         return Ok(new { message = "Login successful." });
     }
 
+    /// <summary>
+    /// The endpoint takes no token by design — clearing a cookie that was never set has to
+    /// succeed — so an anonymous POST would land an actor-less row, and could be repeated to bury
+    /// the entries that matter. Only a real session is recorded.
+    /// <seealso>AuditTrailTests.Logout_IsRecordedForASessionAndIgnoredWithoutOne</seealso>
+    /// </summary>
     [HttpPost("logout")]
     public IActionResult Logout()
     {
         _cookies.Clear(Response);
-        // Only a real session ends here. The endpoint takes no token by design — clearing a
-        // cookie that was never set has to succeed — so without this check an anonymous POST
-        // would land an actor-less row, and could be repeated to bury the entries that matter.
         if (User.Identity?.IsAuthenticated == true)
         {
             _audit.Describe(AuditActions.AuthLogout, summary: "Signed out");

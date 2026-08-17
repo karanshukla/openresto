@@ -1,68 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, View } from "react-native";
 import { Redirect, Stack } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAuth, useCan } from "@/context/AuthContext";
-import { hexToRgba } from "@/utils/colors";
 import Button from "@/components/common/Button";
-import HorizontalScroller from "@/components/common/HorizontalScroller";
 import PageLoader from "@/components/common/PageLoader";
+import Select, { type SelectOption } from "@/components/common/Select";
 import { Icon } from "@/components/common/Icon";
 import { fetchRestaurants } from "@/api/restaurants";
 import { adminListUsers } from "@/api/users";
 import { getAuditEntries, type AdminAuditEntryDto } from "@/api/audit";
-import { ACTION_GROUPS, PAGE_SIZE, personLabel } from "@/utils/audit";
+import {
+  ACTION_GROUPS,
+  ANY_ID,
+  PAGE_SIZE,
+  fromIdFilter,
+  personLabel,
+  toIdFilter,
+} from "@/utils/audit";
 import { ActivityRow } from "@/components/admin/activity/ActivityRow";
 import { styles } from "@/styles/admin/activity.styles";
-
-interface FilterOption {
-  key: string;
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}
-
-function FilterRow({
-  label,
-  options,
-  borderColor,
-  mutedColor,
-  primaryColor,
-}: {
-  label: string;
-  options: FilterOption[];
-  borderColor: string;
-  mutedColor: string;
-  primaryColor: string;
-}) {
-  return (
-    <HorizontalScroller label={label} contentContainerStyle={styles.pillRow}>
-      {options.map((option) => (
-        <Pressable
-          key={option.key}
-          onPress={option.onPress}
-          accessibilityRole="radio"
-          accessibilityLabel={option.label}
-          accessibilityState={{ checked: option.active }}
-          style={[
-            styles.pill,
-            option.active
-              ? { backgroundColor: hexToRgba(primaryColor, 0.12), borderColor: primaryColor }
-              : { backgroundColor: "transparent", borderColor },
-          ]}
-        >
-          <ThemedText
-            style={[styles.pillText, { color: option.active ? primaryColor : mutedColor }]}
-          >
-            {option.label}
-          </ThemedText>
-        </Pressable>
-      ))}
-    </HorizontalScroller>
-  );
-}
 
 /**
  * The Owner-only activity trail. The API refuses a Manager outright, so the route is a dead
@@ -158,43 +117,20 @@ export default function ActivityScreen() {
 
   const borderColor = colors.border;
   const mutedColor = colors.muted;
-  const palette = { borderColor, mutedColor, primaryColor };
 
-  const locationOptions: FilterOption[] = [
-    {
-      key: "all",
-      label: "All locations",
-      active: selectedRestaurantId === null,
-      onPress: () => setSelectedRestaurantId(null),
-    },
-    ...restaurants.map((r) => ({
-      key: String(r.id),
-      label: r.name,
-      active: selectedRestaurantId === r.id,
-      onPress: () => setSelectedRestaurantId(r.id),
-    })),
+  const locationOptions: SelectOption[] = [
+    { label: "All locations", value: ANY_ID },
+    ...restaurants.map((r) => ({ label: r.name, value: r.id })),
   ];
 
-  const actionOptions: FilterOption[] = ACTION_GROUPS.map((group) => ({
-    key: group.value || "all",
+  const actionOptions: SelectOption[] = ACTION_GROUPS.map((group) => ({
     label: group.label,
-    active: selectedAction === group.value,
-    onPress: () => setSelectedAction(group.value),
+    value: group.value,
   }));
 
-  const actorOptions: FilterOption[] = [
-    {
-      key: "anyone",
-      label: "Anyone",
-      active: selectedActorId === null,
-      onPress: () => setSelectedActorId(null),
-    },
-    ...actors.map((a) => ({
-      key: String(a.id),
-      label: a.name,
-      active: selectedActorId === a.id,
-      onPress: () => setSelectedActorId(a.id),
-    })),
+  const personOptions: SelectOption[] = [
+    { label: "Anyone", value: ANY_ID },
+    ...actors.map((a) => ({ label: a.name, value: a.id })),
   ];
 
   return (
@@ -208,10 +144,34 @@ export default function ActivityScreen() {
         </ThemedText>
       </View>
 
-      <View style={styles.filtersSection}>
-        <FilterRow label="Locations" options={locationOptions} {...palette} />
-        <FilterRow label="Activity types" options={actionOptions} {...palette} />
-        <FilterRow label="People" options={actorOptions} {...palette} />
+      <View style={styles.filtersRow}>
+        <View style={styles.filterControl}>
+          <Select
+            icon="storefront-outline"
+            accessibilityLabel="Filter by location"
+            options={locationOptions}
+            selectedValue={toIdFilter(selectedRestaurantId)}
+            onSelect={(value) => setSelectedRestaurantId(fromIdFilter(value))}
+          />
+        </View>
+        <View style={styles.filterControl}>
+          <Select
+            icon="pricetags-outline"
+            accessibilityLabel="Filter by activity"
+            options={actionOptions}
+            selectedValue={selectedAction}
+            onSelect={(value) => setSelectedAction(String(value))}
+          />
+        </View>
+        <View style={styles.filterControl}>
+          <Select
+            icon="person-outline"
+            accessibilityLabel="Filter by person"
+            options={personOptions}
+            selectedValue={toIdFilter(selectedActorId)}
+            onSelect={(value) => setSelectedActorId(fromIdFilter(value))}
+          />
+        </View>
       </View>
 
       {loading ? (
@@ -258,6 +218,7 @@ export default function ActivityScreen() {
               isLast={index === items.length - 1 && !hasMore}
               borderColor={borderColor}
               cardBg={colors.card}
+              detailBg={colors.surfaceAlt}
               mutedColor={mutedColor}
               textColor={colors.text}
             />

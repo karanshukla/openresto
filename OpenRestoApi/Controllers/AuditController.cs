@@ -14,6 +14,10 @@ namespace OpenRestoApi.Controllers;
 /// Gated <see cref="AuthPolicies.RequireOwner"/>, matching user management — "who did what" is a
 /// management function, and a Manager should not be reviewing an Owner's actions by default.
 /// </para>
+/// <seealso>AuditCoverageTests.TheAuditTrailItselfIsOwnerOnlyAndReadOnly</seealso>
+/// <seealso>AuditTrailTests.AuditTrail_IsReadableByAnOwner</seealso>
+/// <seealso>AuditTrailTests.AuditTrail_IsRefusedToAManager</seealso>
+/// <seealso>AuditTrailTests.AuditTrail_ExposesNoWayToDeleteAnEntry</seealso>
 /// </summary>
 [ApiController]
 [Route("api/admin/audit")]

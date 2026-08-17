@@ -8,6 +8,8 @@ namespace OpenRestoApi.Core.Application.Services;
 /// <summary>
 /// The read side of the audit trail. Paging bounds match the notification history's
 /// (<c>pageSize</c> clamped 1–100) so both admin list screens behave the same.
+/// <seealso>AuditQueryServiceTests.GetEntriesAsync_ClampsPageSizeToTheSameBoundsAsNotificationHistory</seealso>
+/// <seealso>AuditQueryServiceTests.GetEntriesAsync_FloorsPageAtOne</seealso>
 /// </summary>
 public class AuditQueryService(IAdminAuditRepository repository)
 {
@@ -51,6 +53,8 @@ public class AuditQueryService(IAdminAuditRepository repository)
     /// <summary>
     /// A row whose JSON can't be read still renders — the diff is the enrichment, not the record,
     /// and dropping the whole entry over it would lose the actor and action too.
+    /// <seealso>AuditQueryServiceTests.GetEntriesAsync_StillReturnsTheEntry_WhenItsStoredDiffIsUnreadable</seealso>
+    /// <seealso>AuditQueryServiceTests.GetEntriesAsync_UnpacksTheStoredDiff_SoTheClientNeverParsesAStringField</seealso>
     /// </summary>
     private static List<AuditChangeDto> ParseChanges(string? json)
     {

@@ -13,8 +13,8 @@ public class EmailSettingsService(
     IAuditScope? audit = null)
 {
     /// <summary>
-    /// Castle's generated proxy constructors do not carry default values, so a Moq class mock can
-    /// only reach a constructor whose arity it matches exactly. This is the arity it passes.
+    /// Castle's generated proxy constructors drop default values, so a Moq class mock reaches only
+    /// a constructor of exactly matching arity. This is that constructor.
     /// </summary>
     public EmailSettingsService(
         IEmailSettingsRepository settings,

@@ -63,7 +63,16 @@ test.describe("Admin activity trail", () => {
     await page.request.delete(`/api/admin/restaurants/${id}`);
   });
 
-  test("the Activity screen renders the trail", async ({ page }) => {
+  /**
+   * The whole product in one test: take an action, then find that action — not merely some
+   * activity — on the screen, and open it to see the request behind it.
+   *
+   * Matched on the location's own unique name rather than on the summary's phrasing, so an
+   * edit to the wording of a summary doesn't fail a test that is about the trail working.
+   */
+  test("an action appears on the Activity screen, and expands to show the request", async ({
+    page,
+  }) => {
     const name = `E2E Visible ${Date.now()}`;
     const id = await createLocation(page, name);
 
@@ -73,10 +82,97 @@ test.describe("Admin activity trail", () => {
     // The screen hydrates from rate-limited admin fetches; reload after a cool-down if the
     // list hasn't rendered, the same way the other admin specs do.
     await expectVisibleWithReload(page, page.getByTestId("activity-list"), { timeout: 15_000 });
-    await expect(page.getByTestId("activity-row").first()).toBeVisible({ timeout: 15_000 });
+
+    const row = page.getByTestId("activity-row").filter({ hasText: name });
+    await expect(row).toHaveCount(1, { timeout: 15_000 });
+    await expect(row).toContainText(ADMIN_EMAIL);
+    await expect(row).toContainText("201");
+
+    await row.click();
+    const detail = page.getByTestId(/^activity-detail-/);
+    await expect(detail).toContainText("POST /api/admin/restaurants → 201");
 
     await page.request.patch(`/api/admin/restaurants/${id}`, { data: { isArchived: true } });
     await page.request.delete(`/api/admin/restaurants/${id}`);
+  });
+
+  /**
+   * The same loop driven entirely through the UI, on the one path where the actor is resolved
+   * by the service rather than read off a token: signing in has no session yet, so the entry's
+   * actor comes from an explicit `AttributeTo` and nothing else would catch it being wrong.
+   */
+  test("a sign-in performed through the login form shows up attributed to that person", async ({
+    page,
+    browser,
+  }) => {
+    // The display name has to be as unique as the email: it is what the actor pill is labelled
+    // with, and the API has no delete endpoint, so a fixed one would leave two identically
+    // named pills behind on the second local run against the same container.
+    const stamp = Date.now();
+    const email = `e2e-activity-signin-${stamp}@example.com`;
+    const password = "TempPass123";
+    const displayName = `Robin Signin ${stamp}`;
+
+    const created = await page.request.post("/api/admin/users", {
+      data: { email, password, displayName, role: "Manager" },
+    });
+    expect(created.ok()).toBeTruthy();
+    const userId = (await created.json()).id as number;
+
+    // The control. Without it this test would still pass against a build that recorded a
+    // sign-in for everyone, or one that recorded the account's creation as a sign-in — it is
+    // the before/after pair, not the sighting, that shows the entry came from the act below.
+    const before = await readTrail(page, `?actorUserId=${userId}&action=auth&pageSize=100`);
+    expect(before.items.filter((e) => e.action === "auth.login")).toHaveLength(0);
+
+    // A context of its own, with no stored cookie: this signs in the way a person does.
+    const ctx = await browser.newContext({ baseURL: "http://localhost:5062" });
+    const theirPage = await ctx.newPage();
+    await theirPage.goto("/admin/login");
+    await theirPage.locator("input[type=email]").fill(email);
+    await theirPage.locator("input[type=password]").fill(password);
+    await theirPage.getByRole("button", { name: /sign in/i }).click();
+    await theirPage.waitForURL(/\/admin\/dashboard/, { timeout: 20_000 });
+    await ctx.close();
+
+    // Back as the Owner, narrowed to that person: the filter is how a reviewer would actually
+    // arrive at this, and it proves the entry carries a resolved user id rather than an email alone.
+    await gotoAdminDashboard(page);
+    await page.goto("/admin/activity");
+    await expectVisibleWithReload(page, page.getByTestId("activity-list"), { timeout: 15_000 });
+
+    // The person filter is a Select: open the trigger, then pick the option. Matched on the
+    // trigger's prefix rather than its whole name, which carries the current selection.
+    const personFilter = page.getByRole("button", { name: /^Filter by person, / });
+    await personFilter.click();
+
+    // The options hang off the trigger rather than floating in the middle of the screen. Only a
+    // browser can tell the difference — a React ref is a DOM node with a real box here and a
+    // component instance under Jest — so this is the assertion that holds the anchoring up.
+    //
+    // Measured on the panel, not on an option: an option sits partway down the list, so its own
+    // box says nothing about where the list is. Tolerances are tight enough to fail a centred
+    // sheet, which would sit halfway down the viewport and nowhere near the trigger's left edge.
+    const panel = page.getByRole("menu");
+    await expect(panel).toBeVisible();
+    const trigger = await personFilter.boundingBox();
+    const menu = await panel.boundingBox();
+    expect(menu!.y).toBeGreaterThanOrEqual(trigger!.y + trigger!.height);
+    expect(menu!.y).toBeLessThan(trigger!.y + trigger!.height + 40);
+    expect(Math.abs(menu!.x - trigger!.x)).toBeLessThan(24);
+
+    await page.getByRole("menuitem", { name: displayName, exact: true }).click();
+
+    const rows = page.getByTestId("activity-row");
+    await expect(rows.first()).toContainText(displayName, { timeout: 15_000 });
+    await expect(rows.first()).toContainText("Manager");
+
+    const after = await readTrail(page, `?actorUserId=${userId}&action=auth&pageSize=100`);
+    const signIns = after.items.filter((e) => e.action === "auth.login");
+    expect(signIns).toHaveLength(1);
+    expect(signIns[0].actorDisplayName).toBe(displayName);
+    expect(signIns[0].actorRole).toBe("Manager");
+    expect(signIns[0].statusCode).toBe(200);
   });
 
   /**

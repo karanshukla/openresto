@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -41,8 +40,8 @@ public class AdminService(
     IAuditScope? audit = null)
 {
     /// <summary>
-    /// Castle's generated proxy constructors do not carry default values, so a Moq class mock can
-    /// only reach a constructor whose arity it matches exactly. This is the arity it passes.
+    /// Castle's generated proxy constructors drop default values, so a Moq class mock reaches only
+    /// a constructor of exactly matching arity. This is that constructor.
     /// </summary>
     public AdminService(
         IBookingRepository bookings,
@@ -226,8 +225,6 @@ public class AdminService(
             _notificationQueue.EnqueueCapacityCheck(booking.RestaurantId, booking.Restaurant!.Name, booking.Date);
         }
 
-        // The guest's name and email stay out of the entry: booking history is GDPR-purgeable and
-        // an audit row holding them would survive the purge. The reference identifies the booking.
         DescribeBooking(AuditActions.BookingCreate, booking,
             $"Created booking {booking.BookingRef} for {booking.Seats} guests");
         return ToDetailDto(booking);
@@ -423,7 +420,9 @@ public class AdminService(
     /// <summary>
     /// The booking fields an admin edit can move, snapshotted either side of the update.
     /// <see cref="Booking.SpecialRequests"/> is deliberately absent: it is guest-authored free text
-    /// that routinely names people, and nothing masks it on the way into the entry.
+    /// that routinely names people, and unlike a named field there is nothing masking it on the way
+    /// into the entry.
+    /// <seealso>AuditTrailTests.NoGuestDetailOnABooking_EverReachesTheTrail</seealso>
     /// </summary>
     private sealed record BookingFields(
         int RestaurantId,
@@ -448,18 +447,32 @@ public class AdminService(
         _audit.RecordChange("date", before.Date, after.Date);
         _audit.RecordChange("endTime", before.EndTime, after.EndTime);
         _audit.RecordChange("seats", before.Seats, after.Seats);
-        // Both values mask to the redaction marker, so the entry says the guest's details were
-        // edited without restating the details a purge is meant to remove.
+        // Recordable only because both sides mask to the redaction marker: the entry says the
+        // guest's details were edited without restating them.
         _audit.RecordChange("customerEmail", before.CustomerEmail, after.CustomerEmail);
         _audit.RecordChange("customerName", before.CustomerName, after.CustomerName);
     }
 
     private void DescribeBooking(string action, Booking booking, string summary)
-        => _audit.Describe(action, AuditTargets.Booking, booking.Id.ToString(CultureInfo.InvariantCulture), booking.BookingRef,
-            booking.RestaurantId, summary);
+        => DescribeBooking(action, booking.Id, booking.BookingRef, booking.RestaurantId, summary);
+
+    private void DescribeBooking(string action, BookingDetailDto booking, string summary)
+        => DescribeBooking(action, booking.Id, booking.BookingRef, booking.RestaurantId, summary);
+
+    /// <summary>
+    /// Every booking entry goes through here, which is what keeps them all pointing at a booking
+    /// by id and reference rather than by the guest sitting at it — the summaries above name the
+    /// reference for the same reason. Booking history is deliberately GDPR-purgeable, and an entry
+    /// carrying a guest's name, address, note or the body of a mail sent to them would outlive the
+    /// purge that was supposed to remove it.
+    /// <seealso>AuditTrailTests.BookingEntry_PointsAtTheBookingByItsReference</seealso>
+    /// <seealso>AuditTrailTests.NoGuestDetailOnABooking_EverReachesTheTrail</seealso>
+    /// </summary>
+    private void DescribeBooking(string action, int id, string? bookingRef, int restaurantId, string summary)
+        => _audit.Describe(action, AuditTargets.Booking, AuditTargets.IdOf(id), bookingRef, restaurantId, summary);
 
     private void DescribeRestaurant(string action, Restaurant restaurant, string summary)
-        => _audit.Describe(action, AuditTargets.Restaurant, restaurant.Id.ToString(CultureInfo.InvariantCulture),
+        => _audit.Describe(action, AuditTargets.Restaurant, AuditTargets.IdOf(restaurant.Id),
             restaurant.Name, restaurant.Id, summary);
 
     /// <summary>Moves the sitting while keeping its length, so a reschedule never silently resizes it.</summary>
@@ -515,7 +528,7 @@ public class AdminService(
         if (reordered == true)
         {
             _audit.Describe(AuditActions.RestaurantReorderSections, AuditTargets.Restaurant,
-                restaurantId.ToString(CultureInfo.InvariantCulture), restaurantId: restaurantId,
+                AuditTargets.IdOf(restaurantId), restaurantId: restaurantId,
                 summary: $"Reordered {sectionIds.Count} sections");
         }
 
@@ -713,10 +726,7 @@ public class AdminService(
         string htmlBody = await EmailHelper.BuildEmailContentFromBrand(_brandService, req.Body);
         await _emailService.SendEmailAsync(booking.CustomerEmail, req.Subject, htmlBody);
 
-        // Neither the recipient address nor the message body: the entry records that the guest on
-        // this booking was emailed, and the booking reference is how it points at them.
-        _audit.Describe(AuditActions.BookingEmail, AuditTargets.Booking, booking.Id.ToString(CultureInfo.InvariantCulture),
-            booking.BookingRef, booking.RestaurantId,
+        DescribeBooking(AuditActions.BookingEmail, booking,
             $"Emailed the guest on booking {booking.BookingRef}");
         return SendBookingEmailResult.Sent(booking.CustomerEmail);
     }

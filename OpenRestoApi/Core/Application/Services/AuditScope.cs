@@ -55,10 +55,15 @@ public sealed class AuditScope : IAuditScope
         Summary = summary ?? Summary;
     }
 
+    /// <summary>
+    /// The equality check runs on the raw values, before redaction: two different passwords both
+    /// mask to <see cref="AuditFields.RedactedMarker"/>, and dropping them as equal would lose the
+    /// one thing the entry is allowed to say about them.
+    /// <seealso>AuditScopeTests.RecordChange_RecordsThatAProtectedFieldChanged_ButNotItsValues</seealso>
+    /// <seealso>AuditScopeTests.RecordChange_DropsFieldsThatDidNotChange</seealso>
+    /// </summary>
     public void RecordChange(string field, object? before, object? after)
     {
-        // Compared before redaction: two different passwords both mask to "[redacted]", and
-        // dropping them as equal would lose the one thing the entry is allowed to say about them.
         if (Equals(before, after)) return;
 
         _changes ??= [];
@@ -75,7 +80,10 @@ public sealed class AuditScope : IAuditScope
 
     /// <summary>
     /// The recorded diff as it goes into the column, or null when nothing changed. Over-long
-    /// payloads are dropped rather than clipped — half a JSON document is worse than none.
+    /// payloads are dropped rather than clipped — half a JSON document is worse than none, since
+    /// the read side would fail to parse it and lose the whole diff anyway.
+    /// <seealso>AuditScopeTests.ChangesJson_IsDroppedRatherThanClippedWhenItExceedsTheColumn</seealso>
+    /// <seealso>AuditScopeTests.ChangesJson_IsKeptWhenItFitsTheColumn</seealso>
     /// </summary>
     public string? ChangesJson()
     {

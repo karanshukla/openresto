@@ -1,6 +1,13 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
+/**
+ * Wide enough for the longest option label the filters carry ("All activity", a location
+ * name) and narrow enough that three of them still fit a tablet. `flexGrow` off this basis is
+ * what drops the row to two lines and then one as the viewport narrows, with no breakpoint.
+ */
+const FILTER_BASIS = 210;
+
 export const styles = StyleSheet.create({
   container: {
     padding: theme.spacing.xxl,
@@ -14,19 +21,17 @@ export const styles = StyleSheet.create({
   pageHeader: { gap: 4 },
   pageSub: { ...theme.typography.body },
 
-  filtersSection: { gap: 8 },
-  pillRow: {
+  filtersRow: {
     flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
   },
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
+  filterControl: {
+    flexGrow: 1,
+    flexBasis: FILTER_BASIS,
+    minWidth: 160,
+    maxWidth: 320,
   },
-  pillText: { fontSize: 13, fontWeight: "600" },
 
   listCard: {
     borderRadius: theme.borderRadius.card,

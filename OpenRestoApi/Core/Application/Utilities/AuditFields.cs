@@ -77,10 +77,28 @@ public static class AuditFields
         _ => value.ToString(),
     };
 
-    /// <summary>Clips to a column's cap. Storing a truncated user agent beats storing none.</summary>
-    public static string? Truncate(string? value, int maxLength)
+    /// <summary>
+    /// Everything an entry stores goes through here: control characters out, then clipped to the
+    /// column's cap. Storing a truncated user agent beats storing none.
+    /// <para>
+    /// The stripping is the security-relevant half. An entry's path, user agent and — on a
+    /// rejected sign-in — the attempted address are all supplied by the caller, and Kestrel
+    /// percent-decodes <c>%0A</c> straight into <c>Request.Path</c>. Left alone, a newline
+    /// forges a line break in the log file and, worse for this feature, renders in the trail as
+    /// a convincing extra row: whoever is reading the record to find out what happened is
+    /// exactly the person a forged entry is aimed at.
+    /// </para>
+    /// <seealso>AuditFieldsTests.Sanitize_StripsControlCharactersThatWouldForgeALine</seealso>
+    /// <seealso>AuditFieldsTests.Sanitize_ClipsToTheColumnCap</seealso>
+    /// </summary>
+    public static string? Sanitize(string? value, int maxLength)
     {
         if (string.IsNullOrEmpty(value)) return value;
-        return value.Length <= maxLength ? value : value[..maxLength];
+
+        string cleaned = value.Any(char.IsControl)
+            ? new string([.. value.Select(c => char.IsControl(c) ? ' ' : c)])
+            : value;
+
+        return cleaned.Length <= maxLength ? cleaned : cleaned[..maxLength];
     }
 }

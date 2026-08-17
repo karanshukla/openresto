@@ -1,6 +1,13 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
+/**
+ * The label column of the expanded detail. Every row — When, Request, From, Device and each
+ * changed field — shares it, so the values line up as one column instead of as four stacks.
+ * Wide enough for a field name like `smtpPassword` at the detail's type size.
+ */
+const DETAIL_LABEL_WIDTH = 88;
+
 export const styles = StyleSheet.create({
   wrap: { overflow: "hidden" },
 
@@ -19,7 +26,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  body: { flex: 1, gap: 2 },
+  body: { flex: 1, gap: 2, minWidth: 0 },
   primary: { fontSize: 14, fontWeight: "600", lineHeight: 20 },
   secondary: { fontSize: 12, lineHeight: 17 },
   meta: { fontSize: 12, lineHeight: 17 },
@@ -32,27 +39,51 @@ export const styles = StyleSheet.create({
   },
   statusText: { fontSize: 11, fontWeight: "700" },
 
-  // ── Expanded detail
   detail: {
     borderTopWidth: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     gap: theme.spacing.sm,
   },
-  detailHeading: {
-    ...theme.typography.labelSmall,
-    textTransform: "uppercase",
+  changesBlock: {
+    gap: theme.spacing.xxs,
+    paddingBottom: theme.spacing.sm,
+    borderBottomWidth: 1,
   },
-  changeRow: {
+  changesHeading: { ...theme.typography.label, fontSize: 12 },
+  metaBlock: { gap: theme.spacing.xxs },
+
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: theme.spacing.xsm,
+  },
+  detailLabel: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    width: DETAIL_LABEL_WIDTH,
+    flexShrink: 0,
+  },
+  detailValue: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: theme.spacing.xxs,
+  },
+  detailValueText: {
+    ...theme.typography.caption,
+    lineHeight: 18,
+    flexShrink: 1,
+  },
+
+  changeValue: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
+    gap: 3,
+    flexShrink: 1,
+    minWidth: 0,
   },
-  changeField: { fontSize: 12, fontWeight: "700" },
-  changeValue: { fontSize: 12 },
-  changeArrow: { fontSize: 12 },
   redacted: { fontStyle: "italic" },
-  monoLine: { fontSize: 12, lineHeight: 18 },
-  detailBlock: { gap: 3 },
 });

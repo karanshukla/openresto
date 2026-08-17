@@ -21,6 +21,13 @@ internal class AdminAuditRepository(AppDbContext db) : IAdminAuditRepository
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Newest first, with the id breaking ties so entries written inside the same clock tick don't
+    /// shuffle across a page boundary.
+    /// <seealso>AdminAuditRepositoryTests.QueryPagedAsync_MatchesActionByPrefix</seealso>
+    /// <seealso>AdminAuditRepositoryTests.QueryPagedAsync_PagesDeterministically_WhenTimestampsCollide</seealso>
+    /// <seealso>AdminAuditRepositoryTests.QueryPagedAsync_FiltersByDateRangeInclusively</seealso>
+    /// </summary>
     public async Task<(List<AdminAuditEntry> Items, int TotalCount)> QueryPagedAsync(
         AuditQuery query, int page, int pageSize)
     {
@@ -29,8 +36,6 @@ internal class AdminAuditRepository(AppDbContext db) : IAdminAuditRepository
         if (query.ActorUserId.HasValue)
             q = q.Where(e => e.ActorUserId == query.ActorUserId.Value);
 
-        // Prefix rather than equality, so "booking" selects every booking.* key and
-        // "booking.cancel" still selects exactly one.
         if (!string.IsNullOrWhiteSpace(query.Action))
         {
             string prefix = query.Action.Trim();
@@ -49,8 +54,6 @@ internal class AdminAuditRepository(AppDbContext db) : IAdminAuditRepository
         if (query.To.HasValue)
             q = q.Where(e => e.OccurredAt <= query.To.Value);
 
-        // Id breaks ties: entries written inside the same clock tick would otherwise page
-        // non-deterministically and drop or repeat rows across page boundaries.
         q = q.OrderByDescending(e => e.OccurredAt).ThenByDescending(e => e.Id);
 
         int total = await q.CountAsync();

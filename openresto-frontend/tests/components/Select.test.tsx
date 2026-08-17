@@ -3,8 +3,9 @@
  */
 import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react-native";
-import { Modal } from "react-native";
+import { Modal, Platform } from "react-native";
 import Select from "@/components/common/Select";
+import { backdropStyleFor, panelStyleFor } from "@/components/common/Select.styles";
 import { useBrand } from "@/context/BrandContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -102,6 +103,95 @@ describe("Select", () => {
     (useBrand as jest.Mock).mockReturnValueOnce({ appName: "Test App", primaryColor: "" });
     render(<Select selectedValue="1" options={options} onSelect={onSelect} />);
     expect(screen.getByText("Option 1")).toBeTruthy();
+  });
+
+  /**
+   * On web the options hang off the trigger like a dropdown; on native they stay a centred
+   * sheet, which is the platform convention. The pair is the point — it is what stops the web
+   * fix quietly changing how the pickers behave on a phone.
+   */
+  describe("placement", () => {
+    const originalOS = Platform.OS;
+    const setOS = (value: string) =>
+      Object.defineProperty(Platform, "OS", { value, configurable: true });
+
+    afterEach(() => setOS(originalOS));
+
+    /**
+     * `justifyContent` is the tell, not `flex: 1` — both backdrops carry that, so asserting on
+     * it passes against either branch. This distinction is load-bearing: an earlier version of
+     * this test asserted `flex: 1` and passed while rendering the centred sheet.
+     */
+    const isCentredSheet = () =>
+      Object.prototype.hasOwnProperty.call(
+        screen.getByTestId("select-backdrop").props.style,
+        "justifyContent"
+      );
+
+    it("keeps the centred sheet on native, which is the platform convention there", () => {
+      setOS("ios");
+
+      render(<Select selectedValue="1" options={options} onSelect={onSelect} />);
+      fireEvent.press(screen.getByText("Option 1"));
+
+      expect(isCentredSheet()).toBe(true);
+      expect(screen.getByText("Option 2")).toBeTruthy();
+    });
+
+    /**
+     * Web still falls back to the sheet whenever the trigger reports no box — which is every
+     * time under react-test-renderer, where a ref is a component instance rather than a DOM
+     * node. That is why the anchored branch is proven in the browser (`e2e/admin-activity.spec.ts`)
+     * and its arithmetic in `tests/utils/selectAnchor.test.ts`, not here.
+     */
+    it("falls back to the centred sheet on web when the trigger cannot be measured", () => {
+      setOS("web");
+
+      render(<Select selectedValue="1" options={options} onSelect={onSelect} />);
+      fireEvent.press(screen.getByText("Option 1"));
+
+      expect(isCentredSheet()).toBe(true);
+      expect(screen.getByText("Option 2")).toBeTruthy();
+    });
+
+    /**
+     * The anchored shape itself, exercised directly — the component cannot reach it under
+     * react-test-renderer, and a style branch nothing can take is a style branch nobody checked.
+     */
+    it("hangs the panel off the measured trigger", () => {
+      const anchored = panelStyleFor(
+        { top: 146, left: 200, width: 240, maxHeight: 360 },
+        "#ccc"
+      ) as object[];
+
+      expect(anchored).toContainEqual(
+        expect.objectContaining({ top: 146, left: 200, width: 240, maxHeight: 360 })
+      );
+      expect(backdropStyleFor(true)).not.toHaveProperty("justifyContent");
+    });
+
+    /**
+     * A flipped panel is pinned by its bottom edge. Setting both would leave the undefined one
+     * fighting the edge that matters and stretch the panel across the gap.
+     */
+    it("pins a flipped panel by its bottom edge alone", () => {
+      const flipped = panelStyleFor(
+        { bottom: 181, left: 200, width: 240, maxHeight: 360 },
+        "#ccc"
+      ) as object[];
+
+      const positioned = flipped.find((s) => "bottom" in s)!;
+      expect(positioned).toEqual(expect.objectContaining({ bottom: 181 }));
+      expect(positioned).not.toHaveProperty("top");
+    });
+
+    it("centres the sheet when there is no anchor", () => {
+      const centred = panelStyleFor(null, "#ccc") as object[];
+
+      expect(centred).toContainEqual(expect.objectContaining({ borderColor: "#ccc" }));
+      expect(centred.some((s) => "top" in s)).toBe(false);
+      expect(backdropStyleFor(false)).toHaveProperty("justifyContent", "center");
+    });
   });
 
   it("highlights the trigger border when hovered", () => {

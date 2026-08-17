@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace OpenRestoApi.Core.Application.Utilities;
 
 /// <summary>
@@ -86,6 +88,13 @@ public static class AuditActions
 /// <summary>The <c>TargetType</c> values an entry can carry.</summary>
 public static class AuditTargets
 {
+    /// <summary>
+    /// An entity's primary key as a <c>TargetId</c>. The column is a string so booking refs and
+    /// numeric ids both fit, and every service coerces through here so the stored form is
+    /// invariant rather than the request thread's culture.
+    /// </summary>
+    public static string IdOf(int id) => id.ToString(CultureInfo.InvariantCulture);
+
     public const string Booking = "Booking";
     public const string Restaurant = "Restaurant";
     public const string Section = "Section";
