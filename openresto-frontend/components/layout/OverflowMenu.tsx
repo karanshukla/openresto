@@ -1,226 +1,252 @@
-import { useEffect, useRef, useState } from "react";
-import { Linking, Modal, Pressable, View, TouchableWithoutFeedback } from "react-native";
+import { useEffect, useId, useRef, useState } from "react";
+import { Linking, Pressable, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useBrand } from "@/context/BrandContext";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
+import { AnchoredPanel } from "@/components/common/AnchoredPanel";
+import Button from "@/components/common/Button";
+import ButtonRow from "@/components/common/ButtonRow";
+import { ModalCard } from "@/components/common/ModalCard";
+import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
+import { openIndexFor, resolveListboxKey } from "@/utils/listboxKeys";
+import { webProps, type WebKeyEvent } from "@/utils/webProps";
 import { styles } from "./OverflowMenu.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
-/** Web-only overflow menu in the navbar. */
+/** Width of the panel. Wider than the icon it hangs off, so it is right-aligned to it. */
+const PANEL_WIDTH = 260;
+
+interface MenuItem {
+  key: string;
+  /** The row's visible text. */
+  text: string;
+  /** What a screen reader announces, where the visible text alone is not a whole instruction. */
+  label: string;
+  icon: IconName;
+  onPress: () => void;
+}
+
+/**
+ * Web-only overflow menu in the navbar.
+ *
+ * The second of the app's two anchored popups, and the reason `AnchoredPanel` exists: it used
+ * to measure its trigger and place itself with its own copy of the arithmetic `Select` had
+ * (issue #348). Everything below the item list — positioning, dismissal, focus, keys — now
+ * comes from the shared primitive.
+ *
+ * @see [OverflowMenu.test.tsx](../../tests/components/layout/OverflowMenu.test.tsx) — pins the
+ * rows and the keyboard navigation; the dismissal paths are in `OverflowMenu.dark.test.tsx`.
+ */
 export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () => void }) {
   const [open, setOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
-  // Modal content is portaled to the document root on web, escaping the
-  // Navbar's centered maxWidth container — so the panel can't just anchor to
-  // a fixed distance from the window edge (the trigger isn't there once the
-  // viewport is wider than the navbar's content). Measure the trigger's real
-  // on-screen position instead and anchor the panel to that.
-  const [panelPos, setPanelPos] = useState({ top: 64, right: 18 });
   const triggerRef = useRef<View>(null);
+  const { panel, measure, release } = useAnchorTracking(triggerRef, {
+    align: "end",
+    width: PANEL_WIDTH,
+  });
   const { toggle } = useTheme();
   const { colors, isDark } = useAppTheme();
   const brand = useBrand();
+  const menuId = useId();
+  const itemId = (index: number) => `${menuId}-item-${index}`;
 
   useEffect(() => {
     fetchSocialLinks().then(setSocialLinks);
   }, []);
 
-  const openMenu = () => {
-    // This component is web-only (see doc comment above), so the ref's
-    // current node is a real DOM element — read its position synchronously
-    // rather than via RNW's measureInWindow, which always defers through a
-    // setTimeout(0) and would let the panel flash at the stale position.
-    const rect = (triggerRef.current as unknown as HTMLElement | null)?.getBoundingClientRect?.();
-    if (rect) {
-      setPanelPos({
-        top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
-      });
-    }
+  const close = () => {
+    setOpen(false);
+    release();
+  };
+
+  const runAndClose = (action: () => void) => () => {
+    close();
+    action();
+  };
+
+  const items: MenuItem[] = [
+    {
+      key: "help",
+      text: "Help",
+      label: "Help",
+      icon: "help-circle-outline",
+      onPress: runAndClose(() => setShowHelp(true)),
+    },
+    {
+      key: "theme",
+      text: isDark ? "Switch to light mode" : "Switch to dark mode",
+      label: isDark ? "Switch to light mode" : "Switch to dark mode",
+      icon: isDark ? "sunny-outline" : "moon-outline",
+      onPress: runAndClose(toggle),
+    },
+    {
+      key: "shortcuts",
+      text: "Keyboard shortcuts",
+      label: "View keyboard shortcuts",
+      icon: "keypad-outline",
+      onPress: runAndClose(onOpenShortcuts),
+    },
+  ];
+
+  const show = (index: number) => {
+    measure();
+    setActiveIndex(index);
     setOpen(true);
+  };
+
+  const isChorded = (event: WebKeyEvent) => !!(event.ctrlKey || event.metaKey || event.altKey);
+  const labels = items.map((item) => item.text);
+
+  const handleTriggerKey = (event: WebKeyEvent) => {
+    if (isChorded(event)) return;
+    const from = openIndexFor(event.key, -1, labels, true);
+    if (from === null) return;
+    event.preventDefault?.();
+    show(from);
+  };
+
+  const handleMenuKey = (event: WebKeyEvent) => {
+    if (isChorded(event)) return;
+    // Menus wrap where the value picker clamps: a command list has no "past the end" to fall
+    // off, and every other menu a person uses comes back round.
+    const result = resolveListboxKey(event.key, {
+      activeIndex,
+      labels,
+      typeahead: "",
+      wrap: true,
+    });
+    if (result.handled) event.preventDefault?.();
+    if (result.activeIndex !== undefined) setActiveIndex(result.activeIndex);
+    if (result.commit) items[activeIndex]?.onPress();
+    else if (result.close) close();
   };
 
   return (
     <>
       <Pressable
         ref={triggerRef}
-        onPress={openMenu}
-        style={({ hovered }: any) => [styles.trigger, hovered && { opacity: 0.7 }]}
+        onPress={() => show(-1)}
+        style={(state) => [
+          styles.trigger,
+          (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
+        ]}
         accessibilityLabel="Open menu"
-        accessibilityRole="button"
+        role="button"
+        aria-expanded={open}
+        {...webProps({
+          onKeyDown: handleTriggerKey,
+          "aria-controls": menuId,
+          "aria-haspopup": "menu",
+        })}
       >
         <Icon name="ellipsis-vertical" size={19} color={colors.muted} />
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable
-          testID="menu-backdrop"
-          style={styles.backdrop}
-          onPress={() => setOpen(false)}
-          accessibilityRole="button"
-          accessibilityLabel="Close menu"
-        >
-          <TouchableWithoutFeedback>
-            <View
-              role="menu"
-              accessibilityLabel="More options"
-              style={[
-                styles.panel,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                { top: panelPos.top, right: panelPos.right },
-              ]}
-            >
-              <Pressable
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.row,
-                  (hovered || pressed) && { backgroundColor: colors.input },
-                ]}
-                onPress={() => {
-                  setOpen(false);
-                  setShowHelp(true);
-                }}
-                accessibilityRole="menuitem"
-                accessibilityLabel="Help"
-              >
-                <Icon name="help-circle-outline" size="lg" color={colors.muted} />
-                <ThemedText style={styles.rowText}>Help</ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.row,
-                  (hovered || pressed) && { backgroundColor: colors.input },
-                ]}
-                onPress={() => {
-                  setOpen(false);
-                  toggle();
-                }}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: isDark }}
-                accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                <Icon
-                  name={isDark ? "sunny-outline" : "moon-outline"}
-                  size="lg"
-                  color={colors.muted}
-                />
-                <ThemedText style={styles.rowText}>
-                  {isDark ? "Switch to light mode" : "Switch to dark mode"}
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.row,
-                  (hovered || pressed) && { backgroundColor: colors.input },
-                ]}
-                onPress={() => {
-                  setOpen(false);
-                  onOpenShortcuts();
-                }}
-                accessibilityRole="menuitem"
-                accessibilityLabel="View keyboard shortcuts"
-              >
-                <Icon name="keypad-outline" size="lg" color={colors.muted} />
-                <ThemedText style={styles.rowText}>Keyboard shortcuts</ThemedText>
-              </Pressable>
-
-              {socialLinks.length > 0 && (
-                <>
-                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                  <View style={styles.socialRow}>
-                    {socialLinks.map((link) => (
-                      <Pressable
-                        key={link.id}
-                        onPress={() => {
-                          setOpen(false);
-                          Linking.openURL(link.url);
-                        }}
-                        accessibilityRole="link"
-                        accessibilityLabel={link.label}
-                        hitSlop={8}
-                        style={({ hovered }: any) => [
-                          styles.socialBtn,
-                          { borderColor: colors.border },
-                          hovered && { opacity: 0.65 },
-                        ]}
-                      >
-                        <Icon name={link.iconKey as IconName} size="md" color={colors.muted} />
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              )}
-            </View>
-          </TouchableWithoutFeedback>
-        </Pressable>
-      </Modal>
-
-      <Modal
-        visible={showHelp}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowHelp(false)}
+      <AnchoredPanel
+        visible={open}
+        onClose={close}
+        position={panel}
+        role="menu"
+        id={menuId}
+        accessibilityLabel="More options"
+        activeDescendantId={open && activeIndex >= 0 ? itemId(activeIndex) : undefined}
+        onKeyDown={handleMenuKey}
+        closeLabel="Close menu"
+        backdropTestID="menu-backdrop"
+        testID="overflow-menu"
       >
-        <Pressable
-          testID="help-backdrop"
-          style={styles.helpBackdrop}
-          onPress={() => setShowHelp(false)}
-          accessibilityRole="button"
-          accessibilityLabel="Close help"
-        >
-          <TouchableWithoutFeedback>
-            <View
-              role="dialog"
-              aria-modal
-              accessibilityViewIsModal
-              accessibilityLabel="Help"
-              style={[
-                styles.helpCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
+        <View style={styles.panelInner}>
+          {items.map((item, i) => (
+            <Pressable
+              key={item.key}
+              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                styles.row,
+                (hovered || pressed || i === activeIndex) && { backgroundColor: colors.input },
               ]}
+              onPress={item.onPress}
+              id={itemId(i)}
+              role="menuitem"
+              accessibilityLabel={item.label}
+              tabIndex={-1}
             >
-              <ThemedText type="h3" accessibilityRole="header">
-                Help
-              </ThemedText>
-              <ThemedText style={[styles.helpText, { color: colors.muted }]}>
-                Open the Locations page to see hours, menus, and available times for each location.
-                Pick a time slot to open the booking form right there, or use "My Bookings" to look
-                up an existing reservation with your booking reference.
-              </ThemedText>
-              {brand.websiteUrl && (
-                <Pressable
-                  style={styles.helpLink}
-                  onPress={() => {
-                    setShowHelp(false);
-                    Linking.openURL(brand.websiteUrl!);
-                  }}
-                  accessibilityRole="link"
-                  accessibilityLabel="Visit our website"
-                >
-                  <Icon name="globe-outline" size="md" color={colors.muted} />
-                  <ThemedText style={[styles.helpLinkText, { color: colors.muted }]}>
-                    Visit our website
-                  </ThemedText>
-                </Pressable>
-              )}
-              <Pressable
-                testID="help-close"
-                style={[styles.closeBtn, { borderColor: colors.border }]}
-                onPress={() => setShowHelp(false)}
-                accessibilityRole="button"
-              >
-                <ThemedText style={[styles.closeBtnText, { color: colors.muted }]}>
-                  Close
-                </ThemedText>
-              </Pressable>
-            </View>
-          </TouchableWithoutFeedback>
-        </Pressable>
-      </Modal>
+              <Icon name={item.icon} size="lg" color={colors.muted} />
+              <ThemedText style={styles.rowText}>{item.text}</ThemedText>
+            </Pressable>
+          ))}
+
+          {socialLinks.length > 0 && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <View style={styles.socialRow} role="group" accessibilityLabel="Find us elsewhere">
+                {socialLinks.map((link) => (
+                  <Pressable
+                    key={link.id}
+                    onPress={runAndClose(() => {
+                      Linking.openURL(link.url);
+                    })}
+                    accessibilityRole="link"
+                    accessibilityLabel={link.label}
+                    hitSlop={8}
+                    style={(state) => [
+                      styles.socialBtn,
+                      { borderColor: colors.border },
+                      (state as { hovered?: boolean }).hovered && { opacity: 0.65 },
+                    ]}
+                  >
+                    <Icon name={link.iconKey as IconName} size="md" color={colors.muted} />
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      </AnchoredPanel>
+
+      <ModalCard
+        visible={showHelp}
+        title="Help"
+        onDismiss={() => setShowHelp(false)}
+        dismissLabel="Close help"
+        testID="help-backdrop"
+      >
+        <ThemedText style={[styles.helpText, { color: colors.muted }]}>
+          Open the Locations page to see hours, menus, and available times for each location. Pick a
+          time slot to open the booking form right there, or use "My Bookings" to look up an
+          existing reservation with your booking reference.
+        </ThemedText>
+        {brand.websiteUrl && (
+          <Pressable
+            style={styles.helpLink}
+            onPress={() => {
+              setShowHelp(false);
+              Linking.openURL(brand.websiteUrl!);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Visit our website"
+          >
+            <Icon name="globe-outline" size="md" color={colors.muted} />
+            <ThemedText style={[styles.helpLinkText, { color: colors.muted }]}>
+              Visit our website
+            </ThemedText>
+          </Pressable>
+        )}
+        <ButtonRow>
+          <Button
+            testID="help-close"
+            variant="secondary"
+            tone="neutral"
+            size="md"
+            onPress={() => setShowHelp(false)}
+          >
+            Close
+          </Button>
+        </ButtonRow>
+      </ModalCard>
     </>
   );
 }

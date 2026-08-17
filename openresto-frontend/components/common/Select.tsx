@@ -1,38 +1,47 @@
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { Modal, Platform, Pressable, ScrollView, View } from "react-native";
-import { useCallback, useRef, useState } from "react";
-import { useCloseOnViewportChange } from "@/hooks/use-close-on-viewport-change";
+import { Pressable, ScrollView, View } from "react-native";
+import { useEffect, useId, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { AnchoredPanel } from "@/components/common/AnchoredPanel";
+import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import * as Haptics from "expo-haptics";
-import { measureAnchor, type AnchoredPanel } from "@/utils/selectAnchor";
-import { backdropStyleFor, panelStyleFor, styles } from "./Select.styles";
+import { hexToRgba } from "@/utils/colors";
+import { scrollIntoView } from "@/utils/scrollIntoView";
+import { openIndexFor, resolveListboxKey, TYPEAHEAD_RESET_MS } from "@/utils/listboxKeys";
+import { LISTBOX_ROLE, webProps, type WebKeyEvent } from "@/utils/webProps";
+import { styles } from "./Select.styles";
 
+/** The brand tint on the option holding the current value. */
+const SELECTED_TINT = 0.08;
 /**
- * Where the options panel should sit, or null to fall back to the centred sheet — which is what
- * native always gets, and what web gets when the trigger cannot be measured.
- *
- * `Modal` portals its content to the document root on web, escaping whatever container the
- * trigger sits in, so the panel cannot be positioned relative to its parent — the trigger's real
- * viewport rect is the only thing it can hang off. Read synchronously rather than through RNW's
- * `measureInWindow`, which defers a tick and would flash the panel at a stale position.
- *
- * @see [selectAnchor.test.ts](../../tests/utils/selectAnchor.test.ts) — pins the measuring and
- * the clamping. The browser half (that a React ref really is a DOM node there) is only true in
- * a browser, so it is pinned by `e2e/admin-activity.spec.ts` instead.
+ * ...and on the one the pointer or the keyboard is resting on, which has to read stronger than
+ * the selected row it can land on. Mixed with `hexToRgba` rather than by appending hex digits to
+ * the brand colour: a three-digit brand ("#0a7") concatenated with an alpha pair is not a colour
+ * at all, and renders as nothing.
  */
-function panelFor(trigger: View | null): AnchoredPanel | null {
-  if (Platform.OS !== "web") return null;
-
-  return measureAnchor(trigger, { width: window.innerWidth, height: window.innerHeight });
-}
+const HIGHLIGHT_TINT = 0.16;
 
 export interface SelectOption {
   label: string;
   value: string | number;
 }
 
+/**
+ * The app's one dropdown: a combobox trigger over a listbox of values.
+ *
+ * The roles are the ones a value picker is supposed to carry. It was a `menu` of `menuitem`s,
+ * which is the pattern for commands — a screen reader announced "menu" for a control whose
+ * whole job is holding a value, and told nobody which value it held (issue #348).
+ *
+ * The open list keeps focus on itself and moves an `aria-activedescendant` highlight, rather
+ * than moving focus from option to option. That is what makes one keydown handler enough for
+ * a fifty-row seat picker, and it is why the options carry `tabIndex={-1}`: the list is the
+ * keyboard's target, the rows are not.
+ *
+ * @see [Select.test.tsx](../../tests/components/Select.test.tsx) — pins the roles, and each
+ * key against the behaviour it is supposed to have.
+ */
 export default function Select({
   options,
   onSelect,
@@ -49,117 +58,203 @@ export default function Select({
   icon?: IconName;
   accessibilityLabel?: string;
 }) {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [panel, setPanel] = useState<AnchoredPanel | null>(null);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const triggerRef = useRef<View>(null);
-  const close = useCallback(() => setModalVisible(false), []);
-  // Only the anchored panel goes stale when the viewport moves; the centred sheet does not care.
-  useCloseOnViewportChange(modalVisible && panel !== null, close);
+  const listRef = useRef<ScrollView>(null);
+  const optionRefs = useRef<(View | null)[]>([]);
+  const typeahead = useRef("");
+  const typeaheadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { panel, measure, release } = useAnchorTracking(triggerRef);
+  const listId = useId();
+  const optionId = (index: number) => `${listId}-option-${index}`;
+
   const { colors, isDark, primaryColor } = useAppTheme();
-  const borderColor = colors.border;
-  const placeholderColor = colors.muted;
-  const backgroundColor = colors.input;
   const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
 
-  const selectedOption = options.find((o) => o.value === selectedValue);
+  const selectedIndex = options.findIndex((o) => o.value === selectedValue);
+  const selectedOption = selectedIndex === -1 ? undefined : options[selectedIndex];
+
+  const clearTypeahead = () => {
+    if (typeaheadTimer.current) clearTimeout(typeaheadTimer.current);
+    typeaheadTimer.current = null;
+  };
+  useEffect(() => clearTypeahead, []);
+
+  const rememberTypeahead = (value: string) => {
+    typeahead.current = value;
+    clearTypeahead();
+    if (value !== "") {
+      typeaheadTimer.current = setTimeout(() => {
+        typeahead.current = "";
+      }, TYPEAHEAD_RESET_MS);
+    }
+  };
+
+  const close = () => {
+    setOpen(false);
+    release();
+    rememberTypeahead("");
+  };
+
+  const show = (index: number) => {
+    measure();
+    setActiveIndex(index);
+    setOpen(true);
+  };
+
+  const commit = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+    Haptics.selectionAsync();
+    onSelect(option.value);
+    close();
+  };
+
+  // Keeping the highlight on screen is not a nicety once arrow keys exist: without it, the
+  // fourth press down a fifty-row list moves a highlight nobody can see.
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    // No guard on the ref: `scrollIntoView` already ignores a target that isn't there, which
+    // is what a highlight left pointing past a list that shrank under it resolves to.
+    scrollIntoView({ current: optionRefs.current[activeIndex] }, listRef, "nearest");
+  }, [open, activeIndex]);
+
+  const isChorded = (event: WebKeyEvent) => !!(event.ctrlKey || event.metaKey || event.altKey);
+
+  const handleTriggerKey = (event: WebKeyEvent) => {
+    if (isChorded(event)) return;
+    const from = openIndexFor(
+      event.key,
+      selectedIndex,
+      options.map((o) => o.label),
+      false
+    );
+    if (from === null) return;
+    event.preventDefault?.();
+    show(from);
+  };
+
+  const handleListKey = (event: WebKeyEvent) => {
+    if (isChorded(event)) return;
+    const result = resolveListboxKey(event.key, {
+      activeIndex,
+      labels: options.map((o) => o.label),
+      typeahead: typeahead.current,
+      wrap: false,
+    });
+    if (result.handled) event.preventDefault?.();
+    rememberTypeahead(result.typeahead);
+    if (result.activeIndex !== undefined) setActiveIndex(result.activeIndex);
+    if (result.commit) commit(activeIndex);
+    else if (result.close) close();
+  };
 
   return (
     <>
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={close}>
-        <Pressable
-          testID="select-backdrop"
-          // A dropdown hanging off its trigger doesn't dim the page behind it; a centred sheet
-          // does. The backdrop still covers the screen either way, so a press outside closes.
-          style={backdropStyleFor(panel !== null)}
-          onPress={close}
-          accessibilityRole="button"
-          accessibilityLabel="Close the options list"
-        >
-          <ThemedView
-            style={panelStyleFor(panel, borderColor)}
-            role="dialog"
-            aria-modal
-            accessibilityViewIsModal
-            accessibilityLabel={accessibilityLabel ?? placeholder}
-          >
-            {/*
-              Plain ScrollView over FlatList: option counts are small (max ~50 for seat pickers),
-              so virtualization buys nothing, and react-native-web's FlatList scroll container
-              intercepts the touch-start of a tap (treating it as a potential drag) so the option's
-              onPress never fires — the modal just dismisses on pointer-up. A ScrollView with
-              nestedScrollEnabled + direct Pressable rows is reliable cross-platform.
-            */}
-            <ScrollView style={styles.list} nestedScrollEnabled role="menu">
-              {options.map((item, i) => (
-                <View key={item.value.toString()}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.option,
-                      item.value === selectedValue && { backgroundColor: `${primaryColor}14` },
-                      pressed && { opacity: 0.6 },
+      <AnchoredPanel
+        visible={open}
+        onClose={close}
+        position={panel}
+        role={LISTBOX_ROLE}
+        id={listId}
+        accessibilityLabel={accessibilityLabel ?? placeholder}
+        activeDescendantId={open && activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        onKeyDown={handleListKey}
+        closeLabel="Close the options list"
+        backdropTestID="select-backdrop"
+        testID="select-list"
+      >
+        {/*
+          Plain ScrollView over FlatList: option counts are small (max ~50 for seat pickers),
+          so virtualization buys nothing, and react-native-web's FlatList scroll container
+          intercepts the touch-start of a tap (treating it as a potential drag) so the option's
+          onPress never fires — the modal just dismisses on pointer-up. A ScrollView with
+          nestedScrollEnabled + direct Pressable rows is reliable cross-platform.
+        */}
+        <ScrollView ref={listRef} style={styles.list} nestedScrollEnabled>
+          {options.map((item, i) => {
+            const isSelected = i === selectedIndex;
+            const isActive = i === activeIndex;
+            return (
+              <View key={item.value.toString()}>
+                <Pressable
+                  ref={(node) => {
+                    optionRefs.current[i] = node;
+                  }}
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
+                    styles.option,
+                    isSelected && { backgroundColor: hexToRgba(primaryColor, SELECTED_TINT) },
+                    (isActive || hovered) && {
+                      backgroundColor: hexToRgba(primaryColor, HIGHLIGHT_TINT),
+                    },
+                    pressed && { opacity: 0.6 },
+                  ]}
+                  onPress={() => commit(i)}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={isSelected}
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: isSelected }}
+                  // The list is the keyboard's one focus target; its rows are reached by
+                  // arrowing the highlight, not by tabbing through fifty of them.
+                  tabIndex={-1}
+                >
+                  <ThemedText
+                    style={[
+                      styles.optionText,
+                      isSelected && { color: primaryColor, fontWeight: "600" },
                     ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      onSelect(item.value);
-                      close();
-                    }}
-                    role="menuitem"
-                    accessibilityLabel={item.label}
-                    accessibilityState={{ selected: item.value === selectedValue }}
                   >
+                    {item.label}
+                  </ThemedText>
+                  {isSelected && (
                     <ThemedText
-                      style={[
-                        styles.optionText,
-                        item.value === selectedValue && { color: primaryColor, fontWeight: "600" },
-                      ]}
+                      style={[styles.checkmark, { color: primaryColor }]}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
                     >
-                      {item.label}
+                      ✓
                     </ThemedText>
-                    {item.value === selectedValue && (
-                      <ThemedText
-                        style={[styles.checkmark, { color: primaryColor }]}
-                        accessibilityElementsHidden
-                        importantForAccessibility="no"
-                      >
-                        ✓
-                      </ThemedText>
-                    )}
-                  </Pressable>
-                  {i < options.length - 1 && (
-                    <ThemedView style={[styles.separator, { backgroundColor: dividerColor }]} />
                   )}
-                </View>
-              ))}
-            </ScrollView>
-          </ThemedView>
-        </Pressable>
-      </Modal>
+                </Pressable>
+                {i < options.length - 1 && (
+                  <View style={[styles.separator, { backgroundColor: dividerColor }]} />
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
+      </AnchoredPanel>
 
       <Pressable
         ref={triggerRef}
         style={(state) => [
           styles.trigger,
-          { borderColor, backgroundColor },
+          { borderColor: colors.border, backgroundColor: colors.input },
           (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
         ]}
-        onPress={() => {
-          setPanel(panelFor(triggerRef.current));
-          setModalVisible(true);
-        }}
-        accessibilityRole="button"
+        onPress={() => show(selectedIndex)}
+        role="combobox"
+        aria-expanded={open}
         accessibilityLabel={
           accessibilityLabel
             ? `${accessibilityLabel}, ${selectedOption?.label ?? placeholder}`
             : undefined
         }
-        accessibilityState={{ expanded: modalVisible }}
+        accessibilityState={{ expanded: open }}
+        {...webProps({
+          onKeyDown: handleTriggerKey,
+          "aria-controls": listId,
+          "aria-haspopup": "listbox",
+        })}
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Icon name={icon} size="md" color={placeholderColor} />
+            <Icon name={icon} size="md" color={colors.muted} />
             <ThemedText
               numberOfLines={1}
-              style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
+              style={[styles.triggerText, !selectedOption && { color: colors.muted }]}
             >
               {selectedOption?.label ?? placeholder}
             </ThemedText>
@@ -167,12 +262,12 @@ export default function Select({
         ) : (
           <ThemedText
             numberOfLines={1}
-            style={[styles.triggerText, !selectedOption && { color: placeholderColor }]}
+            style={[styles.triggerText, !selectedOption && { color: colors.muted }]}
           >
             {selectedOption?.label ?? placeholder}
           </ThemedText>
         )}
-        <Icon name="chevron-down" size="md" color={placeholderColor} />
+        <Icon name="chevron-down" size="md" color={colors.muted} />
       </Pressable>
     </>
   );

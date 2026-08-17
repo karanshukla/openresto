@@ -58,7 +58,7 @@ test.describe("Locations card actions", () => {
     await expect(drawer).toHaveAttribute("aria-label", `Book ${first.name}`);
 
     await drawer.getByLabel(/^Location, /).click();
-    await page.getByRole("menuitem", { name: second.name, exact: true }).click();
+    await page.getByRole("option", { name: second.name, exact: true }).click();
 
     await expect(page.getByTestId("booking-drawer")).toHaveAttribute(
       "aria-label",

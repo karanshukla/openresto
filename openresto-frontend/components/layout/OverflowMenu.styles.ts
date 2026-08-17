@@ -10,24 +10,8 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     marginLeft: 4,
   },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.25)",
-  },
-  helpBackdrop: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay.light,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.spacing.xxl,
-  },
-  panel: {
-    position: "absolute",
-    minWidth: 230,
-    borderRadius: theme.borderRadius.modal,
-    borderWidth: 1,
+  panelInner: {
     padding: 6,
-    ...theme.shadows.popup,
   },
   row: {
     flexDirection: "row",
@@ -61,15 +45,6 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  helpCard: {
-    borderRadius: theme.borderRadius.modal,
-    borderWidth: 1,
-    padding: theme.spacing.xxl,
-    width: "100%",
-    maxWidth: 380,
-    gap: theme.spacing.md,
-    ...theme.shadows.popup,
-  },
   helpText: {
     ...theme.typography.caption,
     lineHeight: 20,
@@ -82,15 +57,5 @@ export const styles = StyleSheet.create({
   helpLinkText: {
     fontSize: 14,
     fontWeight: "500",
-  },
-  closeBtn: {
-    paddingVertical: 11,
-    borderRadius: theme.borderRadius.lg,
-    alignItems: "center",
-    marginTop: theme.spacing.sm,
-    borderWidth: 1,
-  },
-  closeBtnText: {
-    ...theme.typography.bodyBold,
   },
 });

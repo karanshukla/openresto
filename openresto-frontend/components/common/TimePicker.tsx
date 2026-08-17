@@ -1,14 +1,19 @@
-import { ThemedText } from "@/components/themed-text";
-import { Icon } from "@/components/common/Icon";
-import { ThemedView } from "@/components/themed-view";
-import { Modal, Pressable, FlatList, TouchableOpacity } from "react-native";
-import { useState } from "react";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import Select from "@/components/common/Select";
 import { generateTimeOptions } from "@/utils/timeOptions";
-import { styles } from "./TimePicker.styles";
 
 export { generateTimeOptions };
 
+/**
+ * Time-of-day picker: a `Select` over the 15-minute slots between two bounds.
+ *
+ * It used to be two hand-rolled files — a centred `Modal` on native and a second, differently
+ * styled one on web — each with its own trigger, its own option rows and the same wrong
+ * `menu`/`menuitem` roles `Select` carried (issue #348). There was never anything time-specific
+ * below the option list, so there is nothing left here but the options.
+ *
+ * @see [TimePicker.test.tsx](../../tests/components/TimePicker.test.tsx) — pins that the
+ * bounds reach the option list and that a pick comes back as an "HH:mm" string.
+ */
 export default function TimePicker({
   selectedTime,
   onSelect,
@@ -20,100 +25,13 @@ export default function TimePicker({
   minTime?: string;
   maxTime?: string;
 }) {
-  const [modalVisible, setModalVisible] = useState(false);
-  const { colors, primaryColor } = useAppTheme();
-  const borderColor = colors.border;
-  const placeholderColor = colors.muted;
-  const backgroundColor = colors.input;
-  const options = generateTimeOptions(minTime, maxTime);
-  const selected = options.find((o) => o.value === selectedTime);
-
   return (
-    <>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable
-          testID="time-picker-backdrop"
-          style={styles.backdrop}
-          onPress={() => setModalVisible(false)}
-          accessibilityRole="button"
-          accessibilityLabel="Close the time picker"
-        >
-          <ThemedView
-            style={[styles.modalView, { borderColor }]}
-            role="dialog"
-            aria-modal
-            accessibilityViewIsModal
-            accessibilityLabel="Select a time"
-          >
-            <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
-              Select a time
-            </ThemedText>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.value}
-              style={styles.list}
-              role="menu"
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === selectedTime && { backgroundColor: `${primaryColor}14` },
-                  ]}
-                  onPress={() => {
-                    onSelect(item.value);
-                    setModalVisible(false);
-                  }}
-                  role="menuitem"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: item.value === selectedTime }}
-                >
-                  <ThemedText
-                    style={
-                      item.value === selectedTime && { color: primaryColor, fontWeight: "600" }
-                    }
-                  >
-                    {item.label}
-                  </ThemedText>
-                  {item.value === selectedTime && (
-                    <ThemedText
-                      style={[styles.checkmark, { color: primaryColor }]}
-                      accessibilityElementsHidden
-                      importantForAccessibility="no"
-                    >
-                      ✓
-                    </ThemedText>
-                  )}
-                </TouchableOpacity>
-              )}
-            />
-          </ThemedView>
-        </Pressable>
-      </Modal>
-
-      <Pressable
-        style={(state) => [
-          styles.trigger,
-          { borderColor, backgroundColor },
-          (state as { hovered?: boolean }).hovered && { borderColor: primaryColor },
-        ]}
-        onPress={() => setModalVisible(true)}
-        accessibilityRole="button"
-        accessibilityLabel={selected ? `Change time, currently ${selected.label}` : "Select a time"}
-        accessibilityState={{ expanded: modalVisible }}
-      >
-        <ThemedText
-          numberOfLines={1}
-          style={[styles.triggerText, !selected && { color: placeholderColor }]}
-        >
-          {selected?.label ?? "Select a time"}
-        </ThemedText>
-        <Icon name="chevron-down" size="md" color={placeholderColor} />
-      </Pressable>
-    </>
+    <Select
+      options={generateTimeOptions(minTime, maxTime)}
+      selectedValue={selectedTime}
+      onSelect={(value) => onSelect(String(value))}
+      placeholder="Select a time"
+      accessibilityLabel="Time"
+    />
   );
 }

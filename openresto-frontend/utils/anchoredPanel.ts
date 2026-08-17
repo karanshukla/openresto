@@ -1,15 +1,16 @@
 /**
- * Where a `Select`'s options panel goes on web, so it hangs off its trigger like a dropdown
- * rather than floating in the middle of the screen.
+ * Where a panel goes when it hangs off a trigger on web — a `Select`'s option list, the
+ * navbar's overflow menu — so it reads as a dropdown rather than floating in the middle of
+ * the screen.
  *
- * Kept as pure geometry, separate from the component, because the interesting part is the
+ * Kept as pure geometry, separate from the components, because the interesting part is the
  * clamping: the panel has to stay on screen when the trigger sits near an edge, and mobile web
  * is a real target — the booking drawer's pickers run on phones, where a panel sized to its
  * content would happily hang off the side.
  *
- * @see [selectAnchor.test.ts](../tests/utils/selectAnchor.test.ts) — pins each clamp on both
- * sides of its boundary: opening below vs flipping above, and the left/width limits at both
- * screen edges.
+ * @see [anchoredPanel.test.ts](../tests/utils/anchoredPanel.test.ts) — pins each clamp on both
+ * sides of its boundary: opening below vs flipping above, the left/width limits at both screen
+ * edges, and right-alignment for a panel wider than the icon it hangs off.
  */
 
 /** The bit of a DOMRect this needs. Kept structural so a test needn't build a real rect. */
@@ -23,6 +24,19 @@ export interface TriggerRect {
 export interface Viewport {
   width: number;
   height: number;
+}
+
+/**
+ * Which of the trigger's vertical edges the panel lines up with. A panel that matches its
+ * trigger's width grows from the left; one that is wider than its trigger (a menu hanging off
+ * an icon button) has to grow the other way or it runs off the screen.
+ */
+export type PanelAlign = "start" | "end";
+
+export interface AnchorOptions {
+  align?: PanelAlign;
+  /** Fixed panel width, for a panel that should not simply match its trigger. */
+  width?: number;
 }
 
 /**
@@ -67,19 +81,29 @@ export interface Measurable {
  * react-test-renderer it is a component instance with no `getBoundingClientRect` at all, and
  * that difference is exactly the case this has to return null for rather than assume.
  */
-export function measureAnchor(node: unknown, viewport: Viewport): AnchoredPanel | null {
+export function measureAnchor(
+  node: unknown,
+  viewport: Viewport,
+  options: AnchorOptions = {}
+): AnchoredPanel | null {
   const rect = (node as Measurable | null)?.getBoundingClientRect?.();
   if (!rect?.width) return null;
 
-  return anchorPanel(rect, viewport);
+  return anchorPanel(rect, viewport, options);
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-export function anchorPanel(trigger: TriggerRect, viewport: Viewport): AnchoredPanel {
+export function anchorPanel(
+  trigger: TriggerRect,
+  viewport: Viewport,
+  { align = "start", width: fixedWidth }: AnchorOptions = {}
+): AnchoredPanel {
   const available = viewport.width - PANEL_MARGIN * 2;
-  const width = clamp(trigger.width, Math.min(PANEL_MIN_WIDTH, available), available);
-  const left = clamp(trigger.left, PANEL_MARGIN, viewport.width - width - PANEL_MARGIN);
+  const desired = fixedWidth ?? Math.max(trigger.width, Math.min(PANEL_MIN_WIDTH, available));
+  const width = Math.min(desired, available);
+  const unclampedLeft = align === "end" ? trigger.left + trigger.width - width : trigger.left;
+  const left = clamp(unclampedLeft, PANEL_MARGIN, viewport.width - width - PANEL_MARGIN);
 
   const spaceBelow = viewport.height - trigger.bottom - PANEL_GAP - PANEL_MARGIN;
   const spaceAbove = trigger.top - PANEL_GAP - PANEL_MARGIN;
@@ -93,4 +117,20 @@ export function anchorPanel(trigger: TriggerRect, viewport: Viewport): AnchoredP
   return opensBelow
     ? { top: trigger.bottom + PANEL_GAP, left, width, maxHeight }
     : { bottom: viewport.height - trigger.top + PANEL_GAP, left, width, maxHeight };
+}
+
+/**
+ * Whether two measurements describe the same box. Anchor tracking re-measures on every scroll
+ * frame, and the common case is that nothing moved — comparing here keeps a scroll of the
+ * option list itself from re-rendering the panel 60 times a second.
+ */
+export function samePanel(a: AnchoredPanel | null, b: AnchoredPanel | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.top === b.top &&
+    a.bottom === b.bottom &&
+    a.left === b.left &&
+    a.width === b.width &&
+    a.maxHeight === b.maxHeight
+  );
 }

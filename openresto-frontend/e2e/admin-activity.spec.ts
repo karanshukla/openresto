@@ -143,7 +143,7 @@ test.describe("Admin activity trail", () => {
 
     // The person filter is a Select: open the trigger, then pick the option. Matched on the
     // trigger's prefix rather than its whole name, which carries the current selection.
-    const personFilter = page.getByRole("button", { name: /^Filter by person, / });
+    const personFilter = page.getByRole("combobox", { name: /^Filter by person, / });
     await personFilter.click();
 
     // The options hang off the trigger rather than floating in the middle of the screen. Only a
@@ -153,7 +153,7 @@ test.describe("Admin activity trail", () => {
     // Measured on the panel, not on an option: an option sits partway down the list, so its own
     // box says nothing about where the list is. Tolerances are tight enough to fail a centred
     // sheet, which would sit halfway down the viewport and nowhere near the trigger's left edge.
-    const panel = page.getByRole("menu");
+    const panel = page.getByRole("listbox");
     await expect(panel).toBeVisible();
     const trigger = await personFilter.boundingBox();
     const menu = await panel.boundingBox();
@@ -161,7 +161,7 @@ test.describe("Admin activity trail", () => {
     expect(menu!.y).toBeLessThan(trigger!.y + trigger!.height + 40);
     expect(Math.abs(menu!.x - trigger!.x)).toBeLessThan(24);
 
-    await page.getByRole("menuitem", { name: displayName, exact: true }).click();
+    await page.getByRole("option", { name: displayName, exact: true }).click();
 
     const rows = page.getByTestId("activity-row");
     await expect(rows.first()).toContainText(displayName, { timeout: 15_000 });
@@ -238,5 +238,54 @@ test.describe("Admin activity trail", () => {
     }
 
     expect((await readTrail(page, "?pageSize=1")).totalCount).toBeGreaterThanOrEqual(before);
+  });
+
+  /**
+   * The `Select` is the app's one dropdown, and until #348 it could be reached by keyboard and
+   * then not used with one: nothing opened it, nothing moved through it, nothing picked from it,
+   * and Escape did not close it. Only a browser can show this — under Jest the list never takes
+   * DOM focus and no key ever reaches it — so the whole path is exercised here in one go.
+   */
+  test("the activity filter is operable with the keyboard alone", async ({ page }) => {
+    await gotoAdminDashboard(page);
+    await page.goto("/admin/activity");
+    await expectVisibleWithReload(page, page.getByTestId("activity-list"), { timeout: 15_000 });
+
+    const filter = page.getByRole("combobox", { name: /^Filter by activity, / });
+    await filter.focus();
+    await page.keyboard.press("ArrowDown");
+
+    // Opening moves focus onto the list itself, which is what makes one keydown handler enough
+    // however many rows it holds.
+    const list = page.getByRole("listbox");
+    await expect(list).toBeVisible();
+    await expect(list).toBeFocused();
+
+    // Type-ahead: "s" reaches "Sign-ins" without arrowing past everything before it.
+    await page.keyboard.press("s");
+    const signIns = page.getByRole("option", { name: "Sign-ins", exact: true });
+    const signInsId = await signIns.getAttribute("id");
+    expect(signInsId).toBeTruthy();
+    await expect(list).toHaveAttribute("aria-activedescendant", signInsId!);
+
+    await page.keyboard.press("Enter");
+    await expect(list).toBeHidden();
+    await expect(
+      page.getByRole("combobox", { name: "Filter by activity, Sign-ins" })
+    ).toBeVisible();
+
+    // Escape backs out without changing the value, and hands focus back to the trigger it came
+    // from — without which a keyboard user lands at the top of the document instead.
+    const reopened = page.getByRole("combobox", { name: /^Filter by activity, / });
+    await reopened.focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(page.getByRole("listbox")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect(page.getByRole("listbox")).toBeHidden();
+    await expect(reopened).toBeFocused();
+    await expect(
+      page.getByRole("combobox", { name: "Filter by activity, Sign-ins" })
+    ).toBeVisible();
   });
 });

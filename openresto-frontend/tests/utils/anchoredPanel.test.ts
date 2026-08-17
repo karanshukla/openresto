@@ -1,13 +1,14 @@
 import {
   anchorPanel,
   measureAnchor,
+  samePanel,
   PANEL_GAP,
   PANEL_MARGIN,
   PANEL_MAX_HEIGHT,
   PANEL_MIN_HEIGHT,
   PANEL_MIN_WIDTH,
   type TriggerRect,
-} from "@/utils/selectAnchor";
+} from "@/utils/anchoredPanel";
 
 const DESKTOP = { width: 1440, height: 900 };
 /** A narrow phone in portrait — the booking drawer's pickers run here. */
@@ -159,5 +160,79 @@ describe("measureAnchor", () => {
     const node = { getBoundingClientRect: () => trigger({ width: 0 }) };
 
     expect(measureAnchor(node, DESKTOP)).toBeNull();
+  });
+});
+
+/**
+ * A panel wider than the icon it hangs off has to grow leftwards or run off the screen — which
+ * is the navbar's overflow menu, a 36px trigger under a 260px panel pinned to the right edge of
+ * the window.
+ */
+describe("alignment", () => {
+  it("grows rightwards from the trigger's left edge by default", () => {
+    expect(anchorPanel(trigger({ left: 200, width: 40 }), DESKTOP, { width: 260 }).left).toBe(200);
+  });
+
+  it("grows leftwards from the trigger's right edge when end-aligned", () => {
+    const panel = anchorPanel(trigger({ left: 800, width: 40 }), DESKTOP, {
+      align: "end",
+      width: 260,
+    });
+
+    expect(panel.left + panel.width).toBe(840);
+    expect(panel.width).toBe(260);
+  });
+
+  it("still pulls an end-aligned panel back on screen at the left edge", () => {
+    const panel = anchorPanel(trigger({ left: 10, width: 36 }), DESKTOP, {
+      align: "end",
+      width: 260,
+    });
+
+    expect(panel.left).toBe(PANEL_MARGIN);
+  });
+
+  it("takes a fixed width over the trigger's, in both directions", () => {
+    expect(anchorPanel(trigger({ width: 400 }), DESKTOP, { width: 260 }).width).toBe(260);
+    expect(anchorPanel(trigger({ width: 40 }), DESKTOP, { width: 260 }).width).toBe(260);
+  });
+
+  it("passes the options through when measuring a node", () => {
+    const node = { getBoundingClientRect: () => trigger({ left: 800, width: 40 }) };
+
+    const panel = measureAnchor(node, DESKTOP, { align: "end", width: 260 })!;
+
+    expect(panel.left + panel.width).toBe(840);
+  });
+});
+
+/**
+ * Anchor tracking re-measures on every scroll frame, and almost always finds the trigger
+ * exactly where it left it. Without this the option list scrolling inside the panel would
+ * re-render the panel around it sixty times a second.
+ */
+describe("samePanel", () => {
+  it("recognises an unchanged measurement", () => {
+    expect(samePanel(anchorPanel(trigger(), DESKTOP), anchorPanel(trigger(), DESKTOP))).toBe(true);
+  });
+
+  it("sees a trigger that moved", () => {
+    const before = anchorPanel(trigger(), DESKTOP);
+    const after = anchorPanel(trigger({ top: 140, bottom: 180 }), DESKTOP);
+
+    expect(samePanel(before, after)).toBe(false);
+  });
+
+  it("tells a flip apart from the panel it flipped out of", () => {
+    const below = { top: 146, left: 0, width: 240, maxHeight: 360 };
+    const above = { bottom: 146, left: 0, width: 240, maxHeight: 360 };
+
+    expect(samePanel(below, above)).toBe(false);
+  });
+
+  it("treats the centred sheet as itself and nothing else", () => {
+    expect(samePanel(null, null)).toBe(true);
+    expect(samePanel(null, anchorPanel(trigger(), DESKTOP))).toBe(false);
+    expect(samePanel(anchorPanel(trigger(), DESKTOP), null)).toBe(false);
   });
 });

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
+import { useRef } from "react";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { styles } from "./ModalCard.styles";
 
 export interface ModalCardProps {
@@ -33,15 +34,7 @@ export function ModalCard({
 }: ModalCardProps) {
   const { colors } = useAppTheme();
   const cardRef = useRef<View>(null);
-
-  useEffect(() => {
-    /* istanbul ignore next -- native has no document to restore focus within */
-    if (Platform.OS !== "web" || !visible) return;
-    const previous = (globalThis as { document?: Document }).document
-      ?.activeElement as HTMLElement | null;
-    (cardRef.current as unknown as HTMLElement | null)?.focus?.();
-    return () => previous?.focus?.();
-  }, [visible]);
+  useDialogFocus(visible, cardRef);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
