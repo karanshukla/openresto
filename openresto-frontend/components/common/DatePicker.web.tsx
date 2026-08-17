@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Modal, View, Pressable } from "react-native";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { IconButton } from "@/components/common/IconButton";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import { webProps, type WebKeyEvent } from "@/utils/webProps";
 import { styles } from "./DatePicker.web.styles";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -105,6 +108,16 @@ export default function DatePicker({
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(initialView.getFullYear());
   const [viewMonth, setViewMonth] = useState(initialView.getMonth());
+  const calendarRef = useRef<View>(null);
+  useDialogFocus(open, calendarRef);
+
+  // Escape is the way out of every other popup in the app; `onRequestClose` covers the Android
+  // back button, not a keypress on web.
+  const handleKey = (event: WebKeyEvent) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault?.();
+    setOpen(false);
+  };
 
   const openPicker = () => {
     const base = selectedDate ? new Date(selectedDate + "T12:00:00") : today;
@@ -216,6 +229,7 @@ export default function DatePicker({
           accessibilityLabel="Close the date picker"
         >
           <Pressable
+            ref={calendarRef}
             style={[
               styles.calendar,
               { backgroundColor: colors.card, borderColor },
@@ -227,47 +241,33 @@ export default function DatePicker({
             aria-modal
             accessibilityViewIsModal
             accessibilityLabel="Choose a date"
+            tabIndex={-1}
+            {...webProps({ onKeyDown: handleKey })}
           >
             <View style={styles.calendarHeader}>
-              <Pressable
+              <IconButton
+                name="chevron-back"
                 onPress={goPrevMonth}
                 disabled={!canGoPrev}
                 testID="date-picker-prev-month"
-                style={styles.navButton}
-                accessibilityRole="button"
                 accessibilityLabel="Previous month"
-                accessibilityState={{ disabled: !canGoPrev }}
-                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-              >
-                <ThemedText
-                  style={{ color: canGoPrev ? textColor : placeholderColor, fontSize: 16 }}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no"
-                >
-                  ‹
-                </ThemedText>
-              </Pressable>
+                color={canGoPrev ? textColor : placeholderColor}
+                size="md"
+                compact
+              />
               <ThemedText style={{ fontSize: 14, fontWeight: "600" }} accessibilityRole="header">
                 {MONTH_LABELS[viewMonth]} {viewYear}
               </ThemedText>
-              <Pressable
+              <IconButton
+                name="chevron-forward"
                 onPress={goNextMonth}
                 disabled={!canGoNext}
                 testID="date-picker-next-month"
-                style={styles.navButton}
-                accessibilityRole="button"
                 accessibilityLabel="Next month"
-                accessibilityState={{ disabled: !canGoNext }}
-                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-              >
-                <ThemedText
-                  style={{ color: canGoNext ? textColor : placeholderColor, fontSize: 16 }}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no"
-                >
-                  ›
-                </ThemedText>
-              </Pressable>
+                color={canGoNext ? textColor : placeholderColor}
+                size="md"
+                compact
+              />
             </View>
 
             <View

@@ -44,10 +44,6 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  navButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
   weekdayRow: {
     flexDirection: "row",
   },

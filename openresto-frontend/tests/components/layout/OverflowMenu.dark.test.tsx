@@ -71,8 +71,8 @@ describe("OverflowMenu dismissal", () => {
     render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
     openMenu();
 
-    // The panel itself sits in a TouchableWithoutFeedback, so a press on the card doesn't bubble
-    // out to the backdrop behind it.
+    // Pressed on the backdrop itself: the panel swallows its own presses, so a press on the
+    // card does not reach it.
     fireEvent.press(screen.getByTestId("menu-backdrop"));
 
     expect(panelModal().props.visible).toBe(false);

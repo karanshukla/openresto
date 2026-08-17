@@ -276,4 +276,38 @@ describe("DatePicker (web) as a filter chip", () => {
     render(<DatePickerWeb onSelect={onSelect} icon="calendar-outline" selectedDate="2026-04-16" />);
     expect(screen.getByText(APR_16_LABEL)).toBeTruthy();
   });
+
+  /**
+   * Escape is the way out of every other popup in the app. `onRequestClose` covers the Android
+   * back button and nothing on web, so a keyboard user who opened the calendar was stuck with it.
+   */
+  it("closes on Escape", () => {
+    render(<DatePickerWeb onSelect={onSelect} />);
+    fireEvent.press(screen.getByTestId("date-picker-trigger"));
+    expect(screen.getByTestId("date-picker-calendar")).toBeTruthy();
+
+    fireEvent(screen.getByTestId("date-picker-calendar"), "keyDown", {
+      key: "Escape",
+      preventDefault: jest.fn(),
+    });
+
+    expect(screen.queryByTestId("date-picker-calendar")).toBeNull();
+  });
+
+  it("leaves other keys to the browser", () => {
+    render(<DatePickerWeb onSelect={onSelect} />);
+    fireEvent.press(screen.getByTestId("date-picker-trigger"));
+
+    fireEvent(screen.getByTestId("date-picker-calendar"), "keyDown", { key: "a" });
+
+    expect(screen.getByTestId("date-picker-calendar")).toBeTruthy();
+  });
+
+  /** The calendar is the focus target while it is open, without joining the tab order. */
+  it("takes focus itself rather than leaving it on the page behind", () => {
+    render(<DatePickerWeb onSelect={onSelect} />);
+    fireEvent.press(screen.getByTestId("date-picker-trigger"));
+
+    expect(screen.getByTestId("date-picker-calendar").props.tabIndex).toBe(-1);
+  });
 });

@@ -14,7 +14,7 @@ import type { ScrollView, View } from "react-native";
 export function scrollIntoView(
   targetRef: RefObject<View | null>,
   scrollRef: RefObject<ScrollView | null>,
-  block: "start" | "center" = "start"
+  block: "start" | "center" | "nearest" = "start"
 ) {
   if (!targetRef.current) return;
   if (Platform.OS === "web") {

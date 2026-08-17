@@ -54,7 +54,7 @@ const openFilter = (name: string) =>
 
 const chooseFilter = (name: string, option: string) => {
   openFilter(name);
-  fireEvent.press(screen.getByRole("menuitem", { name: option }));
+  fireEvent.press(screen.getByRole("option", { name: option }));
 };
 
 const entry = (over: Partial<auditApi.AdminAuditEntryDto> = {}): auditApi.AdminAuditEntryDto => ({
@@ -279,8 +279,8 @@ describe("ActivityScreen filters", () => {
     renderWithProviders(<ActivityScreen />, { withAuth: true });
     await waitFor(() => expect(screen.getByTestId("activity-list")).toBeTruthy());
     openFilter("Filter by person");
-    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
-    expect(screen.getByRole("menuitem", { name: "Anyone" })).toBeTruthy();
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+    expect(screen.getByRole("option", { name: "Anyone" })).toBeTruthy();
   });
 
   it("honours a persisted filter on mount", async () => {

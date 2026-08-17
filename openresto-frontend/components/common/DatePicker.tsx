@@ -4,6 +4,7 @@ import { Modal, Pressable, FlatList, TouchableOpacity, View } from "react-native
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { LISTBOX_ROLE } from "@/utils/webProps";
 import { styles } from "./DatePicker.styles";
 
 export function generateDateOptions(options?: {
@@ -122,7 +123,7 @@ export default function DatePicker({
                 data={options}
                 keyExtractor={(item) => item.value}
                 style={styles.list}
-                role="menu"
+                role={LISTBOX_ROLE}
                 renderItem={({ item }) => {
                   const unavailable = isUnavailable(item.value);
                   const isSelected = item.value === selectedDate;
@@ -144,7 +145,7 @@ export default function DatePicker({
                         onSelect(item.value);
                         setModalVisible(false);
                       }}
-                      role="menuitem"
+                      role="option"
                       accessibilityLabel={
                         unavailable && unavailableReason
                           ? `${item.label}, ${unavailableReason}`
