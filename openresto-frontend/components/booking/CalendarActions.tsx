@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { VENDOR_BRANDS } from "@/constants/vendorBrands";
 import { buildCalendarUrls } from "@/utils/calendar";
 import { styles } from "./CalendarActions.styles";
 
@@ -24,6 +25,11 @@ interface CalendarActionsProps {
  * is a side errand, and three of them stacked read as the most important thing on the card.
  * As `Button`s in a `ButtonRow` they take their natural width, wrap when the column is too
  * narrow, and inherit the same treatment as the directions pills directly below them.
+ *
+ * The two that hand the diner to a service wear that service's logo and brand blue; the .ics stays
+ * neutral because a file format has no brand to wear. That is also why its label is just the
+ * extension — spelled out as "Download .ics" it pushed the row onto a second line on a phone,
+ * for a word the download glyph beside it already says.
  */
 export default function CalendarActions(props: CalendarActionsProps) {
   const { colors } = useAppTheme();
@@ -36,9 +42,9 @@ export default function CalendarActions(props: CalendarActionsProps) {
         <Button
           testID="calendar-google-btn"
           variant="secondary"
-          tone="neutral"
           size="sm"
           icon="logo-google"
+          accentColor={VENDOR_BRANDS.google}
           onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
         >
           Google
@@ -46,9 +52,9 @@ export default function CalendarActions(props: CalendarActionsProps) {
         <Button
           testID="calendar-outlook-btn"
           variant="secondary"
-          tone="neutral"
           size="sm"
-          icon="calendar-outline"
+          icon="logo-microsoft"
+          accentColor={VENDOR_BRANDS.microsoft}
           onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
         >
           Outlook
@@ -62,7 +68,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
           onPress={downloadIcs}
           accessibilityLabel="Download .ics for Apple Calendar, Thunderbird and others"
         >
-          Download .ics
+          .ics
         </Button>
       </ButtonRow>
     </View>

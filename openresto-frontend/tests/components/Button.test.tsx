@@ -163,6 +163,43 @@ describe("Button", () => {
     });
   });
 
+  describe("accentColor", () => {
+    const surface = () => StyleSheet.flatten(screen.getByRole("button").props.style) as ViewStyle;
+    const labelColor = () => StyleSheet.flatten(screen.getByText("Act").props.style) as TextStyle;
+
+    /**
+     * A brand blue chosen to look like its logo is a 3:1 colour, which an outline and a glyph
+     * may spend but a label may not — so the label has to stay out of it.
+     */
+    it("outlines in the brand colour but leaves the label at reading contrast", () => {
+      render(
+        <Button variant="secondary" accentColor="#4285f4">
+          Act
+        </Button>
+      );
+      expect(surface().borderColor).toBe("#4285f4");
+      expect(labelColor().color).not.toBe("#4285f4");
+    });
+
+    it("wins over an explicit tone on the outline", () => {
+      render(
+        <Button variant="secondary" tone="neutral" accentColor="#4285f4">
+          Act
+        </Button>
+      );
+      expect(surface().borderColor).toBe("#4285f4");
+    });
+
+    it("still yields to the disabled treatment", () => {
+      render(
+        <Button variant="secondary" accentColor="#4285f4" disabled>
+          Act
+        </Button>
+      );
+      expect(surface().borderColor).not.toBe("#4285f4");
+    });
+  });
+
   it("stretches only when fullWidth is set", () => {
     const { rerender } = render(<Button>Act</Button>);
     const surface = () => StyleSheet.flatten(screen.getByRole("button").props.style) as ViewStyle;

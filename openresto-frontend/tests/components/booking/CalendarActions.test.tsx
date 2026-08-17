@@ -1,6 +1,8 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
+import { StyleSheet, type ViewStyle } from "react-native";
 import CalendarActions from "@/components/booking/CalendarActions";
+import { VENDOR_BRANDS } from "@/constants/vendorBrands";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -46,7 +48,7 @@ describe("CalendarActions", () => {
     expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy();
     expect(screen.getByText("Google")).toBeTruthy();
     expect(screen.getByText("Outlook")).toBeTruthy();
-    expect(screen.getByText("Download .ics")).toBeTruthy();
+    expect(screen.getByText(".ics")).toBeTruthy();
   });
 
   it("spells out what an .ics is for, for screen readers only", () => {
@@ -71,8 +73,31 @@ describe("CalendarActions", () => {
     const downloadIcs = jest.fn();
     withDownloadIcs(downloadIcs);
     render(<CalendarActions {...baseProps} />);
-    fireEvent.press(screen.getByText("Download .ics"));
+    fireEvent.press(screen.getByText(".ics"));
     expect(downloadIcs).toHaveBeenCalled();
+  });
+
+  it("dresses the two service pills in their own brand colour, not the .ics", () => {
+    render(<CalendarActions {...baseProps} />);
+    const borderOf = (testID: string) =>
+      (StyleSheet.flatten(screen.getByTestId(testID).props.style) as ViewStyle).borderColor;
+
+    expect(borderOf("calendar-google-btn")).toBe(VENDOR_BRANDS.google);
+    expect(borderOf("calendar-outlook-btn")).toBe(VENDOR_BRANDS.microsoft);
+    // A file format has no brand to wear, so it keeps the neutral tone.
+    expect(borderOf("calendar-ics-btn")).not.toBe(VENDOR_BRANDS.google);
+  });
+
+  it("keeps the brand colours as they are in dark mode", () => {
+    // Somebody else's brand doesn't re-tint with our theme: these are spent on the outline
+    // and the glyph, which clear 3:1 against the card either way.
+    (useColorScheme as jest.Mock).mockReturnValue("dark");
+    render(<CalendarActions {...baseProps} />);
+    const border = (
+      StyleSheet.flatten(screen.getByTestId("calendar-google-btn").props.style) as ViewStyle
+    ).borderColor;
+    expect(border).toBe(VENDOR_BRANDS.google);
+    (useColorScheme as jest.Mock).mockReturnValue("light");
   });
 
   it("renders with specialRequests prop", () => {

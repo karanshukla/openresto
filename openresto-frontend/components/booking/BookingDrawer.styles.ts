@@ -58,9 +58,7 @@ export const styles = StyleSheet.create({
     borderRadius: 2,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: theme.spacing.md,
+    gap: 3,
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
@@ -68,10 +66,14 @@ export const styles = StyleSheet.create({
     // still reach the close button; only browser panning is suppressed.
     ...ownsTheGesture,
   },
-  headerText: {
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+  },
+  headerHeading: {
     flex: 1,
     minWidth: 0,
-    gap: 3,
   },
   title: {
     fontSize: 19,

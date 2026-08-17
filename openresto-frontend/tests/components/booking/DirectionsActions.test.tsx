@@ -3,8 +3,9 @@
  */
 import React from "react";
 import { screen, fireEvent } from "@testing-library/react-native";
-import { Linking, Platform } from "react-native";
+import { Linking, Platform, StyleSheet, type ViewStyle } from "react-native";
 import DirectionsActions from "@/components/booking/DirectionsActions";
+import { VENDOR_BRANDS } from "@/constants/vendorBrands";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
@@ -21,6 +22,15 @@ describe("DirectionsActions", () => {
     renderWithProviders(<DirectionsActions address="123 Main St" />);
     expect(screen.getByLabelText("Google")).toBeTruthy();
     expect(screen.getByLabelText("Apple")).toBeTruthy();
+  });
+
+  it("gives Google its brand colour and leaves Apple's achromatic mark neutral", () => {
+    renderWithProviders(<DirectionsActions address="123 Main St" />);
+    const borderOf = (testID: string) =>
+      (StyleSheet.flatten(screen.getByTestId(testID).props.style) as ViewStyle).borderColor;
+
+    expect(borderOf("maps-google-btn")).toBe(VENDOR_BRANDS.google);
+    expect(borderOf("maps-apple-btn")).not.toBe(VENDOR_BRANDS.google);
   });
 
   it("opens Google Maps with the encoded address", () => {

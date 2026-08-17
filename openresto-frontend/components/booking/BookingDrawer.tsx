@@ -231,22 +231,25 @@ export default function BookingDrawer({
   const body = (headerHandlers: Partial<GestureResponderHandlers> = {}) => (
     <>
       <View {...headerHandlers} style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.headerText}>
-          {heading}
-          <ThemedText style={[styles.summary, { color: colors.muted }]}>
-            {summaryLine(seats, date, time, today)}
-          </ThemedText>
+        {/* The close button sits on the heading's own row rather than beside the whole
+            two-line column, so it centres against the title or the location picker instead
+            of riding high against the top of the block. */}
+        <View style={styles.headerTop}>
+          <View style={styles.headerHeading}>{heading}</View>
+          <Pressable
+            testID="booking-drawer-close"
+            onPress={closeWithHaptic}
+            accessibilityRole="button"
+            accessibilityLabel="Close booking panel"
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
+          >
+            <Icon name="close" size="lg" color={colors.muted} />
+          </Pressable>
         </View>
-        <Pressable
-          testID="booking-drawer-close"
-          onPress={closeWithHaptic}
-          accessibilityRole="button"
-          accessibilityLabel="Close booking panel"
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
-        >
-          <Icon name="close" size="lg" color={colors.muted} />
-        </Pressable>
+        <ThemedText style={[styles.summary, { color: colors.muted }]}>
+          {summaryLine(seats, date, time, today)}
+        </ThemedText>
       </View>
 
       <ScrollView

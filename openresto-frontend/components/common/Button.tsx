@@ -36,6 +36,14 @@ interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
   variant?: ButtonVariant;
   tone?: ButtonTone;
   size?: ButtonSize;
+  /**
+   * An outside service's own colour, for a pill that hands the diner over to one — Google,
+   * Outlook. It paints the outline and the glyph and stops there: the label stays at the
+   * theme's reading colour, because a brand blue picked to look like its logo is a 3:1 colour
+   * and a label needs 4.5:1. An in-app action's colour comes from `tone`; reaching for this to
+   * recolour one is how the two axes stop meaning anything. See `constants/vendorBrands.ts`.
+   */
+  accentColor?: string;
   /** Renders a spinner in place of the leading icon and blocks presses. */
   loading?: boolean;
   icon?: IconName;
@@ -64,6 +72,7 @@ export default function Button({
   variant = "primary",
   tone,
   size = "lg",
+  accentColor,
   loading = false,
   icon,
   iconPosition = "leading",
@@ -89,14 +98,17 @@ export default function Button({
     neutral: colors.muted,
   };
   const toneColor = toneColors[resolvedTone];
+  const accent = isInert ? null : accentColor;
 
   const filled = weight === "primary";
   const contentColor = isInert ? colors.muted : filled ? theme.colors.white : toneColor;
+  const glyphColor = accent ?? contentColor;
+  const labelColor = accent ? colors.text : contentColor;
 
   const surfaceStyle: ViewStyle = filled
     ? { backgroundColor: isInert ? colors.disabled : toneColor }
     : weight === "secondary"
-      ? { borderWidth: 1, borderColor: isInert ? colors.disabled : toneColor }
+      ? { borderWidth: 1, borderColor: isInert ? colors.disabled : (accent ?? toneColor) }
       : {};
 
   const handlePress: PressableProps["onPress"] = (e) => {
@@ -129,15 +141,15 @@ export default function Button({
         {loading ? (
           <ActivityIndicator size="small" color={contentColor} />
         ) : icon && iconPosition === "leading" ? (
-          <Icon name={icon} size={glyphSize} color={contentColor} />
+          <Icon name={icon} size={glyphSize} color={glyphColor} />
         ) : null}
         <ThemedText
-          style={[styles.buttonText, size === "sm" && styles.buttonTextSm, { color: contentColor }]}
+          style={[styles.buttonText, size === "sm" && styles.buttonTextSm, { color: labelColor }]}
         >
           {children}
         </ThemedText>
         {!loading && icon && iconPosition === "trailing" ? (
-          <Icon name={icon} size={glyphSize} color={contentColor} />
+          <Icon name={icon} size={glyphSize} color={glyphColor} />
         ) : null}
       </View>
     </Pressable>

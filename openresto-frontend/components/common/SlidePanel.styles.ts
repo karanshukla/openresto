@@ -30,9 +30,12 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: theme.borderRadius.modal,
     overflow: "hidden",
   },
+  // Dragging down is the only way out of this sheet — it carries no close button — so the
+  // handle's strip is padded out to the 44px touch target rather than the 24px that hugging
+  // the bar gives, and spans the full width so the grab doesn't have to be aimed.
   grabberArea: {
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
     alignItems: "center",
     ...ownsTheGesture,
   },
