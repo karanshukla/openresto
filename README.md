@@ -85,9 +85,10 @@ docker compose up
 
 ```bash
 # run from the repo root
-npm run dev 
+npm run dev
 ```
-The SQLite database is created automatically on first run. Since this is not running via docker, Images and other media will not work, however HMR is enabled. 
+
+The SQLite database is created automatically on first run. Since this is not running via docker, Images and other media will not work, however HMR is enabled.
 
 ## Configuration
 
@@ -123,6 +124,7 @@ cd openresto-frontend && npm test
 # Full frontend coverage report
 cd openresto-frontend && npm test -- --coverage
 ```
+
 Note: VSCode may not pick up on the Jest config, unless you use the command palette to activate all the test runners.
 
 ## Key Features
@@ -140,6 +142,7 @@ Note: VSCode may not pick up on the Jest config, unless you use the command pale
 - **Floor sections** — tables are grouped into named sections (e.g. "Patio", "Bar", "Main") so admins can organize seating and customers see which section they're booking.
 - **Admin dashboard** — live bookings list with status filtering (active / past / cancelled), extend or cancel reservations, and a customer-name field for front-of-house use.
 - **Booking pause** — temporarily suspend new reservations for a restaurant without taking it offline or editing config.
+- **Activity trail** — every state-changing admin action, plus sign-ins and failed sign-in attempts, is recorded append-only with who did it, when, from which IP, and a before/after diff. Coverage is structural rather than a maintained list: any mutating request behind an admin policy is recorded, so a new endpoint is audited the day it ships. Owner-only to read, with no delete endpoint at any role — entries leave only through a configurable retention pass (365 days by default). Credentials and customer identity are masked, so an entry can record that a password or a guest's name changed without recording what it changed to.
 
 ### Branding & UI
 

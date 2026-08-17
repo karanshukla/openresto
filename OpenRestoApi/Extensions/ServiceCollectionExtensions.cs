@@ -189,6 +189,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailFailureRepository, EmailFailureRepository>();
         services.AddScoped<IHighlightRepository, HighlightRepository>();
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
+        services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
+
+        // One instance per request, reachable both as the write-only contract services enrich
+        // through and as the concrete draft the audit middleware reads back.
+        services.AddScoped<AuditScope>();
+        services.AddScoped<IAuditScope>(sp => sp.GetRequiredService<AuditScope>());
+        services.AddScoped<AuditQueryService>();
+        services.AddScoped<AuditRetentionService>();
+        services.AddOptions<OpenRestoApi.Core.Application.Settings.AuditSettings>()
+                .BindConfiguration("Audit");
+        services.AddHostedService<OpenRestoApi.Infrastructure.Auditing.AuditRetentionWorker>();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPasswordService, PasswordService>();

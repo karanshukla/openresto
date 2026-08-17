@@ -1,6 +1,7 @@
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -12,11 +13,13 @@ public record PvqVerifyOutcome(PvqVerifyStatus Status, string? ResetToken = null
 public sealed class SecurityQuestionsService(
     IAdminCredentialRepository credentialRepository,
     IPasswordService passwordService,
-    ICurrentUserService currentUser) : ISecurityQuestionsService
+    ICurrentUserService currentUser,
+    IAuditScope? audit = null) : ISecurityQuestionsService
 {
     private readonly IAdminCredentialRepository _credentialRepository = credentialRepository;
     private readonly IPasswordService _passwordService = passwordService;
     private readonly ICurrentUserService _currentUser = currentUser;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     public async Task<PvqStatusDto> GetStatusAsync(string email)
     {
@@ -41,6 +44,11 @@ public sealed class SecurityQuestionsService(
         (cred.PvqAnswerHash, cred.PvqAnswerSalt) = _passwordService.Hash(NormaliseAnswer(answer));
         cred.PvqQuestion = question.Trim();
         await _credentialRepository.SaveChangesAsync();
+
+        // Neither the question nor the answer is recorded: together they are a credential, and the
+        // question alone narrows a guess at the answer.
+        _audit.Describe(AuditActions.AuthPvqSetup, AuditTargets.User, AuditTargets.IdOf(cred.Id),
+            UserFields.PersonLabel(cred.DisplayName, cred.Email), summary: "Configured a security question");
     }
 
     public async Task<PvqVerifyOutcome> VerifyAsync(string email, string answer)

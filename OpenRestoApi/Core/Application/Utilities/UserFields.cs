@@ -58,6 +58,14 @@ public static class UserFields
         return trimmed;
     }
 
+    /// <summary>
+    /// How a person is named wherever the admin shows one: the display name they set, else the
+    /// email they sign in with. The counterpart of <see cref="NormalizeDisplayName"/> storing null
+    /// for a blank name, and the same rule the frontend applies in <c>utils/audit.ts</c>.
+    /// </summary>
+    public static string PersonLabel(string? displayName, string email)
+        => string.IsNullOrWhiteSpace(displayName) ? email : displayName;
+
     /// <summary>Throws <see cref="ValidationException"/> unless the password meets the minimum length.</summary>
     public static void ValidatePassword(string? password)
     {

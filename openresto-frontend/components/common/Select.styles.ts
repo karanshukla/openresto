@@ -1,5 +1,6 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import { theme } from "@/theme/theme";
+import type { AnchoredPanel } from "@/utils/selectAnchor";
 
 export const styles = StyleSheet.create({
   trigger: {
@@ -29,6 +30,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
+  // Native, and any web trigger that couldn't be measured: a centred sheet.
   modalView: {
     borderRadius: 14,
     borderWidth: 1,
@@ -36,6 +38,17 @@ export const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     overflow: "hidden",
+  },
+  // Web: hung off the trigger. Position and size come from utils/selectAnchor at open time.
+  backdropAnchored: {
+    flex: 1,
+  },
+  panel: {
+    position: "absolute",
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...theme.shadows.popup,
   },
   list: {
     width: "100%",
@@ -57,3 +70,35 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+/**
+ * The two shapes the options list takes: hung off its trigger when it could be measured, a
+ * centred sheet when it could not.
+ *
+ * Pure functions rather than ternaries inside the component, because the anchored side is
+ * unreachable from a component test — under react-test-renderer a ref never reports a box, so a
+ * branch written inline there could only ever be exercised one way.
+ *
+ * @see [Select.test.tsx](../../tests/components/Select.test.tsx) — pins both shapes.
+ */
+export const backdropStyleFor = (anchored: boolean): StyleProp<ViewStyle> =>
+  anchored ? styles.backdropAnchored : styles.backdrop;
+
+export const panelStyleFor = (
+  panel: AnchoredPanel | null,
+  borderColor: string
+): StyleProp<ViewStyle> =>
+  panel
+    ? [
+        styles.panel,
+        {
+          borderColor,
+          // Spread rather than set both: the panel is pinned by its top edge or its bottom one,
+          // and passing an undefined counterpart would fight the one that matters.
+          ...(panel.top === undefined ? { bottom: panel.bottom } : { top: panel.top }),
+          left: panel.left,
+          width: panel.width,
+          maxHeight: panel.maxHeight,
+        },
+      ]
+    : [styles.modalView, { borderColor }];

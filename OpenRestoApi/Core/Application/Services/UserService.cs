@@ -17,11 +17,13 @@ namespace OpenRestoApi.Core.Application.Services;
 public class UserService(
     IAdminCredentialRepository credentialRepository,
     IPasswordService passwordService,
-    ICurrentUserService currentUser)
+    ICurrentUserService currentUser,
+    IAuditScope? audit = null)
 {
     private readonly IAdminCredentialRepository _credentialRepository = credentialRepository;
     private readonly IPasswordService _passwordService = passwordService;
     private readonly ICurrentUserService _currentUser = currentUser;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     public async Task<List<UserDto>> GetAllAsync()
     {
@@ -53,6 +55,8 @@ public class UserService(
             CreatedAt = DateTime.UtcNow,
         };
         await _credentialRepository.AddAsync(user);
+
+        Describe(AuditActions.UserCreate, user, $"Created a {role} account for {email}");
         return UserMapper.ToDto(user);
     }
 
@@ -71,8 +75,13 @@ public class UserService(
             }
 
             await EnsureAnotherActiveOwnerRemainsAsync(user, "demote");
+            string previousRole = user.Role;
             user.Role = role;
             await _credentialRepository.SaveChangesAsync();
+
+            _audit.RecordChange("role", previousRole, role);
+            Describe(AuditActions.UserRoleChange, user,
+                $"Changed {DisplayNameOf(user)}'s role from {previousRole} to {role}");
         }
 
         return UserMapper.ToDto(user);
@@ -96,6 +105,14 @@ public class UserService(
 
             user.IsActive = req.IsActive;
             await _credentialRepository.SaveChangesAsync();
+
+            _audit.RecordChange("isActive", !req.IsActive, req.IsActive);
+            Describe(
+                req.IsActive ? AuditActions.UserActivate : AuditActions.UserDeactivate,
+                user,
+                req.IsActive
+                    ? $"Reactivated {DisplayNameOf(user)}'s account"
+                    : $"Deactivated {DisplayNameOf(user)}'s account");
         }
 
         return UserMapper.ToDto(user);
@@ -111,12 +128,24 @@ public class UserService(
         UserFields.ValidatePassword(req.NewPassword);
         AdminCredential user = await RequireUserAsync(id);
 
+        string previousHash = user.PasswordHash;
         (user.PasswordHash, user.PasswordSalt) = _passwordService.Hash(req.NewPassword);
         user.ResetToken = null;
         user.ResetTokenExpiry = null;
         await _credentialRepository.SaveChangesAsync();
+
+        _audit.RecordChange("passwordHash", previousHash, user.PasswordHash);
+        Describe(AuditActions.UserPasswordReset, user,
+            $"Reset the password for {DisplayNameOf(user)}");
         return UserMapper.ToDto(user);
     }
+
+    private void Describe(string action, AdminCredential user, string summary)
+        => _audit.Describe(action, AuditTargets.User, AuditTargets.IdOf(user.Id), DisplayNameOf(user),
+            summary: summary);
+
+    private static string DisplayNameOf(AdminCredential user)
+        => UserFields.PersonLabel(user.DisplayName, user.Email);
 
     private async Task<AdminCredential> RequireUserAsync(int id)
         => await _credentialRepository.GetByIdAsync(id)

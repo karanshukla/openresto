@@ -6,10 +6,14 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class BrandService(IBrandSettingsRepository brandRepository, IConfiguration configuration)
+public class BrandService(
+    IBrandSettingsRepository brandRepository,
+    IConfiguration configuration,
+    IAuditScope? audit = null)
 {
     private readonly IBrandSettingsRepository _brandRepository = brandRepository;
     private readonly IConfiguration _configuration = configuration;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     /// <summary>Permitted values for <see cref="BrandSettings.HeaderImageFit"/> (case-insensitive).</summary>
     public static readonly HashSet<string> AllowedHeaderImageFits =
@@ -132,6 +136,8 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
             isNew = true;
         }
 
+        BrandFields before = BrandFields.From(brand);
+
         brand.AppName = appName ?? brand.AppName;
         brand.PrimaryColor = primaryColor ?? brand.PrimaryColor;
         brand.AccentColor = accentColor;
@@ -190,5 +196,46 @@ public class BrandService(IBrandSettingsRepository brandRepository, IConfigurati
         {
             await _brandRepository.SaveChangesAsync();
         }
+
+        RecordBrandChanges(before, BrandFields.From(brand));
+        _audit.Describe(AuditActions.BrandUpdate, AuditTargets.Brand, AuditTargets.IdOf(brand.Id),
+            brand.AppName, summary: "Updated the brand settings");
+    }
+
+    /// <summary>The writable brand text/colour fields, snapshotted either side of the save.</summary>
+    private sealed record BrandFields(
+        string AppName,
+        string PrimaryColor,
+        string? AccentColor,
+        string? FaviconIcon,
+        string? WebsiteUrl,
+        string? PhoneNumber,
+        string? EmailAddress,
+        string? CopyrightText,
+        string? Subtitle,
+        string? HighlightsHeading,
+        string? HighlightsSubheading,
+        string? HeaderImageFit)
+    {
+        public static BrandFields From(BrandSettings b) => new(
+            b.AppName, b.PrimaryColor, b.AccentColor, b.FaviconIcon, b.WebsiteUrl, b.PhoneNumber,
+            b.EmailAddress, b.CopyrightText, b.Subtitle, b.HighlightsHeading,
+            b.HighlightsSubheading, b.HeaderImageFit);
+    }
+
+    private void RecordBrandChanges(BrandFields before, BrandFields after)
+    {
+        _audit.RecordChange("appName", before.AppName, after.AppName);
+        _audit.RecordChange("primaryColor", before.PrimaryColor, after.PrimaryColor);
+        _audit.RecordChange("accentColor", before.AccentColor, after.AccentColor);
+        _audit.RecordChange("faviconIcon", before.FaviconIcon, after.FaviconIcon);
+        _audit.RecordChange("websiteUrl", before.WebsiteUrl, after.WebsiteUrl);
+        _audit.RecordChange("phoneNumber", before.PhoneNumber, after.PhoneNumber);
+        _audit.RecordChange("emailAddress", before.EmailAddress, after.EmailAddress);
+        _audit.RecordChange("copyrightText", before.CopyrightText, after.CopyrightText);
+        _audit.RecordChange("subtitle", before.Subtitle, after.Subtitle);
+        _audit.RecordChange("highlightsHeading", before.HighlightsHeading, after.HighlightsHeading);
+        _audit.RecordChange("highlightsSubheading", before.HighlightsSubheading, after.HighlightsSubheading);
+        _audit.RecordChange("headerImageFit", before.HeaderImageFit, after.HeaderImageFit);
     }
 }

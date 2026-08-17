@@ -56,6 +56,13 @@ const NAV_SECTIONS: { heading: string; items: NavItem[] }[] = [
         href: "/admin/notifications" as const,
         match: (p: string) => p === "/admin/notifications",
       },
+      {
+        label: "Activity",
+        icon: "receipt-outline" as const,
+        href: "/admin/activity" as const,
+        match: (p: string) => p === "/admin/activity",
+        capability: "view:audit" as const,
+      },
     ],
   },
   {

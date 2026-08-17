@@ -17,6 +17,94 @@ namespace OpenRestoApi.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminAuditEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorDisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorRole")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChangesJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RestaurantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetLabel")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetType")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("ActorUserId", "OccurredAt");
+
+                    b.HasIndex("RestaurantId", "OccurredAt");
+
+                    b.ToTable("AdminAuditEntries");
+                });
+
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminCredential", b =>
                 {
                     b.Property<int>("Id")
@@ -572,6 +660,16 @@ namespace OpenRestoApi.Migrations
                         .IsUnique();
 
                     b.ToTable("TableGroupMemberships");
+                });
+
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminAuditEntry", b =>
+                {
+                    b.HasOne("OpenRestoApi.Core.Domain.AdminCredential", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActorUser");
                 });
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminNotification", b =>

@@ -36,8 +36,28 @@ public class AdminService(
     IHoldService holdService,
     IEmailService emailService,
     BrandService? brandService = null,
-    INotificationQueue? notificationQueue = null)
+    INotificationQueue? notificationQueue = null,
+    IAuditScope? audit = null)
 {
+    /// <summary>
+    /// Castle's generated proxy constructors drop default values, so a Moq class mock reaches only
+    /// a constructor of exactly matching arity. This is that constructor.
+    /// </summary>
+    public AdminService(
+        IBookingRepository bookings,
+        IBookingFilterRepository bookingFilters,
+        IRestaurantRepository restaurants,
+        ISectionRepository sections,
+        ITableRepository tables,
+        IHoldService holds,
+        IEmailService email,
+        BrandService? brand,
+        INotificationQueue? notifications)
+        : this(bookings, bookingFilters, restaurants, sections, tables, holds, email, brand,
+            notifications, null)
+    { }
+
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly IBookingFilterRepository _bookingFilterRepository = bookingFilterRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
@@ -205,6 +225,8 @@ public class AdminService(
             _notificationQueue.EnqueueCapacityCheck(booking.RestaurantId, booking.Restaurant!.Name, booking.Date);
         }
 
+        DescribeBooking(AuditActions.BookingCreate, booking,
+            $"Created booking {booking.BookingRef} for {booking.Seats} guests");
         return ToDetailDto(booking);
     }
 
@@ -227,8 +249,13 @@ public class AdminService(
             from = booking.Date.AddMinutes(restaurant?.DefaultBookingDurationMinutes ?? 60);
         }
 
+        DateTime? previousEnd = booking.EndTime;
         booking.EndTime = from.AddMinutes(minutes);
         await _bookingRepository.UpdateAsync(booking);
+
+        _audit.RecordChange("endTime", previousEnd, booking.EndTime);
+        DescribeBooking(AuditActions.BookingExtend, booking,
+            $"Extended booking {booking.BookingRef} by {minutes} minutes");
         return booking.EndTime;
     }
 
@@ -255,6 +282,8 @@ public class AdminService(
             _notificationQueue.EnqueueBookingCancelled(withRestaurant ?? booking, withRestaurant?.Restaurant?.Name ?? "");
         }
 
+        DescribeBooking(AuditActions.BookingCancel, booking,
+            $"Cancelled booking {booking.BookingRef}");
         return true;
     }
 
@@ -267,6 +296,9 @@ public class AdminService(
         }
 
         await _bookingRepository.DeleteAsync(id);
+
+        DescribeBooking(AuditActions.BookingPurge, booking,
+            $"Permanently deleted booking {booking.BookingRef}");
         return true;
     }
 
@@ -287,6 +319,8 @@ public class AdminService(
         booking.CancelledAt = null;
         await _bookingRepository.UpdateAsync(booking);
 
+        DescribeBooking(AuditActions.BookingRestore, booking,
+            $"Restored cancelled booking {booking.BookingRef}");
         return ToDetailDto(booking);
     }
 
@@ -298,6 +332,8 @@ public class AdminService(
         {
             return null;
         }
+
+        BookingFields before = BookingFields.From(booking);
 
         Restaurant? restaurant = booking.Restaurant;
         if (req.RestaurantId.HasValue && req.RestaurantId.Value != booking.RestaurantId)
@@ -373,10 +409,71 @@ public class AdminService(
 
         await _bookingRepository.UpdateAsync(booking);
 
+        RecordBookingChanges(before, BookingFields.From(booking));
+        DescribeBooking(AuditActions.BookingUpdate, booking, $"Updated booking {booking.BookingRef}");
+
         // Reloaded through the eager-loading read so the DTO carries the updated names.
         Booking? reloaded = await _bookingRepository.GetByIdAsync(id);
         return reloaded == null ? ToDetailDto(booking) : ToDetailDto(reloaded);
     }
+
+    /// <summary>
+    /// The booking fields an admin edit can move, snapshotted either side of the update.
+    /// <see cref="Booking.SpecialRequests"/> is deliberately absent: it is guest-authored free text
+    /// that routinely names people, and unlike a named field there is nothing masking it on the way
+    /// into the entry.
+    /// <seealso>AuditTrailTests.NoGuestDetailOnABooking_EverReachesTheTrail</seealso>
+    /// </summary>
+    private sealed record BookingFields(
+        int RestaurantId,
+        int? TableId,
+        int? SectionId,
+        DateTime Date,
+        DateTime? EndTime,
+        int Seats,
+        string? CustomerEmail,
+        string? CustomerName)
+    {
+        public static BookingFields From(Booking b) => new(
+            b.RestaurantId, b.TableId, b.SectionId, b.Date, b.EndTime, b.Seats,
+            b.CustomerEmail, b.CustomerName);
+    }
+
+    private void RecordBookingChanges(BookingFields before, BookingFields after)
+    {
+        _audit.RecordChange("restaurantId", before.RestaurantId, after.RestaurantId);
+        _audit.RecordChange("tableId", before.TableId, after.TableId);
+        _audit.RecordChange("sectionId", before.SectionId, after.SectionId);
+        _audit.RecordChange("date", before.Date, after.Date);
+        _audit.RecordChange("endTime", before.EndTime, after.EndTime);
+        _audit.RecordChange("seats", before.Seats, after.Seats);
+        // Recordable only because both sides mask to the redaction marker: the entry says the
+        // guest's details were edited without restating them.
+        _audit.RecordChange("customerEmail", before.CustomerEmail, after.CustomerEmail);
+        _audit.RecordChange("customerName", before.CustomerName, after.CustomerName);
+    }
+
+    private void DescribeBooking(string action, Booking booking, string summary)
+        => DescribeBooking(action, booking.Id, booking.BookingRef, booking.RestaurantId, summary);
+
+    private void DescribeBooking(string action, BookingDetailDto booking, string summary)
+        => DescribeBooking(action, booking.Id, booking.BookingRef, booking.RestaurantId, summary);
+
+    /// <summary>
+    /// Every booking entry goes through here, which is what keeps them all pointing at a booking
+    /// by id and reference rather than by the guest sitting at it — the summaries above name the
+    /// reference for the same reason. Booking history is deliberately GDPR-purgeable, and an entry
+    /// carrying a guest's name, address, note or the body of a mail sent to them would outlive the
+    /// purge that was supposed to remove it.
+    /// <seealso>AuditTrailTests.BookingEntry_PointsAtTheBookingByItsReference</seealso>
+    /// <seealso>AuditTrailTests.NoGuestDetailOnABooking_EverReachesTheTrail</seealso>
+    /// </summary>
+    private void DescribeBooking(string action, int id, string? bookingRef, int restaurantId, string summary)
+        => _audit.Describe(action, AuditTargets.Booking, AuditTargets.IdOf(id), bookingRef, restaurantId, summary);
+
+    private void DescribeRestaurant(string action, Restaurant restaurant, string summary)
+        => _audit.Describe(action, AuditTargets.Restaurant, AuditTargets.IdOf(restaurant.Id),
+            restaurant.Name, restaurant.Id, summary);
 
     /// <summary>Moves the sitting while keeping its length, so a reschedule never silently resizes it.</summary>
     private static void RescheduleKeepingDuration(Booking booking, DateTime newDate, int fallbackDurationMinutes)
@@ -427,7 +524,15 @@ public class AdminService(
     /// </summary>
     public virtual async Task<bool?> ReorderSectionsAsync(int restaurantId, List<int> sectionIds)
     {
-        return await _sectionRepository.ReorderAsync(restaurantId, sectionIds);
+        bool? reordered = await _sectionRepository.ReorderAsync(restaurantId, sectionIds);
+        if (reordered == true)
+        {
+            _audit.Describe(AuditActions.RestaurantReorderSections, AuditTargets.Restaurant,
+                AuditTargets.IdOf(restaurantId), restaurantId: restaurantId,
+                summary: $"Reordered {sectionIds.Count} sections");
+        }
+
+        return reordered;
     }
 
     // ── Restaurants ─────────────────────────────────────────────────────────
@@ -440,8 +545,13 @@ public class AdminService(
             return false;
         }
 
+        DateTime? previousPausedUntil = restaurant.BookingsPausedUntil;
         restaurant.BookingsPausedUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
         await _restaurantRepository.SaveChangesAsync();
+
+        _audit.RecordChange("bookingsPausedUntil", previousPausedUntil, restaurant.BookingsPausedUntil);
+        DescribeRestaurant(AuditActions.RestaurantPause, restaurant,
+            $"Paused bookings at {restaurant.Name} for {durationMinutes} minutes");
         return true;
     }
 
@@ -453,8 +563,13 @@ public class AdminService(
             return false;
         }
 
+        DateTime? previousPausedUntil = restaurant.BookingsPausedUntil;
         restaurant.BookingsPausedUntil = null;
         await _restaurantRepository.SaveChangesAsync();
+
+        _audit.RecordChange("bookingsPausedUntil", previousPausedUntil, null);
+        DescribeRestaurant(AuditActions.RestaurantUnpause, restaurant,
+            $"Resumed bookings at {restaurant.Name}");
         return true;
     }
 
@@ -479,6 +594,9 @@ public class AdminService(
         // Single SaveChanges flushes every mutated EndTime — same DB round-trip count as the
         // original implementation. The entities are already tracked on the shared DI-scoped DbContext.
         await _bookingRepository.SaveChangesAsync();
+
+        DescribeRestaurant(AuditActions.RestaurantExtendBookings, restaurant,
+            $"Extended {activeBookings.Count} in-progress bookings at {restaurant.Name} by {extensionMinutes} minutes");
         return activeBookings.Select(ToDetailDto).ToList();
     }
 
@@ -486,6 +604,9 @@ public class AdminService(
     {
         var restaurant = new Restaurant { Name = name.Trim(), Address = address?.Trim() };
         await _restaurantRepository.AddAsync(restaurant);
+
+        DescribeRestaurant(AuditActions.RestaurantCreate, restaurant,
+            $"Created the location \"{restaurant.Name}\"");
 
         return new RestaurantDto
         {
@@ -506,8 +627,16 @@ public class AdminService(
             return false;
         }
 
+        _audit.RecordChange("isArchived", restaurant.IsArchived, archived);
         restaurant.IsArchived = archived;
         await _restaurantRepository.SaveChangesAsync();
+
+        DescribeRestaurant(
+            archived ? AuditActions.RestaurantArchive : AuditActions.RestaurantRestore,
+            restaurant,
+            archived
+                ? $"Archived the location \"{restaurant.Name}\""
+                : $"Restored the location \"{restaurant.Name}\"");
         return true;
     }
 
@@ -538,6 +667,9 @@ public class AdminService(
         _bookingRepository.RemoveRange(bookings);
         _restaurantRepository.Remove(restaurant);
         await _restaurantRepository.SaveChangesAsync();
+
+        DescribeRestaurant(AuditActions.RestaurantDelete, restaurant,
+            $"Permanently deleted the location \"{restaurant.Name}\" and its {bookings.Count} bookings");
         return true;
     }
 
@@ -593,6 +725,9 @@ public class AdminService(
 
         string htmlBody = await EmailHelper.BuildEmailContentFromBrand(_brandService, req.Body);
         await _emailService.SendEmailAsync(booking.CustomerEmail, req.Subject, htmlBody);
+
+        DescribeBooking(AuditActions.BookingEmail, booking,
+            $"Emailed the guest on booking {booking.BookingRef}");
         return SendBookingEmailResult.Sent(booking.CustomerEmail);
     }
 
