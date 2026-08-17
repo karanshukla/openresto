@@ -2,25 +2,6 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 /**
- * The settings forms drop to a plain DOM `<select>` where the native picker would be worse on
- * web, so those two need style objects StyleSheet can't hold. The theme-dependent half is a
- * function because a DOM node can't read a token the way a themed RN component does.
- */
-export const domStyles = {
-  select: {
-    width: "100%",
-    height: 44,
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderRadius: theme.borderRadius.md,
-    paddingLeft: theme.spacing.md,
-    paddingRight: theme.spacing.md,
-    fontSize: 14,
-    cursor: "pointer",
-  },
-} as const;
-
-/**
  * Below this the preview column would squeeze the form narrower than its own 480px fields, so
  * the two stack instead. 1100 = the 1200px page cap minus its padding, split as 560 form +
  * 400 preview + the gap between them.
@@ -33,12 +14,6 @@ export const SPLIT_MIN_WIDTH = 1100;
  * only applied on web.
  */
 export const stickyAside = { position: "sticky", top: theme.spacing.xxl } as const;
-
-export const themedSelect = (colors: { border: string; input: string; text: string }) => ({
-  borderColor: colors.border,
-  backgroundColor: colors.input,
-  color: colors.text,
-});
 
 export const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -98,11 +73,13 @@ export const styles = StyleSheet.create({
   fieldFlex: { flex: 1, minWidth: 220 },
   // Shared form-field label style used across every settings card. Inline copies in
   // RestaurantInfoForm / HighlightsCard should migrate to this token (see #231).
-  fieldLabel: { fontSize: 12, fontWeight: "500" as const },
+  fieldLabel: { fontSize: 12, fontWeight: "500" as const, lineHeight: 16 },
   // A field label paired with a trailing counter or badge.
   fieldHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   fieldCharCount: { fontSize: 11 },
-  fieldHint: { fontSize: 11, marginTop: theme.spacing.xs },
+  // lineHeight is explicit because ThemedText's default variant carries a 24px one, which
+  // leaves a wrapped 11px hint reading as two unrelated lines.
+  fieldHint: { fontSize: 11, lineHeight: 15, marginTop: theme.spacing.xs },
   secHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -179,8 +156,8 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.xsm,
   },
   policyHeaderCopy: { gap: 2 },
-  policyTitle: { fontSize: 13, fontWeight: "600" },
-  policySub: { fontSize: 11 },
+  policyTitle: { fontSize: 13, fontWeight: "600", lineHeight: 18 },
+  policySub: { fontSize: 11, lineHeight: 15 },
   policyModeGroup: {
     flexDirection: "row",
     gap: 2,
@@ -188,7 +165,7 @@ export const styles = StyleSheet.create({
     borderRadius: 9,
   },
   policyNote: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
-  policyHint: { fontSize: 11 },
+  policyHint: { fontSize: 11, lineHeight: 15 },
   policyField: { gap: theme.spacing.xxs },
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
   dayBtn: {

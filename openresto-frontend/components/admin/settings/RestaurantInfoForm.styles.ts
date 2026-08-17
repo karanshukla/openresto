@@ -3,7 +3,7 @@ import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
   field: { gap: theme.spacing.xxs },
-  fieldHint: { fontSize: 11 },
+  fieldHint: { fontSize: 11, lineHeight: 15 },
   descriptionInput: { height: 96, paddingTop: theme.spacing.xsm, paddingBottom: theme.spacing.xsm },
 
   menuLabelRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.sm },
@@ -26,9 +26,11 @@ export const styles = StyleSheet.create({
   menuMsg: { fontSize: 12 },
 
   fieldGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
-  gridField: { flex: 1, minWidth: 220, gap: theme.spacing.xxs },
+  // maxWidth is what stops the last field of a wrapped row from stretching across the whole
+  // card on its own; flexBasis keeps the columns an even width above that.
+  gridField: { flexGrow: 1, flexBasis: 240, minWidth: 220, maxWidth: 420, gap: theme.spacing.xxs },
   // Pulled back up under the two-column contact row, which already carries its own gap.
-  contactHint: { fontSize: 11, marginTop: -8 },
+  contactHint: { fontSize: 11, lineHeight: 15, marginTop: -8 },
 
   footer: {
     padding: theme.spacing.lg,

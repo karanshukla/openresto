@@ -202,23 +202,20 @@ export default function DatePicker({
       >
         {icon ? (
           <View style={styles.triggerLead}>
-            <Icon name={icon} size={15} color={placeholderColor} />
-            <ThemedText numberOfLines={1} style={!selected && { color: placeholderColor }}>
+            <Icon name={icon} size="md" color={placeholderColor} />
+            <ThemedText
+              numberOfLines={1}
+              style={[styles.triggerText, !selected && { color: placeholderColor }]}
+            >
               {triggerLabel ?? selected?.label ?? "Select a date"}
             </ThemedText>
           </View>
         ) : (
-          <ThemedText style={!selected && { color: placeholderColor }}>
+          <ThemedText style={[styles.triggerText, !selected && { color: placeholderColor }]}>
             {triggerLabel ?? selected?.label ?? "Select a date"}
           </ThemedText>
         )}
-        <ThemedText
-          style={[styles.chevron, { color: placeholderColor }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
-          ▾
-        </ThemedText>
+        <Icon name="chevron-down" size="md" color={placeholderColor} />
       </Pressable>
     </>
   );

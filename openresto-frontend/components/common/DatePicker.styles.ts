@@ -12,15 +12,13 @@ export const styles = StyleSheet.create({
     borderRadius: theme.formSizes.inputBorderRadius,
     paddingHorizontal: theme.formSizes.inputPaddingH,
   },
+  triggerText: { fontSize: theme.formSizes.inputFontSize },
   triggerLead: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.sm,
     minWidth: 0,
-  },
-  chevron: {
-    fontSize: 14,
   },
   backdrop: {
     flex: 1,
