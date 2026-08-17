@@ -22,9 +22,38 @@ describe("scrollIntoView", () => {
     const targetRef = { current: { scrollIntoView: domScrollIntoView } };
     const scrollRef = { current: null };
 
-    scrollIntoView(targetRef as any, scrollRef as any, "center");
+    scrollIntoView(targetRef as any, scrollRef as any, { block: "center" });
 
     expect(domScrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
+  });
+
+  /**
+   * A list positioning itself at its current value has to be there on the first frame: the
+   * smooth path animates through every row in between, which on a fifty-row picker reads as
+   * the control scrolling away from the press.
+   */
+  it("lands instantly on web when the caller opts out of the animation", () => {
+    Platform.OS = "web";
+    const domScrollIntoView = jest.fn();
+    const targetRef = { current: { scrollIntoView: domScrollIntoView } };
+    const scrollRef = { current: null };
+
+    scrollIntoView(targetRef as any, scrollRef as any, { block: "nearest", animated: false });
+
+    expect(domScrollIntoView).toHaveBeenCalledWith({ behavior: "instant", block: "nearest" });
+  });
+
+  it("lands instantly on native when the caller opts out of the animation", () => {
+    Platform.OS = "ios";
+    jest.spyOn(require("react-native"), "findNodeHandle").mockReturnValue(7);
+    const scrollTo = jest.fn();
+    const measureLayout = jest.fn((_node, onSuccess) => onSuccess(0, 200));
+    const targetRef = { current: { measureLayout } };
+    const scrollRef = { current: { scrollTo } };
+
+    scrollIntoView(targetRef as any, scrollRef as any, { animated: false });
+
+    expect(scrollTo).toHaveBeenCalledWith({ y: 184, animated: false });
   });
 
   it("defaults block to 'start' on web when omitted, and is a no-op when scrollIntoView is unavailable", () => {

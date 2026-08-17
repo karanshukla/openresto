@@ -55,6 +55,55 @@ describe("useDialogFocus", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  /**
+   * react-native-web's Modal trap activates when the open animation ends, a frame after this
+   * hook has run, and hands focus to the first focusable descendant — the backdrop. A panel
+   * that has lost focus hears none of the keys it exists to handle.
+   */
+  it("takes focus back when something else steals it while it is open", () => {
+    const backdrop = document.createElement("div");
+    backdrop.tabIndex = -1;
+    document.body.append(backdrop);
+    renderHook(() => useDialogFocus(true, ref()));
+
+    backdrop.focus();
+
+    expect(document.activeElement).toBe(panel);
+    backdrop.remove();
+  });
+
+  it("leaves focus alone when it moves inside the popup", () => {
+    const option = document.createElement("div");
+    option.tabIndex = -1;
+    panel.append(option);
+    renderHook(() => useDialogFocus(true, ref()));
+
+    option.focus();
+
+    expect(document.activeElement).toBe(option);
+  });
+
+  /** Two reclaiming popups would pull the same focus between them forever. */
+  it("reclaims from the innermost popup only", () => {
+    const inner = document.createElement("div");
+    inner.tabIndex = -1;
+    document.body.append(inner);
+    const outerRef = { current: panel as unknown as View };
+    const innerRef = { current: inner as unknown as View };
+    renderHook(() => useDialogFocus(true, outerRef));
+    const innerHook = renderHook(() => useDialogFocus(true, innerRef));
+    expect(document.activeElement).toBe(inner);
+
+    trigger.focus();
+    expect(document.activeElement).toBe(inner);
+
+    innerHook.unmount();
+    trigger.focus();
+
+    expect(document.activeElement).toBe(panel);
+    inner.remove();
+  });
+
   it("survives a popup whose ref never resolved", () => {
     expect(() => renderHook(() => useDialogFocus(true, { current: null }))).not.toThrow();
   });

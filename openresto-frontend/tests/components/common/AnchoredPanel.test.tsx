@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import { Text } from "react-native";
+import { Modal, Text } from "react-native";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
 import { backdropStyleFor, panelStyleFor } from "@/components/common/AnchoredPanel.styles";
 
@@ -107,6 +107,22 @@ describe("AnchoredPanel", () => {
     renderPanel();
 
     expect(screen.getByTestId("panel-backdrop").props.tabIndex).toBe(-1);
+  });
+
+  /**
+   * The caller's measurement has to outlive the close: the Modal keeps the panel mounted for
+   * its fade-out, so releasing the anchor in the handler that closes it swaps the panel to the
+   * centred sheet mid-fade and it drifts to the middle of the screen on the way out.
+   */
+  it("reports the close only once the popup has finished animating away", () => {
+    const onClosed = jest.fn();
+    renderPanel({ onClosed, onClose: jest.fn() });
+
+    const modal = screen.UNSAFE_getByType(Modal);
+    expect(modal.props.onDismiss).toBe(onClosed);
+
+    fireEvent.press(screen.getByTestId("panel-backdrop"));
+    expect(onClosed).not.toHaveBeenCalled();
   });
 });
 
