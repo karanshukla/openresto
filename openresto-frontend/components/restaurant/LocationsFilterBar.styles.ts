@@ -37,9 +37,13 @@ export const styles = StyleSheet.create({
   // leaves the seat trigger 64px, which is less than its own icon, digits and chevron, so
   // the count ellipsised down to a stray dot. The floors are what each trigger actually
   // needs, and the bar wraps when they no longer fit rather than squeezing one of them.
+  //
+  // 80 was sized for the icon, chevron and padding plus a single digit, but left the digit
+  // itself under 10px — real device font rendering clipped it rather than showing it in
+  // full, and party size goes up to 10, which needs two. 100 gives the number actual room.
   controlCompactSeats: {
     flex: 1,
-    minWidth: 80,
+    minWidth: 100,
   },
   controlCompactWide: {
     flex: 2,
