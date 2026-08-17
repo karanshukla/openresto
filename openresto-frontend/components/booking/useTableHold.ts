@@ -82,6 +82,26 @@ export function useTableHold({
 
   const lastAppliedParams = useRef<string>("");
 
+  /**
+   * The three shapes a hold request comes in. A group hold names the group and lets the server
+   * resolve its members; auto-assign names nothing and lets the server pick; an explicit pick
+   * names the table and resolves its own section, because the caller only tracks the table id.
+   */
+  function holdTarget() {
+    if (tableGroupId) {
+      return { tableId: null, sectionId: null, tableGroupId, seats };
+    }
+    if (autoAssign) {
+      return { tableId: null, sectionId: null, tableGroupId: undefined, seats };
+    }
+    return {
+      tableId: tableId!,
+      sectionId: sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0,
+      tableGroupId: undefined,
+      seats: undefined,
+    };
+  }
+
   function clearCountdown() {
     if (countdownTimer.current) {
       clearInterval(countdownTimer.current);
@@ -121,12 +141,9 @@ export function useTableHold({
     clearCountdown();
   }
 
-  // Debounced hold trigger
   useEffect(() => {
-    // Auto-assign fires without a table; explicit mode requires a tableId; a group hold requires a
-    // tableGroupId.
-    const hasTableForHold = autoAssign || (!!tableId && tableId > 0) || !!tableGroupId;
-    if (!enabled || !hasTableForHold || !date || !time || !isValidEmail(email)) {
+    const hasHoldableUnit = autoAssign || (!!tableId && tableId > 0) || !!tableGroupId;
+    if (!enabled || !hasHoldableUnit || !date || !time || !isValidEmail(email)) {
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
       }
@@ -150,41 +167,30 @@ export function useTableHold({
       const previousHoldId = currentHoldId.current;
       lastAppliedParams.current = paramsKey;
 
-      // Send naive ISO string (no 'Z' or offset) so backend can interpret as restaurant-local
+      // Naive ISO — no 'Z', no offset — so the server reads it as restaurant-local.
       const naiveIsoDate = `${date}T${time}:00`;
 
       const result = await createHold({
         restaurantId,
-        // A group hold sends tableGroupId + seats (null table/section); auto-assign sends null
-        // table/section + seats; explicit selection resolves the section from the tableId.
-        tableId: tableGroupId ? null : autoAssign ? null : tableId!,
-        sectionId: tableGroupId
-          ? null
-          : autoAssign
-            ? null
-            : (sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0),
-        tableGroupId: tableGroupId ?? undefined,
-        seats: autoAssign || tableGroupId ? seats : undefined,
+        ...holdTarget(),
         date: naiveIsoDate,
         currentHoldId: previousHoldId ?? undefined,
       });
 
       if (result.ok) {
-        // Backend atomically released previousHoldId and placed the new hold
+        // The server released previousHoldId and placed this one in the same call.
         currentHoldId.current = result.hold.holdId;
         setHoldId(result.hold.holdId);
         setHold(result.hold);
         setHoldMessage(null);
-        // For auto-assigned/group holds, capture the server-resolved ids so the form can submit
-        // them with the booking (the booking create then "adopts" the held unit).
+        // The booking submit sends these back so the server adopts the held unit rather than
+        // racing for a second one.
         setResolvedTableId(result.hold.tableId ?? null);
         setResolvedSectionId(result.hold.sectionId ?? null);
         setResolvedGroupId(result.hold.tableGroupId ?? null);
         setHoldStatus("held");
         startCountdown(result.hold.expiresAt);
       } else {
-        // Hold rejected (already-held, past time, paused, closed, walk-in).
-        // Release our previous hold and surface the backend's reason.
         if (previousHoldId) releaseHold(previousHoldId);
         currentHoldId.current = null;
         setHoldId(null);
@@ -206,7 +212,6 @@ export function useTableHold({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableId, date, time, email, autoAssign, seats, tableGroupId, enabled]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (debounceTimer.current) {

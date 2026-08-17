@@ -224,7 +224,6 @@ public sealed class BookingNotificationService(
             _pushSubscriptionRepository.RemoveRange(stale);
         }
 
-        // Update the notification record with push outcome
         AdminNotification? record = await _notificationRepository.FindByIdAsync(notificationId);
         if (record is not null)
         {

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -18,10 +19,10 @@ public static class OpeningHoursHelper
     public class DayHours
     {
         [JsonPropertyName("open")]
-        public string Open { get; set; } = "09:00";
+        public string Open { get; set; } = OpeningHourDefaults.Open;
 
         [JsonPropertyName("close")]
-        public string Close { get; set; } = "22:00";
+        public string Close { get; set; } = OpeningHourDefaults.Close;
     }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()

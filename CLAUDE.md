@@ -112,7 +112,43 @@ OPENRESTO_VERSION=1.0.0 docker compose -f docker-compose.release.yml up -d
 
 ## Code comments
 
-Don't add comments above functions or inline unless the WHY is genuinely non-obvious (a hidden constraint, a subtle invariant, a workaround for a specific bug). Well-named identifiers should make the WHAT self-evident. Before reaching for a comment, check whether the explanation can instead be expressed through abstraction or encapsulation — e.g. business logic embedded in a controller should move to a self-commenting, domain-named method in `Core/Application/Services` rather than being explained in a comment. Favor human-readable, domain-driven names and logical flow over prose explanations, while keeping code legible to agents working in this repo.
+A comment is the last resort, not the first. Work down this ladder and only write prose when all four rungs fail:
+
+1. **Abstraction and encapsulation.** Business logic explained by a comment in a controller belongs in a domain-named method in `Core/Application/Services` instead. Arithmetic spelled out in a comment (`// 44px target minus 30px of rendered height`) belongs in named constants that compute it. The same coercion explained in two places belongs in one named helper (`ContactFields.Normalize`, `OpeningHoursHelper.GetHoursForDay`).
+2. **Human-readable subfunctions.** A comment labelling a block (`// Step 2: resolve the local day`, `// --- Sections ---`) means the block wants to be a method, or the line below already says it. Name it and delete the label. Sentinel values get names too: `UnlimitedOversize` beats `null // = no cap`.
+3. **Unit tests that pin the rule, on both sides of its boundary.** A comment stating a business rule is a rule nothing enforces. Replace it with a pair of tests, one inside the boundary and one outside, named after the rule. A cap of four spare seats becomes "offers a table four seats over the party size" and "rejects a table five seats over", not `// max 4 spare seats`. The pair is the point: a single happy-path test documents a case, whereas the pair documents the limit and fails the day someone moves it. A comment goes stale silently.
+4. **Integration/E2E tests for rules that only exist across a boundary.** Same idea one level up. A rule that only shows up end to end (an archived location staying out of `RestaurantDto`, a hold surviving into `POST /api/bookings`, a settings round-trip clearing a field) gets a spec, not a paragraph above the code.
+5. **Whatever 1–4 can't reach.** Hidden constraints, upstream bugs, production-incident history, protocol requirements, reachability arguments for coverage suppressions. These stay, but keep them tight: state the constraint, not its biography. "Consolidates the check previously duplicated across four services" is biography; the reader needs the invariant, not the changelog.
+
+Tests augment the rule rather than merely restating it: the rule becomes executable, and the boundary that prose only asserted is now enforced. What is left over after the rule is pinned (a threat model, an incident, an upstream bug) is rung 5 and can stay, but it should be the residue, not the rule written twice.
+
+### Point at the test that carries the rule
+
+When rung 3 or 4 is what replaced a comment, leave a link to the test so the rule stays findable from the code it governs. Use the form each toolchain understands:
+
+- **TypeScript**: a markdown link in JSDoc, path relative to the file. VS Code renders it clickable on hover:
+
+  ```ts
+  /**
+   * @see [walkIn.test.ts](../__tests__/utils/walkIn.test.ts) — pins that a
+   * per-day walk-in flag closes only that day.
+   */
+  ```
+
+- **C#**: `<seealso>` naming the test method. `cref` can't reach `OpenRestoApi.Tests` (the reference points the other way), so the name goes in the tag body and the checker resolves it:
+
+  ```csharp
+  /// <seealso>RestaurantTests.IsPausedFor_BlocksSittingInsideWindow</seealso>
+  /// <seealso>RestaurantTests.IsPausedFor_AllowsSittingAfterWindow</seealso>
+  ```
+
+Say which rule the test pins, not just that one exists. A bare `@see` is noise.
+
+`npm run check:doc-links` (run in CI by the `doc-links` job in `ci.yml`) fails on a `@see [name](path)` whose file is missing and on a `<seealso>` naming a method that no test class declares. Without it a renamed test rots the link silently, which is the same staleness problem the comment had.
+
+### What this does not license
+
+`<summary>` on a public domain property whose meaning is a data format (`OpenDays` being comma-separated ISO day numbers, `OpenHoursJson`'s shape) stays — that is rung 5 constraint documentation, not narration. Coverage and analyzer suppressions keep their justification (`[ExcludeFromCodeCoverage]` reasons, `#pragma warning disable` rationale). What goes is the summary that restates the signature, the block label, and the changelog entry about which method the code used to live in.
 
 ## Architecture
 

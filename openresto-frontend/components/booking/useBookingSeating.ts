@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { RestaurantDto, TableDto } from "@/api/restaurants";
 import type { TimeSlotDto } from "@/api/availability";
 import { groupDropdownLabel, groupedTableIds } from "@/utils/tableGroups";
+import { seatsAtLeast } from "@/utils/seating";
 
 export const ANY_SECTION_ID = 0;
 
@@ -33,36 +34,30 @@ export interface UseBookingSeatingArgs {
 export function useBookingSeating({ restaurant, seats, currentSlot }: UseBookingSeatingArgs) {
   const [sectionId, setSectionId] = useState<number>(ANY_SECTION_ID);
   const [tableId, setTableId] = useState<number | undefined>();
-  // Combinable-group selection (#274): when set, the diner picked a combined-table group from the
-  // dropdown instead of a single table. Mutually exclusive with tableId in the submit payload.
+  /** Mutually exclusive with `tableId` in the submit payload: a booking reserves one or the other. */
   const [tableGroupId, setTableGroupId] = useState<number | undefined>();
 
   const allTables = restaurant.sections.flatMap((s) => s.tables);
   const allGroups = restaurant.groups ?? [];
-  // Tables flagged combinable. They stay individually bookable (#242) — this only deprioritizes
-  // them in the suggested-table pick below.
   const groupedTableIdSet = groupedTableIds(allGroups);
 
-  // Largest capacity at this location — the best single table OR the best combinable group (#274).
-  // Parties above this can't be seated even with pushed-together tables and must contact the
-  // restaurant directly. Computed client-side from the nested restaurant payload — no extra fetch.
+  // Parties above the best single table *or* the best combinable group can't be seated even with
+  // tables pushed together, and have to contact the restaurant directly.
   const maxSingleTableSeats = allTables.length > 0 ? Math.max(...allTables.map((t) => t.seats)) : 0;
   const maxGroupSeats =
     allGroups.length > 0 ? Math.max(...allGroups.map((g) => g.combinedSeats)) : 0;
   const maxTableCapacity = Math.max(maxSingleTableSeats, maxGroupSeats);
   const partyTooLarge = maxTableCapacity > 0 && seats > maxTableCapacity;
 
-  // "Any section" is the default option (value 0); concrete sections follow. When selected,
-  // the form hides the table dropdown and lets the server pick the best available table.
   const sectionOptions = [
     { label: "Any section", value: ANY_SECTION_ID },
     ...restaurant.sections.map((s) => ({ label: s.name, value: s.id })),
   ];
   const isAutoAssign = sectionId === ANY_SECTION_ID;
   const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
-  // Groups belong to the picked section only when *every* member sits in it — booking a group is
-  // booking all its tables, so one member elsewhere means the party would be split across sections.
-  // TableDto carries no sectionId, so membership is resolved through the section's own table ids.
+  // A group belongs to the picked section only when *every* member sits in it: booking a group
+  // books all its tables, so one member elsewhere would split the party across sections. TableDto
+  // carries no sectionId, hence resolving membership through the section's own table ids.
   const sectionTableIds = new Set(tablesInSection.map((t) => t.id));
   const groupsInSection = isAutoAssign
     ? allGroups
@@ -75,21 +70,13 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
 
   function bestTableFor(seatCount: number, availableIds?: number[], candidateTables?: TableDto[]) {
     const pool = candidateTables ?? allTables;
-    // Lower bound: table must seat the party. Upper bound: when the restaurant caps spare
-    // seats, drop tables too large for the group. Mirrors the server-side eligible-table
-    // filter (AvailabilityService) so the auto-suggested pick is always one the API accepts.
-    let eligible = pool.filter(
-      (t) =>
-        t.seats >= seatCount &&
-        (restaurant.maxTableOversizeSeats == null ||
-          t.seats <= seatCount + restaurant.maxTableOversizeSeats)
-    );
+    let eligible = seatsAtLeast(pool, seatCount, restaurant.maxTableOversizeSeats, (t) => t.seats);
     if (availableIds && availableIds.length > 0) {
       eligible = eligible.filter((t) => availableIds.includes(t.id));
     }
-    // Smallest fitting table, but a combinable table loses to an ungrouped one of the same size —
-    // the same deprioritization the server applies when auto-assigning, so the suggested default
-    // leaves the mergeable tables free for the parties that need them pushed together.
+    // Smallest fitting table, and a combinable table loses to an ungrouped one of the same size —
+    // the deprioritization the server applies when auto-assigning, so the suggested default leaves
+    // mergeable tables free for the parties that need them pushed together.
     eligible.sort((a, b) => {
       if (a.seats !== b.seats) return a.seats - b.seats;
       return Number(groupedTableIdSet.has(a.id)) - Number(groupedTableIdSet.has(b.id));
@@ -97,7 +84,6 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
     return eligible[0]?.id ?? pool[0]?.id;
   }
 
-  // Auto-assign mode: the server picks the table, so no pre-selection here.
   useEffect(() => {
     if (isAutoAssign) {
       if (tableId !== undefined) setTableId(undefined);
@@ -132,31 +118,21 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId]);
 
-  const eligibleTables = tablesInSection
-    .filter(
-      (t) =>
-        t.seats >= seats &&
-        (restaurant.maxTableOversizeSeats == null ||
-          t.seats <= seats + restaurant.maxTableOversizeSeats)
-    )
-    .filter((t) => {
-      if (currentSlot) {
-        return availableTableIds.includes(t.id);
-      }
-      return true;
-    })
+  const eligibleTables = seatsAtLeast(
+    tablesInSection,
+    seats,
+    restaurant.maxTableOversizeSeats,
+    (t) => t.seats
+  )
+    .filter((t) => (currentSlot ? availableTableIds.includes(t.id) : true))
     .sort((a, b) => a.seats - b.seats);
 
-  // Combinable groups (#274): a group is selectable when it sits in the picked section, its combined
-  // capacity fits the party, it respects the optional oversize cap, and (when availability data is
-  // present) the group's id is in the slot's availableGroupIds.
-  const eligibleGroups = groupsInSection
-    .filter(
-      (g) =>
-        g.combinedSeats >= seats &&
-        (restaurant.maxTableOversizeSeats == null ||
-          g.combinedSeats <= seats + restaurant.maxTableOversizeSeats)
-    )
+  const eligibleGroups = seatsAtLeast(
+    groupsInSection,
+    seats,
+    restaurant.maxTableOversizeSeats,
+    (g) => g.combinedSeats
+  )
     .filter((g) => (currentSlot ? availableGroupIds.includes(g.id) : true))
     .sort((a, b) => a.combinedSeats - b.combinedSeats);
 

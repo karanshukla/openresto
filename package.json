@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently --names \"api,fe\" --prefix-colors \"cyan,magenta\" \"dotnet watch --project OpenRestoApi\" \"npm run dev --prefix openresto-frontend\"",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "check:doc-links": "node scripts/check-doc-links.mjs",
     "prepare": "husky"
   },
   "repository": {

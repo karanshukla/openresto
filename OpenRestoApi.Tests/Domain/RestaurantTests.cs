@@ -236,4 +236,45 @@ public class RestaurantTests
         var tuesday = new DateTime(2026, 1, 6, 12, 0, 0, DateTimeKind.Utc); // Tuesday
         Assert.False(r.IsOpenAt(tuesday));
     }
+
+    // ── CanSeat ────────────────────────────────────────────────────────────────
+    //
+    // Availability, holds, booking creation/update and auto-assign all ask this one question,
+    // so the boundary has to be stated here rather than re-derived at each call site.
+
+    [Fact]
+    public void CanSeat_True_WhenTheUnitIsExactlyAtTheOversizeCap()
+    {
+        Restaurant r = NewRestaurant();
+        r.MaxTableOversizeSeats = 2;
+
+        Assert.True(r.CanSeat(unitSeats: 6, partySize: 4));
+    }
+
+    [Fact]
+    public void CanSeat_False_WhenTheUnitIsOneSeatOverTheCap()
+    {
+        Restaurant r = NewRestaurant();
+        r.MaxTableOversizeSeats = 2;
+
+        Assert.False(r.CanSeat(unitSeats: 7, partySize: 4));
+    }
+
+    [Fact]
+    public void CanSeat_False_WhenTheUnitIsSmallerThanTheParty()
+    {
+        Restaurant r = NewRestaurant();
+        r.MaxTableOversizeSeats = null;
+
+        Assert.False(r.CanSeat(unitSeats: 2, partySize: 4));
+    }
+
+    [Fact]
+    public void CanSeat_True_ForAnyLargerUnit_WhenNoCapIsSet()
+    {
+        Restaurant r = NewRestaurant();
+        r.MaxTableOversizeSeats = null;
+
+        Assert.True(r.CanSeat(unitSeats: 10, partySize: 2));
+    }
 }

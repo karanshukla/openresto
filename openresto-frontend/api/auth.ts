@@ -19,8 +19,6 @@ export async function logout(): Promise<void> {
   }
 }
 
-// ---------- Session check ----------
-
 /**
  * The signed-in admin, as returned by `GET /admin/auth/me`. Treat unknown extra fields as
  * additive — the server may grow this shape (permissions, scoping) without a client change.
@@ -42,8 +40,6 @@ export async function checkSession(): Promise<AuthUser | "rate-limited" | null> 
     return null;
   }
 }
-
-// ---------- Password management ----------
 
 export async function changePassword(
   currentPassword: string,
@@ -74,8 +70,6 @@ export async function changeEmail(
     return { ok: false, message: "Network error." };
   }
 }
-
-// ---------- PVQ (Personal Verification Questions) ----------
 
 export interface PvqStatus {
   isConfigured: boolean;

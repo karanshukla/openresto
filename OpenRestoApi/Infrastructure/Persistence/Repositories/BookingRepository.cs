@@ -93,8 +93,8 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             DateTime newEnd = newStart.AddMinutes(durationMinutes);
             DateTime thresholdStart = newStart.AddMinutes(-durationMinutes); // For legacy bookings without EndTime
 
-            // Check if any existing booking's time window overlaps the new one
-            // Condition: (ExistingStart < NewEnd) AND (ExistingEnd > NewStart)
+            // Half-open overlap: existing starts before the new window ends, and ends after it
+            // begins. A booking that ends exactly when this one starts is not a conflict.
             return await _db.Bookings.AnyAsync(b =>
                 b.TableId == tableId &&
                 !b.IsCancelled &&

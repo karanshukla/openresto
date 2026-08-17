@@ -321,7 +321,7 @@ public static partial class DatabaseExtensions
             LogConnectionString(logger, connectionString);
             LogCurrentUser(logger, Environment.UserName);
 
-            // Ensure the DB directory exists (needed for Docker volume mounts)
+            // Docker volume mounts hand us the mount point, not the path inside it.
             string dbFile = connectionString;
             if (connectionString.Contains(';'))
             {

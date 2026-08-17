@@ -119,8 +119,7 @@ public class HoldsController(
         }
 
         Restaurant restaurant = policy.Restaurant!;
-        if (restaurant.MaxTableOversizeSeats.HasValue
-            && group.CombinedSeats - request.Seats > restaurant.MaxTableOversizeSeats.Value)
+        if (restaurant.ExceedsOversizeCap(group.CombinedSeats, request.Seats))
         {
             return Conflict(new MessageResponse
             {

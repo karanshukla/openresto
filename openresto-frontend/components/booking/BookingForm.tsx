@@ -188,10 +188,10 @@ export default function BookingForm({
     value: i + 1,
   }));
 
-  // Hours for the selected date's day of week (falls back to uniform hours).
-  // For after-midnight closing (close <= open) let the picker run to end of day.
   const selectedDayHours = getHoursForDate(restaurant, date || getNowInTimezone(timezone).dateStr);
   const minPickerTime = selectedDayHours.open;
+  // A close time at or before the open time is a past-midnight service, so the picker runs to
+  // the end of the day rather than to a close that reads as earlier than the open.
   const maxPickerTime =
     selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
 
@@ -204,6 +204,17 @@ export default function BookingForm({
     isValidEmail(customerEmail) &&
     holdStatus === "held" &&
     !bookingBlocked;
+
+  /**
+   * Which seating unit the booking reserves. Null table and section ids route the create call
+   * into auto-assign, where the server adopts whatever the hold already reserved; a group id
+   * routes it into the group branch. The three are mutually exclusive by construction.
+   */
+  const seatingPayload = () => {
+    if (tableGroupId) return { tableId: null, sectionId: null, tableGroupId };
+    if (isAutoAssign) return { tableId: null, sectionId: null, tableGroupId: null };
+    return { tableId: tableId ?? null, sectionId, tableGroupId: null };
+  };
 
   const handleSubmit = async () => {
     if (!isValid || submitting) return;
@@ -222,13 +233,7 @@ export default function BookingForm({
         customerEmail,
         customerName,
         seats,
-        // For "Any section", defer table selection to the server (null ids trigger auto-assign
-        // on the booking create path; the server will adopt the held table from the hold id).
-        // For a combinable group selection, send the group id + null table so the booking-create
-        // path routes into the group-booking branch.
-        tableId: isAutoAssign || tableGroupId ? null : (tableId ?? null),
-        sectionId: isAutoAssign || tableGroupId ? null : sectionId,
-        tableGroupId: tableGroupId ?? null,
+        ...seatingPayload(),
         date,
         time,
         holdId,

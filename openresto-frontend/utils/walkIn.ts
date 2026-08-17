@@ -45,24 +45,33 @@ export function isWalkInOnlyOnDate(restaurant: WalkInSource, date: string): bool
   return isWalkInOnlyOnDay(restaurant, getIsoDayFromDateString(date));
 }
 
-/** Human summary of the walk-in days, e.g. "Saturdays and Sundays". */
+/**
+ * Human summary of the walk-in days. The label gets terser as the list grows, because it sits
+ * in a badge on a card: a couple of days are spelled out, a handful are abbreviated, and a run
+ * or a long list collapses to initialled ranges.
+ *
+ * @see [walkIn.test.ts](../tests/utils/walkIn.test.ts) — pins each tier and the boundary
+ * between them.
+ */
 export function walkInDaysLabel(restaurant: WalkInSource): string | null {
   const days = [...new Set(parseWalkInDays(restaurant.walkInDays))].sort((a, b) => a - b);
-  //the rules here are as follows
-  //consecutive days show first day and last day, e.g. "Mon–Wed"
-  //non-consecutive days show all days, e.g. "Mon, Wed and Fri" as long as its 3 or less days
-  //otherwise show the first letter representations
   if (days.length === 0) return null;
-  const isConsecutiveRun = days.length > 2 && days[days.length - 1] - days[0] + 1 === days.length;
-  if (days.length > 3 || isConsecutiveRun) return consecutiveDaysLabel(days);
-  const dayNames = days.length > 2 ? DAY_NAMES_SHORT : DAY_NAMES;
-  const names = days.map((d) => dayNames[d - 1]);
-  if (names.length === 1) return names[0];
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+
+  const isUnbrokenRun = days.length > 2 && days[days.length - 1] - days[0] + 1 === days.length;
+  if (isUnbrokenRun || days.length > 3) return initialledRangesLabel(days);
+
+  return listLabel(days, days.length > 2 ? DAY_NAMES_SHORT : DAY_NAMES);
 }
 
-/** Groups consecutive ISO days, e.g. "Mon–Wed, Fri" for [1,2,3,5]. */
-function consecutiveDaysLabel(days: number[]): string {
+/** "Saturdays and Sundays", "Mon, Wed and Fri". */
+function listLabel(days: number[], names: string[]): string {
+  const labels = days.map((d) => names[d - 1]);
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+}
+
+/** "M–W, Sat" for [1,2,3,6] — consecutive days collapse into a range. */
+function initialledRangesLabel(days: number[]): string {
   const groups = days.reduce<number[][]>((groups, day) => {
     const lastGroup = groups[groups.length - 1];
     if (lastGroup && day === lastGroup[lastGroup.length - 1] + 1) {

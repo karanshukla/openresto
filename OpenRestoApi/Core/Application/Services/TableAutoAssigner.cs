@@ -5,10 +5,9 @@ namespace OpenRestoApi.Core.Application.Services;
 
 /// <summary>
 /// Computes the ordered candidate list for "Any section" auto-assignment, shared by the holds
-/// controller (hold placement) and <see cref="BookingService"/> (booking creation). The actual
-/// atomic pick happens inside <see cref="IHoldService.PlaceAutoHold"/>'s lock — this class only
-/// builds the pre-sorted pool (smallest fitting free table first, with combinable tables
-/// deprioritized within each size so they stay free for the larger parties that need them merged).
+/// controller and <see cref="BookingService"/>. This class only builds the pre-sorted pool; the
+/// atomic pick happens inside <see cref="IHoldService.PlaceAutoHold"/>'s lock, so a candidate
+/// here is a proposal, not a reservation.
 /// </summary>
 public sealed class TableAutoAssigner(
     IBookingRepository bookingRepository,
@@ -18,16 +17,13 @@ public sealed class TableAutoAssigner(
     private readonly IHoldService _holdService = holdService;
 
     /// <summary>
-    /// Returns the restaurant's bookable units — individual tables and combinable groups — that (a)
-    /// have at least <paramref name="seats"/> seats, (b) respect the optional
-    /// <see cref="Restaurant.MaxTableOversizeSeats"/> cap, and (c) have no overlapping confirmed
-    /// booking or active hold at <paramref name="bookingDateUtc"/>. Ordered smallest-fitting-first,
-    /// then by the deprioritization tier requested in #242 — an ungrouped table wins over a
-    /// combinable table of the same size, which in turn wins over a group of that size, so
-    /// combinable tables stay free as long as possible for the larger parties that need them pushed
-    /// together. Table id ties-breaks within a tier for deterministic ordering. Empty when nothing
-    /// fits.
+    /// The restaurant's bookable units that can seat <paramref name="seats"/> (see
+    /// <see cref="Restaurant.CanSeat"/>) and carry no overlapping booking or hold at
+    /// <paramref name="bookingDateUtc"/>, ordered smallest-fitting-first and then by
+    /// <see cref="DeprioritizationTier"/>. Empty when nothing fits.
     /// </summary>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_PrefersStandaloneTable_WhenPartyFitsBoth</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersGroupOnly_WhenNoStandaloneTableFits</seealso>
     public async Task<IReadOnlyList<TableCandidate>> BuildCandidatesAsync(
         Restaurant restaurant,
         int seats,
@@ -38,37 +34,51 @@ public sealed class TableAutoAssigner(
             return Array.Empty<TableCandidate>();
         }
 
-        // Capacity filter first — same predicate as AvailabilityService.GetAvailabilityAsync's
-        // restaurant-wide eligible-table set, so the auto-assign pool matches what the
-        // availability feed advertises per slot. The optional upper bound
-        // (Restaurant.MaxTableOversizeSeats) keeps a small party off a much larger table.
-        var eligible = restaurant.Sections
-            .Where(s => s.Tables != null)
-            .SelectMany(s => s.Tables!.Where(t => t != null).Select(t => (table: t!, sectionId: s.Id)))
-            .Where(x => x.table.Seats >= seats
-                && (restaurant.MaxTableOversizeSeats == null
-                    || x.table.Seats - seats <= restaurant.MaxTableOversizeSeats.Value))
-            .ToList();
-
         int durationMinutes = restaurant.DefaultBookingDurationMinutes;
-
         var free = new List<TableCandidate>();
+        free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes));
+        free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes));
 
-        // Membership of a combinable group does NOT remove a table from the individual pool: tables 8
-        // and 9 seat 4 each on their own and must keep taking parties of 4 (#242). It only pushes them
-        // down the ordering below, so they're the last of their size to fill. Mutual exclusion between
-        // a member booking and its group's booking is enforced by IsUnitBookedOnDateAsync/IsTableHeld,
-        // not by hiding the table.
-        var groupedTableIds = (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
+        HashSet<int> groupedTableIds = GroupedTableIds(restaurant);
+
+        return free
+            .OrderBy(c => c.Seats)
+            .ThenBy(c => DeprioritizationTier(c, groupedTableIds))
+            .ThenBy(c => c.TableId)
+            .ToList();
+    }
+
+    /// <summary>
+    /// An ungrouped table beats a combinable table of the same size, which beats a group of that
+    /// size, so combinable tables stay free as long as possible for the larger parties that need
+    /// them pushed together. Grouping a table only moves it down this order — it never leaves the
+    /// individual pool, because a table in a group still seats its own capacity on its own.
+    /// </summary>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersGroupedTablesIndividually_AfterUngroupedOnesOfTheSameSize</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_DeprioritizesGroups_AgainstStandaloneTablesOfEqualCapacity</seealso>
+    private static int DeprioritizationTier(TableCandidate candidate, HashSet<int> groupedTableIds)
+        => candidate.IsGroup ? 2 : groupedTableIds.Contains(candidate.TableId) ? 1 : 0;
+
+    private static HashSet<int> GroupedTableIds(Restaurant restaurant)
+        => (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
             .SelectMany(g => g.Members).Select(m => m.TableId).ToHashSet();
 
-        // Drop tables with an existing confirmed booking overlapping this slot. Done serially
-        // because IsTableBookedOnDateAsync is per-table; the candidate count is small (one
-        // restaurant's tables) and this runs once per auto-assign request before the lock.
+    /// <summary>
+    /// Checked serially because the repository answers one unit at a time. The pool is a single
+    /// restaurant's tables and this runs once per auto-assign request, before the lock.
+    /// </summary>
+    private async Task<List<TableCandidate>> FreeTablesAsync(
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes)
+    {
+        var free = new List<TableCandidate>();
+
+        IEnumerable<(Table Table, int SectionId)> eligible = restaurant.Sections!
+            .Where(s => s.Tables != null)
+            .SelectMany(s => s.Tables!.Where(t => t != null).Select(t => (Table: t!, SectionId: s.Id)))
+            .Where(x => restaurant.CanSeat(x.Table.Seats, seats));
+
         foreach ((Table table, int sectionId) in eligible)
         {
-            // Group-aware: also blocks when the table is reserved by a group booking (which stores
-            // TableId = null and so is invisible to the table-only check).
             bool booked = await _bookingRepository.IsUnitBookedOnDateAsync(
                 table.Id, tableGroupId: null, bookingDateUtc, durationMinutes);
             if (!booked && !_holdService.IsTableHeld(table.Id, bookingDateUtc, durationMinutes: durationMinutes))
@@ -77,64 +87,47 @@ public sealed class TableAutoAssigner(
             }
         }
 
-        // Combinable groups: capacity check against CombinedSeats, all members must be free.
-        // The oversize cap applies to groups too (#272) — don't seat a party of 2 at an 8-seat
-        // combined group unless the cap allows it.
-        if (restaurant.Groups is { Count: > 0 })
+        return free;
+    }
+
+    private async Task<List<TableCandidate>> FreeGroupsAsync(
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes)
+    {
+        var free = new List<TableCandidate>();
+        if (restaurant.Groups is not { Count: > 0 })
         {
-            foreach (TableGroup group in restaurant.Groups)
-            {
-                if (group.CombinedSeats < seats) continue;
-                if (restaurant.MaxTableOversizeSeats.HasValue
-                    && group.CombinedSeats - seats > restaurant.MaxTableOversizeSeats.Value)
-                {
-                    continue;
-                }
-
-                var memberIds = group.Members.Select(m => m.TableId).ToList();
-                if (memberIds.Count == 0) continue;
-
-                // Group-aware: a single check catches the group already booked, a member booked
-                // individually, or a member reserved by a sibling group booking.
-                bool groupBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
-                    tableId: null, tableGroupId: group.Id, bookingDateUtc, durationMinutes);
-
-                bool allMembersFreeOfHolds = !groupBooked;
-                if (allMembersFreeOfHolds)
-                {
-                    foreach (int memberId in memberIds)
-                    {
-                        if (_holdService.IsTableHeld(memberId, bookingDateUtc, durationMinutes: durationMinutes))
-                        {
-                            allMembersFreeOfHolds = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (!allMembersFreeOfHolds) continue;
-
-                // Anchor to the first member's id/section so existing callers that read TableId/SectionId
-                // still get a concrete value; the group identity rides on TableGroupId + MemberTableIds.
-                TableGroupMembership anchor = group.Members.OrderBy(m => m.TableId).First();
-                free.Add(new TableCandidate(
-                    anchor.TableId,
-                    anchor.Table?.SectionId ?? 0,
-                    group.CombinedSeats,
-                    IsGroup: true,
-                    TableGroupId: group.Id,
-                    MemberTableIds: memberIds));
-            }
+            return free;
         }
 
-        // Smallest fitting free unit first, then the deprioritization tier (ungrouped table → grouped
-        // table → group), then id for deterministic ordering.
-        int Tier(TableCandidate c) => c.IsGroup ? 2 : groupedTableIds.Contains(c.TableId) ? 1 : 0;
+        foreach (TableGroup group in restaurant.Groups)
+        {
+            if (!restaurant.CanSeat(group.CombinedSeats, seats)) continue;
 
-        return free
-            .OrderBy(c => c.Seats)
-            .ThenBy(Tier)
-            .ThenBy(c => c.TableId)
-            .ToList();
+            var memberIds = group.Members.Select(m => m.TableId).ToList();
+            if (memberIds.Count == 0) continue;
+
+            // One query covers all three ways a group can be taken: the group itself booked, a
+            // member booked individually, or a member reserved by a sibling group's booking.
+            bool groupBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
+                tableId: null, tableGroupId: group.Id, bookingDateUtc, durationMinutes);
+            if (groupBooked) continue;
+
+            bool anyMemberHeld = memberIds.Any(
+                id => _holdService.IsTableHeld(id, bookingDateUtc, durationMinutes: durationMinutes));
+            if (anyMemberHeld) continue;
+
+            // Anchored to the lowest member's id/section so callers reading TableId/SectionId still
+            // get a concrete value; the group identity rides on TableGroupId + MemberTableIds.
+            TableGroupMembership anchor = group.Members.OrderBy(m => m.TableId).First();
+            free.Add(new TableCandidate(
+                anchor.TableId,
+                anchor.Table?.SectionId ?? 0,
+                group.CombinedSeats,
+                IsGroup: true,
+                TableGroupId: group.Id,
+                MemberTableIds: memberIds));
+        }
+
+        return free;
     }
 }
