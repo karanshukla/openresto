@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
 
@@ -8,8 +9,21 @@ public class EmailSettingsService(
     IEmailSettingsRepository settingsRepository,
     IEmailFailureRepository emailFailureRepository,
     CredentialProtector protector,
-    IEmailService emailService)
+    IEmailService emailService,
+    IAuditScope? audit = null)
 {
+    /// <summary>
+    /// Castle's generated proxy constructors do not carry default values, so a Moq class mock can
+    /// only reach a constructor whose arity it matches exactly. This is the arity it passes.
+    /// </summary>
+    public EmailSettingsService(
+        IEmailSettingsRepository settings,
+        IEmailFailureRepository failures,
+        CredentialProtector credentialProtector,
+        IEmailService email)
+        : this(settings, failures, credentialProtector, email, null) { }
+
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly IEmailSettingsRepository _settingsRepository = settingsRepository;
     private readonly IEmailFailureRepository _emailFailureRepository = emailFailureRepository;
     private readonly CredentialProtector _protector = protector;
@@ -33,6 +47,16 @@ public class EmailSettingsService(
             isNew = true;
         }
 
+        // Named one by one rather than serialized from the request: the request also carries the
+        // SMTP password, and an audit entry may never hold a credential.
+        _audit.RecordChange("host", settings.Host, host);
+        _audit.RecordChange("port", settings.Port, port);
+        _audit.RecordChange("username", settings.Username, username);
+        _audit.RecordChange("enableSsl", settings.EnableSsl, enableSsl);
+        _audit.RecordChange("fromName", settings.FromName, fromName);
+        _audit.RecordChange("fromEmail", settings.FromEmail, fromEmail);
+        _audit.RecordChange("sendBookingConfirmations", settings.SendBookingConfirmations, sendBookingConfirmations);
+
         settings.Host = host;
         settings.Port = port;
         settings.Username = username;
@@ -43,7 +67,11 @@ public class EmailSettingsService(
 
         if (!string.IsNullOrEmpty(password) && password != "••••••••")
         {
+            string? previous = settings.EncryptedPassword;
             settings.EncryptedPassword = _protector.Encrypt(password);
+            // Both sides mask to the redaction marker, so the entry carries the fact of the
+            // change and nothing more.
+            _audit.RecordChange("password", previous, settings.EncryptedPassword);
         }
 
         if (isNew)
@@ -54,11 +82,19 @@ public class EmailSettingsService(
         {
             await _settingsRepository.SaveChangesAsync();
         }
+
+        _audit.Describe(AuditActions.EmailSettingsUpdate, AuditTargets.EmailSettings,
+            summary: $"Updated the outgoing email settings ({host}:{port})");
     }
 
     public virtual async Task<bool> TestConnectionAsync()
     {
-        return await _emailService.TestConnectionAsync();
+        bool connected = await _emailService.TestConnectionAsync();
+        _audit.Describe(AuditActions.EmailSettingsTest, AuditTargets.EmailSettings,
+            summary: connected
+                ? "Tested the outgoing email connection — succeeded"
+                : "Tested the outgoing email connection — failed");
+        return connected;
     }
 
     public virtual async Task<IReadOnlyList<EmailFailure>> GetFailuresAsync()

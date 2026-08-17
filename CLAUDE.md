@@ -245,6 +245,17 @@ openresto-frontend/
 
 **Customer bookings** — no auth. Customers identify via `BookingRef` (short random string) or the encrypted recent-bookings cookie.
 
+### Admin audit trail
+
+`AdminAuditEntry` is an append-only record of who did what, surfaced at `/admin/activity`. Six things about it are easy to get wrong:
+
+- **Coverage is structural, not a list.** `AuditLogMiddleware` writes a row for every mutating request to an endpoint gated by `RequireAdmin`/`RequireOwner` (`AuditRequestClassifier`), so an endpoint added tomorrow is audited the day it ships. `IAuditScope` only adds the readable part on top — a domain action key from `AuditActions`, a target, a summary, a diff. An unenriched request still lands a row keyed `http.post`. The corollary is that a gate which names no policy (a bare `[Authorize]`, or one listing raw roles) is invisible to the floor; `AuditCoverageTests` reflects over every controller action and fails on one.
+- **The middleware is outermost in `Program.cs`, above `UseExceptionHandler`.** It records after the pipeline unwinds, so `Response.StatusCode` is the 400 the caller actually received rather than the 200 it still was inside MVC's filters, and `RemoteIpAddress` is the client's as rewritten by `UseForwardedHeaders`. Moving it inwards silently changes both.
+- **The write uses its own DI scope.** Sharing the request's `DbContext` would make the audit `SaveChanges` flush whatever a half-finished service left tracked on it — committing, as a side effect of logging, the mutation that threw.
+- **Entries never carry secrets or customer PII.** `ChangesJson` is only ever written by a service naming a field through `RecordChange`, so the recorded set is an allow-list by construction; `AuditFields.IsProtected` masks the value on top of that, for credentials and for customer identity alike. Booking history is deliberately GDPR-purgeable, so entries reference bookings by ref and id only — never a customer name, email or phone, in `TargetLabel` or `Summary` either. `Path` is stored without its query string for the same reason (admin list screens filter by customer email).
+- **There is no write and no delete endpoint.** An admin who can erase the audit log has no audit log. Rows leave only through `AuditRetentionService` (default 365 days, `Audit:RetentionDays`, driven daily by `AuditRetentionWorker`). The demo reset wipes the table for a sharper reason: the demo's admin password is public, so its entries are visitors' actions and visitors' IPs shown to every other visitor.
+- **Services take `IAuditScope? audit = null`** as an optional last constructor parameter, falling back to `NullAuditScope.Instance`. That is what keeps the ~30 test classes that construct services by hand compiling with no arrangement.
+
 ### Brand / Favicon
 
 - `BrandSettings.FaviconIcon` — nullable string (max 32 chars), validated server-side against `LucideIconPaths.cs` (15 icons: utensils, wine, coffee, pizza, flame, leaf, star, heart, chef-hat, fish, hamburger, sandwich, soup, cake, ice-cream-cone).

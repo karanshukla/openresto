@@ -1,6 +1,8 @@
+using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
@@ -11,13 +13,15 @@ public class RestaurantManagementService(
     ISectionRepository sectionRepository,
     ITableRepository tableRepository,
     IBookingRepository bookingRepository,
-    ITableGroupRepository tableGroupRepository)
+    ITableGroupRepository tableGroupRepository,
+    IAuditScope? audit = null)
 {
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly ISectionRepository _sectionRepository = sectionRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     private static readonly HashSet<int> _allowedBookingDurationsMinutes =
         [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
@@ -92,6 +96,9 @@ public class RestaurantManagementService(
         }
 
         await _restaurantRepository.AddAsync(entity);
+
+        DescribeRestaurant(AuditActions.RestaurantCreate, entity,
+            $"Created the location \"{entity.Name}\"");
         return ToDto(entity);
     }
 
@@ -102,6 +109,8 @@ public class RestaurantManagementService(
         {
             return null;
         }
+
+        RestaurantFields before = RestaurantFields.From(r);
 
         r.Name = req.Name;
         r.Address = req.Address;
@@ -218,6 +227,9 @@ public class RestaurantManagementService(
 
         await _restaurantRepository.SaveChangesAsync();
 
+        RecordRestaurantChanges(before, RestaurantFields.From(r));
+        DescribeRestaurant(AuditActions.RestaurantUpdate, r, $"Updated the location \"{r.Name}\"");
+
         return new RestaurantDto
         {
             Id = r.Id,
@@ -246,6 +258,63 @@ public class RestaurantManagementService(
         };
     }
 
+    /// <summary>The location settings an admin edit can move, snapshotted either side of the save.</summary>
+    private sealed record RestaurantFields(
+        string Name,
+        string? Address,
+        string? Description,
+        string? MenuUrl,
+        string? PhoneNumber,
+        string? EmailAddress,
+        string OpenTime,
+        string CloseTime,
+        string? OpenHoursJson,
+        string OpenDays,
+        string Timezone,
+        string? Tags,
+        int DefaultBookingDurationMinutes,
+        int BookingSlotIntervalMinutes,
+        int? MaxTableOversizeSeats,
+        BookingRefFormat BookingRefFormat,
+        bool WalkInOnly,
+        string? WalkInDays)
+    {
+        public static RestaurantFields From(Restaurant r) => new(
+            r.Name, r.Address, r.Description, r.MenuUrl, r.PhoneNumber, r.EmailAddress, r.OpenTime,
+            r.CloseTime, r.OpenHoursJson, r.OpenDays, r.Timezone, r.Tags,
+            r.DefaultBookingDurationMinutes, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
+            r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
+    }
+
+    private void RecordRestaurantChanges(RestaurantFields before, RestaurantFields after)
+    {
+        _audit.RecordChange("name", before.Name, after.Name);
+        _audit.RecordChange("address", before.Address, after.Address);
+        _audit.RecordChange("description", before.Description, after.Description);
+        _audit.RecordChange("menuUrl", before.MenuUrl, after.MenuUrl);
+        _audit.RecordChange("phoneNumber", before.PhoneNumber, after.PhoneNumber);
+        _audit.RecordChange("emailAddress", before.EmailAddress, after.EmailAddress);
+        _audit.RecordChange("openTime", before.OpenTime, after.OpenTime);
+        _audit.RecordChange("closeTime", before.CloseTime, after.CloseTime);
+        _audit.RecordChange("openHours", before.OpenHoursJson, after.OpenHoursJson);
+        _audit.RecordChange("openDays", before.OpenDays, after.OpenDays);
+        _audit.RecordChange("timezone", before.Timezone, after.Timezone);
+        _audit.RecordChange("tags", before.Tags, after.Tags);
+        _audit.RecordChange("defaultBookingDurationMinutes",
+            before.DefaultBookingDurationMinutes, after.DefaultBookingDurationMinutes);
+        _audit.RecordChange("bookingSlotIntervalMinutes",
+            before.BookingSlotIntervalMinutes, after.BookingSlotIntervalMinutes);
+        _audit.RecordChange("maxTableOversizeSeats",
+            before.MaxTableOversizeSeats, after.MaxTableOversizeSeats);
+        _audit.RecordChange("bookingRefFormat", before.BookingRefFormat, after.BookingRefFormat);
+        _audit.RecordChange("walkInOnly", before.WalkInOnly, after.WalkInOnly);
+        _audit.RecordChange("walkInDays", before.WalkInDays, after.WalkInDays);
+    }
+
+    private void DescribeRestaurant(string action, Restaurant restaurant, string summary)
+        => _audit.Describe(action, AuditTargets.Restaurant, restaurant.Id.ToString(CultureInfo.InvariantCulture),
+            restaurant.Name, restaurant.Id, summary);
+
     // ── Sections ────────────────────────────────────────────────────────────
 
     public async Task<SectionDto?> AddSectionAsync(int restaurantId, string name)
@@ -260,6 +329,8 @@ public class RestaurantManagementService(
         var section = new Section { Name = name, RestaurantId = restaurantId, SortOrder = nextSortOrder };
         await _sectionRepository.AddAsync(section);
 
+        DescribeSection(AuditActions.SectionCreate, section, restaurantId,
+            $"Added the section \"{section.Name}\" to {r.Name}");
         return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
@@ -272,8 +343,12 @@ public class RestaurantManagementService(
             return null;
         }
 
+        _audit.RecordChange("name", section.Name, name);
         section.Name = name;
         await _sectionRepository.SaveChangesAsync();
+
+        DescribeSection(AuditActions.SectionUpdate, section, restaurantId,
+            $"Renamed a section to \"{section.Name}\"");
         return new SectionDto { Id = section.Id, Name = section.Name, SortOrder = section.SortOrder, Tables = [] };
     }
 
@@ -301,8 +376,15 @@ public class RestaurantManagementService(
 
         _sectionRepository.Remove(section);
         await _sectionRepository.SaveChangesAsync();
+
+        DescribeSection(AuditActions.SectionDelete, section, restaurantId,
+            $"Deleted the section \"{section.Name}\" and its {tableIds.Count} tables");
         return true;
     }
+
+    private void DescribeSection(string action, Section section, int restaurantId, string summary)
+        => _audit.Describe(action, AuditTargets.Section, section.Id.ToString(CultureInfo.InvariantCulture), section.Name,
+            restaurantId, summary);
 
     // ── Tables ──────────────────────────────────────────────────────────────
 
@@ -320,6 +402,8 @@ public class RestaurantManagementService(
         var table = new Table { Name = name, Seats = seats, SectionId = sectionId };
         await _tableRepository.AddAsync(table);
 
+        DescribeTable(AuditActions.TableCreate, table, restaurantId,
+            $"Added {TableLabel(table)} ({seats} seats) to \"{section.Name}\"");
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
@@ -334,6 +418,9 @@ public class RestaurantManagementService(
 
         ValidateSeats(seats);
 
+        _audit.RecordChange("name", table.Name, name);
+        _audit.RecordChange("seats", table.Seats, seats);
+
         table.Name = name;
         table.Seats = seats;
         await _tableRepository.SaveChangesAsync();
@@ -342,6 +429,8 @@ public class RestaurantManagementService(
         await ReconcileTableGroupsAsync(restaurantId, Array.Empty<int>());
         await _tableRepository.SaveChangesAsync();
 
+        DescribeTable(AuditActions.TableUpdate, table, restaurantId,
+            $"Updated {TableLabel(table)} ({table.Seats} seats)");
         return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
     }
 
@@ -455,8 +544,17 @@ public class RestaurantManagementService(
 
         _tableRepository.Remove(table);
         await _tableRepository.SaveChangesAsync();
+
+        DescribeTable(AuditActions.TableDelete, table, restaurantId,
+            $"Deleted {TableLabel(table)}, clearing it from {affected.Count} bookings");
         return true;
     }
+
+    private void DescribeTable(string action, Table table, int restaurantId, string summary)
+        => _audit.Describe(action, AuditTargets.Table, table.Id.ToString(CultureInfo.InvariantCulture), TableLabel(table),
+            restaurantId, summary);
+
+    private static string TableLabel(Table table) => table.Name ?? $"Table {table.Id}";
 
     // ── Delete-impact reads (two-step delete friction, #270) ────────────────
     //
@@ -552,6 +650,8 @@ public class RestaurantManagementService(
         await _tableGroupRepository.AddAsync(group);
         await _tableGroupRepository.SaveChangesAsync();
 
+        DescribeTableGroup(AuditActions.TableGroupCreate, group,
+            $"Made {BookingMapper.GroupLabel(group)} combinable, seating {group.CombinedSeats}");
         return ToGroupDto(group);
     }
 
@@ -570,12 +670,19 @@ public class RestaurantManagementService(
 
         ValidateCombinedSeats(req.CombinedSeats, members);
 
+        _audit.RecordChange("name", group.Name, req.Name);
+        _audit.RecordChange("combinedSeats", group.CombinedSeats, req.CombinedSeats);
+        _audit.RecordChange("members", MemberIdList(currentMemberIds), MemberIdList(members.Select(t => t.Id)));
+
         group.Name = req.Name;
         group.CombinedSeats = req.CombinedSeats;
         // Replace the member set in place so EF tracks the add/remove diff and cascades correctly.
         group.Members = members.Select(t => new TableGroupMembership { TableGroupId = group.Id, TableId = t.Id, Table = t }).ToList();
 
         await _tableGroupRepository.SaveChangesAsync();
+
+        DescribeTableGroup(AuditActions.TableGroupUpdate, group,
+            $"Updated {BookingMapper.GroupLabel(group)}, seating {group.CombinedSeats}");
         return ToGroupDto(group);
     }
 
@@ -596,8 +703,18 @@ public class RestaurantManagementService(
 
         _tableGroupRepository.Remove(group);
         await _tableGroupRepository.SaveChangesAsync();
+
+        DescribeTableGroup(AuditActions.TableGroupDelete, group,
+            $"Split up {BookingMapper.GroupLabel(group)}, freeing {affected.Count} bookings from it");
         return true;
     }
+
+    private void DescribeTableGroup(string action, TableGroup group, string summary)
+        => _audit.Describe(action, AuditTargets.TableGroup, group.Id.ToString(CultureInfo.InvariantCulture),
+            BookingMapper.GroupLabel(group), group.RestaurantId, summary);
+
+    private static string MemberIdList(IEnumerable<int> tableIds)
+        => string.Join(",", tableIds.Order());
 
     /// <summary>
     /// Loads the requested member tables, scoped to the restaurant, and enforces every data-integrity

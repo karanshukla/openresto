@@ -79,6 +79,7 @@ function AdminLayoutInner() {
       "/admin/bookings/new": "New Walk-in",
       "/admin/locations": "Locations",
       "/admin/notifications": "Notifications",
+      "/admin/activity": "Activity",
       "/admin/login": "Admin Login",
     };
     /* istanbul ignore next */
@@ -128,6 +129,7 @@ function AdminLayoutInner() {
       <Stack.Screen name="bookings/[id]" options={{ title: "Booking Detail" }} />
       <Stack.Screen name="locations" options={{ title: "Locations" }} />
       <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="activity" options={{ title: "Activity" }} />
       <Stack.Screen name="settings/index" options={{ title: "Settings" }} />
       <Stack.Screen name="settings/brand" options={{ title: "Brand" }} />
       <Stack.Screen name="settings/email" options={{ title: "Email & Push" }} />

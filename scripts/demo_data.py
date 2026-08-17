@@ -499,6 +499,12 @@ def build_dataset(now_utc):
 # ─── Config SQL ──────────────────────────────────────────────────────────────
 
 CONFIG_TABLES = [
+    # The activity log is wiped on every reset, and for a stronger reason than the rest of
+    # this list: the demo's admin password is public, so its entries are visitors' actions
+    # and visitors' IP addresses, shown to every other visitor. The seeded entries that
+    # replace them are emitted with the bookings, which is where the refs they point at
+    # are generated.
+    "AdminAuditEntries",
     "Highlights",
     "SocialLinks",
     "TableGroupMemberships",
@@ -1025,7 +1031,130 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
             )
         )
 
+    out.extend(emit_audit_entries(ds, bookings, now_utc))
+
     return out, len(bookings)
+
+
+# ─── Activity log ────────────────────────────────────────────────────────────
+# Only actions an admin actually takes belong here: a diner booking a table is
+# not an admin action and produces no entry, which is why these are cancels,
+# pauses and settings edits rather than one row per seeded booking.
+#
+# ActorUserId is NULL throughout. The accounts section runs after this one and
+# wipes AdminCredentials, which would SET NULL any id written here anyway — and
+# an entry that still reads correctly with no account behind it is exactly what
+# the denormalized actor columns exist for.
+
+
+def emit_audit_entries(ds, bookings, now_utc):
+    def entry(minutes_ago, action, **fields):
+        row = {
+            "OccurredAt": utc_str(now_utc - timedelta(minutes=minutes_ago)),
+            "ActorUserId": None,
+            "ActorEmail": DEMO_MANAGER_EMAIL,
+            "ActorDisplayName": DEMO_MANAGER_DISPLAY_NAME,
+            "ActorRole": "Manager",
+            "Action": action,
+            "TargetType": None,
+            "TargetId": None,
+            "TargetLabel": None,
+            "RestaurantId": None,
+            "Summary": None,
+            "ChangesJson": None,
+            "HttpMethod": "POST",
+            "Path": "/api/admin",
+            "StatusCode": 204,
+            "IpAddress": "203.0.113.42",
+            "UserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        }
+        row.update(fields)
+        return row
+
+    first = ds["restaurants"][0]
+    cancelled = [(i, row) for i, (row, _, _) in enumerate(bookings, start=1) if row["IsCancelled"]][-3:]
+
+    rows = [
+        entry(
+            2,
+            "auth.login",
+            Path="/api/admin/auth/login",
+            StatusCode=200,
+            Summary=f"{DEMO_MANAGER_DISPLAY_NAME} signed in",
+        ),
+        # A rejected attempt is exactly what a trail gets consulted about, so 4xx rows are kept.
+        entry(
+            9,
+            "auth.login_failed",
+            ActorEmail="someone@example.com",
+            ActorDisplayName=None,
+            ActorRole="",
+            Path="/api/admin/auth/login",
+            StatusCode=401,
+            Summary="Failed sign-in attempt",
+            IpAddress="198.51.100.7",
+        ),
+        entry(
+            34,
+            "restaurant.pause",
+            TargetType="Restaurant",
+            TargetId=str(first["id"]),
+            TargetLabel=first["row"]["Name"],
+            RestaurantId=first["id"],
+            Path=f"/api/admin/restaurants/{first['id']}/pause",
+            StatusCode=200,
+            Summary="Paused new bookings for 60 minutes",
+        ),
+        entry(
+            96,
+            "brand.update",
+            TargetType="Brand",
+            HttpMethod="PATCH",
+            Path="/api/brand",
+            StatusCode=200,
+            Summary="Updated the homepage tagline",
+            ChangesJson='{"tagline":{"before":"Book a table","after":"Reserve your table"}}',
+        ),
+        entry(
+            210,
+            "table.update",
+            TargetType="Table",
+            TargetId="4",
+            TargetLabel="Table 4",
+            RestaurantId=first["id"],
+            HttpMethod="PUT",
+            Path=f"/api/restaurants/{first['id']}/sections/1/tables/4",
+            StatusCode=200,
+            Summary="Resized Table 4 from 2 to 4 seats",
+            ChangesJson='{"seats":{"before":"2","after":"4"}}',
+        ),
+        # The customer's name is not recorded, here or anywhere: booking history is
+        # deliberately GDPR-purgeable, and an entry holding it would put it back.
+        *[
+            entry(
+                360 + index * 47,
+                "booking.cancel",
+                TargetType="Booking",
+                TargetId=str(booking_id),
+                TargetLabel=row["BookingRef"],
+                RestaurantId=row["RestaurantId"],
+                Path=f"/api/admin/bookings/{booking_id}/cancel",
+                Summary=f"Cancelled booking {row['BookingRef']}",
+            )
+            for index, (booking_id, row) in enumerate(cancelled)
+        ],
+    ]
+
+    out = [
+        "",
+        f"-- Activity log: {len(rows)} admin actions (see AdminAuditEntry).",
+        # Repeated from the config section so this one stays self-contained: applying
+        # `bookings` on its own must not collide with the explicit ids below.
+        "DELETE FROM AdminAuditEntries;",
+        "DELETE FROM sqlite_sequence WHERE name = 'AdminAuditEntries';",
+    ]
+    out.extend(insert("AdminAuditEntries", {"Id": i, **row}) for i, row in enumerate(rows, start=1))
+    return out
 
 
 # ─── CLI ─────────────────────────────────────────────────────────────────────

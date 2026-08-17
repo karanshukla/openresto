@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -6,8 +7,20 @@ namespace OpenRestoApi.Core.Application.Services;
 public class MediaService(
     IBrandSettingsRepository brandRepository,
     IRestaurantRepository restaurantRepository,
-    IWebHostEnvironment env)
+    IWebHostEnvironment env,
+    IAuditScope? audit = null)
 {
+    /// <summary>
+    /// Castle's generated proxy constructors do not carry default values, so a Moq class mock can
+    /// only reach a constructor whose arity it matches exactly. This is the arity it passes.
+    /// </summary>
+    public MediaService(
+        IBrandSettingsRepository brand,
+        IRestaurantRepository restaurants,
+        IWebHostEnvironment hostEnvironment)
+        : this(brand, restaurants, hostEnvironment, null) { }
+
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly IBrandSettingsRepository _brandRepository = brandRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly string _mediaDir = Path.Combine(env.ContentRootPath, "wwwroot", "media");
@@ -41,6 +54,9 @@ public class MediaService(
         {
             await _brandRepository.SaveChangesAsync();
         }
+
+        DescribeMedia(AuditActions.MediaUpload, HeroSlot, "Homepage header image", null,
+            "Uploaded a new homepage header image");
         return url;
     }
 
@@ -55,6 +71,9 @@ public class MediaService(
             brand.HeaderImageUrl = null;
             await _brandRepository.SaveChangesAsync();
             TryDeleteFile(url);
+
+            DescribeMedia(AuditActions.MediaDelete, HeroSlot, "Homepage header image", null,
+                "Removed the homepage header image");
         }
     }
 
@@ -74,6 +93,9 @@ public class MediaService(
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.ImageUrl = url;
         await _restaurantRepository.SaveChangesAsync();
+
+        DescribeMedia(AuditActions.MediaUpload, LocationSlot(id), restaurant.Name, id,
+            $"Uploaded a new photo for {restaurant.Name}");
         return url;
     }
 
@@ -89,6 +111,9 @@ public class MediaService(
             restaurant.ImageUrl = null;
             await _restaurantRepository.SaveChangesAsync();
             TryDeleteFile(url);
+
+            DescribeMedia(AuditActions.MediaDelete, LocationSlot(id), restaurant.Name, id,
+                $"Removed the photo for {restaurant.Name}");
         }
         return true;
     }
@@ -114,6 +139,9 @@ public class MediaService(
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.MenuUrl = url;
         await _restaurantRepository.SaveChangesAsync();
+
+        DescribeMedia(AuditActions.MediaUpload, MenuSlot(id), $"{restaurant.Name} menu", id,
+            $"Uploaded a new menu for {restaurant.Name}");
         return url;
     }
 
@@ -129,9 +157,20 @@ public class MediaService(
             restaurant.MenuUrl = null;
             await _restaurantRepository.SaveChangesAsync();
             TryDeleteFile(url);
+
+            DescribeMedia(AuditActions.MediaDelete, MenuSlot(id), $"{restaurant.Name} menu", id,
+                $"Removed the menu for {restaurant.Name}");
         }
         return true;
     }
+
+    /// <summary>The deterministic on-disk slots an upload writes into, as audit target ids.</summary>
+    private const string HeroSlot = "hero";
+    private static string LocationSlot(int restaurantId) => $"location-{restaurantId}";
+    private static string MenuSlot(int restaurantId) => $"menu-{restaurantId}";
+
+    private void DescribeMedia(string action, string slot, string label, int? restaurantId, string summary)
+        => _audit.Describe(action, AuditTargets.Media, slot, label, restaurantId, summary);
 
     private void EnsureMediaDir() => Directory.CreateDirectory(_mediaDir);
 

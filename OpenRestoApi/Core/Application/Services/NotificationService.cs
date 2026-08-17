@@ -1,7 +1,9 @@
+using System.Globalization;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Settings;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -10,12 +12,14 @@ public class NotificationService(
     IAdminNotificationRepository notificationRepository,
     IAdminPushSubscriptionRepository pushSubscriptionRepository,
     IOptions<VapidSettings> vapidOptions,
-    ILogger<NotificationService> logger) : INotificationService
+    ILogger<NotificationService> logger,
+    IAuditScope? audit = null) : INotificationService
 {
     private readonly IAdminNotificationRepository _notificationRepository = notificationRepository;
     private readonly IAdminPushSubscriptionRepository _pushSubscriptionRepository = pushSubscriptionRepository;
     private readonly VapidSettings _vapid = vapidOptions.Value;
     private readonly ILogger<NotificationService> _log = logger;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     public string? GetVapidPublicKey() =>
         _vapid.IsConfigured ? _vapid.PublicKey : null;
@@ -67,6 +71,10 @@ public class NotificationService(
             });
             _log.LogInformation("[Push] New subscription for restaurant {RestaurantId}", restaurantId);
         }
+
+        // No endpoint or key material: a push subscription's keys are credentials.
+        _audit.Describe(AuditActions.PushSubscribe, restaurantId: restaurantId,
+            summary: "Enabled push notifications for a device");
     }
 
     public async Task UnsubscribeAsync(string endpoint)
@@ -79,6 +87,8 @@ public class NotificationService(
             _pushSubscriptionRepository.RemoveRange(subs);
             await _pushSubscriptionRepository.SaveChangesAsync();
             _log.LogInformation("[Push] Unsubscribed {Count} subscription(s)", subs.Count);
+            _audit.Describe(AuditActions.PushUnsubscribe,
+                summary: $"Disabled push notifications for a device at {subs.Count} location(s)");
         }
         else
         {
@@ -86,14 +96,26 @@ public class NotificationService(
         }
     }
 
-    public async Task DeleteByIdAsync(int notificationId) =>
+    public async Task DeleteByIdAsync(int notificationId)
+    {
         await _notificationRepository.DeleteByIdAsync(notificationId);
+        _audit.Describe(AuditActions.NotificationDelete, AuditTargets.Notification,
+            notificationId.ToString(CultureInfo.InvariantCulture), summary: "Deleted 1 notification");
+    }
 
-    public async Task DeleteByIdsAsync(List<int> notificationIds) =>
+    public async Task DeleteByIdsAsync(List<int> notificationIds)
+    {
         await _notificationRepository.DeleteByIdsAsync(notificationIds);
+        _audit.Describe(AuditActions.NotificationDelete, AuditTargets.Notification,
+            summary: $"Deleted {notificationIds.Count} notifications");
+    }
 
-    public async Task DeleteAllAsync(int? restaurantId, string? type, bool? unreadOnly) =>
+    public async Task DeleteAllAsync(int? restaurantId, string? type, bool? unreadOnly)
+    {
         await _notificationRepository.DeleteAllAsync(restaurantId, type, unreadOnly);
+        _audit.Describe(AuditActions.NotificationDelete, AuditTargets.Notification,
+            restaurantId: restaurantId, summary: "Cleared the matching notifications");
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 

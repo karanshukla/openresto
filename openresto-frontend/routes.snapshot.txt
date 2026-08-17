@@ -9,6 +9,7 @@
 /(user)/search
 /+not-found
 /_sitemap
+/admin/activity
 /admin/bookings/index
 /admin/dashboard
 /admin/locations

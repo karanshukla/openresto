@@ -14,11 +14,13 @@ namespace OpenRestoApi.Controllers;
 public class AuthController(
     IAuthService authService,
     ISecurityQuestionsService securityQuestions,
-    IAuthCookieService cookies) : ControllerBase
+    IAuthCookieService cookies,
+    IAuditScope? audit = null) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly ISecurityQuestionsService _securityQuestions = securityQuestions;
     private readonly IAuthCookieService _cookies = cookies;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
@@ -34,6 +36,13 @@ public class AuthController(
     public IActionResult Logout()
     {
         _cookies.Clear(Response);
+        // Only a real session ends here. The endpoint takes no token by design — clearing a
+        // cookie that was never set has to succeed — so without this check an anonymous POST
+        // would land an actor-less row, and could be repeated to bury the entries that matter.
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            _audit.Describe(AuditActions.AuthLogout, summary: "Signed out");
+        }
         return Ok(new { message = "Logged out." });
     }
 

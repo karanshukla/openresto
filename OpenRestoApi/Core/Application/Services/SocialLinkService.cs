@@ -1,3 +1,4 @@
+using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -6,9 +7,10 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class SocialLinkService(ISocialLinkRepository socialLinkRepository)
+public class SocialLinkService(ISocialLinkRepository socialLinkRepository, IAuditScope? audit = null)
 {
     private readonly ISocialLinkRepository _socialLinkRepository = socialLinkRepository;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     private const int MaxLabelLength = 60;
 
@@ -29,6 +31,8 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository)
             SortOrder = req.SortOrder,
         };
         await _socialLinkRepository.AddAsync(entity);
+
+        Describe(AuditActions.SocialLinkCreate, entity, $"Added the social link \"{entity.Label}\"");
         return ToDto(entity);
     }
 
@@ -40,11 +44,18 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository)
             return null;
         }
         ValidateAndNormalize(req.Label, req.Url, req.IconKey, out string label, out string url, out string iconKey);
+        _audit.RecordChange("label", entity.Label, label);
+        _audit.RecordChange("url", entity.Url, url);
+        _audit.RecordChange("iconKey", entity.IconKey, iconKey);
+        _audit.RecordChange("sortOrder", entity.SortOrder, req.SortOrder);
+
         entity.Label = label;
         entity.Url = url;
         entity.IconKey = iconKey;
         entity.SortOrder = req.SortOrder;
         await _socialLinkRepository.SaveChangesAsync();
+
+        Describe(AuditActions.SocialLinkUpdate, entity, $"Edited the social link \"{entity.Label}\"");
         return ToDto(entity);
     }
 
@@ -57,8 +68,14 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository)
         }
         _socialLinkRepository.Remove(entity);
         await _socialLinkRepository.SaveChangesAsync();
+
+        Describe(AuditActions.SocialLinkDelete, entity, $"Deleted the social link \"{entity.Label}\"");
         return true;
     }
+
+    private void Describe(string action, SocialLink entity, string summary)
+        => _audit.Describe(action, AuditTargets.SocialLink, entity.Id.ToString(CultureInfo.InvariantCulture), entity.Label,
+            summary: summary);
 
     private static SocialLinkDto ToDto(SocialLink s) => new()
     {

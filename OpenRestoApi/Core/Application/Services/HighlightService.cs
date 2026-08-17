@@ -1,3 +1,4 @@
+using System.Globalization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -6,9 +7,10 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public class HighlightService(IHighlightRepository highlightRepository)
+public class HighlightService(IHighlightRepository highlightRepository, IAuditScope? audit = null)
 {
     private readonly IHighlightRepository _highlightRepository = highlightRepository;
+    private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
     private const int MaxTitleLength = 60;
     private const int MaxBodyLength = 500;
@@ -33,6 +35,8 @@ public class HighlightService(IHighlightRepository highlightRepository)
             Link = link,
         };
         await _highlightRepository.AddAsync(entity);
+
+        Describe(AuditActions.HighlightCreate, entity, $"Added the highlight \"{entity.Title}\"");
         return ToDto(entity);
     }
 
@@ -46,12 +50,20 @@ public class HighlightService(IHighlightRepository highlightRepository)
         ValidateAndNormalize(
             req.Title, req.Body, req.IconKey, req.Link,
             out string title, out string body, out string iconKey, out string? link);
+        _audit.RecordChange("title", entity.Title, title);
+        _audit.RecordChange("body", entity.Body, body);
+        _audit.RecordChange("iconKey", entity.IconKey, iconKey);
+        _audit.RecordChange("sortOrder", entity.SortOrder, req.SortOrder);
+        _audit.RecordChange("link", entity.Link, link);
+
         entity.Title = title;
         entity.Body = body;
         entity.IconKey = iconKey;
         entity.SortOrder = req.SortOrder;
         entity.Link = link;
         await _highlightRepository.SaveChangesAsync();
+
+        Describe(AuditActions.HighlightUpdate, entity, $"Edited the highlight \"{entity.Title}\"");
         return ToDto(entity);
     }
 
@@ -64,8 +76,14 @@ public class HighlightService(IHighlightRepository highlightRepository)
         }
         _highlightRepository.Remove(entity);
         await _highlightRepository.SaveChangesAsync();
+
+        Describe(AuditActions.HighlightDelete, entity, $"Deleted the highlight \"{entity.Title}\"");
         return true;
     }
+
+    private void Describe(string action, RestaurantHighlight entity, string summary)
+        => _audit.Describe(action, AuditTargets.Highlight, entity.Id.ToString(CultureInfo.InvariantCulture), entity.Title,
+            summary: summary);
 
     private static HighlightDto ToDto(RestaurantHighlight h) => new()
     {

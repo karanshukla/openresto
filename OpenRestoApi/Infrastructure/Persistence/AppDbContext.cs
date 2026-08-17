@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EmailFailure> EmailFailures { get; set; } = null!;
     public DbSet<AdminNotification> AdminNotifications { get; set; } = null!;
     public DbSet<AdminPushSubscription> AdminPushSubscriptions { get; set; } = null!;
+    public DbSet<AdminAuditEntry> AdminAuditEntries { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +132,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             n.HasOne(x => x.Booking).WithMany().HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.SetNull);
             n.HasIndex(x => new { x.RestaurantId, x.CreatedAt });
             n.HasIndex(x => new { x.RestaurantId, x.IsRead });
+        });
+
+        modelBuilder.Entity<AdminAuditEntry>(e =>
+        {
+            e.HasKey(x => x.Id);
+            // SetNull, not Cascade: the denormalized actor email and role are what keep an entry
+            // readable, and deleting the account must not delete the record of what it did.
+            e.HasOne(x => x.ActorUser).WithMany().HasForeignKey(x => x.ActorUserId).OnDelete(DeleteBehavior.SetNull);
+            e.Property(x => x.ActorEmail).IsRequired().HasMaxLength(AuditFields.MaxActorEmailLength);
+            e.Property(x => x.ActorDisplayName).HasMaxLength(AuditFields.MaxActorDisplayNameLength);
+            e.Property(x => x.ActorRole).IsRequired().HasMaxLength(AuditFields.MaxRoleLength);
+            e.Property(x => x.Action).IsRequired().HasMaxLength(AuditFields.MaxActionLength);
+            e.Property(x => x.TargetType).HasMaxLength(AuditFields.MaxTargetTypeLength);
+            e.Property(x => x.TargetId).HasMaxLength(AuditFields.MaxTargetIdLength);
+            e.Property(x => x.TargetLabel).HasMaxLength(AuditFields.MaxTargetLabelLength);
+            e.Property(x => x.Summary).HasMaxLength(AuditFields.MaxSummaryLength);
+            e.Property(x => x.ChangesJson).HasMaxLength(AuditFields.MaxChangesJsonLength);
+            e.Property(x => x.HttpMethod).IsRequired().HasMaxLength(AuditFields.MaxHttpMethodLength);
+            e.Property(x => x.Path).IsRequired().HasMaxLength(AuditFields.MaxPathLength);
+            e.Property(x => x.IpAddress).HasMaxLength(AuditFields.MaxIpAddressLength);
+            e.Property(x => x.UserAgent).HasMaxLength(AuditFields.MaxUserAgentLength);
+            // The list is always newest-first; the filters are the other three axes.
+            e.HasIndex(x => x.OccurredAt);
+            e.HasIndex(x => new { x.ActorUserId, x.OccurredAt });
+            e.HasIndex(x => new { x.RestaurantId, x.OccurredAt });
+            e.HasIndex(x => x.Action);
         });
 
         modelBuilder.Entity<AdminPushSubscription>(s =>

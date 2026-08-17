@@ -43,6 +43,7 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
       testIgnore: [
+        "**/admin-activity.spec.ts",
         "**/admin-pause.spec.ts",
         "**/admin-extend.spec.ts",
         "**/brand-colour.spec.ts",
@@ -69,6 +70,7 @@ export default defineConfig({
         storageState: ADMIN_STATE_FILE,
       },
       testMatch: [
+        "**/admin-activity.spec.ts",
         "**/admin-pause.spec.ts",
         "**/admin-extend.spec.ts",
         "**/brand-colour.spec.ts",

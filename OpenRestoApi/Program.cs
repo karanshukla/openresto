@@ -1,4 +1,5 @@
 using OpenRestoApi.Extensions;
+using OpenRestoApi.Infrastructure.Auditing;
 using OpenRestoApi.Infrastructure.Exceptions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,12 @@ string connectionString = builder.Configuration.GetAppConnectionString(builder.E
 builder.Services.AddDatabaseSetup(connectionString, builder.Environment);
 
 WebApplication app = builder.Build();
+
+// Outermost on purpose: the audit entry is written after everything else has finished with the
+// request, so the status code it records is the one the caller actually received — including the
+// 400 that UseExceptionHandler (below) mapped a domain exception to — and the IP is the client's
+// as rewritten by UseForwardedHeaders rather than the proxy's.
+app.UseAdminAuditLog();
 
 // Convert unhandled exceptions and bare status-code responses (404/405/etc.)
 // into JSON. Must be one of the first middlewares so it can wrap the rest of the
