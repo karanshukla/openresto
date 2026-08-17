@@ -129,7 +129,7 @@ export default function LocationsScreen({
     if (scrollTimer.current) clearTimeout(scrollTimer.current);
     // let the accordion's expand tween settle before measuring
     scrollTimer.current = setTimeout(() => {
-      scrollIntoView({ current: itemRefs.current[id] ?? null }, scrollRef, "start");
+      scrollIntoView({ current: itemRefs.current[id] ?? null }, scrollRef, { block: "start" });
     }, delay);
   }, []);
 

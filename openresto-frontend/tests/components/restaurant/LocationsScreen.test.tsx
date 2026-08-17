@@ -462,7 +462,7 @@ describe("LocationsScreen", () => {
         expect(scrollIntoView).toHaveBeenCalledWith(
           { current: { marker: "item-1" } },
           expect.anything(),
-          "start"
+          { block: "start" }
         ),
       { timeout: 1000 }
     );
@@ -477,7 +477,9 @@ describe("LocationsScreen", () => {
 
     await waitFor(
       () =>
-        expect(scrollIntoView).toHaveBeenCalledWith({ current: null }, expect.anything(), "start"),
+        expect(scrollIntoView).toHaveBeenCalledWith({ current: null }, expect.anything(), {
+          block: "start",
+        }),
       { timeout: 1000 }
     );
   });

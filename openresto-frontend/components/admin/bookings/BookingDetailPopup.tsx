@@ -79,7 +79,10 @@ export function BookingDetailPopup({
 
   useEffect(() => {
     if (initialFocus !== "extend" || loading || editing || !booking || booking.isCancelled) return;
-    const timer = setTimeout(() => scrollIntoView(extendSectionRef, scrollRef, "center"), 150);
+    const timer = setTimeout(
+      () => scrollIntoView(extendSectionRef, scrollRef, { block: "center" }),
+      150
+    );
     return () => clearTimeout(timer);
     // Depend on booking?.id/isCancelled rather than the whole booking object
     // so an in-place update (e.g. a successful extend refreshing endTime)

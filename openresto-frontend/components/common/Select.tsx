@@ -93,7 +93,6 @@ export default function Select({
 
   const close = () => {
     setOpen(false);
-    release();
     rememberTypeahead("");
   };
 
@@ -112,12 +111,17 @@ export default function Select({
   };
 
   // Keeping the highlight on screen is not a nicety once arrow keys exist: without it, the
-  // fourth press down a fifty-row list moves a highlight nobody can see.
+  // fourth press down a fifty-row list moves a highlight nobody can see. Unanimated on
+  // purpose — a list that opens on 20:30 has to be there on the first frame, not scroll the
+  // fifty rows to it while the diner watches.
   useEffect(() => {
     if (!open || activeIndex < 0) return;
     // No guard on the ref: `scrollIntoView` already ignores a target that isn't there, which
     // is what a highlight left pointing past a list that shrank under it resolves to.
-    scrollIntoView({ current: optionRefs.current[activeIndex] }, listRef, "nearest");
+    scrollIntoView({ current: optionRefs.current[activeIndex] }, listRef, {
+      block: "nearest",
+      animated: false,
+    });
   }, [open, activeIndex]);
 
   const isChorded = (event: WebKeyEvent) => !!(event.ctrlKey || event.metaKey || event.altKey);
@@ -156,6 +160,7 @@ export default function Select({
         visible={open}
         onClose={close}
         position={panel}
+        onClosed={release}
         role={LISTBOX_ROLE}
         id={listId}
         accessibilityLabel={accessibilityLabel ?? placeholder}

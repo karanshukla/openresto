@@ -11,6 +11,13 @@ export interface AnchoredPanelProps {
   onClose: () => void;
   /** Where to hang the panel, from `useAnchorTracking`. Null renders the centred sheet. */
   position: PanelPosition | null;
+  /**
+   * Fires once the popup has finished animating away. Releasing the measurement any earlier —
+   * in the same handler that closes it — swaps `position` to null while the fade-out is still
+   * playing, so the panel tears off its trigger and fades from the middle of the screen as the
+   * centred sheet instead.
+   */
+  onClosed?: () => void;
   /** What the panel is: a list of values (`listbox`) or a set of commands (`menu`). */
   role: Role;
   accessibilityLabel: string;
@@ -46,6 +53,7 @@ export function AnchoredPanel({
   visible,
   onClose,
   position,
+  onClosed,
   role,
   accessibilityLabel,
   activeDescendantId,
@@ -61,7 +69,13 @@ export function AnchoredPanel({
   useDialogFocus(visible, panelRef);
 
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      onRequestClose={onClose}
+      onDismiss={onClosed}
+    >
       <Pressable
         testID={backdropTestID}
         style={backdropStyleFor(position !== null)}

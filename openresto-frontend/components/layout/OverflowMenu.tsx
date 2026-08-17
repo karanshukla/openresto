@@ -59,10 +59,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
     fetchSocialLinks().then(setSocialLinks);
   }, []);
 
-  const close = () => {
-    setOpen(false);
-    release();
-  };
+  const close = () => setOpen(false);
 
   const runAndClose = (action: () => void) => () => {
     close();
@@ -151,6 +148,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         visible={open}
         onClose={close}
         position={panel}
+        onClosed={release}
         role="menu"
         id={menuId}
         accessibilityLabel="More options"
