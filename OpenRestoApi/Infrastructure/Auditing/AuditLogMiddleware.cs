@@ -40,12 +40,15 @@ internal sealed class AuditLogMiddleware(
         catch (Exception ex)
         {
             // The response has already gone out; there is nothing to fail. Losing the entry is
-            // bad, so it is logged loudly rather than swallowed. Both values are caller-supplied
-            // and reach the log verbatim, so they go through the same sanitizer the entry uses —
-            // Kestrel percent-decodes %0A into Request.Path, which would otherwise forge a line.
-            logger.LogError(ex, "[Audit] Failed to record {Method} {Path}",
-                AuditFields.Sanitize(context.Request.Method, AuditFields.MaxHttpMethodLength),
-                AuditFields.Sanitize(context.Request.Path.Value, AuditFields.MaxPathLength));
+            // bad, so it is logged loudly rather than swallowed.
+            //
+            // Named by its endpoint rather than its URL. The request method and path are
+            // caller-supplied — Kestrel percent-decodes %0A straight into Request.Path — and a
+            // log line assembled from them can be made to forge a second line. The endpoint's
+            // display name comes from the routing table instead, so there is nothing to sanitize,
+            // and "which action failed to record" is the more useful thing to read anyway.
+            logger.LogError(ex, "[Audit] Failed to record an entry for {Endpoint}",
+                context.GetEndpoint()?.DisplayName ?? "an unrouted request");
         }
     }
 
