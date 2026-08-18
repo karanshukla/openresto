@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, View, Pressable } from "react-native";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { IconButton } from "@/components/common/IconButton";
@@ -6,10 +6,20 @@ import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
-import { webProps, type WebKeyEvent } from "@/utils/webProps";
+import { clampToRange, resolveCalendarKey, shiftCalendarMonths } from "@/utils/calendarKeys";
+import { GRIDCELL_ROLE, webProps, type WebKeyEvent } from "@/utils/webProps";
 import { styles } from "./DatePicker.web.styles";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_FULL_LABELS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 const MONTH_LABELS = [
   "January",
   "February",
@@ -44,6 +54,18 @@ function startOfToday(): Date {
   return d;
 }
 
+/**
+ * The month grid of days, as an ARIA `grid` with a roving tab stop.
+ *
+ * The highlighted day is the whole month's single tab stop and every other cell is `tabIndex`
+ * -1: a month used to be up to 31 tab stops with no way past them, so reaching the end of the
+ * dialog took about 33 presses (issue #350). Arrow keys move the highlight from there, and
+ * because the highlighted day is also what the calendar renders around, arrowing off the end of
+ * a month pages the view for free.
+ *
+ * @see [DatePickerWeb.test.tsx](../../tests/components/common/DatePickerWeb.test.tsx) — pins the
+ * single tab stop, the grid roles, and that a key on the grid moves the highlight and the month.
+ */
 export default function DatePicker({
   selectedDate,
   onSelect,
@@ -104,25 +126,73 @@ export default function DatePicker({
     !openDays.includes(isoDayOf(new Date(selectedDate + "T12:00:00")))
   );
 
-  const initialView = selectedDate ? new Date(selectedDate + "T12:00:00") : today;
   const [open, setOpen] = useState(false);
-  const [viewYear, setViewYear] = useState(initialView.getFullYear());
-  const [viewMonth, setViewMonth] = useState(initialView.getMonth());
+  // The highlighted day is the calendar's one piece of position state: the visible month is
+  // read off it, so nothing can page the grid away from the day the keyboard is on.
+  const [focused, setFocused] = useState(() =>
+    clampToRange(selectedDate ?? toDateStr(today), minDateStr, maxDateStr)
+  );
   const calendarRef = useRef<View>(null);
+  const dayRefs = useRef<Record<string, View | null>>({});
+  const followFocus = useRef(false);
   useDialogFocus(open, calendarRef);
 
-  // Escape is the way out of every other popup in the app; `onRequestClose` covers the Android
-  // back button, not a keypress on web.
-  const handleKey = (event: WebKeyEvent) => {
-    if (event.key !== "Escape") return;
-    event.preventDefault?.();
+  const viewDate = new Date(focused + "T12:00:00");
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth();
+
+  const isUnpickable = (dateStr: string) => {
+    if (dateStr < minDateStr || dateStr > maxDateStr) return true;
+    const isoDay = isoDayOf(new Date(dateStr + "T12:00:00"));
+    return (!!openDays && !openDays.includes(isoDay)) || !!unavailableDays?.includes(isoDay);
+  };
+
+  const commit = (dateStr: string) => {
+    if (isUnpickable(dateStr)) return;
+    onSelect(dateStr);
     setOpen(false);
   };
 
+  /**
+   * Hung on the dialog *and* on every day cell, because neither alone hears every key. The
+   * dialog is where focus lands — react-native-web's modal trap fires after the open animation
+   * and `useDialogFocus` takes it back to the card — but a cell holding focus stops Enter and
+   * Space from ever reaching it, since RNW treats them as a press on itself and halts them
+   * there. Handled keys stop where they are caught, so the two placements never both fire.
+   */
+  const handleKey = (event: WebKeyEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const result = resolveCalendarKey(event.key, {
+      focused,
+      min: minDateStr,
+      max: maxDateStr,
+    });
+    if (result.handled) {
+      // Enter's default action is to activate the nearest ancestor that has one, and inside this
+      // modal that is the backdrop `button` that closes it — so a day taken with Enter used to
+      // dismiss the calendar instead.
+      event.preventDefault?.();
+      event.stopPropagation?.();
+    }
+    if (result.focused !== undefined) {
+      followFocus.current = true;
+      setFocused(result.focused);
+    }
+    if (result.commit) commit(focused);
+    if (result.close) setOpen(false);
+  };
+
+  // Focus follows the highlight, so a screen reader announces each day the arrows land on. Only
+  // for a key that moved it: a month arrow moves the highlight too, and pulling focus off the
+  // button would leave a diner unable to press it twice.
+  useEffect(() => {
+    if (!open || !followFocus.current) return;
+    followFocus.current = false;
+    (dayRefs.current[focused] as unknown as HTMLElement | null)?.focus?.();
+  }, [open, focused]);
+
   const openPicker = () => {
-    const base = selectedDate ? new Date(selectedDate + "T12:00:00") : today;
-    setViewYear(base.getFullYear());
-    setViewMonth(base.getMonth());
+    setFocused(clampToRange(selectedDate ?? toDateStr(today), minDateStr, maxDateStr));
     setOpen(true);
   };
 
@@ -131,24 +201,17 @@ export default function DatePicker({
   const nextMonthFirstDay = new Date(viewYear, viewMonth + 1, 1);
   const canGoNext = toDateStr(nextMonthFirstDay) <= maxDateStr;
 
+  const stepMonth = (months: number) =>
+    setFocused((current) =>
+      clampToRange(shiftCalendarMonths(current, months), minDateStr, maxDateStr)
+    );
+
   const goPrevMonth = () => {
-    if (!canGoPrev) return;
-    if (viewMonth === 0) {
-      setViewYear((y) => y - 1);
-      setViewMonth(11);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
+    if (canGoPrev) stepMonth(-1);
   };
 
   const goNextMonth = () => {
-    if (!canGoNext) return;
-    if (viewMonth === 11) {
-      setViewYear((y) => y + 1);
-      setViewMonth(0);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
+    if (canGoNext) stepMonth(1);
   };
 
   const firstOfMonth = new Date(viewYear, viewMonth, 1);
@@ -271,76 +334,89 @@ export default function DatePicker({
             </View>
 
             <View
-              style={styles.weekdayRow}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
+              role="grid"
+              testID="date-picker-grid"
+              accessibilityLabel={`${MONTH_LABELS[viewMonth]} ${viewYear}`}
             >
-              {WEEKDAY_LABELS.map((label) => (
-                <View key={label} style={styles.cell}>
-                  <ThemedText style={{ fontSize: 11, color: placeholderColor, fontWeight: "600" }}>
-                    {label}
-                  </ThemedText>
+              <View style={styles.weekdayRow} role="row">
+                {WEEKDAY_LABELS.map((label, i) => (
+                  <View
+                    key={label}
+                    style={styles.cell}
+                    role="columnheader"
+                    accessibilityLabel={WEEKDAY_FULL_LABELS[i]}
+                  >
+                    <ThemedText
+                      style={{ fontSize: 11, color: placeholderColor, fontWeight: "600" }}
+                    >
+                      {label}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+
+              {Array.from({ length: cells.length / 7 }, (_, row) => (
+                <View key={row} style={styles.weekRow} role="row">
+                  {cells.slice(row * 7, row * 7 + 7).map((dayNum, col) => {
+                    if (dayNum === null)
+                      return <View key={col} style={styles.cell} role={GRIDCELL_ROLE} />;
+                    const cellDate = new Date(viewYear, viewMonth, dayNum);
+                    const cellStr = toDateStr(cellDate);
+                    const closedWeekday = !!openDays && !openDays.includes(isoDayOf(cellDate));
+                    const unbookableWeekday = !!unavailableDays?.includes(isoDayOf(cellDate));
+                    const disabled = isUnpickable(cellStr);
+                    const isSelected = cellStr === selectedDate;
+                    const isFocused = cellStr === focused;
+                    return (
+                      <Pressable
+                        key={col}
+                        ref={(node) => {
+                          dayRefs.current[cellStr] = node;
+                        }}
+                        disabled={disabled}
+                        testID={`date-picker-day-${cellStr}`}
+                        onPress={() => commit(cellStr)}
+                        role={GRIDCELL_ROLE}
+                        {...webProps({ onKeyDown: handleKey })}
+                        aria-selected={isSelected}
+                        // The month's one tab stop. Every other day is reached by arrowing the
+                        // highlight, not by tabbing through thirty of them.
+                        tabIndex={isFocused ? 0 : -1}
+                        accessibilityLabel={describeDate(cellDate)}
+                        accessibilityHint={
+                          closedWeekday
+                            ? "Normally closed"
+                            : unbookableWeekday
+                              ? unavailableReason
+                              : undefined
+                        }
+                        accessibilityState={{ disabled, selected: isSelected }}
+                        style={[
+                          styles.cell,
+                          styles.dayCell,
+                          isFocused && { borderColor: primaryColor },
+                          isSelected && { backgroundColor: primaryColor },
+                        ]}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 13,
+                            color: isSelected
+                              ? theme.colors.white
+                              : disabled
+                                ? colors.disabled
+                                : textColor,
+                            fontWeight: isSelected ? "600" : "400",
+                          }}
+                        >
+                          {dayNum}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               ))}
             </View>
-
-            {Array.from({ length: cells.length / 7 }, (_, row) => (
-              <View key={row} style={styles.weekRow}>
-                {cells.slice(row * 7, row * 7 + 7).map((dayNum, col) => {
-                  if (dayNum === null) return <View key={col} style={styles.cell} />;
-                  const cellDate = new Date(viewYear, viewMonth, dayNum);
-                  const cellStr = toDateStr(cellDate);
-                  const outOfRange = cellStr < minDateStr || cellStr > maxDateStr;
-                  const closedWeekday = !!openDays && !openDays.includes(isoDayOf(cellDate));
-                  const unbookableWeekday = !!unavailableDays?.includes(isoDayOf(cellDate));
-                  const disabled = outOfRange || closedWeekday || unbookableWeekday;
-                  const isSelected = cellStr === selectedDate;
-                  return (
-                    <Pressable
-                      key={col}
-                      disabled={disabled}
-                      testID={`date-picker-day-${cellStr}`}
-                      onPress={() => {
-                        onSelect(cellStr);
-                        setOpen(false);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={describeDate(cellDate)}
-                      accessibilityHint={
-                        closedWeekday
-                          ? "Normally closed"
-                          : unbookableWeekday
-                            ? unavailableReason
-                            : undefined
-                      }
-                      accessibilityState={{ disabled, selected: isSelected }}
-                      style={[
-                        styles.cell,
-                        styles.dayCell,
-                        isSelected && {
-                          backgroundColor: primaryColor,
-                          borderRadius: theme.borderRadius.sm,
-                        },
-                      ]}
-                    >
-                      <ThemedText
-                        style={{
-                          fontSize: 13,
-                          color: isSelected
-                            ? theme.colors.white
-                            : disabled
-                              ? colors.disabled
-                              : textColor,
-                          fontWeight: isSelected ? "600" : "400",
-                        }}
-                      >
-                        {dayNum}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
           </Pressable>
         </Pressable>
       </Modal>

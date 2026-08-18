@@ -18,6 +18,7 @@ export interface WebKeyEvent {
   ctrlKey?: boolean;
   metaKey?: boolean;
   preventDefault?: () => void;
+  stopPropagation?: () => void;
 }
 
 export interface WebOnlyProps {
@@ -40,3 +41,10 @@ export const webProps = (props: WebOnlyProps): Record<string, unknown> =>
  * rather than casting at each use.
  */
 export const LISTBOX_ROLE = "listbox" as Role;
+
+/**
+ * Same gap for the calendar grid: React Native's `Role` union has `grid`, `row` and
+ * `columnheader` but stops at `cell` where ARIA says `gridcell`, and a `cell` inside a `grid`
+ * is not the role a day of the month is supposed to carry.
+ */
+export const GRIDCELL_ROLE = "gridcell" as Role;
