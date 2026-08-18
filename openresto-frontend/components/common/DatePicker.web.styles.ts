@@ -56,7 +56,12 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // The border is always there and usually invisible: the keyboard's highlight colours it in,
+  // and a ring that appeared only when focused would nudge every other day in the row.
   dayCell: {
     margin: 1,
+    borderWidth: 1,
+    borderColor: "transparent",
+    borderRadius: theme.borderRadius.sm,
   },
 });

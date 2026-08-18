@@ -311,3 +311,152 @@ describe("DatePicker (web) as a filter chip", () => {
     expect(screen.getByTestId("date-picker-calendar").props.tabIndex).toBe(-1);
   });
 });
+
+/**
+ * The month grid, as a keyboard sees it (issue #350). Every day used to be a tab stop with no
+ * arrow keys to move between them, so a month cost about 33 presses to get past and there was
+ * no way to skip it.
+ */
+describe("DatePicker (web) keyboard grid", () => {
+  const onSelect = jest.fn();
+  const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const openOn = (selectedDate: string, props: Record<string, unknown> = {}) => {
+    render(<DatePickerWeb selectedDate={selectedDate} onSelect={onSelect} {...props} />);
+    fireEvent.press(screen.getByTestId("date-picker-trigger"));
+  };
+
+  const press = (key: string) =>
+    fireEvent(screen.getByTestId("date-picker-calendar"), "keyDown", {
+      key,
+      preventDefault: jest.fn(),
+    });
+
+  const tabStops = () =>
+    screen
+      .getAllByTestId(/^date-picker-day-/)
+      .filter((cell) => cell.props.tabIndex === 0)
+      .map((cell) => cell.props.testID);
+
+  it("gives the whole month one tab stop", () => {
+    const todayStr = localDateValue(new Date());
+    openOn(todayStr, { openDays: ALL_DAYS });
+
+    expect(tabStops()).toEqual([`date-picker-day-${todayStr}`]);
+  });
+
+  it("moves the tab stop with the arrow keys instead of leaving it put", () => {
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    openOn(localDateValue(today), { openDays: ALL_DAYS });
+
+    press("ArrowDown");
+
+    expect(tabStops()).toEqual([`date-picker-day-${localDateValue(nextWeek)}`]);
+  });
+
+  /** The visible month is read off the highlight, so walking off the end of one pages the grid. */
+  it("pages the month when the highlight walks off the end of it", () => {
+    const today = new Date();
+    const lastOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    const prevLabel = lastOfPrevMonth.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+    const thisLabel = today.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    openOn(localDateValue(lastOfPrevMonth), { allowPast: true });
+    expect(screen.getByText(prevLabel)).toBeTruthy();
+
+    press("ArrowRight");
+
+    expect(screen.getByText(thisLabel)).toBeTruthy();
+  });
+
+  /**
+   * Both commit keys are the grid's, not the cell's: Enter's own default action would activate
+   * the backdrop `button` the calendar sits inside, which dismissed it instead of taking the day.
+   */
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])("takes the highlighted day on %s", (_name, key) => {
+    const todayStr = localDateValue(new Date());
+    openOn(todayStr, { openDays: ALL_DAYS });
+    const stopPropagation = jest.fn();
+
+    fireEvent(screen.getByTestId(`date-picker-day-${todayStr}`), "keyDown", {
+      key,
+      preventDefault: jest.fn(),
+      stopPropagation,
+    });
+
+    expect(onSelect).toHaveBeenCalledWith(todayStr);
+    expect(stopPropagation).toHaveBeenCalled();
+    expect(screen.queryByTestId("date-picker-calendar")).toBeNull();
+  });
+
+  it("takes the highlighted day on Space from the dialog itself", () => {
+    const todayStr = localDateValue(new Date());
+    openOn(todayStr, { openDays: ALL_DAYS });
+
+    press(" ");
+
+    expect(onSelect).toHaveBeenCalledWith(todayStr);
+    expect(screen.queryByTestId("date-picker-calendar")).toBeNull();
+  });
+
+  /**
+   * Space is committed by the grid rather than by the cell, so the cell being `disabled` is not
+   * what stops it — the grid has to refuse the day itself.
+   */
+  it("refuses a closed day on Space, the same as pressing it would", () => {
+    const today = new Date();
+    const todayIso = today.getDay() === 0 ? 7 : today.getDay();
+    openOn(localDateValue(today), { openDays: ALL_DAYS.filter((d) => d !== todayIso) });
+
+    press(" ");
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByTestId("date-picker-calendar")).toBeTruthy();
+  });
+
+  it("leaves a chorded key to the browser", () => {
+    const todayStr = localDateValue(new Date());
+    openOn(todayStr, { openDays: ALL_DAYS });
+
+    fireEvent(screen.getByTestId("date-picker-calendar"), "keyDown", {
+      key: "ArrowDown",
+      ctrlKey: true,
+      preventDefault: jest.fn(),
+    });
+
+    expect(tabStops()).toEqual([`date-picker-day-${todayStr}`]);
+  });
+
+  it("is a grid of days, not a pile of buttons", () => {
+    const todayStr = localDateValue(new Date());
+    openOn(todayStr, { openDays: ALL_DAYS });
+
+    expect(screen.getByTestId("date-picker-grid").props.role).toBe("grid");
+    const day = screen.getByTestId(`date-picker-day-${todayStr}`);
+    expect(day.props.role).toBe("gridcell");
+    expect(day.props.accessibilityState.selected).toBe(true);
+  });
+
+  it("marks only the chosen day as selected", () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    openOn(localDateValue(today), { openDays: ALL_DAYS });
+
+    expect(
+      screen.getByTestId(`date-picker-day-${localDateValue(tomorrow)}`).props.accessibilityState
+        .selected
+    ).toBe(false);
+  });
+});
