@@ -440,11 +440,7 @@ export default function NotificationsScreen() {
           </HorizontalScroller>
 
           <View style={styles.pillRow2}>
-            <HorizontalScroller
-              label="Notification types"
-              style={{ flex: 1 }}
-              contentContainerStyle={styles.pillRow}
-            >
+            <HorizontalScroller label="Notification types" contentContainerStyle={styles.pillRow}>
               {TYPE_FILTERS.map((f) => {
                 const active = selectedType === f.value;
                 return (
