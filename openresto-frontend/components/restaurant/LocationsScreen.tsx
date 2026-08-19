@@ -12,8 +12,9 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import PageContainer from "@/components/layout/PageContainer";
 import PageLoader from "@/components/common/PageLoader";
-import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
+import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
@@ -63,7 +64,7 @@ export default function LocationsScreen({
   // Raw scroll offsets live in refs; state holds only the booleans the UI reacts to, so
   // scrolling re-renders the list on transitions instead of every scroll event.
   const [filterPinned, setFilterPinned] = useState(false);
-  const [fabVisible, setFabVisible] = useState(false);
+  const fab = useScrollToTopFab();
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = isMobileWidth(width);
@@ -73,6 +74,15 @@ export default function LocationsScreen({
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [meal, setMeal] = useState<MealWindow>("All");
   const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
+  /**
+   * Two panes rather than an overlay, so the drawer takes its width off everything in the
+   * list column — the footer included, which is why the footer moves out from under the
+   * list to sit beneath both panes instead.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins that the footer leaves the column for the side drawer and stays for the sheet.
+   */
+  const sideDrawer = Boolean(drawer) && !isCompact;
   const [availability, setAvailability] = useState<Record<number, number | null>>({});
   // Where the filter bar's band sits in the unscrolled list, so the page can tell a pinned
   // bar from one still sitting under the heading and only draw its edge once it is pinned.
@@ -86,11 +96,13 @@ export default function LocationsScreen({
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    setFilterPinned(y > filterTop.current);
-    setFabVisible(y > SHOW_AFTER_SCROLL_Y);
-  }, []);
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setFilterPinned(e.nativeEvent.contentOffset.y > filterTop.current);
+      fab.trackScroll(e);
+    },
+    [fab]
+  );
 
   const loadRestaurants = useCallback(() => {
     setLoading(true);
@@ -116,6 +128,13 @@ export default function LocationsScreen({
   const registerRef = useCallback((id: number, ref: View | null) => {
     itemRefs.current[id] = ref;
   }, []);
+
+  // With the footer out of the column there is nothing left in this scroll for the FAB to
+  // climb over, and a height measured before the drawer opened would lift it over nothing.
+  const { setFooterHeight } = fab;
+  useEffect(() => {
+    if (sideDrawer) setFooterHeight(0);
+  }, [sideDrawer, setFooterHeight]);
 
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -190,15 +209,6 @@ export default function LocationsScreen({
   }
 
   const summary = availabilitySummary(availability, restaurants.length);
-  /**
-   * Two panes rather than an overlay, so the drawer takes its width off everything in the
-   * list column — the footer included, which is why the footer moves out from under the
-   * list to sit beneath both panes instead.
-   *
-   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
-   * — pins that the footer leaves the column for the side drawer and stays for the sheet.
-   */
-  const sideDrawer = Boolean(drawer) && !isCompact;
   // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
   // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
   // either side. Matching it is what puts the drawer's edge under the overflow menu.
@@ -278,10 +288,10 @@ export default function LocationsScreen({
               )}
             </PageContainer>
 
-            {!sideDrawer && <Footer />}
+            {!sideDrawer && <Footer onLayout={fab.measureFooter} />}
           </ScrollView>
 
-          <ScrollToTopFab visible={fabVisible} onPress={scrollToTop} />
+          <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
         </View>
 
         {drawer && (

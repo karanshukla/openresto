@@ -23,7 +23,13 @@ jest.mock("@/utils/scrollIntoView", () => ({
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
-  return { __esModule: true, default: () => <View testID="mock-footer" /> };
+  return {
+    __esModule: true,
+    // Forwards onLayout: the screen measures the footer so the FAB can clear it.
+    default: ({ onLayout }: { onLayout?: (e: unknown) => void }) => (
+      <View testID="mock-footer" onLayout={onLayout} />
+    ),
+  };
 });
 
 jest.mock("@/components/booking/BookingDrawer", () => {
@@ -134,6 +140,19 @@ function mockViewport(width: number) {
 
 jest.setTimeout(15000);
 
+/**
+ * A scroll event carrying the full geometry RN reports. The scroll-to-top FAB reads the
+ * content/viewport pair to work out how close the footer is, so a partial event is not a
+ * scroll it can answer.
+ */
+const scrollEvent = (y: number) => ({
+  nativeEvent: {
+    contentOffset: { y },
+    contentSize: { height: 4000 },
+    layoutMeasurement: { height: 900 },
+  },
+});
+
 describe("availabilitySummary", () => {
   it("stays silent until every location has reported", () => {
     expect(availabilitySummary({ 1: 3 }, 2)).toBeNull();
@@ -235,9 +254,7 @@ describe("LocationsScreen", () => {
     fireEvent(screen.getByTestId("locations-filter-sticky"), "layout", {
       nativeEvent: { layout: { y: 120 } },
     });
-    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), {
-      nativeEvent: { contentOffset: { y: 400 } },
-    });
+    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
 
     // A mask, not a surface: it hides the list in the gap above the pill and fades out
     // rather than ending on an edge, which is what made the old band read as a header.
@@ -433,6 +450,62 @@ describe("LocationsScreen", () => {
       expect(within(screen.getByTestId("locations-row")).queryByTestId("mock-footer")).toBeNull();
     });
 
+    // The FAB used to rest in the column's own bottom corner whatever was under it, so at
+    // the end of the list it landed on the footer's links.
+    it("lifts the FAB over the footer it measured once the list reaches the end", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      fireEvent(screen.getByTestId("mock-footer"), "layout", {
+        nativeEvent: { layout: { height: 88, width: 1280, x: 0, y: 0 } },
+      });
+      const scrollView = screen.UNSAFE_getByType(ScrollView);
+
+      fireEvent.scroll(scrollView, scrollEvent(400));
+      const lane = () => StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+      const resting = lane().bottom;
+
+      fireEvent.scroll(scrollView, {
+        nativeEvent: {
+          contentOffset: { y: 3100 },
+          contentSize: { height: 4000 },
+          layoutMeasurement: { height: 900 },
+        },
+      });
+      expect(lane().bottom).toBe(resting + 88);
+    });
+
+    it("drops the lift again when the drawer takes the footer out of the column", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      fireEvent(screen.getByTestId("mock-footer"), "layout", {
+        nativeEvent: { layout: { height: 88, width: 1280, x: 0, y: 0 } },
+      });
+      const scrollView = screen.UNSAFE_getByType(ScrollView);
+      const atEnd = {
+        nativeEvent: {
+          contentOffset: { y: 3100 },
+          contentSize: { height: 4000 },
+          layoutMeasurement: { height: 900 },
+        },
+      };
+      fireEvent.scroll(scrollView, atEnd);
+      const lifted = StyleSheet.flatten(
+        screen.getByTestId("scroll-to-top-lane").props.style
+      ).bottom;
+
+      fireEvent.press(screen.getByTestId("book-1"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+      fireEvent.scroll(scrollView, atEnd);
+
+      expect(
+        StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom
+      ).toBeLessThan(lifted);
+    });
+
     it("leaves the footer in the column for the phone sheet, which takes no width off it", async () => {
       dimensionsSpy.mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
       (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
@@ -533,10 +606,10 @@ describe("LocationsScreen", () => {
 
     const scrollView = screen.UNSAFE_getByType(ScrollView);
     // Scrolled, but not yet past the bar: still sitting in the list, still unlifted.
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 60 } } });
+    fireEvent.scroll(scrollView, scrollEvent(60));
     expect(barStyle().shadowOpacity).toBeUndefined();
 
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    fireEvent.scroll(scrollView, scrollEvent(400));
     expect(barStyle().shadowOpacity).toBeGreaterThan(0);
   });
 
@@ -545,7 +618,7 @@ describe("LocationsScreen", () => {
     renderWithProviders(<LocationsScreen />);
     await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
     const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    fireEvent.scroll(scrollView, scrollEvent(400));
     // Line covered — no assertion needed beyond no crash.
   });
 
@@ -556,7 +629,7 @@ describe("LocationsScreen", () => {
     await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
 
     const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    fireEvent.scroll(scrollView, scrollEvent(400));
 
     fireEvent.press(screen.getByLabelText("Scroll to top"));
     // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
