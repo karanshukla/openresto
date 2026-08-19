@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent, within } from "@testing-library/react-native";
 import { ScrollView, StyleSheet } from "react-native";
 import LocationsScreen, { availabilitySummary } from "@/components/restaurant/LocationsScreen";
 import { fetchRestaurants } from "@/api/restaurants";
@@ -406,6 +406,43 @@ describe("LocationsScreen", () => {
 
       fireEvent.press(screen.getByTestId("drawer-close"));
       await waitFor(() => expect(screen.queryByTestId("mock-drawer")).toBeNull());
+    });
+
+    // The footer is page chrome. Left in the list column it loses the drawer's width off
+    // its own row and wraps into a squashed block beside the booking form (#353), so an
+    // open side drawer hands it back the page and it sits under both panes.
+    it("keeps the footer in the list column while the drawer is closed", async () => {
+      dimensionsSpy.mockReturnValue({ width: 1440, height: 900, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      expect(within(screen.getByTestId("locations-row")).getByTestId("mock-footer")).toBeTruthy();
+    });
+
+    it("lifts the footer clear of the column the side drawer squeezes", async () => {
+      dimensionsSpy.mockReturnValue({ width: 1440, height: 900, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("book-1"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+      expect(screen.getByTestId("mock-footer")).toBeTruthy();
+      expect(within(screen.getByTestId("locations-row")).queryByTestId("mock-footer")).toBeNull();
+    });
+
+    it("leaves the footer in the column for the phone sheet, which takes no width off it", async () => {
+      dimensionsSpy.mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+
+      fireEvent.press(screen.getByTestId("book-1"));
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+
+      expect(within(screen.getByTestId("locations-row")).getByTestId("mock-footer")).toBeTruthy();
     });
   });
 

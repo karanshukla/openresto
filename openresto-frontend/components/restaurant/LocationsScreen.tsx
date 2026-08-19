@@ -190,7 +190,15 @@ export default function LocationsScreen({
   }
 
   const summary = availabilitySummary(availability, restaurants.length);
-  const sideDrawer = drawer && !isCompact;
+  /**
+   * Two panes rather than an overlay, so the drawer takes its width off everything in the
+   * list column — the footer included, which is why the footer moves out from under the
+   * list to sit beneath both panes instead.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins that the footer leaves the column for the side drawer and stays for the sheet.
+   */
+  const sideDrawer = Boolean(drawer) && !isCompact;
   // Where the navbar's own content ends: its column is capped at CONTENT_MAX_WIDTH but
   // tracks the viewport below that, and it insets its contents by CONTENT_PADDING_H
   // either side. Matching it is what puts the drawer's edge under the overflow menu.
@@ -270,7 +278,7 @@ export default function LocationsScreen({
               )}
             </PageContainer>
 
-            <Footer />
+            {!sideDrawer && <Footer />}
           </ScrollView>
 
           <ScrollToTopFab visible={fabVisible} onPress={scrollToTop} />
@@ -292,6 +300,8 @@ export default function LocationsScreen({
           />
         )}
       </View>
+
+      {sideDrawer && <Footer />}
     </ThemedView>
   );
 }
