@@ -29,9 +29,14 @@ export function fabGutter(containerWidth: number): number {
 interface Props {
   visible: boolean;
   onPress: () => void;
+  /**
+   * How far to rise off the bottom of the container, on top of the resting gutter, so the
+   * FAB clears a footer scrolling into view underneath it. See `useScrollToTopFab`.
+   */
+  lift?: number;
 }
 
-export default function ScrollToTopFab({ visible, onPress }: Props) {
+export default function ScrollToTopFab({ visible, onPress, lift = 0 }: Props) {
   const { primaryColor } = useAppTheme();
   const insets = useSafeAreaInsets();
   // The lane spans whatever box the FAB was mounted into — the page on most screens, a
@@ -50,7 +55,12 @@ export default function ScrollToTopFab({ visible, onPress }: Props) {
       onLayout={(e: LayoutChangeEvent) => setLaneWidth(e.nativeEvent.layout.width)}
       style={[
         styles.lane,
-        { bottom: insets.bottom + FAB_MIN_GUTTER, paddingRight: fabGutter(laneWidth) },
+        {
+          // The footer carries the safe-area inset itself, so once it is tall enough to
+          // govern the two never stack.
+          bottom: Math.max(insets.bottom, lift) + FAB_MIN_GUTTER,
+          paddingRight: fabGutter(laneWidth),
+        },
       ]}
     >
       <Pressable

@@ -94,6 +94,21 @@ describe("ScrollToTopFab", () => {
     expect(StyleSheet.flatten(lane.props.style).paddingRight).toBe(FAB_MIN_GUTTER);
   });
 
+  // The lift is what keeps the FAB off the footer's own links at the end of a scroll; see
+  // useScrollToTopFab for where the number comes from.
+  it("rises off the bottom by the lift it is given", () => {
+    const { unmount } = renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
+    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
+      FAB_MIN_GUTTER
+    );
+    unmount();
+
+    renderWithProviders(<ScrollToTopFab visible lift={88} onPress={jest.fn()} />);
+    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
+      88 + FAB_MIN_GUTTER
+    );
+  });
+
   it("calls onPress when pressed", () => {
     const onPress = jest.fn();
     renderWithProviders(<ScrollToTopFab visible onPress={onPress} />);

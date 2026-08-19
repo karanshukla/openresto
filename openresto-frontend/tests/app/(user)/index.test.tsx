@@ -47,6 +47,19 @@ jest.setTimeout(15000);
 // app/(user)/_layout.tsx, which renders the shared Navbar once for every
 // (user) route (see issue #140 review, Concern 9: this page previously lived
 // outside the (user) group and duplicated Navbar rendering itself).
+/**
+ * A scroll event carrying the full geometry RN reports. The scroll-to-top FAB reads the
+ * content/viewport pair to work out how close the footer is, so a partial event is not a
+ * scroll it can answer.
+ */
+const scrollEvent = (y: number) => ({
+  nativeEvent: {
+    contentOffset: { y },
+    contentSize: { height: 4000 },
+    layoutMeasurement: { height: 900 },
+  },
+});
+
 describe("HomeScreen", () => {
   const mockRestaurants = [
     {
@@ -302,7 +315,7 @@ describe("HomeScreen", () => {
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
     const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 200 } } });
+    fireEvent.scroll(scrollView, scrollEvent(200));
     // Line covered — no assertion needed beyond no crash
   });
 
@@ -314,7 +327,7 @@ describe("HomeScreen", () => {
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
     const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    fireEvent.scroll(scrollView, scrollEvent(400));
 
     fireEvent.press(screen.getByLabelText("Scroll to top"));
     // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and

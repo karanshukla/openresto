@@ -72,6 +72,19 @@ function setWidth(width: number) {
     .mockReturnValue({ width, height: 800 });
 }
 
+/**
+ * A scroll event carrying the full geometry RN reports. The scroll-to-top FAB reads the
+ * content/viewport pair to work out how close the footer is, so a partial event is not a
+ * scroll it can answer.
+ */
+const scrollEvent = (y: number) => ({
+  nativeEvent: {
+    contentOffset: { y },
+    contentSize: { height: 4000 },
+    layoutMeasurement: { height: 900 },
+  },
+});
+
 describe("LookupScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -533,7 +546,7 @@ describe("LookupScreen", () => {
     renderWithProviders(<LookupScreen />);
     const { ScrollView } = require("react-native");
     const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
-    fireEvent.scroll(scrollViews[0], { nativeEvent: { contentOffset: { y: 400 } } });
+    fireEvent.scroll(scrollViews[0], scrollEvent(400));
     expect(screen.getByText("Find my booking")).toBeTruthy();
   });
 });

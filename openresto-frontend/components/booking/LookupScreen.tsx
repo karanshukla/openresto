@@ -9,7 +9,8 @@ import ButtonRow from "@/components/common/ButtonRow";
 import { Icon } from "@/components/common/Icon";
 import PageContainer from "@/components/layout/PageContainer";
 import Footer from "@/components/layout/Footer";
-import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
+import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 import SlidePanel from "@/components/common/SlidePanel";
@@ -49,8 +50,8 @@ export default function LookupScreen({
   const [refInput, setRefInput] = useState(initialRef ?? "");
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
-  const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const fab = useScrollToTopFab();
   const refInputRef = useRef<TextInput>(null);
   const didDeepLink = useRef(false);
   const hasTyped = useRef(false);
@@ -206,7 +207,7 @@ export default function LookupScreen({
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={fab.trackScroll}
         scrollEventThrottle={100}
       >
         <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
@@ -315,7 +316,7 @@ export default function LookupScreen({
           </View>
         </PageContainer>
 
-        <Footer />
+        <Footer onLayout={fab.measureFooter} />
       </ScrollView>
 
       {isCompact && showPanel && (
@@ -324,7 +325,7 @@ export default function LookupScreen({
         </SlidePanel>
       )}
 
-      <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
 
       {showCancelConfirm && (
         <ConfirmModal

@@ -8,8 +8,9 @@ import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import ScrollToTopFab, { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
+import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
+import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
@@ -39,10 +40,10 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>(_cachedRestaurants ?? []);
   const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
   const [loading, setLoading] = useState(_cachedRestaurants === null);
-  const [scrollY, setScrollY] = useState(0);
   const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
   const scrollRef = useRef<ScrollView>(null);
+  const fab = useScrollToTopFab();
 
   const isMobile = isMobileWidth(width);
 
@@ -139,7 +140,7 @@ export default function HomeScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={fab.trackScroll}
         scrollEventThrottle={100}
         {...(HOME_SCROLL_TIMELINE as object)}
       >
@@ -337,10 +338,10 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Footer />
+        <Footer onLayout={fab.measureFooter} />
       </ScrollView>
 
-      <ScrollToTopFab visible={scrollY > SHOW_AFTER_SCROLL_Y} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
     </ThemedView>
   );
 }
