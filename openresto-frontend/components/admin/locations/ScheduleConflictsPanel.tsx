@@ -14,7 +14,6 @@ import { styles } from "./ScheduleConflictsPanel.styles";
 const REASON_LABELS: Record<ScheduleConflictReason, string> = {
   closedDay: "Now a closed day",
   outsideHours: "Now outside opening hours",
-  walkInOnly: "Now walk-in only",
 };
 
 function formatSitting(dateUtc: string, timezone: string): string {
@@ -36,8 +35,13 @@ function formatSitting(dateUtc: string, timezone: string): string {
  * Deliberately a report rather than a gate: the admin narrowing hours usually knows they have
  * bookings to move, and blocking the edit would leave them unable to stop taking new ones.
  *
+ * Three states, not two. Conflicts are listed, none is said out loud, and a failed read stays
+ * silent. Collapsing the last two is tempting and wrong in both directions: it would either
+ * report an all-clear the read never established, or leave a working panel indistinguishable
+ * from a broken one on the locations that need reassuring most.
+ *
  * @see [ScheduleConflictsPanel.test.tsx](../../../tests/components/admin/locations/ScheduleConflictsPanel.test.tsx)
- * — pins that a failed read stays silent rather than reporting all-clear.
+ * — pins that a failed read stays silent while an empty one reports all-clear.
  */
 export function ScheduleConflictsPanel({
   restaurantId,
@@ -78,8 +82,21 @@ export function ScheduleConflictsPanel({
 
   useEffect(load, [load, refreshKey]);
 
-  // Null is "could not check", not "all clear" — saying nothing beats a false all-clear.
-  if (conflicts === null || conflicts.length === 0) return null;
+  // Null is "could not check", and stays silent: a false all-clear is the one thing worse than
+  // saying nothing. An empty list is a real answer, so it gets said out loud — otherwise a
+  // working panel and a dead one look identical from the admin's side.
+  if (conflicts === null) return null;
+
+  if (conflicts.length === 0) {
+    return (
+      <View testID="schedule-conflicts-clear" style={styles.clearRow}>
+        <Icon name="checkmark-circle-outline" size="sm" color={colors.success} />
+        <ThemedText style={[styles.clearText, { color: mutedColor }]}>
+          Every upcoming booking fits this schedule.
+        </ThemedText>
+      </View>
+    );
+  }
 
   return (
     <View

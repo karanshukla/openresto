@@ -111,40 +111,44 @@ public class ScheduleConflictHelperTests
             ScheduleConflictHelper.Evaluate(restaurant, MondayAt(0, 30)));
     }
 
+    // The walk-in flag stops the location taking *new* online bookings. It does not close the
+    // location, so a sitting already on the books is honoured and is not a conflict. Staff can
+    // still record walk-ins against such a location (AdminService.CreateBookingAsync is exempt),
+    // which would otherwise leave it permanently reporting conflicts it can never clear.
     [Fact]
-    public void Evaluate_FlagsSittingOnceTheLocationTurnsWalkInOnly()
+    public void Evaluate_KeepsSittingAtAWalkInOnlyLocation()
     {
         Assert.Equal(
-            ScheduleConflictReason.WalkInOnly,
+            ScheduleConflictReason.None,
             ScheduleConflictHelper.Evaluate(Restaurant(walkInOnly: true), MondayAt(19)));
     }
 
     [Fact]
-    public void Evaluate_FlagsSittingOnADayTurnedWalkInOnly()
+    public void Evaluate_KeepsSittingOnAWalkInOnlyDay()
     {
         Assert.Equal(
-            ScheduleConflictReason.WalkInOnly,
+            ScheduleConflictReason.None,
             ScheduleConflictHelper.Evaluate(Restaurant(walkInDays: "1"), MondayAt(19)));
     }
 
     [Fact]
-    public void Evaluate_KeepsSittingOnADayOtherLocationDaysTurnedWalkInOnly()
+    public void Evaluate_StillFlagsAClosedDayAtAWalkInOnlyLocation()
     {
-        Assert.Equal(
-            ScheduleConflictReason.None,
-            ScheduleConflictHelper.Evaluate(Restaurant(walkInDays: "2,3"), MondayAt(19)));
-    }
-
-    [Fact]
-    public void Evaluate_ReportsTheClosedDayRatherThanTheWalkInSwitchWhenBothApply()
-    {
-        // A closed day is the harder problem: the guest has nowhere to be seated at all, where a
-        // walk-in day still opens. Reporting the milder reason would understate the fix needed.
+        // The walk-in flag is not a conflict, but it does not excuse one either: this Monday is
+        // closed outright, so the guest has nowhere to be seated whatever the booking policy is.
         Restaurant restaurant = Restaurant(openDays: "2,3,4,5,6,7", walkInOnly: true);
 
         Assert.Equal(
             ScheduleConflictReason.ClosedDay,
             ScheduleConflictHelper.Evaluate(restaurant, MondayAt(19)));
+    }
+
+    [Fact]
+    public void Evaluate_StillFlagsHoursAtAWalkInOnlyLocation()
+    {
+        Assert.Equal(
+            ScheduleConflictReason.OutsideHours,
+            ScheduleConflictHelper.Evaluate(Restaurant(walkInOnly: true), MondayAt(3)));
     }
 
     [Fact]

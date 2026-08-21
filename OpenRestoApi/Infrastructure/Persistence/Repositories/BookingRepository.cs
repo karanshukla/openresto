@@ -118,7 +118,8 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             int? tableId,
             int? tableGroupId,
             DateTime bookingDate,
-            int durationMinutes = 60)
+            int durationMinutes = 60,
+            int? excludeBookingId = null)
         {
             DateTime newStart = bookingDate.ToUniversalTime();
             DateTime newEnd = newStart.AddMinutes(durationMinutes);
@@ -166,6 +167,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 
             return await _db.Bookings.AnyAsync(b =>
                 !b.IsCancelled &&
+                (excludeBookingId == null || b.Id != excludeBookingId.Value) &&
                 b.Date < newEnd &&
                 (b.EndTime != null ? b.EndTime > newStart : b.Date > thresholdStart) &&
                 ((b.TableId.HasValue && reservedTableIds.Contains(b.TableId.Value)) ||

@@ -7,6 +7,15 @@ export const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     overflow: "hidden",
   },
+  // The all-clear is reassurance, not an alert: a quiet row rather than the bordered card the
+  // conflict list uses, so it reads as the absence of a problem instead of a fifth section.
+  clearRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xxs,
+    paddingHorizontal: theme.spacing.xs,
+  },
+  clearText: { ...theme.typography.caption },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",

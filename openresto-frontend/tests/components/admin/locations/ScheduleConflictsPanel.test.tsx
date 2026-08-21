@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import { ScheduleConflictsPanel } from "@/components/admin/locations/ScheduleConflictsPanel";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -49,24 +49,58 @@ describe("ScheduleConflictsPanel", () => {
     expect(screen.getByText(/Now outside opening hours/)).toBeTruthy();
   });
 
-  it("renders nothing when every upcoming booking still fits", async () => {
+  // An empty list is a real answer and gets said out loud. Without it a working panel and a
+  // dead one look identical on every location that has nothing wrong with it, which is most.
+  it("says so out loud when every upcoming booking still fits", async () => {
     (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
 
     render(<ScheduleConflictsPanel {...props} />);
 
-    await waitFor(() => expect(fetchScheduleConflicts).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByTestId("schedule-conflicts-clear")).toBeTruthy());
+    expect(screen.getByText("Every upcoming booking fits this schedule.")).toBeTruthy();
     expect(screen.queryByTestId("schedule-conflicts-panel")).toBeNull();
   });
 
-  // A failed read is not an all-clear. Rendering the empty state for it would tell the admin
-  // their edit stranded nobody, which is the one thing this panel exists to disprove.
+  // A failed read is not an all-clear. Reporting one would tell the admin their edit stranded
+  // nobody, which is the one thing this panel exists to disprove.
   it("stays silent when the read fails rather than reporting all-clear", async () => {
     (fetchScheduleConflicts as jest.Mock).mockResolvedValue(null);
 
     render(<ScheduleConflictsPanel {...props} />);
 
     await waitFor(() => expect(fetchScheduleConflicts).toHaveBeenCalled());
+    expect(screen.queryByTestId("schedule-conflicts-clear")).toBeNull();
     expect(screen.queryByTestId("schedule-conflicts-panel")).toBeNull();
+  });
+
+  it("says nothing at all while the read is still in flight", async () => {
+    let resolve: (value: unknown) => void = () => {};
+    (fetchScheduleConflicts as jest.Mock).mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      })
+    );
+
+    render(<ScheduleConflictsPanel {...props} />);
+
+    expect(screen.queryByTestId("schedule-conflicts-clear")).toBeNull();
+    expect(screen.queryByTestId("schedule-conflicts-panel")).toBeNull();
+
+    await act(async () => resolve([]));
+    expect(screen.getByTestId("schedule-conflicts-clear")).toBeTruthy();
+  });
+
+  it("drops the all-clear once a conflict appears", async () => {
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
+
+    const { rerender } = render(<ScheduleConflictsPanel {...props} />);
+    await waitFor(() => expect(screen.getByTestId("schedule-conflicts-clear")).toBeTruthy());
+
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([conflict]);
+    rerender(<ScheduleConflictsPanel {...props} refreshKey={1} />);
+
+    await waitFor(() => expect(screen.getByTestId("schedule-conflicts-panel")).toBeTruthy());
+    expect(screen.queryByTestId("schedule-conflicts-clear")).toBeNull();
   });
 
   it("re-reads when the schedule is saved again", async () => {
@@ -101,15 +135,5 @@ describe("ScheduleConflictsPanel", () => {
 
     await waitFor(() => expect(screen.getByText(/crispy-basil-truffle ·/)).toBeTruthy());
     expect(screen.getByText(/Now a closed day · 1 guest/)).toBeTruthy();
-  });
-
-  it("labels a booking stranded by the walk-in switch", async () => {
-    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([
-      { ...conflict, reason: "walkInOnly" },
-    ]);
-
-    render(<ScheduleConflictsPanel {...props} />);
-
-    await waitFor(() => expect(screen.getByText(/Now walk-in only/)).toBeTruthy());
   });
 });

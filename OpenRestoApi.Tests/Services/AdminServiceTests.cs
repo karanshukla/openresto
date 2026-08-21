@@ -899,41 +899,90 @@ public class AdminServiceTests : IDisposable
         Assert.Equal(date.AddMinutes(90), result!.EndTime);
     }
 
+    // Editing a booking is how it gets moved — there is no separate reschedule flow — so this
+    // guard is the only thing between an admin changing a date and the same table being seated
+    // twice. It compared the request against a booking the caller had already written the request
+    // onto, so every comparison was a value against itself and the check never ran once.
     [Fact]
-    public async Task AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug()
+    public async Task AdminUpdateBookingAsync_RejectsAMoveOntoATableAlreadyBookedThen()
     {
-        // KNOWN PRE-EXISTING BUG — out of scope for #135, not introduced or fixed by it
-        // (see .claude/investigations/135-reexamine.md, Gaps #2). AdminUpdateBookingAsync
-        // mutates `booking.Date`/`booking.TableId` in place *before* the conflict-check
-        // guard compares `req.Date.Value != booking.Date` / `req.TableId.Value !=
-        // booking.TableId`. Both comparisons are always false by the time they run
-        // (the fields were just set to those exact values), so the conflict-check block
-        // is unreachable dead code today.
-        //
-        // This test PINS that current (buggy-but-harmless-here) behaviour — an update
-        // that *should* conflict with an existing booking on the same table currently
-        // succeeds instead of throwing — so a future refactor doesn't silently change it
-        // unnoticed. It does NOT assert this is correct behaviour; the real fix (compare
-        // against the pre-mutation values) is a separate, unrelated follow-up.
+        AdminService svc = CreateService();
+        SeedTwoBookingsOnOneTable(out DateTime _, out DateTime taken);
+        await _db.SaveChangesAsync();
+
+        BusinessRuleException ex = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = taken }));
+
+        Assert.Contains("conflict", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AdminUpdateBookingAsync_AllowsAMoveOntoAFreeSlotOnTheSameTable()
+    {
+        AdminService svc = CreateService();
+        SeedTwoBookingsOnOneTable(out DateTime original, out DateTime _);
+        await _db.SaveChangesAsync();
+        DateTime free = original.AddDays(5);
+
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = free });
+
+        Assert.Equal(free, result!.Date);
+    }
+
+    // The booking being moved must not be found conflicting with itself, or every edit that left
+    // the slot alone (a name or seat-count change) would report a conflict with its own row.
+    [Fact]
+    public async Task AdminUpdateBookingAsync_DoesNotTreatTheBookingItselfAsAConflict()
+    {
+        AdminService svc = CreateService();
+        SeedTwoBookingsOnOneTable(out DateTime original, out DateTime _);
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(
+            1,
+            new AdminUpdateBookingRequest { Date = original, CustomerName = "Renamed" });
+
+        Assert.Equal("Renamed", result!.CustomerName);
+        Assert.Equal(original, result.Date);
+    }
+
+    // A group booking stores TableId = null. Checking tables alone would compare it against every
+    // other table-less booking on the instance and miss the group it actually occupies.
+    [Fact]
+    public async Task AdminUpdateBookingAsync_RejectsAMoveOntoAGroupWhoseMemberIsBookedThen()
+    {
         AdminService svc = CreateService();
         _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", DefaultBookingDurationMinutes = 60 });
         _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        _db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
+        _db.TableGroups.Add(new TableGroup { Id = 1, RestaurantId = 1, Name = "Window booths", CombinedSeats = 7 });
+        _db.TableGroupMemberships.Add(new TableGroupMembership { TableGroupId = 1, TableId = 1 });
+        _db.TableGroupMemberships.Add(new TableGroupMembership { TableGroupId = 1, TableId = 2 });
 
-        DateTime original = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc);
-        DateTime conflictingSlot = new DateTime(2026, 1, 2, 10, 0, 0, DateTimeKind.Utc);
-
-        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = original, EndTime = original.AddMinutes(60), BookingRef = "MOVING" });
-        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = conflictingSlot, EndTime = conflictingSlot.AddMinutes(60), BookingRef = "EXISTING" });
+        var original = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        var taken = new DateTime(2026, 1, 2, 10, 0, 0, DateTimeKind.Utc);
+        // The mover reserves the whole group; a single member is already taken at the target slot.
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableGroupId = 1, Date = original, EndTime = original.AddMinutes(60), BookingRef = "MOVING" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 2, Date = taken, EndTime = taken.AddMinutes(60), BookingRef = "MEMBER" });
         await _db.SaveChangesAsync();
 
-        // Moving booking 1 onto exactly booking 2's slot on the same table would throw if
-        // the conflict-check guard above were actually reachable. It isn't, so this
-        // currently succeeds — pinning the bug's observable effect, not endorsing it.
-        BookingDetailDto? result = await svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = conflictingSlot });
+        await Assert.ThrowsAsync<BusinessRuleException>(
+            () => svc.AdminUpdateBookingAsync(1, new AdminUpdateBookingRequest { Date = taken }));
+    }
 
-        Assert.NotNull(result);
-        Assert.Equal(conflictingSlot, result!.Date);
+    /// <summary>Booking 1 is the one being moved; booking 2 already holds <paramref name="taken"/> on the same table.</summary>
+    private void SeedTwoBookingsOnOneTable(out DateTime original, out DateTime taken)
+    {
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", DefaultBookingDurationMinutes = 60 });
+        _db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        _db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+
+        original = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        taken = new DateTime(2026, 1, 2, 10, 0, 0, DateTimeKind.Utc);
+
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = original, EndTime = original.AddMinutes(60), BookingRef = "MOVING" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = taken, EndTime = taken.AddMinutes(60), BookingRef = "EXISTING" });
     }
 
     [Fact]

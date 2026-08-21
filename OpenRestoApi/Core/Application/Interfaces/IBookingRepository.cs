@@ -31,11 +31,20 @@ public interface IBookingRepository
     /// </summary>
     /// <seealso>BookingServiceTests.CreateBookingAsync_GroupBooking_RejectsWhenMemberIsBooked</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_SingleTable_RejectsWhenItsGroupAlreadyBooked</seealso>
+    /// <param name="tableId"></param>
+    /// <param name="tableGroupId"></param>
+    /// <param name="bookingDate"></param>
+    /// <param name="durationMinutes"></param>
+    /// <param name="excludeBookingId">
+    /// The booking being moved, which must not be found conflicting with itself. Null when
+    /// checking a booking that does not exist yet.
+    /// </param>
     Task<bool> IsUnitBookedOnDateAsync(
         int? tableId,
         int? tableGroupId,
         DateTime bookingDate,
-        int durationMinutes = 60);
+        int durationMinutes = 60,
+        int? excludeBookingId = null);
     /// <summary>Returns all non-cancelled bookings for a specific restaurant and local date.</summary>
     Task<IEnumerable<Booking>> GetActiveBookingsForDateAsync(int restaurantId, DateTime bookingDate);
 

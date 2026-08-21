@@ -4,11 +4,19 @@ using OpenRestoApi.Core.Domain;
 namespace OpenRestoApi.Core.Application.Services;
 
 /// <summary>
-/// Why an already-taken booking no longer fits its location's schedule. Editing opening
-/// hours, open days or the walk-in policy never touches existing rows, so a booking taken
-/// under the old schedule survives the edit and is only discoverable by re-evaluating it
-/// against the current one.
+/// Why an already-taken booking no longer fits its location's schedule. Editing opening hours
+/// or open days never touches existing rows, so a booking taken under the old schedule survives
+/// the edit and is only discoverable by re-evaluating it against the current one.
+/// <para>
+/// Every reason here means the guest arrives to a closed restaurant. Switching a location or a
+/// day to walk-in-only is deliberately <em>not</em> one: the location is still open and still
+/// seating people, it just stops taking new online bookings, so a booking already on the books
+/// is honoured as it stands. Staff-recorded walk-ins are exempt from that gate by design and
+/// would otherwise be reported as conflicts on a location that can never clear them.
+/// </para>
 /// </summary>
+/// <seealso>ScheduleConflictHelperTests.Evaluate_KeepsSittingOnAWalkInOnlyDay</seealso>
+/// <seealso>ScheduleConflictHelperTests.Evaluate_KeepsSittingAtAWalkInOnlyLocation</seealso>
 public enum ScheduleConflictReason
 {
     /// <summary>The booking still falls inside a service the location currently runs.</summary>
@@ -19,15 +27,12 @@ public enum ScheduleConflictReason
 
     /// <summary>The day is open, but the booking starts outside that day's service window.</summary>
     OutsideHours,
-
-    /// <summary>The location still opens then, but no longer takes bookings for that day.</summary>
-    WalkInOnly,
 }
 
 /// <summary>
 /// Re-evaluates an existing booking against the schedule a location has <em>now</em>. Editing
-/// hours, open days or the walk-in policy never touches rows already taken, so a booking sold
-/// under the old schedule is only discoverable by asking this again.
+/// hours or open days never touches rows already taken, so a booking sold under the old
+/// schedule is only discoverable by asking this again.
 /// </summary>
 /// <seealso>ScheduleConflictHelperTests.Evaluate_KeepsAfterMidnightSittingOfAnOvernightService</seealso>
 /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOnADayThatIsNoLongerOpen</seealso>
@@ -58,8 +63,6 @@ public static class ScheduleConflictHelper
                 : ScheduleConflictReason.ClosedDay;
         }
 
-        return WalkInHelper.IsWalkInOnlyAt(restaurant, bookingUtc)
-            ? ScheduleConflictReason.WalkInOnly
-            : ScheduleConflictReason.None;
+        return ScheduleConflictReason.None;
     }
 }
