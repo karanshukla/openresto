@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
@@ -32,11 +32,19 @@ export const styles = StyleSheet.create({
   // Pulled back up under the two-column contact row, which already carries its own gap.
   contactHint: { fontSize: 11, lineHeight: 15, marginTop: -8 },
 
-  footer: {
-    padding: theme.spacing.lg,
+  // The form is a run of sibling section cards, not one card with a footer, so the autosave
+  // outcome has no corner to sit in. Given its own card it reads as an empty box between edits,
+  // since SaveStatus holds its row open on purpose. A bare bar, stuck to the foot of the
+  // viewport on web, keeps the outcome and its 10s undo reachable from whichever card was
+  // edited rather than parked below the last one.
+  statusBar: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: theme.spacing.xs,
+    // Opaque: stuck to the foot of the scrollport it has the rest of the form passing behind it.
+    ...(Platform.OS === "web" ? ({ position: "sticky", bottom: 0 } as object) : null),
   },
 });

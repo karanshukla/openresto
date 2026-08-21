@@ -27,7 +27,9 @@ describe("AvailabilityGrid", () => {
     {
       id: 10,
       tableId: 101,
-      date: new Date(new Date().setHours(12, 0, 0, 0)).toISOString(), // 12:00 PM
+      // setUTCHours, not setHours: the grid resolves the hour through the timezone prop, so a
+      // date pinned to the machine's local noon lands on a different column anywhere but UTC.
+      date: new Date(new Date().setUTCHours(12, 0, 0, 0)).toISOString(),
       seats: 2,
       customerEmail: "booked@test.com",
     },

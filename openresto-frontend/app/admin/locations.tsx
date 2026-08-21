@@ -363,19 +363,19 @@ export default function AdminLocationsScreen() {
         </View>
       ) : selectedRestaurant ? (
         <View style={styles.section}>
+          <ScheduleConflictsPanel
+            restaurantId={selectedRestaurant.id}
+            timezone={selectedRestaurant.timezone ?? "UTC"}
+            refreshKey={scheduleRevision}
+            borderColor={borderColor}
+            mutedColor={mutedColor}
+            cardBg={cardBg}
+          />
           <LocationCard
             key={selectedRestaurant.id}
             restaurant={selectedRestaurant}
             onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
             isDark={isDark}
-            borderColor={borderColor}
-            mutedColor={mutedColor}
-            cardBg={cardBg}
-          />
-          <ScheduleConflictsPanel
-            restaurantId={selectedRestaurant.id}
-            timezone={selectedRestaurant.timezone ?? "UTC"}
-            refreshKey={scheduleRevision}
             borderColor={borderColor}
             mutedColor={mutedColor}
             cardBg={cardBg}

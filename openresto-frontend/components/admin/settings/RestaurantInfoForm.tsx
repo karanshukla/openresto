@@ -787,18 +787,16 @@ export function RestaurantInfoForm({
         surface2={surface2}
       />
 
-      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
-        <View style={styles.footer}>
-          <SaveStatus
-            status={status}
-            error={error}
-            onRetry={retry}
-            onUndo={undo}
-            mutedColor={mutedColor}
-            blockedReason={blockedReason}
-            testID="location-save-status"
-          />
-        </View>
+      <View style={[styles.statusBar, { backgroundColor: colors.page }]}>
+        <SaveStatus
+          status={status}
+          error={error}
+          onRetry={retry}
+          onUndo={undo}
+          mutedColor={mutedColor}
+          blockedReason={blockedReason}
+          testID="location-save-status"
+        />
       </View>
     </>
   );
