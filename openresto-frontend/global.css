@@ -120,9 +120,17 @@ body.theme-ready * {
    would have to re-render the page on every frame to do it. `scroll()` hands the whole
    thing to the compositor. Where it isn't supported the hero simply scrolls away, which is
    what it did before. */
-@keyframes home-hero-title-collapse {
+/* The fade lives on the pill, not on the title: with a hero image the title sits in a
+   card with its own background and border, and fading only the text left an empty box
+   sitting over the image for the length of the range. */
+@keyframes home-hero-box-collapse {
   to {
     opacity: 0;
+  }
+}
+
+@keyframes home-hero-title-collapse {
+  to {
     transform: scale(0.34) translateY(-10px);
   }
 }
@@ -147,18 +155,31 @@ body.theme-ready * {
   scroll-timeline-axis: block;
 }
 
-@supports (animation-timeline: scroll()) {
-  [data-hero-collapse="title"] {
-    transform-origin: left top;
-    animation: home-hero-title-collapse linear both;
-    animation-timeline: --home-scroll;
-    animation-range: 0px 130px;
-  }
+/* Phone widths only: the collapse borrows a native large-title header, an idiom a phone
+   browser has and a desktop one does not — on a wide window the hero is simply a hero and
+   shrinking it hands the title to a navbar the eye was not following. `767.98px` is
+   BREAKPOINTS.mobile (768) as a max-width; CSS cannot import the constant, so moving one
+   means moving both. */
+@media (max-width: 767.98px) {
+  @supports (animation-timeline: scroll()) {
+    [data-hero-collapse="box"] {
+      animation: home-hero-box-collapse linear both;
+      animation-timeline: --home-scroll;
+      animation-range: 0px 130px;
+    }
 
-  [data-hero-collapse="sub"] {
-    animation: home-hero-sub-collapse linear both;
-    animation-timeline: --home-scroll;
-    animation-range: 0px 90px;
+    [data-hero-collapse="title"] {
+      transform-origin: left top;
+      animation: home-hero-title-collapse linear both;
+      animation-timeline: --home-scroll;
+      animation-range: 0px 130px;
+    }
+
+    [data-hero-collapse="sub"] {
+      animation: home-hero-sub-collapse linear both;
+      animation-timeline: --home-scroll;
+      animation-range: 0px 90px;
+    }
   }
 }
 

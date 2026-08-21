@@ -22,6 +22,7 @@ import { Icon, type IconName } from "@/components/common/Icon";
  * types, so it is spread through a cast the way web-only style properties are elsewhere.
  */
 const HOME_SCROLL_TIMELINE = { dataSet: { scrollTimeline: "home" } };
+const HERO_COLLAPSE_BOX = { dataSet: { heroCollapse: "box" } };
 const HERO_COLLAPSE_TITLE = { dataSet: { heroCollapse: "title" } };
 const HERO_COLLAPSE_SUB = { dataSet: { heroCollapse: "sub" } };
 
@@ -192,6 +193,7 @@ export default function HomeScreen() {
             )}
             <View style={[styles.heroInner, isMobile && { paddingHorizontal: 20 }]}>
               <View
+                {...(HERO_COLLAPSE_BOX as object)}
                 style={[
                   styles.heroTextPill,
                   hasHero && {
