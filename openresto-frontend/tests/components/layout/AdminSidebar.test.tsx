@@ -183,7 +183,9 @@ describe("AdminSidebar", () => {
         <AdminSidebar />
       </AuthProvider>
     );
-    await waitFor(() => expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
+    );
     expect(screen.getByText("Search")).toBeTruthy();
   });
 
@@ -195,8 +197,10 @@ describe("AdminSidebar", () => {
         <AdminSidebar />
       </AuthProvider>
     );
-    await waitFor(() => expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "unknown");
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "unknown");
     await act(async () => {
       fireEvent.press(screen.getByText("Search"));
     });
@@ -211,8 +215,13 @@ describe("AdminSidebar", () => {
         <AdminSidebar />
       </AuthProvider>
     );
-    await waitFor(() => expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "john@example.com");
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Name, email or reference…"),
+      "john@example.com"
+    );
     await act(async () => {
       fireEvent.press(screen.getByText("Search"));
     });
@@ -227,8 +236,13 @@ describe("AdminSidebar", () => {
         <AdminSidebar />
       </AuthProvider>
     );
-    await waitFor(() => expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "multi@example.com");
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Name, email or reference…"),
+      "multi@example.com"
+    );
     await act(async () => {
       fireEvent.press(screen.getByText("Search"));
     });
@@ -261,13 +275,15 @@ describe("AdminSidebar", () => {
         <AdminSidebar />
       </AuthProvider>
     );
-    await waitFor(() => expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "test");
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "test");
     await act(async () => {
       fireEvent.press(screen.getByText("Search"));
     });
     await waitFor(() => expect(screen.getByText("No booking found.")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "new");
+    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "new");
     expect(screen.queryByText("No booking found.")).toBeNull();
   });
 

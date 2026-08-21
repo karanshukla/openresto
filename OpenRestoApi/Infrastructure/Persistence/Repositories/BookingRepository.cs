@@ -47,6 +47,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
 
         public async Task<Booking?> GetByRefAsync(string bookingRef)
         {
+            string normalized = bookingRef.Trim().ToLowerInvariant();
             return await _db.Bookings
                 .Include(b => b.Table)
                 .Include(b => b.Section)
@@ -54,7 +55,12 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
                     .ThenInclude(g => g.Members)
                         .ThenInclude(m => m.Table)
                 .Include(b => b.Restaurant)
-                .FirstOrDefaultAsync(b => b.BookingRef == bookingRef);
+                // Refs are minted lowercase, so matching case-insensitively costs nothing and
+                // spares a guest whose keyboard or mail client capitalised the ref they pasted.
+                // Still an exact match: a prefix match would let anyone enumerate other bookings.
+#pragma warning disable CA1862, CA1311, CA1304 // ToLower in LINQ-to-EF is intentional (ToLowerInvariant is not translatable)
+                .FirstOrDefaultAsync(b => b.BookingRef.ToLower() == normalized);
+#pragma warning restore CA1862, CA1311, CA1304
         }
 
         public async Task<IEnumerable<Booking>> GetBookingsByRestaurantIdAsync(int restaurantId)
@@ -276,6 +282,14 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
         public async Task<List<Booking>> GetByTableAsync(int tableId)
         {
             return await _db.Bookings.Where(b => b.TableId == tableId).ToListAsync();
+        }
+
+        public async Task<List<Booking>> GetFutureForRestaurantAsync(int restaurantId, DateTime nowUtc)
+        {
+            return await _db.Bookings
+                .Where(b => b.RestaurantId == restaurantId && !b.IsCancelled && b.Date >= nowUtc)
+                .OrderBy(b => b.Date)
+                .ToListAsync();
         }
 
         public async Task<int> CountFutureByTableAsync(int tableId, DateTime nowUtc)

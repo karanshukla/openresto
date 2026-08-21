@@ -112,6 +112,18 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
         return result == null ? NotFound() : Ok(result);
     }
 
+    // Bookings taken under an older schedule (#359). Editing hours/open days/walk-in policy is
+    // silent by design — it leaves existing rows alone — so the admin UI reads this after an edit
+    // to show who is now booked into a service the location no longer runs. 404 when the
+    // restaurant doesn't exist, so the caller can drop the panel rather than block the form.
+    [HttpGet("{id}/schedule-conflicts")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    public async Task<IActionResult> GetScheduleConflicts(int id)
+    {
+        List<ScheduleConflictDto>? result = await _service.GetScheduleConflictsAsync(id);
+        return result == null ? NotFound() : Ok(result);
+    }
+
     // ── Combinable table groups (#271) ──────────────────────────────────────
     //
     // Schema + CRUD only here. Wiring groups into availability/auto-assign/holds is the next issue

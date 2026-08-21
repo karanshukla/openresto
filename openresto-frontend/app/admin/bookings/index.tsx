@@ -84,16 +84,14 @@ export default function AdminBookingsScreen() {
   const router = useRouter();
   const {
     create,
-    email: emailParam,
-    bookingRef: bookingRefParam,
+    query: queryParam,
     restaurantId: restaurantIdParam,
   } = useLocalSearchParams<{
     create?: string;
-    email?: string;
-    bookingRef?: string;
+    query?: string;
     restaurantId?: string;
   }>();
-  const searchQuery = emailParam || bookingRefParam || null;
+  const searchQuery = queryParam || null;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -156,7 +154,7 @@ export default function AdminBookingsScreen() {
       let cancelled = false;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
-      getAdminBookings(undefined, undefined, "all", emailParam, bookingRefParam).then((b) => {
+      getAdminBookings(undefined, undefined, "all", searchQuery).then((b) => {
         if (!cancelled) {
           setBookings(b);
           setLoading(false);
@@ -179,7 +177,7 @@ export default function AdminBookingsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, selectedRestaurantId, searchQuery, emailParam, bookingRefParam, refreshKey]);
+  }, [statusFilter, selectedRestaurantId, searchQuery, refreshKey]);
 
   const handleSelectRestaurant = (id: number) => {
     if (id === selectedRestaurantId) return;
@@ -271,11 +269,7 @@ export default function AdminBookingsScreen() {
         setSelectedBookingId(results[0].id);
       } else {
         setLookupStatus("multiple");
-        const isEmail = q.includes("@");
-        router.replace({
-          pathname: "/admin/bookings",
-          params: isEmail ? { email: q } : { bookingRef: q },
-        });
+        router.replace({ pathname: "/admin/bookings", params: { query: q } });
       }
     } finally {
       setLookupLoading(false);

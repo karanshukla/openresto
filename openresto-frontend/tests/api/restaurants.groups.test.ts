@@ -5,6 +5,7 @@ import {
   deleteTableGroup,
   fetchTableDeleteImpact,
   fetchSectionDeleteImpact,
+  fetchScheduleConflicts,
 } from "@/api/restaurants";
 
 const mockFetch = jest.fn();
@@ -185,5 +186,35 @@ describe("fetchSectionDeleteImpact", () => {
   it("returns null on a network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     expect(await fetchSectionDeleteImpact(1, 2)).toBeNull();
+  });
+});
+
+describe("fetchScheduleConflicts", () => {
+  const conflict = {
+    bookingId: 7,
+    bookingRef: "crispy-basil-truffle",
+    customerName: "Ada",
+    date: "2026-09-02T10:00:00Z",
+    seats: 2,
+    reason: "outsideHours",
+  };
+
+  it("returns the conflicts when the response is ok", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [conflict] });
+
+    expect(await fetchScheduleConflicts(1)).toEqual([conflict]);
+    expect(mockFetch.mock.calls[0][0]).toContain("/api/restaurants/1/schedule-conflicts");
+  });
+
+  // Null, not [] — the caller renders nothing for null and would otherwise announce all-clear.
+  it("returns null on a non-ok response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    expect(await fetchScheduleConflicts(1)).toBeNull();
+  });
+
+  it("returns null on a network error", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await fetchScheduleConflicts(1)).toBeNull();
+    expect(console.error).toHaveBeenCalled();
   });
 });

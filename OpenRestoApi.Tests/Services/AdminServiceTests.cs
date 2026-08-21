@@ -435,6 +435,37 @@ public class AdminServiceTests : IDisposable
         Assert.Equal("ABC123", results[0].BookingRef);
     }
 
+    // The admin lookup used to split the typed term into "email if it has an @, else booking
+    // reference", so a partial email matched nothing and a customer name matched nothing at all.
+    // One free-text param spans all three fields instead (#358).
+    [Theory]
+    [InlineData("ali")]           // partial name
+    [InlineData("ALICE@EX")]      // partial email, wrong case
+    [InlineData("bc12")]          // mid-string slice of the booking reference
+    public async Task GetBookingsAsync_QueryFilter_MatchesNameEmailAndRefPartially(string query)
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "ABC123", CustomerName = "Alice Smith", CustomerEmail = "Alice@Example.com" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "XYZ789", CustomerName = "Bob Jones", CustomerEmail = "bob@example.com" });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(1, null, "all", query: query);
+
+        Assert.Equal("ABC123", Assert.Single(results).BookingRef);
+    }
+
+    [Fact]
+    public async Task GetBookingsAsync_QueryFilter_ReturnsNothingWhenTheTermMatchesNoField()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "ABC123", CustomerName = "Alice Smith", CustomerEmail = "alice@example.com" });
+        await _db.SaveChangesAsync();
+
+        Assert.Empty(await svc.GetBookingsAsync(1, null, "all", query: "zzz"));
+    }
+
     [Fact]
     public async Task GetBookingAsync_ReturnsNull_WhenNotFound()
     {

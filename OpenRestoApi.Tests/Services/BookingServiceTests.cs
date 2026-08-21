@@ -504,6 +504,44 @@ public partial class BookingServiceTests
         Assert.Equal(created.BookingRef, result!.BookingRef);
     }
 
+    // References are minted lowercase and guests paste them out of a confirmation email, so a
+    // capitalised or space-padded ref is the guest's keyboard, not a wrong reference (#358).
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task GetBookingByRefAsync_ToleratesCaseAndSurroundingWhitespace(bool upper, bool padded)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(GetBookingByRefAsync_ToleratesCaseAndSurroundingWhitespace)}-{upper}-{padded}");
+        TestSeed.BasicRestaurant(db);
+
+        BookingService svc = CreateService(db);
+        BookingDto created = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        string typed = created.BookingRef!;
+        if (upper)
+        {
+            typed = typed.ToUpperInvariant();
+        }
+
+        if (padded)
+        {
+            typed = $"  {typed} ";
+        }
+
+        BookingDto? result = await svc.GetBookingByRefAsync(typed);
+
+        Assert.Equal(created.BookingRef, result?.BookingRef);
+    }
+
     [Fact]
     public async Task GetBookingByRefAsync_ReturnsNull_WhenNotFound()
     {

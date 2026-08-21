@@ -151,7 +151,7 @@ public class AdminService(
     [ExcludeFromCodeCoverage(Justification = "Unreachable: the 7-iteration loop above always populates rawCounts, so Count is never 0 at this call site.")]
     private static int MaxOrZero(List<int> counts) => counts.Count > 0 ? counts.Max() : 0;
 
-    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null)
+    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null, string? query = null)
     {
         List<Booking> bookings = await _bookingFilterRepository.QueryAsync(new BookingFilter
         {
@@ -160,6 +160,7 @@ public class AdminService(
             Status = status,
             Email = email,
             BookingRef = bookingRef,
+            Query = query,
         });
 
         return bookings.Select(ToDetailDto).ToList();

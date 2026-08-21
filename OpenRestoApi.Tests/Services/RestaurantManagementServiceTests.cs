@@ -19,6 +19,106 @@ public class RestaurantManagementServiceTests
         new TableGroupRepository(db));
 
     [Fact]
+    public async Task GetScheduleConflictsAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_ReturnsNull_WhenRestaurantNotFound));
+        Assert.Null(await CreateService(db).GetScheduleConflictsAsync(999));
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_FlagsBookingsLeftOutsideNarrowedHours()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_FlagsBookingsLeftOutsideNarrowedHours));
+        // Taken while the location opened at 11:00; it now opens at 17:00.
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 12);
+
+        List<ScheduleConflictDto>? conflicts = await CreateService(db).GetScheduleConflictsAsync(1);
+
+        ScheduleConflictDto conflict = Assert.Single(conflicts!);
+        Assert.Equal("outsideHours", conflict.Reason);
+        Assert.Equal("ABC123", conflict.BookingRef);
+        Assert.Equal("Ada", conflict.CustomerName);
+        Assert.Equal(2, conflict.Seats);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_IgnoresBookingsThatStillFit()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_IgnoresBookingsThatStillFit));
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 19);
+
+        Assert.Empty((await CreateService(db).GetScheduleConflictsAsync(1))!);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_IgnoresCancelledBookings()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_IgnoresCancelledBookings));
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 12, cancelled: true);
+
+        Assert.Empty((await CreateService(db).GetScheduleConflictsAsync(1))!);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_IgnoresBookingsAlreadyInThePast()
+    {
+        // A sitting that has already happened cannot be moved, so it is not the admin's problem.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_IgnoresBookingsAlreadyInThePast));
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 12, daysAhead: -7);
+
+        Assert.Empty((await CreateService(db).GetScheduleConflictsAsync(1))!);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_FlagsBookingsOnceTheLocationTurnsWalkInOnly()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_FlagsBookingsOnceTheLocationTurnsWalkInOnly));
+        await SeedScheduleFixtureAsync(db, bookingHourUtc: 19, walkInOnly: true);
+
+        Assert.Equal("walkInOnly", Assert.Single((await CreateService(db).GetScheduleConflictsAsync(1))!).Reason);
+    }
+
+    /// <summary>
+    /// One upcoming booking at <paramref name="bookingHourUtc"/> against a UTC location whose
+    /// schedule is whatever the caller passes — i.e. the schedule as edited <em>after</em> the
+    /// booking was taken.
+    /// </summary>
+    private static async Task SeedScheduleFixtureAsync(
+        AppDbContext db,
+        int bookingHourUtc,
+        string openTime = "11:00",
+        bool walkInOnly = false,
+        bool cancelled = false,
+        int daysAhead = 7)
+    {
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "R1",
+            Timezone = "UTC",
+            OpenTime = openTime,
+            CloseTime = "23:00",
+            OpenDays = "1,2,3,4,5,6,7",
+            WalkInOnly = walkInOnly,
+        });
+
+        DateTime day = DateTime.UtcNow.Date.AddDays(daysAhead);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1,
+            RestaurantId = 1,
+            Date = day.AddHours(bookingHourUtc),
+            Seats = 2,
+            CustomerName = "Ada",
+            BookingRef = "ABC123",
+            IsCancelled = cancelled,
+            CancelledAt = cancelled ? DateTime.UtcNow : null,
+        });
+
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
     public async Task GetAllAsync_ReturnsAll()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(GetAllAsync_ReturnsAll));

@@ -579,6 +579,48 @@ public class RestaurantManagementService(
         return new DeleteImpactDto { Bookings = bookings };
     }
 
+    /// <summary>
+    /// Upcoming bookings that the location's <em>current</em> schedule would no longer accept.
+    /// Narrowing opening hours, closing a day or switching to walk-in only never touches the
+    /// bookings already on the books, so this read is the only thing that surfaces the guests
+    /// left stranded by the edit. Returns null when the restaurant doesn't exist.
+    /// </summary>
+    /// <seealso>RestaurantManagementServiceTests.GetScheduleConflictsAsync_FlagsBookingsLeftOutsideNarrowedHours</seealso>
+    /// <seealso>RestaurantManagementServiceTests.GetScheduleConflictsAsync_IgnoresBookingsThatStillFit</seealso>
+    public async Task<List<ScheduleConflictDto>?> GetScheduleConflictsAsync(int restaurantId)
+    {
+        Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
+        if (restaurant == null)
+        {
+            return null;
+        }
+
+        List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(restaurantId, DateTime.UtcNow);
+
+        return upcoming
+            .Select(b => (Booking: b, Reason: ScheduleConflictHelper.Evaluate(restaurant, b.Date)))
+            .Where(x => x.Reason != ScheduleConflictReason.None)
+            .Select(x => new ScheduleConflictDto
+            {
+                BookingId = x.Booking.Id,
+                BookingRef = x.Booking.BookingRef,
+                CustomerName = x.Booking.CustomerName,
+                Date = x.Booking.Date,
+                Seats = x.Booking.Seats,
+                Reason = ReasonKey(x.Reason),
+            })
+            .ToList();
+    }
+
+    private static string ReasonKey(ScheduleConflictReason reason) => reason switch
+    {
+        ScheduleConflictReason.ClosedDay => "closedDay",
+        ScheduleConflictReason.OutsideHours => "outsideHours",
+        ScheduleConflictReason.WalkInOnly => "walkInOnly",
+        // Unreachable: GetScheduleConflictsAsync filters None out before mapping.
+        _ => "unknown",
+    };
+
     public async Task<DeleteImpactDto?> GetSectionDeleteImpactAsync(int restaurantId, int sectionId)
     {
         Section? section = await _sectionRepository.GetWithTablesForRestaurantAsync(sectionId, restaurantId);

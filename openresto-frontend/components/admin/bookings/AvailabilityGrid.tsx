@@ -7,14 +7,37 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { Icon } from "@/components/common/Icon";
 
-function buildTimeSlots(openTime: string, closeTime: string) {
+/** 12-hour clock labels, indexed by 24-hour hour. Midnight reads 12a, not 0a. */
+const HOUR_LABELS = Array.from({ length: 24 }, (_, h) =>
+  h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`
+);
+
+/**
+ * The hour columns to draw: the service window, plus an extra column for any hour a booking
+ * actually falls on. Editing a location's hours leaves the bookings taken under the old ones
+ * where they are, so a window-only grid quietly stops rendering them — the timetable is where
+ * staff would notice, which makes it the worst place to hide them.
+ *
+ * Hours are laid out forward from opening, so an overnight service (18:00–02:00) reads
+ * 6p…11p, 12a, 1a rather than collapsing to a single column.
+ *
+ * @see [AvailabilityGrid.test.tsx](../../../tests/components/AvailabilityGrid.test.tsx)
+ * — pins that a booking outside the current hours still gets a column, and that an overnight
+ * window spans the night instead of one hour.
+ */
+function buildTimeSlots(openTime: string, closeTime: string, bookedHours: number[] = []) {
   const startHour = parseInt(openTime.split(":")[0], 10);
-  const endHour = parseInt(closeTime.split(":")[0], 10);
-  return Array.from({ length: Math.max(endHour - startHour, 1) }, (_, i) => {
-    const h = startHour + i;
-    const label = h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
-    return { hour: h, label };
-  });
+  const rawEndHour = parseInt(closeTime.split(":")[0], 10);
+  const span = (rawEndHour - startHour + 24) % 24 || 24;
+
+  const hours = new Set<number>();
+  for (let i = 0; i < span; i++) hours.add((startHour + i) % 24);
+  for (const hour of bookedHours) hours.add(hour);
+
+  const sinceOpening = (hour: number) => (hour - startHour + 24) % 24;
+  return [...hours]
+    .sort((a, b) => sinceOpening(a) - sinceOpening(b))
+    .map((h) => ({ hour: h, label: HOUR_LABELS[h] }));
 }
 
 export const COL_W = 68;
@@ -53,7 +76,10 @@ export function AvailabilityGrid({
   closeTime?: string;
   timezone?: string;
 }) {
-  const timeSlots = buildTimeSlots(openTime, closeTime);
+  const bookedHours = bookings
+    .filter((b) => b.tableId != null)
+    .map((b) => getRestaurantHour(b.date, timezone));
+  const timeSlots = buildTimeSlots(openTime, closeTime, bookedHours);
   const colors = getThemeColors(isDark);
   const borderColor = colors.border;
   const headerBg = isDark ? "#28292b" : "#f4f5f6";
