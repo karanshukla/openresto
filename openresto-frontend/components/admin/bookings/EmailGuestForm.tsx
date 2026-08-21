@@ -12,6 +12,8 @@ interface ThemeColors {
 }
 
 interface EmailGuestFormProps {
+  /** The sitting just moved and a notice has been written into the fields below, unsent. */
+  moveNoticeReady?: boolean;
   borderColor: string;
   mutedColor: string;
   isDark: boolean;
@@ -27,6 +29,7 @@ interface EmailGuestFormProps {
 }
 
 export function EmailGuestForm({
+  moveNoticeReady = false,
   borderColor,
   mutedColor,
   isDark,
@@ -47,6 +50,15 @@ export function EmailGuestForm({
         <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
       </View>
       <ThemedText style={[styles.emailTo, { color: mutedColor }]}>To: {customerEmail}</ThemedText>
+      {moveNoticeReady && (
+        <ThemedText
+          testID="move-notice-ready"
+          style={[styles.emailTo, { color: theme.colors.warning }]}
+        >
+          The sitting moved. A notice is written below and has not been sent: edit it, or send it as
+          it stands.
+        </ThemedText>
+      )}
       <input
         type="text"
         placeholder="Subject"

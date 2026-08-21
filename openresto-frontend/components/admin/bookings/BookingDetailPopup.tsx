@@ -24,6 +24,7 @@ import { BookingDetailsCard } from "./BookingDetailsCard";
 import { EditBookingForm } from "./EditBookingForm";
 import { ExtendBookingActions } from "./ExtendBookingActions";
 import { EmailGuestForm } from "./EmailGuestForm";
+import { composeBookingMoveNotice } from "@/utils/bookingMoveNotice";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { isPast } from "./StatusBadge";
 import Button from "@/components/common/Button";
@@ -54,6 +55,7 @@ export function BookingDetailPopup({
   const [emailBody, setEmailBody] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailResult, setEmailResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [moveNoticeReady, setMoveNoticeReady] = useState(false);
   const [uncancelling, setUncancelling] = useState(false);
   const [showUncancelConfirm, setShowUncancelConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -76,6 +78,18 @@ export function BookingDetailPopup({
 
   const scrollRef = useRef<ScrollView>(null);
   const extendSectionRef = useRef<View>(null);
+  const emailSectionRef = useRef<View>(null);
+
+  // A form that silently fills itself in reads as a glitch. Bringing it into view is what turns
+  // the prefill into an offer the admin can act on or ignore.
+  useEffect(() => {
+    if (!moveNoticeReady) return;
+    const timer = setTimeout(
+      () => scrollIntoView(emailSectionRef, scrollRef, { block: "center" }),
+      150
+    );
+    return () => clearTimeout(timer);
+  }, [moveNoticeReady]);
 
   useEffect(() => {
     if (initialFocus !== "extend" || loading || editing || !booking || booking.isCancelled) return;
@@ -98,6 +112,7 @@ export function BookingDetailPopup({
       setEmailSubject("");
       setEmailBody("");
       setEmailResult(null);
+      setMoveNoticeReady(false);
       return;
     }
     let cancelled = false;
@@ -249,10 +264,31 @@ export function BookingDetailPopup({
         specialRequests: editSpecialRequests.trim() || undefined,
       };
 
+      const movedFrom = booking.date;
       const updated = await adminUpdateBookingFull(booking.id, updateData);
       setBooking(updated);
       setEditing(false);
       onMutated?.();
+
+      // Composing the notice is the step that was missing, not sending it: the admin still reads
+      // and sends. Only offered once the write has landed, so a move the conflict check rejected
+      // never gets announced to a guest it did not happen to.
+      const notice = updated
+        ? composeBookingMoveNotice({
+            restaurantName: updated.restaurantName,
+            bookingRef: updated.bookingRef,
+            customerName: updated.customerName,
+            fromIso: movedFrom,
+            toIso: updated.date,
+            timezone: updated.timezone,
+          })
+        : null;
+      if (notice && updated?.customerEmail) {
+        setEmailSubject(notice.subject);
+        setEmailBody(notice.body);
+        setEmailResult(null);
+        setMoveNoticeReady(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update booking.";
       setErrorMessage(message);
@@ -287,6 +323,7 @@ export function BookingDetailPopup({
     if (result.ok) {
       setEmailSubject("");
       setEmailBody("");
+      setMoveNoticeReady(false);
     }
   };
 
@@ -453,20 +490,23 @@ export function BookingDetailPopup({
                             onExtend={handleExtend}
                           />
                         </View>
-                        <EmailGuestForm
-                          borderColor={borderColor}
-                          mutedColor={mutedColor}
-                          isDark={isDark}
-                          colors={colors}
-                          customerEmail={booking.customerEmail}
-                          emailSubject={emailSubject}
-                          emailBody={emailBody}
-                          emailSending={emailSending}
-                          emailResult={emailResult}
-                          setEmailSubject={setEmailSubject}
-                          setEmailBody={setEmailBody}
-                          onSendEmail={handleSendEmail}
-                        />
+                        <View ref={emailSectionRef} testID="email-section">
+                          <EmailGuestForm
+                            moveNoticeReady={moveNoticeReady}
+                            borderColor={borderColor}
+                            mutedColor={mutedColor}
+                            isDark={isDark}
+                            colors={colors}
+                            customerEmail={booking.customerEmail}
+                            emailSubject={emailSubject}
+                            emailBody={emailBody}
+                            emailSending={emailSending}
+                            emailResult={emailResult}
+                            setEmailSubject={setEmailSubject}
+                            setEmailBody={setEmailBody}
+                            onSendEmail={handleSendEmail}
+                          />
+                        </View>
                       </View>
                     ) : null}
                   </View>
