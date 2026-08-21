@@ -54,8 +54,11 @@ function fileExists(path) {
   }
 }
 
-// A markdown link after the tag, plus the bare relative-path form.
-const TS_MARKDOWN_LINK = /@see\s+\[[^\]]+\]\(([^)]+)\)/g;
+// A markdown link after the tag, plus the bare relative-path form. The angle-bracket
+// variant is CommonMark's escape for a path containing parentheses, which every file
+// under an Expo Router route group (`tests/app/(user)/...`) has.
+const TS_MARKDOWN_ANGLE_LINK = /@see\s+\[[^\]]+\]\(<([^>]+)>\)/g;
+const TS_MARKDOWN_LINK = /@see\s+\[[^\]]+\]\(([^<)][^)]*)\)/g;
 const TS_BARE_LINK = /@see\s+((?:\.{1,2}\/)[^\s)]+)/g;
 const CS_SEEALSO = /<seealso>([^<]+)<\/seealso>/g;
 const CS_CLASS_DECL = /^\s*(?:public|internal|sealed|static|abstract|partial|\s)*class\s+([A-Za-z0-9_]+)/gm;
@@ -70,6 +73,7 @@ function checkTypeScript(files) {
     const source = readFileSync(file, "utf8");
     const targets = new Set();
 
+    for (const [, target] of source.matchAll(TS_MARKDOWN_ANGLE_LINK)) targets.add(target);
     for (const [, target] of source.matchAll(TS_MARKDOWN_LINK)) targets.add(target);
     for (const [, target] of source.matchAll(TS_BARE_LINK)) targets.add(target);
 

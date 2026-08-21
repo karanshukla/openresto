@@ -68,14 +68,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
   },
-  // The rail runs edge to edge while its cards still line up with the section's own
-  // padding: the negative margin cancels the 20px the highlights block insets by at
-  // phone width, and the content padding puts it back inside the scroller.
-  highlightsRail: {
-    marginHorizontal: -20,
-  },
   highlightsRailContent: {
-    paddingHorizontal: 20,
     gap: 12,
   },
   highlightCard: {

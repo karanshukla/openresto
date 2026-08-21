@@ -17,8 +17,11 @@ export const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
-  // A translucent band of the page colour behind the button, so the row's own content
-  // reads as passing underneath it rather than colliding with it.
+  // Positioning only, and deliberately transparent. This carried a translucent band of the
+  // page colour so content read as passing under the button; that is invisible on the page
+  // background it was named after, and over anything else — the home hero's image — it is a
+  // dark slab across the row. The button's own filled, bordered circle already separates it
+  // from whatever scrolls beneath.
   affordance: {
     position: "absolute",
     top: 0,
@@ -30,13 +33,9 @@ export const styles = StyleSheet.create({
   },
   affordanceStart: {
     left: 0,
-    borderTopRightRadius: theme.borderRadius.xl,
-    borderBottomRightRadius: theme.borderRadius.xl,
   },
   affordanceEnd: {
     right: 0,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderBottomLeftRadius: theme.borderRadius.xl,
   },
   arrow: {
     width: 32,

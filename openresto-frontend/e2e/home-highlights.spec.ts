@@ -3,12 +3,17 @@ import { test, expect } from "@playwright/test";
 /**
  * Guards the home-page highlights section.
  *
- * Two invariants:
+ * Three invariants:
  *   1. With real seeded data the "Restaurant highlights" heading, the
  *      "Curated by the owner" tag, and at least one highlight card render.
  *   2. When the highlights API returns an empty list, the *entire* section —
  *      heading included — must disappear (regression guard for the fix that
  *      wrapped the block in `highlights.length > 0`).
+ *   3. More highlights than columns become a scrolling rail rather than a second
+ *      row, and its forward button retires once the rail reaches its end. That
+ *      last part only exists in real layout: the rail cancels the section's
+ *      padding with a negative margin, so the scrollport is wider than the
+ *      wrapper around it, and a component test has no geometry to tell them apart.
  *
  * Both tests mock /api/restaurants** to a single fake restaurant so the page
  * renders predictably without depending on the broader seeded dataset.
@@ -69,6 +74,42 @@ test.describe("Home highlights section", () => {
     await expect(page.getByText("Curated by the owner")).toBeVisible();
     await expect(page.getByText("E2E Highlight Title", { exact: true })).toBeVisible();
     await expect(page.getByText("E2E highlight body copy.", { exact: true })).toBeVisible();
+  });
+
+  test("scrolls a fifth highlight into a rail whose forward button retires at the end", async ({
+    page,
+  }) => {
+    await page.route("**/api/restaurants**", (route) => route.fulfill({ json: fakeRestaurants }));
+    await page.route("**/api/highlights**", (route) =>
+      route.fulfill({
+        json: Array.from({ length: 6 }, (_, i) => ({
+          id: i + 1,
+          title: `Rail Highlight ${i + 1}`,
+          body: "Rail body copy.",
+          iconKey: "flame-outline",
+          sortOrder: i,
+        })),
+      })
+    );
+
+    await page.goto("/");
+    await expect(page.getByText("Rail Highlight 1", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const rail = page.getByRole("group", { name: "Restaurant highlights" });
+    const forward = page.getByRole("button", { name: "Scroll Restaurant highlights right" });
+    const back = page.getByRole("button", { name: "Scroll Restaurant highlights left" });
+
+    // Six highlights across at most four columns: one row that scrolls, not two rows.
+    await expect(rail).toBeVisible();
+    await expect(forward).toBeVisible();
+    await expect(back).toBeHidden();
+
+    await rail.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+
+    await expect(forward).toBeHidden();
+    await expect(back).toBeVisible();
   });
 
   test("hides the entire highlights section (heading included) when there are none", async ({

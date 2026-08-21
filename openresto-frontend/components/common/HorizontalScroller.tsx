@@ -1,5 +1,12 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Platform, ScrollView, View, type ScrollViewProps, type ViewStyle } from "react-native";
+import {
+  Platform,
+  ScrollView,
+  View,
+  type ScrollViewProps,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import IconButton from "@/components/common/IconButton";
 import { styles } from "./HorizontalScroller.styles";
@@ -28,7 +35,7 @@ interface Props extends Omit<ScrollViewProps, "horizontal" | "children"> {
    * card rail says it scrolls by letting the next card peek instead.
    */
   scrollButtons?: boolean;
-  contentContainerStyle?: ViewStyle;
+  contentContainerStyle?: StyleProp<ViewStyle>;
   children: ReactNode;
 }
 
@@ -48,16 +55,17 @@ export default function HorizontalScroller({
   style,
   children,
   onScroll,
+  onLayout,
   ...rest
 }: Props) {
   const { colors, primaryColor } = useAppTheme();
   const scrollRef = useRef<ScrollView>(null);
   const [offset, setOffset] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [scrollportWidth, setScrollportWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
 
   const canScrollBack = offset > EDGE_SLOP;
-  const canScrollOn = offset + containerWidth < contentWidth - EDGE_SLOP;
+  const canScrollOn = offset + scrollportWidth < contentWidth - EDGE_SLOP;
   const scrollable = canScrollBack || canScrollOn;
 
   const scrollBy = (delta: number) =>
@@ -66,11 +74,7 @@ export default function HorizontalScroller({
   const scrollButton = (back: boolean) => (
     <View
       pointerEvents="box-none"
-      style={[
-        styles.affordance,
-        back ? styles.affordanceStart : styles.affordanceEnd,
-        { backgroundColor: colors.page + "99" },
-      ]}
+      style={[styles.affordance, back ? styles.affordanceStart : styles.affordanceEnd]}
     >
       <IconButton
         testID={`scroll-${back ? "back" : "forward"}`}
@@ -85,7 +89,7 @@ export default function HorizontalScroller({
   );
 
   return (
-    <View style={styles.wrapper} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+    <View style={styles.wrapper}>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -102,6 +106,19 @@ export default function HorizontalScroller({
           onScroll?.(e);
         }}
         onContentSizeChange={(w) => setContentWidth(w)}
+        // Measured on the ScrollView, not on the wrapper around it: a caller may hang a
+        // negative margin off `style` to run the row past its container's padding, and the
+        // content padding that puts the cards back in line is inside `contentWidth`. Reading
+        // the wrapper instead understates the scrollport by both insets, so the row claims
+        // there is more to the right of it than there is and the forward button never retires.
+        //
+        // @see [home-highlights.spec.ts](../../e2e/home-highlights.spec.ts) — pins that the
+        // forward button retires once the home rail, which insets exactly this way, is at
+        // its end.
+        onLayout={(e) => {
+          setScrollportWidth(e.nativeEvent.layout.width);
+          onLayout?.(e);
+        }}
         style={style}
         contentContainerStyle={contentContainerStyle}
         // react-native-web renders no tabindex of its own, so a scroller whose contents

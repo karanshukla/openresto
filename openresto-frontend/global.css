@@ -189,6 +189,44 @@ body.theme-ready * {
   }
 }
 
+/* The location cards arrive and leave the way the hero title does: a fade driven by the
+   page's own scroll rather than by a handler, so nothing re-renders per frame. `view()`
+   runs each card against its own passage through the scrollport, which is why one keyframe
+   set covers both ends — the plateau in the middle is the card sitting in view, and the
+   two edges are it entering and leaving. Unlike the hero collapse this is not phone-only:
+   it is the cards responding to the scroll, not a native large-title idiom.
+
+   Not guarded by a width query, but it is guarded by @supports: where `view()` is missing
+   the cards are simply opaque, which is what they were before. */
+@keyframes home-card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  18%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  [data-card-reveal] {
+    animation: home-card-reveal linear both;
+    animation-timeline: view();
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-card-reveal] {
+    animation: none;
+  }
+}
+
 .grab-scroll {
   cursor: grab !important;
 }

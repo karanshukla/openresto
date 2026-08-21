@@ -156,6 +156,41 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
   });
 
+  const manyHighlights = (count: number) =>
+    (fetchHighlights as jest.Mock).mockResolvedValue(
+      Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        title: `Highlight ${i + 1}`,
+        body: "Body.",
+        iconKey: "flame-outline",
+        sortOrder: i,
+      }))
+    );
+
+  it("keeps a full four-column row of highlights as a grid", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 1200, height: 900 });
+    manyHighlights(4);
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    expect(screen.queryByTestId("highlights-rail")).toBeNull();
+  });
+
+  it("scrolls the highlights sideways rather than opening a second row for a fifth", async () => {
+    jest
+      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+      .mockReturnValue({ width: 1200, height: 900 });
+    manyHighlights(5);
+    renderWithProviders(<HomeScreen />);
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+    const rail = screen.getByTestId("highlights-rail");
+    expect(rail.props.horizontal).toBe(true);
+    expect(screen.getByText("Highlight 5")).toBeTruthy();
+  });
+
   it("renders restaurants after loading", async () => {
     renderWithProviders(<HomeScreen />);
 

@@ -11,7 +11,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
-import { isMobileWidth } from "@/constants/breakpoints";
+import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -25,12 +25,22 @@ const HOME_SCROLL_TIMELINE = { dataSet: { scrollTimeline: "home" } };
 const HERO_COLLAPSE_BOX = { dataSet: { heroCollapse: "box" } };
 const HERO_COLLAPSE_TITLE = { dataSet: { heroCollapse: "title" } };
 const HERO_COLLAPSE_SUB = { dataSet: { heroCollapse: "sub" } };
+/** Marks a location card for the scroll-driven fade in global.css. */
+const CARD_REVEAL = { dataSet: { cardReveal: "card" } };
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
 let _cachedHighlights: HighlightDto[] | null = null;
 
 const DEFAULT_PARTY_SIZE = 2;
+
+const HIGHLIGHT_GAP = 12;
+/** Phone rail card, as a fraction of the viewport. */
+const PHONE_RAIL_CARD_FRACTION = 0.78;
+const PHONE_RAIL_CARD_MAX = 300;
+/** Wider rail card, as a fraction of the grid column it replaces. The remainder is the peek. */
+const RAIL_CARD_OF_COLUMN = 0.92;
+const PHONE_SECTION_PADDING_H = 20;
 
 export function resetHomeCache() {
   _cachedRestaurants = null;
@@ -98,11 +108,24 @@ export default function HomeScreen() {
   // loaded and found one location.
   const skeletonCount = numColumns === 1 ? 2 : numColumns;
 
-  // The card is deliberately narrower than the viewport: the sliver of the next one is
+  /**
+   * Highlights stay one row. Past the column count they scroll sideways instead of
+   * wrapping, so a fifth highlight doesn't open a second row with three empty slots in it.
+   *
+   * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins the boundary: four
+   * highlights across four columns stay a grid, a fifth becomes a rail.
+   */
+  const useHighlightRail = numHighlightCols === 1 || highlights.length > numHighlightCols;
+  const railInset = isMobile ? PHONE_SECTION_PADDING_H : CONTENT_PADDING_H;
+  const highlightColumnWidth =
+    (Math.min(width, CONTENT_MAX_WIDTH) - railInset * 2 - HIGHLIGHT_GAP * (numHighlightCols - 1)) /
+    numHighlightCols;
+  // The card is deliberately narrower than the room it has: the sliver of the next one is
   // what says "this scrolls" without a scrollbar to say it.
-  const railCardWidth = Math.min(300, Math.round(width * 0.78));
-  const railGap = 12;
-  const useHighlightRail = numHighlightCols === 1;
+  const railCardWidth =
+    numHighlightCols === 1
+      ? Math.min(PHONE_RAIL_CARD_MAX, Math.round(width * PHONE_RAIL_CARD_FRACTION))
+      : Math.round(highlightColumnWidth * RAIL_CARD_OF_COLUMN);
 
   const wrapHighlights = (cards: ReactNode) =>
     useHighlightRail ? (
@@ -112,19 +135,24 @@ export default function HomeScreen() {
         // The cards are only focusable when they carry a link, so without a stop of its
         // own a keyboard could reach the third highlight only by luck.
         keyboardFocusable
-        scrollButtons={false}
-        snapToInterval={railCardWidth + railGap}
+        // A pointer has no swipe. Past phone widths the row needs a control to say it
+        // scrolls; on a phone the gesture is already the one the visitor reaches for.
+        scrollButtons={!isMobile}
+        snapToInterval={railCardWidth + HIGHLIGHT_GAP}
         decelerationRate="fast"
         style={[
-          styles.highlightsRail,
+          // The rail runs edge to edge while its cards stay lined up with the section's own
+          // padding: the negative margin cancels the inset the highlights block carries, and
+          // the content padding puts it back inside the scroller.
+          { marginHorizontal: -railInset },
           Platform.OS === "web" &&
             // Without the scroll padding, mandatory snapping pulls the first card flush to
-            // the viewport edge on load: the rail's own left inset reads as 20px of
-            // scrolled-past content, so the browser snaps it away and the row starts out
-            // of line with the heading above it.
-            ({ scrollSnapType: "x mandatory", scrollPaddingLeft: 20 } as object),
+            // the viewport edge on load: the rail's own left inset reads as scrolled-past
+            // content, so the browser snaps it away and the row starts out of line with the
+            // heading above it.
+            ({ scrollSnapType: "x mandatory", scrollPaddingLeft: railInset } as object),
         ]}
-        contentContainerStyle={styles.highlightsRailContent}
+        contentContainerStyle={{ ...styles.highlightsRailContent, paddingHorizontal: railInset }}
       >
         {cards}
       </HorizontalScroller>
@@ -332,7 +360,7 @@ export default function HomeScreen() {
                     </View>
                   ))
                 : restaurants.map((r) => (
-                    <View key={r.id} style={cardWrapperStyle}>
+                    <View key={r.id} style={cardWrapperStyle} {...(CARD_REVEAL as object)}>
                       <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
                     </View>
                   ))}
