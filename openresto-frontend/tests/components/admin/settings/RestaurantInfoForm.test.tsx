@@ -1098,4 +1098,52 @@ describe("RestaurantInfoForm", () => {
       expect(screen.queryByText("Default booking duration")).toBeNull();
     });
   });
+
+  // Changing a location's timezone reinterprets the local wall-clock time of every booking it
+  // already holds, without moving the booking or telling the guest (#362). A warning, not a
+  // gate: the bookings are correct, only the time the guest was told has drifted.
+  describe("timezone warning", () => {
+    it("warns when the location already holds upcoming bookings", () => {
+      render(
+        <RestaurantInfoForm
+          restaurant={mockRestaurant}
+          onSaved={onSaved}
+          upcomingBookingsCount={3}
+        />
+      );
+
+      expect(screen.getByTestId("timezone-rebase-warning")).toBeTruthy();
+      expect(screen.getByText(/3 upcoming bookings on the books/)).toBeTruthy();
+    });
+
+    it("stays out of the way when the location holds none", () => {
+      render(
+        <RestaurantInfoForm
+          restaurant={mockRestaurant}
+          onSaved={onSaved}
+          upcomingBookingsCount={0}
+        />
+      );
+
+      expect(screen.queryByTestId("timezone-rebase-warning")).toBeNull();
+    });
+
+    it("keeps the count singular for one booking", () => {
+      render(
+        <RestaurantInfoForm
+          restaurant={mockRestaurant}
+          onSaved={onSaved}
+          upcomingBookingsCount={1}
+        />
+      );
+
+      expect(screen.getByText(/1 upcoming booking on the books/)).toBeTruthy();
+    });
+
+    it("hides when the count is absent, rather than assuming there are bookings", () => {
+      render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+
+      expect(screen.queryByTestId("timezone-rebase-warning")).toBeNull();
+    });
+  });
 });

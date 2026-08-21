@@ -144,11 +144,7 @@ export default function AdminSidebar() {
         setSelectedBookingId(results[0].id);
       } else {
         setLookupStatus("multiple");
-        const isEmail = q.includes("@");
-        router.push({
-          pathname: "/admin/bookings",
-          params: isEmail ? { email: q } : { bookingRef: q },
-        });
+        router.push({ pathname: "/admin/bookings", params: { query: q } });
       }
     } finally {
       setLookupLoading(false);
@@ -275,7 +271,7 @@ export default function AdminSidebar() {
               backgroundColor: colors.input,
             },
           ]}
-          placeholder="Email or reference…"
+          placeholder="Name, email or reference…"
           placeholderTextColor={colors.muted}
           value={lookupQuery}
           onChangeText={(t) => {

@@ -79,6 +79,7 @@ public class AdminService(
 
         int todayBookingsCount = 0;
         int pausedRestaurantsCount = 0;
+        int scheduleConflictsCount = 0;
         List<BookingDetailDto> todayBookingsList = [];
         foreach (Restaurant? r in restaurants)
         {
@@ -86,6 +87,9 @@ public class AdminService(
             List<Booking> rTodayBookings = await _bookingRepository.GetForRestaurantInUtcRangeAsync(r.Id, start, end);
             todayBookingsCount += rTodayBookings.Count;
             todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
+
+            List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(r.Id, nowUtc);
+            scheduleConflictsCount += ScheduleConflictHelper.Conflicting(r, upcoming).Count;
 
             if (r.BookingsPausedUntil.HasValue && r.BookingsPausedUntil.Value > nowUtc)
             {
@@ -104,6 +108,7 @@ public class AdminService(
             TotalSeats = totalSeats,
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
             PausedRestaurantsCount = pausedRestaurantsCount,
+            ScheduleConflictsCount = scheduleConflictsCount,
             OccupancyData = occupancyData,
             OccupancyDates = occupancyDates,
             OccupancyCounts = rawCounts,
@@ -151,7 +156,7 @@ public class AdminService(
     [ExcludeFromCodeCoverage(Justification = "Unreachable: the 7-iteration loop above always populates rawCounts, so Count is never 0 at this call site.")]
     private static int MaxOrZero(List<int> counts) => counts.Count > 0 ? counts.Max() : 0;
 
-    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null)
+    public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null, string? query = null)
     {
         List<Booking> bookings = await _bookingFilterRepository.QueryAsync(new BookingFilter
         {
@@ -160,6 +165,7 @@ public class AdminService(
             Status = status,
             Email = email,
             BookingRef = bookingRef,
+            Query = query,
         });
 
         return bookings.Select(ToDetailDto).ToList();

@@ -72,6 +72,7 @@ const mockStats: AdminDashboardStats = {
   todayCount: 5,
   activeHoldsCount: 3,
   pausedCount: 1,
+  scheduleConflictsCount: 0,
   totalCovers: 100,
   occupancyData: [10, 20, 30, 40, 50, 60, 70],
   occupancyCounts: [1, 2, 3, 4, 5, 6, 12],

@@ -124,6 +124,26 @@ public class DeleteImpactDto
     public int Bookings { get; set; }
 }
 
+// ── Schedule conflicts (#359) ─────────────────────────────────────────────
+
+/// <summary>
+/// An upcoming booking that no longer fits the location's current schedule, so the admin who
+/// narrowed the hours can see who they have to move or call.
+/// </summary>
+public class ScheduleConflictDto
+{
+    public int BookingId { get; set; }
+    public string BookingRef { get; set; } = string.Empty;
+    public string? CustomerName { get; set; }
+
+    /// <summary>Sitting start, UTC — the client renders it in the location's timezone.</summary>
+    public DateTime Date { get; set; }
+    public int Seats { get; set; }
+
+    /// <summary>"closedDay" | "outsideHours" | "walkInOnly" — see <c>ScheduleConflictReason</c>.</summary>
+    public string Reason { get; set; } = string.Empty;
+}
+
 // ── Combinable table groups (#271) ────────────────────────────────────────
 
 public class CreateTableGroupRequest

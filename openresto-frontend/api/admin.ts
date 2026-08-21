@@ -7,6 +7,7 @@ export interface AdminOverviewDto {
   totalSeats: number;
   activeHoldsCount?: number;
   pausedRestaurantsCount?: number;
+  scheduleConflictsCount?: number;
   occupancyData?: number[];
   occupancyDates?: string[];
   occupancyCounts?: number[];
@@ -29,6 +30,7 @@ export interface AdminDashboardStats {
   todayCount: number;
   activeHoldsCount: number;
   pausedCount: number;
+  scheduleConflictsCount: number;
   totalCovers: number;
   occupancyData: number[];
   occupancyDates: string[];
@@ -46,6 +48,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
       pausedCount: overview.pausedRestaurantsCount ?? 0,
+      scheduleConflictsCount: overview.scheduleConflictsCount ?? 0,
       totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
       occupancyDates: overview.occupancyDates ?? [],
@@ -127,16 +130,14 @@ export async function getAdminBookings(
   restaurantId?: number,
   date?: string,
   status: BookingStatusFilter = "active",
-  email?: string,
-  bookingRef?: string
+  search?: string
 ): Promise<BookingDetailDto[]> {
   try {
     const params = new URLSearchParams();
     if (restaurantId != null) params.set("restaurantId", String(restaurantId));
     if (date) params.set("date", date);
     if (status !== "active") params.set("status", status);
-    if (email) params.set("email", email);
-    if (bookingRef) params.set("bookingRef", bookingRef);
+    if (search) params.set("query", search);
     const query = params.toString() ? `?${params}` : "";
     const res = await get(`/admin/bookings${query}`);
     if (!res.ok) throw new Error("Failed to fetch admin bookings");
@@ -147,15 +148,16 @@ export async function getAdminBookings(
   }
 }
 
+/**
+ * Free-text booking search across every location. One `query` param, matched server-side as a
+ * substring of the customer name, the customer email and the booking reference at once — the
+ * caller does not have to guess which field the admin typed.
+ *
+ * @see [admin.test.ts](../tests/api/admin.test.ts) — pins that a partial name, a partial
+ * email and a partial reference all go out as the same `query` param.
+ */
 export async function adminLookupBookings(query: string): Promise<BookingDetailDto[]> {
-  const isEmail = query.includes("@");
-  return getAdminBookings(
-    undefined,
-    undefined,
-    "all",
-    isEmail ? query : undefined,
-    isEmail ? undefined : query
-  );
+  return getAdminBookings(undefined, undefined, "all", query);
 }
 
 export async function getAdminBooking(id: number): Promise<BookingDetailDto | null> {

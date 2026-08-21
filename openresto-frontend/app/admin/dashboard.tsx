@@ -19,6 +19,7 @@ import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionM
 import AlertModal from "@/components/common/AlertModal";
 import { styles } from "@/styles/admin/dashboard.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { ScheduleConflictsBanner } from "@/components/admin/dashboard/ScheduleConflictsBanner";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -142,6 +143,7 @@ export default function AdminDashboardScreen() {
           />
         ) : (
           <>
+            <ScheduleConflictsBanner count={stats?.scheduleConflictsCount ?? 0} />
             <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
               {metricCards.map((stat) => (
                 <MetricCard key={stat.label} stat={stat} colors={colors} />

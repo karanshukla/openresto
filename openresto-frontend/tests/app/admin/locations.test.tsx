@@ -4,7 +4,7 @@
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
 import AdminLocationsScreen from "@/app/admin/locations";
-import { fetchRestaurants, createRestaurant } from "@/api/restaurants";
+import { fetchRestaurants, createRestaurant, fetchScheduleConflicts } from "@/api/restaurants";
 import {
   adminGetRestaurants,
   adminDeleteRestaurant,
@@ -26,8 +26,10 @@ jest.mock("@/api/admin", () => ({
   unpauseRestaurantBookings: jest.fn(),
   extendRestaurantBookings: jest.fn(),
 }));
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
+  useRouter: () => ({ push: mockPush }),
 }));
 jest.mock("@/api/auth", () => ({
   checkSession: jest.fn(),
@@ -65,6 +67,7 @@ describe("AdminLocationsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     signedInAs("Owner");
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (adminGetRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (pauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
@@ -326,6 +329,7 @@ describe("AdminLocationsScreen archive and delete", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     signedInAs("Owner");
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
     (fetchRestaurants as jest.Mock).mockResolvedValue([
       { id: 1, name: "Resto 1", sections: [], activeBookingsCount: 0 },
     ]);
@@ -537,6 +541,7 @@ describe("AdminLocationsScreen selected-location persistence", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     signedInAs("Owner");
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
     Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
     localStorage.clear();
     (fetchRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);

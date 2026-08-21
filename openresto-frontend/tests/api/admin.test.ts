@@ -99,6 +99,7 @@ describe("getAdminDashboardStats", () => {
       todayCount: 5,
       activeHoldsCount: 0,
       pausedCount: 0,
+      scheduleConflictsCount: 0,
       totalCovers: 100,
       occupancyData: [],
       occupancyDates: [],
@@ -943,25 +944,21 @@ describe("adminDeleteHighlight", () => {
 // ---------- Lookup / new booking helpers ----------
 
 describe("adminLookupBookings", () => {
-  it("passes email param when query contains @", async () => {
+  // One free-text param whatever the admin typed. Splitting the term into email-vs-reference on
+  // the client is what stopped a partial email — and any customer name at all — from matching.
+  it.each([
+    ["a partial email", "user@exam"],
+    ["a partial reference", "crispy-bas"],
+    ["a customer name", "Ada Lovelace"],
+  ])("sends %s as the single query param", async (_label, term) => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
 
-    await adminLookupBookings("user@example.com");
+    await adminLookupBookings(term);
 
     const url = mockFetch.mock.calls[0][0] as string;
-    expect(url).toContain("email=user%40example.com");
-    expect(url).not.toContain("bookingRef=");
-    expect(url).toContain("status=all");
-  });
-
-  it("passes bookingRef param when query does not contain @", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
-
-    await adminLookupBookings("REF123");
-
-    const url = mockFetch.mock.calls[0][0] as string;
-    expect(url).toContain("bookingRef=REF123");
+    expect(url).toContain(new URLSearchParams({ query: term }).toString());
     expect(url).not.toContain("email=");
+    expect(url).not.toContain("bookingRef=");
     expect(url).toContain("status=all");
   });
 

@@ -23,6 +23,7 @@ import { AddLocationForm } from "@/components/admin/locations/AddLocationForm";
 import { LocationPills } from "@/components/admin/locations/LocationPills";
 import { ArchiveLocationRow } from "@/components/admin/locations/ArchiveLocationRow";
 import { ArchivedLocationPanel } from "@/components/admin/locations/ArchivedLocationPanel";
+import { ScheduleConflictsPanel } from "@/components/admin/locations/ScheduleConflictsPanel";
 import { styles } from "@/components/admin/settings/settings.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -51,6 +52,9 @@ export default function AdminLocationsScreen() {
   const [archiving, setArchiving] = useState(false);
   const [archiveFailed, setArchiveFailed] = useState(false);
   const [deletedName, setDeletedName] = useState<string | null>(null);
+  // The location form autosaves, so there is no submit to hang a re-read off; bumping this on
+  // every committed patch is what makes the schedule-conflict panel reflect the edit just made.
+  const [scheduleRevision, setScheduleRevision] = useState(0);
 
   const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
@@ -60,6 +64,7 @@ export default function AdminLocationsScreen() {
 
   function patchRestaurant(id: number, patch: Partial<RestaurantDto>) {
     setRestaurants((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    setScheduleRevision((n) => n + 1);
     // The pills read the admin list, so a rename has to reach it or the selector keeps
     // showing the old name until the next load.
     if (patch.name !== undefined) {
@@ -358,10 +363,19 @@ export default function AdminLocationsScreen() {
         </View>
       ) : selectedRestaurant ? (
         <View style={styles.section}>
+          <ScheduleConflictsPanel
+            restaurantId={selectedRestaurant.id}
+            timezone={selectedRestaurant.timezone ?? "UTC"}
+            refreshKey={scheduleRevision}
+            borderColor={borderColor}
+            mutedColor={mutedColor}
+            cardBg={cardBg}
+          />
           <LocationCard
             key={selectedRestaurant.id}
             restaurant={selectedRestaurant}
             onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
+            upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
             isDark={isDark}
             borderColor={borderColor}
             mutedColor={mutedColor}

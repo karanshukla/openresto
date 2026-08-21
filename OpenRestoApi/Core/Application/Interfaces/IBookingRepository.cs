@@ -126,4 +126,11 @@ public interface IBookingRepository
 
     /// <summary>All bookings whose TableGroupId matches — used by RestaurantManagementService.DeleteTableGroupAsync to FK-null them.</summary>
     Task<List<Booking>> GetByTableGroupAsync(int tableGroupId);
+
+    /// <summary>
+    /// Non-cancelled bookings for a restaurant starting at or after <paramref name="nowUtc"/>, oldest
+    /// first and with no navigation properties loaded — the set the schedule-conflict read re-evaluates
+    /// against the location's current opening hours and walk-in policy.
+    /// </summary>
+    Task<List<Booking>> GetFutureForRestaurantAsync(int restaurantId, DateTime nowUtc);
 }

@@ -50,7 +50,7 @@ export function BookingLookupBar({
               minWidth: 180,
             },
           ]}
-          placeholder="Email or reference…"
+          placeholder="Name, email or reference…"
           placeholderTextColor={placeholderColor}
           value={query}
           onChangeText={onQueryChange}

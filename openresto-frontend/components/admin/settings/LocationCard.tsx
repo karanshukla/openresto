@@ -47,6 +47,7 @@ function StatChip({
 export function LocationCard({
   restaurant,
   onSaved,
+  upcomingBookingsCount = 0,
   isDark,
   borderColor,
   mutedColor,
@@ -54,6 +55,8 @@ export function LocationCard({
 }: {
   restaurant: RestaurantDto;
   onSaved: (patch: Partial<RestaurantDto>) => void;
+  /** Forwarded to the timezone warning; 0 keeps it hidden. */
+  upcomingBookingsCount?: number;
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
@@ -163,7 +166,11 @@ export function LocationCard({
         />
       </View>
 
-      <RestaurantInfoForm restaurant={restaurant} onSaved={onSaved} />
+      <RestaurantInfoForm
+        restaurant={restaurant}
+        onSaved={onSaved}
+        upcomingBookingsCount={upcomingBookingsCount}
+      />
 
       <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
         <AccordionCardHeader

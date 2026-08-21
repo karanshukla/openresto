@@ -26,7 +26,7 @@ describe("BookingLookupBar", () => {
         {...theme}
       />
     );
-    expect(screen.getByPlaceholderText("Email or reference…")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy();
     expect(screen.getByText("Find")).toBeTruthy();
   });
 
@@ -42,7 +42,10 @@ describe("BookingLookupBar", () => {
         {...theme}
       />
     );
-    fireEvent.changeText(screen.getByPlaceholderText("Email or reference…"), "alice@test.com");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Name, email or reference…"),
+      "alice@test.com"
+    );
     expect(onQueryChange).toHaveBeenCalledWith("alice@test.com");
   });
 

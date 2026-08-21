@@ -1014,4 +1014,48 @@ public class AvailabilityServiceTests
         Assert.DoesNotContain(2, slot1200.AvailableTableIds);
         Assert.DoesNotContain(3, slot1200.AvailableTableIds);
     }
+
+    /// <summary>
+    /// The gate the picker offers a slot through and the gate the hold endpoint judges it by
+    /// have to agree. They did not: availability builds Saturday's 18:00–02:00 window and emits
+    /// the after-midnight slots as part of Saturday's service, while the hold gate resolved
+    /// 00:30 against Sunday and refused it whenever Sunday's schedule differed.
+    /// </summary>
+    [Fact]
+    public async Task GetAvailabilityAsync_OnlyOffersSlotsTheHoldGateAccepts_ForAnOvernightService()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_OnlyOffersSlotsTheHoldGateAccepts_ForAnOvernightService));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Late",
+            OpenTime = "18:00",
+            CloseTime = "02:00",
+            OpenDays = "6", // Saturday only, so Sunday carries the tail but opens nothing itself
+            Timezone = "UTC",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+        var saturday = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, saturday, 2);
+        Restaurant restaurant = db.Restaurants.Find(1)!;
+
+        Assert.Contains(result.Slots, s => s.Time == "00:30");
+        Assert.All(result.Slots, slot =>
+        {
+            DateTime slotUtc = SlotInstant(saturday, slot.Time);
+            Assert.True(restaurant.IsOpenAt(slotUtc), $"availability offered {slot.Time} but the hold gate refuses it");
+        });
+    }
+
+    /// <summary>A slot time past the opening hour belongs to the same day; one before it has wrapped.</summary>
+    private static DateTime SlotInstant(DateTime localDate, string slotTime)
+    {
+        TimeSpan timeOfDay = TimeSpan.Parse(slotTime, System.Globalization.CultureInfo.InvariantCulture);
+        return timeOfDay >= TimeSpan.FromHours(18) ? localDate + timeOfDay : localDate.AddDays(1) + timeOfDay;
+    }
 }

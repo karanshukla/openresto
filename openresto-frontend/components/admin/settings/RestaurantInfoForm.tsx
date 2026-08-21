@@ -170,12 +170,54 @@ function buildOpenHoursPayload(
   return payload;
 }
 
+/**
+ * What changing a location's timezone does to the bookings it already holds.
+ *
+ * Every sitting is stored in UTC, so the booking does not move: the guest is still expected at
+ * the same real moment. What moves is the wall-clock time that moment reads as, which is the
+ * time the confirmation email told them. Nothing re-sends, and the schedule-conflict read does
+ * not catch it either, because the sitting usually still lands inside the new local window.
+ *
+ * Deliberately a warning and not a gate or a rebase. Silently rewriting confirmed bookings as a
+ * side effect of a settings edit is the failure mode this whole area exists to avoid.
+ *
+ * @see [RestaurantInfoForm.test.tsx](../../../tests/components/admin/settings/RestaurantInfoForm.test.tsx)
+ * — pins that it stays out of the way until the location actually holds bookings.
+ */
+function TimezoneRebaseWarning({
+  upcomingBookingsCount,
+  warningColor,
+}: {
+  upcomingBookingsCount: number;
+  warningColor: string;
+}) {
+  if (upcomingBookingsCount <= 0) return null;
+
+  const bookings = `${upcomingBookingsCount} upcoming booking${upcomingBookingsCount === 1 ? "" : "s"}`;
+
+  return (
+    <View testID="timezone-rebase-warning" style={styles.fieldWarning}>
+      <Icon name="alert-circle-outline" size="sm" color={warningColor} />
+      <ThemedText style={[styles.fieldHint, styles.fieldWarningText, { color: warningColor }]}>
+        {bookings} on the books. Changing this does not move them — they are stored in UTC — but it
+        changes the local time each guest was told, and nothing is sent to them.
+      </ThemedText>
+    </View>
+  );
+}
+
 export function RestaurantInfoForm({
   restaurant,
   onSaved,
+  /**
+   * Drives the timezone warning only. Zero means there is nothing a timezone change could
+   * reinterpret, so the warning stays out of the way on a location with no bookings yet.
+   */
+  upcomingBookingsCount = 0,
 }: {
   restaurant: RestaurantDto;
   onSaved: (patch: Partial<RestaurantDto>) => void;
+  upcomingBookingsCount?: number;
 }) {
   const { colors, isDark, primaryColor } = useAppTheme();
 
@@ -675,6 +717,10 @@ export function RestaurantInfoForm({
                   If this value differs from the customer&apos;s device timezone, a note will appear
                   on the booking page.
                 </ThemedText>
+                <TimezoneRebaseWarning
+                  upcomingBookingsCount={upcomingBookingsCount}
+                  warningColor={colors.warning}
+                />
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
@@ -787,18 +833,16 @@ export function RestaurantInfoForm({
         surface2={surface2}
       />
 
-      <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
-        <View style={styles.footer}>
-          <SaveStatus
-            status={status}
-            error={error}
-            onRetry={retry}
-            onUndo={undo}
-            mutedColor={mutedColor}
-            blockedReason={blockedReason}
-            testID="location-save-status"
-          />
-        </View>
+      <View style={[styles.statusBar, { backgroundColor: colors.page }]}>
+        <SaveStatus
+          status={status}
+          error={error}
+          onRetry={retry}
+          onUndo={undo}
+          mutedColor={mutedColor}
+          blockedReason={blockedReason}
+          testID="location-save-status"
+        />
       </View>
     </>
   );

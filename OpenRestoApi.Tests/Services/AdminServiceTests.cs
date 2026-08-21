@@ -72,6 +72,46 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_CountsBookingsStrandedByEveryLocationsSchedule()
+    {
+        AdminService svc = CreateService();
+        // Two Monday-only locations, each holding one Monday sitting and one Tuesday sitting.
+        // Only the Tuesdays are stranded, and the count has to span both locations.
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "A", Timezone = "UTC", OpenDays = "1" });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "B", Timezone = "UTC", OpenDays = "1" });
+        var monday = new DateTime(2099, 1, 5, 12, 0, 0, DateTimeKind.Utc);
+        var tuesday = new DateTime(2099, 1, 6, 12, 0, 0, DateTimeKind.Utc);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, Date = monday, Seats = 2, BookingRef = "a1" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, Date = tuesday, Seats = 2, BookingRef = "a2" });
+        _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 2, Date = tuesday, Seats = 2, BookingRef = "b1" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(2, overview.ScheduleConflictsCount);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_CountsNoConflicts_WhenEveryBookingStillFits()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "A", Timezone = "UTC", OpenDays = "1,2,3,4,5,6,7" });
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1,
+            RestaurantId = 1,
+            Date = new DateTime(2099, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            Seats = 2,
+            BookingRef = "a1",
+        });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(0, overview.ScheduleConflictsCount);
+    }
+
+    [Fact]
     public async Task GetOverviewAsync_TotalSeats_HandlesNull()
     {
         AdminService svc = CreateService();
@@ -433,6 +473,37 @@ public class AdminServiceTests : IDisposable
 
         Assert.Single(results);
         Assert.Equal("ABC123", results[0].BookingRef);
+    }
+
+    // The admin lookup used to split the typed term into "email if it has an @, else booking
+    // reference", so a partial email matched nothing and a customer name matched nothing at all.
+    // One free-text param spans all three fields instead (#358).
+    [Theory]
+    [InlineData("ali")]           // partial name
+    [InlineData("ALICE@EX")]      // partial email, wrong case
+    [InlineData("bc12")]          // mid-string slice of the booking reference
+    public async Task GetBookingsAsync_QueryFilter_MatchesNameEmailAndRefPartially(string query)
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "ABC123", CustomerName = "Alice Smith", CustomerEmail = "Alice@Example.com" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "XYZ789", CustomerName = "Bob Jones", CustomerEmail = "bob@example.com" });
+        await _db.SaveChangesAsync();
+
+        List<BookingDetailDto> results = await svc.GetBookingsAsync(1, null, "all", query: query);
+
+        Assert.Equal("ABC123", Assert.Single(results).BookingRef);
+    }
+
+    [Fact]
+    public async Task GetBookingsAsync_QueryFilter_ReturnsNothingWhenTheTermMatchesNoField()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, SectionId = 1, TableId = 1, Date = DateTime.UtcNow, BookingRef = "ABC123", CustomerName = "Alice Smith", CustomerEmail = "alice@example.com" });
+        await _db.SaveChangesAsync();
+
+        Assert.Empty(await svc.GetBookingsAsync(1, null, "all", query: "zzz"));
     }
 
     [Fact]

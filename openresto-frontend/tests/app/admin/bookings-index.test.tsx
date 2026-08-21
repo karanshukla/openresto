@@ -188,7 +188,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const input = screen.getByPlaceholderText("Email or reference…");
+    const input = screen.getByPlaceholderText("Name, email or reference…");
     fireEvent.changeText(input, "unknown@example.com");
     await act(async () => {
       fireEvent.press(screen.getByText("Find"));
@@ -203,7 +203,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const input = screen.getByPlaceholderText("Email or reference…");
+    const input = screen.getByPlaceholderText("Name, email or reference…");
     fireEvent.changeText(input, "john@example.com");
     await act(async () => {
       fireEvent.press(screen.getByText("Find"));
@@ -219,7 +219,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const input = screen.getByPlaceholderText("Email or reference…");
+    const input = screen.getByPlaceholderText("Name, email or reference…");
     fireEvent.changeText(input, "john@example.com");
     await act(async () => {
       fireEvent.press(screen.getByText("Find"));
@@ -235,7 +235,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const searchInput = screen.getByPlaceholderText("Email or reference…");
+    const searchInput = screen.getByPlaceholderText("Name, email or reference…");
     fireEvent.changeText(searchInput, "test");
     await act(async () => {
       fireEvent.press(screen.getByText("Find"));
@@ -254,7 +254,7 @@ describe("AdminBookingsScreen", () => {
   });
 
   it("shows search results when emailParam is provided", async () => {
-    mockSearchParams.email = "john@example.com";
+    mockSearchParams.query = "john@example.com";
     render(<AdminBookingsScreen />);
     await waitFor(() => {
       expect(screen.getByText("Search Results")).toBeTruthy();
@@ -262,7 +262,7 @@ describe("AdminBookingsScreen", () => {
   });
 
   it("shows clear button when searchQuery is present", async () => {
-    mockSearchParams.email = "john@example.com";
+    mockSearchParams.query = "john@example.com";
     render(<AdminBookingsScreen />);
     await waitFor(() => {
       expect(screen.getByText("Clear")).toBeTruthy();
@@ -327,21 +327,15 @@ describe("AdminBookingsScreen", () => {
     await waitFor(() => expect(getAdminBookings).toHaveBeenCalled(), { timeout: 3000 });
   });
 
-  it("loads bookings when bookingRef search param is provided", async () => {
-    mockSearchParams.bookingRef = "REF-ABCD";
+  it("loads bookings when the query search param is provided", async () => {
+    mockSearchParams.query = "REF-ABCD";
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Search Results")).toBeTruthy());
-    expect(getAdminBookings).toHaveBeenCalledWith(
-      undefined,
-      undefined,
-      "all",
-      undefined,
-      "REF-ABCD"
-    );
+    expect(getAdminBookings).toHaveBeenCalledWith(undefined, undefined, "all", "REF-ABCD");
   });
 
   it("clears search results when Clear button is pressed", async () => {
-    mockSearchParams.email = "john@example.com";
+    mockSearchParams.query = "john@example.com";
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Clear")).toBeTruthy());
     fireEvent.press(screen.getByText("Clear"));
@@ -384,7 +378,7 @@ describe("AdminBookingsScreen", () => {
     await waitFor(() => expect(getAdminBookings).toHaveBeenCalled());
   });
 
-  it("lookup with multiple results using bookingRef navigates with bookingRef param", async () => {
+  it("lookup with multiple results navigates with the query param", async () => {
     (adminLookupBookings as jest.Mock).mockResolvedValue([
       { ...mockBookings[0], id: 1 },
       { ...mockBookings[0], id: 2 },
@@ -392,7 +386,7 @@ describe("AdminBookingsScreen", () => {
     render(<AdminBookingsScreen />);
     await waitFor(() => expect(screen.getByText("Bookings")).toBeTruthy());
 
-    const input = screen.getByPlaceholderText("Email or reference…");
+    const input = screen.getByPlaceholderText("Name, email or reference…");
     fireEvent.changeText(input, "REF-XYZ");
     await act(async () => {
       fireEvent.press(screen.getByText("Find"));
@@ -400,7 +394,7 @@ describe("AdminBookingsScreen", () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalled());
     expect(mockReplace).toHaveBeenCalledWith(
       expect.objectContaining({
-        params: expect.objectContaining({ bookingRef: "REF-XYZ" }),
+        params: expect.objectContaining({ query: "REF-XYZ" }),
       })
     );
   });

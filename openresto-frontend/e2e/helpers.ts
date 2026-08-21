@@ -187,7 +187,7 @@ export async function gotoAdminDashboard(page: Page, loginFirst = false): Promis
   }
   await page.goto("/admin/dashboard");
   await page.waitForURL(/.*dashboard.*/, { timeout: 20_000 });
-  await page.waitForSelector('input[placeholder="Email or reference…"]', { timeout: 10_000 });
+  await page.waitForSelector('input[placeholder="Name, email or reference…"]', { timeout: 10_000 });
 }
 
 /** @deprecated Use gotoAdminDashboard instead. */

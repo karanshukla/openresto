@@ -152,59 +152,12 @@ public class Restaurant
         => WalkInHelper.IsWalkInOnlyAt(this, utc);
 
     /// <summary>
-    /// True when the restaurant is open at the given UTC instant, resolved through
-    /// <see cref="Timezone"/> — which falls back to UTC when it is not a known IANA id.
+    /// True when a service the restaurant runs covers the given UTC instant, resolved through
+    /// <see cref="Timezone"/> — which falls back to UTC when it is not a known IANA id. A
+    /// service that closes after midnight belongs to the day it opened, so an 01:00 sitting is
+    /// open only if the <em>previous</em> day runs that late.
     /// </summary>
     /// <seealso>RestaurantTests.IsOpenAt_True_ForOvernightWindow_AfterMidnightClose</seealso>
     /// <seealso>RestaurantTests.IsOpenAt_False_ForOvernightWindow_OutsideBothSegments</seealso>
-    public bool IsOpenAt(DateTime utc)
-    {
-        DateTime localTime = TimeZoneHelper.ConvertUtcToLocal(utc, Timezone);
-        int isoDay = IsoDay.Of(localTime);
-
-        if (!IsOpenOn(isoDay))
-        {
-            return false;
-        }
-
-        (TimeSpan open, TimeSpan close) = ServiceWindowOn(isoDay);
-        return Covers(open, close, localTime.TimeOfDay);
-    }
-
-    private bool IsOpenOn(int isoDay)
-    {
-        HashSet<int> openDays = IsoDay.ParseList(OpenDays);
-        return openDays.Count == 0 || openDays.Contains(isoDay);
-    }
-
-    private (TimeSpan Open, TimeSpan Close) ServiceWindowOn(int isoDay)
-    {
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(this, isoDay);
-
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
-        {
-            (openHour, openMin) = OpeningHourDefaults.OpenAt;
-        }
-
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
-        {
-            (closeHour, closeMin) = OpeningHourDefaults.CloseAt;
-        }
-
-        return (new TimeSpan(openHour, openMin, 0), new TimeSpan(closeHour, closeMin, 0));
-    }
-
-    private static bool Covers(TimeSpan open, TimeSpan close, TimeSpan timeOfDay)
-    {
-        bool openAllDay = open == close;
-        if (openAllDay)
-        {
-            return true;
-        }
-
-        bool closesAfterMidnight = close < open;
-        return closesAfterMidnight
-            ? timeOfDay >= open || timeOfDay < close
-            : timeOfDay >= open && timeOfDay < close;
-    }
+    public bool IsOpenAt(DateTime utc) => ServiceWindowHelper.IsServingAt(this, utc);
 }

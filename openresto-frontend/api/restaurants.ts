@@ -35,6 +35,24 @@ export interface DeleteImpactDto {
   bookings: number;
 }
 
+/** Why an upcoming booking no longer fits its location's current schedule. */
+export type ScheduleConflictReason = "closedDay" | "outsideHours" | "walkInOnly";
+
+/**
+ * An upcoming booking the location's current schedule would no longer accept. Editing hours,
+ * open days or the walk-in policy leaves the bookings already taken exactly where they are, so
+ * this read is the only thing that surfaces the guests the edit stranded.
+ */
+export interface ScheduleConflictDto {
+  bookingId: number;
+  bookingRef: string;
+  customerName?: string | null;
+  /** Sitting start, UTC. */
+  date: string;
+  seats: number;
+  reason: ScheduleConflictReason;
+}
+
 export interface DayHoursDto {
   /** ISO 8601 day number: 1=Monday … 7=Sunday. */
   day: number;
@@ -340,6 +358,24 @@ export async function fetchTableDeleteImpact(
     return await res.json();
   } catch (err) {
     console.error("fetchTableDeleteImpact error:", err);
+    return null;
+  }
+}
+
+/**
+ * Upcoming bookings the location's current opening hours, open days or walk-in policy would no
+ * longer accept. Null (not an empty list) when the read failed, so the caller can tell "nothing
+ * stranded" from "could not check" and stay silent for the latter rather than claiming all-clear.
+ */
+export async function fetchScheduleConflicts(
+  restaurantId: number
+): Promise<ScheduleConflictDto[] | null> {
+  try {
+    const res = await get(`/restaurants/${restaurantId}/schedule-conflicts`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("fetchScheduleConflicts error:", err);
     return null;
   }
 }

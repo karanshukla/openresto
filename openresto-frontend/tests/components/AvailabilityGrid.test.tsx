@@ -27,7 +27,9 @@ describe("AvailabilityGrid", () => {
     {
       id: 10,
       tableId: 101,
-      date: new Date(new Date().setHours(12, 0, 0, 0)).toISOString(), // 12:00 PM
+      // setUTCHours, not setHours: the grid resolves the hour through the timezone prop, so a
+      // date pinned to the machine's local noon lands on a different column anywhere but UTC.
+      date: new Date(new Date().setUTCHours(12, 0, 0, 0)).toISOString(),
       seats: 2,
       customerEmail: "booked@test.com",
     },
@@ -65,5 +67,54 @@ describe("AvailabilityGrid", () => {
   it("renders correctly in dark mode", () => {
     render(<AvailabilityGrid {...props} isDark={true} />);
     expect(screen.getByText("Table 1")).toBeTruthy();
+  });
+
+  // Narrowing a location's opening hours does not move the bookings already taken under the
+  // old ones (#359). The timetable is where staff would look for them, so it has to widen to
+  // cover a sitting the current window no longer contains.
+  it("keeps a booking that now falls outside the opening hours visible", () => {
+    render(<AvailabilityGrid {...props} openTime="17:00" closeTime="23:00" timezone="UTC" />);
+
+    expect(screen.getByText("12p")).toBeTruthy();
+    expect(screen.getByText("booked")).toBeTruthy();
+  });
+
+  it("does not draw a column for an hour with no booking in it", () => {
+    render(<AvailabilityGrid {...props} openTime="17:00" closeTime="23:00" timezone="UTC" />);
+
+    expect(screen.queryByText("1p")).toBeNull();
+  });
+
+  it("spans the night for an overnight service rather than collapsing to one column", () => {
+    render(
+      <AvailabilityGrid
+        {...props}
+        bookings={[]}
+        openTime="18:00"
+        closeTime="02:00"
+        timezone="UTC"
+      />
+    );
+
+    expect(screen.getByText("6p")).toBeTruthy();
+    expect(screen.getByText("11p")).toBeTruthy();
+    expect(screen.getByText("12a")).toBeTruthy();
+    expect(screen.getByText("1a")).toBeTruthy();
+    expect(screen.queryByText("2a")).toBeNull();
+  });
+
+  it("draws the full day when opening and closing time match", () => {
+    render(
+      <AvailabilityGrid
+        {...props}
+        bookings={[]}
+        openTime="00:00"
+        closeTime="00:00"
+        timezone="UTC"
+      />
+    );
+
+    expect(screen.getByText("12a")).toBeTruthy();
+    expect(screen.getByText("11p")).toBeTruthy();
   });
 });

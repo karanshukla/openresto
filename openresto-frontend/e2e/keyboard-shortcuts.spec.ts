@@ -100,7 +100,7 @@ test.describe("Admin keyboard shortcuts", () => {
     // .first() = the AdminSidebar's global lookup input (present on every
     // admin route) — the page-local bookings-list search is a separate
     // instance further down the DOM. See issue #140 Correction #7/#8.
-    const sidebarLookupInput = page.getByPlaceholder("Email or reference…").first();
+    const sidebarLookupInput = page.getByPlaceholder("Name, email or reference…").first();
     await page.keyboard.press("/");
 
     await expect(sidebarLookupInput).toBeFocused();
@@ -144,7 +144,7 @@ test.describe("Admin keyboard shortcuts", () => {
         } else {
           await page.goto("/admin/bookings");
         }
-        const searchInput = page.getByPlaceholder("Email or reference…").nth(1);
+        const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
         await expect(searchInput).toBeVisible({ timeout: 10_000 });
         await searchInput.fill(uniqueEmail);
         await page.getByText("Find", { exact: true }).click();
