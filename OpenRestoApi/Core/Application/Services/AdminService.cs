@@ -381,11 +381,7 @@ public class AdminService(
             booking.EndTime = booking.Date.AddMinutes(durationMinutes);
         }
 
-        // Dead code today: booking.Date/booking.TableId are mutated above, so this guard's
-        // comparisons are always false. Pinned as-is by
-        // AdminServiceTests.AdminUpdateBookingAsync_ConflictCheckGuard_IsUnreachable_DueToPreExistingDeadCodeBug;
-        // the fix — comparing against the pre-mutation values — is an unrelated follow-up.
-        await CheckSlotConflictIfChangedAsync(booking, req, id, durationMinutes);
+        await RejectIfMovedOntoATakenUnitAsync(booking, before, id, durationMinutes);
 
         if (req.Seats.HasValue)
         {
@@ -490,22 +486,64 @@ public class AdminService(
         booking.Date = newDate;
     }
 
-    [ExcludeFromCodeCoverage(Justification = "Pre-existing dead code: caller mutates booking.Date/TableId before calling this, so the guard never trips. Kept as-is; not fixed here.")]
-    private async Task CheckSlotConflictIfChangedAsync(Booking booking, AdminUpdateBookingRequest req, int id, int durationMinutes)
+    /// <summary>
+    /// Rejects an edit that would put this booking on furniture someone else already has. Editing
+    /// is how a booking is moved — there is no separate reschedule flow — so this is the only
+    /// thing standing between an admin changing a date and the same table being seated twice.
+    /// <para>
+    /// Compares against <paramref name="before"/> rather than the request, because the caller has
+    /// already written the request onto <paramref name="booking"/>: asking whether the request
+    /// differs from the booking is asking whether a value differs from itself, which is what left
+    /// this check unreachable for its whole life. Asking whether the booking moved is the question
+    /// that survives the caller changing.
+    /// </para>
+    /// </summary>
+    /// <seealso>AdminServiceTests.AdminUpdateBookingAsync_RejectsAMoveOntoATableAlreadyBookedThen</seealso>
+    /// <seealso>AdminServiceTests.AdminUpdateBookingAsync_AllowsAMoveOntoAFreeSlotOnTheSameTable</seealso>
+    private async Task RejectIfMovedOntoATakenUnitAsync(Booking booking, BookingFields before, int id, int durationMinutes)
     {
-        if ((req.Date.HasValue && req.Date.Value != booking.Date) || (req.TableId.HasValue && req.TableId.Value != booking.TableId))
+        bool moved = booking.Date != before.Date || booking.TableId != before.TableId;
+        if (!moved)
         {
-            DateTime newStart = booking.Date.ToUniversalTime();
-            DateTime newEnd = booking.EndTime ?? newStart.AddMinutes(durationMinutes);
+            return;
+        }
 
-            bool conflict = await _bookingRepository.HasConflictAsync(booking.TableId, newStart, newEnd, durationMinutes, id);
+        // The unit the booking actually occupies, not the one the request named: a group booking
+        // carries TableId = null, and a table-only check would miss every group on the floor.
+        bool taken = await _bookingRepository.IsUnitBookedOnDateAsync(
+            booking.TableId,
+            booking.TableGroupId,
+            AsUtc(booking.Date),
+            OccupancyMinutes(booking, durationMinutes),
+            excludeBookingId: id);
 
-            if (conflict)
-            {
-                throw new BusinessRuleException("This update would cause a conflict with an existing booking.");
-            }
+        if (taken)
+        {
+            throw new BusinessRuleException("This update would cause a conflict with an existing booking.");
         }
     }
+
+    /// <summary>How long the booking holds its unit: its own span when it has one, else the default.</summary>
+    private static int OccupancyMinutes(Booking booking, int fallbackMinutes)
+    {
+        if (!booking.EndTime.HasValue)
+        {
+            return fallbackMinutes;
+        }
+
+        int span = (int)(booking.EndTime.Value - booking.Date).TotalMinutes;
+        return span > 0 ? span : fallbackMinutes;
+    }
+
+    /// <summary>
+    /// A stored <see cref="DateTime"/> as UTC. Everything is persisted UTC, so an Unspecified
+    /// kind is already UTC and must be labelled rather than converted —
+    /// <see cref="DateTime.ToUniversalTime"/> would read it as server-local and shift it.
+    /// </summary>
+    private static DateTime AsUtc(DateTime value)
+        => value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(value, DateTimeKind.Utc)
+            : value.ToUniversalTime();
 
     public virtual async Task<List<LookupDto>> GetRestaurantsAsync()
     {
@@ -741,25 +779,9 @@ public class AdminService(
 
     private static BookingDetailDto ToDetailDto(Booking b)
     {
-        DateTime dateUtc = b.Date.Kind == DateTimeKind.Unspecified
-            ? DateTime.SpecifyKind(b.Date, DateTimeKind.Utc)
-            : b.Date.ToUniversalTime();
-
-        DateTime? endTimeUtc = null;
-        if (b.EndTime.HasValue)
-        {
-            endTimeUtc = b.EndTime.Value.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(b.EndTime.Value, DateTimeKind.Utc)
-                : b.EndTime.Value.ToUniversalTime();
-        }
-
-        DateTime? cancelledAtUtc = null;
-        if (b.CancelledAt.HasValue)
-        {
-            cancelledAtUtc = b.CancelledAt.Value.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(b.CancelledAt.Value, DateTimeKind.Utc)
-                : b.CancelledAt.Value.ToUniversalTime();
-        }
+        DateTime dateUtc = AsUtc(b.Date);
+        DateTime? endTimeUtc = b.EndTime.HasValue ? AsUtc(b.EndTime.Value) : null;
+        DateTime? cancelledAtUtc = b.CancelledAt.HasValue ? AsUtc(b.CancelledAt.Value) : null;
 
         // Group booking: Table/TableId are null (the booking reserves a combinable group). Show a
         // readable group label + the group id so the admin grid doesn't render the row as "Table".
