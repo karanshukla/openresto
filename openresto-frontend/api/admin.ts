@@ -7,6 +7,7 @@ export interface AdminOverviewDto {
   totalSeats: number;
   activeHoldsCount?: number;
   pausedRestaurantsCount?: number;
+  scheduleConflictsCount?: number;
   occupancyData?: number[];
   occupancyDates?: string[];
   occupancyCounts?: number[];
@@ -29,6 +30,7 @@ export interface AdminDashboardStats {
   todayCount: number;
   activeHoldsCount: number;
   pausedCount: number;
+  scheduleConflictsCount: number;
   totalCovers: number;
   occupancyData: number[];
   occupancyDates: string[];
@@ -46,6 +48,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
       pausedCount: overview.pausedRestaurantsCount ?? 0,
+      scheduleConflictsCount: overview.scheduleConflictsCount ?? 0,
       totalCovers: overview.totalSeats,
       occupancyData: overview.occupancyData ?? [],
       occupancyDates: overview.occupancyDates ?? [],

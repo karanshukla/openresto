@@ -21,6 +21,13 @@ public class AdminOverviewDto
     public int TotalSeats { get; set; }
     public int ActiveHoldsCount { get; set; }
     public int PausedRestaurantsCount { get; set; }
+
+    /// <summary>
+    /// Upcoming bookings across every active location that its current schedule would no longer
+    /// accept. The locations screen reports these per location, but an admin who narrows hours
+    /// and navigates away never sees that panel again.
+    /// </summary>
+    public int ScheduleConflictsCount { get; set; }
     public List<int> OccupancyData { get; set; } = [];
     public List<string> OccupancyDates { get; set; } = [];
     public List<int> OccupancyCounts { get; set; } = [];

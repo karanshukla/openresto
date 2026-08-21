@@ -33,6 +33,21 @@ public enum ScheduleConflictReason
 /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOnADayThatIsNoLongerOpen</seealso>
 public static class ScheduleConflictHelper
 {
+    /// <summary>
+    /// The bookings among <paramref name="bookings"/> that <paramref name="restaurant"/>'s current
+    /// schedule would no longer accept, each with the reason. Callers differ in what they do with
+    /// the result — the locations panel lists them, the dashboard counts them — but which bookings
+    /// are stranded is one question with one answer.
+    /// </summary>
+    /// <seealso>ScheduleConflictHelperTests.Conflicting_ReturnsOnlyTheBookingsTheScheduleNoLongerAccepts</seealso>
+    public static List<(Booking Booking, ScheduleConflictReason Reason)> Conflicting(
+        Restaurant restaurant,
+        IEnumerable<Booking> bookings)
+        => bookings
+            .Select(b => (Booking: b, Reason: Evaluate(restaurant, b.Date)))
+            .Where(x => x.Reason != ScheduleConflictReason.None)
+            .ToList();
+
     public static ScheduleConflictReason Evaluate(Restaurant restaurant, DateTime bookingUtc)
     {
         if (!ServiceWindowHelper.IsServingAt(restaurant, bookingUtc))

@@ -79,6 +79,7 @@ public class AdminService(
 
         int todayBookingsCount = 0;
         int pausedRestaurantsCount = 0;
+        int scheduleConflictsCount = 0;
         List<BookingDetailDto> todayBookingsList = [];
         foreach (Restaurant? r in restaurants)
         {
@@ -86,6 +87,9 @@ public class AdminService(
             List<Booking> rTodayBookings = await _bookingRepository.GetForRestaurantInUtcRangeAsync(r.Id, start, end);
             todayBookingsCount += rTodayBookings.Count;
             todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
+
+            List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(r.Id, nowUtc);
+            scheduleConflictsCount += ScheduleConflictHelper.Conflicting(r, upcoming).Count;
 
             if (r.BookingsPausedUntil.HasValue && r.BookingsPausedUntil.Value > nowUtc)
             {
@@ -104,6 +108,7 @@ public class AdminService(
             TotalSeats = totalSeats,
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
             PausedRestaurantsCount = pausedRestaurantsCount,
+            ScheduleConflictsCount = scheduleConflictsCount,
             OccupancyData = occupancyData,
             OccupancyDates = occupancyDates,
             OccupancyCounts = rawCounts,

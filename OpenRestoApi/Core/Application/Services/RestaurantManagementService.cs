@@ -597,9 +597,7 @@ public class RestaurantManagementService(
 
         List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(restaurantId, DateTime.UtcNow);
 
-        return upcoming
-            .Select(b => (Booking: b, Reason: ScheduleConflictHelper.Evaluate(restaurant, b.Date)))
-            .Where(x => x.Reason != ScheduleConflictReason.None)
+        return ScheduleConflictHelper.Conflicting(restaurant, upcoming)
             .Select(x => new ScheduleConflictDto
             {
                 BookingId = x.Booking.Id,

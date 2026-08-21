@@ -72,6 +72,46 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_CountsBookingsStrandedByEveryLocationsSchedule()
+    {
+        AdminService svc = CreateService();
+        // Two Monday-only locations, each holding one Monday sitting and one Tuesday sitting.
+        // Only the Tuesdays are stranded, and the count has to span both locations.
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "A", Timezone = "UTC", OpenDays = "1" });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "B", Timezone = "UTC", OpenDays = "1" });
+        var monday = new DateTime(2099, 1, 5, 12, 0, 0, DateTimeKind.Utc);
+        var tuesday = new DateTime(2099, 1, 6, 12, 0, 0, DateTimeKind.Utc);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, Date = monday, Seats = 2, BookingRef = "a1" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 1, Date = tuesday, Seats = 2, BookingRef = "a2" });
+        _db.Bookings.Add(new Booking { Id = 3, RestaurantId = 2, Date = tuesday, Seats = 2, BookingRef = "b1" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(2, overview.ScheduleConflictsCount);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_CountsNoConflicts_WhenEveryBookingStillFits()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "A", Timezone = "UTC", OpenDays = "1,2,3,4,5,6,7" });
+        _db.Bookings.Add(new Booking
+        {
+            Id = 1,
+            RestaurantId = 1,
+            Date = new DateTime(2099, 1, 5, 12, 0, 0, DateTimeKind.Utc),
+            Seats = 2,
+            BookingRef = "a1",
+        });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal(0, overview.ScheduleConflictsCount);
+    }
+
+    [Fact]
     public async Task GetOverviewAsync_TotalSeats_HandlesNull()
     {
         AdminService svc = CreateService();

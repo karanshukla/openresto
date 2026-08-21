@@ -167,4 +167,33 @@ public class ScheduleConflictHelperTests
             ScheduleConflictReason.None,
             ScheduleConflictHelper.Evaluate(Restaurant(openTime: "00:00", closeTime: "00:00"), MondayAt(4)));
     }
+
+    [Fact]
+    public void Conflicting_ReturnsOnlyTheBookingsTheScheduleNoLongerAccepts()
+    {
+        // Open 11:00-23:00, so the 09:00 sitting is stranded and the other two still fit.
+        Restaurant restaurant = Restaurant();
+        List<Booking> bookings =
+        [
+            new() { Id = 1, Date = MondayAt(12), BookingRef = "fits" },
+            new() { Id = 2, Date = MondayAt(9), BookingRef = "stranded" },
+            new() { Id = 3, Date = MondayAt(22), BookingRef = "fits-late" },
+        ];
+
+        List<(Booking Booking, ScheduleConflictReason Reason)> conflicts =
+            ScheduleConflictHelper.Conflicting(restaurant, bookings);
+
+        (Booking booking, ScheduleConflictReason reason) = Assert.Single(conflicts);
+        Assert.Equal("stranded", booking.BookingRef);
+        Assert.Equal(ScheduleConflictReason.OutsideHours, reason);
+    }
+
+    [Fact]
+    public void Conflicting_ReturnsNothing_WhenEveryBookingStillFits()
+    {
+        Restaurant restaurant = Restaurant();
+        List<Booking> bookings = [new() { Id = 1, Date = MondayAt(12), BookingRef = "fits" }];
+
+        Assert.Empty(ScheduleConflictHelper.Conflicting(restaurant, bookings));
+    }
 }
