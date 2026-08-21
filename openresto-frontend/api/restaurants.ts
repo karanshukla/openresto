@@ -36,7 +36,12 @@ export interface DeleteImpactDto {
 }
 
 /** Why an upcoming booking no longer fits its location's current schedule. */
-export type ScheduleConflictReason = "closedDay" | "outsideHours" | "walkInOnly";
+/**
+ * Every reason means the guest arrives to a closed restaurant. A walk-in-only location or day
+ * is deliberately not one: it stops new online bookings, it does not close the location, so a
+ * sitting already on the books stands.
+ */
+export type ScheduleConflictReason = "closedDay" | "outsideHours";
 
 /**
  * An upcoming booking the location's current schedule would no longer accept. Editing hours,

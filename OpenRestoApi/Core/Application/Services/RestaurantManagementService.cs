@@ -614,7 +614,6 @@ public class RestaurantManagementService(
     {
         ScheduleConflictReason.ClosedDay => "closedDay",
         ScheduleConflictReason.OutsideHours => "outsideHours",
-        ScheduleConflictReason.WalkInOnly => "walkInOnly",
         // Unreachable: GetScheduleConflictsAsync filters None out before mapping.
         _ => "unknown",
     };

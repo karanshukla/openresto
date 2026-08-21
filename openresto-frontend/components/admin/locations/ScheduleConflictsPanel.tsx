@@ -14,7 +14,6 @@ import { styles } from "./ScheduleConflictsPanel.styles";
 const REASON_LABELS: Record<ScheduleConflictReason, string> = {
   closedDay: "Now a closed day",
   outsideHours: "Now outside opening hours",
-  walkInOnly: "Now walk-in only",
 };
 
 function formatSitting(dateUtc: string, timezone: string): string {

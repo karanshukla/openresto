@@ -102,14 +102,4 @@ describe("ScheduleConflictsPanel", () => {
     await waitFor(() => expect(screen.getByText(/crispy-basil-truffle ·/)).toBeTruthy());
     expect(screen.getByText(/Now a closed day · 1 guest/)).toBeTruthy();
   });
-
-  it("labels a booking stranded by the walk-in switch", async () => {
-    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([
-      { ...conflict, reason: "walkInOnly" },
-    ]);
-
-    render(<ScheduleConflictsPanel {...props} />);
-
-    await waitFor(() => expect(screen.getByText(/Now walk-in only/)).toBeTruthy());
-  });
 });

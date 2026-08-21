@@ -962,6 +962,69 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
             )
         )
 
+    # Bookings the location's *current* schedule would no longer accept. Everything
+    # above is generated against the rules the server enforces, so the schedule-conflict
+    # panel and its dashboard count would have nothing to report on a fresh demo and the
+    # feature would be invisible. These are the case it exists for: a schedule narrowed
+    # after the bookings were taken. One lands on a day the location no longer opens,
+    # one an hour and a half before it now opens.
+    #
+    # Deliberately the only seeded rows that break the never-conflict rule. They are
+    # upcoming and non-cancelled because the read excludes anything else.
+    strand_target = ds["restaurants"][0]
+    strand_spec = strand_target["spec"]
+    strand_tz = ZoneInfo(strand_spec["timezone"])
+    strand_open_days = {int(d) for d in strand_spec["open_days"].split(",") if d.strip()}
+    strand_units = [u for u in bookable_units(strand_target) if u[0] == "table"]
+
+    def first_upcoming(wanted_open):
+        for offset in range(2, max(days_forward, 2) + 1):
+            day = today + timedelta(days=offset)
+            if (day.isoweekday() in strand_open_days) == wanted_open:
+                return day
+        return None
+
+    closed_day = first_upcoming(wanted_open=False)
+    open_day = first_upcoming(wanted_open=True)
+    strand_open_minutes = parse_hhmm(hours_for_day(strand_spec, (open_day or today).isoweekday())[0])
+
+    stranded = []
+    if closed_day and strand_units:
+        stranded.append((closed_day, 19 * 60, "Booked before Sundays were dropped"))
+    if open_day and strand_units and strand_open_minutes >= 90:
+        stranded.append((open_day, strand_open_minutes - 90, "Booked before the kitchen opened later"))
+
+    for i, (local_day, minutes, note) in enumerate(stranded):
+        _, unit_id, capacity, section_id, keys = strand_units[i % len(strand_units)]
+        local_start = datetime.combine(local_day, datetime.min.time()) + timedelta(minutes=minutes)
+        start_utc = local_start.replace(tzinfo=strand_tz).astimezone(timezone.utc)
+        end_utc = start_utc + timedelta(minutes=strand_spec["duration"])
+        ledger.reserve(keys, start_utc, end_utc)
+
+        name, email, _ = GUESTS[guest_idx % len(GUESTS)]
+        guest_idx += 1
+        bookings.append(
+            (
+                {
+                    "BookingRef": mint(strand_spec["ref_format"]),
+                    "CustomerName": name,
+                    "CustomerEmail": email,
+                    "Date": utc_str(start_utc),
+                    "EndTime": utc_str(end_utc),
+                    "Seats": min(2, capacity),
+                    "SectionId": section_id,
+                    "TableId": unit_id,
+                    "TableGroupId": None,
+                    "RestaurantId": strand_target["id"],
+                    "IsCancelled": False,
+                    "CancelledAt": None,
+                    "SpecialRequests": note,
+                },
+                strand_target["row"]["Name"],
+                start_utc,
+            )
+        )
+
     # Insert in chronological order so Bookings.Id correlates with time, the
     # way it would on a live system.
     bookings.sort(key=lambda b: b[2])

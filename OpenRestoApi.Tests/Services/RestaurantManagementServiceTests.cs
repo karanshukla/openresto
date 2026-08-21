@@ -69,13 +69,16 @@ public class RestaurantManagementServiceTests
         Assert.Empty((await CreateService(db).GetScheduleConflictsAsync(1))!);
     }
 
+    // Turning a location walk-in-only stops it taking new online bookings; it does not close it,
+    // so the sittings already on the books stand. Staff-recorded walk-ins live at exactly such a
+    // location, and reporting them would give it a conflict count that never reaches zero.
     [Fact]
-    public async Task GetScheduleConflictsAsync_FlagsBookingsOnceTheLocationTurnsWalkInOnly()
+    public async Task GetScheduleConflictsAsync_KeepsBookingsWhenTheLocationTurnsWalkInOnly()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_FlagsBookingsOnceTheLocationTurnsWalkInOnly));
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_KeepsBookingsWhenTheLocationTurnsWalkInOnly));
         await SeedScheduleFixtureAsync(db, bookingHourUtc: 19, walkInOnly: true);
 
-        Assert.Equal("walkInOnly", Assert.Single((await CreateService(db).GetScheduleConflictsAsync(1))!).Reason);
+        Assert.Empty((await CreateService(db).GetScheduleConflictsAsync(1))!);
     }
 
     /// <summary>
