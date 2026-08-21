@@ -375,6 +375,7 @@ export default function AdminLocationsScreen() {
             key={selectedRestaurant.id}
             restaurant={selectedRestaurant}
             onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
+            upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
             isDark={isDark}
             borderColor={borderColor}
             mutedColor={mutedColor}

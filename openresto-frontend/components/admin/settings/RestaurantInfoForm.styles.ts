@@ -29,6 +29,9 @@ export const styles = StyleSheet.create({
   // maxWidth is what stops the last field of a wrapped row from stretching across the whole
   // card on its own; flexBasis keeps the columns an even width above that.
   gridField: { flexGrow: 1, flexBasis: 240, minWidth: 220, maxWidth: 420, gap: theme.spacing.xxs },
+  fieldWarning: { flexDirection: "row", alignItems: "flex-start", gap: theme.spacing.xxs },
+  fieldWarningText: { flex: 1 },
+
   // Pulled back up under the two-column contact row, which already carries its own gap.
   contactHint: { fontSize: 11, lineHeight: 15, marginTop: -8 },
 
