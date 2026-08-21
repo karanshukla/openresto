@@ -76,7 +76,7 @@ test.describe("Home highlights section", () => {
     await expect(page.getByText("E2E highlight body copy.", { exact: true })).toBeVisible();
   });
 
-  test("scrolls a fifth highlight into a rail whose forward button retires at the end", async ({
+  test("turns an overflowing highlights row into a rail that retires its forward button", async ({
     page,
   }) => {
     await page.route("**/api/restaurants**", (route) => route.fulfill({ json: fakeRestaurants }));
@@ -106,7 +106,16 @@ test.describe("Home highlights section", () => {
     await expect(forward).toBeVisible();
     await expect(back).toBeHidden();
 
-    await rail.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+    // The button drives the row.
+    await forward.click();
+    await expect.poll(() => rail.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+
+    // And retires once nothing is left to its right. The offset is set to the end rather
+    // than scrolled past it: `scroll-snap-type: x mandatory` bounces an out-of-range
+    // scrollTo back to the first snap point, so scrollTo(scrollWidth) lands at 0.
+    await rail.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth - el.clientWidth;
+    });
 
     await expect(forward).toBeHidden();
     await expect(back).toBeVisible();
