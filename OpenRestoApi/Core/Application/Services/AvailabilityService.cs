@@ -30,12 +30,12 @@ public sealed class AvailabilityService(
         DateTime localDate = bookingDate.Date;
         int isoDay = IsoDay.Of(localDate);
 
-        if (WalkInHelper.IsWalkInOnlyOn(restaurant, isoDay) || !IsOpenOn(restaurant, isoDay))
+        if (WalkInHelper.IsWalkInOnlyOn(restaurant, isoDay) || !ServiceWindowHelper.IsOpenOn(restaurant, isoDay))
         {
             return NoSlots(restaurantId, bookingDate);
         }
 
-        (DateTime localStart, DateTime localEnd) = ServiceWindowOn(restaurant, localDate, isoDay);
+        (DateTime localStart, DateTime localEnd) = ServiceWindowHelper.LocalWindowFor(restaurant, localDate, isoDay);
         var reservations = new UnitReservations(restaurant, activeBookings);
         List<Table> eligibleTables = EligibleTables(restaurant, seats);
         List<TableGroup> eligibleGroups = EligibleGroups(restaurant, seats);
@@ -98,30 +98,6 @@ public sealed class AvailabilityService(
 
     private static string FormatSlotTime(DateTime local)
         => local.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
-
-    private static bool IsOpenOn(Restaurant restaurant, int isoDay)
-    {
-        HashSet<int> openDays = IsoDay.ParseList(restaurant.OpenDays);
-        return openDays.Count == 0 || openDays.Contains(isoDay);
-    }
-
-    private static (DateTime Start, DateTime End) ServiceWindowOn(Restaurant restaurant, DateTime localDate, int isoDay)
-    {
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
-        {
-            (openHour, openMin) = OpeningHourDefaults.OpenAt;
-        }
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
-        {
-            (closeHour, closeMin) = OpeningHourDefaults.CloseAt;
-        }
-
-        DateTime start = localDate.AddHours(openHour).AddMinutes(openMin);
-        DateTime end = localDate.AddHours(closeHour).AddMinutes(closeMin);
-        bool closesAfterMidnight = end <= start;
-        return (start, closesAfterMidnight ? end.AddDays(1) : end);
-    }
 
     /// <summary>
     /// A zero or negative stored interval would spin the slot loop forever. Validation keeps
