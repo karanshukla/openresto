@@ -6,11 +6,6 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-}));
-
 jest.mock("@/api/restaurants", () => ({
   fetchScheduleConflicts: jest.fn(),
 }));
@@ -26,9 +21,12 @@ const conflict = {
   reason: "outsideHours" as const,
 };
 
+const onOpenBooking = jest.fn();
+
 const props = {
   restaurantId: 1,
   timezone: "UTC",
+  onOpenBooking,
   refreshKey: 0,
   borderColor: "#eee",
   mutedColor: "#888",
@@ -81,7 +79,9 @@ describe("ScheduleConflictsPanel", () => {
     await waitFor(() => expect(fetchScheduleConflicts).toHaveBeenCalledTimes(2));
   });
 
-  it("opens the stranded booking through the admin booking search", async () => {
+  // The id, not the ref: the screen opens the booking popup over the form the conflict came
+  // from, rather than sending the admin to the bookings list to search for a ref it already had.
+  it("hands the stranded booking up by id instead of routing to it", async () => {
     (fetchScheduleConflicts as jest.Mock).mockResolvedValue([conflict]);
 
     render(<ScheduleConflictsPanel {...props} />);
@@ -89,10 +89,7 @@ describe("ScheduleConflictsPanel", () => {
 
     fireEvent.press(screen.getByLabelText("Open booking crispy-basil-truffle"));
 
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/admin/bookings",
-      params: { query: "crispy-basil-truffle" },
-    });
+    expect(onOpenBooking).toHaveBeenCalledWith(7);
   });
 
   it("falls back to the reference when the booking has no customer name", async () => {

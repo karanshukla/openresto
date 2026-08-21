@@ -24,6 +24,7 @@ import { LocationPills } from "@/components/admin/locations/LocationPills";
 import { ArchiveLocationRow } from "@/components/admin/locations/ArchiveLocationRow";
 import { ArchivedLocationPanel } from "@/components/admin/locations/ArchivedLocationPanel";
 import { ScheduleConflictsPanel } from "@/components/admin/locations/ScheduleConflictsPanel";
+import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { styles } from "@/components/admin/settings/settings.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -55,6 +56,7 @@ export default function AdminLocationsScreen() {
   // The location form autosaves, so there is no submit to hang a re-read off; bumping this on
   // every committed patch is what makes the schedule-conflict panel reflect the edit just made.
   const [scheduleRevision, setScheduleRevision] = useState(0);
+  const [conflictBookingId, setConflictBookingId] = useState<number | null>(null);
 
   const { colors, isDark, primaryColor } = useAppTheme();
   const borderColor = colors.border;
@@ -164,234 +166,247 @@ export default function AdminLocationsScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Locations" }} />}
+    <>
+      <ScrollView contentContainerStyle={styles.container}>
+        {Platform.OS !== "web" && <Stack.Screen options={{ title: "Locations" }} />}
 
-      <View style={styles.pageHeader}>
-        <View style={{ gap: 2 }}>
-          <ThemedText type="h1">Locations</ThemedText>
-          <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-            {locationCountSummary(allRestaurants.length - archivedCount, archivedCount)}
-          </ThemedText>
-        </View>
-        <Button
-          size="md"
-          icon="add"
-          onPress={() => setAddingLocation(true)}
-          disabled={addingLocation}
-          accessibilityLabel="Add location"
-        >
-          Add location
-        </Button>
-      </View>
-
-      {deletedName && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon name="checkmark-circle-outline" size="lg" color={colors.success} />
-          <ThemedText style={{ fontSize: 13, color: mutedColor }}>
-            {deletedName} was permanently deleted.
-          </ThemedText>
-        </View>
-      )}
-
-      {addingLocation && (
-        <AddLocationForm
-          value={newLocationName}
-          saving={savingLocation}
-          isDark={isDark}
-          mutedColor={mutedColor}
-          primaryColor={primaryColor}
-          onValueChange={setNewLocationName}
-          onSubmit={async () => {
-            if (!newLocationName.trim()) return;
-            setSavingLocation(true);
-            const created = await createRestaurant(newLocationName.trim());
-            setSavingLocation(false);
-            if (created) {
-              setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
-              setAllRestaurants((prev) => [...prev, { id: created.id, name: created.name }]);
-              selectAndRemember(created.id);
-            }
-            setNewLocationName("");
-            setAddingLocation(false);
-          }}
-          onCancel={() => {
-            setAddingLocation(false);
-            setNewLocationName("");
-          }}
-        />
-      )}
-
-      {allRestaurants.length > 0 && (
-        <LocationPills
-          restaurants={allRestaurants}
-          selectedId={selectedId}
-          onSelect={handleSelectLocation}
-        />
-      )}
-
-      {selectedRestaurant && (
-        <View style={styles.bulkActions}>
+        <View style={styles.pageHeader}>
+          <View style={{ gap: 2 }}>
+            <ThemedText type="h1">Locations</ThemedText>
+            <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
+              {locationCountSummary(allRestaurants.length - archivedCount, archivedCount)}
+            </ThemedText>
+          </View>
           <Button
-            variant="secondary"
-            tone={isPaused ? "success" : "warning"}
             size="md"
-            style={styles.bulkAction}
-            icon={isPaused ? "play-circle-outline" : "pause-circle-outline"}
-            disabled={pausing}
-            loading={pausing}
-            accessibilityLabel={
-              isPaused
-                ? `Resume bookings for ${selectedRestaurant.name}`
-                : `Pause the next hour of bookings at ${selectedRestaurant.name}`
-            }
-            onPress={async () => {
-              setPausing(true);
-              if (isPaused) {
-                await unpauseRestaurantBookings(selectedRestaurant.id);
-                setAllRestaurants((prev) =>
-                  prev.map((r) =>
-                    r.id === selectedRestaurant.id ? { ...r, bookingsPausedUntil: undefined } : r
-                  )
-                );
-              } else {
-                await pauseRestaurantBookings(selectedRestaurant.id, 60);
-                setAllRestaurants((prev) =>
-                  prev.map((r) =>
-                    r.id === selectedRestaurant.id
-                      ? {
-                          ...r,
-                          bookingsPausedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-                        }
-                      : r
-                  )
-                );
-              }
-              setPausing(false);
-            }}
+            icon="add"
+            onPress={() => setAddingLocation(true)}
+            disabled={addingLocation}
+            accessibilityLabel="Add location"
           >
-            {pausing
-              ? "Saving…"
-              : isPaused
-                ? `Resume New Bookings now (paused up to ${pausedUntilText})`
-                : "Pause New Bookings for the next 60m"}
+            Add location
           </Button>
+        </View>
 
-          <Button
-            variant="secondary"
-            size="md"
-            style={styles.bulkAction}
-            icon="timer-outline"
-            disabled={extending || extendedBookings !== null || extendNoActive || activeCount === 0}
-            loading={extending}
-            accessibilityLabel={`Extend all active bookings at ${selectedRestaurant.name} by an hour`}
-            onPress={async () => {
-              setExtending(true);
-              const result = await extendRestaurantBookings(selectedRestaurant.id, 60);
-              setExtending(false);
-              if (result.ok) {
-                if (result.extendedBookings.length > 0) {
-                  setExtendedBookings(result.extendedBookings);
+        {deletedName && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Icon name="checkmark-circle-outline" size="lg" color={colors.success} />
+            <ThemedText style={{ fontSize: 13, color: mutedColor }}>
+              {deletedName} was permanently deleted.
+            </ThemedText>
+          </View>
+        )}
+
+        {addingLocation && (
+          <AddLocationForm
+            value={newLocationName}
+            saving={savingLocation}
+            isDark={isDark}
+            mutedColor={mutedColor}
+            primaryColor={primaryColor}
+            onValueChange={setNewLocationName}
+            onSubmit={async () => {
+              if (!newLocationName.trim()) return;
+              setSavingLocation(true);
+              const created = await createRestaurant(newLocationName.trim());
+              setSavingLocation(false);
+              if (created) {
+                setRestaurants((prev) => [...prev, { ...created, sections: [] }]);
+                setAllRestaurants((prev) => [...prev, { id: created.id, name: created.name }]);
+                selectAndRemember(created.id);
+              }
+              setNewLocationName("");
+              setAddingLocation(false);
+            }}
+            onCancel={() => {
+              setAddingLocation(false);
+              setNewLocationName("");
+            }}
+          />
+        )}
+
+        {allRestaurants.length > 0 && (
+          <LocationPills
+            restaurants={allRestaurants}
+            selectedId={selectedId}
+            onSelect={handleSelectLocation}
+          />
+        )}
+
+        {selectedRestaurant && (
+          <View style={styles.bulkActions}>
+            <Button
+              variant="secondary"
+              tone={isPaused ? "success" : "warning"}
+              size="md"
+              style={styles.bulkAction}
+              icon={isPaused ? "play-circle-outline" : "pause-circle-outline"}
+              disabled={pausing}
+              loading={pausing}
+              accessibilityLabel={
+                isPaused
+                  ? `Resume bookings for ${selectedRestaurant.name}`
+                  : `Pause the next hour of bookings at ${selectedRestaurant.name}`
+              }
+              onPress={async () => {
+                setPausing(true);
+                if (isPaused) {
+                  await unpauseRestaurantBookings(selectedRestaurant.id);
+                  setAllRestaurants((prev) =>
+                    prev.map((r) =>
+                      r.id === selectedRestaurant.id ? { ...r, bookingsPausedUntil: undefined } : r
+                    )
+                  );
                 } else {
-                  setExtendNoActive(true);
+                  await pauseRestaurantBookings(selectedRestaurant.id, 60);
+                  setAllRestaurants((prev) =>
+                    prev.map((r) =>
+                      r.id === selectedRestaurant.id
+                        ? {
+                            ...r,
+                            bookingsPausedUntil: new Date(
+                              Date.now() + 60 * 60 * 1000
+                            ).toISOString(),
+                          }
+                        : r
+                    )
+                  );
                 }
-              }
-            }}
-          >
-            {extending
-              ? "Extending…"
-              : extendedBookings !== null
-                ? `Extended ${extendedBookings.length} active bookings +60m`
-                : extendNoActive
-                  ? "No active bookings to extend"
-                  : activeCount > 0
-                    ? `Extend ${activeCount} active Bookings by 60m`
-                    : "No active bookings"}
-          </Button>
-        </View>
-      )}
+                setPausing(false);
+              }}
+            >
+              {pausing
+                ? "Saving…"
+                : isPaused
+                  ? `Resume New Bookings now (paused up to ${pausedUntilText})`
+                  : "Pause New Bookings for the next 60m"}
+            </Button>
 
-      {allRestaurants.length === 0 ? (
-        <View
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 72,
-            gap: 12,
-          }}
-        >
+            <Button
+              variant="secondary"
+              size="md"
+              style={styles.bulkAction}
+              icon="timer-outline"
+              disabled={
+                extending || extendedBookings !== null || extendNoActive || activeCount === 0
+              }
+              loading={extending}
+              accessibilityLabel={`Extend all active bookings at ${selectedRestaurant.name} by an hour`}
+              onPress={async () => {
+                setExtending(true);
+                const result = await extendRestaurantBookings(selectedRestaurant.id, 60);
+                setExtending(false);
+                if (result.ok) {
+                  if (result.extendedBookings.length > 0) {
+                    setExtendedBookings(result.extendedBookings);
+                  } else {
+                    setExtendNoActive(true);
+                  }
+                }
+              }}
+            >
+              {extending
+                ? "Extending…"
+                : extendedBookings !== null
+                  ? `Extended ${extendedBookings.length} active bookings +60m`
+                  : extendNoActive
+                    ? "No active bookings to extend"
+                    : activeCount > 0
+                      ? `Extend ${activeCount} active Bookings by 60m`
+                      : "No active bookings"}
+            </Button>
+          </View>
+        )}
+
+        {allRestaurants.length === 0 ? (
           <View
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              borderWidth: 1,
-              borderColor,
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 4,
+              paddingVertical: 72,
+              gap: 12,
             }}
           >
-            <Icon name="storefront-outline" size={28} color={mutedColor} />
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                borderWidth: 1,
+                borderColor,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Icon name="storefront-outline" size={28} color={mutedColor} />
+            </View>
+            <ThemedText style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}>
+              No locations yet
+            </ThemedText>
+            <ThemedText
+              style={{
+                fontSize: 14,
+                color: mutedColor,
+                textAlign: "center",
+                maxWidth: 280,
+                lineHeight: 22,
+              }}
+            >
+              Add your first location to start accepting bookings.
+            </ThemedText>
           </View>
-          <ThemedText style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}>
-            No locations yet
-          </ThemedText>
-          <ThemedText
-            style={{
-              fontSize: 14,
-              color: mutedColor,
-              textAlign: "center",
-              maxWidth: 280,
-              lineHeight: 22,
-            }}
-          >
-            Add your first location to start accepting bookings.
-          </ThemedText>
-        </View>
-      ) : selectedSummary && isArchived ? (
-        <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-          <ArchivedLocationPanel
-            id={selectedSummary.id}
-            name={selectedSummary.name}
-            restoring={archiving}
-            restoreFailed={archiveFailed}
-            onRestore={() => handleSetArchived(selectedSummary.id, false)}
-            canDelete={canDeleteLocation}
-            onDeleted={handleDeleted}
-          />
-        </View>
-      ) : selectedRestaurant ? (
-        <View style={styles.section}>
-          <ScheduleConflictsPanel
-            restaurantId={selectedRestaurant.id}
-            timezone={selectedRestaurant.timezone ?? "UTC"}
-            refreshKey={scheduleRevision}
-            borderColor={borderColor}
-            mutedColor={mutedColor}
-            cardBg={cardBg}
-          />
-          <LocationCard
-            key={selectedRestaurant.id}
-            restaurant={selectedRestaurant}
-            onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
-            upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
-            isDark={isDark}
-            borderColor={borderColor}
-            mutedColor={mutedColor}
-            cardBg={cardBg}
-          />
+        ) : selectedSummary && isArchived ? (
           <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
-            <ArchiveLocationRow
-              name={selectedRestaurant.name}
-              upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
-              archiving={archiving}
-              failed={archiveFailed}
-              onArchive={() => handleSetArchived(selectedRestaurant.id, true)}
+            <ArchivedLocationPanel
+              id={selectedSummary.id}
+              name={selectedSummary.name}
+              restoring={archiving}
+              restoreFailed={archiveFailed}
+              onRestore={() => handleSetArchived(selectedSummary.id, false)}
+              canDelete={canDeleteLocation}
+              onDeleted={handleDeleted}
             />
           </View>
-        </View>
-      ) : null}
-    </ScrollView>
+        ) : selectedRestaurant ? (
+          <View style={styles.section}>
+            <ScheduleConflictsPanel
+              restaurantId={selectedRestaurant.id}
+              timezone={selectedRestaurant.timezone ?? "UTC"}
+              refreshKey={scheduleRevision}
+              onOpenBooking={setConflictBookingId}
+              borderColor={borderColor}
+              mutedColor={mutedColor}
+              cardBg={cardBg}
+            />
+            <LocationCard
+              key={selectedRestaurant.id}
+              restaurant={selectedRestaurant}
+              onSaved={(patch) => patchRestaurant(selectedRestaurant.id, patch)}
+              upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
+              isDark={isDark}
+              borderColor={borderColor}
+              mutedColor={mutedColor}
+              cardBg={cardBg}
+            />
+            <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]}>
+              <ArchiveLocationRow
+                name={selectedRestaurant.name}
+                upcomingBookingsCount={selectedSummary?.upcomingBookingsCount ?? 0}
+                archiving={archiving}
+                failed={archiveFailed}
+                onArchive={() => handleSetArchived(selectedRestaurant.id, true)}
+              />
+            </View>
+          </View>
+        ) : null}
+      </ScrollView>
+      <BookingDetailPopup
+        bookingId={conflictBookingId}
+        onClose={() => setConflictBookingId(null)}
+        // A booking moved or cancelled out of the conflict is one the panel should stop listing.
+        onMutated={() => setScheduleRevision((n) => n + 1)}
+      />
+    </>
   );
 }

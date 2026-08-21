@@ -36,6 +36,17 @@ jest.mock("@/api/auth", () => ({
   logout: jest.fn(),
 }));
 
+jest.mock("@/components/admin/bookings/BookingDetailPopup", () => ({
+  BookingDetailPopup: ({ bookingId }: any) => {
+    const { View, Text } = require("react-native");
+    return bookingId == null ? null : (
+      <View testID="booking-popup">
+        <Text>{`booking ${bookingId}`}</Text>
+      </View>
+    );
+  },
+}));
+
 jest.mock("@/components/admin/settings/LocationCard", () => ({
   LocationCard: ({ onSaved }: any) => {
     const { View, Pressable, Text } = require("react-native");
@@ -590,5 +601,29 @@ describe("AdminLocationsScreen selected-location persistence", () => {
     await waitFor(() => expect(screen.getByText("Resto 2")).toBeTruthy());
     fireEvent.press(screen.getByText("Resto 2"));
     await waitFor(() => expect(screen.getByText("Archived")).toBeTruthy());
+  });
+
+  // The panel used to route to /admin/bookings with the ref as a search term, which left the
+  // location being edited and made the admin search for a booking it already had in hand.
+  it("opens a stranded booking in the popup instead of leaving for the bookings list", async () => {
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([
+      {
+        bookingId: 42,
+        bookingRef: "crispy-basil-truffle",
+        customerName: "Ada Lovelace",
+        date: "2026-09-02T10:00:00Z",
+        seats: 2,
+        reason: "outsideHours",
+      },
+    ]);
+
+    renderScreen();
+    await waitFor(() => expect(screen.getByTestId("schedule-conflicts-panel")).toBeTruthy());
+    expect(screen.queryByTestId("booking-popup")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Open booking crispy-basil-truffle"));
+
+    await waitFor(() => expect(screen.getByText("booking 42")).toBeTruthy());
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
