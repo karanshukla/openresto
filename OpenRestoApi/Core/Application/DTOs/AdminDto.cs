@@ -41,6 +41,13 @@ public class BookingDetailDto
     public int Id { get; set; }
     public int RestaurantId { get; set; }
     public string? RestaurantName { get; set; }
+
+    /// <summary>
+    /// The location's IANA timezone. <see cref="Date"/> is UTC, so it names no wall-clock time on
+    /// its own — anything shown to or sent to a guest has to resolve it through this rather than
+    /// through whatever zone the admin's browser happens to be in.
+    /// </summary>
+    public string? Timezone { get; set; }
     public int? SectionId { get; set; }
     public string? SectionName { get; set; }
     public int? TableId { get; set; }

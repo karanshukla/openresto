@@ -83,6 +83,11 @@ export interface BookingDetailDto {
   id: number;
   restaurantId: number;
   restaurantName: string;
+  /**
+   * The location's IANA timezone. `date` is UTC and names no wall-clock time on its own, so
+   * anything shown to or sent to a guest resolves through this, not the admin's browser zone.
+   */
+  timezone?: string;
   sectionId: number | null;
   sectionName: string;
   tableId: number | null;

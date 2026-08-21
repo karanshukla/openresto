@@ -799,6 +799,7 @@ public class AdminService(
             Id = b.Id,
             RestaurantId = b.RestaurantId,
             RestaurantName = b.Restaurant?.Name,
+            Timezone = b.Restaurant?.Timezone,
             SectionId = b.SectionId,
             SectionName = b.Section?.Name ?? (b.SectionId.HasValue ? $"Section {b.SectionId}" : "Section"),
             TableId = tableId,

@@ -101,14 +101,23 @@ jest.mock("@/components/admin/bookings/EmailGuestForm", () => ({
     onSendEmail,
     setEmailSubject,
     setEmailBody,
+    emailSubject,
+    emailBody,
+    moveNoticeReady,
   }: {
     onSendEmail: () => void;
     setEmailSubject: (s: string) => void;
     setEmailBody: (s: string) => void;
+    emailSubject: string;
+    emailBody: string;
+    moveNoticeReady?: boolean;
   }) => {
     const { View, Text, Pressable } = require("react-native");
     return (
       <View>
+        {moveNoticeReady ? <Text testID="move-notice-ready">notice ready</Text> : null}
+        <Text testID="email-subject">{emailSubject}</Text>
+        <Text testID="email-body">{emailBody}</Text>
         <Pressable testID="send-email-btn" onPress={onSendEmail}>
           <Text>Send Email</Text>
         </Pressable>
@@ -1169,6 +1178,93 @@ describe("BookingDetailPopup", () => {
       await new Promise((resolve) => setTimeout(resolve, 250));
       expect(findNodeHandleSpy).not.toHaveBeenCalled();
       findNodeHandleSpy.mockRestore();
+    });
+  });
+
+  // Moving a booking and telling the guest were two unrelated steps: the admin edited it, then
+  // hand-typed an email, with nothing carrying the old time across. The composing is what the
+  // save now does; sending stays the admin's.
+  describe("notifying the guest when a sitting moves", () => {
+    const moved = {
+      ...mockBooking,
+      date: "2026-12-02T20:30:00Z",
+      timezone: "America/New_York",
+      customerName: "Ada Lovelace",
+    };
+
+    it("writes an unsent notice into the email form naming both sittings", async () => {
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockResolvedValue(moved);
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+
+      await waitFor(() => expect(screen.getByTestId("move-notice-ready")).toBeTruthy());
+      expect(screen.getByTestId("email-subject").props.children).toContain("has moved");
+      expect(screen.getByTestId("email-body").props.children).toContain("Previously:");
+      // Composed, not sent. Sending stays an explicit press.
+      expect(adminApi.sendBookingEmail).not.toHaveBeenCalled();
+    });
+
+    it("offers nothing when the edit left the sitting where it was", async () => {
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockResolvedValue({
+        ...mockBooking,
+        seats: 4,
+      });
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+
+      await waitFor(() => expect(adminApi.adminUpdateBookingFull).toHaveBeenCalled());
+      expect(screen.queryByTestId("move-notice-ready")).toBeNull();
+      expect(screen.getByTestId("email-subject").props.children).toBe("");
+    });
+
+    // A booking with no address on it cannot be told anything, and a notice written into a form
+    // that can never send reads as a step the admin failed to complete.
+    it("offers nothing when the booking carries no customer email", async () => {
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockResolvedValue({
+        ...moved,
+        customerEmail: "",
+      });
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+
+      await waitFor(() => expect(adminApi.adminUpdateBookingFull).toHaveBeenCalled());
+      expect(screen.queryByTestId("move-notice-ready")).toBeNull();
+    });
+
+    // A rejected move must never be announced to a guest it did not happen to.
+    it("offers nothing when the update was rejected", async () => {
+      (adminApi.adminUpdateBookingFull as jest.Mock).mockRejectedValue(
+        new Error("This update would cause a conflict with an existing booking.")
+      );
+      render(<BookingDetailPopup {...baseProps} />);
+      await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
+      fireEvent.press(screen.getByText("Edit"));
+      await waitFor(() => expect(screen.getByText("Save Changes")).toBeTruthy());
+
+      await act(async () => {
+        fireEvent.press(screen.getByText("Save Changes"));
+      });
+
+      await waitFor(() => expect(screen.getByTestId("alert-message")).toBeTruthy());
+      expect(screen.queryByTestId("move-notice-ready")).toBeNull();
     });
   });
 });
