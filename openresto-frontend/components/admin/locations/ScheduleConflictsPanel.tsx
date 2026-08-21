@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { RowTextButton } from "@/components/common/RowTextButton";
@@ -43,6 +42,12 @@ function formatSitting(dateUtc: string, timezone: string): string {
 export function ScheduleConflictsPanel({
   restaurantId,
   timezone,
+  /**
+   * Hands the booking to the screen rather than routing to it. The bookings list can only be
+   * reached by leaving the location being edited, and it then has to be searched for the ref
+   * that was already in hand; the popup opens over the form the conflict came from.
+   */
+  onOpenBooking,
   /** Bumped by the parent after a save, so the panel re-reads against the new schedule. */
   refreshKey,
   borderColor,
@@ -51,13 +56,13 @@ export function ScheduleConflictsPanel({
 }: {
   restaurantId: number;
   timezone: string;
+  onOpenBooking: (bookingId: number) => void;
   refreshKey: number;
   borderColor: string;
   mutedColor: string;
   cardBg: string;
 }) {
   const { colors } = useAppTheme();
-  const router = useRouter();
   const [conflicts, setConflicts] = useState<ScheduleConflictDto[] | null>(null);
 
   const load = useCallback(() => {
@@ -114,12 +119,7 @@ export function ScheduleConflictsPanel({
             icon="open-outline"
             color={colors.text}
             accessibilityLabel={`Open booking ${conflict.bookingRef}`}
-            onPress={() =>
-              router.push({
-                pathname: "/admin/bookings",
-                params: { query: conflict.bookingRef },
-              })
-            }
+            onPress={() => onOpenBooking(conflict.bookingId)}
           />
         </View>
       ))}
