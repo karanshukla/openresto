@@ -35,6 +35,7 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             .Include(b => b.Restaurant)
             .Include(b => b.Section)
             .Include(b => b.Table)
+            .Include(b => b.TableGroup!).ThenInclude(g => g.Members).ThenInclude(m => m.Table)
             .AsQueryable();
 
         DateTime nowUtc = DateTime.UtcNow;

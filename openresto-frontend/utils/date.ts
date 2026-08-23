@@ -118,3 +118,28 @@ export function isTodayInTimezone(utcDateStr: string, timezone: string): boolean
     return false;
   }
 }
+
+/**
+ * Minutes since local midnight for a UTC instant, expressed in the given IANA timezone. The
+ * counterpart of {@link getNowInTimezone} for an arbitrary instant — a booking's `date` is UTC and
+ * names no wall-clock time until it is resolved against the location it belongs to.
+ *
+ * @see [bookingTimeline.test.ts](../tests/utils/bookingTimeline.test.ts) — pins that a booking is
+ * placed by the restaurant's wall clock rather than the admin browser's.
+ */
+export function minutesInTimezone(iso: string, timezone: string): number {
+  const tz = timezone || "UTC";
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(iso));
+    const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+    return (get("hour") % 24) * 60 + get("minute");
+  } catch {
+    const d = new Date(iso);
+    return d.getHours() * 60 + d.getMinutes();
+  }
+}

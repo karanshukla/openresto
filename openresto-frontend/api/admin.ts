@@ -94,6 +94,12 @@ export interface BookingDetailDto {
   sectionId: number | null;
   sectionName: string;
   tableId: number | null;
+  /**
+   * Set when the booking reserves a combinable table group rather than a single table, in which
+   * case `tableId` is null. Placing a booking on the floor has to branch on both or every group
+   * booking is silently dropped.
+   */
+  tableGroupId?: number | null;
   tableName: string;
   date: string;
   endTime?: string;

@@ -283,25 +283,25 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                         options={seatOptions}
                       />
                     </View>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Guest email</ThemedText>
+                    <View style={styles.fieldHalf}>
+                      <ThemedText style={styles.label}>Guest name (optional)</ThemedText>
                       <Input
-                        placeholder="guest@example.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
+                        placeholder="Full name"
+                        value={guestName}
+                        onChangeText={setGuestName}
+                        autoCapitalize="words"
                       />
                     </View>
                   </View>
 
                   <View style={styles.field}>
-                    <ThemedText style={styles.label}>Guest name (optional)</ThemedText>
+                    <ThemedText style={styles.label}>Guest email</ThemedText>
                     <Input
-                      placeholder="Full name"
-                      value={guestName}
-                      onChangeText={setGuestName}
-                      autoCapitalize="words"
+                      placeholder="guest@example.com"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                     />
                   </View>
 

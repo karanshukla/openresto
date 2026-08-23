@@ -11,7 +11,7 @@ using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
-public class AdminServiceTests : IDisposable
+public partial class AdminServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _db;

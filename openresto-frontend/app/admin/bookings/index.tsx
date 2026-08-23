@@ -42,7 +42,7 @@ import {
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { fmtDate } from "@/utils/formatters";
+import { fmtDate, isoDate } from "@/utils/formatters";
 import { Icon } from "@/components/common/Icon";
 
 type ViewMode = "timetable" | "list";
@@ -517,6 +517,15 @@ export default function AdminBookingsScreen() {
               ]}
             >
               <View style={[styles.legendDot, { backgroundColor: PRIMARY }]} />
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Seated now</ThemedText>
+            </View>
+            <View
+              style={[
+                styles.legendItem,
+                { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+              ]}
+            >
+              <View style={[styles.legendDot, { backgroundColor: `${PRIMARY}44` }]} />
               <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
             </View>
             <View
@@ -528,13 +537,13 @@ export default function AdminBookingsScreen() {
               <View
                 style={[
                   styles.legendDot,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" },
+                  { width: 3, backgroundColor: colors.error, borderRadius: 0 },
                 ]}
               />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Available</ThemedText>
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Now</ThemedText>
             </View>
             <ThemedText style={[styles.legendText, { color: mutedColor, marginLeft: 4 }]}>
-              Tap a booking to view details
+              Tap a sitting to view details
             </ThemedText>
           </View>
 
@@ -546,9 +555,13 @@ export default function AdminBookingsScreen() {
               bookings={gridBookings}
               isDark={isDark}
               onBookingPress={(b) => openBooking(b.id)}
+              groups={selectedRestaurant?.groups ?? []}
               openTime={openTime}
               closeTime={closeTime}
               timezone={timezone}
+              defaultDurationMinutes={selectedRestaurant?.defaultBookingDurationMinutes ?? 90}
+              gridDateIso={isoDate(gridDate)}
+              dateLabel={fmtDate(gridDate)}
             />
           )}
         </View>
