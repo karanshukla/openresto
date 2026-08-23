@@ -27,9 +27,11 @@ jest.mock("@/api/admin", () => ({
   extendRestaurantBookings: jest.fn(),
 }));
 const mockPush = jest.fn();
+const mockSearchParams: { location?: string } = {};
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
   useRouter: () => ({ push: mockPush }),
+  useLocalSearchParams: () => mockSearchParams,
 }));
 jest.mock("@/api/auth", () => ({
   checkSession: jest.fn(),
@@ -555,6 +557,7 @@ describe("AdminLocationsScreen selected-location persistence", () => {
     (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
     Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
     localStorage.clear();
+    delete mockSearchParams.location;
     (fetchRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);
     (adminGetRestaurants as jest.Mock).mockResolvedValue(twoRestaurants);
     (pauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
@@ -571,6 +574,23 @@ describe("AdminLocationsScreen selected-location persistence", () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
     // Persisted value (2) was honoured, not overwritten to the first restaurant (1).
+    expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(2);
+  });
+
+  it("opens on the location the caller named, over the one it remembered", async () => {
+    localStorage.setItem("locations:selectedId", JSON.stringify(1));
+    mockSearchParams.location = "2";
+    renderScreen();
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(2)
+    );
+  });
+
+  it("keeps the remembered location when the caller names one that no longer exists", async () => {
+    localStorage.setItem("locations:selectedId", JSON.stringify(2));
+    mockSearchParams.location = "999";
+    renderScreen();
+    await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
     expect(JSON.parse(localStorage.getItem("locations:selectedId") as string)).toBe(2);
   });
 

@@ -30,6 +30,11 @@ import { isPast } from "./StatusBadge";
 import Button from "@/components/common/Button";
 import { Icon } from "@/components/common/Icon";
 
+/**
+ * @see [BookingDetailPopup.test.tsx](../../../tests/components/admin/bookings/BookingDetailPopup.test.tsx)
+ * — pins that the actions stay busy while a cancel is in flight and come back live for the next
+ * booking the same mounted popup is opened on.
+ */
 export function BookingDetailPopup({
   bookingId,
   onClose,
@@ -105,8 +110,16 @@ export function BookingDetailPopup({
   }, [initialFocus, loading, editing, booking?.id, booking?.isCancelled]);
 
   useEffect(() => {
+    // The popup outlives the booking it was opened for: the screens that host it keep it mounted
+    // and only swap the id. A cancel or purge closes it without clearing its own in-flight flag,
+    // so anything left set here is what the next booking opens with — a permanently disabled
+    // "Cancelling…" on a booking nothing has cancelled.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDeleting(false);
+    setUncancelling(false);
+    setExtending(false);
+    setErrorMessage(null);
     if (bookingId === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBooking(null);
       setEditing(false);
       setEmailSubject("");

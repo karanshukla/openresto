@@ -100,6 +100,7 @@ describe("getAdminDashboardStats", () => {
       activeHoldsCount: 0,
       pausedCount: 0,
       scheduleConflictsCount: 0,
+      scheduleConflictLocationIds: [],
       totalCovers: 100,
       occupancyData: [],
       occupancyDates: [],

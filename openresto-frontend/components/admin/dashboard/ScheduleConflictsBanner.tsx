@@ -1,5 +1,5 @@
 import { Pressable, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -17,23 +17,38 @@ import { styles } from "./ScheduleConflictsBanner.styles";
  * Renders nothing at zero: an all-clear shown every day trains the eye to skip the row this
  * needs to be noticed in.
  *
+ * The link carries the location, because the locations screen remembers the last one selected and
+ * would otherwise open on a location with nothing wrong with it — a control that lands you
+ * somewhere reporting an all-clear reads as a broken count rather than a wrong destination.
+ *
  * @see [ScheduleConflictsBanner.test.tsx](../../../tests/components/admin/dashboard/ScheduleConflictsBanner.test.tsx)
- * — pins that it stays silent at zero and links through to the locations screen.
+ * — pins that it stays silent at zero and links to the first location that has conflicts.
  */
-export function ScheduleConflictsBanner({ count }: { count: number }) {
+export function ScheduleConflictsBanner({
+  count,
+  locationIds,
+}: {
+  count: number;
+  /** The locations the conflicts sit on; the first is where the link lands. */
+  locationIds: number[];
+}) {
   const { colors } = useAppTheme();
   const router = useRouter();
 
   if (count <= 0) return null;
 
   const bookings = `${count} upcoming booking${count === 1 ? "" : "s"}`;
+  const target: Href =
+    locationIds.length > 0
+      ? { pathname: "/admin/locations", params: { location: String(locationIds[0]) } }
+      : "/admin/locations";
 
   return (
     <Pressable
       testID="dashboard-schedule-conflicts"
       accessibilityRole="button"
       accessibilityLabel={`${bookings} no longer fit their location's schedule. Review locations.`}
-      onPress={() => router.push("/admin/locations")}
+      onPress={() => router.push(target)}
       style={[styles.banner, { backgroundColor: colors.card, borderColor: colors.warning }]}
     >
       <View style={[styles.icon, { backgroundColor: `${colors.warning}1f` }]}>

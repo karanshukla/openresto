@@ -28,6 +28,12 @@ public class AdminOverviewDto
     /// and navigates away never sees that panel again.
     /// </summary>
     public int ScheduleConflictsCount { get; set; }
+
+    /// <summary>
+    /// The locations those conflicts belong to. The count alone names no location, so a control
+    /// built on it can only drop the admin on whichever location the screen happened to remember.
+    /// </summary>
+    public List<int> ScheduleConflictLocationIds { get; set; } = [];
     public List<int> OccupancyData { get; set; } = [];
     public List<string> OccupancyDates { get; set; } = [];
     public List<int> OccupancyCounts { get; set; } = [];

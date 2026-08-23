@@ -143,7 +143,10 @@ export default function AdminDashboardScreen() {
           />
         ) : (
           <>
-            <ScheduleConflictsBanner count={stats?.scheduleConflictsCount ?? 0} />
+            <ScheduleConflictsBanner
+              count={stats?.scheduleConflictsCount ?? 0}
+              locationIds={stats?.scheduleConflictLocationIds ?? []}
+            />
             <View style={[styles.metricsGrid, isWide && styles.metricsGridWide]}>
               {metricCards.map((stat) => (
                 <MetricCard key={stat.label} stat={stat} colors={colors} />

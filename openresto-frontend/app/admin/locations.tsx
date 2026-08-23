@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View, Platform } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Button from "@/components/common/Button";
@@ -35,6 +35,8 @@ function locationCountSummary(activeCount: number, archivedCount: number): strin
 }
 
 export default function AdminLocationsScreen() {
+  const { location } = useLocalSearchParams<{ location?: string }>();
+  const requestedId = location ? Number(location) : null;
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [persistedSelectedId, setPersistedSelectedId] = usePersistedState<number | null>(
@@ -81,9 +83,14 @@ export default function AdminLocationsScreen() {
     Promise.all([fetchRestaurants(), adminGetRestaurants()]).then(([active, all]) => {
       if (cancelled) return;
       setRestaurants(active);
+      // A caller that names a location outranks the remembered one: the dashboard's stranded-
+      // bookings banner sends the admin here to act on a specific location, and opening on
+      // whichever one they last edited would report an all-clear over the top of the problem.
+      const requestedMatch =
+        requestedId != null ? all.find((r) => r.id === requestedId) : undefined;
       const persistedMatch =
         persistedSelectedId != null ? all.find((r) => r.id === persistedSelectedId) : undefined;
-      const nextId = persistedMatch ? persistedMatch.id : (all[0]?.id ?? null);
+      const nextId = (requestedMatch ?? persistedMatch)?.id ?? all[0]?.id ?? null;
       if (nextId !== null) setSelectedId(nextId);
       setPersistedSelectedId(nextId);
       setAllRestaurants(all);
@@ -93,7 +100,8 @@ export default function AdminLocationsScreen() {
     return () => {
       cancelled = true;
     };
-    // persistedSelectedId seeds the initial selection only; omitting it avoids a refetch loop.
+    // persistedSelectedId and requestedId seed the initial selection only; omitting them avoids
+    // a refetch loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

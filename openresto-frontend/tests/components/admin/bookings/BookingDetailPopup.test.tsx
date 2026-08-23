@@ -142,16 +142,19 @@ jest.mock("@/components/admin/bookings/BookingActionButtons", () => ({
     onUncancel,
     isCancelled,
     isPast,
+    deleting,
   }: {
     onCancel: () => void;
     onPurge: () => void;
     onUncancel: () => void;
     isCancelled: boolean;
     isPast?: boolean;
+    deleting: boolean;
   }) => {
     const { View, Pressable, Text } = require("react-native");
     return (
       <View>
+        <Text testID="action-deleting">{String(deleting)}</Text>
         {isCancelled ? (
           <Pressable testID="uncancel-btn" onPress={onUncancel}>
             <Text>Restore</Text>
@@ -361,6 +364,37 @@ describe("BookingDetailPopup", () => {
     expect(adminApi.adminDeleteBooking).toHaveBeenCalledWith(1);
     expect(baseProps.onMutated).toHaveBeenCalled();
     expect(baseProps.onClose).toHaveBeenCalled();
+  });
+
+  it("keeps the actions busy while the cancel it started is still in flight", async () => {
+    (adminApi.adminDeleteBooking as jest.Mock).mockReturnValue(new Promise(() => {}));
+    render(<BookingDetailPopup {...baseProps} />);
+    await waitFor(() => expect(screen.getByTestId("cancel-btn")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("cancel-btn"));
+    await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+    });
+    expect(screen.getByTestId("action-deleting").props.children).toBe("true");
+  });
+
+  it("hands the next booking live actions after a cancel closed the popup", async () => {
+    (adminApi.adminDeleteBooking as jest.Mock).mockResolvedValue(true);
+    const { rerender } = render(<BookingDetailPopup {...baseProps} />);
+    await waitFor(() => expect(screen.getByTestId("cancel-btn")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("cancel-btn"));
+    await waitFor(() => expect(screen.getByTestId("confirm-btn")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("confirm-btn"));
+    });
+
+    // The hosting screen closes the popup and reopens it on the next booking; the component
+    // itself never unmounts, so nothing but this effect clears the flag the cancel set.
+    rerender(<BookingDetailPopup {...baseProps} bookingId={null} />);
+    rerender(<BookingDetailPopup {...baseProps} bookingId={2} />);
+
+    await waitFor(() => expect(screen.getByTestId("cancel-btn")).toBeTruthy());
+    expect(screen.getByTestId("action-deleting").props.children).toBe("false");
   });
 
   it("shows error message when cancel fails", async () => {

@@ -89,6 +89,7 @@ public class AdminServiceTests : IDisposable
         AdminOverviewDto overview = await svc.GetOverviewAsync();
 
         Assert.Equal(2, overview.ScheduleConflictsCount);
+        Assert.Equal([1, 2], overview.ScheduleConflictLocationIds);
     }
 
     [Fact]
@@ -109,6 +110,25 @@ public class AdminServiceTests : IDisposable
         AdminOverviewDto overview = await svc.GetOverviewAsync();
 
         Assert.Equal(0, overview.ScheduleConflictsCount);
+        Assert.Empty(overview.ScheduleConflictLocationIds);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_NamesOnlyTheLocationsHoldingAStrandedBooking()
+    {
+        AdminService svc = CreateService();
+        // One location has narrowed to Mondays and kept a Tuesday sitting; the other still opens
+        // every day. A count alone cannot say which, so the ids are what makes it actionable.
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Fits", Timezone = "UTC", OpenDays = "1,2,3,4,5,6,7" });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "Stranded", Timezone = "UTC", OpenDays = "1" });
+        var tuesday = new DateTime(2099, 1, 6, 12, 0, 0, DateTimeKind.Utc);
+        _db.Bookings.Add(new Booking { Id = 1, RestaurantId = 1, Date = tuesday, Seats = 2, BookingRef = "a1" });
+        _db.Bookings.Add(new Booking { Id = 2, RestaurantId = 2, Date = tuesday, Seats = 2, BookingRef = "b1" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        Assert.Equal([2], overview.ScheduleConflictLocationIds);
     }
 
     [Fact]
