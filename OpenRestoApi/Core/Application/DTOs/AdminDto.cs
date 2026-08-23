@@ -57,8 +57,21 @@ public class BookingDetailDto
     public int? SectionId { get; set; }
     public string? SectionName { get; set; }
     public int? TableId { get; set; }
+
+    /// <summary>
+    /// Set when the booking reserves a combinable <c>TableGroup</c> rather than a single table, in
+    /// which case <see cref="TableId"/> is null. Both are never set at once, so a consumer placing a
+    /// booking on the floor has to branch on this or it will silently drop every group booking.
+    /// </summary>
+    public int? TableGroupId { get; set; }
+
     public string? TableName { get; set; }
     public DateTime Date { get; set; }
+
+    /// <summary>
+    /// The sitting's end, resolved through <c>BookingDuration.ResolveEnd</c> — a booking stored with
+    /// no end reads as its location's default duration rather than as zero-length.
+    /// </summary>
     public DateTime? EndTime { get; set; }
     public string? CustomerEmail { get; set; }
     public string? CustomerName { get; set; }

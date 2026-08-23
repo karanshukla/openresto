@@ -251,16 +251,11 @@ public class AdminService(
             return null;
         }
 
-        DateTime from;
-        if (booking.EndTime.HasValue && booking.EndTime.Value > booking.Date)
-        {
-            from = booking.EndTime.Value;
-        }
-        else
-        {
-            Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(booking.RestaurantId);
-            from = booking.Date.AddMinutes(restaurant?.DefaultBookingDurationMinutes ?? 60);
-        }
+        Restaurant? restaurant = booking.EndTime.HasValue && booking.EndTime.Value > booking.Date
+            ? null
+            : await _restaurantRepository.FindByIdAsync(booking.RestaurantId);
+        DateTime from = BookingDuration.ResolveEnd(
+            booking.Date, booking.EndTime, restaurant?.DefaultBookingDurationMinutes);
 
         DateTime? previousEnd = booking.EndTime;
         booking.EndTime = from.AddMinutes(minutes);
@@ -810,9 +805,11 @@ public class AdminService(
             SectionId = b.SectionId,
             SectionName = b.Section?.Name ?? (b.SectionId.HasValue ? $"Section {b.SectionId}" : "Section"),
             TableId = tableId,
+            TableGroupId = b.TableGroupId,
             TableName = tableName,
             Date = dateUtc,
-            EndTime = endTimeUtc,
+            EndTime = BookingDuration.ResolveEnd(
+                dateUtc, endTimeUtc, b.Restaurant?.DefaultBookingDurationMinutes),
             CustomerEmail = b.CustomerEmail,
             CustomerName = b.CustomerName,
             Seats = b.Seats,

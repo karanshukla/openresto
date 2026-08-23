@@ -84,10 +84,10 @@ export const styles = StyleSheet.create({
   legendText: { ...theme.typography.caption },
   gridHeaderText: { ...theme.typography.labelSmall, letterSpacing: 0.5 },
   gridSectionLabel: { ...theme.typography.labelSmall, letterSpacing: 0.8 },
-  gridCellEmail: { fontSize: 9, fontWeight: "600", color: theme.colors.error, textAlign: "center" },
-  gridCellSeats: { fontSize: 9 },
   gridTableName: { ...theme.typography.caption, fontWeight: "600" },
   gridTableSeats: { fontSize: 10 },
+  gridBarGuest: { fontSize: 11, fontWeight: "600" },
+  gridBarTime: { fontSize: 9 },
 
   tableCard: {
     borderRadius: theme.borderRadius.card,
