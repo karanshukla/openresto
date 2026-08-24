@@ -40,7 +40,7 @@ public class UserService(
 
         if (await _credentialRepository.GetByEmailAsync(email) != null)
         {
-            throw new BusinessRuleException("An account with that email address already exists.");
+            throw new BusinessRuleException("An account with that email address already exists.") { Code = ErrorCodes.UserEmailAlreadyExists };
         }
 
         (string hash, string salt) = _passwordService.Hash(req.Password);
@@ -71,7 +71,7 @@ public class UserService(
             // your access to this very screen, so it takes another Owner to do it to you.
             if (IsSelf(user))
             {
-                throw new BusinessRuleException("You cannot change your own role.");
+                throw new BusinessRuleException("You cannot change your own role.") { Code = ErrorCodes.UserCannotChangeOwnRole };
             }
 
             await EnsureAnotherActiveOwnerRemainsAsync(user, "demote");
@@ -97,7 +97,7 @@ public class UserService(
             {
                 if (IsSelf(user))
                 {
-                    throw new BusinessRuleException("You cannot deactivate your own account.");
+                    throw new BusinessRuleException("You cannot deactivate your own account.") { Code = ErrorCodes.UserCannotDeactivateSelf };
                 }
 
                 await EnsureAnotherActiveOwnerRemainsAsync(user, "deactivate");
@@ -149,7 +149,7 @@ public class UserService(
 
     private async Task<AdminCredential> RequireUserAsync(int id)
         => await _credentialRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"User {id} not found.");
+            ?? throw new NotFoundException($"User {id} not found.") { Code = ErrorCodes.UserNotFound };
 
     private bool IsSelf(AdminCredential user)
         => _currentUser.UserId == user.Id
@@ -169,7 +169,8 @@ public class UserService(
         if (activeOwners <= 1)
         {
             throw new BusinessRuleException(
-                $"Cannot {action} the last active {UserRoles.Owner}. Promote another user first.");
+                $"Cannot {action} the last active {UserRoles.Owner}. Promote another user first.")
+            { Code = ErrorCodes.UserLastActiveOwner };
         }
     }
 }

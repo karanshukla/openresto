@@ -13,6 +13,13 @@ namespace OpenRestoApi.Core.Application.Exceptions;
 [Serializable]
 public abstract class OpenRestoException : Exception
 {
+    /// <summary>
+    /// Stable machine-readable identifier for the specific rule that rejected the request, e.g.
+    /// "booking.paused" (see <see cref="Utilities.ErrorCodes"/>). Nullable so throw sites not yet
+    /// migrated to a code keep compiling.
+    /// </summary>
+    public string? Code { get; init; }
+
     protected OpenRestoException() { }
     protected OpenRestoException(string message) : base(message) { }
     protected OpenRestoException(string message, Exception inner) : base(message, inner) { }

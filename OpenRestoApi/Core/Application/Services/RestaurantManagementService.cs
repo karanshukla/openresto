@@ -41,7 +41,8 @@ public class RestaurantManagementService(
             || char.IsDigit(value.Trim().FirstOrDefault()))
         {
             throw new ValidationException(
-                $"BookingRefFormat must be one of: {string.Join(", ", Enum.GetNames<BookingRefFormat>())}.");
+                $"BookingRefFormat must be one of: {string.Join(", ", Enum.GetNames<BookingRefFormat>())}.")
+            { Code = ErrorCodes.RestaurantBookingRefFormatInvalid };
         }
 
         return parsed;
@@ -135,7 +136,8 @@ public class RestaurantManagementService(
                 if (!isServedMenuFile && !UrlValidator.IsValid(trimmed, UrlValidator.WebSchemes))
                 {
                     throw new ValidationException(
-                        "Menu URL must be a valid absolute http(s) URL.");
+                        "Menu URL must be a valid absolute http(s) URL.")
+                    { Code = ErrorCodes.RestaurantMenuUrlInvalid };
                 }
                 r.MenuUrl = trimmed;
             }
@@ -183,7 +185,8 @@ public class RestaurantManagementService(
             if (!_allowedBookingDurationsMinutes.Contains(req.DefaultBookingDurationMinutes.Value))
             {
                 throw new ValidationException(
-                    $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", _allowedBookingDurationsMinutes.Order())}.");
+                    $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", _allowedBookingDurationsMinutes.Order())}.")
+                { Code = ErrorCodes.RestaurantDurationInvalid };
             }
 
             r.DefaultBookingDurationMinutes = req.DefaultBookingDurationMinutes.Value;
@@ -194,7 +197,8 @@ public class RestaurantManagementService(
             if (!_allowedBookingSlotIntervalsMinutes.Contains(req.BookingSlotIntervalMinutes.Value))
             {
                 throw new ValidationException(
-                    $"BookingSlotIntervalMinutes must be one of: {string.Join(", ", _allowedBookingSlotIntervalsMinutes.Order())}.");
+                    $"BookingSlotIntervalMinutes must be one of: {string.Join(", ", _allowedBookingSlotIntervalsMinutes.Order())}.")
+                { Code = ErrorCodes.RestaurantSlotIntervalInvalid };
             }
 
             r.BookingSlotIntervalMinutes = req.BookingSlotIntervalMinutes.Value;
@@ -204,7 +208,7 @@ public class RestaurantManagementService(
         // field, so a conditional write would make selecting "Off" unable to clear a set cap.
         if (req.MaxTableOversizeSeats.HasValue && req.MaxTableOversizeSeats.Value < 0)
         {
-            throw new ValidationException("MaxTableOversizeSeats must be zero or greater, or null to disable.");
+            throw new ValidationException("MaxTableOversizeSeats must be zero or greater, or null to disable.") { Code = ErrorCodes.RestaurantOversizeCapInvalid };
         }
 
         r.MaxTableOversizeSeats = req.MaxTableOversizeSeats;
@@ -492,7 +496,8 @@ public class RestaurantManagementService(
         if (seats < BookingLimits.MinSeats || seats > BookingLimits.MaxSeats)
         {
             throw new ValidationException(
-                $"Seats must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.");
+                $"Seats must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.")
+            { Code = ErrorCodes.TableSeatsOutOfRange };
         }
     }
 
@@ -512,7 +517,8 @@ public class RestaurantManagementService(
         if (combinedSeats > memberSeatsSum)
         {
             throw new ValidationException(
-                $"CombinedSeats ({combinedSeats}) cannot exceed the sum of member seats ({memberSeatsSum}).");
+                $"CombinedSeats ({combinedSeats}) cannot exceed the sum of member seats ({memberSeatsSum}).")
+            { Code = ErrorCodes.TableGroupCombinedSeatsExceedsSum };
         }
 
         int largestMemberSeats = members.Max(t => t.Seats);
@@ -520,7 +526,8 @@ public class RestaurantManagementService(
         {
             throw new ValidationException(
                 $"CombinedSeats ({combinedSeats}) must be more than the largest member table ({largestMemberSeats}). "
-                + "combining these tables would not seat a bigger party.");
+                + "combining these tables would not seat a bigger party.")
+            { Code = ErrorCodes.TableGroupCombinedSeatsNotWorthCombining };
         }
     }
 
@@ -768,19 +775,19 @@ public class RestaurantManagementService(
     {
         if (memberIds == null || memberIds.Count < 2)
         {
-            throw new ValidationException("A combinable table group must have at least two members.");
+            throw new ValidationException("A combinable table group must have at least two members.") { Code = ErrorCodes.TableGroupMinMembers };
         }
 
         if (memberIds.Distinct().Count() != memberIds.Count)
         {
-            throw new ValidationException("A combinable table group cannot list the same table twice.");
+            throw new ValidationException("A combinable table group cannot list the same table twice.") { Code = ErrorCodes.TableGroupDuplicateMember };
         }
 
         // Load candidate members scoped to the restaurant via the section→restaurant chain.
         List<Table> tables = await _tableRepository.GetManyForRestaurantAsync(memberIds, restaurantId);
         if (tables.Count != memberIds.Count)
         {
-            throw new ValidationException("All member tables must exist and belong to this restaurant.");
+            throw new ValidationException("All member tables must exist and belong to this restaurant.") { Code = ErrorCodes.TableGroupInvalidMembers };
         }
 
         // Reject any member already claimed by a *different* group. A table in the group being edited
@@ -801,7 +808,8 @@ public class RestaurantManagementService(
             if (tableIdToGroup.TryGetValue(t.Id, out int ownerGroupId))
             {
                 throw new ValidationException(
-                    $"Table {t.Id} already belongs to another combinable group ({ownerGroupId}).");
+                    $"Table {t.Id} already belongs to another combinable group ({ownerGroupId}).")
+                { Code = ErrorCodes.TableGroupMemberAlreadyGrouped };
             }
         }
 

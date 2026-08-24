@@ -40,7 +40,8 @@ public static class AdminBootstrap
         if (string.IsNullOrWhiteSpace(password))
         {
             throw new InfrastructureException(
-                "Admin:Password must be configured before first use. Set it via ADMIN_PASSWORD env var.");
+                "Admin:Password must be configured before first use. Set it via ADMIN_PASSWORD env var.")
+            { Code = ErrorCodes.AdminPasswordNotConfigured };
         }
 
         (string hash, string salt) = passwordService.Hash(password);

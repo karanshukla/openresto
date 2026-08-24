@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 
@@ -72,7 +73,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.Name))
         {
-            return BadRequest(new MessageResponse { Message = "Name is required." });
+            throw new ValidationException("Name is required.") { Code = ErrorCodes.RestaurantNameRequired };
         }
 
         RestaurantDto result = await _adminService.CreateRestaurantAsync(req.Name, req.Address);
@@ -148,7 +149,7 @@ public class AdminController(AdminService adminService) : ControllerBase
         return result switch
         {
             null => NotFound(),
-            false => BadRequest(new MessageResponse { Message = "sectionIds must include exactly the restaurant's current sections, with no duplicates." }),
+            false => BadRequest(new MessageResponse { Message = "sectionIds must include exactly the restaurant's current sections, with no duplicates.", Code = ErrorCodes.RestaurantSectionIdsMismatch }),
             true => NoContent(),
         };
     }
@@ -157,9 +158,11 @@ public class AdminController(AdminService adminService) : ControllerBase
     public async Task<IActionResult> GetTables(int restaurantId)
     {
         List<SectionDto>? result = await _adminService.GetTablesAsync(restaurantId);
-        return result == null
-            ? NotFound(new MessageResponse { Message = "Restaurant not found or has no sections." })
-            : Ok(result);
+        if (result == null)
+        {
+            throw new NotFoundException("Restaurant not found or has no sections.") { Code = ErrorCodes.RestaurantNoSections };
+        }
+        return Ok(result);
     }
 
     [HttpPost("bookings/{id}/email")]
@@ -176,14 +179,14 @@ public class AdminController(AdminService adminService) : ControllerBase
             return result.Status switch
             {
                 SendBookingEmailStatus.NotFound => NotFound(),
-                SendBookingEmailStatus.MissingFields => BadRequest(new MessageResponse { Message = "Subject and body are required." }),
-                SendBookingEmailStatus.NoCustomerEmail => BadRequest(new MessageResponse { Message = "Customer email is not available." }),
+                SendBookingEmailStatus.MissingFields => BadRequest(new MessageResponse { Message = "Subject and body are required.", Code = ErrorCodes.BookingEmailFieldsRequired }),
+                SendBookingEmailStatus.NoCustomerEmail => BadRequest(new MessageResponse { Message = "Customer email is not available.", Code = ErrorCodes.BookingNoCustomerEmail }),
                 _ => Ok(new MessageResponse { Message = $"Email sent to {result.Recipient}." })
             };
         }
         catch (Exception ex)
         {
-            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}" });
+            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}", Code = ErrorCodes.BookingEmailSendFailed });
         }
     }
 

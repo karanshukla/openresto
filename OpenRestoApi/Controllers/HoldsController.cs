@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Controllers;
@@ -45,7 +46,8 @@ public class HoldsController(
             {
                 return BadRequest(new MessageResponse
                 {
-                    Message = "Specify either TableId or TableGroupId, not both."
+                    Message = "Specify either TableId or TableGroupId, not both.",
+                    Code = ErrorCodes.HoldAmbiguousGroupAndTable
                 });
             }
 
@@ -57,7 +59,8 @@ public class HoldsController(
         {
             return BadRequest(new MessageResponse
             {
-                Message = "Specify both TableId and SectionId, or omit both for auto-assign."
+                Message = "Specify both TableId and SectionId, or omit both for auto-assign.",
+                Code = ErrorCodes.BookingAmbiguousTableSelection
             });
         }
 
@@ -67,9 +70,9 @@ public class HoldsController(
 
         return policy.Status switch
         {
-            HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found." }),
-            HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage! }),
-            HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage! }),
+            HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found.", Code = policy.Code }),
+            HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
+            HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
             _ => autoAssign
                 ? await PlaceAutoAssignedHold(request, policy)
                 : PlaceEligibleHold(request, policy)
@@ -89,24 +92,25 @@ public class HoldsController(
         {
             return policy.Status switch
             {
-                HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found." }),
-                HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage! }),
-                HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage! }),
-                _ => BadRequest(new MessageResponse { Message = "Hold not available." })
+                HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found.", Code = policy.Code }),
+                HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
+                HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
+                _ => BadRequest(new MessageResponse { Message = "Hold not available.", Code = ErrorCodes.HoldUnavailable })
             };
         }
 
         TableGroup? group = await _tableGroupRepository.GetByIdWithMembersAsync(request.TableGroupId!.Value, request.RestaurantId);
         if (group == null)
         {
-            return NotFound(new MessageResponse { Message = "Table group not found." });
+            return NotFound(new MessageResponse { Message = "Table group not found.", Code = ErrorCodes.TableGroupNotFound });
         }
 
         if (request.Seats <= 0)
         {
             return BadRequest(new MessageResponse
             {
-                Message = "Seats is required for a group hold so the server can validate combined capacity."
+                Message = "Seats is required for a group hold so the server can validate combined capacity.",
+                Code = ErrorCodes.HoldGroupSeatsRequired
             });
         }
 
@@ -114,7 +118,8 @@ public class HoldsController(
         {
             return Conflict(new MessageResponse
             {
-                Message = $"This group only has {group.CombinedSeats} combined seats, but {request.Seats} guests were requested."
+                Message = $"This group only has {group.CombinedSeats} combined seats, but {request.Seats} guests were requested.",
+                Code = ErrorCodes.TableGroupSeatsExceeded
             });
         }
 
@@ -123,14 +128,15 @@ public class HoldsController(
         {
             return Conflict(new MessageResponse
             {
-                Message = $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {request.Seats}."
+                Message = $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {request.Seats}.",
+                Code = ErrorCodes.TableGroupOversizeCap
             });
         }
 
         var memberIds = group.Members.Select(m => m.TableId).ToList();
         if (memberIds.Count == 0)
         {
-            return Conflict(new MessageResponse { Message = "This table group has no members." });
+            return Conflict(new MessageResponse { Message = "This table group has no members.", Code = ErrorCodes.TableGroupNoMembers });
         }
 
         int sectionId = group.Members.OrderBy(m => m.TableId).First().Table?.SectionId ?? 0;
@@ -148,7 +154,8 @@ public class HoldsController(
         {
             return Conflict(new MessageResponse
             {
-                Message = "One of the combined tables is already held by another user. Please try again shortly."
+                Message = "One of the combined tables is already held by another user. Please try again shortly.",
+                Code = ErrorCodes.TableGroupHoldConflict
             });
         }
 
@@ -172,7 +179,7 @@ public class HoldsController(
 
         if (result == null)
         {
-            return Conflict(new MessageResponse { Message = "This table is already held by another user. Please select a different table or try again shortly." });
+            return Conflict(new MessageResponse { Message = "This table is already held by another user. Please select a different table or try again shortly.", Code = ErrorCodes.BookingTableHeld });
         }
 
         return Ok(new HoldResponse
@@ -188,7 +195,8 @@ public class HoldsController(
         {
             return BadRequest(new MessageResponse
             {
-                Message = "Seats is required for auto-assign so the server can pick a table that fits your party."
+                Message = "Seats is required for auto-assign so the server can pick a table that fits your party.",
+                Code = ErrorCodes.HoldAutoAssignSeatsRequired
             });
         }
 
@@ -199,7 +207,8 @@ public class HoldsController(
         {
             return Conflict(new MessageResponse
             {
-                Message = "No tables are available for the requested time and party size."
+                Message = "No tables are available for the requested time and party size.",
+                Code = ErrorCodes.BookingNoTablesAvailable
             });
         }
 
@@ -214,7 +223,8 @@ public class HoldsController(
         {
             return Conflict(new MessageResponse
             {
-                Message = "All suitable tables are currently being held by other users. Please try again shortly."
+                Message = "All suitable tables are currently being held by other users. Please try again shortly.",
+                Code = ErrorCodes.BookingAllTablesHeld
             });
         }
 

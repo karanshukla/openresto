@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Interfaces;
@@ -18,17 +19,20 @@ public enum HoldPolicyStatus { Eligible, NotFound, Rejected, Booked }
 /// <summary>
 /// Eligible holds carry the resolved <see cref="Restaurant"/> and the timezone-normalized
 /// UTC booking date so the caller can place the hold without re-fetching. Rejected/Booked/
-/// NotFound results carry <see cref="FailureMessage"/> instead.
+/// NotFound results carry <see cref="FailureMessage"/> instead, plus the matching
+/// <see cref="ErrorCodes"/> value in <see cref="Code"/> — this service never throws for an
+/// expected policy violation, so the code has to travel on the result rather than on an exception.
 /// </summary>
 public record HoldPolicyResult(
     HoldPolicyStatus Status,
     Restaurant? Restaurant = null,
     DateTime BookingDate = default,
-    string? FailureMessage = null)
+    string? FailureMessage = null,
+    string? Code = null)
 {
-    public static HoldPolicyResult NotFound() => new(HoldPolicyStatus.NotFound);
-    public static HoldPolicyResult Rejected(string message) => new(HoldPolicyStatus.Rejected, FailureMessage: message);
-    public static HoldPolicyResult Booked(string message) => new(HoldPolicyStatus.Booked, FailureMessage: message);
+    public static HoldPolicyResult NotFound() => new(HoldPolicyStatus.NotFound, Code: ErrorCodes.RestaurantNotFound);
+    public static HoldPolicyResult Rejected(string message, string? code = null) => new(HoldPolicyStatus.Rejected, FailureMessage: message, Code: code);
+    public static HoldPolicyResult Booked(string message, string? code = null) => new(HoldPolicyStatus.Booked, FailureMessage: message, Code: code);
     public static HoldPolicyResult Eligible(Restaurant restaurant, DateTime bookingDate)
         => new(HoldPolicyStatus.Eligible, restaurant, bookingDate);
 }

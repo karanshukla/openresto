@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Infrastructure.Exceptions;
 
 namespace OpenRestoApi.Tests.Infrastructure;
@@ -238,5 +239,83 @@ public class GlobalExceptionHandlerTests
         Assert.True(doc.RootElement.TryGetProperty("message", out JsonElement msg));
         Assert.Equal(JsonValueKind.String, msg.ValueKind);
         Assert.Equal("bad input", msg.GetString());
+    }
+
+    // ── i18n G: error codes (#375) ──────────────────────────────────────────
+
+    [Fact]
+    public async Task ExceptionWithCode_SurfacesCodeInResponseBody()
+    {
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx, new ConflictException("Bookings are paused until 18:00. Please choose a later time.") { Code = ErrorCodes.BookingPaused }, default);
+
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.True(doc.RootElement.TryGetProperty("code", out JsonElement code));
+        Assert.Equal(ErrorCodes.BookingPaused, code.GetString());
+        Assert.Equal("Bookings are paused until 18:00. Please choose a later time.",
+            doc.RootElement.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task ExceptionWithoutCode_OmitsCodePropertyEntirely()
+    {
+        // Additive-only guard: an unmigrated throw site (Code left null) must not grow a
+        // "code": null field on the wire, or any snapshot that only ever saw "message" shifts.
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(ctx, new ValidationException("Password must be at least 6 characters."), default);
+
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.False(doc.RootElement.TryGetProperty("code", out _));
+    }
+
+    [Fact]
+    public async Task UntypedException_OmitsCodeProperty()
+    {
+        // A non-OpenRestoException (the untyped 500 fallback) has no Code to surface at all.
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(ctx, new InvalidOperationException("boom"), default);
+
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.False(doc.RootElement.TryGetProperty("code", out _));
+    }
+
+    // Pins that a representative sample of throw sites migrated for #375 still produce the
+    // exact pre-migration English message — the whole point of the ticket is that `message`
+    // never moves, only `code` is added alongside it. Each case uses the exact exception type
+    // the real throw site uses, so this also pins the status-code mapping stayed put.
+    public static IEnumerable<object[]> MigratedThrowSites =>
+    [
+        [new NotFoundException("Restaurant not found.") { Code = ErrorCodes.RestaurantNotFound }, (int)HttpStatusCode.NotFound],
+        [new ConflictException("This table is already booked for that time.") { Code = ErrorCodes.BookingTableConflict }, (int)HttpStatusCode.Conflict],
+        [new ConflictException("Cannot create a booking in the past.") { Code = ErrorCodes.BookingPastDate }, (int)HttpStatusCode.Conflict],
+        [new ConflictException("No tables are available for the requested time and party size.") { Code = ErrorCodes.BookingNoTablesAvailable }, (int)HttpStatusCode.Conflict],
+        [new BusinessRuleException("You cannot deactivate your own account.") { Code = ErrorCodes.UserCannotDeactivateSelf }, (int)HttpStatusCode.BadRequest],
+        [new ValidationException("A combinable table group must have at least two members.") { Code = ErrorCodes.TableGroupMinMembers }, (int)HttpStatusCode.BadRequest],
+    ];
+
+    [Theory]
+    [MemberData(nameof(MigratedThrowSites))]
+    public async Task MigratedThrowSite_MessageStaysByteIdentical_CodeAddedAlongside(OpenRestoException exception, int expectedStatus)
+    {
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(ctx, exception, default);
+
+        Assert.Equal(expectedStatus, ctx.Response.StatusCode);
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.Equal(exception.Message, doc.RootElement.GetProperty("message").GetString());
+        Assert.Equal(exception.Code, doc.RootElement.GetProperty("code").GetString());
     }
 }

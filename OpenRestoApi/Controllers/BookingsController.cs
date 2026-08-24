@@ -41,13 +41,13 @@ namespace OpenRestoApi.Controllers
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                return BadRequest(new { message = "Email is required to look up a booking." });
+                return BadRequest(new MessageResponse { Message = "Email is required to look up a booking.", Code = ErrorCodes.BookingLookupEmailRequired });
             }
 
             BookingDto? booking = await _bookingService.GetBookingByRefAsync(bookingRef);
             if (booking == null || !string.Equals(booking.CustomerEmail, email.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                return NotFound(new { message = "No booking found matching that reference and email." });
+                return NotFound(new MessageResponse { Message = "No booking found matching that reference and email.", Code = ErrorCodes.BookingLookupNotFound });
             }
             return Ok(booking);
         }
@@ -118,7 +118,7 @@ namespace OpenRestoApi.Controllers
         {
             if (string.IsNullOrWhiteSpace(req.Email))
             {
-                return BadRequest(new { message = "Email is required to cancel a booking." });
+                return BadRequest(new MessageResponse { Message = "Email is required to cancel a booking.", Code = ErrorCodes.BookingCancelEmailRequired });
             }
 
             // ConflictException (past booking) → 409 is mapped by GlobalExceptionHandler;
@@ -126,7 +126,7 @@ namespace OpenRestoApi.Controllers
             bool ok = await _bookingService.CancelBookingAsync(bookingRef, req.Email);
             if (!ok)
             {
-                return NotFound(new { message = "No booking found matching that reference and email." });
+                return NotFound(new MessageResponse { Message = "No booking found matching that reference and email.", Code = ErrorCodes.BookingLookupNotFound });
             }
             return NoContent();
         }

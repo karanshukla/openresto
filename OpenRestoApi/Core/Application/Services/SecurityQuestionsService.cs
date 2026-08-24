@@ -40,7 +40,7 @@ public sealed class SecurityQuestionsService(
     public async Task SetupAsync(string question, string answer)
     {
         AdminCredential cred = await ResolveCurrentUserAsync()
-            ?? throw new NotFoundException("No account matches the signed-in session.");
+            ?? throw new NotFoundException("No account matches the signed-in session.") { Code = ErrorCodes.AuthNoAccountForSession };
         (cred.PvqAnswerHash, cred.PvqAnswerSalt) = _passwordService.Hash(NormaliseAnswer(answer));
         cred.PvqQuestion = question.Trim();
         await _credentialRepository.SaveChangesAsync();

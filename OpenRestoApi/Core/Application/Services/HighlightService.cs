@@ -114,23 +114,23 @@ public class HighlightService(IHighlightRepository highlightRepository, IAuditSc
         title = (rawTitle ?? string.Empty).Trim();
         if (title.Length == 0)
         {
-            throw new ValidationException("Highlight title cannot be empty.");
+            throw new ValidationException("Highlight title cannot be empty.") { Code = ErrorCodes.HighlightTitleRequired };
         }
         if (title.Length > MaxTitleLength)
         {
-            throw new ValidationException($"Highlight title cannot exceed {MaxTitleLength} characters.");
+            throw new ValidationException($"Highlight title cannot exceed {MaxTitleLength} characters.") { Code = ErrorCodes.HighlightTitleTooLong };
         }
 
         body = (rawBody ?? string.Empty).Trim();
         if (body.Length > MaxBodyLength)
         {
-            throw new ValidationException($"Highlight body cannot exceed {MaxBodyLength} characters.");
+            throw new ValidationException($"Highlight body cannot exceed {MaxBodyLength} characters.") { Code = ErrorCodes.HighlightBodyTooLong };
         }
 
         iconKey = (rawIconKey ?? string.Empty).Trim();
         if (!IoniconsAllowList.AllIcons.Contains(iconKey))
         {
-            throw new ValidationException("Icon key must be one of the supported icons.");
+            throw new ValidationException("Icon key must be one of the supported icons.") { Code = ErrorCodes.IconInvalid };
         }
 
         link = NormalizeLink(rawLink);
@@ -152,7 +152,8 @@ public class HighlightService(IHighlightRepository highlightRepository, IAuditSc
         if (!UrlValidator.IsValid(trimmed, UrlValidator.WebAndContactSchemes))
         {
             throw new ValidationException(
-                "Highlight link must be a valid absolute URL (http, https, mailto, tel, or sms).");
+                "Highlight link must be a valid absolute URL (http, https, mailto, tel, or sms).")
+            { Code = ErrorCodes.HighlightLinkInvalid };
         }
         return trimmed;
     }

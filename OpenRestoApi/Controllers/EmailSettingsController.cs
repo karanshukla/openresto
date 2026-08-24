@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -68,11 +69,11 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
             bool ok = await _emailSettings.TestConnectionAsync();
             return ok
                 ? Ok(new { message = "Connection successful." })
-                : BadRequest(new { message = "Email is not configured." });
+                : BadRequest(new MessageResponse { Message = "Email is not configured.", Code = ErrorCodes.EmailNotConfigured });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = $"Connection failed: {ex.Message}" });
+            return BadRequest(new MessageResponse { Message = $"Connection failed: {ex.Message}", Code = ErrorCodes.EmailConnectionFailed });
         }
     }
 }
