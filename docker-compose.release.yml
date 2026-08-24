@@ -36,6 +36,9 @@ services:
       - Vapid__Subject=${VAPID_SUBJECT:-}
       # Optional — override the URL used in email links/images if it differs from CORS_ORIGINS
       # - WEBSITE_URL=${WEBSITE_URL:-}
+      # Optional — default UI locale served on GET /api/brand. Valid values: en, fr, es, de.
+      # Unset or unsupported falls back to en.
+      # - OPENRESTO_DEFAULT_LOCALE=${OPENRESTO_DEFAULT_LOCALE:-en}
       # Optional SMTP — leave empty to disable email
       - EmailSettings__Host=${SMTP_HOST:-}
       - EmailSettings__Port=${SMTP_PORT:-587}

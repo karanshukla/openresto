@@ -51,6 +51,24 @@ public class BrandService(
         return GetWebsiteUrl(brand);
     }
 
+    /// <summary>
+    /// Resolves the default UI locale from <c>Locale:Default</c> configuration, then the
+    /// <c>OPENRESTO_DEFAULT_LOCALE</c> environment variable, falling back to
+    /// <see cref="SupportedLocales.Default"/> when neither is set or the value isn't supported.
+    /// The unused <paramref name="brand"/> parameter mirrors <see cref="GetWebsiteUrl"/>: #376
+    /// adds <c>BrandSettings.DefaultLocale</c> as a higher-priority layer, and this signature
+    /// means that change touches this method body and no call sites.
+    /// </summary>
+    public string GetDefaultLocale(BrandSettings? brand = null)
+    {
+        string? configured = _configuration["Locale:Default"]
+            ?? Environment.GetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE");
+
+        return SupportedLocales.IsSupported(configured)
+            ? configured!.Trim().ToLowerInvariant()
+            : SupportedLocales.Default;
+    }
+
     public async Task<BrandSettings> GetAsync()
     {
         return await _brandRepository.GetAsync()
