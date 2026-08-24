@@ -12,6 +12,7 @@ import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
+import { DEFAULT_COPY } from "@/constants/defaultCopy";
 import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -79,11 +80,10 @@ export default function HomeScreen() {
   const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},0.18)`;
 
-  const DEFAULT_SUBTITLE =
-    "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!";
-  const heroSubtitle = brand.subtitle?.trim() || DEFAULT_SUBTITLE;
-  const highlightsHeading = brand.highlightsHeading?.trim() || "Restaurant highlights";
-  const highlightsSubheading = brand.highlightsSubheading?.trim() || "Curated by the owner";
+  const heroSubtitle = brand.subtitle?.trim() || DEFAULT_COPY.heroSubtitle;
+  const highlightsHeading = brand.highlightsHeading?.trim() || DEFAULT_COPY.highlightsHeading;
+  const highlightsSubheading =
+    brand.highlightsSubheading?.trim() || DEFAULT_COPY.highlightsSubheading;
 
   // "Contain" shows the whole image (avoids aggressive cropping on mobile); anything else
   // (null unset, or "Cover") keeps today's cover behaviour — no visual regression.
@@ -344,7 +344,9 @@ export default function HomeScreen() {
 
           <View style={[styles.body, isMobile && { paddingHorizontal: 16 }]}>
             <View style={styles.sectionHead}>
-              <ThemedText style={styles.sectionTitle}>Our locations</ThemedText>
+              <ThemedText style={styles.sectionTitle}>
+                {DEFAULT_COPY.locationsSectionHeading}
+              </ThemedText>
             </View>
 
             <View
