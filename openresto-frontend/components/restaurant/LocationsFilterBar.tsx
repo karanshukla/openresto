@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { fmtDateString } from "@/utils/formatters";
 import { styles } from "./LocationsFilterBar.styles";
 
 /**
@@ -38,11 +39,7 @@ export function formatBarDate(date: string, today: string, compact: boolean): st
 }
 
 function shortDate(date: string): string {
-  return new Date(date + "T12:00:00").toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  return fmtDateString(date);
 }
 
 /** Page-level party/date/meal bar for the Locations list. */

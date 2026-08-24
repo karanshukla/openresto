@@ -141,7 +141,7 @@ describe("ActivityScreen", () => {
   it("leads a row with its summary, actor and status", async () => {
     renderWithProviders(<ActivityScreen />, { withAuth: true });
     await waitFor(() => expect(screen.getByText("Cancelled REF001 at Resto A")).toBeTruthy());
-    expect(screen.getByText(/Dana · Owner · just now/)).toBeTruthy();
+    expect(screen.getByText(/Dana · Owner · now/)).toBeTruthy();
     expect(screen.getByText("200")).toBeTruthy();
   });
 

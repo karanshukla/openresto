@@ -9,6 +9,7 @@ import {
   ScheduleConflictDto,
   ScheduleConflictReason,
 } from "@/api/restaurants";
+import { fmtDateTimeInZone } from "@/utils/formatters";
 import { styles } from "./ScheduleConflictsPanel.styles";
 
 const REASON_LABELS: Record<ScheduleConflictReason, string> = {
@@ -17,14 +18,7 @@ const REASON_LABELS: Record<ScheduleConflictReason, string> = {
 };
 
 function formatSitting(dateUtc: string, timezone: string): string {
-  return new Date(dateUtc).toLocaleString(undefined, {
-    timeZone: timezone,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return fmtDateTimeInZone(dateUtc, timezone);
 }
 
 /**

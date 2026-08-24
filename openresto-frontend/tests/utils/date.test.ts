@@ -4,7 +4,9 @@ import {
   getNowInTimezone,
   formatCurrentTimeInTimezone,
   isViewerInTimezone,
+  minutesInTimezone,
 } from "@/utils/date";
+import { setActiveLocale } from "@/utils/locale";
 
 describe("date utility - convertLocalToUtc", () => {
   it("converts Toronto local time (EDT, UTC-4) to UTC", () => {
@@ -176,6 +178,47 @@ describe("date utility - isTodayInTimezone", () => {
     const now = new Date().toISOString();
     const result = isTodayInTimezone(now, "");
     expect(typeof result).toBe("boolean");
+  });
+});
+
+describe("date utility - pinned parsers stay correct under a non-English active locale", () => {
+  afterEach(() => {
+    setActiveLocale(undefined);
+  });
+
+  it("convertLocalToUtc is unaffected by the active display locale", () => {
+    setActiveLocale("fr");
+    const result = convertLocalToUtc("2026-04-18", "15:00", "America/Toronto");
+    expect(result).toBe("2026-04-18T19:00:00.000Z");
+  });
+
+  it("isTodayInTimezone is unaffected by the active display locale", () => {
+    setActiveLocale("fr");
+    const now = new Date().toISOString();
+    expect(isTodayInTimezone(now, "America/Toronto")).toBe(true);
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    expect(isTodayInTimezone(yesterday.toISOString(), "UTC")).toBe(false);
+  });
+
+  it("getNowInTimezone is unaffected by the active display locale", () => {
+    setActiveLocale("fr");
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-01-05T10:30:00Z")); // a Monday
+    try {
+      const { dateStr, hours, minutes } = getNowInTimezone("UTC");
+      expect(dateStr).toBe("2026-01-05");
+      expect(hours).toBe(10);
+      expect(minutes).toBe(30);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("minutesInTimezone is unaffected by the active display locale", () => {
+    setActiveLocale("fr");
+    expect(minutesInTimezone("2026-04-18T19:30:00Z", "UTC")).toBe(19 * 60 + 30);
   });
 });
 

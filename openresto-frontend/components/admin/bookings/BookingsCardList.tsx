@@ -9,7 +9,7 @@ import {
   focusedRowHighlight,
   rowA11yProps,
 } from "@/components/admin/bookings/bookingRowProps";
-import { initials } from "@/utils/formatters";
+import { fmtDateTime, initials } from "@/utils/formatters";
 import { BookingsSortControl } from "@/components/admin/bookings/BookingsSortControl";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
 import { Icon } from "@/components/common/Icon";
@@ -92,13 +92,7 @@ export function BookingsCardList({
                   </ThemedText>
                 ) : null}
                 <ThemedText style={[styles.tdTime, { fontSize: 13 }]}>
-                  {new Date(b.date).toLocaleString(undefined, {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {fmtDateTime(new Date(b.date))}
                 </ThemedText>
                 <View style={styles.partyPill}>
                   <Icon name="people-outline" size="xs" color={mutedColor} />

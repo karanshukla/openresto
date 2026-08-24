@@ -23,6 +23,8 @@ const WEEKDAY_TO_ISO: Record<string, number> = {
 export function getRestaurantNow(timezone: string): { totalMins: number; isoDay: number } {
   try {
     const now = new Date();
+    // Locale pinned to en-US: only the "hour"/"minute"/"weekday" part types are read below, and
+    // WEEKDAY_TO_ISO expects English weekday names, so the locale itself must stay fixed.
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
       hour: "numeric",
@@ -48,6 +50,8 @@ export function getRestaurantNow(timezone: string): { totalMins: number; isoDay:
 export function getRestaurantDate(timezone: string): string {
   try {
     const now = new Date();
+    // Locale pinned to en-US: only the "year"/"month"/"day" part types are read below, so the
+    // locale itself is irrelevant to the result — pinning keeps the part values numeric.
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
       year: "numeric",

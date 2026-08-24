@@ -1,3 +1,5 @@
+import { fmtDateTime } from "@/utils/formatters";
+
 /**
  * Shared a11y/highlight helpers for bookings-list rows — kept identical between
  * the wide-table and mobile-card layouts so keyboard-focus state can't silently
@@ -30,12 +32,7 @@ export function describeBookingRow(b: {
   seats: number;
   tableName?: string | null;
 }): string {
-  const when = new Date(b.date).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const when = fmtDateTime(new Date(b.date));
   const where = b.tableName ? `, ${b.tableName}` : "";
   return `${b.customerName ?? b.customerEmail}, ${when}, ${b.seats} guests${where}`;
 }

@@ -1,5 +1,6 @@
 import { theme } from "@/theme/theme";
 import type { NotificationType } from "@/api/notifications";
+import { fmtDateTime } from "@/utils/formatters";
 
 /** Decodes a VAPID public key (base64url) into a Uint8Array for PushManager.subscribe. */
 export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -20,13 +21,7 @@ export { relativeTime } from "@/utils/formatters";
 
 /** Locale-aware booking date for notification meta lines. */
 export function formatBookingDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return fmtDateTime(new Date(iso));
 }
 
 export const PAGE_SIZE = 20;

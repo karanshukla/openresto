@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDto } from "@/api/bookings";
+import { fmtDate, fmtTime, fmtYear } from "@/utils/formatters";
 import { styles } from "./BookingFactsBand.styles";
 
 interface BookingFactsBandProps {
@@ -18,16 +19,12 @@ type Fact = { key: string; value: string; sub?: string };
 const formatTime = (value: string): string | undefined => {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return undefined;
-  return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return fmtTime(d);
 };
 
 export function buildFacts(booking: BookingDto, compact: boolean): Fact[] {
   const date = new Date(booking.date);
-  const day = date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const day = fmtDate(date);
   const time = formatTime(booking.date) ?? "";
   const until = booking.endTime ? formatTime(booking.endTime) : undefined;
   const party = {
@@ -41,7 +38,7 @@ export function buildFacts(booking: BookingDto, compact: boolean): Fact[] {
   }
 
   return [
-    { key: "Date", value: day, sub: date.toLocaleDateString(undefined, { year: "numeric" }) },
+    { key: "Date", value: day, sub: fmtYear(date) },
     { key: "Time", value: time, sub: until ? `until ${until}` : undefined },
     party,
   ];

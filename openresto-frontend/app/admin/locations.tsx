@@ -27,6 +27,7 @@ import { ScheduleConflictsPanel } from "@/components/admin/locations/ScheduleCon
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { styles } from "@/components/admin/settings/settings.styles";
 import { Icon } from "@/components/common/Icon";
+import { fmtTime } from "@/utils/formatters";
 
 function locationCountSummary(activeCount: number, archivedCount: number): string {
   if (activeCount + archivedCount === 0) return "No locations configured";
@@ -117,10 +118,7 @@ export default function AdminLocationsScreen() {
     : false;
   const pausedUntilText =
     isPaused && selectedSummary?.bookingsPausedUntil
-      ? new Date(selectedSummary.bookingsPausedUntil).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
+      ? fmtTime(new Date(selectedSummary.bookingsPausedUntil))
       : null;
   const archivedCount = allRestaurants.filter((r) => r.isArchived).length;
 

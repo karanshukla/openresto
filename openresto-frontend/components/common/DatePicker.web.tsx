@@ -8,6 +8,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { clampToRange, resolveCalendarKey, shiftCalendarMonths } from "@/utils/calendarKeys";
 import { GRIDCELL_ROLE, webProps, type WebKeyEvent } from "@/utils/webProps";
+import { fmtDateString, fmtLongDate } from "@/utils/formatters";
 import { styles } from "./DatePicker.web.styles";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -223,21 +224,9 @@ export default function DatePicker({
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const selectedLabel = selectedDate
-    ? new Date(selectedDate + "T12:00:00").toLocaleDateString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      })
-    : null;
+  const selectedLabel = selectedDate ? fmtDateString(selectedDate) : null;
 
-  const describeDate = (d: Date) =>
-    d.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+  const describeDate = (d: Date) => fmtLongDate(d);
 
   return (
     <View style={styles.wrapper} testID="date-picker-web">
