@@ -28,7 +28,8 @@ public static class ContactFields
         if (trimmed.Length > ContactLimits.MaxPhoneLength)
         {
             throw new ValidationException(
-                $"Phone number cannot exceed {ContactLimits.MaxPhoneLength} characters.");
+                $"Phone number cannot exceed {ContactLimits.MaxPhoneLength} characters.")
+            { Code = ErrorCodes.ContactPhoneTooLong };
         }
 
         return trimmed;
@@ -51,12 +52,13 @@ public static class ContactFields
         if (trimmed.Length > ContactLimits.MaxEmailLength)
         {
             throw new ValidationException(
-                $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.");
+                $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.")
+            { Code = ErrorCodes.ContactEmailTooLong };
         }
 
         if (!EmailValidator.IsValid(trimmed))
         {
-            throw new ValidationException("Email address must be a valid email address.");
+            throw new ValidationException("Email address must be a valid email address.") { Code = ErrorCodes.ContactEmailInvalid };
         }
 
         return trimmed;

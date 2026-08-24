@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Core.Application.DTOs;
@@ -202,6 +203,14 @@ public class AdminRestaurantPatchRequest
 public class MessageResponse
 {
     public string Message { get; set; } = null!;
+
+    /// <summary>
+    /// Stable machine-readable identifier for the rule behind <see cref="Message"/> (see
+    /// <see cref="ErrorCodes"/>). Additive: omitted from the JSON entirely when null, so existing
+    /// response snapshots that only ever saw "message" do not shift.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Code { get; set; }
 }
 
 public class PvqStatusDto

@@ -77,18 +77,18 @@ public static class OpeningHoursHelper
         {
             if (entry.Day < 1 || entry.Day > 7)
             {
-                throw new ValidationException("OpenHours entries must use ISO day numbers 1 (Monday) through 7 (Sunday).");
+                throw new ValidationException("OpenHours entries must use ISO day numbers 1 (Monday) through 7 (Sunday).") { Code = ErrorCodes.RestaurantOpenHoursDayInvalid };
             }
 
             if (byDay.ContainsKey(entry.Day))
             {
-                throw new ValidationException($"OpenHours contains more than one entry for day {entry.Day}.");
+                throw new ValidationException($"OpenHours contains more than one entry for day {entry.Day}.") { Code = ErrorCodes.RestaurantOpenHoursDuplicateDay };
             }
 
             if (!TryParseTime(entry.Open, out int openH, out int openM)
                 || !TryParseTime(entry.Close, out int closeH, out int closeM))
             {
-                throw new ValidationException("OpenHours times must be valid HH:mm values (00:00–23:59).");
+                throw new ValidationException("OpenHours times must be valid HH:mm values (00:00–23:59).") { Code = ErrorCodes.RestaurantOpenHoursTimeInvalid };
             }
 
             byDay[entry.Day] = new DayHours

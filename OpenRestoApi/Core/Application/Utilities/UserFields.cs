@@ -23,14 +23,15 @@ public static class UserFields
     {
         if (!EmailValidator.IsValid(email))
         {
-            throw new ValidationException("A valid email address is required.");
+            throw new ValidationException("A valid email address is required.") { Code = ErrorCodes.UserEmailInvalid };
         }
 
         string normalized = email!.Trim().ToLowerInvariant();
         if (normalized.Length > ContactLimits.MaxEmailLength)
         {
             throw new ValidationException(
-                $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.");
+                $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.")
+            { Code = ErrorCodes.UserEmailTooLong };
         }
 
         return normalized;
@@ -52,7 +53,8 @@ public static class UserFields
         if (trimmed.Length > MaxDisplayNameLength)
         {
             throw new ValidationException(
-                $"Display name cannot exceed {MaxDisplayNameLength} characters.");
+                $"Display name cannot exceed {MaxDisplayNameLength} characters.")
+            { Code = ErrorCodes.UserDisplayNameTooLong };
         }
 
         return trimmed;
@@ -71,7 +73,7 @@ public static class UserFields
     {
         if (string.IsNullOrEmpty(password) || password.Length < MinPasswordLength)
         {
-            throw new ValidationException($"Password must be at least {MinPasswordLength} characters.");
+            throw new ValidationException($"Password must be at least {MinPasswordLength} characters.") { Code = ErrorCodes.UserPasswordTooShort };
         }
     }
 
@@ -80,6 +82,7 @@ public static class UserFields
     {
         return UserRoles.Normalise(role)
             ?? throw new ValidationException(
-                $"Role must be one of: {string.Join(", ", UserRoles.Assignable.Order())}.");
+                $"Role must be one of: {string.Join(", ", UserRoles.Assignable.Order())}.")
+            { Code = ErrorCodes.UserRoleInvalid };
     }
 }

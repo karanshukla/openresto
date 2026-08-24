@@ -48,7 +48,7 @@ public sealed class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(
-            new MessageResponse { Message = message },
+            new MessageResponse { Message = message, Code = (exception as OpenRestoException)?.Code },
             cancellationToken);
 
         return true; // marked handled — default ProblemDetails handler is skipped

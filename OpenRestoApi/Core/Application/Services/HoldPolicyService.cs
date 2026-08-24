@@ -33,7 +33,7 @@ public sealed class HoldPolicyService(
             tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
         if (alreadyBooked)
         {
-            return HoldPolicyResult.Booked("This table is already booked for that time.");
+            return HoldPolicyResult.Booked("This table is already booked for that time.", ErrorCodes.BookingTableConflict);
         }
 
         return restaurantPolicy;
@@ -69,27 +69,29 @@ public sealed class HoldPolicyService(
         // 3. Past-date guard (same 5-min tolerance as booking create/cancel).
         if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
         {
-            return HoldPolicyResult.Rejected("Cannot hold a table for a past time.");
+            return HoldPolicyResult.Rejected("Cannot hold a table for a past time.", ErrorCodes.BookingPastDate);
         }
 
         // 4. Pause window — scoped to the sittings inside it, not to every future date.
         if (restaurant.IsPausedFor(bookingDate))
         {
-            return HoldPolicyResult.Rejected(PauseHelper.RejectionMessage(restaurant));
+            return HoldPolicyResult.Rejected(PauseHelper.RejectionMessage(restaurant), ErrorCodes.BookingPaused);
         }
 
         // 5. Walk-in-only policy (location-wide or per ISO day).
         if (restaurant.IsWalkInOnlyAt(bookingDate))
         {
-            return HoldPolicyResult.Rejected(restaurant.WalkInOnly
-                ? "This location accepts walk-ins only and does not take online bookings."
-                : "This location accepts walk-ins only on the selected day.");
+            return HoldPolicyResult.Rejected(
+                restaurant.WalkInOnly
+                    ? "This location accepts walk-ins only and does not take online bookings."
+                    : "This location accepts walk-ins only on the selected day.",
+                restaurant.WalkInOnly ? ErrorCodes.BookingWalkInOnly : ErrorCodes.BookingWalkInOnlyToday);
         }
 
         // 6. Operating hours / open days.
         if (!restaurant.IsOpenAt(bookingDate))
         {
-            return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.");
+            return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.", ErrorCodes.RestaurantClosedAtTime);
         }
 
         return HoldPolicyResult.Eligible(restaurant, bookingDate);

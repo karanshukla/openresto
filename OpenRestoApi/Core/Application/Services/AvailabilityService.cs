@@ -18,7 +18,7 @@ public sealed class AvailabilityService(
     public async Task<AvailabilityResponseDto> GetAvailabilityAsync(int restaurantId, DateTime bookingDate, int seats)
     {
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId)
-            ?? throw new NotFoundException("Restaurant not found.");
+            ?? throw new NotFoundException("Restaurant not found.") { Code = ErrorCodes.RestaurantNotFound };
 
         TimeZoneInfo tz = TimeZoneHelper.Resolve(restaurant.Timezone);
 

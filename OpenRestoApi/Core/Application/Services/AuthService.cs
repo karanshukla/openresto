@@ -83,11 +83,11 @@ public class AuthService(
         if (cred == null || !CredentialHelper.VerifyPassword(cred, currentPassword, _passwordService))
             return null;
         if (string.Equals(normalizedEmail, cred.Email, StringComparison.OrdinalIgnoreCase))
-            throw new BusinessRuleException("New email must be different from the current email.");
+            throw new BusinessRuleException("New email must be different from the current email.") { Code = ErrorCodes.AuthEmailUnchanged };
 
         AdminCredential? existing = await _credentialRepository.GetByEmailAsync(normalizedEmail);
         if (existing != null && existing.Id != cred.Id)
-            throw new BusinessRuleException("That email address is already in use.");
+            throw new BusinessRuleException("That email address is already in use.") { Code = ErrorCodes.AuthEmailAlreadyInUse };
 
         string previousEmail = cred.Email;
         cred.Email = normalizedEmail;

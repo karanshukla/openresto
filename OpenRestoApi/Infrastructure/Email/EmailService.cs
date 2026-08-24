@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -42,7 +43,7 @@ public class EmailService(AppDbContext db, CredentialProtector protector, Func<I
     public async Task SendEmailAsync(string recipient, string subject, string htmlBody)
     {
         EmailSettings settings = await GetSettingsAsync()
-            ?? throw new InfrastructureException("Email is not configured.");
+            ?? throw new InfrastructureException("Email is not configured.") { Code = ErrorCodes.EmailNotConfigured };
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(

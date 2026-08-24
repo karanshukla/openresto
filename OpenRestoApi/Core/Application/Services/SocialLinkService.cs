@@ -101,28 +101,29 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository, IAudi
         label = (rawLabel ?? string.Empty).Trim();
         if (label.Length == 0)
         {
-            throw new ValidationException("Social link label cannot be empty.");
+            throw new ValidationException("Social link label cannot be empty.") { Code = ErrorCodes.SocialLinkLabelRequired };
         }
         if (label.Length > MaxLabelLength)
         {
-            throw new ValidationException($"Social link label cannot exceed {MaxLabelLength} characters.");
+            throw new ValidationException($"Social link label cannot exceed {MaxLabelLength} characters.") { Code = ErrorCodes.SocialLinkLabelTooLong };
         }
 
         url = (rawUrl ?? string.Empty).Trim();
         if (url.Length == 0)
         {
-            throw new ValidationException("Social link URL cannot be empty.");
+            throw new ValidationException("Social link URL cannot be empty.") { Code = ErrorCodes.SocialLinkUrlRequired };
         }
         if (!UrlValidator.IsValid(url, UrlValidator.WebAndContactSchemes))
         {
             throw new ValidationException(
-                "Social link URL must be a valid absolute URL (http, https, mailto, tel, or sms).");
+                "Social link URL must be a valid absolute URL (http, https, mailto, tel, or sms).")
+            { Code = ErrorCodes.SocialLinkUrlInvalid };
         }
 
         iconKey = (rawIconKey ?? string.Empty).Trim();
         if (!IoniconsAllowList.AllIcons.Contains(iconKey))
         {
-            throw new ValidationException("Icon key must be one of the supported icons.");
+            throw new ValidationException("Icon key must be one of the supported icons.") { Code = ErrorCodes.IconInvalid };
         }
     }
 }

@@ -95,17 +95,17 @@ public class BrandService(
     {
         if (appName != null && appName.Length > 32)
         {
-            throw new ValidationException("App name cannot exceed 32 characters.");
+            throw new ValidationException("App name cannot exceed 32 characters.") { Code = ErrorCodes.BrandAppNameTooLong };
         }
 
         if (primaryColor != null && !IsValidHexColor(primaryColor))
         {
-            throw new ValidationException("Invalid primary color hex code.");
+            throw new ValidationException("Invalid primary color hex code.") { Code = ErrorCodes.BrandPrimaryColorInvalid };
         }
 
         if (accentColor != null && !IsValidHexColor(accentColor))
         {
-            throw new ValidationException("Invalid accent color hex code.");
+            throw new ValidationException("Invalid accent color hex code.") { Code = ErrorCodes.BrandAccentColorInvalid };
         }
 
         // Blank clears the icon (the picker's deselect); a non-blank value must be one we can draw.
@@ -113,27 +113,27 @@ public class BrandService(
             && !string.IsNullOrWhiteSpace(faviconIcon)
             && LucideIconPaths.Get(faviconIcon) == null)
         {
-            throw new ValidationException("Invalid favicon icon.");
+            throw new ValidationException("Invalid favicon icon.") { Code = ErrorCodes.BrandFaviconInvalid };
         }
 
         if (copyrightText != null && copyrightText.Length > 200)
         {
-            throw new ValidationException("Copyright text cannot exceed 200 characters.");
+            throw new ValidationException("Copyright text cannot exceed 200 characters.") { Code = ErrorCodes.BrandCopyrightTooLong };
         }
 
         if (subtitle != null && subtitle.Length > 160)
         {
-            throw new ValidationException("Subtitle cannot exceed 160 characters.");
+            throw new ValidationException("Subtitle cannot exceed 160 characters.") { Code = ErrorCodes.BrandSubtitleTooLong };
         }
 
         if (highlightsHeading != null && highlightsHeading.Length > 60)
         {
-            throw new ValidationException("Highlights heading cannot exceed 60 characters.");
+            throw new ValidationException("Highlights heading cannot exceed 60 characters.") { Code = ErrorCodes.BrandHighlightsHeadingTooLong };
         }
 
         if (highlightsSubheading != null && highlightsSubheading.Length > 60)
         {
-            throw new ValidationException("Highlights subheading cannot exceed 60 characters.");
+            throw new ValidationException("Highlights subheading cannot exceed 60 characters.") { Code = ErrorCodes.BrandHighlightsSubheadingTooLong };
         }
 
         // Empty string clears the fit (falls back to the default "Cover"); a non-empty value
@@ -143,7 +143,8 @@ public class BrandService(
             && !AllowedHeaderImageFits.Contains(headerImageFit))
         {
             throw new ValidationException(
-                $"HeaderImageFit must be one of: {string.Join(", ", AllowedHeaderImageFits.Order())}.");
+                $"HeaderImageFit must be one of: {string.Join(", ", AllowedHeaderImageFits.Order())}.")
+            { Code = ErrorCodes.BrandHeaderImageFitInvalid };
         }
 
         BrandSettings? brand = await _brandRepository.GetAsync();

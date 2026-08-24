@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
@@ -111,7 +112,7 @@ public class AuthController(
     public async Task<IActionResult> SetupPvq([FromBody] SetupPvqRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Question) || string.IsNullOrWhiteSpace(req.Answer))
-            return BadRequest(new { message = "Question and answer are required." });
+            throw new ValidationException("Question and answer are required.") { Code = ErrorCodes.AuthPvqFieldsRequired };
 
         await _securityQuestions.SetupAsync(req.Question, req.Answer);
         return Ok(new { message = "Security question configured." });
@@ -123,7 +124,7 @@ public class AuthController(
         PvqVerifyOutcome outcome = await _securityQuestions.VerifyAsync(req.Email, req.Answer);
         return outcome.Status switch
         {
-            PvqVerifyStatus.NotConfigured => BadRequest(new { message = "Security question not configured for this account." }),
+            PvqVerifyStatus.NotConfigured => throw new ValidationException("Security question not configured for this account.") { Code = ErrorCodes.AuthPvqNotConfigured },
             PvqVerifyStatus.WrongAnswer => Unauthorized(new { message = "Incorrect answer." }),
             _ => Ok(new { resetToken = outcome.ResetToken })
         };
@@ -135,7 +136,7 @@ public class AuthController(
         // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
         bool ok = await _authService.ResetPasswordAsync(req.ResetToken, req.NewPassword);
         if (!ok)
-            return BadRequest(new { message = "Invalid or expired reset token." });
+            throw new ValidationException("Invalid or expired reset token.") { Code = ErrorCodes.AuthInvalidResetToken };
         return Ok(new { message = "Password reset successfully." });
     }
 }

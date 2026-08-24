@@ -33,7 +33,7 @@ public class BookingService(
     public virtual async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
         Restaurant restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId)
-            ?? throw new NotFoundException("Restaurant not found.");
+            ?? throw new NotFoundException("Restaurant not found.") { Code = ErrorCodes.RestaurantNotFound };
 
         // An Unspecified date is the restaurant's local time; every check below runs on UTC.
         DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(bookingDto.Date, restaurant.Timezone);
@@ -51,7 +51,7 @@ public class BookingService(
             bool ambiguousSelection = bookingDto.TableId is null ^ bookingDto.SectionId is null;
             if (ambiguousSelection)
             {
-                throw new ValidationException("Specify both TableId and SectionId, or neither for auto-assign.");
+                throw new ValidationException("Specify both TableId and SectionId, or neither for auto-assign.") { Code = ErrorCodes.BookingAmbiguousTableSelection };
             }
 
             await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
@@ -70,7 +70,7 @@ public class BookingService(
             tableId, tableGroupId: null, bookingDate, restaurant.DefaultBookingDurationMinutes);
         if (alreadyBooked)
         {
-            throw new ConflictException("This table is already booked for that time.");
+            throw new ConflictException("This table is already booked for that time.") { Code = ErrorCodes.BookingTableConflict };
         }
 
         bool heldByOther = _holdService.IsTableHeld(
@@ -78,7 +78,7 @@ public class BookingService(
             durationMinutes: restaurant.DefaultBookingDurationMinutes);
         if (heldByOther)
         {
-            throw new ConflictException("This table is currently being held by another user. Please try again shortly.");
+            throw new ConflictException("This table is currently being held by another user. Please try again shortly.") { Code = ErrorCodes.BookingTableHeld };
         }
 
         Table? table = await _tableRepository.GetByIdAsync(tableId);
@@ -115,19 +115,20 @@ public class BookingService(
     {
         if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
         {
-            throw new ConflictException("Cannot create a booking in the past.");
+            throw new ConflictException("Cannot create a booking in the past.") { Code = ErrorCodes.BookingPastDate };
         }
 
         if (restaurant.IsPausedFor(bookingDate))
         {
-            throw new ConflictException(PauseHelper.RejectionMessage(restaurant));
+            throw new ConflictException(PauseHelper.RejectionMessage(restaurant)) { Code = ErrorCodes.BookingPaused };
         }
 
         if (restaurant.IsWalkInOnlyAt(bookingDate))
         {
             throw new ConflictException(restaurant.WalkInOnly
                 ? "This location accepts walk-ins only and does not take online bookings."
-                : "This location accepts walk-ins only on the selected day. Please choose another day or just come in.");
+                : "This location accepts walk-ins only on the selected day. Please choose another day or just come in.")
+            { Code = restaurant.WalkInOnly ? ErrorCodes.BookingWalkInOnly : ErrorCodes.BookingWalkInOnlyToday };
         }
     }
 
@@ -140,7 +141,8 @@ public class BookingService(
         if (seats < BookingLimits.MinSeats || seats > BookingLimits.MaxSeats)
         {
             throw new ValidationException(
-                $"Party size must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.");
+                $"Party size must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.")
+            { Code = ErrorCodes.BookingPartySizeOutOfRange };
         }
     }
 
@@ -153,13 +155,14 @@ public class BookingService(
 
         if (seats > table.Seats)
         {
-            throw new ConflictException($"This table only has {table.Seats} seats, but {seats} guests were requested.");
+            throw new ConflictException($"This table only has {table.Seats} seats, but {seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
         }
 
         if (restaurant?.ExceedsOversizeCap(table.Seats, seats) == true)
         {
             throw new ConflictException(
-                $"This table has {table.Seats} seats, which is too large for a party of {seats}.");
+                $"This table has {table.Seats} seats, which is too large for a party of {seats}.")
+            { Code = ErrorCodes.TableOversizeCap };
         }
     }
 
@@ -196,7 +199,7 @@ public class BookingService(
 
         if (candidates.Count == 0)
         {
-            throw new ConflictException("No tables are available for the requested time and party size.");
+            throw new ConflictException("No tables are available for the requested time and party size.") { Code = ErrorCodes.BookingNoTablesAvailable };
         }
 
         AutoAssignResult assigned = _holdService.PlaceAutoHold(
@@ -205,7 +208,7 @@ public class BookingService(
             bookingDate,
             currentHoldId: bookingDto.HoldId,
             restaurant.DefaultBookingDurationMinutes)
-            ?? throw new ConflictException("All suitable tables are currently being held by other users. Please try again shortly.");
+            ?? throw new ConflictException("All suitable tables are currently being held by other users. Please try again shortly.") { Code = ErrorCodes.BookingAllTablesHeld };
 
         if (assigned.IsGroup)
         {
@@ -282,7 +285,7 @@ public class BookingService(
     private async Task<BookingDto> CreateGroupBookingAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
     {
         TableGroup group = await _tableGroupRepository.GetByIdWithMembersAsync(bookingDto.TableGroupId!.Value, restaurant.Id)
-            ?? throw new NotFoundException("The selected table group no longer exists.");
+            ?? throw new NotFoundException("The selected table group no longer exists.") { Code = ErrorCodes.TableGroupNotFound };
 
         RejectIfGroupCannotSeat(group, restaurant, bookingDto.Seats);
 
@@ -296,14 +299,14 @@ public class BookingService(
             tableId: null, tableGroupId: group.Id, bookingDate, durationMinutes);
         if (groupConflict)
         {
-            throw new ConflictException("One of the combined tables is already booked for that time.");
+            throw new ConflictException("One of the combined tables is already booked for that time.") { Code = ErrorCodes.TableGroupBookingConflict };
         }
 
         bool anyMemberHeldByOther = memberIds.Any(id => _holdService.IsTableHeld(
             id, bookingDate, excludeHoldId: bookingDto.HoldId, durationMinutes: durationMinutes));
         if (anyMemberHeldByOther)
         {
-            throw new ConflictException("One of the combined tables is currently being held by another user. Please try again shortly.");
+            throw new ConflictException("One of the combined tables is currently being held by another user. Please try again shortly.") { Code = ErrorCodes.TableGroupHoldConflict };
         }
 
         Booking booking = _mapper.ToEntity(bookingDto);
@@ -336,19 +339,21 @@ public class BookingService(
         // unit, and its stored CombinedSeats no longer describes anything real.
         if (group.Members.Count < 2)
         {
-            throw new ConflictException("These tables can no longer be combined. Please pick another time or table.");
+            throw new ConflictException("These tables can no longer be combined. Please pick another time or table.") { Code = ErrorCodes.TableGroupDisbanded };
         }
 
         if (seats > group.CombinedSeats)
         {
             throw new ConflictException(
-                $"This group only has {group.CombinedSeats} combined seats, but {seats} guests were requested.");
+                $"This group only has {group.CombinedSeats} combined seats, but {seats} guests were requested.")
+            { Code = ErrorCodes.TableGroupSeatsExceeded };
         }
 
         if (restaurant.ExceedsOversizeCap(group.CombinedSeats, seats))
         {
             throw new ConflictException(
-                $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {seats}.");
+                $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {seats}.")
+            { Code = ErrorCodes.TableGroupOversizeCap };
         }
     }
 
@@ -423,7 +428,7 @@ public class BookingService(
 
         if (!booking.CanBeCancelledAt(DateTime.UtcNow))
         {
-            throw new ConflictException("Cannot cancel a booking that has already passed.");
+            throw new ConflictException("Cannot cancel a booking that has already passed.") { Code = ErrorCodes.BookingAlreadyPast };
         }
 
         booking.IsCancelled = true;

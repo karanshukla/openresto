@@ -187,11 +187,11 @@ public class AdminService(
     public virtual async Task<BookingDetailDto> CreateBookingAsync(AdminCreateBookingRequest req)
     {
         Table table = await _tableRepository.GetWithSectionRestaurantAsync(req.TableId, req.SectionId)
-            ?? throw new ValidationException("Table not found in the specified section.");
+            ?? throw new ValidationException("Table not found in the specified section.") { Code = ErrorCodes.BookingTableNotInSection };
 
         if (table.Section!.RestaurantId != req.RestaurantId)
         {
-            throw new ValidationException("Section does not belong to this restaurant.");
+            throw new ValidationException("Section does not belong to this restaurant.") { Code = ErrorCodes.BookingSectionMismatch };
         }
 
         DateTime newStart = TimeZoneHelper.ConvertLocalToUtc(req.Date, table.Section.Restaurant!.Timezone);
@@ -203,12 +203,12 @@ public class AdminService(
 
         if (conflict)
         {
-            throw new ConflictException("This table already has a booking that overlaps with the requested time.");
+            throw new ConflictException("This table already has a booking that overlaps with the requested time.") { Code = ErrorCodes.BookingTableConflict };
         }
 
         if (req.Seats > table.Seats)
         {
-            throw new ConflictException($"This table only has {table.Seats} seats, but {req.Seats} guests were requested.");
+            throw new ConflictException($"This table only has {table.Seats} seats, but {req.Seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
         }
 
         var booking = new Booking
@@ -277,7 +277,7 @@ public class AdminService(
 
         if (!booking.IsCancelled && !booking.CanBeCancelledAt(DateTime.UtcNow))
         {
-            throw new ConflictException("Cannot cancel a booking that has already passed.");
+            throw new ConflictException("Cannot cancel a booking that has already passed.") { Code = ErrorCodes.BookingAlreadyPast };
         }
 
         booking.IsCancelled = true;
@@ -320,7 +320,7 @@ public class AdminService(
 
         if (!booking.IsCancelled)
         {
-            throw new BusinessRuleException("Booking is already active.");
+            throw new BusinessRuleException("Booking is already active.") { Code = ErrorCodes.BookingAlreadyActive };
         }
 
         booking.IsCancelled = false;
@@ -349,7 +349,7 @@ public class AdminService(
             Restaurant? newRestaurant = await _restaurantRepository.FindByIdAsync(req.RestaurantId.Value);
             if (newRestaurant == null)
             {
-                throw new ValidationException("Invalid restaurant.");
+                throw new ValidationException("Invalid restaurant.") { Code = ErrorCodes.RestaurantNotFound };
             }
             booking.RestaurantId = req.RestaurantId.Value;
             restaurant = newRestaurant;
@@ -363,14 +363,14 @@ public class AdminService(
 
             if (table == null)
             {
-                throw new ValidationException("Invalid table for this restaurant.");
+                throw new ValidationException("Invalid table for this restaurant.") { Code = ErrorCodes.BookingInvalidTableForRestaurant };
             }
             booking.TableId = req.TableId.Value;
             booking.SectionId = table.SectionId;
         }
         else if (req.SectionId.HasValue && req.SectionId.Value != booking.SectionId)
         {
-            throw new ValidationException("Provide tableId when reassigning to a different section.");
+            throw new ValidationException("Provide tableId when reassigning to a different section.") { Code = ErrorCodes.BookingTableIdRequiredForSectionChange };
         }
 
         if (req.Date.HasValue && req.Date.Value != booking.Date)
@@ -393,7 +393,7 @@ public class AdminService(
                 Table? currentTable = await _tableRepository.FindByIdAsync(resolvedTableId.Value);
                 if (currentTable != null && req.Seats.Value > currentTable.Seats)
                 {
-                    throw new BusinessRuleException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.");
+                    throw new BusinessRuleException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
                 }
             }
             booking.Seats = req.Seats.Value;
@@ -521,7 +521,7 @@ public class AdminService(
 
         if (taken)
         {
-            throw new BusinessRuleException("This update would cause a conflict with an existing booking.");
+            throw new BusinessRuleException("This update would cause a conflict with an existing booking.") { Code = ErrorCodes.BookingMoveConflict };
         }
     }
 
@@ -704,7 +704,8 @@ public class AdminService(
         if (!restaurant.IsArchived)
         {
             throw new BusinessRuleException(
-                "Archive this location before deleting it. Archiving takes it off the public site and can be undone; deleting cannot.");
+                "Archive this location before deleting it. Archiving takes it off the public site and can be undone; deleting cannot.")
+            { Code = ErrorCodes.RestaurantArchiveBeforeDelete };
         }
 
         // Cascade-delete all bookings for this restaurant (cancelled and active alike), then the restaurant row,
