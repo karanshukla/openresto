@@ -6,19 +6,10 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getThemeColors, theme } from "@/theme/theme";
 import { buildFaviconDataUri } from "@/constants/faviconIcons";
+import { DEFAULT_COPY } from "@/constants/defaultCopy";
 import { hexToRgb } from "@/utils/colors";
 import { useBrandDraft } from "./BrandDraftContext";
 import { styles, domStyles } from "./BrandPreview.styles";
-
-/**
- * The home page's own fallback copy. Duplicated rather than imported because `app/(user)/index`
- * is a route module — importing it here would pull the whole customer screen into the admin
- * bundle. Keep the two in step; a drift shows up as a preview that lies about the default.
- */
-const DEFAULT_SUBTITLE =
-  "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!";
-const DEFAULT_HIGHLIGHTS_HEADING = "Restaurant highlights";
-const DEFAULT_HIGHLIGHTS_SUBHEADING = "Curated by the owner";
 
 const PLACEHOLDER_LOCATIONS = ["Riverside", "Old Town", "Harbour"];
 
@@ -52,9 +43,10 @@ export function BrandPreview({
 
   const hasHero = !!draft.headerImageUrl && Platform.OS === "web";
   const heroContain = draft.headerImageFit?.toLowerCase() === "contain";
-  const subtitle = draft.subtitle.trim() || DEFAULT_SUBTITLE;
-  const highlightsHeading = draft.highlightsHeading.trim() || DEFAULT_HIGHLIGHTS_HEADING;
-  const highlightsSubheading = draft.highlightsSubheading.trim() || DEFAULT_HIGHLIGHTS_SUBHEADING;
+  const subtitle = draft.subtitle.trim() || DEFAULT_COPY.heroSubtitle;
+  const highlightsHeading = draft.highlightsHeading.trim() || DEFAULT_COPY.highlightsHeading;
+  const highlightsSubheading =
+    draft.highlightsSubheading.trim() || DEFAULT_COPY.highlightsSubheading;
   const copyright =
     draft.copyrightText.trim() ||
     `© ${new Date().getFullYear()} ${draft.appName}. All rights reserved.`;
@@ -267,7 +259,7 @@ export function BrandPreview({
 
             <View style={styles.locations}>
               <ThemedText style={[styles.locationsTitle, { color: site.text }]}>
-                Our locations
+                {DEFAULT_COPY.locationsSectionHeading}
               </ThemedText>
               <View style={styles.locationsRow}>
                 {PLACEHOLDER_LOCATIONS.map((name) => (

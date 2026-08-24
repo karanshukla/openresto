@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, ActivityIndicator, Animated, Easing, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { DEFAULT_COPY } from "@/constants/defaultCopy";
 import { Brand } from "@/types";
 import { styles } from "./LoadingScreen.styles";
 
@@ -12,7 +13,7 @@ interface LoadingScreenProps {
 
 export default function LoadingScreen({
   brand,
-  message = "Preparing your table...",
+  message = DEFAULT_COPY.loadingMessage,
 }: LoadingScreenProps) {
   const { colors } = useAppTheme();
 
