@@ -368,4 +368,99 @@ public class BrandServiceTests
 
         Assert.Equal("https://persisted.example.com", result);
     }
+
+    // ── GetDefaultLocale (#371) ────────────────────────────────────────────────
+
+    [Fact]
+    public void GetDefaultLocale_UsesEnvVar_WhenSupported()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_UsesEnvVar_WhenSupported)));
+        Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", "fr");
+
+        try
+        {
+            string result = svc.GetDefaultLocale();
+            Assert.Equal("fr", result);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
+        }
+    }
+
+    [Fact]
+    public void GetDefaultLocale_FallsBackToEnglish_WhenEnvVarUnsupported()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_FallsBackToEnglish_WhenEnvVarUnsupported)));
+        Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", "klingon");
+
+        try
+        {
+            string result = svc.GetDefaultLocale();
+            Assert.Equal("en", result);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
+        }
+    }
+
+    [Fact]
+    public void GetDefaultLocale_FallsBackToEnglish_WhenUnset()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_FallsBackToEnglish_WhenUnset)));
+        Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
+
+        string result = svc.GetDefaultLocale();
+
+        Assert.Equal("en", result);
+    }
+
+    [Fact]
+    public void GetDefaultLocale_ConfigTakesPriority_OverEnvVar()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Locale:Default"]).Returns("de");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_ConfigTakesPriority_OverEnvVar)), config.Object);
+        Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", "es");
+
+        try
+        {
+            string result = svc.GetDefaultLocale();
+            Assert.Equal("de", result);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
+        }
+    }
+
+    [Fact]
+    public void GetDefaultLocale_NormalisesCaseAndWhitespace()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Locale:Default"]).Returns("  ES  ");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_NormalisesCaseAndWhitespace)), config.Object);
+
+        string result = svc.GetDefaultLocale();
+
+        Assert.Equal("es", result);
+    }
+
+    [Fact]
+    public void GetDefaultLocale_UnusedBrandParameter_DoesNotAffectResolution()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetDefaultLocale_UnusedBrandParameter_DoesNotAffectResolution)));
+        Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", "fr");
+
+        try
+        {
+            string result = svc.GetDefaultLocale(new BrandSettings { AppName = "Ignored" });
+            Assert.Equal("fr", result);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
+        }
+    }
 }

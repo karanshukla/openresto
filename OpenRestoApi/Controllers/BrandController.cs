@@ -35,6 +35,7 @@ public class BrandController(BrandService brandService) : ControllerBase
             HighlightsHeading = brand.HighlightsHeading,
             HighlightsSubheading = brand.HighlightsSubheading,
             HeaderImageFit = brand.HeaderImageFit,
+            DefaultLocale = _brand.GetDefaultLocale(brand),
         });
     }
 
@@ -163,4 +164,5 @@ public class BrandResponse
     public string? HighlightsHeading { get; set; }
     public string? HighlightsSubheading { get; set; }
     public string? HeaderImageFit { get; set; }
+    public string DefaultLocale { get; set; } = SupportedLocales.Default;
 }
