@@ -6,6 +6,7 @@ import { ThemeColors } from "@/theme/theme";
 import { CachedBooking } from "@/utils/bookingCache";
 import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { fmtMonthDay } from "@/utils/formatters";
 import { styles } from "./RecentBookingsList.styles";
 
 /** How many rows show before the list collapses behind a Show all control. */
@@ -65,10 +66,7 @@ export default function RecentBookingsList({
                 <ThemedText style={styles.ref}>{c.bookingRef}</ThemedText>
                 <ThemedText style={[styles.meta, { color: colors.muted }]}>
                   {c.restaurantName ? `${c.restaurantName} · ` : ""}
-                  {new Date(c.date).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {fmtMonthDay(new Date(c.date))}
                   {" · "}
                   {c.seats} guest{c.seats !== 1 ? "s" : ""}
                 </ThemedText>

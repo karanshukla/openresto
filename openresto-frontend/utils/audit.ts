@@ -1,6 +1,7 @@
 import type { AdminAuditEntryDto } from "@/api/audit";
 import type { IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
+import { fmtTimestamp } from "@/utils/formatters";
 
 /**
  * What the API sends in place of a protected field's value (credentials, customer identity).
@@ -202,7 +203,7 @@ export function httpLine(
 
 /** Full local timestamp for the expanded detail, where "3h ago" is no longer precise enough. */
 export function formatExactTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" });
+  return fmtTimestamp(iso);
 }
 
 /**

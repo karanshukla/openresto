@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import { SubLabel } from "./settingsShared";
 import type { EmailFailureDto } from "@/api/admin";
 import { Icon } from "@/components/common/Icon";
+import { fmtDateTime } from "@/utils/formatters";
 import { styles } from "./EmailFailuresList.styles";
 
 export interface EmailFailuresListProps {
@@ -33,12 +34,7 @@ export function EmailFailuresList({
       <View style={[styles.list, { borderColor: dangerBorder, backgroundColor: dangerSoft }]}>
         {failures.map((f, i) => {
           const date = new Date(f.attemptedAt);
-          const dateStr = date.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
+          const dateStr = fmtDateTime(date);
           return (
             <View
               key={f.id}

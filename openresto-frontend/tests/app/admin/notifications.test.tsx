@@ -475,14 +475,24 @@ describe("NotificationsScreen", () => {
     await waitFor(() => expect(screen.getByText(/3h ago/)).toBeTruthy());
   });
 
-  it("relativeTime shows 'Xd ago' for notifications created days ago", async () => {
-    const twoDaysAgo = new Date(Date.now() - 25 * 3600000).toISOString();
+  it("relativeTime shows 'yesterday' for notifications created a day ago", async () => {
+    const oneDayAgo = new Date(Date.now() - 25 * 3600000).toISOString();
     mockGetNotifications.mockResolvedValue({
-      items: [{ ...mockNotification, createdAt: twoDaysAgo }],
+      items: [{ ...mockNotification, createdAt: oneDayAgo }],
       totalCount: 1,
     });
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getByText(/1d ago/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/yesterday/)).toBeTruthy());
+  });
+
+  it("relativeTime shows 'Xd ago' for notifications created several days ago", async () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+    mockGetNotifications.mockResolvedValue({
+      items: [{ ...mockNotification, createdAt: threeDaysAgo }],
+      totalCount: 1,
+    });
+    render(<NotificationsScreen />);
+    await waitFor(() => expect(screen.getByText(/3d ago/)).toBeTruthy());
   });
 
   it("pressing Mark all read with a specific restaurant selected calls markAllRead for that restaurant only", async () => {
@@ -503,14 +513,14 @@ describe("NotificationsScreen", () => {
     expect(mockMarkAllRead).not.toHaveBeenCalledWith(1);
   });
 
-  it("relativeTime shows 'just now' for notifications created seconds ago", async () => {
+  it("relativeTime shows 'now' for notifications created seconds ago", async () => {
     const justNow = new Date(Date.now() - 30000).toISOString();
     mockGetNotifications.mockResolvedValue({
       items: [{ ...mockNotification, createdAt: justNow }],
       totalCount: 1,
     });
     render(<NotificationsScreen />);
-    await waitFor(() => expect(screen.getByText(/just now/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/· now$/)).toBeTruthy());
   });
 
   it("swipe to delete removes notification and shows toast", async () => {

@@ -9,9 +9,9 @@ import {
 } from "@/utils/notifications";
 
 describe("relativeTime", () => {
-  it("returns 'just now' for <1 minute", () => {
+  it("returns 'now' for <1 minute", () => {
     const iso = new Date(Date.now() - 30_000).toISOString();
-    expect(relativeTime(iso)).toBe("just now");
+    expect(relativeTime(iso)).toBe("now");
   });
 
   it("returns minutes for <1 hour", () => {

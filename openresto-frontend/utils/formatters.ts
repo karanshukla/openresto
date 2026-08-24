@@ -1,10 +1,12 @@
-/**
- * Formats a Date as a short locale-aware label, e.g. "Sat, Apr 18".
- * Uses the runtime locale (undefined first arg) intentionally — users see dates in their
- * own locale, not the restaurant's.
- */
+import { getActiveLocale } from "@/utils/locale";
+
+/** Formats a Date as a short label, e.g. "Sat, Apr 18". */
 export function fmtDate(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString(getActiveLocale(), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 /** fmtDate for a YYYY-MM-DD string; noon avoids timezone rollover to an adjacent day. */
@@ -12,10 +14,8 @@ export function fmtDateString(yyyyMmDd: string): string {
   return fmtDate(new Date(yyyyMmDd + "T12:00:00"));
 }
 
-/**
- * Formats a Date as a naive YYYY-MM-DD string (no timezone offset). Used for query params
- * where the backend reinterprets the date in the restaurant's timezone.
- */
+/** Formats a Date as a naive YYYY-MM-DD string (no timezone offset). Used for query params
+ * where the backend reinterprets the date in the restaurant's timezone. */
 export function isoDate(d: Date): string {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -23,15 +23,83 @@ export function isoDate(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/** Compact relative timestamp: "just now", "5m ago", "3h ago", "2d ago". */
+/** Formats a Date as a time, e.g. "19:30" or "7:30 PM" depending on locale. */
+export function fmtTime(d: Date): string {
+  return d.toLocaleTimeString(getActiveLocale(), { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Compact date + time, e.g. "Sat, Apr 18, 7:30 PM". */
+export function fmtDateTime(d: Date): string {
+  return d.toLocaleString(getActiveLocale(), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Date + time in a specific IANA timezone rather than the viewer's own, e.g. for a sitting
+ * displayed against the restaurant's clock. */
+export function fmtDateTimeInZone(iso: string, timezone: string): string {
+  return new Date(iso).toLocaleString(getActiveLocale(), {
+    timeZone: timezone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Formats a Date as an abbreviated weekday, e.g. "Sat". */
+export function fmtWeekday(d: Date): string {
+  return d.toLocaleDateString(getActiveLocale(), { weekday: "short" });
+}
+
+/** Formats a Date as month + day, e.g. "Apr 18". */
+export function fmtMonthDay(d: Date): string {
+  return d.toLocaleDateString(getActiveLocale(), { month: "short", day: "numeric" });
+}
+
+/** Formats a Date as a full date, e.g. "Saturday, 18 April 2025". */
+export function fmtLongDate(d: Date): string {
+  return d.toLocaleDateString(getActiveLocale(), {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+/** Formats a Date as a bare year, e.g. "2025". */
+export function fmtYear(d: Date): string {
+  return d.toLocaleDateString(getActiveLocale(), { year: "numeric" });
+}
+
+/** Full local timestamp for an ISO instant, e.g. "Apr 18, 2025, 7:30:00 PM". */
+export function fmtTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString(getActiveLocale(), {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
+}
+
+/** Formats a number with locale-appropriate thousands grouping. */
+export function fmtNumber(n: number): string {
+  return n.toLocaleString(getActiveLocale());
+}
+
+/** Compact relative timestamp: "now", "5m ago", "3h ago", "2d ago" (localized). */
 export function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  const rtf = new Intl.RelativeTimeFormat(getActiveLocale(), { numeric: "auto", style: "narrow" });
+  if (mins < 1) return rtf.format(0, "second");
+  if (mins < 60) return rtf.format(-mins, "minute");
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return rtf.format(-hrs, "hour");
+  return rtf.format(-Math.floor(hrs / 24), "day");
 }
 
 /**

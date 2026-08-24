@@ -1,3 +1,5 @@
+import { getActiveLocale } from "@/utils/locale";
+
 /**
  * The email an admin sends a guest whose sitting has been moved.
  *
@@ -41,7 +43,7 @@ function formatSitting(iso: string, timezone?: string | null): string {
   };
 
   try {
-    return new Date(iso).toLocaleString(undefined, {
+    return new Date(iso).toLocaleString(getActiveLocale(), {
       ...options,
       ...(timezone ? { timeZone: timezone } : {}),
     });
@@ -49,7 +51,7 @@ function formatSitting(iso: string, timezone?: string | null): string {
     // An unknown IANA id would otherwise throw and take the whole save handler with it. The
     // browser's zone is wrong for a remote location, but it is labelled, and a notice the admin
     // can correct beats no notice at all.
-    return new Date(iso).toLocaleString(undefined, options);
+    return new Date(iso).toLocaleString(getActiveLocale(), options);
   }
 }
 

@@ -2,7 +2,7 @@ import { Pressable, View, type ViewStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
-import { initials } from "@/utils/formatters";
+import { fmtMonthDay, fmtTime, initials } from "@/utils/formatters";
 import { isPast, StatusBadge } from "@/components/admin/bookings/StatusBadge";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import {
@@ -131,17 +131,9 @@ export function BookingsWideTable({
               </ThemedText>
             </View>
             <View>
-              <ThemedText style={styles.tdTime}>
-                {new Date(b.date).toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </ThemedText>
+              <ThemedText style={styles.tdTime}>{fmtTime(new Date(b.date))}</ThemedText>
               <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
-                {new Date(b.date).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {fmtMonthDay(new Date(b.date))}
               </ThemedText>
             </View>
           </View>

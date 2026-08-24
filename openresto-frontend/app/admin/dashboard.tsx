@@ -20,6 +20,7 @@ import AlertModal from "@/components/common/AlertModal";
 import { styles } from "@/styles/admin/dashboard.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { ScheduleConflictsBanner } from "@/components/admin/dashboard/ScheduleConflictsBanner";
+import { fmtMonthDay, fmtNumber, fmtTime, fmtWeekday } from "@/utils/formatters";
 
 export default function AdminDashboardScreen() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -78,7 +79,7 @@ export default function AdminDashboardScreen() {
         },
         {
           label: "Total Covers",
-          value: stats.totalCovers.toLocaleString(),
+          value: fmtNumber(stats.totalCovers),
           sub: "Total guests served (all time)",
           icon: "people-outline" as const,
           accent: "#d97706",
@@ -322,8 +323,7 @@ function OccupancyChart({
   const [labelMode, setLabelMode] = useState<"relative" | "calendar">("relative");
 
   const relativeLabels = ["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"];
-  const formatCalendar = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const formatCalendar = (iso: string) => fmtMonthDay(new Date(iso));
 
   const labelFor = (i: number) => {
     if (labelMode === "calendar" && dates && dates[i]) {
@@ -338,7 +338,7 @@ function OccupancyChart({
   const totalBookings = hasCounts ? (counts as number[]).reduce((a, b) => a + b, 0) : 0;
   const peakWeekday =
     peakIndex >= 0 && dates && dates[peakIndex]
-      ? new Date(dates[peakIndex]).toLocaleDateString(undefined, { weekday: "short" })
+      ? fmtWeekday(new Date(dates[peakIndex]))
       : peakIndex >= 0
         ? relativeLabels[peakIndex]
         : "";
@@ -483,7 +483,7 @@ function BookingItem({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={[
-        startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        fmtTime(startTime),
         booking.customerName ?? booking.customerEmail,
         `${booking.seats} guests`,
         booking.restaurantName,
@@ -500,7 +500,7 @@ function BookingItem({
     >
       <View style={[styles.bookingTime, { backgroundColor: bubbleBg }]}>
         <ThemedText style={[styles.bookingTimeText, { color: bubbleTextColor }]}>
-          {startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          {fmtTime(startTime)}
         </ThemedText>
       </View>
       <View style={styles.bookingInfo}>

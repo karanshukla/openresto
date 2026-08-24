@@ -14,6 +14,7 @@ import {
 import { styles } from "./RestaurantActionModal.styles";
 import { theme } from "@/theme/theme";
 import { Icon } from "@/components/common/Icon";
+import { fmtTime } from "@/utils/formatters";
 
 interface RestaurantActionModalProps {
   visible: boolean;
@@ -39,12 +40,7 @@ export default function RestaurantActionModal({
 
   async function loadRestaurants() {
     setExtendedBookings(null);
-    setWillPauseUntil(
-      new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
+    setWillPauseUntil(fmtTime(new Date(Date.now() + 60 * 60 * 1000)));
     setLoading(true);
     try {
       const data = await adminGetRestaurants();
@@ -160,17 +156,9 @@ export default function RestaurantActionModal({
                     <View style={styles.itemMain}>
                       <ThemedText style={styles.itemName}>{b.customerEmail}</ThemedText>
                       <ThemedText style={[styles.itemMeta, { color: colors.muted }]}>
-                        {new Date(b.date).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {fmtTime(new Date(b.date))}
                         {" → "}
-                        {b.endTime
-                          ? new Date(b.endTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "Extended"}
+                        {b.endTime ? fmtTime(new Date(b.endTime)) : "Extended"}
                         {` · ${b.seats} guests`}
                       </ThemedText>
                     </View>
@@ -230,7 +218,7 @@ export default function RestaurantActionModal({
                       </View>
                       <ThemedText style={[styles.itemMeta, { color: colors.muted }]}>
                         {isPaused
-                          ? `Bookings up to ${new Date(r.bookingsPausedUntil!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} are paused`
+                          ? `Bookings up to ${fmtTime(new Date(r.bookingsPausedUntil!))} are paused`
                           : actionType === "pause"
                             ? `Will pause bookings up to ${willPauseUntil}`
                             : `${r.activeBookingsCount ?? 0} active bookings`}

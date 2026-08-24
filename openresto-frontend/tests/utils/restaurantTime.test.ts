@@ -4,6 +4,7 @@ import {
   parseDayOfWeek,
   getOpenDaysList,
 } from "@/utils/restaurantTime";
+import { setActiveLocale } from "@/utils/locale";
 
 describe("restaurantTime", () => {
   describe("getRestaurantNow", () => {
@@ -41,6 +42,36 @@ describe("restaurantTime", () => {
     it("falls back gracefully for an invalid timezone", () => {
       const d = getRestaurantDate("Invalid/Zone_XYZ");
       expect(/^\d{4}-\d{2}-\d{2}$/.test(d)).toBe(true);
+    });
+  });
+
+  describe("pinned parsers stay correct under a non-English active locale", () => {
+    afterEach(() => {
+      setActiveLocale(undefined);
+    });
+
+    it("getRestaurantNow is unaffected by the active display locale", () => {
+      setActiveLocale("fr");
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-01-05T10:30:00Z")); // a Monday
+      try {
+        const { totalMins, isoDay } = getRestaurantNow("UTC");
+        expect(isoDay).toBe(1);
+        expect(totalMins).toBe(10 * 60 + 30);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("getRestaurantDate is unaffected by the active display locale", () => {
+      setActiveLocale("fr");
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-01-05T10:30:00Z"));
+      try {
+        expect(getRestaurantDate("UTC")).toBe("2026-01-05");
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 

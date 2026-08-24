@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { LISTBOX_ROLE } from "@/utils/webProps";
+import { fmtDate } from "@/utils/formatters";
 import { styles } from "./DatePicker.styles";
 
 export function generateDateOptions(options?: {
@@ -18,11 +19,7 @@ export function generateDateOptions(options?: {
   for (let i = startOffset; i <= 29; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    const label = d.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
+    const label = fmtDate(d);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");

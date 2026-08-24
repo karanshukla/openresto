@@ -10,6 +10,8 @@ export function getNowInTimezone(timezone: string): {
   const now = new Date();
   const tz = timezone || "UTC";
   try {
+    // Locale pinned to en-CA (not the active display locale): formatToParts below relies on
+    // en-CA's fixed YYYY-MM-DD part order and 24h hour to parse out date/time components.
     const fmt = new Intl.DateTimeFormat("en-CA", {
       timeZone: tz,
       year: "numeric",
@@ -44,6 +46,9 @@ export function formatCurrentTimeInTimezone(timezone: string): string {
   const now = new Date();
   const tz = timezone || "UTC";
   try {
+    // Locale pinned to en-US: this renders the "currently X there" disambiguation hint next to
+    // a stated IANA zone name (BookingForm), so it stays in one fixed, unambiguous 12h shape
+    // rather than following the viewer's own locale.
     return new Intl.DateTimeFormat("en-US", {
       timeZone: tz,
       hour: "numeric",
@@ -71,6 +76,8 @@ export function convertLocalToUtc(date: string, time: string, timezone: string):
     // Use Intl.DateTimeFormat to find the offset of the target timezone relative to UTC
     // by comparing a "local-looking" parse with its localized output.
     const tempDate = new Date(localStr);
+    // Locale pinned to en-US: the M/D/YYYY, HH:MM:SS shape is re-parsed by `new Date()` below,
+    // so the active display locale can't be used here without breaking that round-trip.
     const targetStr = tempDate.toLocaleString("en-US", { timeZone: tz });
     const targetDate = new Date(targetStr);
     const diff = tempDate.getTime() - targetDate.getTime();
@@ -106,6 +113,8 @@ export function isTodayInTimezone(utcDateStr: string, timezone: string): boolean
     const date = new Date(utcDateStr);
     const tz = timezone || "UTC";
 
+    // Locale pinned to en-US for the same reason as convertLocalToUtc: the output is re-parsed
+    // by `new Date()`, so it must stay in a shape that constructor reliably understands.
     const nowInTz = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
     const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: tz }));
 
@@ -130,6 +139,9 @@ export function isTodayInTimezone(utcDateStr: string, timezone: string): boolean
 export function minutesInTimezone(iso: string, timezone: string): number {
   const tz = timezone || "UTC";
   try {
+    // Locale pinned to en-US: only `formatToParts`'s "hour"/"minute" part types are read below,
+    // so the locale itself is irrelevant to the result — pinning avoids a locale that renders
+    // the hour/minute parts in an unexpected order or script.
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: tz,
       hour: "2-digit",

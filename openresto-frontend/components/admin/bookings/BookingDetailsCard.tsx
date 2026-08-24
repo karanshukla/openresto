@@ -1,6 +1,7 @@
 import { View, ViewStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
+import { fmtLongDate, fmtMonthDay, fmtTime } from "@/utils/formatters";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
 
 interface BookingDetailsCardProps {
@@ -39,20 +40,8 @@ export function BookingDetailsCard({
   const diffMs = endTime.getTime() - startTime.getTime();
   const durationMins = Math.round(diffMs / 60000);
 
-  const formatTime = (d: Date) => {
-    return d.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  };
-
-  const formatDate = (d: Date) => {
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const formatTime = fmtTime;
+  const formatDate = fmtMonthDay;
 
   const timeRangeDisplay =
     startTime.toDateString() === endTime.toDateString()
@@ -69,12 +58,7 @@ export function BookingDetailsCard({
     { label: "Table", value: booking.tableName ?? "Table" },
     {
       label: "Date",
-      value: startTime.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
+      value: fmtLongDate(startTime),
     },
     {
       label: "Time",
