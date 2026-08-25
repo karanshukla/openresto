@@ -168,6 +168,7 @@
     },
     "footer": {
       "adminLinkText": "Admin",
+      "copyrightFallback": "© {{year}} {{appName}}. Todos los derechos reservados.",
       "restaurantAdminLabel": "Administración del restaurante"
     },
     "datePicker": {
@@ -1043,7 +1044,6 @@
         "linksConfigured_other": "{{count}} enlaces sociales configurados",
         "noLinksSubtitle": "Texto de copyright y enlaces sociales",
         "copyrightLabel": "Texto de copyright",
-        "copyrightPlaceholder": "© {{year}} {{appName}}. Todos los derechos reservados.",
         "copyrightHint": "Se muestra en el pie de página del sitio. Déjelo en blanco para usar el texto predeterminado de arriba.",
         "socialLinksLabel": "Enlaces sociales",
         "noLinksEmptyState": "Aún no hay enlaces. Pulse Añadir para crear el primero.",

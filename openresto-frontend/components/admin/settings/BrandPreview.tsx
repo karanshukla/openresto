@@ -51,7 +51,7 @@ export function BrandPreview({
     draft.highlightsSubheading.trim() || t("restaurant.home.highlightsSubheading");
   const copyright =
     draft.copyrightText.trim() ||
-    t("admin.settings.footer.copyrightPlaceholder", {
+    t("common.footer.copyrightFallback", {
       year: new Date().getFullYear(),
       appName: draft.appName,
     });
