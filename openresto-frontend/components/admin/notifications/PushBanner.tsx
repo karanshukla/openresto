@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
@@ -53,6 +54,7 @@ export interface PushBannerProps {
  * or when push is unsupported/already active.
  */
 export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerProps) {
+  const { t } = useTranslation();
   const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
   const [pushStatus, setPushStatus] = usePushStatus(vapidKey);
   const [working, setWorking] = useState(false);
@@ -76,7 +78,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
       const permission = await Notification.requestPermission();
       if (permission === "denied") {
         setPushStatus("denied");
-        setErrorMsg("Blocked by browser - allow notifications in site settings.");
+        setErrorMsg(t("admin.notifications.pushBanner.blockedError"));
         setWorking(false);
         return;
       }
@@ -100,7 +102,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
       setPushStatus("active");
     } catch (err) {
       console.error("Push subscribe error:", err);
-      setErrorMsg("Failed to enable - try again.");
+      setErrorMsg(t("admin.notifications.pushBanner.enableFailed"));
     }
     setWorking(false);
   };
@@ -118,7 +120,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
       >
         <Icon name="notifications-off-outline" size="md" color={theme.colors.warning} />
         <ThemedText style={[styles.pushBannerText, { color: theme.colors.warning }]}>
-          Push notifications blocked - enable in browser site settings.
+          {t("admin.notifications.pushBanner.deniedBanner")}
         </ThemedText>
       </View>
     );
@@ -136,7 +138,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
     >
       <Icon name="notifications-outline" size="md" color={primaryColor} />
       <ThemedText style={[styles.pushBannerText, { color: primaryColor }]}>
-        Enable push notifications to get real-time booking alerts.
+        {t("admin.notifications.pushBanner.promptBanner")}
       </ThemedText>
       {errorMsg && (
         <ThemedText
@@ -153,9 +155,9 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
         onPress={handleEnable}
         disabled={working}
         loading={working}
-        accessibilityLabel="Enable push notifications"
+        accessibilityLabel={t("admin.notifications.pushBanner.enableLabel")}
       >
-        Enable
+        {t("admin.notifications.pushBanner.enable")}
       </Button>
     </View>
   );

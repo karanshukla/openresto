@@ -733,6 +733,19 @@
         "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, annulée",
         "meta": "{{seats}} · {{restaurant}}"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} réservation à venir ne correspond plus à l'horaire de son établissement",
+        "title_other": "{{count}} réservations à venir ne correspondent plus à l'horaire de leur établissement",
+        "subtitle": "Elles ont été prises avant les horaires actuels et sont toujours dans le carnet. Les clients n'ont pas été informés du changement. Consultez les établissements.",
+        "accessibilityLabel_one": "{{count}} réservation à venir ne correspond plus à l'horaire de son établissement. Consultez les établissements.",
+        "accessibilityLabel_other": "{{count}} réservations à venir ne correspondent plus à l'horaire de leur établissement. Consultez les établissements."
+      }
+    },
+    "layout": {
+      "desktopWall": {
+        "title": "Écran trop petit",
+        "body": "Le tableau de bord administrateur nécessite un écran plus large.\nEssayez de faire pivoter votre appareil ou d'utiliser un écran plus grand."
       }
     },
     "locations": {
@@ -837,6 +850,138 @@
         "guestCount_other": "{{count}} convives",
         "openLabel": "Ouvrir",
         "openBookingLabel": "Ouvrir la réservation {{ref}}"
+      }
+    },
+    "login": {
+      "nativeTitle": "Connexion administrateur",
+      "badge": "Administrateur",
+      "backToApp": "Retour à {{appName}}",
+      "signIn": {
+        "title": "Connexion",
+        "subtitle": "Gérez les réservations de votre restaurant.",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "admin@restaurant.com",
+        "passwordLabel": "Mot de passe",
+        "submit": "Se connecter",
+        "submitting": "Connexion…",
+        "forgotPassword": "Mot de passe oublié ?",
+        "invalidCredentials": "E-mail ou mot de passe incorrect. Veuillez réessayer."
+      },
+      "pvqEmail": {
+        "title": "Réinitialiser le mot de passe",
+        "subtitle": "Nous vérifierons votre identité à l'aide de votre question de sécurité.",
+        "emailLabel": "E-mail administrateur",
+        "emailPlaceholder": "admin@restaurant.com",
+        "submit": "Continuer",
+        "checking": "Vérification…",
+        "noQuestionConfigured": "Aucune question de sécurité n'a été configurée pour ce compte."
+      },
+      "pvqAnswer": {
+        "title": "Question de sécurité",
+        "answerLabel": "Votre réponse",
+        "answerPlaceholder": "Réponse (insensible à la casse)",
+        "submit": "Vérifier la réponse",
+        "verifying": "Vérification…",
+        "incorrectAnswer": "Réponse incorrecte. Veuillez réessayer."
+      },
+      "reset": {
+        "title": "Définir un nouveau mot de passe",
+        "subtitle": "Ce lien expire dans 15 minutes.",
+        "newPasswordLabel": "Nouveau mot de passe",
+        "newPasswordPlaceholder": "Au moins 6 caractères",
+        "confirmPasswordLabel": "Confirmer le mot de passe",
+        "confirmPasswordPlaceholder": "Répétez le mot de passe",
+        "submit": "Réinitialiser le mot de passe",
+        "resetting": "Réinitialisation…"
+      },
+      "done": {
+        "title": "Mot de passe réinitialisé !",
+        "subtitle": "Votre mot de passe a été mis à jour. Connectez-vous avec vos nouveaux identifiants.",
+        "backToSignIn": "Retour à la connexion"
+      },
+      "backLabel": "Retour"
+    },
+    "notifications": {
+      "pageTitle": "Notifications",
+      "totalCount_one": "{{count}} notification au total",
+      "totalCount_other": "{{count}} notifications au total",
+      "deleteAll": "Tout supprimer",
+      "deletingAll": "Suppression…",
+      "deleteAllLabel": "Supprimer toutes les notifications",
+      "deleteAllHint": "Conserve les notifications épinglées",
+      "clearRead": "Effacer les lues",
+      "clearingRead": "Effacement…",
+      "clearReadLabel": "Effacer les notifications lues",
+      "markAllRead": "Tout marquer comme lu",
+      "markingAllRead": "Marquage…",
+      "markAllReadLabel": "Marquer toutes les notifications comme lues",
+      "markedAllReadToast": "Tout marqué comme lu",
+      "notificationDeletedToast": "Notification supprimée",
+      "allVisiblePinnedToast": "Toutes les notifications visibles sont épinglées",
+      "readClearedToast": "Notifications lues effacées",
+      "deletedCountToast_one": "{{count}} notification supprimée",
+      "deletedCountToast_other": "{{count}} notifications supprimées",
+      "allLocations": "Tous les établissements",
+      "locationsScrollerLabel": "Établissements",
+      "typesScrollerLabel": "Types de notification",
+      "filterUnread": "Non lues uniquement",
+      "unreadOnlyLabel": "Afficher uniquement les non lues",
+      "errorBody": "Impossible de charger les notifications. Vérifiez votre connexion et réessayez.",
+      "allCaughtUpTitle": "Tout est à jour",
+      "allCaughtUpBody": "Vous avez tout lu. Les nouvelles alertes apparaîtront ici.",
+      "emptyTitle": "Aucune notification pour le moment",
+      "emptyBody": "Les événements de réservation et les alertes de capacité apparaîtront ici.",
+      "pinnedLabel": "Épinglées",
+      "allNotificationsLabel": "Toutes les notifications",
+      "showMoreButton": "Afficher {{count}} de plus",
+      "showMoreLabel_one": "Afficher {{count}} notification de plus",
+      "showMoreLabel_other": "Afficher {{count}} notifications de plus",
+      "loadingMore": "Chargement…",
+      "deleteAllModal": {
+        "title": "Supprimer toutes les notifications ?",
+        "message": "Cela supprimera définitivement toutes les notifications visibles non épinglées. Les notifications épinglées seront conservées.",
+        "confirmLabel": "Tout supprimer"
+      },
+      "deletePinnedModal": {
+        "title": "Supprimer la notification épinglée ?",
+        "message": "Cette notification est épinglée. Voulez-vous vraiment la supprimer ?",
+        "confirmLabel": "Supprimer"
+      },
+      "types": {
+        "bookingCreated": "Nouvelle réservation",
+        "bookingCancelled": "Réservation annulée",
+        "restaurantNearlyFull": "Presque complet"
+      },
+      "filters": {
+        "all": "Tous les types",
+        "bookingCreated": "Nouvelles réservations",
+        "bookingCancelled": "Annulées",
+        "restaurantNearlyFull": "Presque complet"
+      },
+      "row": {
+        "guestCount_one": "{{count}} convive",
+        "guestCount_other": "{{count}} convives",
+        "read": "Lue",
+        "unread": "Non lue",
+        "bookingRefLabel": "réservation {{ref}}",
+        "pin": "Épingler",
+        "unpin": "Désépingler",
+        "pinLabel": "Épingler la notification",
+        "unpinLabel": "Désépingler la notification",
+        "markRead": "Marquer comme lue",
+        "markUnread": "Marquer comme non lue",
+        "markReadLabel": "Marquer la notification comme lue",
+        "markUnreadLabel": "Marquer la notification comme non lue",
+        "delete": "Supprimer",
+        "deleteLabel": "Supprimer la notification"
+      },
+      "pushBanner": {
+        "blockedError": "Bloqué par le navigateur - autorisez les notifications dans les paramètres du site.",
+        "deniedBanner": "Notifications push bloquées - activez-les dans les paramètres du site de votre navigateur.",
+        "promptBanner": "Activez les notifications push pour recevoir des alertes de réservation en temps réel.",
+        "enableFailed": "Échec de l'activation - réessayez.",
+        "enable": "Activer",
+        "enableLabel": "Activer les notifications push"
       }
     },
     "settings": {
@@ -1361,6 +1506,47 @@
       "brandAutosave": {
         "serverUnreachable": "Impossible de joindre le serveur."
       }
+    },
+    "sidebar": {
+      "nav": {
+        "sections": {
+          "manage": "Gérer",
+          "configure": "Configurer"
+        },
+        "items": {
+          "overview": "Aperçu",
+          "bookings": "Réservations",
+          "locations": "Établissements",
+          "notifications": "Notifications",
+          "activity": "Activité",
+          "brand": "Marque",
+          "emailPush": "E-mail et push",
+          "users": "Utilisateurs",
+          "account": "Compte"
+        },
+        "unreadLabel_one": "{{label}}, {{count}} non lue",
+        "unreadLabel_other": "{{label}}, {{count}} non lues"
+      },
+      "managingLocations_one": "Gestion de {{count}} établissement",
+      "managingLocations_other": "Gestion de {{count}} établissements",
+      "adminPanel": "Panneau d'administration",
+      "lookup": {
+        "label": "Rechercher une réservation",
+        "placeholder": "Nom, e-mail ou référence…",
+        "searchLabel": "Rechercher des réservations",
+        "searchButton": "Rechercher",
+        "notFound": "Aucune réservation trouvée.",
+        "showingMatches": "Affichage de toutes les correspondances…",
+        "partialMatchHint": "La recherche par correspondance partielle est prise en charge"
+      },
+      "backToSite": "Retour au site",
+      "themeToggle": {
+        "switchToLight": "Passer en mode clair",
+        "switchToDark": "Passer en mode sombre",
+        "lightMode": "Mode clair",
+        "darkMode": "Mode sombre"
+      },
+      "logOut": "Se déconnecter"
     }
   }
 }

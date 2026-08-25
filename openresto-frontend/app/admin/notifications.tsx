@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -20,14 +21,16 @@ import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPop
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { PushBanner } from "@/components/admin/notifications/PushBanner";
 import { NotificationRow } from "@/components/admin/notifications/NotificationRow";
-import { PAGE_SIZE, PIN_STORAGE_KEY, TYPE_FILTERS } from "@/utils/notifications";
+import { PAGE_SIZE, PIN_STORAGE_KEY, getTypeFilters } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { Icon } from "@/components/common/Icon";
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const { colors, primaryColor, isDark } = useAppTheme();
   const router = useRouter();
+  const typeFilters = getTypeFilters(t);
 
   const [restaurants, setRestaurants] = useState<{ id: number; name: string }[]>([]);
   const [selectedRestaurantId, setSelectedRestaurantId] = usePersistedState<number | null>(
@@ -217,7 +220,7 @@ export default function NotificationsScreen() {
     setMarkingAll(false);
     setSessionUnreadOverrides(new Set());
     setItems((prev) => prev.map((x) => ({ ...x, isRead: true })));
-    showToast("Marked all as read");
+    showToast(t("admin.notifications.markedAllReadToast"));
   };
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -230,7 +233,7 @@ export default function NotificationsScreen() {
       next.delete(id);
       return next;
     });
-    showToast("Notification deleted");
+    showToast(t("admin.notifications.notificationDeletedToast"));
     await deleteNotification(id);
   };
 
@@ -256,7 +259,7 @@ export default function NotificationsScreen() {
   const deleteAllUnpinnedVisible = async () => {
     const idsToDelete = items.filter((x) => !pinnedIds.has(x.id)).map((x) => x.id);
     if (idsToDelete.length === 0) {
-      showToast("All visible notifications are pinned");
+      showToast(t("admin.notifications.allVisiblePinnedToast"));
       return;
     }
     setDeletingAll(true);
@@ -264,7 +267,7 @@ export default function NotificationsScreen() {
     setItems((prev) => prev.filter((x) => pinnedIds.has(x.id)));
     setTotalCount((prev) => Math.max(0, prev - idsToDelete.length));
     setDeletingAll(false);
-    showToast(`Deleted ${idsToDelete.length} notification${idsToDelete.length !== 1 ? "s" : ""}`);
+    showToast(t("admin.notifications.deletedCountToast", { count: idsToDelete.length }));
   };
 
   // On web, only allow swipe-to-delete for touch pointers (not mouse drags).
@@ -289,7 +292,7 @@ export default function NotificationsScreen() {
     setItems((prev) => prev.filter((x) => !readIds.includes(x.id)));
     setTotalCount((prev) => Math.max(0, prev - readIds.length));
     setClearingRead(false);
-    showToast("Read notifications cleared");
+    showToast(t("admin.notifications.readClearedToast"));
   };
 
   const hasMore = items.length < totalCount;
@@ -336,12 +339,14 @@ export default function NotificationsScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        {Platform.OS !== "web" && <Stack.Screen options={{ title: "Notifications" }} />}
+        {Platform.OS !== "web" && (
+          <Stack.Screen options={{ title: t("admin.notifications.pageTitle") }} />
+        )}
 
         <View style={styles.pageHeader}>
           <View style={styles.headerRow}>
             <View style={styles.pageTitleRow}>
-              <ThemedText type="h1">Notifications</ThemedText>
+              <ThemedText type="h1">{t("admin.notifications.pageTitle")}</ThemedText>
               {unreadCount > 0 && (
                 <View style={[styles.unreadBadge, { backgroundColor: primaryColor }]}>
                   <ThemedText style={styles.unreadBadgeText}>
@@ -362,10 +367,12 @@ export default function NotificationsScreen() {
                 onPress={() => setConfirmDeleteAll(true)}
                 disabled={deletingAll || items.length === 0}
                 loading={deletingAll}
-                accessibilityLabel="Delete all notifications"
-                accessibilityHint="Keeps pinned notifications"
+                accessibilityLabel={t("admin.notifications.deleteAllLabel")}
+                accessibilityHint={t("admin.notifications.deleteAllHint")}
               >
-                {deletingAll ? "Deleting…" : "Delete all"}
+                {deletingAll
+                  ? t("admin.notifications.deletingAll")
+                  : t("admin.notifications.deleteAll")}
               </Button>
 
               {(() => {
@@ -379,9 +386,11 @@ export default function NotificationsScreen() {
                     onPress={handleClearRead}
                     disabled={clearingRead || !hasRead}
                     loading={clearingRead}
-                    accessibilityLabel="Clear read notifications"
+                    accessibilityLabel={t("admin.notifications.clearReadLabel")}
                   >
-                    {clearingRead ? "Clearing…" : "Clear read"}
+                    {clearingRead
+                      ? t("admin.notifications.clearingRead")
+                      : t("admin.notifications.clearRead")}
                   </Button>
                 );
               })()}
@@ -392,17 +401,19 @@ export default function NotificationsScreen() {
                 onPress={handleMarkAllRead}
                 disabled={markingAll || unreadCount === 0}
                 loading={markingAll}
-                accessibilityLabel="Mark all notifications read"
+                accessibilityLabel={t("admin.notifications.markAllReadLabel")}
               >
-                {markingAll ? "Marking…" : "Mark all read"}
+                {markingAll
+                  ? t("admin.notifications.markingAllRead")
+                  : t("admin.notifications.markAllRead")}
               </Button>
             </ButtonRow>
           </View>
 
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
             {loading
-              ? "Loading…"
-              : `${totalCount} total notification${totalCount !== 1 ? "s" : ""}`}
+              ? t("common.status.loading")
+              : t("admin.notifications.totalCount", { count: totalCount })}
           </ThemedText>
         </View>
 
@@ -413,35 +424,43 @@ export default function NotificationsScreen() {
         />
 
         <View style={styles.filtersSection}>
-          <HorizontalScroller label="Locations" contentContainerStyle={styles.pillRow}>
-            {[{ id: null, name: "All locations" }, ...restaurants].map((r) => {
-              const active =
-                r.id === null ? selectedRestaurantId === null : selectedRestaurantId === r.id;
-              return (
-                <Pressable
-                  key={r.id ?? "all"}
-                  onPress={() => setSelectedRestaurantId(r.id)}
-                  accessibilityRole="radio"
-                  accessibilityLabel={r.name}
-                  accessibilityState={{ checked: active }}
-                  style={[
-                    styles.pill,
-                    active
-                      ? { backgroundColor: primaryColor, borderColor: primaryColor }
-                      : { backgroundColor: "transparent", borderColor },
-                  ]}
-                >
-                  <ThemedText style={[styles.pillText, { color: active ? "#fff" : mutedColor }]}>
-                    {r.name}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
+          <HorizontalScroller
+            label={t("admin.notifications.locationsScrollerLabel")}
+            contentContainerStyle={styles.pillRow}
+          >
+            {[{ id: null, name: t("admin.notifications.allLocations") }, ...restaurants].map(
+              (r) => {
+                const active =
+                  r.id === null ? selectedRestaurantId === null : selectedRestaurantId === r.id;
+                return (
+                  <Pressable
+                    key={r.id ?? "all"}
+                    onPress={() => setSelectedRestaurantId(r.id)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={r.name}
+                    accessibilityState={{ checked: active }}
+                    style={[
+                      styles.pill,
+                      active
+                        ? { backgroundColor: primaryColor, borderColor: primaryColor }
+                        : { backgroundColor: "transparent", borderColor },
+                    ]}
+                  >
+                    <ThemedText style={[styles.pillText, { color: active ? "#fff" : mutedColor }]}>
+                      {r.name}
+                    </ThemedText>
+                  </Pressable>
+                );
+              }
+            )}
           </HorizontalScroller>
 
           <View style={styles.pillRow2}>
-            <HorizontalScroller label="Notification types" contentContainerStyle={styles.pillRow}>
-              {TYPE_FILTERS.map((f) => {
+            <HorizontalScroller
+              label={t("admin.notifications.typesScrollerLabel")}
+              contentContainerStyle={styles.pillRow}
+            >
+              {typeFilters.map((f) => {
                 const active = selectedType === f.value;
                 return (
                   <Pressable
@@ -474,7 +493,7 @@ export default function NotificationsScreen() {
               onPress={() => setUnreadOnly((v) => !v)}
               role="switch"
               aria-checked={unreadOnly}
-              accessibilityLabel="Show unread only"
+              accessibilityLabel={t("admin.notifications.unreadOnlyLabel")}
               accessibilityState={{ checked: unreadOnly }}
               style={[
                 styles.pill,
@@ -494,7 +513,7 @@ export default function NotificationsScreen() {
               <ThemedText
                 style={[styles.pillText, { color: unreadOnly ? primaryColor : mutedColor }]}
               >
-                Filter Unread
+                {t("admin.notifications.filterUnread")}
               </ThemedText>
             </Pressable>
           </View>
@@ -510,10 +529,10 @@ export default function NotificationsScreen() {
               <Icon name="warning-outline" size={28} color={mutedColor} />
             </View>
             <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-              Something went wrong
+              {t("errors.generic")}
             </ThemedText>
             <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
-              Could not load notifications. Check your connection and try again.
+              {t("admin.notifications.errorBody")}
             </ThemedText>
           </View>
         ) : items.length === 0 ? (
@@ -526,12 +545,14 @@ export default function NotificationsScreen() {
               />
             </View>
             <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-              {unreadOnly ? "All caught up" : "No notifications yet"}
+              {unreadOnly
+                ? t("admin.notifications.allCaughtUpTitle")
+                : t("admin.notifications.emptyTitle")}
             </ThemedText>
             <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
               {unreadOnly
-                ? "You've read everything. New alerts will appear here."
-                : "Booking events and capacity alerts will appear here."}
+                ? t("admin.notifications.allCaughtUpBody")
+                : t("admin.notifications.emptyBody")}
             </ThemedText>
           </View>
         ) : (
@@ -541,7 +562,7 @@ export default function NotificationsScreen() {
                 <View style={[styles.sectionDivider, { borderBottomColor: borderColor }]}>
                   <Icon name="bookmark" size={11} color={primaryColor} />
                   <ThemedText style={[styles.sectionLabel, { color: primaryColor }]}>
-                    Pinned
+                    {t("admin.notifications.pinnedLabel")}
                   </ThemedText>
                 </View>
                 {pinnedItems.map((n, i) => renderRow(n, i, pinnedItems, unpinnedItems.length > 0))}
@@ -557,7 +578,7 @@ export default function NotificationsScreen() {
                     ]}
                   >
                     <ThemedText style={[styles.sectionLabel, { color: mutedColor }]}>
-                      All notifications
+                      {t("admin.notifications.allNotificationsLabel")}
                     </ThemedText>
                   </View>
                 )}
@@ -576,9 +597,13 @@ export default function NotificationsScreen() {
                 onPress={handleLoadMore}
                 disabled={loadingMore}
                 loading={loadingMore}
-                accessibilityLabel={`Show ${totalCount - items.length} more notifications`}
+                accessibilityLabel={t("admin.notifications.showMoreLabel", {
+                  count: totalCount - items.length,
+                })}
               >
-                {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
+                {loadingMore
+                  ? t("admin.notifications.loadingMore")
+                  : t("admin.notifications.showMoreButton", { count: totalCount - items.length })}
               </Button>
             )}
           </View>
@@ -596,9 +621,9 @@ export default function NotificationsScreen() {
 
       <ConfirmModal
         visible={confirmDeleteAll}
-        title="Delete all notifications?"
-        message="This will permanently delete all visible unpinned notifications. Pinned notifications will be kept."
-        confirmLabel="Delete all"
+        title={t("admin.notifications.deleteAllModal.title")}
+        message={t("admin.notifications.deleteAllModal.message")}
+        confirmLabel={t("admin.notifications.deleteAllModal.confirmLabel")}
         destructive
         onConfirm={() => {
           setConfirmDeleteAll(false);
@@ -608,9 +633,9 @@ export default function NotificationsScreen() {
       />
       <ConfirmModal
         visible={confirmDeleteId != null}
-        title="Delete pinned notification?"
-        message="This notification is pinned. Are you sure you want to delete it?"
-        confirmLabel="Delete"
+        title={t("admin.notifications.deletePinnedModal.title")}
+        message={t("admin.notifications.deletePinnedModal.message")}
+        confirmLabel={t("admin.notifications.deletePinnedModal.confirmLabel")}
         destructive
         onConfirm={handleConfirmedDelete}
         onCancel={() => setConfirmDeleteId(null)}

@@ -1,11 +1,13 @@
 import { View, Pressable, Platform, TextInput, type ViewStyle } from "react-native";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
-import { roleLabel, type Capability } from "@/constants/roles";
+import { roleDisplayLabel, type Capability } from "@/constants/roles";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -21,6 +23,7 @@ import { styles } from "./AdminSidebar.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 interface NavItem {
+  id: string;
   label: string;
   icon: IconName;
   href: Href;
@@ -29,82 +32,97 @@ interface NavItem {
   capability?: Capability;
 }
 
-const NAV_SECTIONS: { heading: string; items: NavItem[] }[] = [
-  {
-    heading: "Manage",
-    items: [
-      {
-        label: "Overview",
-        icon: "grid-outline" as const,
-        href: "/admin/dashboard" as const,
-        match: (p: string) => p === "/admin/dashboard",
-      },
-      {
-        label: "Bookings",
-        icon: "calendar-outline" as const,
-        href: "/admin/bookings" as const,
-        match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
-      },
-      {
-        label: "Locations",
-        icon: "storefront-outline" as const,
-        href: "/admin/locations" as const,
-        match: (p: string) => p === "/admin/locations",
-      },
-      {
-        label: "Notifications",
-        icon: "notifications-outline" as const,
-        href: "/admin/notifications" as const,
-        match: (p: string) => p === "/admin/notifications",
-      },
-      {
-        label: "Activity",
-        icon: "receipt-outline" as const,
-        href: "/admin/activity" as const,
-        match: (p: string) => p === "/admin/activity",
-        capability: "view:audit" as const,
-      },
-    ],
-  },
-  {
-    heading: "Configure",
-    items: [
-      {
-        label: "Brand",
-        icon: "color-palette-outline" as const,
-        // /admin/settings redirects here, so it owns the bare path's highlight too.
-        href: "/admin/settings/brand" as const,
-        match: (p: string) => p === "/admin/settings/brand" || p === "/admin/settings",
-      },
-      {
-        label: "Email & Push",
-        icon: "mail-outline" as const,
-        href: "/admin/settings/email" as const,
-        match: (p: string) => p === "/admin/settings/email",
-      },
-      {
-        label: "Users",
-        icon: "people-outline" as const,
-        href: "/admin/settings/users" as const,
-        match: (p: string) => p === "/admin/settings/users",
-        capability: "manage:users" as const,
-      },
-      {
-        label: "Account",
-        icon: "person-circle-outline" as const,
-        href: "/admin/settings/account" as const,
-        match: (p: string) => p === "/admin/settings/account",
-      },
-    ],
-  },
-];
+/** Module-scope labels would resolve before `LocaleContext` picks a locale and never
+ * re-render on a language switch, so the nav is built fresh from `t` on every render. */
+function getNavSections(t: TFunction): { heading: string; items: NavItem[] }[] {
+  return [
+    {
+      heading: t("admin.sidebar.nav.sections.manage"),
+      items: [
+        {
+          id: "overview",
+          label: t("admin.sidebar.nav.items.overview"),
+          icon: "grid-outline" as const,
+          href: "/admin/dashboard" as const,
+          match: (p: string) => p === "/admin/dashboard",
+        },
+        {
+          id: "bookings",
+          label: t("admin.sidebar.nav.items.bookings"),
+          icon: "calendar-outline" as const,
+          href: "/admin/bookings" as const,
+          match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
+        },
+        {
+          id: "locations",
+          label: t("admin.sidebar.nav.items.locations"),
+          icon: "storefront-outline" as const,
+          href: "/admin/locations" as const,
+          match: (p: string) => p === "/admin/locations",
+        },
+        {
+          id: "notifications",
+          label: t("admin.sidebar.nav.items.notifications"),
+          icon: "notifications-outline" as const,
+          href: "/admin/notifications" as const,
+          match: (p: string) => p === "/admin/notifications",
+        },
+        {
+          id: "activity",
+          label: t("admin.sidebar.nav.items.activity"),
+          icon: "receipt-outline" as const,
+          href: "/admin/activity" as const,
+          match: (p: string) => p === "/admin/activity",
+          capability: "view:audit" as const,
+        },
+      ],
+    },
+    {
+      heading: t("admin.sidebar.nav.sections.configure"),
+      items: [
+        {
+          id: "brand",
+          label: t("admin.sidebar.nav.items.brand"),
+          icon: "color-palette-outline" as const,
+          // /admin/settings redirects here, so it owns the bare path's highlight too.
+          href: "/admin/settings/brand" as const,
+          match: (p: string) => p === "/admin/settings/brand" || p === "/admin/settings",
+        },
+        {
+          id: "emailPush",
+          label: t("admin.sidebar.nav.items.emailPush"),
+          icon: "mail-outline" as const,
+          href: "/admin/settings/email" as const,
+          match: (p: string) => p === "/admin/settings/email",
+        },
+        {
+          id: "users",
+          label: t("admin.sidebar.nav.items.users"),
+          icon: "people-outline" as const,
+          href: "/admin/settings/users" as const,
+          match: (p: string) => p === "/admin/settings/users",
+          capability: "manage:users" as const,
+        },
+        {
+          id: "account",
+          label: t("admin.sidebar.nav.items.account"),
+          icon: "person-circle-outline" as const,
+          href: "/admin/settings/account" as const,
+          match: (p: string) => p === "/admin/settings/account",
+        },
+      ],
+    },
+  ];
+}
 
 export default function AdminSidebar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const { colors, isDark, brand, primaryColor: PRIMARY } = useAppTheme();
   const { toggle } = useTheme();
   const { user, signOut, can } = useAuth();
+  const navSections = getNavSections(t);
   const [locationCount, setLocationCount] = useState(0);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const insets = useSafeAreaInsets();
@@ -190,8 +208,8 @@ export default function AdminSidebar() {
           </ThemedText>
           <ThemedText style={[styles.brandSub, { color: colors.muted }]} numberOfLines={1}>
             {locationCount > 0
-              ? `Managing ${locationCount} location${locationCount !== 1 ? "s" : ""}`
-              : "Admin Panel"}
+              ? t("admin.sidebar.managingLocations", { count: locationCount })
+              : t("admin.sidebar.adminPanel")}
           </ThemedText>
         </View>
       </View>
@@ -199,22 +217,26 @@ export default function AdminSidebar() {
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       <View style={styles.nav}>
-        {NAV_SECTIONS.map(({ heading, items }) => (
+        {navSections.map(({ heading, items }) => (
           <View key={heading} style={styles.navSection}>
             <ThemedText style={[styles.navHeading, { color: colors.muted }]}>
               {heading.toUpperCase()}
             </ThemedText>
             {items
               .filter((item) => !item.capability || can(item.capability))
-              .map(({ label, icon, href, match }) => {
+              .map(({ id, label, icon, href, match }) => {
                 const active = match(pathname);
-                const showBadge = label === "Notifications" && unreadNotifCount > 0;
+                const showBadge = id === "notifications" && unreadNotifCount > 0;
                 return (
                   <Pressable
-                    key={label}
+                    key={id}
                     onPress={() => router.push(href)}
                     accessibilityRole="link"
-                    accessibilityLabel={showBadge ? `${label}, ${unreadNotifCount} unread` : label}
+                    accessibilityLabel={
+                      showBadge
+                        ? t("admin.sidebar.nav.unreadLabel", { label, count: unreadNotifCount })
+                        : label
+                    }
                     accessibilityState={{ selected: active }}
                     aria-current={active ? "page" : undefined}
                     style={(state) => [
@@ -260,7 +282,7 @@ export default function AdminSidebar() {
 
       <View style={styles.ctaWrapper}>
         <ThemedText style={[styles.lookupLabel, { color: colors.muted }]}>
-          Lookup Booking
+          {t("admin.sidebar.lookup.label")}
         </ThemedText>
         <TextInput
           ref={lookupInputRef}
@@ -272,11 +294,11 @@ export default function AdminSidebar() {
               backgroundColor: colors.input,
             },
           ]}
-          placeholder="Name, email or reference…"
+          placeholder={t("admin.sidebar.lookup.placeholder")}
           placeholderTextColor={colors.muted}
           value={lookupQuery}
-          onChangeText={(t) => {
-            setLookupQuery(t);
+          onChangeText={(text) => {
+            setLookupQuery(text);
             if (lookupStatus !== "idle") setLookupStatus("idle");
           }}
           autoCapitalize="none"
@@ -290,23 +312,23 @@ export default function AdminSidebar() {
           onPress={handleLookup}
           disabled={!lookupQuery.trim()}
           loading={lookupLoading}
-          accessibilityLabel="Search bookings"
+          accessibilityLabel={t("admin.sidebar.lookup.searchLabel")}
         >
-          Search
+          {t("admin.sidebar.lookup.searchButton")}
         </Button>
         {lookupStatus === "not_found" && (
           <ThemedText style={[styles.lookupHint, { color: theme.colors.error }]}>
-            No booking found.
+            {t("admin.sidebar.lookup.notFound")}
           </ThemedText>
         )}
         {lookupStatus === "multiple" && (
           <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
-            Showing all matches…
+            {t("admin.sidebar.lookup.showingMatches")}
           </ThemedText>
         )}
         {lookupStatus === "idle" && (
           <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
-            Partial matching search is supported
+            {t("admin.sidebar.lookup.partialMatchHint")}
           </ThemedText>
         )}
       </View>
@@ -330,7 +352,7 @@ export default function AdminSidebar() {
             </ThemedText>
             <View style={[styles.roleBadge, { backgroundColor: hexToRgba(PRIMARY, 0.12) }]}>
               <ThemedText style={[styles.roleBadgeText, { color: PRIMARY }]}>
-                {roleLabel(user.role)}
+                {roleDisplayLabel(user.role, t)}
               </ThemedText>
             </View>
           </View>
@@ -338,14 +360,16 @@ export default function AdminSidebar() {
         <Pressable
           onPress={() => router.push("/")}
           accessibilityRole="link"
-          accessibilityLabel="Back to site"
+          accessibilityLabel={t("admin.sidebar.backToSite")}
           style={(state) => [
             styles.footerItem,
             (state as { hovered?: boolean }).hovered && { backgroundColor: hoverBg },
           ]}
         >
           <Icon name="arrow-back-outline" size={15} color={colors.muted} />
-          <ThemedText style={[styles.footerText, { color: colors.muted }]}>Back to site</ThemedText>
+          <ThemedText style={[styles.footerText, { color: colors.muted }]}>
+            {t("admin.sidebar.backToSite")}
+          </ThemedText>
         </Pressable>
         <Pressable
           style={(state) => [
@@ -354,11 +378,17 @@ export default function AdminSidebar() {
           ]}
           onPress={toggle}
           accessibilityRole="button"
-          accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          accessibilityLabel={
+            isDark
+              ? t("admin.sidebar.themeToggle.switchToLight")
+              : t("admin.sidebar.themeToggle.switchToDark")
+          }
         >
           <Icon name={isDark ? "sunny-outline" : "moon-outline"} size={15} color={colors.muted} />
           <ThemedText style={[styles.footerText, { color: colors.muted }]}>
-            {isDark ? "Light mode" : "Dark mode"}
+            {isDark
+              ? t("admin.sidebar.themeToggle.lightMode")
+              : t("admin.sidebar.themeToggle.darkMode")}
           </ThemedText>
         </Pressable>
         <Pressable
@@ -368,10 +398,12 @@ export default function AdminSidebar() {
           ]}
           onPress={handleLogout}
           accessibilityRole="button"
-          accessibilityLabel="Log out"
+          accessibilityLabel={t("admin.sidebar.logOut")}
         >
           <Icon name="log-out-outline" size={15} color={colors.muted} />
-          <ThemedText style={[styles.footerText, { color: colors.muted }]}>Log out</ThemedText>
+          <ThemedText style={[styles.footerText, { color: colors.muted }]}>
+            {t("admin.sidebar.logOut")}
+          </ThemedText>
         </Pressable>
       </View>
     </ThemedView>

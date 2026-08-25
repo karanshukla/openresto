@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
 import { Slot, Stack, useRouter, usePathname, useSegments } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -17,14 +18,12 @@ import { Icon } from "@/components/common/Icon";
 const MIN_WIDTH = 600;
 
 function DesktopOnlyWall() {
+  const { t } = useTranslation();
   return (
     <ThemedView style={styles.wall}>
       <Icon name="desktop-outline" size={48} color={theme.colors.primary} />
-      <ThemedText style={styles.wallTitle}>Screen too small</ThemedText>
-      <ThemedText style={styles.wallBody}>
-        The admin dashboard requires a wider screen.{"\n"}
-        Try rotating your device or using a larger screen.
-      </ThemedText>
+      <ThemedText style={styles.wallTitle}>{t("admin.layout.desktopWall.title")}</ThemedText>
+      <ThemedText style={styles.wallBody}>{t("admin.layout.desktopWall.body")}</ThemedText>
     </ThemedView>
   );
 }

@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { theme } from "@/theme/theme";
 import type { NotificationType } from "@/api/notifications";
 import { fmtDateTime } from "@/utils/formatters";
@@ -27,11 +28,18 @@ export function formatBookingDate(iso: string): string {
 export const PAGE_SIZE = 20;
 export const PIN_STORAGE_KEY = "openresto_pinned_notifs";
 
-export const TYPE_LABELS: Record<NotificationType, string> = {
-  BookingCreated: "New Booking",
-  BookingCancelled: "Booking Cancelled",
-  RestaurantNearlyFull: "Nearly Full",
-};
+/**
+ * Called from render rather than kept as a module-level constant — resolving it once at
+ * import time would freeze every label in whatever locale loaded first and never react to
+ * a language switch.
+ */
+export function getTypeLabels(t: TFunction): Record<NotificationType, string> {
+  return {
+    BookingCreated: t("admin.notifications.types.bookingCreated"),
+    BookingCancelled: t("admin.notifications.types.bookingCancelled"),
+    RestaurantNearlyFull: t("admin.notifications.types.restaurantNearlyFull"),
+  };
+}
 
 type TypeIcon = {
   name: "checkmark-circle-outline" | "close-circle-outline" | "warning-outline";
@@ -44,9 +52,19 @@ export const TYPE_ICONS: Record<NotificationType, TypeIcon> = {
   RestaurantNearlyFull: { name: "warning-outline", color: theme.colors.warning },
 };
 
-export const TYPE_FILTERS = [
-  { label: "All Types", value: "" },
-  { label: "New Bookings", value: "BookingCreated" },
-  { label: "Cancelled", value: "BookingCancelled" },
-  { label: "Nearly Full", value: "RestaurantNearlyFull" },
-];
+export interface TypeFilter {
+  label: string;
+  value: "" | NotificationType;
+}
+
+export function getTypeFilters(t: TFunction): TypeFilter[] {
+  return [
+    { label: t("admin.notifications.filters.all"), value: "" },
+    { label: t("admin.notifications.filters.bookingCreated"), value: "BookingCreated" },
+    { label: t("admin.notifications.filters.bookingCancelled"), value: "BookingCancelled" },
+    {
+      label: t("admin.notifications.filters.restaurantNearlyFull"),
+      value: "RestaurantNearlyFull",
+    },
+  ];
+}

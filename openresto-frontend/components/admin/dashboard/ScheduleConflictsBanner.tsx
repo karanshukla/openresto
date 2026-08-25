@@ -1,5 +1,6 @@
 import { Pressable, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -34,10 +35,10 @@ export function ScheduleConflictsBanner({
 }) {
   const { colors } = useAppTheme();
   const router = useRouter();
+  const { t } = useTranslation();
 
   if (count <= 0) return null;
 
-  const bookings = `${count} upcoming booking${count === 1 ? "" : "s"}`;
   const target: Href =
     locationIds.length > 0
       ? { pathname: "/admin/locations", params: { location: String(locationIds[0]) } }
@@ -47,7 +48,7 @@ export function ScheduleConflictsBanner({
     <Pressable
       testID="dashboard-schedule-conflicts"
       accessibilityRole="button"
-      accessibilityLabel={`${bookings} no longer fit their location's schedule. Review locations.`}
+      accessibilityLabel={t("admin.dashboard.scheduleConflicts.accessibilityLabel", { count })}
       onPress={() => router.push(target)}
       style={[styles.banner, { backgroundColor: colors.card, borderColor: colors.warning }]}
     >
@@ -56,11 +57,10 @@ export function ScheduleConflictsBanner({
       </View>
       <View style={styles.copy}>
         <ThemedText style={styles.title}>
-          {bookings} no longer fit their location&apos;s schedule
+          {t("admin.dashboard.scheduleConflicts.title", { count })}
         </ThemedText>
         <ThemedText style={[styles.sub, { color: colors.muted }]}>
-          Taken before the current hours and still on the books. The guests have not been told
-          anything changed. Review locations.
+          {t("admin.dashboard.scheduleConflicts.subtitle")}
         </ThemedText>
       </View>
       <Icon name="chevron-forward" size="md" color={colors.muted} />
