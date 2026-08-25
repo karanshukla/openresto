@@ -1,4 +1,6 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { styles } from "./bookings.styles";
@@ -12,22 +14,46 @@ export type BadgeVariant = "arrived" | "seated" | "upcoming" | "scheduled" | "co
 // and booking-confirmation screens don't have to reach into components/admin.
 export { isPast };
 
-export function getStatus(date: string): { label: string; variant: BadgeVariant } {
+/**
+ * `variant` is the sorting/styling key (STATUS_RANK, BADGE_STYLES below) and is never
+ * rendered on its own — `getStatus` below resolves it to a localized `label` through `t`.
+ * Keeping `variant` untranslated is what lets `statusRankFor` sort correctly regardless
+ * of UI language.
+ * @see [StatusBadge.test.tsx](../../../tests/components/StatusBadge.test.tsx)
+ * — pins that the label localizes while the variant/rank stay locale-independent.
+ */
+export function statusVariantFor(date: string): BadgeVariant {
   const d = new Date(date);
   const now = new Date();
   const diffMins = (d.getTime() - now.getTime()) / 60000;
-  if (diffMins < -90) return { label: "Completed", variant: "completed" };
-  if (diffMins < -15) return { label: "Seated", variant: "seated" };
-  if (diffMins < 5) return { label: "Arrived", variant: "arrived" };
-  if (diffMins < 60) return { label: "Upcoming", variant: "upcoming" };
-  return { label: "Scheduled", variant: "scheduled" };
+  if (diffMins < -90) return "completed";
+  if (diffMins < -15) return "seated";
+  if (diffMins < 5) return "arrived";
+  if (diffMins < 60) return "upcoming";
+  return "scheduled";
+}
+
+export function getStatus(date: string, t: TFunction): { label: string; variant: BadgeVariant } {
+  const variant = statusVariantFor(date);
+  switch (variant) {
+    case "arrived":
+      return { label: t("admin.bookings.status.arrived"), variant };
+    case "seated":
+      return { label: t("admin.bookings.status.seated"), variant };
+    case "upcoming":
+      return { label: t("admin.bookings.status.upcoming"), variant };
+    case "scheduled":
+      return { label: t("admin.bookings.status.scheduled"), variant };
+    case "completed":
+      return { label: t("admin.bookings.status.completed"), variant };
+  }
 }
 
 // Lifecycle rank for status-based sorting (issue #208). Higher rank surfaces
 // earlier in the default (ascending) sort, so the most attention-worthy rows
 // land at the top: in-progress first, then upcoming/future, then historical,
-// with cancelled last. Reuses getStatus so the time thresholds stay defined
-// in exactly one place (see the keep-in-sync note on isPast above).
+// with cancelled last. Reuses statusVariantFor so the time thresholds stay
+// defined in exactly one place (see the keep-in-sync note on isPast above).
 const STATUS_RANK: Record<BadgeVariant, number> = {
   arrived: 5, // in-progress: sitting down now
   seated: 4, // in-progress: recently seated
@@ -39,7 +65,7 @@ const STATUS_RANK: Record<BadgeVariant, number> = {
 /** Numeric status rank for sorting; cancelled bookings sort last (rank 0). */
 export function statusRankFor(b: BookingDetailDto): number {
   if (b.isCancelled) return 0;
-  return STATUS_RANK[getStatus(b.date).variant];
+  return STATUS_RANK[statusVariantFor(b.date)];
 }
 
 const BADGE_STYLES: Record<
@@ -69,7 +95,8 @@ const BADGE_STYLES: Record<
 };
 
 export function StatusBadge({ date, isDark }: { date: string; isDark: boolean }) {
-  const { label, variant } = getStatus(date);
+  const { t } = useTranslation();
+  const { label, variant } = getStatus(date, t);
   const s = BADGE_STYLES[variant];
 
   const bg = isDark && s.bg.dark ? s.bg.dark : s.bg.light;

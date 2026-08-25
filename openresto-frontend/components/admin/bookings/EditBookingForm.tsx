@@ -1,4 +1,5 @@
 import { View, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import Input from "@/components/common/Input";
@@ -69,13 +70,14 @@ export function EditBookingForm({
   handleRestaurantChange,
   handleSectionChange,
 }: EditBookingFormProps) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.section, { borderColor }]}>
       {loadingRestaurants ? (
         <ActivityIndicator size="small" color={theme.colors.primary} />
       ) : (
         <>
-          <ThemedText style={styles.label}>Restaurant</ThemedText>
+          <ThemedText style={styles.label}>{t("admin.bookings.form.restaurant")}</ThemedText>
           <Select
             selectedValue={editRestaurantId ?? undefined}
             onSelect={handleRestaurantChange}
@@ -84,7 +86,7 @@ export function EditBookingForm({
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Section</ThemedText>
+              <ThemedText style={styles.label}>{t("booking.form.sectionLabel")}</ThemedText>
               <Select
                 selectedValue={editSectionId ?? undefined}
                 onSelect={handleSectionChange}
@@ -92,7 +94,7 @@ export function EditBookingForm({
               />
             </View>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Table</ThemedText>
+              <ThemedText style={styles.label}>{t("booking.form.tableLabel")}</ThemedText>
               <Select
                 selectedValue={editTableId ?? undefined}
                 onSelect={(v) => setEditTableId(v as number)}
@@ -103,11 +105,11 @@ export function EditBookingForm({
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Date</ThemedText>
+              <ThemedText style={styles.label}>{t("booking.form.dateLabel")}</ThemedText>
               <DatePicker selectedDate={editDate} onSelect={setEditDate} />
             </View>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Time</ThemedText>
+              <ThemedText style={styles.label}>{t("booking.form.timeLabel")}</ThemedText>
               <TimePicker
                 selectedTime={editTime}
                 onSelect={setEditTime}
@@ -119,7 +121,7 @@ export function EditBookingForm({
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Guests</ThemedText>
+              <ThemedText style={styles.label}>{t("booking.form.guestsLabel")}</ThemedText>
               <Select
                 selectedValue={Number(editSeats)}
                 onSelect={(v) => setEditSeats(String(v))}
@@ -127,9 +129,9 @@ export function EditBookingForm({
               />
             </View>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Guest email</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.bookings.form.guestEmail")}</ThemedText>
               <Input
-                placeholder="guest@example.com"
+                placeholder={t("admin.bookings.form.emailPlaceholder")}
                 value={editEmail}
                 onChangeText={setEditEmail}
                 keyboardType="email-address"
@@ -140,9 +142,9 @@ export function EditBookingForm({
 
           <View style={styles.fieldRow}>
             <View style={styles.fieldHalf}>
-              <ThemedText style={styles.label}>Guest name</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.bookings.form.guestName")}</ThemedText>
               <Input
-                placeholder="Full name"
+                placeholder={t("admin.bookings.form.namePlaceholder")}
                 value={editCustomerName}
                 onChangeText={setEditCustomerName}
                 autoCapitalize="words"
@@ -150,9 +152,9 @@ export function EditBookingForm({
             </View>
           </View>
 
-          <ThemedText style={styles.label}>Special requests</ThemedText>
+          <ThemedText style={styles.label}>{t("admin.bookings.form.specialRequests")}</ThemedText>
           <Input
-            placeholder="Dietary needs, occasion, notes"
+            placeholder={t("admin.bookings.form.specialRequestsPlaceholder")}
             value={editSpecialRequests}
             onChangeText={setEditSpecialRequests}
           />

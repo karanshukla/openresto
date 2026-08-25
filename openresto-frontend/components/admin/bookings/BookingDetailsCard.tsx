@@ -1,4 +1,5 @@
 import { View, ViewStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { fmtLongDate, fmtMonthDay, fmtTime } from "@/utils/formatters";
@@ -32,6 +33,7 @@ export function BookingDetailsCard({
   cardColor,
   style,
 }: BookingDetailsCardProps) {
+  const { t } = useTranslation();
   const startTime = new Date(booking.date);
   const endTime = booking.endTime
     ? new Date(booking.endTime)
@@ -51,41 +53,85 @@ export function BookingDetailsCard({
   // Field order mirrors EditBookingForm/NewBookingModal (restaurant → section → table →
   // date → time → guests → email → name → requests) so the read-only card and the edit
   // form stay visually aligned when both are shown side by side.
-  const rows: { label: string; value: string }[] = [
-    { label: "Ref", value: booking.bookingRef ?? `#${booking.id}` },
-    { label: "Restaurant", value: booking.restaurantName },
-    ...(booking.sectionName ? [{ label: "Section", value: booking.sectionName }] : []),
-    { label: "Table", value: booking.tableName ?? "Table" },
+  /**
+   * `key` (rather than the localized `label`) drives the "Status" highlight style below,
+   * since a translated label can't be compared against an English literal.
+   * @see [BookingDetailsCard.test.tsx](../../../tests/components/BookingDetailsCard.test.tsx)
+   * — pins that the cancelled-row highlight still applies once the label is translated.
+   */
+  const rows: { key: string; label: string; value: string }[] = [
     {
-      label: "Date",
+      key: "ref",
+      label: t("admin.bookings.detail.fields.ref"),
+      value: booking.bookingRef ?? `#${booking.id}`,
+    },
+    {
+      key: "restaurant",
+      label: t("admin.bookings.form.restaurant"),
+      value: booking.restaurantName,
+    },
+    ...(booking.sectionName
+      ? [{ key: "section", label: t("booking.form.sectionLabel"), value: booking.sectionName }]
+      : []),
+    {
+      key: "table",
+      label: t("booking.form.tableLabel"),
+      value: booking.tableName ?? t("booking.form.tableLabel"),
+    },
+    {
+      key: "date",
+      label: t("booking.form.dateLabel"),
       value: fmtLongDate(startTime),
     },
     {
-      label: "Time",
-      value: `${timeRangeDisplay} (${durationMins} min)`,
+      key: "time",
+      label: t("booking.form.timeLabel"),
+      value: t("admin.bookings.detail.timeRangeWithDuration", {
+        range: timeRangeDisplay,
+        mins: durationMins,
+      }),
     },
-    { label: "Party", value: `${booking.seats} guest${booking.seats !== 1 ? "s" : ""}` },
-    { label: "Email", value: booking.customerEmail },
-    ...(booking.customerName ? [{ label: "Name", value: booking.customerName }] : []),
-    { label: "Requests", value: booking.specialRequests || "None" },
+    {
+      key: "party",
+      label: t("admin.bookings.detail.fields.party"),
+      value: t("booking.form.partySize", { count: booking.seats }),
+    },
+    { key: "email", label: t("booking.form.emailLabel"), value: booking.customerEmail },
+    ...(booking.customerName
+      ? [
+          {
+            key: "name",
+            label: t("admin.bookings.detail.fields.name"),
+            value: booking.customerName,
+          },
+        ]
+      : []),
+    {
+      key: "requests",
+      label: t("admin.bookings.detail.fields.requests"),
+      value: booking.specialRequests || t("admin.bookings.detail.noRequests"),
+    },
   ];
 
   if (booking.isCancelled) {
-    rows.push({ label: "Status", value: "CANCELLED" });
+    rows.push({
+      key: "status",
+      label: t("admin.bookings.sort.status"),
+      value: t("admin.bookings.status.cancelled").toUpperCase(),
+    });
   }
 
   return (
     <View style={[styles.card, { backgroundColor: cardColor, borderColor }, style]}>
-      {rows.map(({ label, value }, i) => (
-        <View key={label}>
+      {rows.map(({ key, label, value }, i) => (
+        <View key={key}>
           {i > 0 && <View style={[styles.divider, { backgroundColor: borderColor }]} />}
           <View style={styles.row}>
             <ThemedText style={[styles.rowLabel, { color: mutedColor }]}>{label}</ThemedText>
             <ThemedText
               style={[
                 styles.rowValue,
-                label === "Status" &&
-                  value === "CANCELLED" && { color: theme.colors.error, fontWeight: "700" },
+                key === "status" && { color: theme.colors.error, fontWeight: "700" },
               ]}
             >
               {value}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, View, ScrollView, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { ButtonRow } from "@/components/common/ButtonRow";
@@ -29,6 +30,7 @@ export default function RestaurantActionModal({
   actionType,
   onSuccess,
 }: RestaurantActionModalProps) {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
   const [restaurants, setRestaurants] = useState<
     { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
@@ -74,18 +76,25 @@ export default function RestaurantActionModal({
           if (result.extendedBookings.length > 0) {
             setExtendedBookings(result.extendedBookings);
           } else {
-            onSuccess?.(`No active bookings found to extend for ${restaurantName}.`);
+            onSuccess?.(
+              t("admin.bookings.restaurantAction.noActiveToExtend", { name: restaurantName })
+            );
             onClose();
           }
         }
       } else {
         if (isCurrentlyPaused) {
           await unpauseRestaurantBookings(restaurantId);
-          onSuccess?.(`Bookings for ${restaurantName} have been resumed.`);
+          onSuccess?.(
+            t("admin.bookings.restaurantAction.resumedSuccess", { name: restaurantName })
+          );
         } else {
           await pauseRestaurantBookings(restaurantId, 60);
           onSuccess?.(
-            `Bookings for ${restaurantName} up to ${willPauseUntil} are paused. Later times stay open.`
+            t("admin.bookings.restaurantAction.pausedSuccess", {
+              name: restaurantName,
+              time: willPauseUntil,
+            })
           );
         }
         onClose();
@@ -106,27 +115,27 @@ export default function RestaurantActionModal({
           accessibilityViewIsModal
           accessibilityLabel={
             extendedBookings
-              ? "Bookings extended"
+              ? t("admin.bookings.restaurantAction.a11y.extended")
               : actionType === "pause"
-                ? "Pause bookings"
-                : "Extend bookings"
+                ? t("admin.bookings.restaurantAction.a11y.pause")
+                : t("admin.bookings.restaurantAction.a11y.extend")
           }
           style={[styles.content, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
           <View style={styles.header}>
             <ThemedText style={styles.title} accessibilityRole="header">
               {extendedBookings
-                ? "Bookings Extended"
+                ? t("admin.bookings.restaurantAction.title.extended")
                 : actionType === "pause"
-                  ? "Pause Bookings"
-                  : "Extend Bookings"}
+                  ? t("admin.bookings.restaurantAction.title.pause")
+                  : t("admin.bookings.restaurantAction.title.extend")}
             </ThemedText>
             <Pressable
               onPress={onClose}
               style={styles.closeBtn}
               testID="close-modal-button"
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel={t("common.actions.close")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Icon name="close" size="xxl" color={colors.muted} />
@@ -135,10 +144,12 @@ export default function RestaurantActionModal({
 
           <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
             {extendedBookings
-              ? `The following ${extendedBookings.length} bookings have been extended by 1 hour:`
+              ? t("admin.bookings.restaurantAction.extendedSubtitle", {
+                  count: extendedBookings.length,
+                })
               : actionType === "pause"
-                ? "Pausing turns away new bookings for the next hour of service. Later times stay bookable."
-                : "Select a restaurant to extend all active bookings by 1 hour."}
+                ? t("admin.bookings.restaurantAction.pauseSubtitle")
+                : t("admin.bookings.restaurantAction.extendSubtitle")}
           </ThemedText>
 
           {loading ? (
@@ -146,7 +157,7 @@ export default function RestaurantActionModal({
               style={styles.spinner}
               color={primaryColor}
               testID="loading-indicator"
-              accessibilityLabel="Loading restaurants"
+              accessibilityLabel={t("admin.bookings.restaurantAction.loadingRestaurants")}
             />
           ) : extendedBookings ? (
             <>
@@ -158,8 +169,10 @@ export default function RestaurantActionModal({
                       <ThemedText style={[styles.itemMeta, { color: colors.muted }]}>
                         {fmtTime(new Date(b.date))}
                         {" → "}
-                        {b.endTime ? fmtTime(new Date(b.endTime)) : "Extended"}
-                        {` · ${b.seats} guests`}
+                        {b.endTime
+                          ? fmtTime(new Date(b.endTime))
+                          : t("admin.bookings.restaurantAction.extendedFallback")}
+                        {` · ${t("booking.form.partySize", { count: b.seats })}`}
                       </ThemedText>
                     </View>
                   </View>
@@ -167,13 +180,15 @@ export default function RestaurantActionModal({
               </ScrollView>
               <ButtonRow style={styles.footer}>
                 <Button size="md" onPress={onClose}>
-                  Done
+                  {t("admin.bookings.restaurantAction.doneAction")}
                 </Button>
               </ButtonRow>
             </>
           ) : restaurants.length === 0 ? (
             <View style={styles.empty}>
-              <ThemedText style={{ color: colors.muted }}>No restaurants found.</ThemedText>
+              <ThemedText style={{ color: colors.muted }}>
+                {t("admin.bookings.restaurantAction.noRestaurants")}
+              </ThemedText>
             </View>
           ) : (
             <ScrollView style={styles.list}>
@@ -188,7 +203,12 @@ export default function RestaurantActionModal({
                     onPress={() => handleAction(r.id, r.name, isPaused)}
                     disabled={submitting !== null}
                     accessibilityRole="button"
-                    accessibilityLabel={`${isPaused ? "Resume" : "Pause"} bookings for ${r.name}`}
+                    accessibilityLabel={t(
+                      isPaused
+                        ? "admin.bookings.restaurantAction.resumeLabel"
+                        : "admin.bookings.restaurantAction.pauseLabel",
+                      { name: r.name }
+                    )}
                     accessibilityState={{ disabled: submitting !== null }}
                     style={({ pressed }) => [
                       styles.item,
@@ -211,17 +231,23 @@ export default function RestaurantActionModal({
                             <ThemedText
                               style={{ color: theme.colors.error, fontSize: 10, fontWeight: "700" }}
                             >
-                              PAUSED
+                              {t("admin.bookings.restaurantAction.pausedBadge")}
                             </ThemedText>
                           </View>
                         )}
                       </View>
                       <ThemedText style={[styles.itemMeta, { color: colors.muted }]}>
                         {isPaused
-                          ? `Bookings up to ${fmtTime(new Date(r.bookingsPausedUntil!))} are paused`
+                          ? t("admin.bookings.restaurantAction.pausedUntil", {
+                              time: fmtTime(new Date(r.bookingsPausedUntil!)),
+                            })
                           : actionType === "pause"
-                            ? `Will pause bookings up to ${willPauseUntil}`
-                            : `${r.activeBookingsCount ?? 0} active bookings`}
+                            ? t("admin.bookings.restaurantAction.willPauseUntil", {
+                                time: willPauseUntil,
+                              })
+                            : t("admin.bookings.restaurantAction.activeBookingsCount", {
+                                count: r.activeBookingsCount ?? 0,
+                              })}
                       </ThemedText>
                     </View>
                     {submitting === r.id ? (

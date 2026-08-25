@@ -1,4 +1,6 @@
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { styles } from "@/components/admin/bookings/bookings.styles";
 import type { SortKey, SortState } from "@/components/admin/bookings/sorting";
@@ -14,13 +16,15 @@ export interface BookingsSortControlProps {
   primaryColor: string;
 }
 
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "date", label: "Time" },
-  { key: "guest", label: "Guest" },
-  { key: "seats", label: "Party" },
-  { key: "table", label: "Table" },
-  { key: "status", label: "Status" },
-];
+function columnsFor(t: TFunction): { key: SortKey; label: string }[] {
+  return [
+    { key: "date", label: t("admin.bookings.sort.time") },
+    { key: "guest", label: t("admin.bookings.sort.guest") },
+    { key: "seats", label: t("admin.bookings.sort.party") },
+    { key: "table", label: t("booking.form.tableLabel") },
+    { key: "status", label: t("admin.bookings.sort.status") },
+  ];
+}
 
 /**
  * Sort affordance for the mobile card list — column headers don't apply to a
@@ -36,23 +40,30 @@ export function BookingsSortControl({
   mutedColor,
   primaryColor,
 }: BookingsSortControlProps) {
+  const { t } = useTranslation();
+  const columns = columnsFor(t);
   return (
     <View style={[styles.sortControl, { borderColor, backgroundColor: cardBg }]}>
-      <ThemedText style={[styles.sortControlLabel, { color: mutedColor }]}>Sort</ThemedText>
+      <ThemedText style={[styles.sortControlLabel, { color: mutedColor }]}>
+        {t("admin.bookings.sort.sortLabel")}
+      </ThemedText>
       <View style={styles.sortControlChips}>
-        {COLUMNS.map(({ key, label }) => {
+        {columns.map(({ key, label }) => {
           const isActive = sort.key === key;
           const dirLabel = isActive
             ? sort.dir === "asc"
-              ? "ascending"
-              : "descending"
-            : "not sorted";
+              ? t("admin.bookings.sort.ascending")
+              : t("admin.bookings.sort.descending")
+            : t("admin.bookings.sort.notSorted");
           return (
             <Pressable
               key={key}
               testID={`sort-chip-${key}`}
               accessibilityRole="button"
-              accessibilityLabel={`Sort by ${label}, ${dirLabel}`}
+              accessibilityLabel={t("admin.bookings.sort.ariaLabel", {
+                column: label,
+                direction: dirLabel,
+              })}
               style={[
                 styles.sortChip,
                 { borderColor: isActive ? primaryColor : borderColor },

@@ -376,5 +376,255 @@
       "moreTagsLabel_one": "{{count}} etiqueta más: {{list}}",
       "moreTagsLabel_other": "{{count}} etiquetas más: {{list}}"
     }
+  },
+  "admin": {
+    "bookings": {
+      "pageTitle": "Reservas",
+      "searchResultsTitle": "Resultados de búsqueda",
+      "searchResultsCount_one": "{{count}} resultado para «{{query}}»",
+      "searchResultsCount_other": "{{count}} resultados para «{{query}}»",
+      "totalTodaySummary": "{{total}} en total · {{today}} hoy",
+      "clearSearch": "Borrar",
+      "clearSearchLabel": "Borrar búsqueda",
+      "newBooking": "Nueva reserva",
+      "newBookingLabel": "Nueva reserva",
+      "screenTitle": {
+        "live": "Reservas activas",
+        "past": "Reservas pasadas",
+        "cancelled": "Reservas canceladas"
+      },
+      "tabs": {
+        "active": "Activas",
+        "past": "Pasadas",
+        "cancelled": "Canceladas",
+        "showLabel": "Mostrar reservas {{tab}}"
+      },
+      "viewToggle": {
+        "timetable": "Horario",
+        "list": "Lista",
+        "timetableLabel": "Vista de horario",
+        "listLabel": "Vista de lista"
+      },
+      "timetable": {
+        "previousDay": "Día anterior",
+        "nextDay": "Día siguiente",
+        "jumpToTodayLabel": "{{date}}, ir a hoy",
+        "tapForToday": "toca para ir a hoy",
+        "legend": {
+          "seatedNow": "Sentados ahora",
+          "booked": "Reservado",
+          "now": "Ahora",
+          "tapHint": "Toca un turno para ver los detalles"
+        },
+        "noTablesFound": "No se encontraron mesas. Agrega secciones y mesas en el gestor de establecimientos.",
+        "noBookingsOnDay": "No hay reservas el {{date}}",
+        "noBookingsGeneric": "No hay reservas este día",
+        "guestFallback": "Cliente",
+        "peopleAbbrev": "{{count}}p",
+        "sittingLabel": "{{guest}}, {{seats}} cubiertos en {{unit}}, de {{start}} a {{end}}",
+        "sittingLabelWithRemaining": "{{guest}}, {{seats}} cubiertos en {{unit}}, de {{start}} a {{end}}, {{remaining}}"
+      },
+      "sort": {
+        "time": "Hora",
+        "guest": "Cliente",
+        "party": "Comensales",
+        "status": "Estado",
+        "sortLabel": "Ordenar",
+        "ariaLabel": "Ordenar por {{column}}, {{direction}}",
+        "ascending": "ascendente",
+        "descending": "descendente",
+        "notSorted": "sin ordenar"
+      },
+      "status": {
+        "completed": "Completada",
+        "seated": "Sentados",
+        "arrived": "Llegaron",
+        "upcoming": "Próxima",
+        "scheduled": "Programada",
+        "cancelled": "Cancelada"
+      },
+      "rowSummary": "{{name}}, {{when}}, {{seats}}",
+      "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
+      "cancelBookingTitle": "Cancelar reserva",
+      "cancelBookingConfirm": "¿Cancelar la reserva de {{name}}?",
+      "keep": "Conservar",
+      "goBack": "Volver",
+      "emptyState": "No se encontraron reservas",
+      "cancelBookingLabel": "Cancelar reserva",
+      "cancelBookingForLabel": "Cancelar la reserva de {{name}}",
+      "restoring": "Restaurando…",
+      "restoreBooking": "Restaurar reserva",
+      "restoreBookingLabel": "Restaurar reserva",
+      "cancelling": "Cancelando…",
+      "permanentlyDeleteGdpr": "Eliminar permanentemente (RGPD)",
+      "permanentlyDeleteLabel": "Eliminar permanentemente la reserva por el RGPD",
+      "permanentlyDeleteHint": "Esta acción no se puede deshacer",
+      "form": {
+        "restaurant": "Restaurante",
+        "guestEmail": "Correo del cliente",
+        "guestName": "Nombre del cliente",
+        "guestNameOptional": "Nombre del cliente (opcional)",
+        "specialRequests": "Solicitudes especiales",
+        "emailPlaceholder": "cliente@ejemplo.com",
+        "namePlaceholder": "Nombre completo",
+        "specialRequestsPlaceholder": "Necesidades dietéticas, ocasión, notas",
+        "tableOptionLabel": "{{name}} ({{seats}})",
+        "tableFallbackName": "Mesa {{id}}"
+      },
+      "detail": {
+        "heading": "Detalles de la reserva",
+        "dialogLabel": "Detalles de la reserva",
+        "closeLabel": "Cerrar detalles de la reserva",
+        "edit": "Editar",
+        "editLabel": "Editar reserva",
+        "discardChangesLabel": "Descartar cambios",
+        "saveChanges": "Guardar cambios",
+        "saving": "Guardando…",
+        "saveChangesLabel": "Guardar cambios",
+        "notFound": "Reserva no encontrada.",
+        "invalidSeats": "Número de comensales no válido",
+        "dateTimeRequired": "La fecha y la hora son obligatorias",
+        "fields": {
+          "ref": "Ref.",
+          "party": "Comensales",
+          "name": "Nombre",
+          "requests": "Solicitudes"
+        },
+        "noRequests": "Ninguna",
+        "timeRangeWithDuration": "{{range}} ({{mins}} min)",
+        "extendSection": "Ampliar reserva",
+        "extendByMinutes": "+{{mins}} min",
+        "extendByMinutesLabel": "Ampliar la reserva {{mins}} minutos",
+        "emailGuest": "Enviar correo al cliente",
+        "emailTo": "Para: {{email}}",
+        "moveNotice": "El turno cambió. Se ha redactado un aviso a continuación y aún no se ha enviado: editálo o envíalo tal cual.",
+        "subjectPlaceholder": "Asunto",
+        "bodyPlaceholder": "Cuerpo del mensaje (se admite HTML)",
+        "sendEmail": "Enviar correo",
+        "sending": "Enviando…",
+        "sendEmailLabel": "Enviar correo al cliente",
+        "restoreBookingTitle": "Restaurar reserva",
+        "restoreBookingConfirm": "¿Seguro que quieres restaurar esta reserva cancelada?",
+        "restore": "Restaurar",
+        "cancelBookingConfirmMessage": "¿Seguro que quieres cancelar esta reserva? Esta acción no se puede deshacer.",
+        "permanentlyDeleteTitle": "Eliminar permanentemente",
+        "permanentlyDeleteMessage": "Esto borrará permanentemente todos los datos de esta reserva, incluidos el correo y los datos personales del cliente. Esta acción no se puede revertir.",
+        "deleteForever": "Eliminar para siempre",
+        "failedToCancel": "No se pudo cancelar la reserva.",
+        "failedToRestore": "No se pudo restaurar la reserva.",
+        "failedToUpdate": "No se pudo actualizar la reserva.",
+        "failedToPermanentlyDelete": "No se pudo eliminar permanentemente la reserva."
+      },
+      "newBookingModal": {
+        "closeFormLabel": "Cerrar el formulario de nueva reserva",
+        "dialogLabel": "Nueva reserva",
+        "loadingForm": "Cargando formulario de reserva",
+        "creating": "Creando…",
+        "submit": "Crear reserva",
+        "overCapacityTitle": "Capacidad excedida",
+        "overCapacityMessage": "Esta mesa solo tiene capacidad para {{tableSeats}}, pero estás reservando para {{guests}}. ¿Continuar de todos modos?",
+        "bookAnyway": "Reservar de todos modos",
+        "createError": "No se pudo crear la reserva."
+      },
+      "restaurantAction": {
+        "title": {
+          "extended": "Reservas ampliadas",
+          "pause": "Pausar reservas",
+          "extend": "Ampliar reservas"
+        },
+        "a11y": {
+          "extended": "Reservas ampliadas",
+          "pause": "Pausar reservas",
+          "extend": "Ampliar reservas"
+        },
+        "pauseSubtitle": "Pausar rechaza nuevas reservas durante la próxima hora de servicio. Los horarios posteriores siguen disponibles.",
+        "extendSubtitle": "Selecciona un restaurante para ampliar todas las reservas activas una hora.",
+        "extendedSubtitle_one": "Se ha ampliado la siguiente reserva una hora:",
+        "extendedSubtitle_other": "Se han ampliado las siguientes {{count}} reservas una hora:",
+        "loadingRestaurants": "Cargando restaurantes",
+        "noRestaurants": "No se encontraron restaurantes.",
+        "pausedBadge": "PAUSADO",
+        "resumeLabel": "Reanudar reservas de {{name}}",
+        "pauseLabel": "Pausar reservas de {{name}}",
+        "pausedUntil": "Las reservas hasta las {{time}} están pausadas",
+        "willPauseUntil": "Pausará las reservas hasta las {{time}}",
+        "activeBookingsCount_one": "{{count}} reserva activa",
+        "activeBookingsCount_other": "{{count}} reservas activas",
+        "extendedFallback": "Ampliada",
+        "noActiveToExtend": "No se encontraron reservas activas para ampliar de {{name}}.",
+        "resumedSuccess": "Se han reanudado las reservas de {{name}}.",
+        "pausedSuccess": "Las reservas de {{name}} hasta las {{time}} están pausadas. Los horarios posteriores siguen abiertos.",
+        "doneAction": "Listo"
+      },
+      "lookup": {
+        "placeholder": "Nombre, correo o referencia…",
+        "find": "Buscar",
+        "findLabel": "Buscar reserva",
+        "notFound": "No se encontró ninguna reserva.",
+        "showingAllMatches": "Mostrando todas las coincidencias…"
+      }
+    },
+    "dashboard": {
+      "nativeTitle": "Panel de administración",
+      "title": "Panel",
+      "welcomeSubtitle": "Bienvenido de nuevo. Esto es lo que pasa hoy.",
+      "successTitle": "Éxito",
+      "metrics": {
+        "todayBookings": {
+          "label": "Reservas de hoy",
+          "sub": "Total de comensales para hoy"
+        },
+        "activeHolds": {
+          "label": "Retenciones activas",
+          "sub": "Mesas retenidas actualmente"
+        },
+        "restaurantStatus": {
+          "label": "Estado del restaurante",
+          "active": "Activo",
+          "paused": "Pausado",
+          "subActive": "Todos los locales aceptan reservas",
+          "subPaused_one": "{{count}} local está pausado actualmente",
+          "subPaused_other": "{{count}} locales están pausados actualmente"
+        },
+        "totalCovers": {
+          "label": "Total de comensales",
+          "sub": "Total de clientes atendidos (desde siempre)"
+        }
+      },
+      "quickActions": {
+        "viewAllBookings": "Ver todas las reservas",
+        "manageSettings": "Gestionar ajustes"
+      },
+      "chart": {
+        "title": "Resumen de ocupación",
+        "last7Days": "Últimos 7 días",
+        "dayLabel": {
+          "tMinus6": "T-6",
+          "tMinus5": "T-5",
+          "tMinus4": "T-4",
+          "tMinus3": "T-3",
+          "tMinus2": "T-2",
+          "tMinus1": "T-1",
+          "today": "Hoy"
+        },
+        "toggle": {
+          "relativeLabel": "Mostrar horas en relación con ahora",
+          "calendarLabel": "Mostrar horas por fecha",
+          "relativeText": "T-x",
+          "datesText": "Fechas"
+        },
+        "summary_one": "{{count}} reserva · {{perDay}}/día · pico {{weekday}}",
+        "summary_other": "{{count}} reservas · {{perDay}}/día · pico {{weekday}}",
+        "summaryEmpty": "No hay reservas en los últimos 7 días"
+      },
+      "recentBookings": {
+        "viewAll": "Ver todo →",
+        "viewAllLabel": "Ver todas las reservas",
+        "empty": "No hay reservas próximas para hoy.",
+        "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
+        "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelada",
+        "meta": "{{seats}} · {{restaurant}}"
+      }
+    }
   }
 }

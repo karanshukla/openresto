@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
+import { useTranslation } from "react-i18next";
 import Button from "@/components/common/Button";
 import {
   getAdminBookings,
@@ -48,6 +49,7 @@ import { Icon } from "@/components/common/Icon";
 type ViewMode = "timetable" | "list";
 
 export default function AdminBookingsScreen() {
+  const { t } = useTranslation();
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<number | null>(null);
   const [persistedRestaurantId, setPersistedRestaurantId] = usePersistedState<number | null>(
@@ -295,10 +297,10 @@ export default function AdminBookingsScreen() {
               viewMode === "timetable"
                 ? fmtDate(gridDate)
                 : statusFilter === "past"
-                  ? "Past Bookings"
+                  ? t("admin.bookings.screenTitle.past")
                   : statusFilter === "cancelled"
-                    ? "Cancelled Bookings"
-                    : "Live Bookings",
+                    ? t("admin.bookings.screenTitle.cancelled")
+                    : t("admin.bookings.screenTitle.live"),
           }}
         />
       )}
@@ -306,14 +308,20 @@ export default function AdminBookingsScreen() {
       <View style={styles.pageHeader}>
         <View style={{ flex: 1 }}>
           <ThemedText style={styles.pageTitle}>
-            {searchQuery ? "Search Results" : "Bookings"}
+            {searchQuery ? t("admin.bookings.searchResultsTitle") : t("admin.bookings.pageTitle")}
           </ThemedText>
           <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
             {searchQuery
-              ? `${bookings.length} result${bookings.length !== 1 ? "s" : ""} for "${searchQuery}"`
+              ? t("admin.bookings.searchResultsCount", {
+                  count: bookings.length,
+                  query: searchQuery,
+                })
               : viewMode === "timetable"
                 ? fmtDate(gridDate)
-                : `${bookings.length} total · ${todayCount} today`}
+                : t("admin.bookings.totalTodaySummary", {
+                    total: bookings.length,
+                    today: todayCount,
+                  })}
           </ThemedText>
         </View>
 
@@ -341,18 +349,18 @@ export default function AdminBookingsScreen() {
               size="md"
               icon="close-outline"
               onPress={() => router.replace("/admin/bookings")}
-              accessibilityLabel="Clear search"
+              accessibilityLabel={t("admin.bookings.clearSearchLabel")}
             >
-              Clear
+              {t("admin.bookings.clearSearch")}
             </Button>
           ) : (
             <Button
               size="md"
               icon="add-outline"
               onPress={() => setShowNewModal(true)}
-              accessibilityLabel="New booking"
+              accessibilityLabel={t("admin.bookings.newBookingLabel")}
             >
-              New Booking
+              {t("admin.bookings.newBooking")}
             </Button>
           )}
         </View>
@@ -395,9 +403,13 @@ export default function AdminBookingsScreen() {
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
             {(
               [
-                { key: "active", label: "Active", color: PRIMARY },
-                { key: "past", label: "Past", color: "#7c3aed" },
-                { key: "cancelled", label: "Cancelled", color: theme.status.cancelled.text },
+                { key: "active", label: t("admin.bookings.tabs.active"), color: PRIMARY },
+                { key: "past", label: t("admin.bookings.tabs.past"), color: "#7c3aed" },
+                {
+                  key: "cancelled",
+                  label: t("admin.bookings.tabs.cancelled"),
+                  color: theme.status.cancelled.text,
+                },
               ] as const
             ).map(({ key, label, color }) => (
               <Pressable
@@ -405,7 +417,9 @@ export default function AdminBookingsScreen() {
                 style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
                 onPress={() => setStatusFilter(key)}
                 accessibilityRole="radio"
-                accessibilityLabel={`Show ${label.toLowerCase()} bookings`}
+                accessibilityLabel={t("admin.bookings.tabs.showLabel", {
+                  tab: label.toLowerCase(),
+                })}
                 accessibilityState={{ checked: statusFilter === key }}
               >
                 <ThemedText
@@ -427,7 +441,7 @@ export default function AdminBookingsScreen() {
             style={[styles.modeBtn, viewMode === "timetable" && { backgroundColor: PRIMARY }]}
             onPress={switchToTimetable}
             accessibilityRole="radio"
-            accessibilityLabel="Timetable view"
+            accessibilityLabel={t("admin.bookings.viewToggle.timetableLabel")}
             accessibilityState={{ checked: viewMode === "timetable" }}
           >
             <Icon
@@ -442,7 +456,7 @@ export default function AdminBookingsScreen() {
                   { color: viewMode === "timetable" ? "#fff" : mutedColor },
                 ]}
               >
-                Timetable
+                {t("admin.bookings.viewToggle.timetable")}
               </ThemedText>
             )}
           </Pressable>
@@ -451,7 +465,7 @@ export default function AdminBookingsScreen() {
             style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
             onPress={() => setViewMode("list")}
             accessibilityRole="radio"
-            accessibilityLabel="List view"
+            accessibilityLabel={t("admin.bookings.viewToggle.listLabel")}
             accessibilityState={{ checked: viewMode === "list" }}
           >
             <Icon name="list-outline" size={15} color={viewMode === "list" ? "#fff" : mutedColor} />
@@ -459,7 +473,7 @@ export default function AdminBookingsScreen() {
               <ThemedText
                 style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}
               >
-                List
+                {t("admin.bookings.viewToggle.list")}
               </ThemedText>
             )}
           </Pressable>
@@ -476,7 +490,7 @@ export default function AdminBookingsScreen() {
               style={styles.gridNavBtn}
               onPress={() => handleGridDateChange(-1)}
               accessibilityRole="button"
-              accessibilityLabel="Previous day"
+              accessibilityLabel={t("admin.bookings.timetable.previousDay")}
             >
               <Icon name="chevron-back" size="lg" color={PRIMARY} />
             </Pressable>
@@ -484,12 +498,14 @@ export default function AdminBookingsScreen() {
               onPress={resetToToday}
               style={styles.gridDateLabel}
               accessibilityRole="button"
-              accessibilityLabel={`${fmtDate(gridDate)}, jump to today`}
+              accessibilityLabel={t("admin.bookings.timetable.jumpToTodayLabel", {
+                date: fmtDate(gridDate),
+              })}
             >
               <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
               {gridDate.toDateString() !== new Date().toDateString() && (
                 <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
-                  tap for today
+                  {t("admin.bookings.timetable.tapForToday")}
                 </ThemedText>
               )}
             </Pressable>
@@ -498,7 +514,7 @@ export default function AdminBookingsScreen() {
               style={styles.gridNavBtn}
               onPress={() => handleGridDateChange(1)}
               accessibilityRole="button"
-              accessibilityLabel="Next day"
+              accessibilityLabel={t("admin.bookings.timetable.nextDay")}
             >
               <Icon name="chevron-forward" size="lg" color={PRIMARY} />
             </Pressable>
@@ -517,7 +533,9 @@ export default function AdminBookingsScreen() {
               ]}
             >
               <View style={[styles.legendDot, { backgroundColor: PRIMARY }]} />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Seated now</ThemedText>
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                {t("admin.bookings.timetable.legend.seatedNow")}
+              </ThemedText>
             </View>
             <View
               style={[
@@ -526,7 +544,9 @@ export default function AdminBookingsScreen() {
               ]}
             >
               <View style={[styles.legendDot, { backgroundColor: `${PRIMARY}44` }]} />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Booked</ThemedText>
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                {t("admin.bookings.timetable.legend.booked")}
+              </ThemedText>
             </View>
             <View
               style={[
@@ -540,10 +560,12 @@ export default function AdminBookingsScreen() {
                   { width: 3, backgroundColor: colors.error, borderRadius: 0 },
                 ]}
               />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>Now</ThemedText>
+              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                {t("admin.bookings.timetable.legend.now")}
+              </ThemedText>
             </View>
             <ThemedText style={[styles.legendText, { color: mutedColor, marginLeft: 4 }]}>
-              Tap a sitting to view details
+              {t("admin.bookings.timetable.legend.tapHint")}
             </ThemedText>
           </View>
 
@@ -569,16 +591,16 @@ export default function AdminBookingsScreen() {
         <View style={styles.emptyState}>
           <Icon name="calendar-outline" size={40} color={mutedColor} />
           <ThemedText style={[styles.emptyText, { color: mutedColor }]}>
-            No bookings found
+            {t("admin.bookings.emptyState")}
           </ThemedText>
           <Button
             size="md"
             icon="add-outline"
             style={styles.emptyStateAction}
             onPress={() => setShowNewModal(true)}
-            accessibilityLabel="New booking"
+            accessibilityLabel={t("admin.bookings.newBookingLabel")}
           >
-            New Booking
+            {t("admin.bookings.newBooking")}
           </Button>
         </View>
       ) : isWide ? (
@@ -632,14 +654,16 @@ export default function AdminBookingsScreen() {
 
       <ConfirmModal
         visible={!!cancelTarget}
-        title="Cancel Booking"
+        title={t("admin.bookings.cancelBookingTitle")}
         message={
           cancelTarget
-            ? `Cancel booking for ${cancelTarget.customerName ?? cancelTarget.customerEmail}?`
+            ? t("admin.bookings.cancelBookingConfirm", {
+                name: cancelTarget.customerName ?? cancelTarget.customerEmail,
+              })
             : ""
         }
-        confirmLabel="Cancel Booking"
-        cancelLabel="Keep"
+        confirmLabel={t("admin.bookings.cancelBookingTitle")}
+        cancelLabel={t("admin.bookings.keep")}
         destructive
         onConfirm={async () => {
           if (!cancelTarget) return;
@@ -657,7 +681,7 @@ export default function AdminBookingsScreen() {
 
       <AlertModal
         visible={errorMessage !== null}
-        title="Error"
+        title={t("errors.title")}
         message={errorMessage ?? ""}
         onClose={clearError}
       />

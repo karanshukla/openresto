@@ -376,5 +376,255 @@
       "moreTagsLabel_one": "{{count}} more tag: {{list}}",
       "moreTagsLabel_other": "{{count}} more tags: {{list}}"
     }
+  },
+  "admin": {
+    "bookings": {
+      "pageTitle": "Bookings",
+      "searchResultsTitle": "Search Results",
+      "searchResultsCount_one": "{{count}} result for \"{{query}}\"",
+      "searchResultsCount_other": "{{count}} results for \"{{query}}\"",
+      "totalTodaySummary": "{{total}} total · {{today}} today",
+      "clearSearch": "Clear",
+      "clearSearchLabel": "Clear search",
+      "newBooking": "New Booking",
+      "newBookingLabel": "New booking",
+      "screenTitle": {
+        "live": "Live Bookings",
+        "past": "Past Bookings",
+        "cancelled": "Cancelled Bookings"
+      },
+      "tabs": {
+        "active": "Active",
+        "past": "Past",
+        "cancelled": "Cancelled",
+        "showLabel": "Show {{tab}} bookings"
+      },
+      "viewToggle": {
+        "timetable": "Timetable",
+        "list": "List",
+        "timetableLabel": "Timetable view",
+        "listLabel": "List view"
+      },
+      "timetable": {
+        "previousDay": "Previous day",
+        "nextDay": "Next day",
+        "jumpToTodayLabel": "{{date}}, jump to today",
+        "tapForToday": "tap for today",
+        "legend": {
+          "seatedNow": "Seated now",
+          "booked": "Booked",
+          "now": "Now",
+          "tapHint": "Tap a sitting to view details"
+        },
+        "noTablesFound": "No tables found. Add sections and tables in Location Manager.",
+        "noBookingsOnDay": "No bookings on {{date}}",
+        "noBookingsGeneric": "No bookings on this day",
+        "guestFallback": "Guest",
+        "peopleAbbrev": "{{count}}p",
+        "sittingLabel": "{{guest}}, {{seats}} covers on {{unit}}, {{start}} to {{end}}",
+        "sittingLabelWithRemaining": "{{guest}}, {{seats}} covers on {{unit}}, {{start}} to {{end}}, {{remaining}}"
+      },
+      "sort": {
+        "time": "Time",
+        "guest": "Guest",
+        "party": "Party",
+        "status": "Status",
+        "sortLabel": "Sort",
+        "ariaLabel": "Sort by {{column}}, {{direction}}",
+        "ascending": "ascending",
+        "descending": "descending",
+        "notSorted": "not sorted"
+      },
+      "status": {
+        "completed": "Completed",
+        "seated": "Seated",
+        "arrived": "Arrived",
+        "upcoming": "Upcoming",
+        "scheduled": "Scheduled",
+        "cancelled": "Cancelled"
+      },
+      "rowSummary": "{{name}}, {{when}}, {{seats}}",
+      "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
+      "cancelBookingTitle": "Cancel Booking",
+      "cancelBookingConfirm": "Cancel booking for {{name}}?",
+      "keep": "Keep",
+      "goBack": "Go Back",
+      "emptyState": "No bookings found",
+      "cancelBookingLabel": "Cancel booking",
+      "cancelBookingForLabel": "Cancel booking for {{name}}",
+      "restoring": "Restoring…",
+      "restoreBooking": "Restore Booking",
+      "restoreBookingLabel": "Restore booking",
+      "cancelling": "Cancelling…",
+      "permanentlyDeleteGdpr": "Permanently Delete (GDPR)",
+      "permanentlyDeleteLabel": "Permanently delete booking for GDPR",
+      "permanentlyDeleteHint": "This cannot be undone",
+      "form": {
+        "restaurant": "Restaurant",
+        "guestEmail": "Guest email",
+        "guestName": "Guest name",
+        "guestNameOptional": "Guest name (optional)",
+        "specialRequests": "Special requests",
+        "emailPlaceholder": "guest@example.com",
+        "namePlaceholder": "Full name",
+        "specialRequestsPlaceholder": "Dietary needs, occasion, notes",
+        "tableOptionLabel": "{{name}} ({{seats}})",
+        "tableFallbackName": "Table {{id}}"
+      },
+      "detail": {
+        "heading": "Booking Details",
+        "dialogLabel": "Booking details",
+        "closeLabel": "Close booking details",
+        "edit": "Edit",
+        "editLabel": "Edit booking",
+        "discardChangesLabel": "Discard changes",
+        "saveChanges": "Save Changes",
+        "saving": "Saving…",
+        "saveChangesLabel": "Save changes",
+        "notFound": "Booking not found.",
+        "invalidSeats": "Invalid seats value",
+        "dateTimeRequired": "Date and time are required",
+        "fields": {
+          "ref": "Ref",
+          "party": "Party",
+          "name": "Name",
+          "requests": "Requests"
+        },
+        "noRequests": "None",
+        "timeRangeWithDuration": "{{range}} ({{mins}} min)",
+        "extendSection": "Extend booking",
+        "extendByMinutes": "+{{mins}} min",
+        "extendByMinutesLabel": "Extend booking by {{mins}} minutes",
+        "emailGuest": "Email guest",
+        "emailTo": "To: {{email}}",
+        "moveNotice": "The sitting moved. A notice is written below and has not been sent: edit it, or send it as it stands.",
+        "subjectPlaceholder": "Subject",
+        "bodyPlaceholder": "Message body (HTML supported)",
+        "sendEmail": "Send Email",
+        "sending": "Sending…",
+        "sendEmailLabel": "Send email to guest",
+        "restoreBookingTitle": "Restore Booking",
+        "restoreBookingConfirm": "Are you sure you want to restore this cancelled booking?",
+        "restore": "Restore",
+        "cancelBookingConfirmMessage": "Are you sure you want to cancel this booking? This cannot be undone.",
+        "permanentlyDeleteTitle": "Permanently Delete",
+        "permanentlyDeleteMessage": "This will permanently erase all data for this booking including the guest's email and personal details. This action cannot be reversed.",
+        "deleteForever": "Delete Forever",
+        "failedToCancel": "Failed to cancel the booking.",
+        "failedToRestore": "Failed to restore booking.",
+        "failedToUpdate": "Failed to update booking.",
+        "failedToPermanentlyDelete": "Failed to permanently delete the booking."
+      },
+      "newBookingModal": {
+        "closeFormLabel": "Close the new booking form",
+        "dialogLabel": "New booking",
+        "loadingForm": "Loading booking form",
+        "creating": "Creating…",
+        "submit": "Create Booking",
+        "overCapacityTitle": "Over Capacity",
+        "overCapacityMessage": "This table only seats {{tableSeats}} but you're booking for {{guests}}. Continue anyway?",
+        "bookAnyway": "Book Anyway",
+        "createError": "Failed to create booking."
+      },
+      "restaurantAction": {
+        "title": {
+          "extended": "Bookings Extended",
+          "pause": "Pause Bookings",
+          "extend": "Extend Bookings"
+        },
+        "a11y": {
+          "extended": "Bookings extended",
+          "pause": "Pause bookings",
+          "extend": "Extend bookings"
+        },
+        "pauseSubtitle": "Pausing turns away new bookings for the next hour of service. Later times stay bookable.",
+        "extendSubtitle": "Select a restaurant to extend all active bookings by 1 hour.",
+        "extendedSubtitle_one": "The following {{count}} booking has been extended by 1 hour:",
+        "extendedSubtitle_other": "The following {{count}} bookings have been extended by 1 hour:",
+        "loadingRestaurants": "Loading restaurants",
+        "noRestaurants": "No restaurants found.",
+        "pausedBadge": "PAUSED",
+        "resumeLabel": "Resume bookings for {{name}}",
+        "pauseLabel": "Pause bookings for {{name}}",
+        "pausedUntil": "Bookings up to {{time}} are paused",
+        "willPauseUntil": "Will pause bookings up to {{time}}",
+        "activeBookingsCount_one": "{{count}} active booking",
+        "activeBookingsCount_other": "{{count}} active bookings",
+        "extendedFallback": "Extended",
+        "noActiveToExtend": "No active bookings found to extend for {{name}}.",
+        "resumedSuccess": "Bookings for {{name}} have been resumed.",
+        "pausedSuccess": "Bookings for {{name}} up to {{time}} are paused. Later times stay open.",
+        "doneAction": "Done"
+      },
+      "lookup": {
+        "placeholder": "Name, email or reference…",
+        "find": "Find",
+        "findLabel": "Find booking",
+        "notFound": "No booking found.",
+        "showingAllMatches": "Showing all matches…"
+      }
+    },
+    "dashboard": {
+      "nativeTitle": "Admin Dashboard",
+      "title": "Dashboard",
+      "welcomeSubtitle": "Welcome back. Here is what's happening today.",
+      "successTitle": "Success",
+      "metrics": {
+        "todayBookings": {
+          "label": "Today's Bookings",
+          "sub": "Total covers for today"
+        },
+        "activeHolds": {
+          "label": "Active Holds",
+          "sub": "Tables currently being held"
+        },
+        "restaurantStatus": {
+          "label": "Restaurant Status",
+          "active": "Active",
+          "paused": "Paused",
+          "subActive": "All venues are accepting bookings",
+          "subPaused_one": "{{count}} venue is currently paused",
+          "subPaused_other": "{{count}} venues are currently paused"
+        },
+        "totalCovers": {
+          "label": "Total Covers",
+          "sub": "Total guests served (all time)"
+        }
+      },
+      "quickActions": {
+        "viewAllBookings": "View All Bookings",
+        "manageSettings": "Manage Settings"
+      },
+      "chart": {
+        "title": "Occupancy Overview",
+        "last7Days": "Last 7 days",
+        "dayLabel": {
+          "tMinus6": "T-6",
+          "tMinus5": "T-5",
+          "tMinus4": "T-4",
+          "tMinus3": "T-3",
+          "tMinus2": "T-2",
+          "tMinus1": "T-1",
+          "today": "Today"
+        },
+        "toggle": {
+          "relativeLabel": "Label hours relative to now",
+          "calendarLabel": "Label hours by clock time",
+          "relativeText": "T-x",
+          "datesText": "Dates"
+        },
+        "summary_one": "{{count}} booking · {{perDay}}/day · peak {{weekday}}",
+        "summary_other": "{{count}} bookings · {{perDay}}/day · peak {{weekday}}",
+        "summaryEmpty": "No bookings in the last 7 days"
+      },
+      "recentBookings": {
+        "viewAll": "View all →",
+        "viewAllLabel": "View all bookings",
+        "empty": "No upcoming bookings for today.",
+        "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
+        "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelled",
+        "meta": "{{seats}} · {{restaurant}}"
+      }
+    }
   }
 }

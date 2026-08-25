@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Button from "@/components/common/Button";
 
 interface BookingActionButtonsProps {
@@ -23,6 +24,7 @@ export function BookingActionButtons({
   onCancel,
   onPurge,
 }: BookingActionButtonsProps) {
+  const { t } = useTranslation();
   return (
     <>
       {isCancelled && (
@@ -35,9 +37,9 @@ export function BookingActionButtons({
           onPress={onUncancel}
           disabled={uncancelling}
           loading={uncancelling}
-          accessibilityLabel="Restore booking"
+          accessibilityLabel={t("admin.bookings.restoreBookingLabel")}
         >
-          {uncancelling ? "Restoring…" : "Restore Booking"}
+          {uncancelling ? t("admin.bookings.restoring") : t("admin.bookings.restoreBooking")}
         </Button>
       )}
 
@@ -51,9 +53,9 @@ export function BookingActionButtons({
           onPress={onCancel}
           disabled={deleting}
           loading={deleting}
-          accessibilityLabel="Cancel booking"
+          accessibilityLabel={t("admin.bookings.cancelBookingLabel")}
         >
-          {deleting ? "Cancelling…" : "Cancel Booking"}
+          {deleting ? t("admin.bookings.cancelling") : t("admin.bookings.cancelBookingTitle")}
         </Button>
       )}
 
@@ -66,10 +68,10 @@ export function BookingActionButtons({
         onPress={onPurge}
         disabled={deleting}
         loading={deleting}
-        accessibilityLabel="Permanently delete booking for GDPR"
-        accessibilityHint="This cannot be undone"
+        accessibilityLabel={t("admin.bookings.permanentlyDeleteLabel")}
+        accessibilityHint={t("admin.bookings.permanentlyDeleteHint")}
       >
-        Permanently Delete (GDPR)
+        {t("admin.bookings.permanentlyDeleteGdpr")}
       </Button>
     </>
   );

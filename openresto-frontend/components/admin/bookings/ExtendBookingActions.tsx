@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
@@ -17,11 +18,14 @@ export function ExtendBookingActions({
   extending,
   onExtend,
 }: ExtendBookingActionsProps) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
         <Icon name="time-outline" size="md" color={mutedColor} />
-        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Extend booking</ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
+          {t("admin.bookings.detail.extendSection")}
+        </ThemedText>
       </View>
       <View style={styles.extendBtns}>
         {[30, 60, 90].map((mins) => (
@@ -31,9 +35,9 @@ export function ExtendBookingActions({
             style={styles.extendBtn}
             onPress={() => onExtend(mins)}
             disabled={extending}
-            accessibilityLabel={`Extend booking by ${mins} minutes`}
+            accessibilityLabel={t("admin.bookings.detail.extendByMinutesLabel", { mins })}
           >
-            {`+${mins} min`}
+            {t("admin.bookings.detail.extendByMinutes", { mins })}
           </Button>
         ))}
       </View>

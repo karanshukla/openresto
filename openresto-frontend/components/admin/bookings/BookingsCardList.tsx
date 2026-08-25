@@ -1,4 +1,5 @@
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
@@ -45,6 +46,7 @@ export function BookingsCardList({
   isDark,
   primaryColor,
 }: BookingsCardListProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.cardListWrap}>
       <BookingsSortControl
@@ -59,7 +61,7 @@ export function BookingsCardList({
         {bookings.map((b) => (
           <Pressable
             key={b.id}
-            {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b))}
+            {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b, t))}
             style={[
               styles.listCard,
               { backgroundColor: cardBg, borderColor },
@@ -97,7 +99,7 @@ export function BookingsCardList({
                 <View style={styles.partyPill}>
                   <Icon name="people-outline" size="xs" color={mutedColor} />
                   <ThemedText style={[styles.tdDate, { color: mutedColor }]}>
-                    {b.seats} guests · {b.tableName}
+                    {t("booking.form.partySize", { count: b.seats })} · {b.tableName}
                   </ThemedText>
                 </View>
               </View>
@@ -112,7 +114,7 @@ export function BookingsCardList({
                     ]}
                   >
                     <ThemedText style={[styles.badgeText, { color: theme.status.cancelled.text }]}>
-                      Cancelled
+                      {t("admin.bookings.status.cancelled")}
                     </ThemedText>
                   </View>
                 ) : (

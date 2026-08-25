@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -45,6 +46,7 @@ interface NewBookingModalProps {
 }
 
 export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModalProps) {
+  const { t } = useTranslation();
   const { colors, primaryColor: PRIMARY } = useAppTheme();
   const borderColor = colors.border;
   const mutedColor = colors.muted;
@@ -150,17 +152,22 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
         onClose();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create booking.");
+      setError(
+        err instanceof Error ? err.message : t("admin.bookings.newBookingModal.createError")
+      );
       setSubmitting(false);
     }
   };
 
   const handleSubmit = () => {
     if (!isValid) return;
-    const table = tables.find((t) => t.id === tableId);
+    const table = tables.find((tbl) => tbl.id === tableId);
     if (table && seats > table.seats) {
       setCapacityWarning(
-        `This table only seats ${table.seats} but you're booking for ${seats} guests. Continue anyway?`
+        t("admin.bookings.newBookingModal.overCapacityMessage", {
+          tableSeats: table.seats,
+          guests: t("booking.form.partySize", { count: seats }),
+        })
       );
       return;
     }
@@ -169,12 +176,15 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
   const restaurantOptions = restaurants.map((r) => ({ label: r.name, value: r.id }));
   const sectionOptions = sections.map((s) => ({ label: s.name, value: s.id }));
-  const tableOptions = tables.map((t) => ({
-    label: `${t.name ?? `Table ${t.id}`} (${t.seats} seats)`,
-    value: t.id,
+  const tableOptions = tables.map((tbl) => ({
+    label: t("admin.bookings.form.tableOptionLabel", {
+      name: tbl.name ?? t("admin.bookings.form.tableFallbackName", { id: tbl.id }),
+      seats: t("booking.form.seatsCount", { count: tbl.seats }),
+    }),
+    value: tbl.id,
   }));
   const seatOptions = [...Array(10).keys()].map((i) => ({
-    label: `${i + 1} guest${i > 0 ? "s" : ""}`,
+    label: t("booking.form.partySize", { count: i + 1 }),
     value: i + 1,
   }));
 
@@ -185,25 +195,25 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
           style={styles.backdrop}
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Close the new booking form"
+          accessibilityLabel={t("admin.bookings.newBookingModal.closeFormLabel")}
         >
           <TouchableWithoutFeedback>
             <View
               role="dialog"
               aria-modal
               accessibilityViewIsModal
-              accessibilityLabel="New booking"
+              accessibilityLabel={t("admin.bookings.newBookingModal.dialogLabel")}
               style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}
             >
               <View style={[styles.header, { borderBottomColor: borderColor }]}>
                 <ThemedText style={styles.title} accessibilityRole="header">
-                  New Booking
+                  {t("admin.bookings.newBooking")}
                 </ThemedText>
                 <Pressable
                   onPress={onClose}
                   style={styles.closeBtn}
                   accessibilityRole="button"
-                  accessibilityLabel="Close"
+                  accessibilityLabel={t("common.actions.close")}
                   hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
                 >
                   <Icon name="close" size={22} color={mutedColor} />
@@ -215,7 +225,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   <ActivityIndicator
                     size="large"
                     color={PRIMARY}
-                    accessibilityLabel="Loading booking form"
+                    accessibilityLabel={t("admin.bookings.newBookingModal.loadingForm")}
                   />
                 </View>
               ) : (
@@ -231,7 +241,9 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   )}
 
                   <View style={styles.field}>
-                    <ThemedText style={styles.label}>Restaurant</ThemedText>
+                    <ThemedText style={styles.label}>
+                      {t("admin.bookings.form.restaurant")}
+                    </ThemedText>
                     <Select
                       selectedValue={restaurantId}
                       onSelect={handleRestaurantChange}
@@ -241,7 +253,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
                   <View style={styles.fieldRow}>
                     <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Section</ThemedText>
+                      <ThemedText style={styles.label}>{t("booking.form.sectionLabel")}</ThemedText>
                       <Select
                         selectedValue={sectionId}
                         onSelect={handleSectionChange}
@@ -249,7 +261,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                       />
                     </View>
                     <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Table</ThemedText>
+                      <ThemedText style={styles.label}>{t("booking.form.tableLabel")}</ThemedText>
                       <Select
                         selectedValue={tableId}
                         onSelect={(v) => setTableId(v as number)}
@@ -260,11 +272,11 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
                   <View style={styles.fieldRow}>
                     <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Date</ThemedText>
+                      <ThemedText style={styles.label}>{t("booking.form.dateLabel")}</ThemedText>
                       <DatePicker selectedDate={date} onSelect={handleDateSelect} allowPast />
                     </View>
                     <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Time</ThemedText>
+                      <ThemedText style={styles.label}>{t("booking.form.timeLabel")}</ThemedText>
                       <TimePicker
                         selectedTime={time}
                         onSelect={setTime}
@@ -276,7 +288,7 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
                   <View style={styles.fieldRow}>
                     <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>Guests</ThemedText>
+                      <ThemedText style={styles.label}>{t("booking.form.guestsLabel")}</ThemedText>
                       <Select
                         selectedValue={seats}
                         onSelect={(v) => setSeats(v as number)}
@@ -284,9 +296,11 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                       />
                     </View>
                     <View style={styles.fieldHalf}>
-                      <ThemedText style={styles.label}>Guest name (optional)</ThemedText>
+                      <ThemedText style={styles.label}>
+                        {t("admin.bookings.form.guestNameOptional")}
+                      </ThemedText>
                       <Input
-                        placeholder="Full name"
+                        placeholder={t("admin.bookings.form.namePlaceholder")}
                         value={guestName}
                         onChangeText={setGuestName}
                         autoCapitalize="words"
@@ -295,9 +309,11 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                   </View>
 
                   <View style={styles.field}>
-                    <ThemedText style={styles.label}>Guest email</ThemedText>
+                    <ThemedText style={styles.label}>
+                      {t("admin.bookings.form.guestEmail")}
+                    </ThemedText>
                     <Input
-                      placeholder="guest@example.com"
+                      placeholder={t("admin.bookings.form.emailPlaceholder")}
                       value={email}
                       onChangeText={setEmail}
                       keyboardType="email-address"
@@ -313,7 +329,9 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
                     disabled={!isValid || submitting}
                     loading={submitting}
                   >
-                    {submitting ? "Creating…" : "Create Booking"}
+                    {submitting
+                      ? t("admin.bookings.newBookingModal.creating")
+                      : t("admin.bookings.newBookingModal.submit")}
                   </Button>
                 </ScrollView>
               )}
@@ -324,10 +342,10 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
 
       <ConfirmModal
         visible={!!capacityWarning}
-        title="Over Capacity"
+        title={t("admin.bookings.newBookingModal.overCapacityTitle")}
         message={capacityWarning ?? ""}
-        confirmLabel="Book Anyway"
-        cancelLabel="Go Back"
+        confirmLabel={t("admin.bookings.newBookingModal.bookAnyway")}
+        cancelLabel={t("admin.bookings.goBack")}
         onConfirm={() => {
           setCapacityWarning(null);
           doSubmit();

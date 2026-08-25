@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
@@ -43,25 +44,29 @@ export function EmailGuestForm({
   setEmailBody,
   onSendEmail,
 }: EmailGuestFormProps) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.section, { borderColor }]}>
       <View style={styles.sectionHeader}>
         <Icon name="mail-outline" size="md" color={mutedColor} />
-        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>Email guest</ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>
+          {t("admin.bookings.detail.emailGuest")}
+        </ThemedText>
       </View>
-      <ThemedText style={[styles.emailTo, { color: mutedColor }]}>To: {customerEmail}</ThemedText>
+      <ThemedText style={[styles.emailTo, { color: mutedColor }]}>
+        {t("admin.bookings.detail.emailTo", { email: customerEmail })}
+      </ThemedText>
       {moveNoticeReady && (
         <ThemedText
           testID="move-notice-ready"
           style={[styles.emailTo, { color: theme.colors.warning }]}
         >
-          The sitting moved. A notice is written below and has not been sent: edit it, or send it as
-          it stands.
+          {t("admin.bookings.detail.moveNotice")}
         </ThemedText>
       )}
       <input
         type="text"
-        placeholder="Subject"
+        placeholder={t("admin.bookings.detail.subjectPlaceholder")}
         value={emailSubject}
         onChange={/* istanbul ignore next */ (e) => setEmailSubject(e.target.value)}
         style={
@@ -82,7 +87,7 @@ export function EmailGuestForm({
         }
       />
       <textarea
-        placeholder="Message body (HTML supported)"
+        placeholder={t("admin.bookings.detail.bodyPlaceholder")}
         value={emailBody}
         onChange={/* istanbul ignore next */ (e) => setEmailBody(e.target.value)}
         rows={4}
@@ -108,11 +113,11 @@ export function EmailGuestForm({
           size="md"
           icon="send-outline"
           onPress={onSendEmail}
-          accessibilityLabel="Send email to guest"
+          accessibilityLabel={t("admin.bookings.detail.sendEmailLabel")}
           disabled={!emailSubject.trim() || !emailBody.trim() || emailSending}
           loading={emailSending}
         >
-          {emailSending ? "Sending…" : "Send Email"}
+          {emailSending ? t("admin.bookings.detail.sending") : t("admin.bookings.detail.sendEmail")}
         </Button>
         {emailResult && (
           <ThemedText

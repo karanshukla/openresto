@@ -376,5 +376,255 @@
       "moreTagsLabel_one": "{{count}} tag supplémentaire : {{list}}",
       "moreTagsLabel_other": "{{count}} tags supplémentaires : {{list}}"
     }
+  },
+  "admin": {
+    "bookings": {
+      "pageTitle": "Réservations",
+      "searchResultsTitle": "Résultats de recherche",
+      "searchResultsCount_one": "{{count}} résultat pour « {{query}} »",
+      "searchResultsCount_other": "{{count}} résultats pour « {{query}} »",
+      "totalTodaySummary": "{{total}} au total · {{today}} aujourd'hui",
+      "clearSearch": "Effacer",
+      "clearSearchLabel": "Effacer la recherche",
+      "newBooking": "Nouvelle réservation",
+      "newBookingLabel": "Nouvelle réservation",
+      "screenTitle": {
+        "live": "Réservations en cours",
+        "past": "Réservations passées",
+        "cancelled": "Réservations annulées"
+      },
+      "tabs": {
+        "active": "En cours",
+        "past": "Passées",
+        "cancelled": "Annulées",
+        "showLabel": "Afficher les réservations {{tab}}"
+      },
+      "viewToggle": {
+        "timetable": "Planning",
+        "list": "Liste",
+        "timetableLabel": "Vue planning",
+        "listLabel": "Vue liste"
+      },
+      "timetable": {
+        "previousDay": "Jour précédent",
+        "nextDay": "Jour suivant",
+        "jumpToTodayLabel": "{{date}}, revenir à aujourd'hui",
+        "tapForToday": "toucher pour aujourd'hui",
+        "legend": {
+          "seatedNow": "Installés",
+          "booked": "Réservé",
+          "now": "Maintenant",
+          "tapHint": "Touchez un créneau pour voir les détails"
+        },
+        "noTablesFound": "Aucune table trouvée. Ajoutez des sections et des tables dans le gestionnaire d'établissement.",
+        "noBookingsOnDay": "Aucune réservation le {{date}}",
+        "noBookingsGeneric": "Aucune réservation ce jour-là",
+        "guestFallback": "Client",
+        "peopleAbbrev": "{{count}}p",
+        "sittingLabel": "{{guest}}, {{seats}} couverts à {{unit}}, de {{start}} à {{end}}",
+        "sittingLabelWithRemaining": "{{guest}}, {{seats}} couverts à {{unit}}, de {{start}} à {{end}}, {{remaining}}"
+      },
+      "sort": {
+        "time": "Heure",
+        "guest": "Client",
+        "party": "Convives",
+        "status": "Statut",
+        "sortLabel": "Trier",
+        "ariaLabel": "Trier par {{column}}, {{direction}}",
+        "ascending": "croissant",
+        "descending": "décroissant",
+        "notSorted": "non trié"
+      },
+      "status": {
+        "completed": "Terminé",
+        "seated": "Installé",
+        "arrived": "Arrivé",
+        "upcoming": "À venir",
+        "scheduled": "Planifié",
+        "cancelled": "Annulé"
+      },
+      "rowSummary": "{{name}}, {{when}}, {{seats}}",
+      "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
+      "cancelBookingTitle": "Annuler la réservation",
+      "cancelBookingConfirm": "Annuler la réservation de {{name}} ?",
+      "keep": "Conserver",
+      "goBack": "Retour",
+      "emptyState": "Aucune réservation trouvée",
+      "cancelBookingLabel": "Annuler la réservation",
+      "cancelBookingForLabel": "Annuler la réservation de {{name}}",
+      "restoring": "Restauration…",
+      "restoreBooking": "Restaurer la réservation",
+      "restoreBookingLabel": "Restaurer la réservation",
+      "cancelling": "Annulation…",
+      "permanentlyDeleteGdpr": "Supprimer définitivement (RGPD)",
+      "permanentlyDeleteLabel": "Supprimer définitivement la réservation pour le RGPD",
+      "permanentlyDeleteHint": "Cette action est irréversible",
+      "form": {
+        "restaurant": "Établissement",
+        "guestEmail": "E-mail du client",
+        "guestName": "Nom du client",
+        "guestNameOptional": "Nom du client (facultatif)",
+        "specialRequests": "Demandes particulières",
+        "emailPlaceholder": "client@exemple.com",
+        "namePlaceholder": "Nom complet",
+        "specialRequestsPlaceholder": "Régime alimentaire, occasion, notes",
+        "tableOptionLabel": "{{name}} ({{seats}})",
+        "tableFallbackName": "Table {{id}}"
+      },
+      "detail": {
+        "heading": "Détails de la réservation",
+        "dialogLabel": "Détails de la réservation",
+        "closeLabel": "Fermer les détails de la réservation",
+        "edit": "Modifier",
+        "editLabel": "Modifier la réservation",
+        "discardChangesLabel": "Annuler les modifications",
+        "saveChanges": "Enregistrer les modifications",
+        "saving": "Enregistrement…",
+        "saveChangesLabel": "Enregistrer les modifications",
+        "notFound": "Réservation introuvable.",
+        "invalidSeats": "Nombre de couverts invalide",
+        "dateTimeRequired": "La date et l'heure sont requises",
+        "fields": {
+          "ref": "Réf.",
+          "party": "Convives",
+          "name": "Nom",
+          "requests": "Demandes"
+        },
+        "noRequests": "Aucune",
+        "timeRangeWithDuration": "{{range}} ({{mins}} min)",
+        "extendSection": "Prolonger la réservation",
+        "extendByMinutes": "+{{mins}} min",
+        "extendByMinutesLabel": "Prolonger la réservation de {{mins}} minutes",
+        "emailGuest": "E-mail au client",
+        "emailTo": "À : {{email}}",
+        "moveNotice": "Le créneau a changé. Un message a été préparé ci-dessous et n'a pas été envoyé : modifiez-le ou envoyez-le tel quel.",
+        "subjectPlaceholder": "Objet",
+        "bodyPlaceholder": "Corps du message (HTML pris en charge)",
+        "sendEmail": "Envoyer l'e-mail",
+        "sending": "Envoi…",
+        "sendEmailLabel": "Envoyer un e-mail au client",
+        "restoreBookingTitle": "Restaurer la réservation",
+        "restoreBookingConfirm": "Voulez-vous vraiment restaurer cette réservation annulée ?",
+        "restore": "Restaurer",
+        "cancelBookingConfirmMessage": "Voulez-vous vraiment annuler cette réservation ? Cette action est irréversible.",
+        "permanentlyDeleteTitle": "Supprimer définitivement",
+        "permanentlyDeleteMessage": "Cette action effacera définitivement toutes les données de cette réservation, y compris l'e-mail et les informations personnelles du client. Cette action est irréversible.",
+        "deleteForever": "Supprimer définitivement",
+        "failedToCancel": "Échec de l'annulation de la réservation.",
+        "failedToRestore": "Échec de la restauration de la réservation.",
+        "failedToUpdate": "Échec de la mise à jour de la réservation.",
+        "failedToPermanentlyDelete": "Échec de la suppression définitive de la réservation."
+      },
+      "newBookingModal": {
+        "closeFormLabel": "Fermer le formulaire de nouvelle réservation",
+        "dialogLabel": "Nouvelle réservation",
+        "loadingForm": "Chargement du formulaire de réservation",
+        "creating": "Création…",
+        "submit": "Créer la réservation",
+        "overCapacityTitle": "Capacité dépassée",
+        "overCapacityMessage": "Cette table ne compte que {{tableSeats}} places, mais vous réservez pour {{guests}}. Continuer quand même ?",
+        "bookAnyway": "Réserver quand même",
+        "createError": "Échec de la création de la réservation."
+      },
+      "restaurantAction": {
+        "title": {
+          "extended": "Réservations prolongées",
+          "pause": "Suspendre les réservations",
+          "extend": "Prolonger les réservations"
+        },
+        "a11y": {
+          "extended": "Réservations prolongées",
+          "pause": "Suspendre les réservations",
+          "extend": "Prolonger les réservations"
+        },
+        "pauseSubtitle": "La suspension refuse les nouvelles réservations pour la prochaine heure de service. Les créneaux suivants restent réservables.",
+        "extendSubtitle": "Sélectionnez un établissement pour prolonger toutes les réservations actives d'une heure.",
+        "extendedSubtitle_one": "La réservation suivante a été prolongée d'une heure :",
+        "extendedSubtitle_other": "Les {{count}} réservations suivantes ont été prolongées d'une heure :",
+        "loadingRestaurants": "Chargement des établissements",
+        "noRestaurants": "Aucun établissement trouvé.",
+        "pausedBadge": "SUSPENDU",
+        "resumeLabel": "Reprendre les réservations de {{name}}",
+        "pauseLabel": "Suspendre les réservations de {{name}}",
+        "pausedUntil": "Les réservations jusqu'à {{time}} sont suspendues",
+        "willPauseUntil": "Suspendra les réservations jusqu'à {{time}}",
+        "activeBookingsCount_one": "{{count}} réservation active",
+        "activeBookingsCount_other": "{{count}} réservations actives",
+        "extendedFallback": "Prolongée",
+        "noActiveToExtend": "Aucune réservation active à prolonger pour {{name}}.",
+        "resumedSuccess": "Les réservations de {{name}} ont été reprises.",
+        "pausedSuccess": "Les réservations de {{name}} jusqu'à {{time}} sont suspendues. Les créneaux suivants restent ouverts.",
+        "doneAction": "Terminé"
+      },
+      "lookup": {
+        "placeholder": "Nom, e-mail ou référence…",
+        "find": "Rechercher",
+        "findLabel": "Rechercher une réservation",
+        "notFound": "Aucune réservation trouvée.",
+        "showingAllMatches": "Affichage de toutes les correspondances…"
+      }
+    },
+    "dashboard": {
+      "nativeTitle": "Tableau de bord admin",
+      "title": "Tableau de bord",
+      "welcomeSubtitle": "Bon retour. Voici ce qui se passe aujourd'hui.",
+      "successTitle": "Succès",
+      "metrics": {
+        "todayBookings": {
+          "label": "Réservations du jour",
+          "sub": "Total des couverts pour aujourd'hui"
+        },
+        "activeHolds": {
+          "label": "Réservations temporaires actives",
+          "sub": "Tables actuellement retenues"
+        },
+        "restaurantStatus": {
+          "label": "Statut de l'établissement",
+          "active": "Actif",
+          "paused": "Suspendu",
+          "subActive": "Tous les établissements acceptent les réservations",
+          "subPaused_one": "{{count}} établissement est actuellement suspendu",
+          "subPaused_other": "{{count}} établissements sont actuellement suspendus"
+        },
+        "totalCovers": {
+          "label": "Total des couverts",
+          "sub": "Total des clients servis (depuis toujours)"
+        }
+      },
+      "quickActions": {
+        "viewAllBookings": "Voir toutes les réservations",
+        "manageSettings": "Gérer les paramètres"
+      },
+      "chart": {
+        "title": "Aperçu de l'occupation",
+        "last7Days": "7 derniers jours",
+        "dayLabel": {
+          "tMinus6": "T-6",
+          "tMinus5": "T-5",
+          "tMinus4": "T-4",
+          "tMinus3": "T-3",
+          "tMinus2": "T-2",
+          "tMinus1": "T-1",
+          "today": "Aujourd'hui"
+        },
+        "toggle": {
+          "relativeLabel": "Afficher les heures par rapport à maintenant",
+          "calendarLabel": "Afficher les heures par date",
+          "relativeText": "T-x",
+          "datesText": "Dates"
+        },
+        "summary_one": "{{count}} réservation · {{perDay}}/jour · pic {{weekday}}",
+        "summary_other": "{{count}} réservations · {{perDay}}/jour · pic {{weekday}}",
+        "summaryEmpty": "Aucune réservation ces 7 derniers jours"
+      },
+      "recentBookings": {
+        "viewAll": "Tout voir →",
+        "viewAllLabel": "Voir toutes les réservations",
+        "empty": "Aucune réservation à venir aujourd'hui.",
+        "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
+        "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, annulée",
+        "meta": "{{seats}} · {{restaurant}}"
+      }
+    }
   }
 }

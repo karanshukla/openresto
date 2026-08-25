@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -23,6 +24,7 @@ import { ScheduleConflictsBanner } from "@/components/admin/dashboard/ScheduleCo
 import { fmtMonthDay, fmtNumber, fmtTime, fmtWeekday } from "@/utils/formatters";
 
 export default function AdminDashboardScreen() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -51,26 +53,31 @@ export default function AdminDashboardScreen() {
   const metricCards = stats
     ? [
         {
-          label: "Today's Bookings",
+          label: t("admin.dashboard.metrics.todayBookings.label"),
           value: stats.todayCount,
-          sub: "Total covers for today",
+          sub: t("admin.dashboard.metrics.todayBookings.sub"),
           icon: "calendar-outline" as const,
           accent: "#2563eb",
         },
         {
-          label: "Active Holds",
+          label: t("admin.dashboard.metrics.activeHolds.label"),
           value: stats.activeHoldsCount,
-          sub: "Tables currently being held",
+          sub: t("admin.dashboard.metrics.activeHolds.sub"),
           icon: "book-outline" as const,
           accent: primaryColor,
         },
         {
-          label: "Restaurant Status",
-          value: stats.pausedCount > 0 ? "Paused" : "Active",
+          label: t("admin.dashboard.metrics.restaurantStatus.label"),
+          value:
+            stats.pausedCount > 0
+              ? t("admin.dashboard.metrics.restaurantStatus.paused")
+              : t("admin.dashboard.metrics.restaurantStatus.active"),
           sub:
             stats.pausedCount > 0
-              ? `${stats.pausedCount} venues are currently paused`
-              : "All venues are accepting bookings",
+              ? t("admin.dashboard.metrics.restaurantStatus.subPaused", {
+                  count: stats.pausedCount,
+                })
+              : t("admin.dashboard.metrics.restaurantStatus.subActive"),
           icon:
             stats.pausedCount > 0
               ? ("pause-circle-outline" as const)
@@ -78,9 +85,9 @@ export default function AdminDashboardScreen() {
           accent: stats.pausedCount > 0 ? theme.colors.error : theme.colors.success,
         },
         {
-          label: "Total Covers",
+          label: t("admin.dashboard.metrics.totalCovers.label"),
           value: fmtNumber(stats.totalCovers),
-          sub: "Total guests served (all time)",
+          sub: t("admin.dashboard.metrics.totalCovers.sub"),
           icon: "people-outline" as const,
           accent: "#d97706",
         },
@@ -89,18 +96,18 @@ export default function AdminDashboardScreen() {
 
   const QUICK_ACTIONS = [
     {
-      title: "New Booking",
+      title: t("admin.bookings.newBooking"),
       icon: "person-add-outline" as const,
       onPress: () => router.push({ pathname: "/admin/bookings", params: { create: "1" } }),
       primary: true,
     },
     {
-      title: "View All Bookings",
+      title: t("admin.dashboard.quickActions.viewAllBookings"),
       icon: "list-outline" as const,
       route: "/admin/bookings" as const,
     },
     {
-      title: "Pause Bookings",
+      title: t("admin.bookings.restaurantAction.title.pause"),
       icon: "pause-circle-outline" as const,
       onPress: () => {
         setActionType("pause");
@@ -108,7 +115,7 @@ export default function AdminDashboardScreen() {
       },
     },
     {
-      title: "Extend Bookings",
+      title: t("admin.bookings.restaurantAction.title.extend"),
       icon: "time-outline" as const,
       onPress: () => {
         setActionType("extend");
@@ -116,7 +123,7 @@ export default function AdminDashboardScreen() {
       },
     },
     {
-      title: "Manage Settings",
+      title: t("admin.dashboard.quickActions.manageSettings"),
       icon: "settings-outline" as const,
       route: "/admin/settings/brand" as const,
     },
@@ -124,13 +131,15 @@ export default function AdminDashboardScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Admin Dashboard" }} />}
+      {Platform.OS !== "web" && (
+        <Stack.Screen options={{ title: t("admin.dashboard.nativeTitle") }} />
+      )}
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View>
-            <ThemedText type="h1">Dashboard</ThemedText>
+            <ThemedText type="h1">{t("admin.dashboard.title")}</ThemedText>
             <ThemedText style={[styles.pageSub, { color: colors.muted }]}>
-              Welcome back. Here is what&apos;s happening today.
+              {t("admin.dashboard.welcomeSubtitle")}
             </ThemedText>
           </View>
         </View>
@@ -163,9 +172,11 @@ export default function AdminDashboardScreen() {
                 ]}
               >
                 <View style={styles.chartHeader}>
-                  <ThemedText style={styles.cardTitle}>Occupancy Overview</ThemedText>
+                  <ThemedText style={styles.cardTitle}>
+                    {t("admin.dashboard.chart.title")}
+                  </ThemedText>
                   <ThemedText style={[styles.chartSub, { color: colors.muted }]}>
-                    Last 7 days
+                    {t("admin.dashboard.chart.last7Days")}
                   </ThemedText>
                 </View>
                 <OccupancyChart
@@ -217,21 +228,23 @@ export default function AdminDashboardScreen() {
               ]}
             >
               <View style={styles.listHeader}>
-                <ThemedText style={styles.cardTitle}>Today&apos;s Bookings</ThemedText>
+                <ThemedText style={styles.cardTitle}>
+                  {t("admin.dashboard.metrics.todayBookings.label")}
+                </ThemedText>
                 <Pressable
                   onPress={() => router.push("/admin/bookings")}
                   accessibilityRole="link"
-                  accessibilityLabel="View all bookings"
+                  accessibilityLabel={t("admin.dashboard.recentBookings.viewAllLabel")}
                 >
                   <ThemedText style={[styles.viewAll, { color: primaryColor }]}>
-                    View all →
+                    {t("admin.dashboard.recentBookings.viewAll")}
                   </ThemedText>
                 </Pressable>
               </View>
               {stats?.recentBookings.length === 0 ? (
                 <View style={styles.emptyRecent}>
                   <ThemedText style={[styles.emptyText, { color: colors.muted }]}>
-                    No upcoming bookings for today.
+                    {t("admin.dashboard.recentBookings.empty")}
                   </ThemedText>
                 </View>
               ) : (
@@ -265,7 +278,7 @@ export default function AdminDashboardScreen() {
 
       <AlertModal
         visible={alertVisible}
-        title="Success"
+        title={t("admin.dashboard.successTitle")}
         message={alertMessage}
         onClose={() => setAlertVisible(false)}
       />
@@ -319,15 +332,24 @@ function OccupancyChart({
   dates?: string[];
   counts?: number[];
 }) {
+  const { t } = useTranslation();
   const chartData = data?.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
   const [labelMode, setLabelMode] = useState<"relative" | "calendar">("relative");
 
-  const relativeLabels = ["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Today"];
+  const relativeLabels = [
+    t("admin.dashboard.chart.dayLabel.tMinus6"),
+    t("admin.dashboard.chart.dayLabel.tMinus5"),
+    t("admin.dashboard.chart.dayLabel.tMinus4"),
+    t("admin.dashboard.chart.dayLabel.tMinus3"),
+    t("admin.dashboard.chart.dayLabel.tMinus2"),
+    t("admin.dashboard.chart.dayLabel.tMinus1"),
+    t("admin.dashboard.chart.dayLabel.today"),
+  ];
   const formatCalendar = (iso: string) => fmtMonthDay(new Date(iso));
 
   const labelFor = (i: number) => {
     if (labelMode === "calendar" && dates && dates[i]) {
-      return i === 6 ? "Today" : formatCalendar(dates[i]);
+      return i === 6 ? t("admin.dashboard.chart.dayLabel.today") : formatCalendar(dates[i]);
     }
     return relativeLabels[i];
   };
@@ -345,8 +367,12 @@ function OccupancyChart({
 
   const summary =
     totalBookings > 0
-      ? `${totalBookings} bookings · ${(totalBookings / 7).toFixed(1)}/day · peak ${peakWeekday}`
-      : "No bookings in the last 7 days";
+      ? t("admin.dashboard.chart.summary", {
+          count: totalBookings,
+          perDay: (totalBookings / 7).toFixed(1),
+          weekday: peakWeekday,
+        })
+      : t("admin.dashboard.chart.summaryEmpty");
 
   return (
     <View style={styles.chartArea}>
@@ -362,7 +388,7 @@ function OccupancyChart({
             testID="occupancy-toggle-relative"
             onPress={() => setLabelMode("relative")}
             accessibilityRole="radio"
-            accessibilityLabel="Label hours relative to now"
+            accessibilityLabel={t("admin.dashboard.chart.toggle.relativeLabel")}
             accessibilityState={{ checked: labelMode === "relative" }}
             style={[
               styles.toggleSegment,
@@ -377,14 +403,14 @@ function OccupancyChart({
                 { color: labelMode === "relative" ? theme.colors.white : colors.muted },
               ]}
             >
-              T-x
+              {t("admin.dashboard.chart.toggle.relativeText")}
             </ThemedText>
           </Pressable>
           <Pressable
             testID="occupancy-toggle-calendar"
             onPress={() => setLabelMode("calendar")}
             accessibilityRole="radio"
-            accessibilityLabel="Label hours by clock time"
+            accessibilityLabel={t("admin.dashboard.chart.toggle.calendarLabel")}
             accessibilityState={{ checked: labelMode === "calendar" }}
             style={[
               styles.toggleSegment,
@@ -399,7 +425,7 @@ function OccupancyChart({
                 { color: labelMode === "calendar" ? theme.colors.white : colors.muted },
               ]}
             >
-              Dates
+              {t("admin.dashboard.chart.toggle.datesText")}
             </ThemedText>
           </Pressable>
         </View>
@@ -457,6 +483,7 @@ function BookingItem({
   isDark: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const now = new Date();
   const startTime = new Date(booking.date);
   const endTime = booking.endTime
@@ -482,15 +509,17 @@ function BookingItem({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={[
-        fmtTime(startTime),
-        booking.customerName ?? booking.customerEmail,
-        `${booking.seats} guests`,
-        booking.restaurantName,
-        isCancelled ? "cancelled" : null,
-      ]
-        .filter(Boolean)
-        .join(", ")}
+      accessibilityLabel={t(
+        isCancelled
+          ? "admin.dashboard.recentBookings.itemLabelCancelled"
+          : "admin.dashboard.recentBookings.itemLabel",
+        {
+          time: fmtTime(startTime),
+          guest: booking.customerName ?? booking.customerEmail,
+          seats: t("booking.form.partySize", { count: booking.seats }),
+          restaurant: booking.restaurantName,
+        }
+      )}
       style={({ hovered }: any) => [
         styles.bookingItem,
         { borderTopColor: colors.border },
@@ -510,7 +539,9 @@ function BookingItem({
           </ThemedText>
           {isCancelled ? (
             <View style={styles.cancelledBadge}>
-              <ThemedText style={styles.cancelledBadgeText}>Cancelled</ThemedText>
+              <ThemedText style={styles.cancelledBadgeText}>
+                {t("admin.bookings.status.cancelled")}
+              </ThemedText>
             </View>
           ) : (
             <StatusBadge date={booking.date} isDark={isDark} />
@@ -522,7 +553,10 @@ function BookingItem({
           </ThemedText>
         )}
         <ThemedText style={[styles.bookingMeta, { color: colors.muted }]}>
-          {booking.seats} guests · {booking.restaurantName}
+          {t("admin.dashboard.recentBookings.meta", {
+            seats: t("booking.form.partySize", { count: booking.seats }),
+            restaurant: booking.restaurantName,
+          })}
         </ThemedText>
       </View>
       <Icon name="chevron-forward" size="md" color={colors.muted} />
