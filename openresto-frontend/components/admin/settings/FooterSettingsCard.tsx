@@ -209,7 +209,7 @@ export function FooterSettingsCard({
             <Input
               value={copyrightText}
               onChangeText={setCopyrightText}
-              placeholder={t("admin.settings.footer.copyrightPlaceholder", {
+              placeholder={t("common.footer.copyrightFallback", {
                 year: new Date().getFullYear(),
                 appName: brand.appName,
               })}

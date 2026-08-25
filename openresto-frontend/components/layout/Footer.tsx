@@ -33,7 +33,8 @@ export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent)
 
   const year = new Date().getFullYear();
   const copyright =
-    brand.copyrightText?.trim() || `© ${year} ${brand.appName}. All rights reserved.`;
+    brand.copyrightText?.trim() ||
+    t("common.footer.copyrightFallback", { year, appName: brand.appName });
 
   return (
     <ThemedView

@@ -168,6 +168,7 @@
     },
     "footer": {
       "adminLinkText": "Admin",
+      "copyrightFallback": "© {{year}} {{appName}}. All rights reserved.",
       "restaurantAdminLabel": "Restaurant admin"
     },
     "datePicker": {
@@ -1043,7 +1044,6 @@
         "linksConfigured_other": "{{count}} social links configured",
         "noLinksSubtitle": "Copyright text and social links",
         "copyrightLabel": "Copyright Text",
-        "copyrightPlaceholder": "© {{year}} {{appName}}. All rights reserved.",
         "copyrightHint": "Shown in the site footer. Leave blank to use the default above.",
         "socialLinksLabel": "Social Links",
         "noLinksEmptyState": "No links yet. Press Add to create your first one.",

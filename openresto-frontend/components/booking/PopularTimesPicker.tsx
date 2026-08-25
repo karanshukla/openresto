@@ -246,7 +246,11 @@ export default function PopularTimesPicker({
         <View style={styles.tabs} accessibilityRole="tablist">
           {categoryTabs}
         </View>
-        <View style={styles.wrappedSlots} role="radiogroup" accessibilityLabel="Available times">
+        <View
+          style={styles.wrappedSlots}
+          role="radiogroup"
+          accessibilityLabel={t("booking.popularTimes.availableTimesA11y")}
+        >
           {slotChips}
         </View>
       </View>
