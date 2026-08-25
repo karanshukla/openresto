@@ -104,7 +104,7 @@ export function AddRow({
             setOpen(false);
           }}
         >
-          {saving ? t("admin.settings.addRow.adding") : t("admin.settings.addRow.add")}
+          {saving ? t("common.status.adding") : t("admin.settings.addRow.add")}
         </Button>
       </ButtonRow>
     </View>

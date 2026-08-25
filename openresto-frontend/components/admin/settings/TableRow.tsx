@@ -378,7 +378,7 @@ export function TableRow({
             }
           }}
         >
-          {saving ? t("admin.settings.tableRow.saving") : t("admin.settings.tableRow.save")}
+          {saving ? t("common.status.saving") : t("admin.settings.tableRow.save")}
         </Button>
       </ButtonRow>
     </View>

@@ -464,7 +464,7 @@ export function UsersCard({
                       loading={busy}
                       accessibilityLabel={t("admin.settings.users.addThisUserLabel")}
                     >
-                      {busy ? t("admin.settings.users.adding") : t("admin.settings.users.add")}
+                      {busy ? t("common.status.adding") : t("admin.settings.users.add")}
                     </Button>
                   </ButtonRow>
                 </View>

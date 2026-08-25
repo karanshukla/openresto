@@ -59,7 +59,7 @@ export function SaveStatus({
         <>
           <ActivityIndicator size="small" color={mutedColor} />
           <ThemedText style={[styles.text, { color: mutedColor }]}>
-            {t("admin.settings.saveStatus.saving")}
+            {t("common.status.saving")}
           </ThemedText>
         </>
       )}

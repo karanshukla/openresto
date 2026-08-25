@@ -73,7 +73,7 @@ export function AddLocationForm({
         onPress={onSubmit}
         accessibilityLabel={t("admin.locations.addLocation")}
       >
-        {saving ? t("admin.locations.addForm.adding") : t("admin.locations.addForm.add")}
+        {saving ? t("common.status.adding") : t("admin.locations.addForm.add")}
       </Button>
     </View>
   );

@@ -221,7 +221,9 @@
       "closeLabel": "Cerrar {{label}}"
     },
     "status": {
-      "loading": "Cargando…"
+      "loading": "Cargando…",
+      "saving": "Guardando…",
+      "adding": "Añadiendo…"
     },
     "timePicker": {
       "accessibilityLabel": "Hora",
@@ -587,7 +589,6 @@
         "editLabel": "Editar reserva",
         "discardChangesLabel": "Descartar cambios",
         "saveChanges": "Guardar cambios",
-        "saving": "Guardando…",
         "saveChangesLabel": "Guardar cambios",
         "notFound": "Reserva no encontrada.",
         "invalidSeats": "Número de comensales no válido",
@@ -750,7 +751,6 @@
         "subtitle": "Agrega tu primer local para empezar a aceptar reservas."
       },
       "pauseButton": {
-        "saving": "Guardando…",
         "resumeLabel": "Reanudar reservas de {{name}}",
         "pauseLabel": "Pausar la próxima hora de reservas en {{name}}",
         "resumeUntil": "Reanudar nuevas reservas ahora (pausadas hasta las {{time}})",
@@ -769,8 +769,7 @@
       "addForm": {
         "namePlaceholder": "Nombre del local (p. ej. Centro, Zona oeste)",
         "cancelLabel": "Cancelar la creación del local",
-        "add": "Agregar",
-        "adding": "Agregando…"
+        "add": "Añadir"
       },
       "archiveRow": {
         "title": "Archivar local",
@@ -901,7 +900,6 @@
         "hint": "Etiquetas cortas que se muestran en la tarjeta pública del restaurante (por ejemplo, «Admite perros», «Terraza»)."
       },
       "saveStatus": {
-        "saving": "Guardando…",
         "saved": "Guardado",
         "undoLabel": "Deshacer el último guardado",
         "undo": "Deshacer",
@@ -912,7 +910,6 @@
       "addRow": {
         "namePlaceholder": "Nombre",
         "cancelLabel": "Cancelar adición",
-        "adding": "Añadiendo…",
         "add": "Añadir"
       },
       "socialLinkRow": {
@@ -977,9 +974,7 @@
         "cancelLabel": "Cancelar la edición de este enlace",
         "addLabel": "Añadir este enlace",
         "saveLabel": "Guardar este enlace",
-        "adding": "Añadiendo…",
         "add": "Añadir",
-        "saving": "Guardando…",
         "save": "Guardar"
       },
       "headerImage": {
@@ -1086,8 +1081,6 @@
         "cancelLabel": "Cancelar la edición de este destacado",
         "addThisLabel": "Añadir este destacado",
         "saveThisLabel": "Guardar este destacado",
-        "adding": "Añadiendo…",
-        "saving": "Guardando…",
         "save": "Guardar",
         "invalidLinkUrl": "Introduzca una URL de enlace válida (p. ej. https://example.com).",
         "serverUnreachable": "No se pudo contactar con el servidor. Inténtelo de nuevo."
@@ -1103,7 +1096,6 @@
         "currentPasswordLabel": "Contraseña actual",
         "passwordPlaceholder": "••••••••",
         "cancelEmailLabel": "Cancelar cambio de correo",
-        "saving": "Guardando…",
         "updateEmail": "Actualizar correo",
         "pvqLabel": "Pregunta de seguridad",
         "pvqNotConfigured": "No configurada. Configure una para activar el restablecimiento de contraseña.",
@@ -1185,7 +1177,6 @@
         "seatsPlaceholder": "Asientos",
         "cancelEditLabel": "Cancelar la edición de {{name}}",
         "saveLabel": "Guardar {{name}}",
-        "saving": "Guardando…",
         "save": "Guardar"
       },
       "sectionBlock": {
@@ -1247,7 +1238,6 @@
         "fromEmailLabel": "Correo del remitente",
         "footerHintVerified": "Conexión verificada · confirmaciones listas",
         "footerHintUnverified": "Pruebe la conexión antes de activar las confirmaciones",
-        "saving": "Guardando…",
         "saveButton": "Guardar configuración SMTP"
       },
       "users": {
@@ -1280,7 +1270,6 @@
         "temporaryPasswordLabel": "Contraseña temporal",
         "newUserRoleLabel": "Rol del nuevo usuario {{role}}",
         "addThisUserLabel": "Añadir este usuario",
-        "adding": "Añadiendo…",
         "add": "Añadir",
         "addUser": "Añadir usuario"
       },
