@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -47,6 +48,7 @@ export default function LookupScreen({
   legacyBookingId?: number;
   justBooked?: boolean;
 }) {
+  const { t } = useTranslation();
   const [refInput, setRefInput] = useState(initialRef ?? "");
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
@@ -163,7 +165,7 @@ export default function LookupScreen({
         <View style={styles.msgRow}>
           <Icon name="alert-circle-outline" size="md" color={colors.muted} />
           <ThemedText style={[styles.msgText, { color: colors.muted }]}>
-            No booking found matching that reference and email.
+            {t("lookup.notFound")}
           </ThemedText>
         </View>
       </View>
@@ -178,11 +180,11 @@ export default function LookupScreen({
         <View style={styles.msgRow}>
           <Icon name="cloud-offline-outline" size="md" color={theme.colors.error} />
           <ThemedText style={[styles.msgText, { color: colors.muted }]}>
-            We couldn&apos;t reach the booking system. Your booking is safe.
+            {t("lookup.connectionError")}
           </ThemedText>
         </View>
         <Button variant="ghost" tone="neutral" size="sm" onPress={handleLookup}>
-          Try again
+          {t("common.actions.tryAgain")}
         </Button>
       </View>
     );
@@ -212,9 +214,9 @@ export default function LookupScreen({
       >
         <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
           <View style={styles.header}>
-            <ThemedText style={styles.title}>Find my booking</ThemedText>
+            <ThemedText style={styles.title}>{t("lookup.title")}</ThemedText>
             <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-              Enter your booking reference and email to look up your reservation.
+              {t("lookup.subtitle")}
             </ThemedText>
           </View>
 
@@ -226,19 +228,19 @@ export default function LookupScreen({
                   { backgroundColor: colors.card, borderColor: colors.border },
                 ]}
               >
-                <ThemedText style={styles.label}>Booking Reference</ThemedText>
+                <ThemedText style={styles.label}>{t("lookup.form.referenceLabel")}</ThemedText>
                 <Input
                   ref={refInputRef}
-                  placeholder="e.g. crispy-basil-thyme"
-                  accessibilityLabel="Booking reference"
+                  placeholder={t("lookup.form.referencePlaceholder")}
+                  accessibilityLabel={t("lookup.form.referenceA11y")}
                   value={refInput}
                   onChangeText={handleTypedChange(setRefInput)}
                   autoCapitalize="none"
                 />
-                <ThemedText style={styles.label}>Email Address</ThemedText>
+                <ThemedText style={styles.label}>{t("lookup.form.emailLabel")}</ThemedText>
                 <Input
-                  placeholder="The email used when booking"
-                  accessibilityLabel="Email address"
+                  placeholder={t("lookup.form.emailPlaceholder")}
+                  accessibilityLabel={t("lookup.form.emailA11y")}
                   value={emailInput}
                   onChangeText={handleTypedChange(setEmailInput)}
                   autoCapitalize="none"
@@ -253,12 +255,12 @@ export default function LookupScreen({
                   disabled={!canSearch}
                   loading={status === "loading"}
                   onPress={handleLookup}
-                  accessibilityLabel="Find my booking"
+                  accessibilityLabel={t("lookup.form.submitA11y")}
                 >
-                  Look Up
+                  {t("lookup.form.submitButton")}
                 </Button>
                 <ThemedText style={[styles.helpText, { color: colors.muted }]}>
-                  Can&apos;t find your booking? Contact the restaurant directly.
+                  {t("lookup.form.helpText")}
                 </ThemedText>
                 {/* Telling someone to get in touch without saying how is half an
                     instruction. Falls back to the brand's details until a lookup names a
@@ -273,7 +275,7 @@ export default function LookupScreen({
                         size="sm"
                         icon="call-outline"
                         onPress={() => Linking.openURL(telHref(contact.phone!))}
-                        accessibilityLabel={`Call ${contact.phone}`}
+                        accessibilityLabel={t("lookup.form.callLabel", { phone: contact.phone })}
                       >
                         {contact.phone}
                       </Button>
@@ -285,7 +287,9 @@ export default function LookupScreen({
                         size="sm"
                         icon="mail-outline"
                         onPress={() => Linking.openURL(mailtoHref(contact.email!))}
-                        accessibilityLabel={`Email ${contact.email}`}
+                        accessibilityLabel={t("lookup.form.emailContactLabel", {
+                          email: contact.email,
+                        })}
                       >
                         {contact.email}
                       </Button>
@@ -308,7 +312,11 @@ export default function LookupScreen({
 
             {twoColumn && (
               <View style={styles.resultCol}>
-                <SlidePanel variant="side" onDismiss={reset} accessibilityLabel="Booking result">
+                <SlidePanel
+                  variant="side"
+                  onDismiss={reset}
+                  accessibilityLabel={t("lookup.resultPanelA11y")}
+                >
                   {panelContent}
                 </SlidePanel>
               </View>
@@ -320,7 +328,11 @@ export default function LookupScreen({
       </ScrollView>
 
       {isCompact && showPanel && (
-        <SlidePanel variant="sheet" onDismiss={reset} accessibilityLabel="Booking result">
+        <SlidePanel
+          variant="sheet"
+          onDismiss={reset}
+          accessibilityLabel={t("lookup.resultPanelA11y")}
+        >
           {panelContent}
         </SlidePanel>
       )}
@@ -330,10 +342,12 @@ export default function LookupScreen({
       {showCancelConfirm && (
         <ConfirmModal
           visible={showCancelConfirm}
-          title="Cancel Reservation"
-          message="Are you sure you want to cancel this booking? This action cannot be undone."
-          confirmLabel={cancelling ? "Cancelling…" : "Cancel Booking"}
-          cancelLabel="Keep Booking"
+          title={t("lookup.cancelModal.title")}
+          message={t("lookup.cancelModal.message")}
+          confirmLabel={
+            cancelling ? t("lookup.cancelModal.confirming") : t("lookup.cancelModal.confirm")
+          }
+          cancelLabel={t("lookup.cancelModal.keep")}
           destructive
           onConfirm={cancelBooking}
           onCancel={() => !cancelling && setShowCancelConfirm(false)}
@@ -343,7 +357,7 @@ export default function LookupScreen({
       {errorMessage !== null && (
         <AlertModal
           visible={errorMessage !== null}
-          title="Error"
+          title={t("errors.title")}
           message={errorMessage}
           onClose={clearError}
         />

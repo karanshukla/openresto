@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal, View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { IconButton } from "@/components/common/IconButton";
 import { ThemedText } from "@/components/themed-text";
@@ -9,32 +10,32 @@ import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { clampToRange, resolveCalendarKey, shiftCalendarMonths } from "@/utils/calendarKeys";
 import { GRIDCELL_ROLE, webProps, type WebKeyEvent } from "@/utils/webProps";
 import { fmtDateString, fmtLongDate } from "@/utils/formatters";
+import { getActiveLocale } from "@/utils/locale";
 import { styles } from "./DatePicker.web.styles";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const WEEKDAY_FULL_LABELS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-const MONTH_LABELS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+/** 2024-01-01 is a Monday, so index 0 lines up with the calendar's Mon-first week. */
+const WEEKDAY_REFERENCE = (index: number) => new Date(2024, 0, 1 + index);
+
+/** Locale-aware weekday name for the header row, e.g. "Mon" or "lun." — follows the active UI language rather than a hardcoded English array. */
+function weekdayShortLabel(index: number): string {
+  return new Intl.DateTimeFormat(getActiveLocale(), { weekday: "short" }).format(
+    WEEKDAY_REFERENCE(index)
+  );
+}
+
+/** Full weekday name, for the header row's accessibilityLabel. */
+function weekdayFullLabel(index: number): string {
+  return new Intl.DateTimeFormat(getActiveLocale(), { weekday: "long" }).format(
+    WEEKDAY_REFERENCE(index)
+  );
+}
+
+/** Locale-aware "Month Year" label, e.g. "January 2026" or "janvier 2026". */
+function monthYearLabel(date: Date): string {
+  return new Intl.DateTimeFormat(getActiveLocale(), { month: "long", year: "numeric" }).format(
+    date
+  );
+}
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -102,6 +103,7 @@ export default function DatePicker({
   allowPast?: boolean;
 }) {
   const { colors, primaryColor } = useAppTheme();
+  const { t } = useTranslation();
   const borderColor = colors.border;
   const bg = colors.input;
   const textColor = colors.text;
@@ -235,7 +237,9 @@ export default function DatePicker({
         testID="date-picker-trigger"
         accessibilityRole="button"
         accessibilityLabel={
-          selectedLabel ? `Change date, currently ${selectedLabel}` : "Select a date"
+          selectedLabel
+            ? t("common.datePicker.changeDate", { date: selectedLabel })
+            : t("common.datePicker.selectDate")
         }
         accessibilityState={{ expanded: open }}
         style={[
@@ -253,7 +257,7 @@ export default function DatePicker({
               numberOfLines={1}
               style={[styles.triggerText, { color: selectedDate ? textColor : placeholderColor }]}
             >
-              {triggerLabel ?? selectedLabel ?? "Select a date"}
+              {triggerLabel ?? selectedLabel ?? t("common.datePicker.selectDate")}
             </ThemedText>
           </View>
         ) : (
@@ -261,7 +265,7 @@ export default function DatePicker({
             numberOfLines={1}
             style={[styles.triggerText, { color: selectedDate ? textColor : placeholderColor }]}
           >
-            {triggerLabel ?? selectedLabel ?? "Select a date"}
+            {triggerLabel ?? selectedLabel ?? t("common.datePicker.selectDate")}
           </ThemedText>
         )}
         <Icon name="chevron-down" size="md" color={placeholderColor} />
@@ -278,7 +282,7 @@ export default function DatePicker({
           testID="date-picker-backdrop"
           onPress={() => setOpen(false)}
           accessibilityRole="button"
-          accessibilityLabel="Close the date picker"
+          accessibilityLabel={t("common.datePicker.closeButtonLabel")}
         >
           <Pressable
             ref={calendarRef}
@@ -292,7 +296,7 @@ export default function DatePicker({
             role="dialog"
             aria-modal
             accessibilityViewIsModal
-            accessibilityLabel="Choose a date"
+            accessibilityLabel={t("common.datePicker.chooseDate")}
             tabIndex={-1}
             {...webProps({ onKeyDown: handleKey })}
           >
@@ -302,20 +306,20 @@ export default function DatePicker({
                 onPress={goPrevMonth}
                 disabled={!canGoPrev}
                 testID="date-picker-prev-month"
-                accessibilityLabel="Previous month"
+                accessibilityLabel={t("common.datePicker.previousMonth")}
                 color={canGoPrev ? textColor : placeholderColor}
                 size="md"
                 compact
               />
               <ThemedText style={{ fontSize: 14, fontWeight: "600" }} accessibilityRole="header">
-                {MONTH_LABELS[viewMonth]} {viewYear}
+                {monthYearLabel(viewDate)}
               </ThemedText>
               <IconButton
                 name="chevron-forward"
                 onPress={goNextMonth}
                 disabled={!canGoNext}
                 testID="date-picker-next-month"
-                accessibilityLabel="Next month"
+                accessibilityLabel={t("common.datePicker.nextMonth")}
                 color={canGoNext ? textColor : placeholderColor}
                 size="md"
                 compact
@@ -325,15 +329,15 @@ export default function DatePicker({
             <View
               role="grid"
               testID="date-picker-grid"
-              accessibilityLabel={`${MONTH_LABELS[viewMonth]} ${viewYear}`}
+              accessibilityLabel={monthYearLabel(viewDate)}
             >
               <View style={styles.weekdayRow} role="row">
-                {WEEKDAY_LABELS.map((label, i) => (
+                {Array.from({ length: 7 }, (_, i) => weekdayShortLabel(i)).map((label, i) => (
                   <View
                     key={label}
                     style={styles.cell}
                     role="columnheader"
-                    accessibilityLabel={WEEKDAY_FULL_LABELS[i]}
+                    accessibilityLabel={weekdayFullLabel(i)}
                   >
                     <ThemedText
                       style={{ fontSize: 11, color: placeholderColor, fontWeight: "600" }}
@@ -374,7 +378,7 @@ export default function DatePicker({
                         accessibilityLabel={describeDate(cellDate)}
                         accessibilityHint={
                           closedWeekday
-                            ? "Normally closed"
+                            ? t("common.datePicker.normallyClosed")
                             : unbookableWeekday
                               ? unavailableReason
                               : undefined

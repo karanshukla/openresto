@@ -1,8 +1,11 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
+import i18n from "@/i18n";
 import { styles } from "./BookingSummaryHeader.styles";
 
 interface BookingSummaryHeaderProps {
@@ -22,9 +25,17 @@ interface BookingSummaryHeaderProps {
  * first. Section and table join the address rather than standing alone — on their own
  * they're two words of context, next to the address they're the rest of the directions.
  */
-export function buildSeatingLine(booking: BookingDto, restaurant: RestaurantDto | null): string {
+/**
+ * `t` defaults to the global i18next instance's own translator so this stays callable outside
+ * a React tree (existing tests call it directly).
+ */
+export function buildSeatingLine(
+  booking: BookingDto,
+  restaurant: RestaurantDto | null,
+  t: TFunction = i18n.t.bind(i18n)
+): string {
   const seating = booking.tableGroupId
-    ? (booking.tableName ?? "Combined tables")
+    ? (booking.tableName ?? t("booking.summaryHeader.combinedTablesFallback"))
     : booking.tableName;
 
   return [restaurant?.address, booking.sectionName, seating].filter(Boolean).join(" · ");
@@ -39,7 +50,8 @@ export default function BookingSummaryHeader({
   mutedColor,
   tint = null,
 }: BookingSummaryHeaderProps) {
-  const seatingLine = buildSeatingLine(booking, restaurant);
+  const { t } = useTranslation();
+  const seatingLine = buildSeatingLine(booking, restaurant, t);
   const name = restaurant?.name;
 
   return (

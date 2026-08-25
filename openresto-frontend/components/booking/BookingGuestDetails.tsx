@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { BookingDto } from "@/api/bookings";
@@ -17,6 +18,7 @@ interface BookingGuestDetailsProps {
  * check. An empty request is omitted rather than rendered as "None".
  */
 export default function BookingGuestDetails({ booking, mutedColor }: BookingGuestDetailsProps) {
+  const { t } = useTranslation();
   const requests = booking.specialRequests?.trim();
 
   return (
@@ -25,7 +27,9 @@ export default function BookingGuestDetails({ booking, mutedColor }: BookingGues
         <Icon name="person-outline" size={15} color={mutedColor} style={styles.icon} />
         <View style={styles.content}>
           <ThemedText style={styles.primary}>
-            {booking.customerName ? `Booked under ${booking.customerName}` : "Booked with"}
+            {booking.customerName
+              ? t("booking.guestDetails.bookedUnder", { name: booking.customerName })
+              : t("booking.guestDetails.bookedWith")}
           </ThemedText>
           <ThemedText style={[styles.secondary, { color: mutedColor }]}>
             {booking.customerEmail}
@@ -37,7 +41,9 @@ export default function BookingGuestDetails({ booking, mutedColor }: BookingGues
         <View style={styles.row}>
           <Icon name="chatbubble-outline" size={15} color={mutedColor} style={styles.icon} />
           <View style={styles.content}>
-            <ThemedText style={[styles.label, { color: mutedColor }]}>Special requests</ThemedText>
+            <ThemedText style={[styles.label, { color: mutedColor }]}>
+              {t("booking.guestDetails.specialRequestsLabel")}
+            </ThemedText>
             <ThemedText style={styles.secondaryStrong}>{requests}</ThemedText>
           </View>
         </View>

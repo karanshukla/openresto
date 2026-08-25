@@ -34,6 +34,9 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.lg,
   },
+  languageSwitcher: {
+    width: 150,
+  },
   social: {
     flexDirection: "row",
     alignItems: "center",

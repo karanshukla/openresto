@@ -136,6 +136,10 @@ export const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
   },
+  languageSwitcher: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
   identity: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Icon } from "@/components/common/Icon";
@@ -28,6 +29,7 @@ export function LocationSeatingMap({
   mutedColor,
   primaryColor,
 }: LocationSeatingMapProps) {
+  const { t } = useTranslation();
   const tableGroups = restaurant.groups ?? [];
   // Keyed off restaurant.groups, not tableGroups — the `?? []` fallback is a fresh array each
   // render, which would defeat the memo on locations that have no groups.
@@ -41,7 +43,7 @@ export function LocationSeatingMap({
   return (
     <View style={styles.subSection}>
       <ThemedText type="defaultSemiBold" style={styles.subHeading}>
-        Seating &amp; tables
+        {t("restaurant.seatingMap.heading")}
       </ThemedText>
       <View style={styles.sectionsGrid}>
         {restaurant.sections.map((section) => (
@@ -61,14 +63,14 @@ export function LocationSeatingMap({
                 >
                   <View style={styles.tableNameRow}>
                     <ThemedText style={styles.tableName}>
-                      {table.name ?? `Table ${table.id}`}
+                      {table.name ?? t("restaurant.seatingMap.tableFallbackName", { id: table.id })}
                     </ThemedText>
                     {groupMemberIds.has(table.id) && (
                       <Icon name="link" size={11} color={primaryColor} />
                     )}
                   </View>
                   <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
-                    {table.seats} seats
+                    {t("restaurant.seatingMap.seatsCount", { count: table.seats })}
                   </ThemedText>
                 </View>
               ))}
@@ -80,7 +82,7 @@ export function LocationSeatingMap({
       {tableGroups.length > 0 && (
         <View style={styles.groupBlock}>
           <ThemedText style={[styles.groupBlockHeading, { color: mutedColor }]}>
-            Tables we can combine
+            {t("restaurant.seatingMap.combinableHeading")}
           </ThemedText>
           {tableGroups.map((group) => (
             <View
@@ -94,7 +96,7 @@ export function LocationSeatingMap({
               <View style={styles.groupTextCol}>
                 <ThemedText style={styles.groupName}>{groupDisplayName(group)}</ThemedText>
                 <ThemedText style={[styles.groupSeats, { color: mutedColor }]}>
-                  Seats up to {group.combinedSeats} pushed together
+                  {t("restaurant.seatingMap.seatsUpTo", { count: group.combinedSeats })}
                 </ThemedText>
               </View>
             </View>

@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -9,10 +10,19 @@ import { getRestaurantNow } from "@/utils/restaurantTime";
 import { styles } from "./OpeningHoursTable.styles";
 import { Icon } from "@/components/common/Icon";
 
-const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAY_KEYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 
 export default function OpeningHoursTable({ restaurant }: { restaurant: RestaurantDto }) {
   const { colors, isDark, primaryColor } = useAppTheme();
+  const { t } = useTranslation();
   const openDays = parseOpenDays(restaurant.openDays);
   const todayIsoDay = getRestaurantNow(restaurant.timezone || "UTC").isoDay;
 
@@ -20,7 +30,8 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
     <ThemedView
       style={[styles.table, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
-      {DAY_LABELS.map((label, idx) => {
+      {DAY_KEYS.map((dayKey, idx) => {
+        const label = t(`restaurant.openingHours.${dayKey}`);
         const isoDay = idx + 1;
         const { open, close } = getHoursForDay(restaurant, isoDay);
         const isOpenDay = openDays.includes(isoDay);
@@ -35,7 +46,7 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
               isToday && {
                 backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)",
               },
-              idx < DAY_LABELS.length - 1 && {
+              idx < DAY_KEYS.length - 1 && {
                 borderBottomWidth: 1,
                 borderBottomColor: colors.border,
               },
@@ -50,8 +61,7 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
                   !isOpenDay && { opacity: 0.55 },
                 ]}
               >
-                {label}
-                {isToday ? "  (today)" : ""}
+                {isToday ? t("restaurant.openingHours.dayToday", { day: label }) : label}
               </ThemedText>
             </View>
 
@@ -67,7 +77,9 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
                   {open} – {close}
                 </ThemedText>
               ) : (
-                <ThemedText style={[styles.closedText, { color: colors.muted }]}>Closed</ThemedText>
+                <ThemedText style={[styles.closedText, { color: colors.muted }]}>
+                  {t("restaurant.openingHours.closed")}
+                </ThemedText>
               )}
 
               {walkInToday && (
@@ -82,7 +94,7 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
                 >
                   <Icon name="walk-outline" size={10} color={colors.muted} />
                   <ThemedText style={[styles.walkInText, { color: colors.muted }]}>
-                    Walk-in
+                    {t("restaurant.openingHours.walkIn")}
                   </ThemedText>
                 </View>
               )}

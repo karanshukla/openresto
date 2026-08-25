@@ -6,6 +6,8 @@ import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
@@ -16,7 +18,7 @@ import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
 import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
 
-function opensLaterToday(restaurant: RestaurantDto): string | null {
+function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null {
   const timezone = restaurant.timezone ?? "UTC";
   const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
   const { open: openTime } = getHoursForDay(restaurant, isoDay);
@@ -28,9 +30,11 @@ function opensLaterToday(restaurant: RestaurantDto): string | null {
   const diffMins = openMins - totalMins;
   const diffHours = Math.floor(diffMins / 60);
   const diffRemMins = diffMins % 60;
-  if (diffHours >= 1 && diffRemMins === 0) return `Opens in ${diffHours}h`;
-  if (diffHours >= 1) return `Opens in ${diffHours}h ${diffRemMins}m`;
-  return `Opens in ${diffMins}m`;
+  if (diffHours >= 1 && diffRemMins === 0)
+    return t("restaurant.card.opensInHours", { hours: diffHours });
+  if (diffHours >= 1)
+    return t("restaurant.card.opensInHoursMinutes", { hours: diffHours, minutes: diffRemMins });
+  return t("restaurant.card.opensInMinutes", { minutes: diffMins });
 }
 
 function isOpenNow(restaurant: RestaurantDto): boolean {
@@ -55,6 +59,7 @@ export default function RestaurantCard({
   const { colors, isDark, primaryColor } = useAppTheme();
   const mutedColor = colors.muted;
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Every route this card can take answers a tap, so each one confirms the tap first.
   // Haptics.selectionAsync is a no-op on web and on devices without a taptic engine.
@@ -105,7 +110,7 @@ export default function RestaurantCard({
   ]);
 
   const open = isOpenNow(restaurant);
-  const opensLabel = !open ? opensLaterToday(restaurant) : null;
+  const opensLabel = !open ? opensLaterToday(restaurant, t) : null;
   const walkInLocation = !!restaurant.walkInOnly;
   const walkInToday =
     !walkInLocation &&
@@ -139,7 +144,7 @@ export default function RestaurantCard({
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={`${restaurant.name}, view details and book`}
+      accessibilityLabel={t("restaurant.card.viewDetailsAndBook", { name: restaurant.name })}
       onPress={() => openLocation()}
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         styles.card,
@@ -214,7 +219,9 @@ export default function RestaurantCard({
           >
             {open && <View style={cardStyles.badgeDot} />}
             <ThemedText style={cardStyles.badgeText}>
-              {open ? `Open till ${todayHours.close}` : (opensLabel ?? "Closed")}
+              {open
+                ? t("restaurant.card.openTill", { time: todayHours.close })
+                : (opensLabel ?? t("restaurant.card.closedBadge"))}
             </ThemedText>
           </View>
           {walkInBadgeText && (
@@ -235,7 +242,7 @@ export default function RestaurantCard({
             <View style={styles.meta}>
               <Icon name="location-outline" size={11} color={mutedColor} />
               <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
-                {restaurant.address || "Multiple areas"}
+                {restaurant.address || t("restaurant.card.multipleAreas")}
               </ThemedText>
             </View>
           </View>
@@ -250,7 +257,7 @@ export default function RestaurantCard({
               }
             }}
             accessibilityRole="link"
-            accessibilityLabel="Open booking page in new tab"
+            accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}
           >
             <Icon name="open-outline" size="sm" color={mutedColor} />
           </Pressable>
@@ -259,7 +266,9 @@ export default function RestaurantCard({
         <RestaurantTags tags={tags} />
 
         <View style={styles.mapLinks}>
-          <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>Directions</ThemedText>
+          <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>
+            {t("restaurant.card.directions")}
+          </ThemedText>
           <Pressable
             style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
               styles.mapLink,
@@ -275,7 +284,7 @@ export default function RestaurantCard({
               );
             }}
             accessibilityRole="link"
-            accessibilityLabel="Open in Google Maps"
+            accessibilityLabel={t("restaurant.card.openInGoogleMaps")}
           >
             <Icon name="navigate-outline" size={11} color={mutedColor} />
             <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Google</ThemedText>
@@ -295,7 +304,7 @@ export default function RestaurantCard({
               );
             }}
             accessibilityRole="link"
-            accessibilityLabel="Open in Apple Maps"
+            accessibilityLabel={t("restaurant.card.openInAppleMaps")}
           >
             <Icon name="navigate-outline" size={11} color={mutedColor} />
             <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Apple</ThemedText>
@@ -309,17 +318,17 @@ export default function RestaurantCard({
             <View style={styles.walkInEmptyState} testID="walk-in-slot-notice">
               <Icon name="walk-outline" size="lg" color={mutedColor} />
               <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
-                No reservations required
+                {t("restaurant.card.noReservationsRequired")}
               </ThemedText>
             </View>
           ) : (
             <>
               <View style={styles.slotLabel}>
                 <ThemedText style={[styles.slotLabelText, { color: mutedColor }]}>
-                  Available slots
+                  {t("restaurant.card.availableSlots")}
                 </ThemedText>
                 <ThemedText style={[styles.slotLabelWhen, { color: colors.text }]}>
-                  {party} {party === 1 ? "guest" : "guests"} · today
+                  {t("restaurant.card.guestsToday", { count: party })}
                 </ThemedText>
               </View>
               {slotsLoading ? (
@@ -330,7 +339,7 @@ export default function RestaurantCard({
                 />
               ) : slots.length === 0 ? (
                 <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
-                  No available slots today
+                  {t("restaurant.card.noAvailableSlotsToday")}
                 </ThemedText>
               ) : (
                 <View style={styles.slotRow}>
@@ -345,7 +354,10 @@ export default function RestaurantCard({
                         );
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`Book ${s.time} at ${restaurant.name}`}
+                      accessibilityLabel={t("restaurant.card.bookAt", {
+                        time: s.time,
+                        name: restaurant.name,
+                      })}
                       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
                         styles.slot,
                         {
@@ -368,27 +380,28 @@ export default function RestaurantCard({
             <Icon name="time-outline" size="xs" color={mutedColor} style={{ marginRight: 5 }} />
             {closedToday ? (
               <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
-                Closed today
+                {t("restaurant.card.closedToday")}
               </ThemedText>
             ) : (
-              <>
-                <ThemedText style={[styles.hoursText, { color: mutedColor }]}>
-                  {hoursVary ? "Today " : "Open "}
-                </ThemedText>
-                <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
-                  {todayHours.open} – {todayHours.close}
-                </ThemedText>
-              </>
+              <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
+                {hoursVary
+                  ? t("restaurant.card.hoursToday", {
+                      hours: `${todayHours.open} – ${todayHours.close}`,
+                    })
+                  : t("restaurant.card.hoursOpen", {
+                      hours: `${todayHours.open} – ${todayHours.close}`,
+                    })}
+              </ThemedText>
             )}
           </View>
           <Pressable
             style={({ pressed }) => [cardStyles.viewBtn, pressed && { backgroundColor: surface2 }]}
             onPress={() => openLocation()}
             accessibilityRole="link"
-            accessibilityLabel={`See details for ${restaurant.name}`}
+            accessibilityLabel={t("restaurant.card.seeDetailsFor", { name: restaurant.name })}
           >
             <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
-              See details
+              {t("restaurant.card.seeDetails")}
             </ThemedText>
             <Icon name="arrow-forward" size={13} color={primaryColor} />
           </Pressable>

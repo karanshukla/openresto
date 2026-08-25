@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { ThemeColors } from "@/theme/theme";
@@ -31,6 +32,7 @@ export default function RecentBookingsList({
   onSelect: (c: CachedBooking) => void;
 }) {
   const { primaryColor, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   if (cached.length === 0) return null;
@@ -40,7 +42,9 @@ export default function RecentBookingsList({
 
   return (
     <View style={[styles.section, style]}>
-      <ThemedText style={[styles.title, { color: colors.muted }]}>YOUR RECENT BOOKINGS</ThemedText>
+      <ThemedText style={[styles.title, { color: colors.muted }]}>
+        {t("lookup.recent.heading")}
+      </ThemedText>
       {visible.map((c) => {
         const isActive = c.bookingRef === activeRef;
         return (
@@ -57,9 +61,11 @@ export default function RecentBookingsList({
             onPress={() => onSelect(c)}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
-            accessibilityLabel={`Look up booking ${c.bookingRef}${
-              c.restaurantName ? ` at ${c.restaurantName}` : ""
-            }`}
+            accessibilityLabel={
+              c.restaurantName
+                ? t("lookup.recent.itemWithNameA11y", { ref: c.bookingRef, name: c.restaurantName })
+                : t("lookup.recent.itemA11y", { ref: c.bookingRef })
+            }
           >
             <View style={styles.cardRow}>
               <View style={{ flex: 1, gap: 3 }}>
@@ -68,7 +74,7 @@ export default function RecentBookingsList({
                   {c.restaurantName ? `${c.restaurantName} · ` : ""}
                   {fmtMonthDay(new Date(c.date))}
                   {" · "}
-                  {c.seats} guest{c.seats !== 1 ? "s" : ""}
+                  {t("lookup.recent.guestCount", { count: c.seats })}
                 </ThemedText>
               </View>
               <Icon
@@ -89,13 +95,14 @@ export default function RecentBookingsList({
           icon={expanded ? "chevron-up-outline" : "chevron-down-outline"}
           onPress={() => setExpanded((prev) => !prev)}
         >
-          {expanded ? "Show fewer" : `Show all ${cached.length}`}
+          {expanded
+            ? t("lookup.recent.showFewer")
+            : t("lookup.recent.showAll", { count: cached.length })}
         </Button>
       )}
 
       <ThemedText style={[styles.storageNote, { color: colors.muted }]}>
-        Recent bookings are stored on this device. Clearing your cache and cookies, or uninstalling
-        the app, will empty this list.
+        {t("lookup.recent.storageNote")}
       </ThemedText>
     </View>
   );

@@ -7,6 +7,7 @@ import {
   NativeScrollEvent,
   Platform,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "../themed-text";
 import { TimeSlotDto } from "@/api/availability";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -40,7 +41,15 @@ export default function PopularTimesPicker({
   wrap = false,
 }: PopularTimesPickerProps) {
   const { colors, primaryColor: PRIMARY } = useAppTheme();
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<Category>("Lunch");
+
+  const categoryLabel = (cat: Category): string =>
+    cat === "Lunch"
+      ? t("restaurant.filterBar.lunch")
+      : cat === "Dinner"
+        ? t("restaurant.filterBar.dinner")
+        : t("restaurant.filterBar.all");
 
   const scrollRef = useRef<ScrollView>(null);
   const [scrollPos, setScrollPos] = useState(0);
@@ -174,7 +183,7 @@ export default function PopularTimesPicker({
         disabled={disabled}
         hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
         accessibilityRole="tab"
-        accessibilityLabel={cat}
+        accessibilityLabel={categoryLabel(cat)}
         accessibilityState={{ selected: isActive, disabled }}
         style={[
           styles.tab,
@@ -190,7 +199,7 @@ export default function PopularTimesPicker({
             disabled && styles.tabTextDisabled,
           ]}
         >
-          {cat}
+          {categoryLabel(cat)}
         </ThemedText>
       </Pressable>
     );
@@ -199,7 +208,7 @@ export default function PopularTimesPicker({
   const slotChips =
     filteredSlots.length === 0 ? (
       <ThemedText style={styles.emptyText} role="status" accessibilityLiveRegion="polite">
-        No slots available for this period.
+        {t("booking.popularTimes.empty")}
       </ThemedText>
     ) : (
       filteredSlots.map((slot) => {
@@ -252,7 +261,7 @@ export default function PopularTimesPicker({
 
       <View
         role="radiogroup"
-        accessibilityLabel="Available times"
+        accessibilityLabel={t("booking.popularTimes.availableTimesA11y")}
         style={styles.scrollWrapper}
         onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
       >
@@ -281,7 +290,7 @@ export default function PopularTimesPicker({
             <IconButton
               testID="scroll-left-arrow"
               name="chevron-back"
-              accessibilityLabel="Show earlier times"
+              accessibilityLabel={t("booking.popularTimes.earlierA11y")}
               onPress={() => scrollBy(-180)}
               color={PRIMARY}
               size="md"
@@ -302,7 +311,7 @@ export default function PopularTimesPicker({
             <IconButton
               testID="scroll-right-arrow"
               name="chevron-forward"
-              accessibilityLabel="Show later times"
+              accessibilityLabel={t("booking.popularTimes.laterA11y")}
               onPress={() => scrollBy(180)}
               color={PRIMARY}
               size="md"

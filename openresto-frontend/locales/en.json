@@ -1,10 +1,380 @@
 {
+  "booking": {
+    "calendar": {
+      "heading": "ADD TO CALENDAR",
+      "icsA11y": "Download .ics for Apple Calendar, Thunderbird and others"
+    },
+    "confirmation": {
+      "loadingInlineLabel": "Loading booking",
+      "loadingLabel": "Loading your booking"
+    },
+    "directions": {
+      "heading": "GET DIRECTIONS"
+    },
+    "drawer": {
+      "bookLocationLabel": "Book {{name}}",
+      "closePanelLabel": "Close booking panel",
+      "exactTimeLabel": "Exact time",
+      "genericSubmitError": "Something went wrong. Please try again.",
+      "locationSelectLabel": "Location",
+      "partyDateHeading": "Party & date",
+      "seatingDisclosureLabel": "Choose a section or table",
+      "specialRequestsLabel": "Special requests / allergies",
+      "summaryLine_one": "{{count}} guest · {{when}} · {{time}}",
+      "summaryLine_other": "{{count}} guests · {{when}} · {{time}}",
+      "today": "Today",
+      "yourDetailsHeading": "Your details"
+    },
+    "factsBand": {
+      "dateKey": "Date",
+      "dateTimeKey": "Date & time",
+      "guestsKey": "Guests",
+      "tableFor": "Table for {{count}}",
+      "timeKey": "Time",
+      "until": "until {{time}}"
+    },
+    "form": {
+      "autoAssignHint": "We'll seat you at the best available table.",
+      "autoAssignHintAllSections": "We'll seat you at the best available table across all sections.",
+      "closedDayNotice": "The restaurant is closed on this day. Please select a different date.",
+      "confirmBookingLabel": "Confirm booking",
+      "confirmLabel": "Confirm Booking",
+      "confirmingLabel": "Confirming…",
+      "dateLabel": "Date",
+      "emailAccessibilityLabel": "Email address",
+      "emailLabel": "Email",
+      "emailPlaceholder": "your@email.com",
+      "fullNameAccessibilityLabel": "Full name",
+      "fullNameLabel": "Full Name",
+      "fullNamePlaceholder": "Your full name",
+      "gdprText": "By confirming, you agree that your email and booking details will be stored to manage your reservation. We also use an essential cookie to remember your recent bookings on this device. We do not share your data with third parties. You can request deletion by contacting the restaurant.",
+      "guestsLabel": "Guests",
+      "guestsSelectLabel": "Number of guests",
+      "holdRequiredHint": "A table hold is required before confirming.",
+      "loadingTimesLabel": "Loading available times",
+      "noTablesAvailable_one": "No tables available for {{count}} guest.",
+      "noTablesAvailable_other": "No tables available for {{count}} guests.",
+      "numberOfGuestsLabel": "Number of Guests",
+      "oversizeConfirm": "Warning: This table only has {{tableSeats}}, but you are booking for {{guests}}. Do you want to continue?",
+      "partySize_one": "{{count}} guest",
+      "partySize_other": "{{count}} guests",
+      "popularTimesLabel": "Popular Times",
+      "requestsAccessibilityLabel": "Special requests or allergies",
+      "requestsPlaceholder": "e.g. nut allergy, high chair needed… (optional)",
+      "routeTitle": "Book a Table",
+      "seatsCount_one": "{{count}} seat",
+      "seatsCount_other": "{{count}} seats",
+      "sectionLabel": "Section",
+      "selectSectionPlaceholder": "Select a section",
+      "selectTablePlaceholder": "Select a table",
+      "specialRequestsLabel": "Special Requests / Allergies",
+      "tableLabel": "Table",
+      "timeLabel": "Time",
+      "timezoneHint": "All times are in {{timezone}} (currently {{time}} there)",
+      "walkInsOnlyReason": "Walk-ins only"
+    },
+    "guestDetails": {
+      "bookedUnder": "Booked under {{name}}",
+      "bookedWith": "Booked with",
+      "specialRequestsLabel": "Special requests"
+    },
+    "hold": {
+      "checking": "Checking availability…",
+      "checkingA11y": "Checking availability",
+      "expiredMessage": "Your table hold expired. Availability may have changed.",
+      "expiresIn": "- expires in {{time}}",
+      "heldLabel": "Table held",
+      "refreshButton": "Refresh page",
+      "refreshHint": "Reloads availability for this date",
+      "unavailableDefault": "Table not available for this date. Please choose another."
+    },
+    "largeParty": {
+      "body": "Our largest table seats {{count}}. Get in touch to arrange a booking for a bigger group.",
+      "callLabel": "Call {{phone}}",
+      "contactAccessibilityLabel": "Contact us about a large party",
+      "contactLink": "Contact us →",
+      "emailLabel": "Email {{email}}",
+      "gotItLabel": "Got it",
+      "modalMessage": "Our largest table seats {{count}}, so a booking for a bigger group needs to be arranged directly. Please get in touch and we'll happily sort something out.",
+      "noContactsMessage": "No contact details are listed yet. Please reach out to us directly.",
+      "title": "Large party"
+    },
+    "moveNotice": {
+      "body": "We have moved your booking at {{venue}}.\n\nPreviously: {{previous}}\nNow: {{next}}\n\nEverything else about the booking stays the same.{{referenceLine}}\n\nIf the new time does not work for you, reply to this email and we will sort it out.",
+      "greetingGeneric": "Hello,",
+      "greetingNamed": "Hi {{name}},",
+      "referenceLine": "\n\nYour booking reference is unchanged: {{ref}}.",
+      "subject": "Your booking at {{venue}} has moved",
+      "venueFallback": "the restaurant"
+    },
+    "popularTimes": {
+      "availableTimesA11y": "Available times",
+      "earlierA11y": "Show earlier times",
+      "empty": "No slots available for this period.",
+      "laterA11y": "Show later times"
+    },
+    "result": {
+      "cancelActionLabel": "Cancel this booking",
+      "cancelButton": "Cancel This Booking",
+      "cancelHint": "This booking cannot be modified. However, feel free to cancel and rebook if need be.",
+      "cancelledHint": "This booking has been cancelled.",
+      "copiedButton": "Copied",
+      "copyButton": "Copy",
+      "copyReferenceLabel": "Copy booking reference",
+      "mapTitle": "Map of {{name}}",
+      "pastHint": "This booking has already passed and can no longer be cancelled.",
+      "referenceCopiedLabel": "Booking reference copied",
+      "referenceLabel": "Reference",
+      "routeTitleConfirmed": "Booking Confirmed",
+      "statusCancelled": "Booking Cancelled",
+      "statusConfirmed": "Booking Confirmed",
+      "statusFound": "Booking Found",
+      "statusPassed": "Booking Has Passed",
+      "unnamedRestaurant": "Restaurant"
+    },
+    "seating": {
+      "anySectionLabel": "Any section",
+      "seatsSuffix_one": "({{count}} seat)",
+      "seatsSuffix_other": "({{count}} seats)",
+      "tableFallbackName": "Table {{id}}"
+    },
+    "summaryHeader": {
+      "combinedTablesFallback": "Combined tables"
+    },
+    "walkIn": {
+      "dayBodyGeneric": "Online booking isn't available for the selected date. Pick another day, or simply come in. Walk-ins are always welcome.",
+      "dayBodyWithDays": "This location doesn't take online bookings on {{days}}. Pick another day, or simply come in - walk-ins are always welcome.",
+      "dayTitle": "Walk-ins only on this day",
+      "daysBanner": "Walk-ins only on {{days}} - online booking isn't available on those days.",
+      "locationBody": "This location doesn't take online bookings. Tables are first come, first served. Just drop by during opening hours.",
+      "locationTitle": "Walk-ins only"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Confirm",
+      "goHome": "Go to home",
+      "scrollToTop": "Scroll to top",
+      "tryAgain": "Try again"
+    },
+    "alertModal": {
+      "defaultButtonLabel": "OK",
+      "defaultTitle": "Notice"
+    },
+    "confirmModal": {
+      "defaultTitle": "Confirm"
+    },
+    "footer": {
+      "adminLinkText": "Admin",
+      "restaurantAdminLabel": "Restaurant admin"
+    },
+    "datePicker": {
+      "changeDate": "Change date, currently {{date}}",
+      "chooseDate": "Choose a date",
+      "closeButtonLabel": "Close the date picker",
+      "nextMonth": "Next month",
+      "normallyClosed": "Normally closed",
+      "previousMonth": "Previous month",
+      "selectDate": "Select a date"
+    },
+    "keyboardShortcuts": {
+      "closeLabel": "Close keyboard shortcuts",
+      "title": "Keyboard shortcuts"
+    },
+    "language": {
+      "switcherLabel": "Language"
+    },
+    "modalCard": {
+      "defaultDismissLabel": "Dismiss"
+    },
+    "navbar": {
+      "brandBackToTop": "{{appName}}, back to top",
+      "brandHome": "{{appName}}, go to home",
+      "goBack": "Go back",
+      "locationsLink": "Locations",
+      "myBookingsLink": "My Bookings"
+    },
+    "overflowMenu": {
+      "closeHelp": "Close help",
+      "closeMenu": "Close menu",
+      "findUsElsewhere": "Find us elsewhere",
+      "help": "Help",
+      "helpBody": "Open the Locations page to see hours, menus, and available times for each location. Pick a time slot to open the booking form right there, or use \"My Bookings\" to look up an existing reservation with your booking reference.",
+      "moreOptions": "More options",
+      "openMenu": "Open menu",
+      "switchToDarkMode": "Switch to dark mode",
+      "switchToLightMode": "Switch to light mode",
+      "viewKeyboardShortcuts": "View keyboard shortcuts",
+      "visitWebsite": "Visit our website"
+    },
+    "select": {
+      "closeListLabel": "Close the options list",
+      "placeholder": "Select an option"
+    },
+    "slidePanel": {
+      "closeLabel": "Close {{label}}"
+    },
+    "timePicker": {
+      "accessibilityLabel": "Time",
+      "placeholder": "Select a time"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "genericMessage": "An unexpected error occurred. Try again.",
+    "title": "Error"
+  },
+  "lookup": {
+    "cancelModal": {
+      "confirm": "Cancel Booking",
+      "confirming": "Cancelling…",
+      "keep": "Keep Booking",
+      "message": "Are you sure you want to cancel this booking? This action cannot be undone.",
+      "title": "Cancel Reservation"
+    },
+    "connectionError": "We couldn't reach the booking system. Your booking is safe.",
+    "form": {
+      "callLabel": "Call {{phone}}",
+      "emailA11y": "Email address",
+      "emailContactLabel": "Email {{email}}",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "The email used when booking",
+      "helpText": "Can't find your booking? Contact the restaurant directly.",
+      "referenceA11y": "Booking reference",
+      "referenceLabel": "Booking Reference",
+      "referencePlaceholder": "e.g. crispy-basil-thyme",
+      "submitA11y": "Find my booking",
+      "submitButton": "Look Up"
+    },
+    "notFound": "No booking found matching that reference and email.",
+    "routeTitle": "Find My Booking",
+    "recent": {
+      "guestCount_one": "{{count}} guest",
+      "guestCount_other": "{{count}} guests",
+      "heading": "YOUR RECENT BOOKINGS",
+      "itemA11y": "Look up booking {{ref}}",
+      "itemWithNameA11y": "Look up booking {{ref}} at {{name}}",
+      "showAll": "Show all {{count}}",
+      "showFewer": "Show fewer",
+      "storageNote": "Recent bookings are stored on this device. Clearing your cache and cookies, or uninstalling the app, will empty this list."
+    },
+    "resultPanelA11y": "Booking result",
+    "subtitle": "Enter your booking reference and email to look up your reservation.",
+    "title": "Find my booking"
+  },
   "restaurant": {
+    "card": {
+      "availableSlots": "Available slots",
+      "bookAt": "Book {{time}} at {{name}}",
+      "closedBadge": "Closed",
+      "closedToday": "Closed today",
+      "directions": "Directions",
+      "guestsToday_one": "{{count}} guest · today",
+      "guestsToday_other": "{{count}} guests · today",
+      "hoursOpen": "Open {{hours}}",
+      "hoursToday": "Today {{hours}}",
+      "multipleAreas": "Multiple areas",
+      "noAvailableSlotsToday": "No available slots today",
+      "noReservationsRequired": "No reservations required",
+      "openBookingPageNewTab": "Open booking page in new tab",
+      "openInAppleMaps": "Open in Apple Maps",
+      "openInGoogleMaps": "Open in Google Maps",
+      "openTill": "Open till {{time}}",
+      "opensInHours": "Opens in {{hours}}h",
+      "opensInHoursMinutes": "Opens in {{hours}}h {{minutes}}m",
+      "opensInMinutes": "Opens in {{minutes}}m",
+      "seeDetails": "See details",
+      "seeDetailsFor": "See details for {{name}}",
+      "viewDetailsAndBook": "{{name}}, view details and book"
+    },
+    "details": {
+      "directionsHeading": "Directions",
+      "openInProviderMaps": "Open in {{provider}} Maps",
+      "openMenu": "Open menu",
+      "openingHoursHeading": "Opening hours",
+      "routeTitle": "Restaurant",
+      "viewMenu": "View menu"
+    },
+    "filterBar": {
+      "all": "All",
+      "allTimes": "All times",
+      "dinner": "Dinner",
+      "guestCount_one": "{{count}} guest",
+      "guestCount_other": "{{count}} guests",
+      "lunch": "Lunch",
+      "numberOfGuests": "Number of guests",
+      "timeOfDay": "Time of day",
+      "today": "Today",
+      "todayDate": "Today, {{date}}"
+    },
     "home": {
       "heroSubtitle": "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!",
       "highlightsHeading": "Restaurant highlights",
       "highlightsSubheading": "Curated by the owner",
-      "locationsHeading": "Our locations"
+      "loadingLocations": "Loading locations",
+      "locationsHeading": "Our locations",
+      "opensInNewTab": "Opens in a new tab"
+    },
+    "locationListItem": {
+      "bookNow": "Book now",
+      "bookTableAt": "Book a table at {{name}}",
+      "closedLabel": "Closed {{day}}",
+      "closedOpensNext": "{{closedLabel}} · opens {{day}} {{time}}",
+      "detailsLabel": "Details",
+      "hideDetails": "Hide details",
+      "hideDetailsFor": "Hide details for {{name}}",
+      "hoursRange": "{{open}} – {{close}} {{day}}",
+      "menuLabel": "Menu",
+      "noReservationsFirstCome": "No reservations required, first come first served",
+      "showDetails": "Show details",
+      "showDetailsFor": "Show details for {{name}}",
+      "today": "today",
+      "viewMenu": "View menu"
+    },
+    "locationsScreen": {
+      "availabilitySummary_one": "{{withTables}} of {{count}} location have tables",
+      "availabilitySummary_other": "{{withTables}} of {{count}} locations have tables",
+      "checkingAvailability": "Checking availability…",
+      "couldntLoad": "Couldn’t load our locations. Please check your connection and try again.",
+      "noLocationsYet": "No locations yet. Please check back soon.",
+      "noTablesAtThisTime": "No tables at this time",
+      "routeTitle": "Locations",
+      "subtitle": "Pick a time and we’ll hold the table for five minutes.",
+      "tablesAvailable": "Tables available",
+      "title": "Our locations",
+      "tryAgain": "Try again"
+    },
+    "openingHours": {
+      "closed": "Closed",
+      "dayToday": "{{day}}  (today)",
+      "friday": "Friday",
+      "monday": "Monday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "thursday": "Thursday",
+      "tuesday": "Tuesday",
+      "walkIn": "Walk-in",
+      "wednesday": "Wednesday"
+    },
+    "seatingMap": {
+      "combinableHeading": "Tables we can combine",
+      "heading": "Seating & tables",
+      "seatsCount_one": "{{count}} seat",
+      "seatsCount_other": "{{count}} seats",
+      "seatsUpTo": "Seats up to {{count}} pushed together",
+      "tableFallbackName": "Table {{id}}"
+    },
+    "slotRow": {
+      "bookAt": "Book {{name}} at {{time}}",
+      "moreLabel": "+{{count}} more",
+      "noTimesAvailable": "No times available, try another date or party size",
+      "showAllTimesFor": "Show all times for {{name}}"
+    },
+    "tags": {
+      "moreTagsLabel_one": "{{count}} more tag: {{list}}",
+      "moreTagsLabel_other": "{{count}} more tags: {{list}}"
     }
   }
 }

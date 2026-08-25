@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { ModalCard } from "@/components/common/ModalCard";
@@ -19,15 +20,19 @@ interface ConfirmModalProps {
 
 export default function ConfirmModal({
   visible,
-  title = "Confirm",
+  title,
   message,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t("common.confirmModal.defaultTitle");
+  const resolvedConfirmLabel = confirmLabel ?? t("common.actions.confirm");
+  const resolvedCancelLabel = cancelLabel ?? t("common.actions.cancel");
 
   const handleConfirm = () => {
     Haptics.notificationAsync(
@@ -41,10 +46,10 @@ export default function ConfirmModal({
   return (
     <ModalCard
       visible={visible}
-      title={title}
+      title={resolvedTitle}
       onDismiss={onCancel}
       alert
-      dismissLabel={cancelLabel}
+      dismissLabel={resolvedCancelLabel}
     >
       <ThemedText style={[styles.message, { color: colors.muted }]}>{message}</ThemedText>
       <View style={[styles.actions, { borderTopColor: colors.border }]}>
@@ -57,7 +62,7 @@ export default function ConfirmModal({
           onPress={onCancel}
           style={styles.action}
         >
-          {cancelLabel}
+          {resolvedCancelLabel}
         </Button>
         <Button
           variant={destructive ? "danger" : "primary"}
@@ -65,7 +70,7 @@ export default function ConfirmModal({
           onPress={handleConfirm}
           style={styles.action}
         >
-          {confirmLabel}
+          {resolvedConfirmLabel}
         </Button>
       </View>
     </ModalCard>

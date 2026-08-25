@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "../themed-text";
 import { Icon } from "@/components/common/Icon";
@@ -66,12 +67,13 @@ export function BookingFormDrawerLayout({
   seatingOpen: boolean;
   onToggleSeating: () => void;
 }) {
+  const { t } = useTranslation();
   const divider = <View style={[styles.divider, { backgroundColor: borderColor }]} />;
 
   const partyAndDate = (
     <View style={styles.drawerSection}>
       <SectionHeading
-        label="Party & date"
+        label={t("booking.drawer.partyDateHeading")}
         busy={loadingAvailability}
         mutedColor={mutedColor}
         primaryColor={primaryColor}
@@ -84,7 +86,7 @@ export function BookingFormDrawerLayout({
       {!bookingBlocked && (
         <>
           {parts.timezoneHint}
-          {parts.timePickerField("Exact time")}
+          {parts.timePickerField(t("booking.drawer.exactTimeLabel"))}
           {parts.largePartyBanner}
         </>
       )}
@@ -109,10 +111,14 @@ export function BookingFormDrawerLayout({
       {divider}
 
       <View style={styles.drawerSection}>
-        <SectionHeading label="Your details" mutedColor={mutedColor} primaryColor={primaryColor} />
+        <SectionHeading
+          label={t("booking.drawer.yourDetailsHeading")}
+          mutedColor={mutedColor}
+          primaryColor={primaryColor}
+        />
         {parts.nameField}
         {parts.emailField}
-        {parts.requestsField("Special requests / allergies")}
+        {parts.requestsField(t("booking.drawer.specialRequestsLabel"))}
       </View>
 
       {divider}
@@ -134,7 +140,7 @@ export function BookingFormDrawerLayout({
               <>
                 <Icon name="options-outline" size="md" color={accent} />
                 <ThemedText style={[styles.disclosureText, { color: accent }]}>
-                  Choose a section or table
+                  {t("booking.drawer.seatingDisclosureLabel")}
                 </ThemedText>
                 <Icon name={seatingOpen ? "chevron-up" : "chevron-down"} size="md" color={accent} />
               </>
@@ -174,12 +180,13 @@ export function BookingFormInlineLayout({
   mutedColor,
   isTwoColumn,
 }: Omit<LayoutProps, "primaryColor" | "borderColor"> & { isTwoColumn: boolean }) {
+  const { t } = useTranslation();
   const half = isTwoColumn ? styles.fieldHalf : undefined;
   const rowStyle = isTwoColumn ? styles.fieldRow : styles.fieldRowStacked;
 
   const partyAndDate = (
     <View testID="booking-field-row" style={rowStyle}>
-      <View style={half}>{parts.guestsField("Number of Guests")}</View>
+      <View style={half}>{parts.guestsField(t("booking.form.numberOfGuestsLabel"))}</View>
       <View style={half}>{parts.dateField}</View>
     </View>
   );
@@ -188,7 +195,7 @@ export function BookingFormInlineLayout({
     return (
       <View style={styles.form}>
         <WalkInDaysBanner restaurant={restaurant} />
-        {parts.timesBlock("Popular Times")}
+        {parts.timesBlock(t("booking.form.popularTimesLabel"))}
         {partyAndDate}
       </View>
     );
@@ -197,7 +204,7 @@ export function BookingFormInlineLayout({
   return (
     <View style={styles.form}>
       <WalkInDaysBanner restaurant={restaurant} />
-      {parts.timesBlock("Popular Times")}
+      {parts.timesBlock(t("booking.form.popularTimesLabel"))}
 
       {partyAndDate}
 
@@ -223,7 +230,7 @@ export function BookingFormInlineLayout({
           {parts.emailField}
           {isTwoColumn && <View style={styles.holdPush}>{parts.holdBanner}</View>}
         </View>
-        <View style={half}>{parts.requestsField("Special Requests / Allergies")}</View>
+        <View style={half}>{parts.requestsField(t("booking.form.specialRequestsLabel"))}</View>
       </View>
 
       {!isTwoColumn && parts.holdBanner}

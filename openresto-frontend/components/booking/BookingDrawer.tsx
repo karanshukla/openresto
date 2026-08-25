@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -36,9 +38,15 @@ import { Icon } from "@/components/common/Icon";
 // them) keep working; utils/panelMotion is the source of truth, shared with SlidePanel.
 export { shouldDismissSheet };
 
-function summaryLine(seats: number, date: string, time: string, today: string): string {
-  const when = date === today ? "Today" : fmtDateString(date);
-  return `${seats} ${seats === 1 ? "guest" : "guests"} · ${when} · ${time}`;
+function summaryLine(
+  t: TFunction,
+  seats: number,
+  date: string,
+  time: string,
+  today: string
+): string {
+  const when = date === today ? t("booking.drawer.today") : fmtDateString(date);
+  return t("booking.drawer.summaryLine", { count: seats, when, time });
 }
 
 /**
@@ -77,6 +85,7 @@ export default function BookingDrawer({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors, isDark } = useAppTheme();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -204,8 +213,7 @@ export default function BookingDrawer({
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      const message = err instanceof Error ? err.message : t("booking.drawer.genericSubmitError");
       setSubmitError(message);
     }
   };
@@ -214,7 +222,7 @@ export default function BookingDrawer({
 
   const heading = switchableLocations ? (
     <Select
-      accessibilityLabel="Location"
+      accessibilityLabel={t("booking.drawer.locationSelectLabel")}
       selectedValue={restaurant.id}
       options={restaurants.map((r) => ({ label: r.name, value: r.id }))}
       onSelect={(value) => {
@@ -240,7 +248,7 @@ export default function BookingDrawer({
             testID="booking-drawer-close"
             onPress={closeWithHaptic}
             accessibilityRole="button"
-            accessibilityLabel="Close booking panel"
+            accessibilityLabel={t("booking.drawer.closePanelLabel")}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             style={[styles.closeBtn, { backgroundColor: colors.surfaceAlt }]}
           >
@@ -248,7 +256,7 @@ export default function BookingDrawer({
           </Pressable>
         </View>
         <ThemedText style={[styles.summary, { color: colors.muted }]}>
-          {summaryLine(seats, date, time, today)}
+          {summaryLine(t, seats, date, time, today)}
         </ThemedText>
       </View>
 
@@ -289,7 +297,7 @@ export default function BookingDrawer({
           <Pressable
             testID="booking-drawer-backdrop"
             accessibilityRole="button"
-            accessibilityLabel="Close booking panel"
+            accessibilityLabel={t("booking.drawer.closePanelLabel")}
             style={[styles.backdrop, { backgroundColor: colors.overlay }]}
             onPress={closeWithHaptic}
           />
@@ -298,7 +306,7 @@ export default function BookingDrawer({
             role="dialog"
             aria-modal
             accessibilityViewIsModal
-            accessibilityLabel={`Book ${restaurant.name}`}
+            accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
             style={[
               styles.sheet,
               { backgroundColor: colors.card, borderTopColor: colors.border },
@@ -336,7 +344,7 @@ export default function BookingDrawer({
       ref={sideRef}
       testID="booking-drawer"
       role="dialog"
-      accessibilityLabel={`Book ${restaurant.name}`}
+      accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
       tabIndex={-1}
       style={[
         styles.side,

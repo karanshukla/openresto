@@ -1,4 +1,5 @@
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
@@ -16,6 +17,7 @@ export default function LargePartyNotice({
   maxCapacity: number;
   onContact: () => void;
 }) {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
 
   const { r, g, b } = hexToRgb(primaryColor);
@@ -31,18 +33,21 @@ export default function LargePartyNotice({
       ]}
       onPress={onContact}
       accessibilityRole="button"
-      accessibilityLabel="Contact us about a large party"
+      accessibilityLabel={t("booking.largeParty.contactAccessibilityLabel")}
     >
       <View style={[styles.iconWrap, { backgroundColor: primaryColor }]}>
         <Icon name="people-outline" size="xl" color="#fff" />
       </View>
       <View style={styles.textWrap}>
-        <ThemedText style={[styles.title, { color: colors.text }]}>Large party</ThemedText>
-        <ThemedText style={[styles.body, { color: colors.muted }]}>
-          Our largest table seats {maxCapacity}. Get in touch to arrange a booking for a bigger
-          group.
+        <ThemedText style={[styles.title, { color: colors.text }]}>
+          {t("booking.largeParty.title")}
         </ThemedText>
-        <ThemedText style={[styles.contactLink, { color: primaryColor }]}>Contact us →</ThemedText>
+        <ThemedText style={[styles.body, { color: colors.muted }]}>
+          {t("booking.largeParty.body", { count: maxCapacity })}
+        </ThemedText>
+        <ThemedText style={[styles.contactLink, { color: primaryColor }]}>
+          {t("booking.largeParty.contactLink")}
+        </ThemedText>
       </View>
     </Pressable>
   );

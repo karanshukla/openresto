@@ -6,6 +6,8 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -37,10 +39,14 @@ export function availabilitySummary(
 ): string | null {
   const reported = Object.values(counts);
   if (total === 0 || reported.length < total) return null;
-  if (reported.some((c) => c === null)) return "Checking availability…";
+  if (reported.some((c) => c === null))
+    return i18n.t("restaurant.locationsScreen.checkingAvailability");
   const withTables = reported.filter((c) => (c ?? 0) > 0).length;
-  if (total === 1) return withTables === 1 ? "Tables available" : "No tables at this time";
-  return `${withTables} of ${total} location${total === 1 ? "" : "s"} have tables`;
+  if (total === 1)
+    return withTables === 1
+      ? i18n.t("restaurant.locationsScreen.tablesAvailable")
+      : i18n.t("restaurant.locationsScreen.noTablesAtThisTime");
+  return i18n.t("restaurant.locationsScreen.availabilitySummary", { count: total, withTables });
 }
 
 /**
@@ -58,6 +64,7 @@ export default function LocationsScreen({
   initialTime?: string;
   initialSeats?: number;
 }) {
+  const { t } = useTranslation();
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -199,10 +206,10 @@ export default function LocationsScreen({
           accessibilityLiveRegion="assertive"
           style={[styles.emptyText, { color: colors.muted }]}
         >
-          Couldn&rsquo;t load our locations. Please check your connection and try again.
+          {t("restaurant.locationsScreen.couldntLoad")}
         </ThemedText>
         <Button variant="secondary" size="md" onPress={loadRestaurants}>
-          Try again
+          {t("restaurant.locationsScreen.tryAgain")}
         </Button>
       </ThemedView>
     );
@@ -231,16 +238,18 @@ export default function LocationsScreen({
           >
             <PageContainer style={styles.page}>
               <View style={styles.header}>
-                <ThemedText style={styles.title}>Our locations</ThemedText>
+                <ThemedText style={styles.title}>
+                  {t("restaurant.locationsScreen.title")}
+                </ThemedText>
                 <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-                  Pick a time and we&rsquo;ll hold the table for five minutes.
+                  {t("restaurant.locationsScreen.subtitle")}
                 </ThemedText>
               </View>
 
               {restaurants.length === 0 ? (
                 <ThemedView style={styles.empty}>
                   <ThemedText style={[styles.emptyText, { color: colors.muted }]}>
-                    No locations yet. Please check back soon.
+                    {t("restaurant.locationsScreen.noLocationsYet")}
                   </ThemedText>
                 </ThemedView>
               ) : (

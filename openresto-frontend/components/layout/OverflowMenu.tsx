@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -40,6 +41,7 @@ interface MenuItem {
  * rows and the keyboard navigation; the dismissal paths are in `OverflowMenu.dark.test.tsx`.
  */
 export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -69,22 +71,26 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const items: MenuItem[] = [
     {
       key: "help",
-      text: "Help",
-      label: "Help",
+      text: t("common.overflowMenu.help"),
+      label: t("common.overflowMenu.help"),
       icon: "help-circle-outline",
       onPress: runAndClose(() => setShowHelp(true)),
     },
     {
       key: "theme",
-      text: isDark ? "Switch to light mode" : "Switch to dark mode",
-      label: isDark ? "Switch to light mode" : "Switch to dark mode",
+      text: isDark
+        ? t("common.overflowMenu.switchToLightMode")
+        : t("common.overflowMenu.switchToDarkMode"),
+      label: isDark
+        ? t("common.overflowMenu.switchToLightMode")
+        : t("common.overflowMenu.switchToDarkMode"),
       icon: isDark ? "sunny-outline" : "moon-outline",
       onPress: runAndClose(toggle),
     },
     {
       key: "shortcuts",
-      text: "Keyboard shortcuts",
-      label: "View keyboard shortcuts",
+      text: t("common.keyboardShortcuts.title"),
+      label: t("common.overflowMenu.viewKeyboardShortcuts"),
       icon: "keypad-outline",
       onPress: runAndClose(onOpenShortcuts),
     },
@@ -132,7 +138,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
           styles.trigger,
           (state as { hovered?: boolean }).hovered && { opacity: 0.7 },
         ]}
-        accessibilityLabel="Open menu"
+        accessibilityLabel={t("common.overflowMenu.openMenu")}
         role="button"
         aria-expanded={open}
         {...webProps({
@@ -151,10 +157,10 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         onClosed={release}
         role="menu"
         id={menuId}
-        accessibilityLabel="More options"
+        accessibilityLabel={t("common.overflowMenu.moreOptions")}
         activeDescendantId={open && activeIndex >= 0 ? itemId(activeIndex) : undefined}
         onKeyDown={handleMenuKey}
-        closeLabel="Close menu"
+        closeLabel={t("common.overflowMenu.closeMenu")}
         backdropTestID="menu-backdrop"
         testID="overflow-menu"
       >
@@ -180,7 +186,11 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
           {socialLinks.length > 0 && (
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <View style={styles.socialRow} role="group" accessibilityLabel="Find us elsewhere">
+              <View
+                style={styles.socialRow}
+                role="group"
+                accessibilityLabel={t("common.overflowMenu.findUsElsewhere")}
+              >
                 {socialLinks.map((link) => (
                   <Pressable
                     key={link.id}
@@ -207,15 +217,13 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
 
       <ModalCard
         visible={showHelp}
-        title="Help"
+        title={t("common.overflowMenu.help")}
         onDismiss={() => setShowHelp(false)}
-        dismissLabel="Close help"
+        dismissLabel={t("common.overflowMenu.closeHelp")}
         testID="help-backdrop"
       >
         <ThemedText style={[styles.helpText, { color: colors.muted }]}>
-          Open the Locations page to see hours, menus, and available times for each location. Pick a
-          time slot to open the booking form right there, or use "My Bookings" to look up an
-          existing reservation with your booking reference.
+          {t("common.overflowMenu.helpBody")}
         </ThemedText>
         {brand.websiteUrl && (
           <Pressable
@@ -225,11 +233,11 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
               Linking.openURL(brand.websiteUrl!);
             }}
             accessibilityRole="link"
-            accessibilityLabel="Visit our website"
+            accessibilityLabel={t("common.overflowMenu.visitWebsite")}
           >
             <Icon name="globe-outline" size="md" color={colors.muted} />
             <ThemedText style={[styles.helpLinkText, { color: colors.muted }]}>
-              Visit our website
+              {t("common.overflowMenu.visitWebsite")}
             </ThemedText>
           </Pressable>
         )}
@@ -241,7 +249,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
             size="md"
             onPress={() => setShowHelp(false)}
           >
-            Close
+            {t("common.actions.close")}
           </Button>
         </ButtonRow>
       </ModalCard>

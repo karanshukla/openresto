@@ -8,16 +8,19 @@ import {
 } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 /** `onLayout` reports the band's height to a screen whose scroll-to-top FAB has to clear it. */
 export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
   const { brand, colors } = useAppTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isMobile = width < 600;
@@ -41,6 +44,10 @@ export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent)
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>
 
         <View style={styles.right}>
+          <View style={styles.languageSwitcher}>
+            <LanguageSwitcher />
+          </View>
+
           {socialLinks.length > 0 && (
             <View style={styles.social}>
               {socialLinks.map((link) => (
@@ -64,12 +71,14 @@ export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent)
           <Link href={"/admin/dashboard" as const} asChild>
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel="Restaurant admin"
+              accessibilityLabel={t("common.footer.restaurantAdminLabel")}
               hitSlop={10}
               style={styles.adminBtn}
             >
               <Icon name="settings-outline" size="sm" color={colors.muted} />
-              <ThemedText style={[styles.adminText, { color: colors.muted }]}>Admin</ThemedText>
+              <ThemedText style={[styles.adminText, { color: colors.muted }]}>
+                {t("common.footer.adminLinkText")}
+              </ThemedText>
             </Pressable>
           </Link>
         </View>

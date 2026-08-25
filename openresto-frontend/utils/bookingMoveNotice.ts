@@ -1,4 +1,5 @@
 import { getActiveLocale } from "@/utils/locale";
+import i18n from "@/i18n";
 
 /**
  * The email an admin sends a guest whose sitting has been moved.
@@ -64,21 +65,23 @@ export function composeBookingMoveNotice(details: BookingMoveDetails): BookingMo
   const to = new Date(details.toIso);
   if (from.getTime() === to.getTime()) return null;
 
-  const venue = details.restaurantName?.trim() || "the restaurant";
-  const greeting = details.customerName?.trim() ? `Hi ${details.customerName.trim()},` : "Hello,";
+  const venue = details.restaurantName?.trim() || i18n.t("booking.moveNotice.venueFallback");
+  const greeting = details.customerName?.trim()
+    ? i18n.t("booking.moveNotice.greetingNamed", { name: details.customerName.trim() })
+    : i18n.t("booking.moveNotice.greetingGeneric");
   const reference = details.bookingRef?.trim()
-    ? `\n\nYour booking reference is unchanged: ${details.bookingRef.trim()}.`
+    ? i18n.t("booking.moveNotice.referenceLine", { ref: details.bookingRef.trim() })
     : "";
 
   return {
-    subject: `Your booking at ${venue} has moved`,
+    subject: i18n.t("booking.moveNotice.subject", { venue }),
     body:
       `${greeting}\n\n` +
-      `We have moved your booking at ${venue}.\n\n` +
-      `Previously: ${formatSitting(details.fromIso, details.timezone)}\n` +
-      `Now: ${formatSitting(details.toIso, details.timezone)}\n\n` +
-      `Everything else about the booking stays the same.` +
-      reference +
-      `\n\nIf the new time does not work for you, reply to this email and we will sort it out.`,
+      i18n.t("booking.moveNotice.body", {
+        venue,
+        previous: formatSitting(details.fromIso, details.timezone),
+        next: formatSitting(details.toIso, details.timezone),
+        referenceLine: reference,
+      }),
   };
 }

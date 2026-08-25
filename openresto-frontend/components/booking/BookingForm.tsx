@@ -1,5 +1,6 @@
 import { RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "../common/Button";
 import { ThemedText } from "../themed-text";
 import { Platform, View, ActivityIndicator, useWindowDimensions } from "react-native";
@@ -84,6 +85,7 @@ export default function BookingForm({
   date?: string;
   onDateChange?: (date: string) => void;
 }) {
+  const { t } = useTranslation();
   const { colors, primaryColor: PRIMARY } = useAppTheme();
   const { width } = useWindowDimensions();
   const isDrawer = layout === "drawer";
@@ -183,8 +185,8 @@ export default function BookingForm({
 
   const seatOptions = [...Array(10).keys()].map((i) => ({
     label: isDrawer
-      ? `${i + 1} ${i === 0 ? "guest" : "guests"}`
-      : `${i + 1} seat${i > 0 ? "s" : ""}`,
+      ? t("booking.form.partySize", { count: i + 1 })
+      : t("booking.form.seatsCount", { count: i + 1 }),
     value: i + 1,
   }));
 
@@ -219,10 +221,13 @@ export default function BookingForm({
   const handleSubmit = async () => {
     if (!isValid || submitting) return;
 
-    const selectedTable = allTables.find((t) => t.id === tableId);
+    const selectedTable = allTables.find((tbl) => tbl.id === tableId);
     if (selectedTable && seats > selectedTable.seats) {
       const confirmed = window.confirm(
-        `Warning: This table only has ${selectedTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+        t("booking.form.oversizeConfirm", {
+          tableSeats: t("booking.form.seatsCount", { count: selectedTable.seats }),
+          guests: t("booking.form.partySize", { count: seats }),
+        })
       );
       if (!confirmed) return;
     }
@@ -268,11 +273,14 @@ export default function BookingForm({
           { color: colors.muted },
         ]}
       >
-        All times are in {timezone.replace(/_/g, " ")} (currently {restaurantCurrentTime} there)
+        {t("booking.form.timezoneHint", {
+          timezone: timezone.replace(/_/g, " "),
+          time: restaurantCurrentTime,
+        })}
       </ThemedText>
     ) : null;
 
-  const guestsField = (label = "Guests") => (
+  const guestsField = (label = t("booking.form.guestsLabel")) => (
     <GuestsField label={label} seats={seats} options={seatOptions} onChange={changeSeats} />
   );
 
@@ -285,7 +293,7 @@ export default function BookingForm({
     />
   );
 
-  const timePickerField = (label = "Time") => (
+  const timePickerField = (label = t("booking.form.timeLabel")) => (
     <TimeField
       label={label}
       time={time}
@@ -327,16 +335,16 @@ export default function BookingForm({
     <RequestsField label={label} value={specialRequests} onChange={setSpecialRequests} />
   );
 
-  const gdprText = `By confirming, you agree that your email and booking details will be stored to manage your reservation. We also use an essential cookie to remember your recent bookings on this device. We do not share your data with third parties. You can request deletion by contacting the restaurant.`;
+  const gdprText = t("booking.form.gdprText");
 
   const confirmButton = (
     <Button
       onPress={handleSubmit}
       disabled={!isValid || submitting}
       loading={submitting}
-      accessibilityLabel="Confirm booking"
+      accessibilityLabel={t("booking.form.confirmBookingLabel")}
     >
-      {submitting ? "Confirming…" : "Confirm Booking"}
+      {submitting ? t("booking.form.confirmingLabel") : t("booking.form.confirmLabel")}
     </Button>
   );
 
@@ -350,7 +358,7 @@ export default function BookingForm({
         role="status"
         accessibilityLiveRegion="polite"
       >
-        A table hold is required before confirming.
+        {t("booking.form.holdRequiredHint")}
       </ThemedText>
     );
 
@@ -372,7 +380,7 @@ export default function BookingForm({
 
   const timesContent = isClosedDay ? (
     <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
-      The restaurant is closed on this day. Please select a different date.
+      {t("booking.form.closedDayNotice")}
     </ThemedText>
   ) : isWalkInDay ? (
     <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
@@ -395,7 +403,7 @@ export default function BookingForm({
           <ActivityIndicator
             size="small"
             color={PRIMARY}
-            accessibilityLabel="Loading available times"
+            accessibilityLabel={t("booking.form.loadingTimesLabel")}
           />
         )}
       </View>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Select from "@/components/common/Select";
 import { generateTimeOptions } from "@/utils/timeOptions";
 
@@ -25,13 +26,14 @@ export default function TimePicker({
   minTime?: string;
   maxTime?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Select
       options={generateTimeOptions(minTime, maxTime)}
       selectedValue={selectedTime}
       onSelect={(value) => onSelect(String(value))}
-      placeholder="Select a time"
-      accessibilityLabel="Time"
+      placeholder={t("common.timePicker.placeholder")}
+      accessibilityLabel={t("common.timePicker.accessibilityLabel")}
     />
   );
 }

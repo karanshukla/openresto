@@ -1,4 +1,5 @@
 import { Linking, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
@@ -22,10 +23,13 @@ function openMaps(base: string, address: string) {
  */
 export default function DirectionsActions({ address }: { address: string }) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.title, { color: colors.muted }]}>GET DIRECTIONS</ThemedText>
+      <ThemedText style={[styles.title, { color: colors.muted }]}>
+        {t("booking.directions.heading")}
+      </ThemedText>
       <ButtonRow align="start">
         <Button
           testID="maps-google-btn"
