@@ -4,10 +4,13 @@ import {
   arrayBufferToBase64,
   PAGE_SIZE,
   PIN_STORAGE_KEY,
-  TYPE_LABELS,
-  TYPE_FILTERS,
+  getTypeLabels,
+  getTypeFilters,
 } from "@/utils/notifications";
 import { setActiveLocale } from "@/utils/locale";
+import i18n from "@/i18n";
+
+const t = i18n.getFixedT("en");
 
 // Re-exported from utils/formatters — see formatters.test.ts for why the locale is pinned
 // rather than left to follow the device.
@@ -66,18 +69,26 @@ describe("constants", () => {
     expect(PIN_STORAGE_KEY).toBe("openresto_pinned_notifs");
   });
 
-  it("TYPE_LABELS covers all three notification types", () => {
-    expect(TYPE_LABELS.BookingCreated).toBe("New Booking");
-    expect(TYPE_LABELS.BookingCancelled).toBe("Booking Cancelled");
-    expect(TYPE_LABELS.RestaurantNearlyFull).toBe("Nearly Full");
+  it("getTypeLabels covers all three notification types", () => {
+    const labels = getTypeLabels(t);
+    expect(labels.BookingCreated).toBe("New Booking");
+    expect(labels.BookingCancelled).toBe("Booking Cancelled");
+    expect(labels.RestaurantNearlyFull).toBe("Nearly Full");
   });
 
-  it("TYPE_FILTERS has an 'All Types' empty-value option plus one per type", () => {
-    expect(TYPE_FILTERS[0]).toEqual({ label: "All Types", value: "" });
-    expect(TYPE_FILTERS).toHaveLength(4);
-    const values = TYPE_FILTERS.map((f) => f.value).filter(Boolean);
+  it("getTypeFilters has an 'All Types' empty-value option plus one per type", () => {
+    const filters = getTypeFilters(t);
+    expect(filters[0]).toEqual({ label: "All Types", value: "" });
+    expect(filters).toHaveLength(4);
+    const values = filters.map((f) => f.value).filter(Boolean);
     expect(values).toEqual(
       expect.arrayContaining(["BookingCreated", "BookingCancelled", "RestaurantNearlyFull"])
     );
+  });
+
+  it("getTypeLabels translates independently of the locale getTypeFilters resolves", () => {
+    const fr = i18n.getFixedT("fr");
+    expect(getTypeLabels(fr).BookingCreated).toBe("Nouvelle réservation");
+    expect(getTypeLabels(t).BookingCreated).toBe("New Booking");
   });
 });

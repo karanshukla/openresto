@@ -734,6 +734,19 @@
         "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelled",
         "meta": "{{seats}} · {{restaurant}}"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} upcoming booking no longer fits its location's schedule",
+        "title_other": "{{count}} upcoming bookings no longer fit their location's schedule",
+        "subtitle": "Taken before the current hours and still on the books. The guests have not been told anything changed. Review locations.",
+        "accessibilityLabel_one": "{{count}} upcoming booking no longer fits its location's schedule. Review locations.",
+        "accessibilityLabel_other": "{{count}} upcoming bookings no longer fit their location's schedule. Review locations."
+      }
+    },
+    "layout": {
+      "desktopWall": {
+        "title": "Screen too small",
+        "body": "The admin dashboard requires a wider screen.\nTry rotating your device or using a larger screen."
       }
     },
     "locations": {
@@ -838,6 +851,138 @@
         "guestCount_other": "{{count}} guests",
         "openLabel": "Open",
         "openBookingLabel": "Open booking {{ref}}"
+      }
+    },
+    "login": {
+      "nativeTitle": "Admin Login",
+      "badge": "Admin",
+      "backToApp": "Back to {{appName}}",
+      "signIn": {
+        "title": "Sign in",
+        "subtitle": "Manage your restaurant bookings.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "admin@restaurant.com",
+        "passwordLabel": "Password",
+        "submit": "Sign In",
+        "submitting": "Signing in…",
+        "forgotPassword": "Forgot password?",
+        "invalidCredentials": "Invalid email or password. Please try again."
+      },
+      "pvqEmail": {
+        "title": "Reset password",
+        "subtitle": "We'll verify your identity using your security question.",
+        "emailLabel": "Admin email",
+        "emailPlaceholder": "admin@restaurant.com",
+        "submit": "Continue",
+        "checking": "Checking…",
+        "noQuestionConfigured": "No security question has been configured for this account."
+      },
+      "pvqAnswer": {
+        "title": "Security question",
+        "answerLabel": "Your answer",
+        "answerPlaceholder": "Answer (not case sensitive)",
+        "submit": "Verify Answer",
+        "verifying": "Verifying…",
+        "incorrectAnswer": "Incorrect answer. Please try again."
+      },
+      "reset": {
+        "title": "Set new password",
+        "subtitle": "This link expires in 15 minutes.",
+        "newPasswordLabel": "New password",
+        "newPasswordPlaceholder": "At least 6 characters",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Repeat password",
+        "submit": "Reset Password",
+        "resetting": "Resetting…"
+      },
+      "done": {
+        "title": "Password reset!",
+        "subtitle": "Your password has been updated. Sign in with your new credentials.",
+        "backToSignIn": "Back to Sign In"
+      },
+      "backLabel": "Back"
+    },
+    "notifications": {
+      "pageTitle": "Notifications",
+      "totalCount_one": "{{count}} total notification",
+      "totalCount_other": "{{count}} total notifications",
+      "deleteAll": "Delete all",
+      "deletingAll": "Deleting…",
+      "deleteAllLabel": "Delete all notifications",
+      "deleteAllHint": "Keeps pinned notifications",
+      "clearRead": "Clear read",
+      "clearingRead": "Clearing…",
+      "clearReadLabel": "Clear read notifications",
+      "markAllRead": "Mark all read",
+      "markingAllRead": "Marking…",
+      "markAllReadLabel": "Mark all notifications read",
+      "markedAllReadToast": "Marked all as read",
+      "notificationDeletedToast": "Notification deleted",
+      "allVisiblePinnedToast": "All visible notifications are pinned",
+      "readClearedToast": "Read notifications cleared",
+      "deletedCountToast_one": "Deleted {{count}} notification",
+      "deletedCountToast_other": "Deleted {{count}} notifications",
+      "allLocations": "All locations",
+      "locationsScrollerLabel": "Locations",
+      "typesScrollerLabel": "Notification types",
+      "filterUnread": "Filter Unread",
+      "unreadOnlyLabel": "Show unread only",
+      "errorBody": "Could not load notifications. Check your connection and try again.",
+      "allCaughtUpTitle": "All caught up",
+      "allCaughtUpBody": "You've read everything. New alerts will appear here.",
+      "emptyTitle": "No notifications yet",
+      "emptyBody": "Booking events and capacity alerts will appear here.",
+      "pinnedLabel": "Pinned",
+      "allNotificationsLabel": "All notifications",
+      "showMoreButton": "Show {{count}} more",
+      "showMoreLabel_one": "Show {{count}} more notification",
+      "showMoreLabel_other": "Show {{count}} more notifications",
+      "loadingMore": "Loading…",
+      "deleteAllModal": {
+        "title": "Delete all notifications?",
+        "message": "This will permanently delete all visible unpinned notifications. Pinned notifications will be kept.",
+        "confirmLabel": "Delete all"
+      },
+      "deletePinnedModal": {
+        "title": "Delete pinned notification?",
+        "message": "This notification is pinned. Are you sure you want to delete it?",
+        "confirmLabel": "Delete"
+      },
+      "types": {
+        "bookingCreated": "New Booking",
+        "bookingCancelled": "Booking Cancelled",
+        "restaurantNearlyFull": "Nearly Full"
+      },
+      "filters": {
+        "all": "All Types",
+        "bookingCreated": "New Bookings",
+        "bookingCancelled": "Cancelled",
+        "restaurantNearlyFull": "Nearly Full"
+      },
+      "row": {
+        "guestCount_one": "{{count}} guest",
+        "guestCount_other": "{{count}} guests",
+        "read": "Read",
+        "unread": "Unread",
+        "bookingRefLabel": "booking {{ref}}",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "pinLabel": "Pin notification",
+        "unpinLabel": "Unpin notification",
+        "markRead": "Mark read",
+        "markUnread": "Mark unread",
+        "markReadLabel": "Mark notification read",
+        "markUnreadLabel": "Mark notification unread",
+        "delete": "Delete",
+        "deleteLabel": "Delete notification"
+      },
+      "pushBanner": {
+        "blockedError": "Blocked by browser - allow notifications in site settings.",
+        "deniedBanner": "Push notifications blocked - enable in browser site settings.",
+        "promptBanner": "Enable push notifications to get real-time booking alerts.",
+        "enableFailed": "Failed to enable - try again.",
+        "enable": "Enable",
+        "enableLabel": "Enable push notifications"
       }
     },
     "settings": {
@@ -1361,6 +1506,47 @@
       "brandAutosave": {
         "serverUnreachable": "Couldn't reach the server."
       }
+    },
+    "sidebar": {
+      "nav": {
+        "sections": {
+          "manage": "Manage",
+          "configure": "Configure"
+        },
+        "items": {
+          "overview": "Overview",
+          "bookings": "Bookings",
+          "locations": "Locations",
+          "notifications": "Notifications",
+          "activity": "Activity",
+          "brand": "Brand",
+          "emailPush": "Email & Push",
+          "users": "Users",
+          "account": "Account"
+        },
+        "unreadLabel_one": "{{label}}, {{count}} unread",
+        "unreadLabel_other": "{{label}}, {{count}} unread"
+      },
+      "managingLocations_one": "Managing {{count}} location",
+      "managingLocations_other": "Managing {{count}} locations",
+      "adminPanel": "Admin Panel",
+      "lookup": {
+        "label": "Lookup Booking",
+        "placeholder": "Name, email or reference…",
+        "searchLabel": "Search bookings",
+        "searchButton": "Search",
+        "notFound": "No booking found.",
+        "showingMatches": "Showing all matches…",
+        "partialMatchHint": "Partial matching search is supported"
+      },
+      "backToSite": "Back to site",
+      "themeToggle": {
+        "switchToLight": "Switch to light mode",
+        "switchToDark": "Switch to dark mode",
+        "lightMode": "Light mode",
+        "darkMode": "Dark mode"
+      },
+      "logOut": "Log out"
     }
   }
 }

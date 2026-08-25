@@ -1,10 +1,11 @@
 import { Platform, Pressable, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { hexToRgba } from "@/utils/colors";
 import { theme } from "@/theme/theme";
 import type { AdminNotificationDto } from "@/api/notifications";
-import { TYPE_ICONS, TYPE_LABELS, formatBookingDate, relativeTime } from "@/utils/notifications";
+import { TYPE_ICONS, getTypeLabels, formatBookingDate, relativeTime } from "@/utils/notifications";
 import { styles } from "@/components/admin/notifications/notifications.styles";
 import { Icon } from "@/components/common/Icon";
 import { RowTextButton } from "@/components/common/RowTextButton";
@@ -49,10 +50,12 @@ export function NotificationRow({
   onRequestDelete,
   onSwipeDelete,
 }: NotificationRowProps) {
+  const { t } = useTranslation();
+  const typeLabels = getTypeLabels(t);
   const typeIcon = TYPE_ICONS[n.type];
   const meta = [
     n.restaurantName,
-    n.seats > 0 ? `${n.seats} guest${n.seats !== 1 ? "s" : ""}` : null,
+    n.seats > 0 ? t("admin.notifications.row.guestCount", { count: n.seats }) : null,
     n.bookingDate ? formatBookingDate(n.bookingDate) : null,
     relativeTime(n.createdAt),
   ]
@@ -83,10 +86,10 @@ export function NotificationRow({
         onPress={() => onRowTap(n)}
         accessibilityRole="button"
         accessibilityLabel={[
-          n.isRead ? "Read" : "Unread",
-          TYPE_LABELS[n.type],
+          n.isRead ? t("admin.notifications.row.read") : t("admin.notifications.row.unread"),
+          typeLabels[n.type],
           n.customerName,
-          n.bookingRef ? `booking ${n.bookingRef}` : null,
+          n.bookingRef ? t("admin.notifications.row.bookingRefLabel", { ref: n.bookingRef }) : null,
           meta,
         ]
           .filter(Boolean)
@@ -110,7 +113,7 @@ export function NotificationRow({
 
         <View style={styles.notifBody}>
           <View style={styles.notifTitleRow}>
-            <ThemedText style={styles.notifType}>{TYPE_LABELS[n.type]}</ThemedText>
+            <ThemedText style={styles.notifType}>{typeLabels[n.type]}</ThemedText>
             {n.bookingRef ? (
               <ThemedText style={[styles.notifRef, { color: mutedColor }]}>
                 #{n.bookingRef}
@@ -130,37 +133,41 @@ export function NotificationRow({
             Pressable so they act on the notification rather than navigating to it. */}
         <View style={styles.rowActions}>
           <RowTextButton
-            label={isPinned ? "Unpin" : "Pin"}
+            label={isPinned ? t("admin.notifications.row.unpin") : t("admin.notifications.row.pin")}
             icon={isPinned ? "bookmark" : "bookmark-outline"}
             color={primaryColor}
             selected={isPinned}
             onPress={() => onTogglePin(n.id)}
-            accessibilityLabel={isPinned ? "Unpin notification" : "Pin notification"}
+            accessibilityLabel={
+              isPinned
+                ? t("admin.notifications.row.unpinLabel")
+                : t("admin.notifications.row.pinLabel")
+            }
           />
           {n.isRead ? (
             <RowTextButton
-              label="Mark unread"
+              label={t("admin.notifications.row.markUnread")}
               icon="mail-unread-outline"
               color={mutedColor}
               onPress={() => onMarkUnread(n.id)}
-              accessibilityLabel="Mark notification unread"
+              accessibilityLabel={t("admin.notifications.row.markUnreadLabel")}
             />
           ) : (
             <RowTextButton
-              label="Mark read"
+              label={t("admin.notifications.row.markRead")}
               icon="mail-open-outline"
               color={mutedColor}
               onPress={() => onMarkRead(n.id)}
-              accessibilityLabel="Mark notification read"
+              accessibilityLabel={t("admin.notifications.row.markReadLabel")}
             />
           )}
           <RowTextButton
             testID={`delete-notif-${n.id}`}
-            label="Delete"
+            label={t("admin.notifications.row.delete")}
             icon="trash-outline"
             color={theme.colors.error}
             onPress={() => onRequestDelete(n.id)}
-            accessibilityLabel="Delete notification"
+            accessibilityLabel={t("admin.notifications.row.deleteLabel")}
           />
         </View>
 

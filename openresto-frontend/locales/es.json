@@ -734,6 +734,19 @@
         "itemLabel": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}",
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelada",
         "meta": "{{seats}} · {{restaurant}}"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} reserva próxima ya no encaja en el horario de su local",
+        "title_other": "{{count}} reservas próximas ya no encajan en el horario de su local",
+        "subtitle": "Se tomaron antes del horario actual y siguen en el libro. A los clientes no se les avisó del cambio. Consulta los locales.",
+        "accessibilityLabel_one": "{{count}} reserva próxima ya no encaja en el horario de su local. Consulta los locales.",
+        "accessibilityLabel_other": "{{count}} reservas próximas ya no encajan en el horario de su local. Consulta los locales."
+      }
+    },
+    "layout": {
+      "desktopWall": {
+        "title": "Pantalla demasiado pequeña",
+        "body": "El panel de administración requiere una pantalla más ancha.\nIntenta girar tu dispositivo o usar una pantalla más grande."
       }
     },
     "locations": {
@@ -838,6 +851,138 @@
         "guestCount_other": "{{count}} comensales",
         "openLabel": "Abrir",
         "openBookingLabel": "Abrir la reserva {{ref}}"
+      }
+    },
+    "login": {
+      "nativeTitle": "Inicio de sesión de administrador",
+      "badge": "Administrador",
+      "backToApp": "Volver a {{appName}}",
+      "signIn": {
+        "title": "Iniciar sesión",
+        "subtitle": "Gestiona las reservas de tu restaurante.",
+        "emailLabel": "Correo electrónico",
+        "emailPlaceholder": "admin@restaurant.com",
+        "passwordLabel": "Contraseña",
+        "submit": "Iniciar sesión",
+        "submitting": "Iniciando sesión…",
+        "forgotPassword": "¿Olvidaste tu contraseña?",
+        "invalidCredentials": "Correo electrónico o contraseña incorrectos. Inténtalo de nuevo."
+      },
+      "pvqEmail": {
+        "title": "Restablecer contraseña",
+        "subtitle": "Verificaremos tu identidad con tu pregunta de seguridad.",
+        "emailLabel": "Correo del administrador",
+        "emailPlaceholder": "admin@restaurant.com",
+        "submit": "Continuar",
+        "checking": "Comprobando…",
+        "noQuestionConfigured": "No se ha configurado ninguna pregunta de seguridad para esta cuenta."
+      },
+      "pvqAnswer": {
+        "title": "Pregunta de seguridad",
+        "answerLabel": "Tu respuesta",
+        "answerPlaceholder": "Respuesta (no distingue mayúsculas)",
+        "submit": "Verificar respuesta",
+        "verifying": "Verificando…",
+        "incorrectAnswer": "Respuesta incorrecta. Inténtalo de nuevo."
+      },
+      "reset": {
+        "title": "Establecer nueva contraseña",
+        "subtitle": "Este enlace caduca en 15 minutos.",
+        "newPasswordLabel": "Nueva contraseña",
+        "newPasswordPlaceholder": "Al menos 6 caracteres",
+        "confirmPasswordLabel": "Confirmar contraseña",
+        "confirmPasswordPlaceholder": "Repite la contraseña",
+        "submit": "Restablecer contraseña",
+        "resetting": "Restableciendo…"
+      },
+      "done": {
+        "title": "¡Contraseña restablecida!",
+        "subtitle": "Tu contraseña se ha actualizado. Inicia sesión con tus nuevas credenciales.",
+        "backToSignIn": "Volver a iniciar sesión"
+      },
+      "backLabel": "Atrás"
+    },
+    "notifications": {
+      "pageTitle": "Notificaciones",
+      "totalCount_one": "{{count}} notificación en total",
+      "totalCount_other": "{{count}} notificaciones en total",
+      "deleteAll": "Eliminar todo",
+      "deletingAll": "Eliminando…",
+      "deleteAllLabel": "Eliminar todas las notificaciones",
+      "deleteAllHint": "Conserva las notificaciones fijadas",
+      "clearRead": "Borrar leídas",
+      "clearingRead": "Borrando…",
+      "clearReadLabel": "Borrar notificaciones leídas",
+      "markAllRead": "Marcar todo como leído",
+      "markingAllRead": "Marcando…",
+      "markAllReadLabel": "Marcar todas las notificaciones como leídas",
+      "markedAllReadToast": "Todo marcado como leído",
+      "notificationDeletedToast": "Notificación eliminada",
+      "allVisiblePinnedToast": "Todas las notificaciones visibles están fijadas",
+      "readClearedToast": "Notificaciones leídas borradas",
+      "deletedCountToast_one": "{{count}} notificación eliminada",
+      "deletedCountToast_other": "{{count}} notificaciones eliminadas",
+      "allLocations": "Todos los locales",
+      "locationsScrollerLabel": "Locales",
+      "typesScrollerLabel": "Tipos de notificación",
+      "filterUnread": "Solo no leídas",
+      "unreadOnlyLabel": "Mostrar solo las no leídas",
+      "errorBody": "No se pudieron cargar las notificaciones. Comprueba tu conexión e inténtalo de nuevo.",
+      "allCaughtUpTitle": "Todo al día",
+      "allCaughtUpBody": "Has leído todo. Las nuevas alertas aparecerán aquí.",
+      "emptyTitle": "Aún no hay notificaciones",
+      "emptyBody": "Los eventos de reserva y las alertas de capacidad aparecerán aquí.",
+      "pinnedLabel": "Fijadas",
+      "allNotificationsLabel": "Todas las notificaciones",
+      "showMoreButton": "Mostrar {{count}} más",
+      "showMoreLabel_one": "Mostrar {{count}} notificación más",
+      "showMoreLabel_other": "Mostrar {{count}} notificaciones más",
+      "loadingMore": "Cargando…",
+      "deleteAllModal": {
+        "title": "¿Eliminar todas las notificaciones?",
+        "message": "Esto eliminará permanentemente todas las notificaciones visibles no fijadas. Las notificaciones fijadas se conservarán.",
+        "confirmLabel": "Eliminar todo"
+      },
+      "deletePinnedModal": {
+        "title": "¿Eliminar la notificación fijada?",
+        "message": "Esta notificación está fijada. ¿Seguro que quieres eliminarla?",
+        "confirmLabel": "Eliminar"
+      },
+      "types": {
+        "bookingCreated": "Nueva reserva",
+        "bookingCancelled": "Reserva cancelada",
+        "restaurantNearlyFull": "Casi lleno"
+      },
+      "filters": {
+        "all": "Todos los tipos",
+        "bookingCreated": "Nuevas reservas",
+        "bookingCancelled": "Canceladas",
+        "restaurantNearlyFull": "Casi lleno"
+      },
+      "row": {
+        "guestCount_one": "{{count}} comensal",
+        "guestCount_other": "{{count}} comensales",
+        "read": "Leída",
+        "unread": "No leída",
+        "bookingRefLabel": "reserva {{ref}}",
+        "pin": "Fijar",
+        "unpin": "Desfijar",
+        "pinLabel": "Fijar notificación",
+        "unpinLabel": "Desfijar notificación",
+        "markRead": "Marcar como leída",
+        "markUnread": "Marcar como no leída",
+        "markReadLabel": "Marcar notificación como leída",
+        "markUnreadLabel": "Marcar notificación como no leída",
+        "delete": "Eliminar",
+        "deleteLabel": "Eliminar notificación"
+      },
+      "pushBanner": {
+        "blockedError": "Bloqueado por el navegador - permite las notificaciones en la configuración del sitio.",
+        "deniedBanner": "Notificaciones push bloqueadas - actívalas en la configuración del sitio de tu navegador.",
+        "promptBanner": "Activa las notificaciones push para recibir alertas de reservas en tiempo real.",
+        "enableFailed": "No se pudo activar - inténtalo de nuevo.",
+        "enable": "Activar",
+        "enableLabel": "Activar notificaciones push"
       }
     },
     "settings": {
@@ -1361,6 +1506,47 @@
       "brandAutosave": {
         "serverUnreachable": "No se pudo contactar con el servidor."
       }
+    },
+    "sidebar": {
+      "nav": {
+        "sections": {
+          "manage": "Gestionar",
+          "configure": "Configurar"
+        },
+        "items": {
+          "overview": "Resumen",
+          "bookings": "Reservas",
+          "locations": "Locales",
+          "notifications": "Notificaciones",
+          "activity": "Actividad",
+          "brand": "Marca",
+          "emailPush": "Correo y push",
+          "users": "Usuarios",
+          "account": "Cuenta"
+        },
+        "unreadLabel_one": "{{label}}, {{count}} no leída",
+        "unreadLabel_other": "{{label}}, {{count}} no leídas"
+      },
+      "managingLocations_one": "Gestionando {{count}} local",
+      "managingLocations_other": "Gestionando {{count}} locales",
+      "adminPanel": "Panel de administración",
+      "lookup": {
+        "label": "Buscar reserva",
+        "placeholder": "Nombre, correo o referencia…",
+        "searchLabel": "Buscar reservas",
+        "searchButton": "Buscar",
+        "notFound": "No se encontró ninguna reserva.",
+        "showingMatches": "Mostrando todas las coincidencias…",
+        "partialMatchHint": "Se admite la búsqueda por coincidencia parcial"
+      },
+      "backToSite": "Volver al sitio",
+      "themeToggle": {
+        "switchToLight": "Cambiar a modo claro",
+        "switchToDark": "Cambiar a modo oscuro",
+        "lightMode": "Modo claro",
+        "darkMode": "Modo oscuro"
+      },
+      "logOut": "Cerrar sesión"
     }
   }
 }

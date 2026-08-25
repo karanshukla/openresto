@@ -7,6 +7,7 @@ import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, TextInput, View, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +18,7 @@ import { Icon } from "@/components/common/Icon";
 type Stage = "login" | "pvq-email" | "pvq-answer" | "reset" | "done";
 
 export default function AdminLoginScreen() {
+  const { t } = useTranslation();
   const [stage, setStage] = useState<Stage>("login");
 
   const [email, setEmail] = useState("");
@@ -51,7 +53,7 @@ export default function AdminLoginScreen() {
       await refresh();
       router.replace("/admin/dashboard");
     } else {
-      setLoginError("Invalid email or password. Please try again.");
+      setLoginError(t("admin.login.signIn.invalidCredentials"));
     }
   };
 
@@ -63,7 +65,7 @@ export default function AdminLoginScreen() {
     const status = await getPvqStatus(fpEmail.trim());
     setFpLoading(false);
     if (!status?.isConfigured || !status.question) {
-      setFpError("No security question has been configured for this account.");
+      setFpError(t("admin.login.pvqEmail.noQuestionConfigured"));
       return;
     }
     setPvqQuestion(status.question);
@@ -76,7 +78,7 @@ export default function AdminLoginScreen() {
     const result = await verifyPvq(fpEmail, pvqAnswer);
     setFpLoading(false);
     if (!result) {
-      setFpError("Incorrect answer. Please try again.");
+      setFpError(t("admin.login.pvqAnswer.incorrectAnswer"));
       return;
     }
     setResetToken(result.resetToken);
@@ -104,16 +106,16 @@ export default function AdminLoginScreen() {
     if (stage === "login") {
       return (
         <>
-          <ThemedText style={styles.title}>Sign in</ThemedText>
+          <ThemedText style={styles.title}>{t("admin.login.signIn.title")}</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            Manage your restaurant bookings.
+            {t("admin.login.signIn.subtitle")}
           </ThemedText>
 
           <View style={styles.fields}>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>Email</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.login.signIn.emailLabel")}</ThemedText>
               <Input
-                placeholder="admin@restaurant.com"
+                placeholder={t("admin.login.signIn.emailPlaceholder")}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -125,7 +127,7 @@ export default function AdminLoginScreen() {
               />
             </View>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>Password</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.login.signIn.passwordLabel")}</ThemedText>
               <Input
                 ref={passwordRef}
                 placeholder="••••••••"
@@ -149,21 +151,21 @@ export default function AdminLoginScreen() {
               disabled={!isValidEmail(email) || password.length === 0 || loginLoading}
               style={styles.submitBtn}
             >
-              {loginLoading ? "Signing in…" : "Sign In"}
+              {loginLoading ? t("admin.login.signIn.submitting") : t("admin.login.signIn.submit")}
             </Button>
 
             <Button
               variant="ghost"
               size="md"
               fullWidth
-              accessibilityLabel="Forgot password?"
+              accessibilityLabel={t("admin.login.signIn.forgotPassword")}
               onPress={() => {
                 setFpEmail(email);
                 setStage("pvq-email");
                 setFpError(null);
               }}
             >
-              Forgot password?
+              {t("admin.login.signIn.forgotPassword")}
             </Button>
           </View>
         </>
@@ -179,16 +181,16 @@ export default function AdminLoginScreen() {
               setFpError(null);
             }}
           />
-          <ThemedText style={styles.title}>Reset password</ThemedText>
+          <ThemedText style={styles.title}>{t("admin.login.pvqEmail.title")}</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            We'll verify your identity using your security question.
+            {t("admin.login.pvqEmail.subtitle")}
           </ThemedText>
 
           <View style={styles.fields}>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>Admin email</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.login.pvqEmail.emailLabel")}</ThemedText>
               <Input
-                placeholder="admin@restaurant.com"
+                placeholder={t("admin.login.pvqEmail.emailPlaceholder")}
                 value={fpEmail}
                 onChangeText={setFpEmail}
                 keyboardType="email-address"
@@ -207,7 +209,7 @@ export default function AdminLoginScreen() {
               disabled={!isValidEmail(fpEmail) || fpLoading}
               style={styles.submitBtn}
             >
-              {fpLoading ? "Checking…" : "Continue"}
+              {fpLoading ? t("admin.login.pvqEmail.checking") : t("admin.login.pvqEmail.submit")}
             </Button>
           </View>
         </>
@@ -224,7 +226,7 @@ export default function AdminLoginScreen() {
               setPvqAnswer("");
             }}
           />
-          <ThemedText style={styles.title}>Security question</ThemedText>
+          <ThemedText style={styles.title}>{t("admin.login.pvqAnswer.title")}</ThemedText>
           <View
             style={[
               styles.questionBox,
@@ -239,9 +241,9 @@ export default function AdminLoginScreen() {
 
           <View style={styles.fields}>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>Your answer</ThemedText>
+              <ThemedText style={styles.label}>{t("admin.login.pvqAnswer.answerLabel")}</ThemedText>
               <Input
-                placeholder="Answer (not case sensitive)"
+                placeholder={t("admin.login.pvqAnswer.answerPlaceholder")}
                 value={pvqAnswer}
                 onChangeText={setPvqAnswer}
                 autoCapitalize="none"
@@ -259,7 +261,7 @@ export default function AdminLoginScreen() {
               disabled={pvqAnswer.trim().length === 0 || fpLoading}
               style={styles.submitBtn}
             >
-              {fpLoading ? "Verifying…" : "Verify Answer"}
+              {fpLoading ? t("admin.login.pvqAnswer.verifying") : t("admin.login.pvqAnswer.submit")}
             </Button>
           </View>
         </>
@@ -272,25 +274,29 @@ export default function AdminLoginScreen() {
           <View style={styles.successIcon}>
             <Icon name="checkmark-circle-outline" size={32} color={theme.colors.success} />
           </View>
-          <ThemedText style={styles.title}>Set new password</ThemedText>
+          <ThemedText style={styles.title}>{t("admin.login.reset.title")}</ThemedText>
           <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-            This link expires in 15 minutes.
+            {t("admin.login.reset.subtitle")}
           </ThemedText>
 
           <View style={styles.fields}>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>New password</ThemedText>
+              <ThemedText style={styles.label}>
+                {t("admin.login.reset.newPasswordLabel")}
+              </ThemedText>
               <Input
-                placeholder="At least 6 characters"
+                placeholder={t("admin.login.reset.newPasswordPlaceholder")}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
               />
             </View>
             <View style={styles.field}>
-              <ThemedText style={styles.label}>Confirm password</ThemedText>
+              <ThemedText style={styles.label}>
+                {t("admin.login.reset.confirmPasswordLabel")}
+              </ThemedText>
               <Input
-                placeholder="Repeat password"
+                placeholder={t("admin.login.reset.confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -308,7 +314,7 @@ export default function AdminLoginScreen() {
               disabled={newPassword.length < 6 || fpLoading}
               style={styles.submitBtn}
             >
-              {fpLoading ? "Resetting…" : "Reset Password"}
+              {fpLoading ? t("admin.login.reset.resetting") : t("admin.login.reset.submit")}
             </Button>
           </View>
         </>
@@ -320,9 +326,9 @@ export default function AdminLoginScreen() {
         <View style={styles.successIcon}>
           <Icon name="checkmark-circle" size={40} color={theme.colors.success} />
         </View>
-        <ThemedText style={styles.title}>Password reset!</ThemedText>
+        <ThemedText style={styles.title}>{t("admin.login.done.title")}</ThemedText>
         <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-          Your password has been updated. Sign in with your new credentials.
+          {t("admin.login.done.subtitle")}
         </ThemedText>
         <Button
           onPress={() => {
@@ -331,7 +337,7 @@ export default function AdminLoginScreen() {
           }}
           style={styles.submitBtn}
         >
-          Back to Sign In
+          {t("admin.login.done.backToSignIn")}
         </Button>
       </>
     );
@@ -339,14 +345,16 @@ export default function AdminLoginScreen() {
 
   return (
     <ThemedView style={styles.root}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Admin Login" }} />}
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: t("admin.login.nativeTitle") }} />}
       <ScrollView contentContainerStyle={styles.outer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <View style={styles.brandRow}>
             <ThemedText style={[styles.brand, { color: primaryColor, flex: 1 }]} numberOfLines={1}>
               {brand.appName}
             </ThemedText>
-            <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>Admin</ThemedText>
+            <ThemedText style={[styles.brandBadge, { color: mutedColor }]}>
+              {t("admin.login.badge")}
+            </ThemedText>
           </View>
 
           <ThemedView
@@ -359,11 +367,11 @@ export default function AdminLoginScreen() {
             <Pressable
               onPress={() => router.replace("/")}
               accessibilityRole="link"
-              accessibilityLabel={`Back to ${brand.appName}`}
+              accessibilityLabel={t("admin.login.backToApp", { appName: brand.appName })}
               style={{ cursor: "pointer" } as const}
             >
               <ThemedText style={[styles.backLink, { color: mutedColor }]}>
-                ← Back to {brand.appName}
+                ← {t("admin.login.backToApp", { appName: brand.appName })}
               </ThemedText>
             </Pressable>
           )}
@@ -374,6 +382,7 @@ export default function AdminLoginScreen() {
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   return (
     <ButtonRow align="start" style={styles.backBtn}>
       <Button
@@ -382,9 +391,9 @@ function BackButton({ onPress }: { onPress: () => void }) {
         size="sm"
         icon="arrow-back"
         onPress={onPress}
-        accessibilityLabel="Back"
+        accessibilityLabel={t("admin.login.backLabel")}
       >
-        Back
+        {t("admin.login.backLabel")}
       </Button>
     </ButtonRow>
   );
