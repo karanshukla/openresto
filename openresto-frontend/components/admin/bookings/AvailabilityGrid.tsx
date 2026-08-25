@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { getThemeColors } from "@/theme/theme";
 import { SectionWithTables, BookingDetailDto } from "@/api/admin";
@@ -86,6 +87,7 @@ export function AvailabilityGrid({
   /** Human-readable form of the same day, named in the empty state. */
   dateLabel?: string;
 }) {
+  const { t } = useTranslation();
   const tick = useMinuteTick();
   const colors = getThemeColors(isDark);
   const { primaryColor: PRIMARY } = useAppTheme();
@@ -150,7 +152,7 @@ export function AvailabilityGrid({
       <View style={{ padding: 40, alignItems: "center" }}>
         <Icon name="grid-outline" size={32} color={mutedColor} />
         <ThemedText style={[{ color: mutedColor, marginTop: 10, fontSize: 14 }]}>
-          No tables found. Add sections and tables in Location Manager.
+          {t("admin.bookings.timetable.noTablesFound")}
         </ThemedText>
       </View>
     );
@@ -163,7 +165,9 @@ export function AvailabilityGrid({
       <View testID="grid-empty-day" style={{ padding: 40, alignItems: "center" }}>
         <Icon name="calendar-outline" size={32} color={mutedColor} />
         <ThemedText style={[{ color: mutedColor, marginTop: 10, fontSize: 14 }]}>
-          {dateLabel ? `No bookings on ${dateLabel}` : "No bookings on this day"}
+          {dateLabel
+            ? t("admin.bookings.timetable.noBookingsOnDay", { date: dateLabel })
+            : t("admin.bookings.timetable.noBookingsGeneric")}
         </ThemedText>
       </View>
     );
@@ -193,7 +197,9 @@ export function AvailabilityGrid({
               borderRightColor: borderColor,
             }}
           >
-            <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>TABLE</ThemedText>
+            <ThemedText style={[styles.gridHeaderText, { color: mutedColor }]}>
+              {t("booking.form.tableLabel").toUpperCase()}
+            </ThemedText>
           </View>
           <View style={{ width: timelineW }}>
             {timeline.ticks.map(({ offset, label }) => (
@@ -265,7 +271,7 @@ export function AvailabilityGrid({
                       </ThemedText>
                       {unit.seats != null && (
                         <ThemedText style={[styles.gridTableSeats, { color: mutedColor }]}>
-                          {unit.seats}p
+                          {t("admin.bookings.timetable.peopleAbbrev", { count: unit.seats })}
                         </ThemedText>
                       )}
                     </View>
@@ -290,7 +296,7 @@ export function AvailabilityGrid({
                         const guest =
                           placement.booking.customerName ||
                           placement.booking.customerEmail?.split("@")[0] ||
-                          "Guest";
+                          t("admin.bookings.timetable.guestFallback");
                         const startLabel = formatClockMinutes(placement.startClockMinutes);
                         const endLabel = formatClockMinutes(
                           placement.startClockMinutes +
@@ -300,6 +306,9 @@ export function AvailabilityGrid({
                           state === "current" && now != null
                             ? formatRemaining(placement.endOffset - now)
                             : null;
+                        const sittingLabelKey = remaining
+                          ? "admin.bookings.timetable.sittingLabelWithRemaining"
+                          : "admin.bookings.timetable.sittingLabel";
 
                         return (
                           <Pressable
@@ -307,7 +316,14 @@ export function AvailabilityGrid({
                             testID={`sitting-${placement.booking.id}`}
                             onPress={() => onBookingPress(placement.booking)}
                             accessibilityRole="button"
-                            accessibilityLabel={`${guest}, ${placement.booking.seats} covers on ${unit.name}, ${startLabel} to ${endLabel}${remaining ? `, ${remaining}` : ""}`}
+                            accessibilityLabel={t(sittingLabelKey, {
+                              guest,
+                              seats: placement.booking.seats,
+                              unit: unit.name,
+                              start: startLabel,
+                              end: endLabel,
+                              remaining,
+                            })}
                             style={{
                               position: "absolute",
                               left: offsetToPx(placement.startOffset),
@@ -330,7 +346,10 @@ export function AvailabilityGrid({
                             }}
                           >
                             <ThemedText style={styles.gridBarGuest} numberOfLines={1}>
-                              {guest} · {placement.booking.seats}p
+                              {guest} ·{" "}
+                              {t("admin.bookings.timetable.peopleAbbrev", {
+                                count: placement.booking.seats,
+                              })}
                             </ThemedText>
                             <ThemedText
                               style={[styles.gridBarTime, { color: mutedColor }]}

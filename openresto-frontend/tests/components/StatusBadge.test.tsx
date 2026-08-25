@@ -1,11 +1,15 @@
 import React from "react";
 import { render, screen } from "@testing-library/react-native";
+import i18n from "@/i18n";
 import {
   StatusBadge,
   getStatus,
   isPast,
   statusRankFor,
+  statusVariantFor,
 } from "@/components/admin/bookings/StatusBadge";
+
+const t = i18n.getFixedT("en");
 
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
@@ -23,27 +27,45 @@ describe("isPast re-export", () => {
 describe("getStatus", () => {
   it("returns 'Completed' for bookings more than 90 minutes ago", () => {
     const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
-    expect(getStatus(date)).toEqual({ label: "Completed", variant: "completed" });
+    expect(getStatus(date, t)).toEqual({ label: "Completed", variant: "completed" });
   });
 
   it("returns 'Seated' for bookings 15-90 minutes ago", () => {
     const date = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    expect(getStatus(date)).toEqual({ label: "Seated", variant: "seated" });
+    expect(getStatus(date, t)).toEqual({ label: "Seated", variant: "seated" });
   });
 
   it("returns 'Arrived' for bookings within 5 minutes of now", () => {
     const date = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    expect(getStatus(date)).toEqual({ label: "Arrived", variant: "arrived" });
+    expect(getStatus(date, t)).toEqual({ label: "Arrived", variant: "arrived" });
   });
 
   it("returns 'Upcoming' for bookings 5-60 minutes in the future", () => {
     const date = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    expect(getStatus(date)).toEqual({ label: "Upcoming", variant: "upcoming" });
+    expect(getStatus(date, t)).toEqual({ label: "Upcoming", variant: "upcoming" });
   });
 
   it("returns 'Scheduled' for bookings more than 60 minutes in the future", () => {
     const date = new Date(Date.now() + 120 * 60 * 1000).toISOString();
-    expect(getStatus(date)).toEqual({ label: "Scheduled", variant: "scheduled" });
+    expect(getStatus(date, t)).toEqual({ label: "Scheduled", variant: "scheduled" });
+  });
+});
+
+describe("label/value split — variant stays untranslated so rank/style lookups don't break", () => {
+  it("resolves a localized label whose text differs from the internal variant identifier", () => {
+    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
+    const { label, variant } = getStatus(date, t);
+    expect(variant).toBe("completed");
+    expect(label).not.toBe(variant);
+    expect(label).toBe("Completed");
+  });
+
+  it("keeps statusVariantFor's identifier stable regardless of the active translation function", () => {
+    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
+    const frT = i18n.getFixedT("fr");
+    expect(statusVariantFor(date)).toBe("completed");
+    expect(getStatus(date, frT).variant).toBe("completed");
+    expect(getStatus(date, frT).label).not.toBe(getStatus(date, t).label);
   });
 });
 

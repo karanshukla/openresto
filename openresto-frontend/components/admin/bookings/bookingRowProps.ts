@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { fmtDateTime } from "@/utils/formatters";
 
 /**
@@ -25,16 +26,22 @@ export function rowA11yProps(id: number, focusedRowId: number | null, label?: st
 }
 
 /** One-line spoken summary of a booking row. */
-export function describeBookingRow(b: {
-  customerName?: string | null;
-  customerEmail: string;
-  date: string;
-  seats: number;
-  tableName?: string | null;
-}): string {
+export function describeBookingRow(
+  b: {
+    customerName?: string | null;
+    customerEmail: string;
+    date: string;
+    seats: number;
+    tableName?: string | null;
+  },
+  t: TFunction
+): string {
+  const name = b.customerName ?? b.customerEmail;
   const when = fmtDateTime(new Date(b.date));
-  const where = b.tableName ? `, ${b.tableName}` : "";
-  return `${b.customerName ?? b.customerEmail}, ${when}, ${b.seats} guests${where}`;
+  const seats = t("booking.form.partySize", { count: b.seats });
+  return b.tableName
+    ? t("admin.bookings.rowSummaryWithTable", { name, when, seats, table: b.tableName })
+    : t("admin.bookings.rowSummary", { name, when, seats });
 }
 
 /**

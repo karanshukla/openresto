@@ -1,4 +1,5 @@
 import { Modal, Pressable, ScrollView, View, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { ThemedText } from "@/components/themed-text";
 import {
@@ -49,6 +50,7 @@ export function BookingDetailPopup({
    * "open" (Enter). */
   initialFocus?: "extend";
 }) {
+  const { t } = useTranslation();
   const [booking, setBooking] = useState<BookingDetailDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -204,7 +206,8 @@ export function BookingDetailPopup({
       onMutated?.();
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to cancel the booking.";
+      const message =
+        err instanceof Error ? err.message : t("admin.bookings.detail.failedToCancel");
       setDeleting(false);
       setErrorMessage(message);
     }
@@ -231,7 +234,8 @@ export function BookingDetailPopup({
       setBooking(updated);
       onMutated?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to restore booking.";
+      const message =
+        err instanceof Error ? err.message : t("admin.bookings.detail.failedToRestore");
       setErrorMessage(message);
     }
     setUncancelling(false);
@@ -241,11 +245,11 @@ export function BookingDetailPopup({
     if (!booking) return;
     const seats = parseInt(editSeats, 10);
     if (isNaN(seats) || seats < 1) {
-      setErrorMessage("Invalid seats value");
+      setErrorMessage(t("admin.bookings.detail.invalidSeats"));
       return;
     }
     if (!editDate || !editTime) {
-      setErrorMessage("Date and time are required");
+      setErrorMessage(t("admin.bookings.detail.dateTimeRequired"));
       return;
     }
     setEditLoading(true);
@@ -257,7 +261,10 @@ export function BookingDetailPopup({
 
       if (currentTable && seats > currentTable.seats) {
         const confirmed = window.confirm(
-          `Warning: This table only has ${currentTable.seats} seats, but you are booking for ${seats} guests. Do you want to continue?`
+          t("booking.form.oversizeConfirm", {
+            tableSeats: t("booking.form.seatsCount", { count: currentTable.seats }),
+            guests: t("booking.form.partySize", { count: seats }),
+          })
         );
         if (!confirmed) {
           setEditLoading(false);
@@ -303,7 +310,8 @@ export function BookingDetailPopup({
         setMoveNoticeReady(true);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update booking.";
+      const message =
+        err instanceof Error ? err.message : t("admin.bookings.detail.failedToUpdate");
       setErrorMessage(message);
     }
     setEditLoading(false);
@@ -342,12 +350,15 @@ export function BookingDetailPopup({
 
   const restaurantOptions = restaurants.map((r) => ({ label: r.name, value: r.id }));
   const sectionOptions = sections.map((s) => ({ label: s.name, value: s.id }));
-  const tableOptions = tables.map((t) => ({
-    label: `${t.name ?? `Table ${t.id}`} (${t.seats} seats)`,
-    value: t.id,
+  const tableOptions = tables.map((tbl) => ({
+    label: t("admin.bookings.form.tableOptionLabel", {
+      name: tbl.name ?? t("admin.bookings.form.tableFallbackName", { id: tbl.id }),
+      seats: t("booking.form.seatsCount", { count: tbl.seats }),
+    }),
+    value: tbl.id,
   }));
   const seatOptions = [...Array(10).keys()].map((i) => ({
-    label: `${i + 1} guest${i > 0 ? "s" : ""}`,
+    label: t("booking.form.partySize", { count: i + 1 }),
     value: i + 1,
   }));
 
@@ -362,14 +373,14 @@ export function BookingDetailPopup({
         }}
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel="Close booking details"
+        accessibilityLabel={t("admin.bookings.detail.closeLabel")}
       >
         <Pressable
           onPress={/* istanbul ignore next */ (e) => e.stopPropagation?.()}
           role="dialog"
           aria-modal
           accessibilityViewIsModal
-          accessibilityLabel="Booking details"
+          accessibilityLabel={t("admin.bookings.detail.dialogLabel")}
           style={{
             width: "92%",
             maxWidth: 960,
@@ -394,7 +405,7 @@ export function BookingDetailPopup({
             }}
           >
             <ThemedText style={{ fontSize: 18, fontWeight: "700", letterSpacing: -0.3 }}>
-              Booking Details
+              {t("admin.bookings.detail.heading")}
             </ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               {editing ? (
@@ -405,18 +416,20 @@ export function BookingDetailPopup({
                     size="md"
                     onPress={handleCancelEdit}
                     disabled={editLoading}
-                    accessibilityLabel="Discard changes"
+                    accessibilityLabel={t("admin.bookings.detail.discardChangesLabel")}
                   >
-                    Cancel
+                    {t("common.actions.cancel")}
                   </Button>
                   <Button
                     size="md"
                     onPress={handleSaveEdit}
                     disabled={editLoading}
                     loading={editLoading}
-                    accessibilityLabel="Save changes"
+                    accessibilityLabel={t("admin.bookings.detail.saveChangesLabel")}
                   >
-                    {editLoading ? "Saving…" : "Save Changes"}
+                    {editLoading
+                      ? t("admin.bookings.detail.saving")
+                      : t("admin.bookings.detail.saveChanges")}
                   </Button>
                 </>
               ) : (
@@ -427,9 +440,9 @@ export function BookingDetailPopup({
                     size="md"
                     icon="create-outline"
                     onPress={() => setEditing(true)}
-                    accessibilityLabel="Edit booking"
+                    accessibilityLabel={t("admin.bookings.detail.editLabel")}
                   >
-                    Edit
+                    {t("admin.bookings.detail.edit")}
                   </Button>
                 )
               )}
@@ -437,7 +450,7 @@ export function BookingDetailPopup({
                 onPress={onClose}
                 style={{ padding: 6 }}
                 accessibilityRole="button"
-                accessibilityLabel="Close"
+                accessibilityLabel={t("common.actions.close")}
                 hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
               >
                 <Icon name="close" size={22} color={mutedColor} />
@@ -450,7 +463,7 @@ export function BookingDetailPopup({
               <ActivityIndicator size="large" color={PRIMARY} style={{ marginVertical: 40 }} />
             ) : !booking ? (
               <ThemedText style={{ textAlign: "center", color: mutedColor, marginVertical: 40 }}>
-                Booking not found.
+                {t("admin.bookings.detail.notFound")}
               </ThemedText>
             ) : (
               <>
@@ -542,10 +555,10 @@ export function BookingDetailPopup({
 
       <ConfirmModal
         visible={showDeleteConfirm}
-        title="Cancel Booking"
-        message="Are you sure you want to cancel this booking? This cannot be undone."
-        confirmLabel="Cancel Booking"
-        cancelLabel="Keep"
+        title={t("admin.bookings.cancelBookingTitle")}
+        message={t("admin.bookings.detail.cancelBookingConfirmMessage")}
+        confirmLabel={t("admin.bookings.cancelBookingTitle")}
+        cancelLabel={t("admin.bookings.keep")}
         destructive
         onConfirm={handleDeleteConfirmed}
         onCancel={() => setShowDeleteConfirm(false)}
@@ -553,20 +566,20 @@ export function BookingDetailPopup({
 
       <ConfirmModal
         visible={showUncancelConfirm}
-        title="Restore Booking"
-        message="Are you sure you want to restore this cancelled booking?"
-        confirmLabel="Restore"
-        cancelLabel="Go Back"
+        title={t("admin.bookings.detail.restoreBookingTitle")}
+        message={t("admin.bookings.detail.restoreBookingConfirm")}
+        confirmLabel={t("admin.bookings.detail.restore")}
+        cancelLabel={t("admin.bookings.goBack")}
         onConfirm={handleUncancel}
         onCancel={() => setShowUncancelConfirm(false)}
       />
 
       <ConfirmModal
         visible={showPurgeConfirm}
-        title="Permanently Delete"
-        message="This will permanently erase all data for this booking including the guest's email and personal details. This action cannot be reversed."
-        confirmLabel="Delete Forever"
-        cancelLabel="Go Back"
+        title={t("admin.bookings.detail.permanentlyDeleteTitle")}
+        message={t("admin.bookings.detail.permanentlyDeleteMessage")}
+        confirmLabel={t("admin.bookings.detail.deleteForever")}
+        cancelLabel={t("admin.bookings.goBack")}
         destructive
         onConfirm={async () => {
           if (!booking) return;
@@ -578,7 +591,7 @@ export function BookingDetailPopup({
             onClose();
           } else {
             setDeleting(false);
-            setErrorMessage("Failed to permanently delete the booking.");
+            setErrorMessage(t("admin.bookings.detail.failedToPermanentlyDelete"));
           }
         }}
         onCancel={() => setShowPurgeConfirm(false)}
@@ -586,7 +599,7 @@ export function BookingDetailPopup({
 
       <AlertModal
         visible={!!errorMessage}
-        title="Error"
+        title={t("errors.title")}
         message={errorMessage ?? ""}
         onClose={() => setErrorMessage(null)}
       />

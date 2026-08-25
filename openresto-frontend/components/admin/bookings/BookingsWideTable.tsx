@@ -1,4 +1,5 @@
 import { Pressable, View, type ViewStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDetailDto } from "@/api/admin";
 import { theme } from "@/theme/theme";
@@ -49,6 +50,7 @@ export function BookingsWideTable({
   isDark,
   primaryColor,
 }: BookingsWideTableProps) {
+  const { t } = useTranslation();
   const headerBg = isDark ? "#28292b" : "#f8f8f9";
   // Subtle alternating row tint for scannability. Translucent so the focused-
   // row highlight (`primaryColor` tint) still reads on top of it.
@@ -56,7 +58,11 @@ export function BookingsWideTable({
 
   const renderSortHeader = (key: SortKey, label: string, columnStyle: ViewStyle) => {
     const isActive = sort.key === key;
-    const dirLabel = isActive ? (sort.dir === "asc" ? "ascending" : "descending") : "not sorted";
+    const dirLabel = isActive
+      ? sort.dir === "asc"
+        ? t("admin.bookings.sort.ascending")
+        : t("admin.bookings.sort.descending")
+      : t("admin.bookings.sort.notSorted");
     const icon = !isActive
       ? "swap-vertical-outline"
       : sort.dir === "asc"
@@ -66,7 +72,10 @@ export function BookingsWideTable({
       <Pressable
         testID={`sort-header-${key}`}
         accessibilityRole="button"
-        accessibilityLabel={`Sort by ${label}, ${dirLabel}`}
+        accessibilityLabel={t("admin.bookings.sort.ariaLabel", {
+          column: label,
+          direction: dirLabel,
+        })}
         style={[styles.thSortBtn, columnStyle, { alignItems: "center" }]}
         onPress={() => onSortChange(key)}
       >
@@ -92,18 +101,22 @@ export function BookingsWideTable({
           { backgroundColor: headerBg, borderBottomWidth: 1, borderBottomColor: borderColor },
         ]}
       >
-        {renderSortHeader("date", "TIME", styles.colTime)}
-        {renderSortHeader("guest", "GUEST", styles.colGuest)}
-        {renderSortHeader("seats", "PARTY", styles.colParty)}
-        {renderSortHeader("table", "TABLE", styles.colTable)}
-        {renderSortHeader("status", "STATUS", styles.colStatus)}
+        {renderSortHeader("date", t("admin.bookings.sort.time").toUpperCase(), styles.colTime)}
+        {renderSortHeader("guest", t("admin.bookings.sort.guest").toUpperCase(), styles.colGuest)}
+        {renderSortHeader("seats", t("admin.bookings.sort.party").toUpperCase(), styles.colParty)}
+        {renderSortHeader("table", t("booking.form.tableLabel").toUpperCase(), styles.colTable)}
+        {renderSortHeader(
+          "status",
+          t("admin.bookings.sort.status").toUpperCase(),
+          styles.colStatus
+        )}
         <View style={styles.colAction} />
       </View>
 
       {bookings.map((b, i) => (
         <Pressable
           key={b.id}
-          {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b))}
+          {...rowA11yProps(b.id, focusedRowId, describeBookingRow(b, t))}
           style={[
             styles.tableRow,
             i > 0 && { borderTopWidth: 1, borderTopColor: borderColor },
@@ -174,7 +187,7 @@ export function BookingsWideTable({
                 ]}
               >
                 <ThemedText style={[styles.badgeText, { color: theme.status.cancelled.text }]}>
-                  Cancelled
+                  {t("admin.bookings.status.cancelled")}
                 </ThemedText>
               </View>
             ) : (
@@ -185,10 +198,12 @@ export function BookingsWideTable({
           <View style={styles.colAction}>
             {!b.isCancelled && !isPast(b.date) && (
               <RowTextButton
-                label="Cancel"
+                label={t("common.actions.cancel")}
                 icon="close-outline"
                 color={theme.status.cancelled.text}
-                accessibilityLabel={`Cancel booking for ${b.customerName ?? b.customerEmail}`}
+                accessibilityLabel={t("admin.bookings.cancelBookingForLabel", {
+                  name: b.customerName ?? b.customerEmail,
+                })}
                 onPress={(e) => {
                   // stopPropagation is present on web mouse events but not RN's
                   // GestureResponderEvent — guard both the event and the method.

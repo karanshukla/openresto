@@ -1,4 +1,5 @@
 import { TextInput, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
@@ -33,6 +34,7 @@ export function BookingLookupBar({
   placeholderColor,
   primaryColor,
 }: BookingLookupBarProps) {
+  const { t } = useTranslation();
   return (
     <>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -50,7 +52,7 @@ export function BookingLookupBar({
               minWidth: 180,
             },
           ]}
-          placeholder="Name, email or reference…"
+          placeholder={t("admin.bookings.lookup.placeholder")}
           placeholderTextColor={placeholderColor}
           value={query}
           onChangeText={onQueryChange}
@@ -64,20 +66,20 @@ export function BookingLookupBar({
           onPress={onSubmit}
           disabled={loading || !query.trim()}
           loading={loading}
-          accessibilityLabel="Find booking"
+          accessibilityLabel={t("admin.bookings.lookup.findLabel")}
         >
-          Find
+          {t("admin.bookings.lookup.find")}
         </Button>
       </View>
 
       {status === "not_found" && (
         <ThemedText style={{ fontSize: 12, color: theme.colors.error, marginTop: -4 }}>
-          No booking found.
+          {t("admin.bookings.lookup.notFound")}
         </ThemedText>
       )}
       {status === "multiple" && (
         <ThemedText style={{ fontSize: 12, color: primaryColor, marginTop: -4 }}>
-          Showing all matches…
+          {t("admin.bookings.lookup.showingAllMatches")}
         </ThemedText>
       )}
     </>

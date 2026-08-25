@@ -111,7 +111,9 @@ describe("AdminDashboardScreen", () => {
     // "5" appears both as the Today's Bookings metric and as an occupancy count label,
     // so assert presence (not uniqueness) here.
     expect(screen.getAllByText("5").length).toBeGreaterThan(0);
-    expect(screen.getByText("1 venues are currently paused")).toBeTruthy();
+    // i18next's plural rule correctly resolves the singular form for a pausedCount of 1
+    // ("1 venue", not "1 venues") — see admin.dashboard.metrics.restaurantStatus.subPaused_one.
+    expect(screen.getByText("1 venue is currently paused")).toBeTruthy();
     expect(screen.getByText("100")).toBeTruthy();
   });
 
