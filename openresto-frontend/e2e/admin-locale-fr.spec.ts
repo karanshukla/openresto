@@ -37,10 +37,14 @@ test.describe("Admin locale (French)", () => {
     // wait does.
     await expect(page.getByTestId("sidebar-identity")).toBeVisible({ timeout: 20_000 });
 
-    // Sidebar nav renders in French (components/layout/AdminSidebar.tsx).
-    await expect(page.getByRole("link", { name: "Aperçu" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Réservations" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Établissements" })).toBeVisible();
+    // Sidebar nav renders in French (components/layout/AdminSidebar.tsx). exact: true
+    // throughout — getByRole's default name match is a case-insensitive substring, and
+    // "Réservations" also matches the dashboard's "Voir toutes les réservations" quick
+    // action (both the link's own accessible name and its accessibilityLabel-holding
+    // sibling), which is a strict-mode violation without it.
+    await expect(page.getByRole("link", { name: "Aperçu", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Réservations", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Établissements", exact: true })).toBeVisible();
     // Section headings render uppercased (AdminSidebar.tsx: heading.toUpperCase()).
     await expect(page.getByText("GÉRER", { exact: true })).toBeVisible();
     await expect(page.getByText("CONFIGURER", { exact: true })).toBeVisible();
@@ -49,7 +53,11 @@ test.describe("Admin locale (French)", () => {
     // Dashboard heading, metric cards and chart section render in French
     // (app/admin/dashboard.tsx).
     await expect(page.getByText("Tableau de bord", { exact: true })).toBeVisible();
-    await expect(page.getByText("Réservations du jour", { exact: true })).toBeVisible();
+    // .first(): the metric card and the "today's bookings" list below it deliberately
+    // reuse the same admin.dashboard.metrics.todayBookings.label key (dashboard.tsx),
+    // so this text legitimately renders twice — asserting either instance is enough to
+    // prove the key translated.
+    await expect(page.getByText("Réservations du jour", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Réservations temporaires actives", { exact: true })).toBeVisible();
     await expect(page.getByText("Statut de l'établissement", { exact: true })).toBeVisible();
     await expect(page.getByText("Total des couverts", { exact: true })).toBeVisible();
