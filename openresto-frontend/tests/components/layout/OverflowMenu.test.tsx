@@ -6,8 +6,10 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react-nativ
 import { Linking } from "react-native";
 import OverflowMenu from "@/components/layout/OverflowMenu";
 import { fetchSocialLinks } from "@/api/restaurants";
+import { useLocale } from "@/context/LocaleContext";
 
 const mockToggle = jest.fn();
+const mockSetLocale = jest.fn();
 let mockBrand: Record<string, unknown> = { appName: "Test App" };
 
 jest.mock("@/hooks/use-app-theme", () => ({
@@ -25,6 +27,10 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: () => mockBrand,
 }));
 
+jest.mock("@/context/LocaleContext", () => ({
+  useLocale: jest.fn(),
+}));
+
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
@@ -38,14 +44,16 @@ describe("OverflowMenu", () => {
     jest.clearAllMocks();
     mockBrand = { appName: "Test App" };
     (fetchSocialLinks as jest.Mock).mockResolvedValue([]);
+    (useLocale as jest.Mock).mockReturnValue({ locale: "en", setLocale: mockSetLocale });
     jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
   });
 
-  it("opens the panel with Help, dark-mode toggle, and shortcuts rows", () => {
+  it("opens the panel with Help, dark-mode toggle, Language, and shortcuts rows", () => {
     render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
     fireEvent.press(screen.getByLabelText("Open menu"));
     expect(screen.getByText("Help")).toBeTruthy();
     expect(screen.getByText("Switch to dark mode")).toBeTruthy();
+    expect(screen.getByText("Language")).toBeTruthy();
     expect(screen.getByText("Keyboard shortcuts")).toBeTruthy();
   });
 
@@ -103,6 +111,58 @@ describe("OverflowMenu", () => {
     fireEvent.press(screen.getByLabelText("Help"));
     fireEvent.press(screen.getByLabelText("Visit our website"));
     expect(Linking.openURL).toHaveBeenCalledWith("https://example.com");
+  });
+
+  describe("language modal", () => {
+    it("closes the menu and opens a modal listing every locale, not an inline submenu", () => {
+      render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+      fireEvent.press(screen.getByLabelText("Open menu"));
+
+      fireEvent.press(screen.getByLabelText("Language"));
+
+      expect(screen.queryByTestId("overflow-menu")).toBeNull();
+      expect(screen.getByTestId("language-radiogroup")).toBeTruthy();
+      expect(screen.getByText("English")).toBeTruthy();
+      expect(screen.getByText("Français")).toBeTruthy();
+      expect(screen.getByText("Español")).toBeTruthy();
+      expect(screen.getByText("Deutsch")).toBeTruthy();
+    });
+
+    it("marks the active locale checked via radio semantics", () => {
+      (useLocale as jest.Mock).mockReturnValue({ locale: "de", setLocale: mockSetLocale });
+      render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+      fireEvent.press(screen.getByLabelText("Open menu"));
+      fireEvent.press(screen.getByLabelText("Language"));
+
+      expect(screen.getByLabelText("Deutsch").props.accessibilityState).toEqual({
+        checked: true,
+      });
+      expect(screen.getByLabelText("English").props.accessibilityState).toEqual({
+        checked: false,
+      });
+    });
+
+    it("writes a pick through LocaleContext.setLocale and dismisses the modal", () => {
+      render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+      fireEvent.press(screen.getByLabelText("Open menu"));
+      fireEvent.press(screen.getByLabelText("Language"));
+
+      fireEvent.press(screen.getByLabelText("Français"));
+
+      expect(mockSetLocale).toHaveBeenCalledWith("fr");
+      expect(screen.queryByTestId("language-radiogroup")).toBeNull();
+    });
+
+    it("closes the language modal when its close control is pressed", () => {
+      render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+      fireEvent.press(screen.getByLabelText("Open menu"));
+      fireEvent.press(screen.getByLabelText("Language"));
+      expect(screen.getByTestId("language-radiogroup")).toBeTruthy();
+
+      fireEvent.press(screen.getByLabelText("Close language", { includeHiddenElements: true }));
+
+      expect(screen.queryByTestId("language-radiogroup")).toBeNull();
+    });
   });
 
   it("renders no social links when none are configured", async () => {
@@ -199,7 +259,7 @@ describe("OverflowMenu", () => {
 
       openWithKey("ArrowUp");
 
-      expect(highlighted()).toBe(2);
+      expect(highlighted()).toBe(3);
     });
 
     it("stays shut for a key that is not a way in", () => {
@@ -227,7 +287,7 @@ describe("OverflowMenu", () => {
 
       press("ArrowUp");
 
-      expect(highlighted()).toBe(2);
+      expect(highlighted()).toBe(3);
     });
 
     it("runs the highlighted command on Enter", () => {

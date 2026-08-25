@@ -198,10 +198,12 @@
     },
     "overflowMenu": {
       "closeHelp": "Hilfe schließen",
+      "closeLanguage": "Sprache schließen",
       "closeMenu": "Menü schließen",
       "findUsElsewhere": "Finden Sie uns auch hier",
       "help": "Hilfe",
       "helpBody": "Öffnen Sie die Seite Standorte, um Öffnungszeiten, Speisekarten und verfügbare Zeiten für jeden Standort zu sehen. Wählen Sie eine Zeit, um direkt das Reservierungsformular zu öffnen, oder nutzen Sie „Meine Reservierungen”, um eine bestehende Reservierung mit Ihrer Reservierungsnummer zu suchen.",
+      "language": "Sprache",
       "moreOptions": "Weitere Optionen",
       "openMenu": "Menü öffnen",
       "switchToDarkMode": "Zum dunklen Modus wechseln",

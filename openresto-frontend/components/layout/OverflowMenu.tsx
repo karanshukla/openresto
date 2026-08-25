@@ -5,12 +5,14 @@ import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useBrand } from "@/context/BrandContext";
+import { useLocale } from "@/context/LocaleContext";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
 import { ModalCard } from "@/components/common/ModalCard";
 import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
+import { LOCALE_LABELS, SUPPORTED_LOCALES } from "@/constants/locales";
 import { openIndexFor, resolveListboxKey } from "@/utils/listboxKeys";
 import { webProps, type WebKeyEvent } from "@/utils/webProps";
 import { styles } from "./OverflowMenu.styles";
@@ -44,6 +46,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showLanguage, setShowLanguage] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
   const triggerRef = useRef<View>(null);
@@ -54,6 +57,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const { toggle } = useTheme();
   const { colors, isDark } = useAppTheme();
   const brand = useBrand();
+  const { locale, setLocale } = useLocale();
   const menuId = useId();
   const itemId = (index: number) => `${menuId}-item-${index}`;
 
@@ -86,6 +90,13 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         : t("common.overflowMenu.switchToDarkMode"),
       icon: isDark ? "sunny-outline" : "moon-outline",
       onPress: runAndClose(toggle),
+    },
+    {
+      key: "language",
+      text: t("common.overflowMenu.language"),
+      label: t("common.overflowMenu.language"),
+      icon: "language-outline",
+      onPress: runAndClose(() => setShowLanguage(true)),
     },
     {
       key: "shortcuts",
@@ -252,6 +263,44 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
             {t("common.actions.close")}
           </Button>
         </ButtonRow>
+      </ModalCard>
+
+      <ModalCard
+        visible={showLanguage}
+        title={t("common.overflowMenu.language")}
+        onDismiss={() => setShowLanguage(false)}
+        dismissLabel={t("common.overflowMenu.closeLanguage")}
+        testID="language-backdrop"
+      >
+        <View
+          style={styles.languageList}
+          role="radiogroup"
+          accessibilityLabel={t("common.language.switcherLabel")}
+          testID="language-radiogroup"
+        >
+          {SUPPORTED_LOCALES.map((option) => {
+            const checked = option === locale;
+            return (
+              <Pressable
+                key={option}
+                onPress={() => {
+                  setLocale(option);
+                  setShowLanguage(false);
+                }}
+                accessibilityRole="radio"
+                accessibilityLabel={LOCALE_LABELS[option]}
+                accessibilityState={{ checked }}
+                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                  styles.languageRow,
+                  (hovered || pressed) && { backgroundColor: colors.input },
+                ]}
+              >
+                <ThemedText style={styles.languageRowText}>{LOCALE_LABELS[option]}</ThemedText>
+                {checked && <Icon name="checkmark" size="md" color={colors.muted} />}
+              </Pressable>
+            );
+          })}
+        </View>
       </ModalCard>
     </>
   );

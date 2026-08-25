@@ -198,10 +198,12 @@
     },
     "overflowMenu": {
       "closeHelp": "Cerrar ayuda",
+      "closeLanguage": "Cerrar idioma",
       "closeMenu": "Cerrar menú",
       "findUsElsewhere": "Encuéntranos en otros sitios",
       "help": "Ayuda",
       "helpBody": "Abre la página de Locales para ver horarios, menús y horas disponibles de cada local. Elige una hora para abrir el formulario de reserva directamente, o usa «Mis reservas» para buscar una reserva existente con tu referencia.",
+      "language": "Idioma",
       "moreOptions": "Más opciones",
       "openMenu": "Abrir menú",
       "switchToDarkMode": "Cambiar a modo oscuro",
