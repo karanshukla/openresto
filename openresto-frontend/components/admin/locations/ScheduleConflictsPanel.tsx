@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { RowTextButton } from "@/components/common/RowTextButton";
@@ -12,13 +14,24 @@ import {
 import { fmtDateTimeInZone } from "@/utils/formatters";
 import { styles } from "./ScheduleConflictsPanel.styles";
 
-const REASON_LABELS: Record<ScheduleConflictReason, string> = {
-  closedDay: "Now a closed day",
-  outsideHours: "Now outside opening hours",
-};
-
 function formatSitting(dateUtc: string, timezone: string): string {
   return fmtDateTimeInZone(dateUtc, timezone);
+}
+
+/**
+ * `reason` is the API's untranslated conflict-reason key; resolving it to a label here (rather
+ * than keying a lookup table off it) is what lets the label localize while `reason` itself stays
+ * comparable to the wire format.
+ * @see [ScheduleConflictsPanel.test.tsx](../../../tests/components/admin/locations/ScheduleConflictsPanel.test.tsx)
+ * — pins that both conflict reasons render their translated label.
+ */
+function reasonLabel(reason: ScheduleConflictReason, t: TFunction): string {
+  switch (reason) {
+    case "closedDay":
+      return t("admin.locations.scheduleConflicts.reason.closedDay");
+    case "outsideHours":
+      return t("admin.locations.scheduleConflicts.reason.outsideHours");
+  }
 }
 
 /**
@@ -60,6 +73,7 @@ export function ScheduleConflictsPanel({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const [conflicts, setConflicts] = useState<ScheduleConflictDto[] | null>(null);
 
@@ -86,7 +100,7 @@ export function ScheduleConflictsPanel({
       <View testID="schedule-conflicts-clear" style={styles.clearRow}>
         <Icon name="checkmark-circle-outline" size="sm" color={colors.success} />
         <ThemedText style={[styles.clearText, { color: mutedColor }]}>
-          Every upcoming booking fits this schedule.
+          {t("admin.locations.scheduleConflicts.allClear")}
         </ThemedText>
       </View>
     );
@@ -103,12 +117,10 @@ export function ScheduleConflictsPanel({
         </View>
         <View style={styles.copy}>
           <ThemedText style={styles.title}>
-            {conflicts.length} upcoming booking{conflicts.length === 1 ? "" : "s"} no longer fit
-            this schedule
+            {t("admin.locations.scheduleConflicts.title", { count: conflicts.length })}
           </ThemedText>
           <ThemedText style={[styles.sub, { color: mutedColor }]}>
-            These were taken before the current hours and are still on the books. Move or cancel
-            them — the guests have not been told anything changed.
+            {t("admin.locations.scheduleConflicts.subtitle")}
           </ThemedText>
         </View>
       </View>
@@ -121,15 +133,18 @@ export function ScheduleConflictsPanel({
               {formatSitting(conflict.date, timezone)}
             </ThemedText>
             <ThemedText style={[styles.rowSub, { color: mutedColor }]}>
-              {REASON_LABELS[conflict.reason]} · {conflict.seats} guest
-              {conflict.seats === 1 ? "" : "s"} · {conflict.bookingRef}
+              {reasonLabel(conflict.reason, t)} ·{" "}
+              {t("admin.locations.scheduleConflicts.guestCount", { count: conflict.seats })} ·{" "}
+              {conflict.bookingRef}
             </ThemedText>
           </View>
           <RowTextButton
-            label="Open"
+            label={t("admin.locations.scheduleConflicts.openLabel")}
             icon="open-outline"
             color={colors.text}
-            accessibilityLabel={`Open booking ${conflict.bookingRef}`}
+            accessibilityLabel={t("admin.locations.scheduleConflicts.openBookingLabel", {
+              ref: conflict.bookingRef,
+            })}
             onPress={() => onOpenBooking(conflict.bookingId)}
           />
         </View>

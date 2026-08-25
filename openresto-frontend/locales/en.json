@@ -625,6 +625,110 @@
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelled",
         "meta": "{{seats}} · {{restaurant}}"
       }
+    },
+    "locations": {
+      "pageTitle": "Locations",
+      "addLocation": "Add location",
+      "deletedNotice": "{{name}} was permanently deleted.",
+      "permanentlyDeleteLabel": "Permanently delete {{name}}",
+      "summary": {
+        "none": "No locations configured",
+        "activeOnly_one": "{{count}} active",
+        "activeOnly_other": "{{count}} active",
+        "withArchived": "{{active}} active · {{archived}} archived"
+      },
+      "empty": {
+        "title": "No locations yet",
+        "subtitle": "Add your first location to start accepting bookings."
+      },
+      "pauseButton": {
+        "saving": "Saving…",
+        "resumeLabel": "Resume bookings for {{name}}",
+        "pauseLabel": "Pause the next hour of bookings at {{name}}",
+        "resumeUntil": "Resume New Bookings now (paused up to {{time}})",
+        "pauseFor60": "Pause New Bookings for the next 60m"
+      },
+      "extendButton": {
+        "a11yLabel": "Extend all active bookings at {{name}} by an hour",
+        "extending": "Extending…",
+        "extended": "Extended {{count}} active bookings +60m",
+        "noActiveToExtend": "No active bookings to extend",
+        "extend": "Extend {{count}} active Bookings by 60m",
+        "noActive": "No active bookings"
+      },
+      "addForm": {
+        "namePlaceholder": "Location name (e.g. Downtown, Westside)",
+        "cancelLabel": "Cancel adding a location",
+        "add": "Add",
+        "adding": "Adding…"
+      },
+      "archiveRow": {
+        "title": "Archive location",
+        "subtitle": "Takes {{name}} off the public site. All data is kept and you can restore it at any time.",
+        "failed": "Failed to archive. Please try again.",
+        "archiveLabel": "Archive {{name}}",
+        "archiveButton": "Archive",
+        "archiving": "Archiving…",
+        "confirmTitle": "Archive {{name}}?",
+        "confirmYes": "Yes, archive",
+        "confirmMessageWithBookings_one": "{{name}} comes off the public site, and customers can no longer find or book it. Its {{count}} upcoming booking stay intact in the admin, but the guests can no longer look them up on the site. You can restore it at any time.",
+        "confirmMessageWithBookings_other": "{{name}} comes off the public site, and customers can no longer find or book it. Its {{count}} upcoming bookings stay intact in the admin, but the guests can no longer look them up on the site. You can restore it at any time.",
+        "confirmMessageNoBookings": "{{name}} comes off the public site, and customers can no longer find or book it. Existing bookings stay intact. You can restore it at any time."
+      },
+      "archivedPanel": {
+        "badge": "Archived",
+        "subtitle": "Hidden from the public site and not bookable. Its sections, tables and bookings are all still here. Restore it to edit it again.",
+        "restoreFailed": "Failed to restore. Please try again.",
+        "restoreLabel": "Restore {{name}}",
+        "restoring": "Restoring…",
+        "restore": "Restore",
+        "deleteTitle": "Delete this location",
+        "deleteSubtitle": "Destroys {{name}} along with every section, table and booking. This cannot be undone.",
+        "deleteHint": "Opens a confirmation that asks you to type the location name",
+        "deleteButton": "Delete…"
+      },
+      "deleteModal": {
+        "title": "Delete {{name}}?",
+        "cancelDeletionLabel": "Cancel deletion",
+        "lead": "This permanently destroys the location and everything attached to it. It cannot be undone.",
+        "loadingImpact": "Loading impact",
+        "impactUnavailable": "Could not load what this would delete. The deletion below still removes every section, table and booking.",
+        "impact": {
+          "sections_one": "{{count}} section",
+          "sections_other": "{{count}} sections",
+          "tables_one": "{{count}} table",
+          "tables_other": "{{count}} tables",
+          "combinableGroups_one": "{{count}} combinable group",
+          "combinableGroups_other": "{{count}} combinable groups",
+          "bookings_one": "{{count}} booking",
+          "bookings_other": "{{count}} bookings",
+          "bookingsWithUpcoming_one": "{{count}} booking, {{upcoming}} still upcoming",
+          "bookingsWithUpcoming_other": "{{count}} bookings, {{upcoming}} still upcoming"
+        },
+        "typeToConfirm": "Type {{name}} to confirm",
+        "typeToConfirmA11y": "Type {{name}} to confirm deletion",
+        "failed": "Failed to delete. Please try again.",
+        "deleting": "Deleting…",
+        "deletePermanently": "Delete permanently"
+      },
+      "pills": {
+        "label": "Locations",
+        "archivedLabel": "{{name}}, archived"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} upcoming booking no longer fit this schedule",
+        "title_other": "{{count}} upcoming bookings no longer fit this schedule",
+        "subtitle": "These were taken before the current hours and are still on the books. Move or cancel them — the guests have not been told anything changed.",
+        "allClear": "Every upcoming booking fits this schedule.",
+        "reason": {
+          "closedDay": "Now a closed day",
+          "outsideHours": "Now outside opening hours"
+        },
+        "guestCount_one": "{{count}} guest",
+        "guestCount_other": "{{count}} guests",
+        "openLabel": "Open",
+        "openBookingLabel": "Open booking {{ref}}"
+      }
     }
   }
 }

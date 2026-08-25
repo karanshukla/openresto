@@ -1,4 +1,5 @@
 import { Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
 import { Icon } from "@/components/common/Icon";
@@ -19,10 +20,14 @@ export interface LocationPillsProps {
  * location while acting on another.
  */
 export function LocationPills({ restaurants, selectedId, onSelect }: LocationPillsProps) {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
 
   return (
-    <HorizontalScroller label="Locations" contentContainerStyle={styles.content}>
+    <HorizontalScroller
+      label={t("admin.locations.pills.label")}
+      contentContainerStyle={styles.content}
+    >
       {restaurants.map((r) => {
         const selected = selectedId === r.id;
         const archived = r.isArchived ?? false;
@@ -31,7 +36,9 @@ export function LocationPills({ restaurants, selectedId, onSelect }: LocationPil
             key={r.id}
             onPress={() => onSelect(r.id)}
             accessibilityRole="radio"
-            accessibilityLabel={archived ? `${r.name}, archived` : r.name}
+            accessibilityLabel={
+              archived ? t("admin.locations.pills.archivedLabel", { name: r.name }) : r.name
+            }
             accessibilityState={{ checked: selected }}
             style={[
               styles.pill,

@@ -625,6 +625,110 @@
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, annulée",
         "meta": "{{seats}} · {{restaurant}}"
       }
+    },
+    "locations": {
+      "pageTitle": "Établissements",
+      "addLocation": "Ajouter un établissement",
+      "deletedNotice": "{{name}} a été définitivement supprimé.",
+      "permanentlyDeleteLabel": "Supprimer définitivement {{name}}",
+      "summary": {
+        "none": "Aucun établissement configuré",
+        "activeOnly_one": "{{count}} actif",
+        "activeOnly_other": "{{count}} actifs",
+        "withArchived": "{{active}} actifs · {{archived}} archivés"
+      },
+      "empty": {
+        "title": "Aucun établissement pour le moment",
+        "subtitle": "Ajoutez votre premier établissement pour commencer à accepter des réservations."
+      },
+      "pauseButton": {
+        "saving": "Enregistrement…",
+        "resumeLabel": "Reprendre les réservations de {{name}}",
+        "pauseLabel": "Suspendre la prochaine heure de réservations à {{name}}",
+        "resumeUntil": "Reprendre les nouvelles réservations maintenant (suspendues jusqu'à {{time}})",
+        "pauseFor60": "Suspendre les nouvelles réservations pendant les 60 prochaines minutes"
+      },
+      "extendButton": {
+        "a11yLabel": "Prolonger toutes les réservations actives de {{name}} d'une heure",
+        "extending": "Prolongation…",
+        "extended": "{{count}} réservations actives prolongées de 60 min",
+        "noActiveToExtend": "Aucune réservation active à prolonger",
+        "extend": "Prolonger {{count}} réservations actives de 60 min",
+        "noActive": "Aucune réservation active"
+      },
+      "addForm": {
+        "namePlaceholder": "Nom de l'établissement (p. ex. Centre-ville, Rive ouest)",
+        "cancelLabel": "Annuler l'ajout d'un établissement",
+        "add": "Ajouter",
+        "adding": "Ajout…"
+      },
+      "archiveRow": {
+        "title": "Archiver l'établissement",
+        "subtitle": "Retire {{name}} du site public. Toutes les données sont conservées et vous pouvez le restaurer à tout moment.",
+        "failed": "Échec de l'archivage. Veuillez réessayer.",
+        "archiveLabel": "Archiver {{name}}",
+        "archiveButton": "Archiver",
+        "archiving": "Archivage…",
+        "confirmTitle": "Archiver {{name}} ?",
+        "confirmYes": "Oui, archiver",
+        "confirmMessageWithBookings_one": "{{name}} est retiré du site public, et les clients ne peuvent plus le trouver ni le réserver. Sa {{count}} réservation à venir reste intacte dans l'administration, mais les clients ne peuvent plus la retrouver sur le site. Vous pouvez le restaurer à tout moment.",
+        "confirmMessageWithBookings_other": "{{name}} est retiré du site public, et les clients ne peuvent plus le trouver ni le réserver. Ses {{count}} réservations à venir restent intactes dans l'administration, mais les clients ne peuvent plus les retrouver sur le site. Vous pouvez le restaurer à tout moment.",
+        "confirmMessageNoBookings": "{{name}} est retiré du site public, et les clients ne peuvent plus le trouver ni le réserver. Les réservations existantes restent intactes. Vous pouvez le restaurer à tout moment."
+      },
+      "archivedPanel": {
+        "badge": "Archivé",
+        "subtitle": "Masqué du site public et non réservable. Ses sections, tables et réservations sont toutes encore là. Restaurez-le pour le modifier à nouveau.",
+        "restoreFailed": "Échec de la restauration. Veuillez réessayer.",
+        "restoreLabel": "Restaurer {{name}}",
+        "restoring": "Restauration…",
+        "restore": "Restaurer",
+        "deleteTitle": "Supprimer cet établissement",
+        "deleteSubtitle": "Détruit {{name}} ainsi que toutes ses sections, tables et réservations. Cette action est irréversible.",
+        "deleteHint": "Ouvre une confirmation qui vous demande de saisir le nom de l'établissement",
+        "deleteButton": "Supprimer…"
+      },
+      "deleteModal": {
+        "title": "Supprimer {{name}} ?",
+        "cancelDeletionLabel": "Annuler la suppression",
+        "lead": "Cette action détruit définitivement l'établissement et tout ce qui lui est rattaché. Elle est irréversible.",
+        "loadingImpact": "Chargement de l'impact",
+        "impactUnavailable": "Impossible de charger ce qui serait supprimé. La suppression ci-dessous retire quand même toutes les sections, tables et réservations.",
+        "impact": {
+          "sections_one": "{{count}} section",
+          "sections_other": "{{count}} sections",
+          "tables_one": "{{count}} table",
+          "tables_other": "{{count}} tables",
+          "combinableGroups_one": "{{count}} groupe combinable",
+          "combinableGroups_other": "{{count}} groupes combinables",
+          "bookings_one": "{{count}} réservation",
+          "bookings_other": "{{count}} réservations",
+          "bookingsWithUpcoming_one": "{{count}} réservation, {{upcoming}} encore à venir",
+          "bookingsWithUpcoming_other": "{{count}} réservations, {{upcoming}} encore à venir"
+        },
+        "typeToConfirm": "Saisissez {{name}} pour confirmer",
+        "typeToConfirmA11y": "Saisissez {{name}} pour confirmer la suppression",
+        "failed": "Échec de la suppression. Veuillez réessayer.",
+        "deleting": "Suppression…",
+        "deletePermanently": "Supprimer définitivement"
+      },
+      "pills": {
+        "label": "Établissements",
+        "archivedLabel": "{{name}}, archivé"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} réservation à venir ne correspond plus à cet horaire",
+        "title_other": "{{count}} réservations à venir ne correspondent plus à cet horaire",
+        "subtitle": "Elles ont été prises avant les horaires actuels et sont toujours dans le carnet. Déplacez-les ou annulez-les — les clients n'ont pas été informés du changement.",
+        "allClear": "Toutes les réservations à venir correspondent à cet horaire.",
+        "reason": {
+          "closedDay": "Désormais un jour de fermeture",
+          "outsideHours": "Désormais en dehors des horaires d'ouverture"
+        },
+        "guestCount_one": "{{count}} convive",
+        "guestCount_other": "{{count}} convives",
+        "openLabel": "Ouvrir",
+        "openBookingLabel": "Ouvrir la réservation {{ref}}"
+      }
     }
   }
 }
