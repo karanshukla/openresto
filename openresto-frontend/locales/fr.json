@@ -220,6 +220,9 @@
     "slidePanel": {
       "closeLabel": "Fermer {{label}}"
     },
+    "status": {
+      "loading": "Chargement…"
+    },
     "timePicker": {
       "accessibilityLabel": "Heure",
       "placeholder": "Sélectionner une heure"
@@ -384,7 +387,6 @@
   "admin": {
     "activity": {
       "title": "Activité",
-      "loading": "Chargement…",
       "eventCount_one": "{{count}} événement enregistré",
       "eventCount_other": "{{count}} événements enregistrés",
       "filters": {
@@ -1042,7 +1044,6 @@
       },
       "footer": {
         "title": "Pied de page",
-        "loading": "Chargement…",
         "linksConfigured_one": "{{count}} lien social configuré",
         "linksConfigured_other": "{{count}} liens sociaux configurés",
         "noLinksSubtitle": "Texte de copyright et liens sociaux",
@@ -1058,7 +1059,6 @@
       },
       "highlights": {
         "title": "Points forts",
-        "loading": "Chargement…",
         "countSubtitle_one": "{{count}} point fort · Page d'accueil",
         "countSubtitle_other": "{{count}} points forts · Page d'accueil",
         "noneSubtitle": "Aucun configuré · Page d'accueil",
@@ -1096,7 +1096,6 @@
         "title": "Sécurité du compte",
         "subtitle": "Gérez votre mot de passe et la vérification d'identité",
         "emailLabel": "E-mail",
-        "loading": "Chargement…",
         "changeEmailLabel": "Changer l'adresse e-mail",
         "change": "Modifier",
         "newEmailLabel": "Nouvel e-mail",
@@ -1253,7 +1252,6 @@
       },
       "users": {
         "title": "Utilisateurs",
-        "loading": "Chargement…",
         "subtitle_one": "{{count}} compte · Les propriétaires peuvent gérer les utilisateurs",
         "subtitle_other": "{{count}} comptes · Les propriétaires peuvent gérer les utilisateurs",
         "loadFailed": "Impossible de charger les comptes. Rechargez pour réessayer.",

@@ -220,6 +220,9 @@
     "slidePanel": {
       "closeLabel": "{{label}} schließen"
     },
+    "status": {
+      "loading": "Wird geladen…"
+    },
     "timePicker": {
       "accessibilityLabel": "Uhrzeit",
       "placeholder": "Uhrzeit auswählen"
@@ -384,7 +387,6 @@
   "admin": {
     "activity": {
       "title": "Aktivität",
-      "loading": "Wird geladen…",
       "eventCount_one": "{{count}} erfasstes Ereignis",
       "eventCount_other": "{{count}} erfasste Ereignisse",
       "filters": {
@@ -1042,7 +1044,6 @@
       },
       "footer": {
         "title": "Fußzeile",
-        "loading": "Wird geladen…",
         "linksConfigured_one": "{{count}} Social-Media-Link konfiguriert",
         "linksConfigured_other": "{{count}} Social-Media-Links konfiguriert",
         "noLinksSubtitle": "Copyright-Text und Social-Media-Links",
@@ -1058,7 +1059,6 @@
       },
       "highlights": {
         "title": "Highlights",
-        "loading": "Wird geladen…",
         "countSubtitle_one": "{{count}} Highlight · Startseite",
         "countSubtitle_other": "{{count}} Highlights · Startseite",
         "noneSubtitle": "Keine konfiguriert · Startseite",
@@ -1096,7 +1096,6 @@
         "title": "Kontosicherheit",
         "subtitle": "Verwalten Sie Ihr Passwort und die Identitätsprüfung",
         "emailLabel": "E-Mail",
-        "loading": "Wird geladen…",
         "changeEmailLabel": "E-Mail-Adresse ändern",
         "change": "Ändern",
         "newEmailLabel": "Neue E-Mail",
@@ -1253,7 +1252,6 @@
       },
       "users": {
         "title": "Benutzer",
-        "loading": "Wird geladen…",
         "subtitle_one": "{{count}} Konto · Inhaber können Benutzer verwalten",
         "subtitle_other": "{{count}} Konten · Inhaber können Benutzer verwalten",
         "loadFailed": "Konten konnten nicht geladen werden. Neu laden, um es erneut zu versuchen.",

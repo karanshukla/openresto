@@ -47,6 +47,9 @@ export function roleLabel(role: string): string {
  * @see [roles.test.ts](../tests/constants/roles.test.ts) — pins that both roles render their
  * translated label, the legacy `Admin` claim renders as Owner's, and an unrecognised value
  * passes through untranslated.
+ * @see [UsersCard.test.tsx](../tests/components/admin/settings/UsersCard.test.tsx) — pins that
+ * the users card shows the translated label at every render site while `adminUpdateUserRole`
+ * still receives the raw role identifier.
  */
 export function roleDisplayLabel(role: string, t: TFunction): string {
   const resolved = roleLabel(role);

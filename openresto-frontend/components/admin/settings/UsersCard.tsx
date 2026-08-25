@@ -196,7 +196,7 @@ export function UsersCard({
         title={t("admin.settings.users.title")}
         subtitle={
           loading
-            ? t("admin.settings.users.loading")
+            ? t("common.status.loading")
             : t("admin.settings.users.subtitle", { count: users.length })
         }
         expanded={expanded}

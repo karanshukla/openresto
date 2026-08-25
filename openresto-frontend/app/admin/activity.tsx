@@ -140,7 +140,7 @@ export default function ActivityScreen() {
         <ThemedText type="h1">{t("admin.activity.title")}</ThemedText>
         <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
           {loading
-            ? t("admin.activity.loading")
+            ? t("common.status.loading")
             : t("admin.activity.eventCount", { count: totalCount })}
         </ThemedText>
       </View>
@@ -242,7 +242,7 @@ export default function ActivityScreen() {
               })}
             >
               {loadingMore
-                ? t("admin.activity.loading")
+                ? t("common.status.loading")
                 : t("admin.activity.loadMore.action", { count: totalCount - items.length })}
             </Button>
           )}

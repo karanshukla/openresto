@@ -220,6 +220,9 @@
     "slidePanel": {
       "closeLabel": "Close {{label}}"
     },
+    "status": {
+      "loading": "Loading…"
+    },
     "timePicker": {
       "accessibilityLabel": "Time",
       "placeholder": "Select a time"
@@ -384,7 +387,6 @@
   "admin": {
     "activity": {
       "title": "Activity",
-      "loading": "Loading…",
       "eventCount_one": "{{count}} recorded event",
       "eventCount_other": "{{count}} recorded events",
       "filters": {
@@ -1042,7 +1044,6 @@
       },
       "footer": {
         "title": "Footer",
-        "loading": "Loading…",
         "linksConfigured_one": "{{count}} social link configured",
         "linksConfigured_other": "{{count}} social links configured",
         "noLinksSubtitle": "Copyright text and social links",
@@ -1058,7 +1059,6 @@
       },
       "highlights": {
         "title": "Highlights",
-        "loading": "Loading…",
         "countSubtitle_one": "{{count}} highlight · Home page",
         "countSubtitle_other": "{{count}} highlights · Home page",
         "noneSubtitle": "None configured · Home page",
@@ -1096,7 +1096,6 @@
         "title": "Account Security",
         "subtitle": "Manage your password and identity verification",
         "emailLabel": "Email",
-        "loading": "Loading…",
         "changeEmailLabel": "Change email address",
         "change": "Change",
         "newEmailLabel": "New email",
@@ -1253,7 +1252,6 @@
       },
       "users": {
         "title": "Users",
-        "loading": "Loading…",
         "subtitle_one": "{{count}} account · Owners can manage users",
         "subtitle_other": "{{count}} accounts · Owners can manage users",
         "loadFailed": "Could not load accounts. Reload to try again.",

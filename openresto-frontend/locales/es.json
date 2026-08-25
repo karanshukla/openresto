@@ -220,6 +220,9 @@
     "slidePanel": {
       "closeLabel": "Cerrar {{label}}"
     },
+    "status": {
+      "loading": "Cargando…"
+    },
     "timePicker": {
       "accessibilityLabel": "Hora",
       "placeholder": "Selecciona una hora"
@@ -384,7 +387,6 @@
   "admin": {
     "activity": {
       "title": "Actividad",
-      "loading": "Cargando…",
       "eventCount_one": "{{count}} evento registrado",
       "eventCount_other": "{{count}} eventos registrados",
       "filters": {
@@ -1042,7 +1044,6 @@
       },
       "footer": {
         "title": "Pie de página",
-        "loading": "Cargando…",
         "linksConfigured_one": "{{count}} enlace social configurado",
         "linksConfigured_other": "{{count}} enlaces sociales configurados",
         "noLinksSubtitle": "Texto de copyright y enlaces sociales",
@@ -1058,7 +1059,6 @@
       },
       "highlights": {
         "title": "Destacados",
-        "loading": "Cargando…",
         "countSubtitle_one": "{{count}} destacado · Página de inicio",
         "countSubtitle_other": "{{count}} destacados · Página de inicio",
         "noneSubtitle": "Ninguno configurado · Página de inicio",
@@ -1096,7 +1096,6 @@
         "title": "Seguridad de la cuenta",
         "subtitle": "Gestione su contraseña y la verificación de identidad",
         "emailLabel": "Correo electrónico",
-        "loading": "Cargando…",
         "changeEmailLabel": "Cambiar la dirección de correo",
         "change": "Cambiar",
         "newEmailLabel": "Nuevo correo",
@@ -1253,7 +1252,6 @@
       },
       "users": {
         "title": "Usuarios",
-        "loading": "Cargando…",
         "subtitle_one": "{{count}} cuenta · Los propietarios pueden gestionar usuarios",
         "subtitle_other": "{{count}} cuentas · Los propietarios pueden gestionar usuarios",
         "loadFailed": "No se pudieron cargar las cuentas. Recargue para volver a intentarlo.",

@@ -176,7 +176,7 @@ export function FooterSettingsCard({
         title={t("admin.settings.footer.title")}
         subtitle={
           loading
-            ? t("admin.settings.footer.loading")
+            ? t("common.status.loading")
             : links.length > 0
               ? t("admin.settings.footer.linksConfigured", { count: links.length })
               : t("admin.settings.footer.noLinksSubtitle")
