@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -10,7 +9,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { useAuth } from "@/context/AuthContext";
-import { ASSIGNABLE_ROLES, ROLES, roleLabel, type AssignableRole } from "@/constants/roles";
+import { ASSIGNABLE_ROLES, ROLES, roleDisplayLabel, type AssignableRole } from "@/constants/roles";
 import { isValidEmail } from "@/utils/validation";
 import {
   adminCreateUser,
@@ -42,25 +41,6 @@ const emptyNewUser = (): NewUserState => ({
   password: "",
   role: ROLES.manager,
 });
-
-/**
- * `role` is the identifier `roleLabel` resolves and the API/JWT compare against (mirrored from
- * `constants/roles.ts`, owned by #375/PR4); only the label this returns localizes.
- * @see [UsersCard.test.tsx](../../../tests/components/admin/settings/UsersCard.test.tsx)
- * — pins that both roles render their translated label at every render site (badge, picker,
- * and the outcome messages) while `adminUpdateUserRole` still receives the raw role string.
- */
-function roleDisplayLabel(role: string, t: TFunction): string {
-  const resolved = roleLabel(role);
-  switch (resolved) {
-    case ROLES.owner:
-      return t("admin.settings.users.roleOwner");
-    case ROLES.manager:
-      return t("admin.settings.users.roleManager");
-    default:
-      return resolved;
-  }
-}
 
 /**
  * Owner-only management of the other admin accounts. Rendered behind `useCan("manage:users")`
@@ -216,7 +196,7 @@ export function UsersCard({
         title={t("admin.settings.users.title")}
         subtitle={
           loading
-            ? t("admin.settings.users.loading")
+            ? t("common.status.loading")
             : t("admin.settings.users.subtitle", { count: users.length })
         }
         expanded={expanded}

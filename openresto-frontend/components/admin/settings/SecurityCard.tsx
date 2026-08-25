@@ -115,7 +115,7 @@ export function SecurityCard({
                 {t("admin.settings.security.emailLabel")}
               </ThemedText>
               <ThemedText style={[styles.secRowSub, { color: mutedColor }]} numberOfLines={1}>
-                {email ?? t("admin.settings.security.loading")}
+                {email ?? t("common.status.loading")}
               </ThemedText>
             </View>
             <Button

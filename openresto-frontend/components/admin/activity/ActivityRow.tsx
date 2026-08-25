@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { hexToRgba } from "@/utils/colors";
 import { relativeTime } from "@/utils/formatters";
-import { roleLabel } from "@/constants/roles";
+import { roleDisplayLabel } from "@/constants/roles";
 import type { AdminAuditEntryDto, AuditChangeDto } from "@/api/audit";
 import {
   actionIcon,
@@ -81,6 +82,7 @@ function ChangeValue({
   color: string;
   mutedColor: string;
 }) {
+  const { t } = useTranslation();
   const masked = isRedacted(value);
   return (
     <View style={styles.changeValue}>
@@ -92,7 +94,7 @@ function ChangeValue({
           masked && styles.redacted,
         ]}
       >
-        {formatChangeValue(value)}
+        {formatChangeValue(value, t)}
       </ThemedText>
     </View>
   );
@@ -142,10 +144,11 @@ export function ActivityRow({
   mutedColor,
   textColor,
 }: ActivityRowProps) {
-  const label = actionLabel(entry.action);
+  const { t } = useTranslation();
+  const label = actionLabel(entry.action, t);
   const actor = actorName(entry);
   const tone = statusColor(entry.statusCode);
-  const meta = [actor, roleLabel(entry.actorRole), relativeTime(entry.occurredAt)]
+  const meta = [actor, roleDisplayLabel(entry.actorRole, t), relativeTime(entry.occurredAt)]
     .filter(Boolean)
     .join(" · ");
 
@@ -201,7 +204,7 @@ export function ActivityRow({
           {entry.changes.length > 0 && (
             <View style={[styles.changesBlock, { borderBottomColor: borderColor }]}>
               <ThemedText style={[styles.changesHeading, { color: mutedColor }]}>
-                Changes
+                {t("admin.activity.detail.changesHeading")}
               </ThemedText>
               {entry.changes.map((change) => (
                 <ChangeRow
@@ -216,26 +219,26 @@ export function ActivityRow({
 
           <View style={styles.metaBlock}>
             <DetailTextRow
-              label="When"
+              label={t("admin.activity.detail.whenLabel")}
               value={formatExactTime(entry.occurredAt)}
               mutedColor={mutedColor}
               textColor={textColor}
             />
             <DetailTextRow
-              label="Request"
+              label={t("admin.activity.detail.requestLabel")}
               value={httpLine(entry)}
               mutedColor={mutedColor}
               textColor={textColor}
             />
             <DetailTextRow
-              label="From"
-              value={entry.ipAddress ?? "unknown"}
+              label={t("admin.activity.detail.fromLabel")}
+              value={entry.ipAddress ?? t("admin.activity.detail.unknownIp")}
               mutedColor={mutedColor}
               textColor={textColor}
             />
             {entry.userAgent ? (
               <DetailTextRow
-                label="Device"
+                label={t("admin.activity.detail.deviceLabel")}
                 value={entry.userAgent}
                 mutedColor={mutedColor}
                 textColor={textColor}

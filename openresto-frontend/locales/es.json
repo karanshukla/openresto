@@ -209,12 +209,19 @@
       "viewKeyboardShortcuts": "Ver atajos de teclado",
       "visitWebsite": "Visitar nuestro sitio web"
     },
+    "roles": {
+      "owner": "Propietario",
+      "manager": "Gestor"
+    },
     "select": {
       "closeListLabel": "Cerrar la lista de opciones",
       "placeholder": "Selecciona una opción"
     },
     "slidePanel": {
       "closeLabel": "Cerrar {{label}}"
+    },
+    "status": {
+      "loading": "Cargando…"
     },
     "timePicker": {
       "accessibilityLabel": "Hora",
@@ -378,6 +385,107 @@
     }
   },
   "admin": {
+    "activity": {
+      "title": "Actividad",
+      "eventCount_one": "{{count}} evento registrado",
+      "eventCount_other": "{{count}} eventos registrados",
+      "filters": {
+        "locationLabel": "Filtrar por local",
+        "activityLabel": "Filtrar por actividad",
+        "personLabel": "Filtrar por persona",
+        "allLocations": "Todos los locales",
+        "anyone": "Cualquiera"
+      },
+      "actionGroups": {
+        "all": "Toda la actividad",
+        "bookings": "Reservas",
+        "locations": "Locales",
+        "accounts": "Cuentas",
+        "signIns": "Inicios de sesión",
+        "brand": "Marca",
+        "email": "Correo",
+        "media": "Multimedia"
+      },
+      "error": {
+        "title": "Algo salió mal",
+        "body": "No se pudo cargar el registro de actividad. Comprueba tu conexión e inténtalo de nuevo."
+      },
+      "empty": {
+        "filteredTitle": "Nada coincide con estos filtros",
+        "noneYetTitle": "Aún no hay actividad",
+        "filteredBody": "Prueba con un local, tipo de actividad o persona más amplios.",
+        "noneYetBody": "Cada acción de administración aparece aquí en cuanto ocurre."
+      },
+      "loadMore": {
+        "action_one": "Mostrar {{count}} más",
+        "action_other": "Mostrar {{count}} más",
+        "accessibilityLabel_one": "Mostrar {{count}} evento más",
+        "accessibilityLabel_other": "Mostrar {{count}} eventos más"
+      },
+      "detail": {
+        "changesHeading": "Cambios",
+        "whenLabel": "Cuándo",
+        "requestLabel": "Solicitud",
+        "fromLabel": "Desde",
+        "deviceLabel": "Dispositivo",
+        "unknownIp": "desconocida",
+        "emptyValue": "(vacío)",
+        "httpRequestLabel": "Solicitud {{method}}"
+      },
+      "actions": {
+        "bookingCreate": "Reserva creada",
+        "bookingUpdate": "Reserva modificada",
+        "bookingCancel": "Reserva cancelada",
+        "bookingRestore": "Reserva restaurada",
+        "bookingExtend": "Reserva ampliada",
+        "bookingPurge": "Reserva purgada",
+        "bookingEmail": "Correo de reserva reenviado",
+        "restaurantCreate": "Local creado",
+        "restaurantUpdate": "Local modificado",
+        "restaurantArchive": "Local archivado",
+        "restaurantRestore": "Local restaurado",
+        "restaurantDelete": "Local eliminado",
+        "restaurantPause": "Reservas pausadas",
+        "restaurantUnpause": "Reservas reanudadas",
+        "restaurantExtendBookings": "Reservas ampliadas",
+        "restaurantReorderSections": "Secciones reordenadas",
+        "sectionCreate": "Sección creada",
+        "sectionUpdate": "Sección modificada",
+        "sectionDelete": "Sección eliminada",
+        "tableCreate": "Mesa creada",
+        "tableUpdate": "Mesa modificada",
+        "tableDelete": "Mesa eliminada",
+        "tableGroupCreate": "Grupo de mesas creado",
+        "tableGroupUpdate": "Grupo de mesas modificado",
+        "tableGroupDelete": "Grupo de mesas eliminado",
+        "userCreate": "Usuario creado",
+        "userRoleChange": "Rol de usuario modificado",
+        "userActivate": "Usuario activado",
+        "userDeactivate": "Usuario desactivado",
+        "userPasswordReset": "Contraseña de usuario restablecida",
+        "authLogin": "Sesión iniciada",
+        "authLoginFailed": "Inicio de sesión fallido",
+        "authLogout": "Sesión cerrada",
+        "authPasswordChange": "Contraseña propia modificada",
+        "authEmailChange": "Correo propio modificado",
+        "authPvqSetup": "Pregunta de seguridad configurada",
+        "authPasswordReset": "Contraseña propia restablecida",
+        "brandUpdate": "Configuración de marca actualizada",
+        "emailSettingsUpdate": "Configuración de correo actualizada",
+        "emailSettingsTest": "Correo de prueba enviado",
+        "mediaUpload": "Archivo multimedia subido",
+        "mediaDelete": "Archivo multimedia eliminado",
+        "highlightCreate": "Destacado creado",
+        "highlightUpdate": "Destacado modificado",
+        "highlightDelete": "Destacado eliminado",
+        "socialLinkCreate": "Enlace social añadido",
+        "socialLinkUpdate": "Enlace social modificado",
+        "socialLinkDelete": "Enlace social eliminado",
+        "notificationDelete": "Notificación eliminada",
+        "pushSubscribe": "Notificaciones push activadas",
+        "pushUnsubscribe": "Notificaciones push desactivadas"
+      }
+    },
     "bookings": {
       "pageTitle": "Reservas",
       "searchResultsTitle": "Resultados de búsqueda",
@@ -936,7 +1044,6 @@
       },
       "footer": {
         "title": "Pie de página",
-        "loading": "Cargando…",
         "linksConfigured_one": "{{count}} enlace social configurado",
         "linksConfigured_other": "{{count}} enlaces sociales configurados",
         "noLinksSubtitle": "Texto de copyright y enlaces sociales",
@@ -952,7 +1059,6 @@
       },
       "highlights": {
         "title": "Destacados",
-        "loading": "Cargando…",
         "countSubtitle_one": "{{count}} destacado · Página de inicio",
         "countSubtitle_other": "{{count}} destacados · Página de inicio",
         "noneSubtitle": "Ninguno configurado · Página de inicio",
@@ -990,7 +1096,6 @@
         "title": "Seguridad de la cuenta",
         "subtitle": "Gestione su contraseña y la verificación de identidad",
         "emailLabel": "Correo electrónico",
-        "loading": "Cargando…",
         "changeEmailLabel": "Cambiar la dirección de correo",
         "change": "Cambiar",
         "newEmailLabel": "Nuevo correo",
@@ -1147,7 +1252,6 @@
       },
       "users": {
         "title": "Usuarios",
-        "loading": "Cargando…",
         "subtitle_one": "{{count}} cuenta · Los propietarios pueden gestionar usuarios",
         "subtitle_other": "{{count}} cuentas · Los propietarios pueden gestionar usuarios",
         "loadFailed": "No se pudieron cargar las cuentas. Recargue para volver a intentarlo.",
@@ -1158,8 +1262,6 @@
         "deactivatedMessage": "{{email}} desactivado.",
         "reactivatedMessage": "{{email}} reactivado.",
         "passwordResetMessage": "Nueva contraseña establecida para {{email}}. Compártala fuera de línea.",
-        "roleOwner": "Propietario",
-        "roleManager": "Gestor",
         "deactivatedBadge": "Desactivado",
         "selfNote": "Este es usted. Cambie su propia contraseña en la página de Cuenta.",
         "roleFieldLabel": "Rol",

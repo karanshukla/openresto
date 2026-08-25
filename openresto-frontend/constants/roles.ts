@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 /**
  * Mirrors the backend's `UserRoles` allow-list and `AuthPolicies` gating. Keep the two in
  * sync: the server is the authority, this exists so the UI can hide what a call would refuse
@@ -35,4 +37,28 @@ export function roleCan(role: string | null | undefined, capability: Capability)
 /** Human label for a role badge — unknown values pass through rather than rendering blank. */
 export function roleLabel(role: string): string {
   return role === ROLES.legacyAdmin ? ROLES.owner : role;
+}
+
+/**
+ * `role` is the identifier `roleLabel` resolves and the API/JWT compare against; only the
+ * label this returns localizes. Shared by the users card, the activity trail, and (a later
+ * PR) the sidebar — the one place a role identifier becomes display text.
+ *
+ * @see [roles.test.ts](../tests/constants/roles.test.ts) — pins that both roles render their
+ * translated label, the legacy `Admin` claim renders as Owner's, and an unrecognised value
+ * passes through untranslated.
+ * @see [UsersCard.test.tsx](../tests/components/admin/settings/UsersCard.test.tsx) — pins that
+ * the users card shows the translated label at every render site while `adminUpdateUserRole`
+ * still receives the raw role identifier.
+ */
+export function roleDisplayLabel(role: string, t: TFunction): string {
+  const resolved = roleLabel(role);
+  switch (resolved) {
+    case ROLES.owner:
+      return t("common.roles.owner");
+    case ROLES.manager:
+      return t("common.roles.manager");
+    default:
+      return resolved;
+  }
 }

@@ -1,4 +1,7 @@
-import { ASSIGNABLE_ROLES, ROLES, roleCan, roleLabel } from "@/constants/roles";
+import i18n from "@/i18n";
+import { ASSIGNABLE_ROLES, ROLES, roleCan, roleDisplayLabel, roleLabel } from "@/constants/roles";
+
+const t = i18n.getFixedT("en");
 
 describe("roles", () => {
   it("only offers Owner and Manager for assignment", () => {
@@ -48,6 +51,30 @@ describe("roles", () => {
     it("passes other roles through unchanged", () => {
       expect(roleLabel(ROLES.manager)).toBe("Manager");
       expect(roleLabel("Host")).toBe("Host");
+    });
+  });
+
+  describe("roleDisplayLabel", () => {
+    it("translates the Owner label", () => {
+      expect(roleDisplayLabel(ROLES.owner, t)).toBe("Owner");
+    });
+
+    it("translates the Manager label", () => {
+      expect(roleDisplayLabel(ROLES.manager, t)).toBe("Manager");
+    });
+
+    it("resolves the legacy Admin claim to the translated Owner label", () => {
+      expect(roleDisplayLabel(ROLES.legacyAdmin, t)).toBe("Owner");
+    });
+
+    it("passes an unrecognised role through untranslated", () => {
+      expect(roleDisplayLabel("Host", t)).toBe("Host");
+    });
+
+    it("translates independently of the raw identifier roleLabel resolves", () => {
+      const fr = i18n.getFixedT("fr");
+      expect(roleDisplayLabel(ROLES.owner, fr)).toBe("Propriétaire");
+      expect(roleLabel(ROLES.owner)).toBe("Owner");
     });
   });
 });

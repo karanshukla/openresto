@@ -238,7 +238,7 @@ export function HighlightsCard({
         title={t("admin.settings.highlights.title")}
         subtitle={
           loading
-            ? t("admin.settings.highlights.loading")
+            ? t("common.status.loading")
             : highlights.length > 0
               ? t("admin.settings.highlights.countSubtitle", { count: highlights.length })
               : t("admin.settings.highlights.noneSubtitle")

@@ -209,12 +209,19 @@
       "viewKeyboardShortcuts": "Tastenkombinationen anzeigen",
       "visitWebsite": "Unsere Website besuchen"
     },
+    "roles": {
+      "owner": "Inhaber",
+      "manager": "Manager"
+    },
     "select": {
       "closeListLabel": "Optionsliste schließen",
       "placeholder": "Option auswählen"
     },
     "slidePanel": {
       "closeLabel": "{{label}} schließen"
+    },
+    "status": {
+      "loading": "Wird geladen…"
     },
     "timePicker": {
       "accessibilityLabel": "Uhrzeit",
@@ -378,6 +385,107 @@
     }
   },
   "admin": {
+    "activity": {
+      "title": "Aktivität",
+      "eventCount_one": "{{count}} erfasstes Ereignis",
+      "eventCount_other": "{{count}} erfasste Ereignisse",
+      "filters": {
+        "locationLabel": "Nach Standort filtern",
+        "activityLabel": "Nach Aktivität filtern",
+        "personLabel": "Nach Person filtern",
+        "allLocations": "Alle Standorte",
+        "anyone": "Beliebig"
+      },
+      "actionGroups": {
+        "all": "Alle Aktivitäten",
+        "bookings": "Buchungen",
+        "locations": "Standorte",
+        "accounts": "Konten",
+        "signIns": "Anmeldungen",
+        "brand": "Marke",
+        "email": "E-Mail",
+        "media": "Medien"
+      },
+      "error": {
+        "title": "Etwas ist schiefgelaufen",
+        "body": "Der Aktivitätsverlauf konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+      },
+      "empty": {
+        "filteredTitle": "Keine Treffer für diese Filter",
+        "noneYetTitle": "Noch keine Aktivität",
+        "filteredBody": "Versuchen Sie es mit einem weiter gefassten Standort, Aktivitätstyp oder einer anderen Person.",
+        "noneYetBody": "Jede Administrator-Aktion erscheint hier, sobald sie geschieht."
+      },
+      "loadMore": {
+        "action_one": "{{count}} weiteres anzeigen",
+        "action_other": "{{count}} weitere anzeigen",
+        "accessibilityLabel_one": "{{count}} weiteres Ereignis anzeigen",
+        "accessibilityLabel_other": "{{count}} weitere Ereignisse anzeigen"
+      },
+      "detail": {
+        "changesHeading": "Änderungen",
+        "whenLabel": "Wann",
+        "requestLabel": "Anfrage",
+        "fromLabel": "Von",
+        "deviceLabel": "Gerät",
+        "unknownIp": "unbekannt",
+        "emptyValue": "(leer)",
+        "httpRequestLabel": "{{method}}-Anfrage"
+      },
+      "actions": {
+        "bookingCreate": "Buchung erstellt",
+        "bookingUpdate": "Buchung aktualisiert",
+        "bookingCancel": "Buchung storniert",
+        "bookingRestore": "Buchung wiederhergestellt",
+        "bookingExtend": "Buchung verlängert",
+        "bookingPurge": "Buchung endgültig gelöscht",
+        "bookingEmail": "Buchungs-E-Mail erneut gesendet",
+        "restaurantCreate": "Standort erstellt",
+        "restaurantUpdate": "Standort aktualisiert",
+        "restaurantArchive": "Standort archiviert",
+        "restaurantRestore": "Standort wiederhergestellt",
+        "restaurantDelete": "Standort gelöscht",
+        "restaurantPause": "Buchungen pausiert",
+        "restaurantUnpause": "Buchungen fortgesetzt",
+        "restaurantExtendBookings": "Buchungen verlängert",
+        "restaurantReorderSections": "Bereiche neu angeordnet",
+        "sectionCreate": "Bereich erstellt",
+        "sectionUpdate": "Bereich aktualisiert",
+        "sectionDelete": "Bereich gelöscht",
+        "tableCreate": "Tisch erstellt",
+        "tableUpdate": "Tisch aktualisiert",
+        "tableDelete": "Tisch gelöscht",
+        "tableGroupCreate": "Tischgruppe erstellt",
+        "tableGroupUpdate": "Tischgruppe aktualisiert",
+        "tableGroupDelete": "Tischgruppe gelöscht",
+        "userCreate": "Benutzer erstellt",
+        "userRoleChange": "Benutzerrolle geändert",
+        "userActivate": "Benutzer aktiviert",
+        "userDeactivate": "Benutzer deaktiviert",
+        "userPasswordReset": "Benutzerpasswort zurückgesetzt",
+        "authLogin": "Angemeldet",
+        "authLoginFailed": "Anmeldung fehlgeschlagen",
+        "authLogout": "Abgemeldet",
+        "authPasswordChange": "Eigenes Passwort geändert",
+        "authEmailChange": "Eigene E-Mail geändert",
+        "authPvqSetup": "Sicherheitsfrage festgelegt",
+        "authPasswordReset": "Eigenes Passwort zurückgesetzt",
+        "brandUpdate": "Markeneinstellungen aktualisiert",
+        "emailSettingsUpdate": "E-Mail-Einstellungen aktualisiert",
+        "emailSettingsTest": "Test-E-Mail gesendet",
+        "mediaUpload": "Medium hochgeladen",
+        "mediaDelete": "Medium gelöscht",
+        "highlightCreate": "Highlight erstellt",
+        "highlightUpdate": "Highlight aktualisiert",
+        "highlightDelete": "Highlight gelöscht",
+        "socialLinkCreate": "Social-Media-Link hinzugefügt",
+        "socialLinkUpdate": "Social-Media-Link aktualisiert",
+        "socialLinkDelete": "Social-Media-Link entfernt",
+        "notificationDelete": "Benachrichtigung gelöscht",
+        "pushSubscribe": "Push-Benachrichtigungen aktiviert",
+        "pushUnsubscribe": "Push-Benachrichtigungen deaktiviert"
+      }
+    },
     "bookings": {
       "pageTitle": "Buchungen",
       "searchResultsTitle": "Suchergebnisse",
@@ -936,7 +1044,6 @@
       },
       "footer": {
         "title": "Fußzeile",
-        "loading": "Wird geladen…",
         "linksConfigured_one": "{{count}} Social-Media-Link konfiguriert",
         "linksConfigured_other": "{{count}} Social-Media-Links konfiguriert",
         "noLinksSubtitle": "Copyright-Text und Social-Media-Links",
@@ -952,7 +1059,6 @@
       },
       "highlights": {
         "title": "Highlights",
-        "loading": "Wird geladen…",
         "countSubtitle_one": "{{count}} Highlight · Startseite",
         "countSubtitle_other": "{{count}} Highlights · Startseite",
         "noneSubtitle": "Keine konfiguriert · Startseite",
@@ -990,7 +1096,6 @@
         "title": "Kontosicherheit",
         "subtitle": "Verwalten Sie Ihr Passwort und die Identitätsprüfung",
         "emailLabel": "E-Mail",
-        "loading": "Wird geladen…",
         "changeEmailLabel": "E-Mail-Adresse ändern",
         "change": "Ändern",
         "newEmailLabel": "Neue E-Mail",
@@ -1147,7 +1252,6 @@
       },
       "users": {
         "title": "Benutzer",
-        "loading": "Wird geladen…",
         "subtitle_one": "{{count}} Konto · Inhaber können Benutzer verwalten",
         "subtitle_other": "{{count}} Konten · Inhaber können Benutzer verwalten",
         "loadFailed": "Konten konnten nicht geladen werden. Neu laden, um es erneut zu versuchen.",
@@ -1158,8 +1262,6 @@
         "deactivatedMessage": "{{email}} deaktiviert.",
         "reactivatedMessage": "{{email}} reaktiviert.",
         "passwordResetMessage": "Neues Passwort für {{email}} festgelegt. Teilen Sie es außerhalb des Systems mit.",
-        "roleOwner": "Inhaber",
-        "roleManager": "Manager",
         "deactivatedBadge": "Deaktiviert",
         "selfNote": "Das sind Sie. Ändern Sie Ihr eigenes Passwort auf der Konto-Seite.",
         "roleFieldLabel": "Rolle",
