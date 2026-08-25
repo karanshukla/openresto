@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { Pressable, ScrollView, View } from "react-native";
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
 import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
@@ -46,7 +47,7 @@ export default function Select({
   options,
   onSelect,
   selectedValue,
-  placeholder = "Select an option",
+  placeholder,
   icon,
   accessibilityLabel,
 }: {
@@ -58,6 +59,8 @@ export default function Select({
   icon?: IconName;
   accessibilityLabel?: string;
 }) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.select.placeholder");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const triggerRef = useRef<View>(null);
@@ -163,10 +166,10 @@ export default function Select({
         onClosed={release}
         role={LISTBOX_ROLE}
         id={listId}
-        accessibilityLabel={accessibilityLabel ?? placeholder}
+        accessibilityLabel={accessibilityLabel ?? resolvedPlaceholder}
         activeDescendantId={open && activeIndex >= 0 ? optionId(activeIndex) : undefined}
         onKeyDown={handleListKey}
-        closeLabel="Close the options list"
+        closeLabel={t("common.select.closeListLabel")}
         backdropTestID="select-backdrop"
         testID="select-list"
       >
@@ -261,7 +264,7 @@ export default function Select({
               numberOfLines={1}
               style={[styles.triggerText, !selectedOption && { color: colors.muted }]}
             >
-              {selectedOption?.label ?? placeholder}
+              {selectedOption?.label ?? resolvedPlaceholder}
             </ThemedText>
           </View>
         ) : (
@@ -269,7 +272,7 @@ export default function Select({
             numberOfLines={1}
             style={[styles.triggerText, !selectedOption && { color: colors.muted }]}
           >
-            {selectedOption?.label ?? placeholder}
+            {selectedOption?.label ?? resolvedPlaceholder}
           </ThemedText>
         )}
         <Icon name="chevron-down" size="md" color={colors.muted} />

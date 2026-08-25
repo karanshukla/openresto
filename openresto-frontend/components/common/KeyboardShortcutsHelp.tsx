@@ -1,4 +1,5 @@
 import { Modal, Pressable, View, TouchableWithoutFeedback } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { SHORTCUTS_BY_SCOPE, ShortcutScope } from "@/constants/keyboardShortcuts";
@@ -16,6 +17,7 @@ export default function KeyboardShortcutsHelp({
   onClose,
 }: KeyboardShortcutsHelpProps) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const shortcuts = SHORTCUTS_BY_SCOPE[scope];
 
   return (
@@ -25,7 +27,7 @@ export default function KeyboardShortcutsHelp({
         style={styles.backdrop}
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel="Close keyboard shortcuts"
+        accessibilityLabel={t("common.keyboardShortcuts.closeLabel")}
       >
         <TouchableWithoutFeedback>
           <View
@@ -33,10 +35,10 @@ export default function KeyboardShortcutsHelp({
             role="dialog"
             aria-modal
             accessibilityViewIsModal
-            accessibilityLabel="Keyboard shortcuts"
+            accessibilityLabel={t("common.keyboardShortcuts.title")}
           >
             <ThemedText type="h3" accessibilityRole="header">
-              Keyboard shortcuts
+              {t("common.keyboardShortcuts.title")}
             </ThemedText>
             <View style={styles.list}>
               {shortcuts.map((s) => (
@@ -58,11 +60,13 @@ export default function KeyboardShortcutsHelp({
             <Pressable
               testID="keyboard-shortcuts-close"
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel={t("common.actions.close")}
               style={[styles.closeBtn, { borderColor: colors.border }]}
               onPress={onClose}
             >
-              <ThemedText style={[styles.closeBtnText, { color: colors.muted }]}>Close</ThemedText>
+              <ThemedText style={[styles.closeBtnText, { color: colors.muted }]}>
+                {t("common.actions.close")}
+              </ThemedText>
             </Pressable>
           </View>
         </TouchableWithoutFeedback>

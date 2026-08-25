@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Link, usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
@@ -16,30 +17,31 @@ import OverflowMenu from "@/components/layout/OverflowMenu";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { NAV_HEIGHT, styles } from "./Navbar.styles";
 
-const NAV_LINKS = [
-  {
-    label: "Locations",
-    href: "/(user)/locations" as const,
-    match: (p: string) => p === "/locations" || p.startsWith("/locations/"),
-  },
-  {
-    label: "My Bookings",
-    href: "/(user)/lookup" as const,
-    match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
-  },
-];
-
 interface NavbarProps {
   onScrollToTop?: () => void;
   onOpenShortcuts?: () => void;
 }
 
 export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const { brand, colors, primaryColor } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+
+  const NAV_LINKS = [
+    {
+      label: t("common.navbar.locationsLink"),
+      href: "/(user)/locations" as const,
+      match: (p: string) => p === "/locations" || p.startsWith("/locations/"),
+    },
+    {
+      label: t("common.navbar.myBookingsLink"),
+      href: "/(user)/lookup" as const,
+      match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
+    },
+  ];
 
   const isMobile = isMobileWidth(width);
   const isTiny = width < 380;
@@ -69,7 +71,7 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
               onPress={() => router.back()}
               style={[styles.backBtn, isMobile && { marginLeft: -8 }]}
               accessibilityRole="button"
-              accessibilityLabel="Go back"
+              accessibilityLabel={t("common.navbar.goBack")}
               hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
             >
               <Icon name="chevron-back" size={22} color={primaryColor} />
@@ -81,7 +83,7 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
               style={styles.brand}
               onPress={onScrollToTop}
               accessibilityRole="button"
-              accessibilityLabel={`${brand.appName}, back to top`}
+              accessibilityLabel={t("common.navbar.brandBackToTop", { appName: brand.appName })}
             >
               <ThemedText
                 style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}
@@ -95,7 +97,7 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
               <Pressable
                 style={styles.brand}
                 accessibilityRole="link"
-                accessibilityLabel={`${brand.appName}, go to home`}
+                accessibilityLabel={t("common.navbar.brandHome", { appName: brand.appName })}
               >
                 <ThemedText
                   style={[styles.brandText, { color: primaryColor }, isTiny && { fontSize: 18 }]}

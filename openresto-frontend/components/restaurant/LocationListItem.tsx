@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GestureResponderEvent, Linking, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { RestaurantDto } from "@/api/restaurants";
@@ -63,6 +64,7 @@ export default function LocationListItem({
   onAvailabilityChange?: (id: number, availableSlots: number | null) => void;
 }) {
   const { colors, isDark, primaryColor } = useAppTheme();
+  const { t } = useTranslation();
   const mutedColor = colors.muted;
   const borderColor = colors.border;
 
@@ -131,8 +133,8 @@ export default function LocationListItem({
     accessibilityRole: "button" as const,
     accessibilityState: { expanded },
     accessibilityLabel: expanded
-      ? `Hide details for ${restaurant.name}`
-      : `Show details for ${restaurant.name}`,
+      ? t("restaurant.locationListItem.hideDetailsFor", { name: restaurant.name })
+      : t("restaurant.locationListItem.showDetailsFor", { name: restaurant.name }),
   };
 
   const walkInBadge = walkInBadgeText ? (
@@ -148,14 +150,20 @@ export default function LocationListItem({
       onPress={toggleExpanded}
       accessibilityRole="button"
       accessibilityState={{ expanded }}
-      accessibilityLabel={expanded ? "Hide details" : "Show details"}
+      accessibilityLabel={
+        expanded
+          ? t("restaurant.locationListItem.hideDetails")
+          : t("restaurant.locationListItem.showDetails")
+      }
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
         cardStyles.viewBtn,
         styles.detailsBtn,
         (hovered || pressed) && { backgroundColor: surface2 },
       ]}
     >
-      <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>Details</ThemedText>
+      <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
+        {t("restaurant.locationListItem.detailsLabel")}
+      </ThemedText>
       <Icon name={expanded ? "chevron-up" : "chevron-down"} size={13} color={primaryColor} />
     </Pressable>
   );
@@ -167,14 +175,14 @@ export default function LocationListItem({
     <Button
       testID={`location-book-now-${restaurant.id}`}
       size="sm"
-      accessibilityLabel={`Book a table at ${restaurant.name}`}
+      accessibilityLabel={t("restaurant.locationListItem.bookTableAt", { name: restaurant.name })}
       onPress={(event) => {
         // Button fires its own haptic; this only has to keep the press off the card body.
         event?.stopPropagation?.();
         onBook(restaurant, usableSlots[0]?.time ?? dayHours.open);
       }}
     >
-      Book now
+      {t("restaurant.locationListItem.bookNow")}
     </Button>
   ) : null;
 
@@ -200,7 +208,7 @@ export default function LocationListItem({
       <View style={styles.walkInRow}>
         <Icon name="walk-outline" size={15} color={mutedColor} />
         <ThemedText style={[styles.walkInText, { color: mutedColor }]}>
-          No reservations required, first come first served
+          {t("restaurant.locationListItem.noReservationsFirstCome")}
         </ThemedText>
       </View>
     ) : null;
@@ -240,21 +248,31 @@ export default function LocationListItem({
         Linking.openURL(restaurant.menuUrl!);
       }}
       accessibilityRole="link"
-      accessibilityLabel="View menu"
+      accessibilityLabel={t("restaurant.locationListItem.viewMenu")}
     >
       <Icon name="document-text-outline" size="xs" color={primaryColor} />
       <ThemedText style={[styles.metaText, styles.metaLink, { color: primaryColor }]}>
-        Menu
+        {t("restaurant.locationListItem.menuLabel")}
       </ThemedText>
     </Pressable>
   ) : null;
 
-  const dayLabel = isToday ? "today" : isoDayShortName(selectedIsoDay);
-  const closedLabel = `Closed ${dayLabel}`;
+  const dayLabel = isToday
+    ? t("restaurant.locationListItem.today")
+    : isoDayShortName(selectedIsoDay);
+  const closedLabel = t("restaurant.locationListItem.closedLabel", { day: dayLabel });
   const hoursLabel = !closedOnDate
-    ? `${dayHours.open} – ${dayHours.close} ${dayLabel}`
+    ? t("restaurant.locationListItem.hoursRange", {
+        open: dayHours.open,
+        close: dayHours.close,
+        day: dayLabel,
+      })
     : nextOpening
-      ? `${closedLabel} · opens ${isoDayShortName(nextOpening.isoDay)} ${nextOpening.open}`
+      ? t("restaurant.locationListItem.closedOpensNext", {
+          closedLabel,
+          day: isoDayShortName(nextOpening.isoDay),
+          time: nextOpening.open,
+        })
       : closedLabel;
 
   const hoursMeta = (

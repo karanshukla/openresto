@@ -1,6 +1,8 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { ThemedText } from "@/components/themed-text";
-import Select from "@/components/common/Select";
+import Select, { type SelectOption } from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fmtDateString } from "@/utils/formatters";
@@ -13,29 +15,30 @@ import { styles } from "./LocationsFilterBar.styles";
  */
 export type MealWindow = "Lunch" | "Dinner" | "All";
 
-const MEAL_OPTIONS = [
-  { label: "Lunch", value: "Lunch" },
-  { label: "Dinner", value: "Dinner" },
-  { label: "All times", value: "All" },
-];
+function mealOptions(compact: boolean): SelectOption[] {
+  const all = compact
+    ? i18n.t("restaurant.filterBar.all")
+    : i18n.t("restaurant.filterBar.allTimes");
+  return [
+    { label: i18n.t("restaurant.filterBar.lunch"), value: "Lunch" },
+    { label: i18n.t("restaurant.filterBar.dinner"), value: "Dinner" },
+    { label: all, value: "All" },
+  ];
+}
 
-/** "All times" is two words the compact bar can't spare the room for. */
-const MEAL_OPTIONS_COMPACT = MEAL_OPTIONS.map((o) =>
-  o.value === "All" ? { ...o, label: "All" } : o
-);
-
-const SEAT_OPTIONS = [...Array(10).keys()].map((i) => ({
-  label: `${i + 1} ${i === 0 ? "guest" : "guests"}`,
-  value: i + 1,
-}));
-
-/** Compact seat labels for the narrow mobile bar, where "2 guests" doesn't fit. */
-const SEAT_OPTIONS_COMPACT = SEAT_OPTIONS.map((o) => ({ ...o, label: String(o.value) }));
+function seatOptions(compact: boolean): SelectOption[] {
+  return [...Array(10).keys()].map((i) => ({
+    label: compact ? String(i + 1) : i18n.t("restaurant.filterBar.guestCount", { count: i + 1 }),
+    value: i + 1,
+  }));
+}
 
 export function formatBarDate(date: string, today: string, compact: boolean): string {
   const isToday = date === today;
-  if (compact) return isToday ? "Today" : shortDate(date);
-  return isToday ? `Today, ${shortDate(date)}` : shortDate(date);
+  if (compact) return isToday ? i18n.t("restaurant.filterBar.today") : shortDate(date);
+  return isToday
+    ? i18n.t("restaurant.filterBar.todayDate", { date: shortDate(date) })
+    : shortDate(date);
 }
 
 function shortDate(date: string): string {
@@ -70,6 +73,7 @@ export default function LocationsFilterBar({
   raised?: boolean;
 }) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -87,8 +91,8 @@ export default function LocationsFilterBar({
       >
         <Select
           icon="people-outline"
-          accessibilityLabel="Number of guests"
-          options={compact ? SEAT_OPTIONS_COMPACT : SEAT_OPTIONS}
+          accessibilityLabel={t("restaurant.filterBar.numberOfGuests")}
+          options={seatOptions(!!compact)}
           selectedValue={seats}
           onSelect={(v) => onSeatsChange(v as number)}
         />
@@ -106,8 +110,8 @@ export default function LocationsFilterBar({
       <View style={compact ? styles.controlCompactWide : styles.controlMeal}>
         <Select
           icon={compact ? undefined : "time-outline"}
-          accessibilityLabel="Time of day"
-          options={compact ? MEAL_OPTIONS_COMPACT : MEAL_OPTIONS}
+          accessibilityLabel={t("restaurant.filterBar.timeOfDay")}
+          options={mealOptions(!!compact)}
           selectedValue={meal}
           onSelect={(v) => onMealChange(v as MealWindow)}
         />

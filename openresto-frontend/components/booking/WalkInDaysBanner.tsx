@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { WalkInSource, walkInDaysLabel } from "@/utils/walkIn";
@@ -11,6 +12,7 @@ import { Icon } from "@/components/common/Icon";
  */
 export default function WalkInDaysBanner({ restaurant }: { restaurant: WalkInSource }) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const daysLabel = walkInDaysLabel(restaurant);
   if (!daysLabel) return null;
 
@@ -21,7 +23,7 @@ export default function WalkInDaysBanner({ restaurant }: { restaurant: WalkInSou
     >
       <Icon name="information-circle-outline" size="md" color={colors.muted} />
       <ThemedText style={[styles.text, { color: colors.muted }]}>
-        Walk-ins only on {daysLabel} - online booking isn&apos;t available on those days.
+        {t("booking.walkIn.daysBanner", { days: daysLabel })}
       </ThemedText>
     </View>
   );

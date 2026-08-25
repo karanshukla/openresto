@@ -16,6 +16,7 @@ import { getUnreadCount } from "@/api/notifications";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import Button from "@/components/common/Button";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { styles } from "./AdminSidebar.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
@@ -318,6 +319,10 @@ export default function AdminSidebar() {
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       <View style={styles.footer}>
+        <View style={styles.languageSwitcher}>
+          <LanguageSwitcher />
+        </View>
+
         {user && (
           <View style={styles.identity} testID="sidebar-identity">
             <ThemedText style={styles.identityName} numberOfLines={1}>

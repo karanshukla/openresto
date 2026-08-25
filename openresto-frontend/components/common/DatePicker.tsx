@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Modal, Pressable, FlatList, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { LISTBOX_ROLE } from "@/utils/webProps";
@@ -66,6 +67,7 @@ export default function DatePicker({
   triggerLabel?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const placeholderColor = colors.muted;
@@ -99,7 +101,7 @@ export default function DatePicker({
           style={styles.backdrop}
           onPress={/* istanbul ignore next */ () => setModalVisible(false)}
           accessibilityRole="button"
-          accessibilityLabel="Close the date picker"
+          accessibilityLabel={t("common.datePicker.closeButtonLabel")}
         >
           {/* The card swallows its own presses. Without this, anything inside it that does
               not consume a press — the title, or a day that can't be picked — reaches the
@@ -111,10 +113,10 @@ export default function DatePicker({
               role="dialog"
               aria-modal
               accessibilityViewIsModal
-              accessibilityLabel="Select a date"
+              accessibilityLabel={t("common.datePicker.selectDate")}
             >
               <ThemedText type="bodyBold" style={styles.modalTitle} accessibilityRole="header">
-                Select a date
+                {t("common.datePicker.selectDate")}
               </ThemedText>
               <FlatList
                 data={options}
@@ -195,7 +197,11 @@ export default function DatePicker({
         ]}
         onPress={() => setModalVisible(true)}
         accessibilityRole="button"
-        accessibilityLabel={selected ? `Change date, currently ${selected.label}` : "Select a date"}
+        accessibilityLabel={
+          selected
+            ? t("common.datePicker.changeDate", { date: selected.label })
+            : t("common.datePicker.selectDate")
+        }
         accessibilityState={{ expanded: modalVisible }}
       >
         {icon ? (
@@ -205,7 +211,7 @@ export default function DatePicker({
               numberOfLines={1}
               style={[styles.triggerText, !selected && { color: placeholderColor }]}
             >
-              {triggerLabel ?? selected?.label ?? "Select a date"}
+              {triggerLabel ?? selected?.label ?? t("common.datePicker.selectDate")}
             </ThemedText>
           </View>
         ) : (
@@ -213,7 +219,7 @@ export default function DatePicker({
             numberOfLines={1}
             style={[styles.triggerText, !selected && { color: placeholderColor }]}
           >
-            {triggerLabel ?? selected?.label ?? "Select a date"}
+            {triggerLabel ?? selected?.label ?? t("common.datePicker.selectDate")}
           </ThemedText>
         )}
         <Icon name="chevron-down" size="md" color={placeholderColor} />

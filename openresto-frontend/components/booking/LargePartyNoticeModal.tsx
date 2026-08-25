@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { ModalCard } from "@/components/common/ModalCard";
 import Button from "@/components/common/Button";
@@ -31,6 +32,7 @@ export default function LargePartyNoticeModal({
   restaurant,
   onClose,
 }: LargePartyNoticeModalProps) {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
   const brand = useBrand();
   const [contactLinks, setContactLinks] = useState<SocialLinkDto[] | null>(null);
@@ -51,10 +53,14 @@ export default function LargePartyNoticeModal({
   }, [visible, hasTypedContact]);
 
   return (
-    <ModalCard visible={visible} title="Large party" onDismiss={onClose} dismissLabel="Close">
+    <ModalCard
+      visible={visible}
+      title={t("booking.largeParty.title")}
+      onDismiss={onClose}
+      dismissLabel={t("common.actions.close")}
+    >
       <ThemedText style={[styles.message, { color: colors.muted }]}>
-        Our largest table seats {maxCapacity}, so a booking for a bigger group needs to be arranged
-        directly. Please get in touch and we&apos;ll happily sort something out.
+        {t("booking.largeParty.modalMessage", { count: maxCapacity })}
       </ThemedText>
 
       {hasTypedContact ? (
@@ -64,7 +70,7 @@ export default function LargePartyNoticeModal({
               style={[styles.contactBtn, { borderColor: colors.border }]}
               onPress={() => Linking.openURL(telHref(contact.phone!))}
               accessibilityRole="link"
-              accessibilityLabel={`Call ${contact.phone}`}
+              accessibilityLabel={t("booking.largeParty.callLabel", { phone: contact.phone })}
               hitSlop={6}
             >
               <Icon name="call-outline" size="md" color={primaryColor} />
@@ -78,7 +84,7 @@ export default function LargePartyNoticeModal({
               style={[styles.contactBtn, { borderColor: colors.border }]}
               onPress={() => Linking.openURL(mailtoHref(contact.email!))}
               accessibilityRole="link"
-              accessibilityLabel={`Email ${contact.email}`}
+              accessibilityLabel={t("booking.largeParty.emailLabel", { email: contact.email })}
               hitSlop={6}
             >
               <Icon name="mail-outline" size="md" color={primaryColor} />
@@ -110,13 +116,13 @@ export default function LargePartyNoticeModal({
           </View>
         ) : (
           <ThemedText style={[styles.noContacts, { color: colors.muted }]}>
-            No contact details are listed yet. Please reach out to us directly.
+            {t("booking.largeParty.noContactsMessage")}
           </ThemedText>
         ))
       )}
 
       <Button size="md" onPress={onClose}>
-        Got it
+        {t("booking.largeParty.gotItLabel")}
       </Button>
     </ModalCard>
   );

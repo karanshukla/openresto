@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { Platform, Text } from "react-native";
 import { LocaleProvider, useLocale } from "@/context/LocaleContext";
 import i18n from "@/i18n";
@@ -26,8 +26,15 @@ jest.mock("@/utils/locale", () => ({
 }));
 
 function TestConsumer() {
-  const { locale } = useLocale();
-  return <Text testID="locale">{locale}</Text>;
+  const { locale, setLocale } = useLocale();
+  return (
+    <>
+      <Text testID="locale">{locale}</Text>
+      <Text testID="switch-to-fr" onPress={() => setLocale("fr")}>
+        switch
+      </Text>
+    </>
+  );
 }
 
 describe("LocaleContext", () => {
@@ -136,5 +143,23 @@ describe("LocaleContext", () => {
   it("useLocale defaults to DEFAULT_LOCALE outside a provider", () => {
     render(<TestConsumer />);
     expect(screen.getByTestId("locale").props.children).toBe("en");
+  });
+
+  it("setLocale updates the context live, persists the pick, and re-applies i18next/formatters", async () => {
+    render(
+      <LocaleProvider>
+        <TestConsumer />
+      </LocaleProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("locale").props.children).toBe("en"));
+    jest.clearAllMocks();
+
+    fireEvent.press(screen.getByTestId("switch-to-fr"));
+
+    expect(screen.getByTestId("locale").props.children).toBe("fr");
+    expect(localStorage.getItem("openresto.locale")).toBe("fr");
+    expect(i18n.changeLanguage).toHaveBeenCalledWith("fr");
+    expect(setActiveLocale).toHaveBeenCalledWith("fr");
+    expect(document.documentElement.lang).toBe("fr");
   });
 });

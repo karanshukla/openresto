@@ -1,7 +1,10 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { BookingDto } from "@/api/bookings";
 import { fmtDate, fmtTime, fmtYear } from "@/utils/formatters";
+import i18n from "@/i18n";
 import { styles } from "./BookingFactsBand.styles";
 
 interface BookingFactsBandProps {
@@ -22,24 +25,38 @@ const formatTime = (value: string): string | undefined => {
   return fmtTime(d);
 };
 
-export function buildFacts(booking: BookingDto, compact: boolean): Fact[] {
+/**
+ * `t` defaults to the global i18next instance's own translator so this stays callable outside
+ * a React tree (as the component below does not need to, but existing tests call it directly).
+ */
+export function buildFacts(
+  booking: BookingDto,
+  compact: boolean,
+  t: TFunction = i18n.t.bind(i18n)
+): Fact[] {
   const date = new Date(booking.date);
   const day = fmtDate(date);
   const time = formatTime(booking.date) ?? "";
   const until = booking.endTime ? formatTime(booking.endTime) : undefined;
   const party = {
-    key: "Guests",
+    key: t("booking.factsBand.guestsKey"),
     value: String(booking.seats),
-    sub: booking.tableSeats ? `Table for ${booking.tableSeats}` : undefined,
+    sub: booking.tableSeats
+      ? t("booking.factsBand.tableFor", { count: booking.tableSeats })
+      : undefined,
   };
 
   if (compact) {
-    return [{ key: "Date & time", value: day, sub: time }, party];
+    return [{ key: t("booking.factsBand.dateTimeKey"), value: day, sub: time }, party];
   }
 
   return [
-    { key: "Date", value: day, sub: fmtYear(date) },
-    { key: "Time", value: time, sub: until ? `until ${until}` : undefined },
+    { key: t("booking.factsBand.dateKey"), value: day, sub: fmtYear(date) },
+    {
+      key: t("booking.factsBand.timeKey"),
+      value: time,
+      sub: until ? t("booking.factsBand.until", { time: until }) : undefined,
+    },
     party,
   ];
 }
@@ -56,7 +73,8 @@ export default function BookingFactsBand({
   borderColor,
   negated = false,
 }: BookingFactsBandProps) {
-  const facts = buildFacts(booking, compact);
+  const { t } = useTranslation();
+  const facts = buildFacts(booking, compact, t);
 
   return (
     <View style={styles.band}>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LayoutChangeEvent, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H } from "@/constants/breakpoints";
 import { FAB_SIZE, styles } from "./ScrollToTopFab.styles";
@@ -38,6 +39,7 @@ interface Props {
 
 export default function ScrollToTopFab({ visible, onPress, lift = 0 }: Props) {
   const { primaryColor } = useAppTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   // The lane spans whatever box the FAB was mounted into — the page on most screens, a
   // single column on Locations once its booking drawer takes the other one — so the FAB
@@ -66,7 +68,7 @@ export default function ScrollToTopFab({ visible, onPress, lift = 0 }: Props) {
       <Pressable
         style={[styles.fab, { backgroundColor: primaryColor }]}
         onPress={onPress}
-        accessibilityLabel="Scroll to top"
+        accessibilityLabel={t("common.actions.scrollToTop")}
         accessibilityRole="button"
       >
         <Icon name="chevron-up" size={22} color="#fff" />

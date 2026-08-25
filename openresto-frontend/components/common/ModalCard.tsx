@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
@@ -29,10 +30,11 @@ export function ModalCard({
   onDismiss,
   children,
   alert = false,
-  dismissLabel = "Dismiss",
+  dismissLabel,
   testID,
 }: ModalCardProps) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const cardRef = useRef<View>(null);
   useDialogFocus(visible, cardRef);
 
@@ -43,7 +45,7 @@ export function ModalCard({
           style={StyleSheet.absoluteFill}
           onPress={onDismiss}
           accessibilityRole="button"
-          accessibilityLabel={dismissLabel}
+          accessibilityLabel={dismissLabel ?? t("common.modalCard.defaultDismissLabel")}
         />
         <View
           ref={cardRef}

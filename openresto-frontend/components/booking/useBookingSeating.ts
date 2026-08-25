@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RestaurantDto, TableDto } from "@/api/restaurants";
 import type { TimeSlotDto } from "@/api/availability";
 import { groupDropdownLabel, groupedTableIds } from "@/utils/tableGroups";
@@ -32,6 +33,7 @@ export interface UseBookingSeatingArgs {
  * flowing into `useTableHold`, which releases or replaces it — never by this hook reaching back.
  */
 export function useBookingSeating({ restaurant, seats, currentSlot }: UseBookingSeatingArgs) {
+  const { t } = useTranslation();
   const [sectionId, setSectionId] = useState<number>(ANY_SECTION_ID);
   const [tableId, setTableId] = useState<number | undefined>();
   /** Mutually exclusive with `tableId` in the submit payload: a booking reserves one or the other. */
@@ -50,7 +52,7 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
   const partyTooLarge = maxTableCapacity > 0 && seats > maxTableCapacity;
 
   const sectionOptions = [
-    { label: "Any section", value: ANY_SECTION_ID },
+    { label: t("booking.seating.anySectionLabel"), value: ANY_SECTION_ID },
     ...restaurant.sections.map((s) => ({ label: s.name, value: s.id })),
   ];
   const isAutoAssign = sectionId === ANY_SECTION_ID;
@@ -138,7 +140,7 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
 
   const tableOptions = [
     ...eligibleTables.map((table) => ({
-      label: `${table.name ?? `Table ${table.id}`} (${table.seats} seats)`,
+      label: `${table.name ?? t("booking.seating.tableFallbackName", { id: table.id })} ${t("booking.seating.seatsSuffix", { count: table.seats })}`,
       value: table.id,
     })),
     ...eligibleGroups.map((g) => ({ label: groupDropdownLabel(g), value: groupSelectValue(g.id) })),

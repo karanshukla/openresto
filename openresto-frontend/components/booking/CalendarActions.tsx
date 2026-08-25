@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
@@ -33,11 +34,14 @@ interface CalendarActionsProps {
  */
 export default function CalendarActions(props: CalendarActionsProps) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const { googleUrl, outlookUrl, downloadIcs } = buildCalendarUrls(props);
 
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.title, { color: colors.muted }]}>ADD TO CALENDAR</ThemedText>
+      <ThemedText style={[styles.title, { color: colors.muted }]}>
+        {t("booking.calendar.heading")}
+      </ThemedText>
       <ButtonRow align="start">
         <Button
           testID="calendar-google-btn"
@@ -66,7 +70,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
           size="sm"
           icon="download-outline"
           onPress={downloadIcs}
-          accessibilityLabel="Download .ics for Apple Calendar, Thunderbird and others"
+          accessibilityLabel={t("booking.calendar.icsA11y")}
         >
           .ics
         </Button>

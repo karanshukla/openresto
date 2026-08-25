@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import type { TimeSlotDto } from "@/api/availability";
 import { styles } from "./LocationListItem.styles";
@@ -37,6 +38,7 @@ export function LocationSlotRow({
   surface2,
   onBook,
 }: LocationSlotRowProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <ActivityIndicator
@@ -54,7 +56,7 @@ export function LocationSlotRow({
   if (shownSlots.length === 0) {
     return (
       <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
-        No times available, try another date or party size
+        {t("restaurant.slotRow.noTimesAvailable")}
       </ThemedText>
     );
   }
@@ -71,7 +73,10 @@ export function LocationSlotRow({
           key={s.time}
           onPress={() => book(s.time)}
           accessibilityRole="button"
-          accessibilityLabel={`Book ${restaurantName} at ${s.time}`}
+          accessibilityLabel={t("restaurant.slotRow.bookAt", {
+            name: restaurantName,
+            time: s.time,
+          })}
           style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
             styles.slot,
             compact && styles.slotCompact,
@@ -89,7 +94,7 @@ export function LocationSlotRow({
           <Pressable
             onPress={() => book(shownSlots[0].time)}
             accessibilityRole="button"
-            accessibilityLabel={`Show all times for ${restaurantName}`}
+            accessibilityLabel={t("restaurant.slotRow.showAllTimesFor", { name: restaurantName })}
             style={[styles.slot, styles.slotMoreCompact, { borderColor }]}
           >
             <ThemedText style={[styles.slotMoreText, { color: primaryColor }]}>
@@ -100,11 +105,11 @@ export function LocationSlotRow({
           <Pressable
             onPress={() => book(shownSlots[0].time)}
             accessibilityRole="button"
-            accessibilityLabel={`Show all times for ${restaurantName}`}
+            accessibilityLabel={t("restaurant.slotRow.showAllTimesFor", { name: restaurantName })}
             hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}
           >
             <ThemedText style={[styles.slotMoreInline, { color: mutedColor }]}>
-              +{overflowCount} more
+              {t("restaurant.slotRow.moreLabel", { count: overflowCount })}
             </ThemedText>
           </Pressable>
         ))}

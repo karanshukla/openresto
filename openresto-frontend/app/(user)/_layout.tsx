@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Platform, View } from "react-native";
 import { Slot, Stack, useRouter, useSegments } from "expo-router";
+import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
 import RouteTransition from "@/components/layout/RouteTransition";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -9,6 +10,7 @@ import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
 import { useBrand } from "@/context/BrandContext";
 
 export default function UserLayout() {
+  const { t } = useTranslation();
   const router = useRouter();
   const brand = useBrand();
   const segments = useSegments();
@@ -52,15 +54,24 @@ export default function UserLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
-      <Stack.Screen name="locations/index" options={{ title: "Locations" }} />
-      <Stack.Screen name="locations/[id]" options={{ title: "Locations" }} />
-      <Stack.Screen name="restaurant/[id]" options={{ title: "Restaurant" }} />
-      <Stack.Screen name="book" options={{ title: "Book a Table" }} />
+      <Stack.Screen
+        name="locations/index"
+        options={{ title: t("restaurant.locationsScreen.routeTitle") }}
+      />
+      <Stack.Screen
+        name="locations/[id]"
+        options={{ title: t("restaurant.locationsScreen.routeTitle") }}
+      />
+      <Stack.Screen
+        name="restaurant/[id]"
+        options={{ title: t("restaurant.details.routeTitle") }}
+      />
+      <Stack.Screen name="book" options={{ title: t("booking.form.routeTitle") }} />
       <Stack.Screen
         name="booking-confirmation/[bookingRef]"
-        options={{ title: "Booking Confirmed", headerBackVisible: false }}
+        options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
       />
-      <Stack.Screen name="lookup" options={{ title: "Find My Booking" }} />
+      <Stack.Screen name="lookup" options={{ title: t("lookup.routeTitle") }} />
     </Stack>
   );
 }

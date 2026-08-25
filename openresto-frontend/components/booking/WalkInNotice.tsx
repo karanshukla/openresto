@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
@@ -19,18 +20,20 @@ export default function WalkInNotice({
   daysLabel?: string;
 }) {
   const { colors, primaryColor } = useAppTheme();
+  const { t } = useTranslation();
 
   const { r, g, b } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${r},${g},${b},0.10)`;
   const accentBorder = `rgba(${r},${g},${b},0.28)`;
 
-  const title = scope === "location" ? "Walk-ins only" : "Walk-ins only on this day";
+  const title =
+    scope === "location" ? t("booking.walkIn.locationTitle") : t("booking.walkIn.dayTitle");
   const body =
     scope === "location"
-      ? "This location doesn't take online bookings. Tables are first come, first served. Just drop by during opening hours."
+      ? t("booking.walkIn.locationBody")
       : daysLabel
-        ? `This location doesn't take online bookings on ${daysLabel}. Pick another day, or simply come in - walk-ins are always welcome.`
-        : "Online booking isn't available for the selected date. Pick another day, or simply come in. Walk-ins are always welcome.";
+        ? t("booking.walkIn.dayBodyWithDays", { days: daysLabel })
+        : t("booking.walkIn.dayBodyGeneric");
 
   return (
     <View

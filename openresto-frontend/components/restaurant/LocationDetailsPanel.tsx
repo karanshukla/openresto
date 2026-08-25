@@ -1,4 +1,5 @@
 import { Linking, Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { LinkedText } from "@/components/common/LinkedText";
@@ -39,6 +40,7 @@ function MapLink({
   primaryColor: string;
   surface2: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
@@ -50,7 +52,7 @@ function MapLink({
       ]}
       onPress={() => Linking.openURL(url)}
       accessibilityRole="link"
-      accessibilityLabel={`Open in ${provider} Maps`}
+      accessibilityLabel={t("restaurant.details.openInProviderMaps", { provider })}
     >
       <Icon name="navigate-outline" size="xs" color={mutedColor} />
       <ThemedText style={[styles.mapLinkText, { color: textColor }]}>{provider}</ThemedText>
@@ -71,6 +73,7 @@ export function LocationDetailsPanel({
   accentBorder,
 }: LocationDetailsPanelProps) {
   const { colors } = useAppTheme();
+  const { t } = useTranslation();
   const mapLinkTheme = { textColor: colors.text, mutedColor, borderColor, primaryColor, surface2 };
 
   return (
@@ -90,11 +93,11 @@ export function LocationDetailsPanel({
           ]}
           onPress={() => Linking.openURL(restaurant.menuUrl!)}
           accessibilityRole="link"
-          accessibilityLabel="Open menu"
+          accessibilityLabel={t("restaurant.details.openMenu")}
         >
           <Icon name="document-text-outline" size="md" color={primaryColor} />
           <ThemedText style={[styles.menuButtonText, { color: primaryColor }]}>
-            View menu
+            {t("restaurant.details.viewMenu")}
           </ThemedText>
           <Icon name="open-outline" size={13} color={mutedColor} style={styles.menuButtonEnd} />
         </Pressable>
@@ -103,7 +106,7 @@ export function LocationDetailsPanel({
       {restaurant.address && (
         <View style={styles.subSection}>
           <ThemedText type="defaultSemiBold" style={styles.subHeading}>
-            Directions
+            {t("restaurant.details.directionsHeading")}
           </ThemedText>
           <View style={styles.mapLinks}>
             <MapLink
@@ -122,7 +125,7 @@ export function LocationDetailsPanel({
 
       <View style={styles.subSection}>
         <ThemedText type="defaultSemiBold" style={styles.subHeading}>
-          Opening hours
+          {t("restaurant.details.openingHoursHeading")}
         </ThemedText>
         <OpeningHoursTable restaurant={restaurant} />
       </View>

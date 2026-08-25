@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
@@ -45,6 +46,7 @@ export default function BookingResultPanel({
   onCancelPress,
 }: BookingResultPanelProps) {
   const { colors, primaryColor, isDark } = useAppTheme();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -55,12 +57,12 @@ export default function BookingResultPanel({
   // Cancelled and past override justBooked the same way they override "Booking Found" —
   // a booking that's already cancelled or over doesn't get a celebratory status.
   const statusLabel = booking.isCancelled
-    ? "Booking Cancelled"
+    ? t("booking.result.statusCancelled")
     : bookingIsPast
-      ? "Booking Has Passed"
+      ? t("booking.result.statusPassed")
       : justBooked
-        ? "Booking Confirmed"
-        : "Booking Found";
+        ? t("booking.result.statusConfirmed")
+        : t("booking.result.statusFound");
   const statusIcon = booking.isCancelled
     ? "close-circle"
     : bookingIsPast
@@ -141,7 +143,9 @@ export default function BookingResultPanel({
           {divider}
           <View style={[styles.refStrip, { backgroundColor: colors.surfaceAlt }]}>
             <View style={styles.refTextGroup}>
-              <ThemedText style={[styles.refLabel, { color: colors.muted }]}>Reference</ThemedText>
+              <ThemedText style={[styles.refLabel, { color: colors.muted }]}>
+                {t("booking.result.referenceLabel")}
+              </ThemedText>
               <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
             </View>
             {Platform.OS === "web" && (
@@ -151,9 +155,13 @@ export default function BookingResultPanel({
                 tone="neutral"
                 icon={copied ? "checkmark" : "copy-outline"}
                 onPress={handleCopy}
-                accessibilityLabel={copied ? "Booking reference copied" : "Copy booking reference"}
+                accessibilityLabel={
+                  copied
+                    ? t("booking.result.referenceCopiedLabel")
+                    : t("booking.result.copyReferenceLabel")
+                }
               >
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("booking.result.copiedButton") : t("booking.result.copyButton")}
               </Button>
             )}
           </View>
@@ -176,7 +184,7 @@ export default function BookingResultPanel({
             endTime={booking.endTime}
             seats={booking.seats}
             specialRequests={booking.specialRequests}
-            restaurantName={restaurant?.name ?? "Restaurant"}
+            restaurantName={restaurant?.name ?? t("booking.result.unnamedRestaurant")}
             restaurantAddress={restaurant?.address ?? ""}
             sectionName={booking.sectionName}
             tableName={booking.tableName}
@@ -192,7 +200,7 @@ export default function BookingResultPanel({
           {Platform.OS === "web" && mapCoords && (
             <View style={styles.mapSection}>
               {React.createElement("iframe", {
-                title: `Map of ${restaurant.name}`,
+                title: t("booking.result.mapTitle", { name: restaurant.name }),
                 src: `https://www.openstreetmap.org/export/embed.html?bbox=${mapCoords.lng - 0.005},${mapCoords.lat - 0.005},${mapCoords.lng + 0.005},${mapCoords.lat + 0.005}&layer=mapnik&marker=${mapCoords.lat},${mapCoords.lng}`,
                 style: mapFrameStyle,
                 loading: "lazy",
@@ -218,19 +226,17 @@ export default function BookingResultPanel({
               icon="trash-outline"
               loading={cancelling}
               onPress={onCancelPress}
-              accessibilityLabel="Cancel this booking"
+              accessibilityLabel={t("booking.result.cancelActionLabel")}
             >
-              Cancel This Booking
+              {t("booking.result.cancelButton")}
             </Button>
             <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-              This booking cannot be modified. However, feel free to cancel and rebook if need be.
+              {t("booking.result.cancelHint")}
             </ThemedText>
           </>
         ) : (
           <ThemedText style={[styles.cancelHint, { color: colors.muted }]}>
-            {booking.isCancelled
-              ? "This booking has been cancelled."
-              : "This booking has already passed and can no longer be cancelled."}
+            {booking.isCancelled ? t("booking.result.cancelledHint") : t("booking.result.pastHint")}
           </ThemedText>
         )}
       </View>

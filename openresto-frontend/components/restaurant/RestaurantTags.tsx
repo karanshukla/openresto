@@ -1,4 +1,5 @@
 import { View, type StyleProp, type ViewStyle } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
@@ -10,6 +11,7 @@ const MAX_VISIBLE_TAGS = 3;
 
 export function RestaurantTags({ tags, style }: { tags: string[]; style?: StyleProp<ViewStyle> }) {
   const { isDark, primaryColor } = useAppTheme();
+  const { t } = useTranslation();
   if (tags.length === 0) return null;
 
   const { r, g, b } = hexToRgb(primaryColor);
@@ -27,9 +29,10 @@ export function RestaurantTags({ tags, style }: { tags: string[]; style?: StyleP
       {hidden > 0 && (
         <View
           style={[styles.tag, { backgroundColor: accentSoft }]}
-          accessibilityLabel={`${hidden} more ${hidden === 1 ? "tag" : "tags"}: ${tags
-            .slice(MAX_VISIBLE_TAGS)
-            .join(", ")}`}
+          accessibilityLabel={t("restaurant.tags.moreTagsLabel", {
+            count: hidden,
+            list: tags.slice(MAX_VISIBLE_TAGS).join(", "),
+          })}
         >
           <ThemedText style={[styles.tagText, { color: primaryColor }]}>{`+${hidden}`}</ThemedText>
         </View>

@@ -1,4 +1,5 @@
 import { ActivityIndicator, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import Input from "../common/Input";
 import Select, { type SelectOption } from "../common/Select";
 import DatePicker from "../common/DatePicker";
@@ -32,11 +33,12 @@ export function GuestsField({
   options: SelectOption[];
   onChange: (seats: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Field label={label}>
       <Select
         icon="people-outline"
-        accessibilityLabel="Number of guests"
+        accessibilityLabel={t("booking.form.guestsSelectLabel")}
         selectedValue={seats}
         onSelect={(v) => onChange(v as number)}
         options={options}
@@ -58,8 +60,9 @@ export function DateField({
   walkInDays?: number[];
   onChange: (date: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Field label="Date">
+    <Field label={t("booking.form.dateLabel")}>
       {/* Customer flow: future-dates-only is intentional. Do NOT pass allowPast
           here — only the admin New Booking modal opts in to back-dating (#160). */}
       <DatePicker
@@ -67,7 +70,7 @@ export function DateField({
         onSelect={onChange}
         openDays={openDays}
         unavailableDays={walkInDays}
-        unavailableReason="Walk-ins only"
+        unavailableReason={t("booking.form.walkInsOnlyReason")}
       />
     </Field>
   );
@@ -102,14 +105,15 @@ export function SectionField({
   options: SelectOption[];
   onChange: (sectionId: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Field label="Section">
+    <Field label={t("booking.form.sectionLabel")}>
       <Select
-        accessibilityLabel="Section"
+        accessibilityLabel={t("booking.form.sectionLabel")}
         selectedValue={sectionId}
         onSelect={(val) => onChange(val as number)}
         options={options}
-        placeholder="Select a section"
+        placeholder={t("booking.form.selectSectionPlaceholder")}
       />
     </Field>
   );
@@ -133,24 +137,26 @@ export function TableField({
   mutedColor: string;
   onChange: (value: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Field label="Table">
+    <Field label={t("booking.form.tableLabel")}>
       {isAutoAssign ? (
         <ThemedText style={[styles.autoAssignHint, { color: mutedColor }]}>
-          We'll seat you at the best available table
-          {resolvedTableId ? "" : " across all sections"}.
+          {resolvedTableId
+            ? t("booking.form.autoAssignHint")
+            : t("booking.form.autoAssignHintAllSections")}
         </ThemedText>
       ) : options.length === 0 ? (
         <ThemedText style={[styles.noTables, { color: mutedColor }]}>
-          No tables available for {seats} guests.
+          {t("booking.form.noTablesAvailable", { count: seats })}
         </ThemedText>
       ) : (
         <Select
-          accessibilityLabel="Table"
+          accessibilityLabel={t("booking.form.tableLabel")}
           selectedValue={selectedValue}
           onSelect={(val) => onChange(val as number)}
           options={options}
-          placeholder="Select a table"
+          placeholder={t("booking.form.selectTablePlaceholder")}
         />
       )}
     </Field>
@@ -164,11 +170,12 @@ export function NameField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Field label="Full Name">
+    <Field label={t("booking.form.fullNameLabel")}>
       <Input
-        placeholder="Your full name"
-        accessibilityLabel="Full name"
+        placeholder={t("booking.form.fullNamePlaceholder")}
+        accessibilityLabel={t("booking.form.fullNameAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
         autoCapitalize="words"
@@ -186,11 +193,12 @@ export function EmailField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Field label="Email">
+    <Field label={t("booking.form.emailLabel")}>
       <Input
-        placeholder="your@email.com"
-        accessibilityLabel="Email address"
+        placeholder={t("booking.form.emailPlaceholder")}
+        accessibilityLabel={t("booking.form.emailAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
         keyboardType="email-address"
@@ -211,11 +219,12 @@ export function RequestsField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Field label={label}>
       <Input
-        placeholder="e.g. nut allergy, high chair needed… (optional)"
-        accessibilityLabel="Special requests or allergies"
+        placeholder={t("booking.form.requestsPlaceholder")}
+        accessibilityLabel={t("booking.form.requestsAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
         multiline
@@ -238,6 +247,7 @@ export function SectionHeading({
   mutedColor: string;
   primaryColor: string;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.sectionHeadingRow}>
       <ThemedText style={[styles.sectionHeading, { color: mutedColor }]}>{label}</ThemedText>
@@ -245,7 +255,7 @@ export function SectionHeading({
         <ActivityIndicator
           size="small"
           color={primaryColor}
-          accessibilityLabel="Loading available times"
+          accessibilityLabel={t("booking.form.loadingTimesLabel")}
         />
       )}
     </View>

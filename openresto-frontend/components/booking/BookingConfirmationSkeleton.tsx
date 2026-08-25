@@ -1,5 +1,6 @@
 import React from "react";
 import { View, ScrollView, Platform, useWindowDimensions } from "react-native";
+import { useTranslation } from "react-i18next";
 import PageContainer from "@/components/layout/PageContainer";
 import Skeleton from "@/components/common/Skeleton";
 import { ThemedView } from "@/components/themed-view";
@@ -13,6 +14,7 @@ import { styles } from "./BookingConfirmationSkeleton.styles";
  * standing in for a whole screen (booking-confirmation's initial load).
  */
 export default function BookingConfirmationSkeleton({ inline = false }: { inline?: boolean }) {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   // Inline mode sits in the lookup result column, which is a fraction of the viewport
   // however wide that viewport is, so it always uses the single-column skeleton rather
@@ -71,7 +73,7 @@ export default function BookingConfirmationSkeleton({ inline = false }: { inline
         role="status"
         accessibilityLiveRegion="polite"
         aria-busy
-        accessibilityLabel="Loading booking"
+        accessibilityLabel={t("booking.confirmation.loadingInlineLabel")}
       >
         {content}
       </View>
@@ -84,7 +86,7 @@ export default function BookingConfirmationSkeleton({ inline = false }: { inline
       role="status"
       accessibilityLiveRegion="polite"
       aria-busy
-      accessibilityLabel="Loading your booking"
+      accessibilityLabel={t("booking.confirmation.loadingLabel")}
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
         <PageContainer>{content}</PageContainer>

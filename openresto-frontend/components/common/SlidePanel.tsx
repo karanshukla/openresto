@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Animated, Modal, PanResponder, Pressable, ScrollView, View } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { animateNode, EASE_ENTER, prefersReducedMotion } from "@/utils/webAnimation";
 import {
@@ -38,6 +39,7 @@ export default function SlidePanel({
   testID = "result-panel",
 }: SlidePanelProps) {
   const { colors, isDark } = useAppTheme();
+  const { t } = useTranslation();
 
   const onDismissRef = useRef(onDismiss);
   useEffect(() => {
@@ -101,7 +103,7 @@ export default function SlidePanel({
           <Pressable
             testID={`${testID}-backdrop`}
             accessibilityRole="button"
-            accessibilityLabel={`Close ${accessibilityLabel}`}
+            accessibilityLabel={t("common.slidePanel.closeLabel", { label: accessibilityLabel })}
             style={[styles.backdrop, { backgroundColor: colors.overlay }]}
             onPress={dismissWithHaptic}
           />

@@ -1,10 +1,380 @@
 {
+  "booking": {
+    "calendar": {
+      "heading": "AÑADIR AL CALENDARIO",
+      "icsA11y": "Descargar el archivo .ics para Apple Calendar, Thunderbird y otros"
+    },
+    "confirmation": {
+      "loadingInlineLabel": "Cargando la reserva",
+      "loadingLabel": "Cargando tu reserva"
+    },
+    "directions": {
+      "heading": "CÓMO LLEGAR"
+    },
+    "drawer": {
+      "bookLocationLabel": "Reservar {{name}}",
+      "closePanelLabel": "Cerrar el panel de reserva",
+      "exactTimeLabel": "Hora exacta",
+      "genericSubmitError": "Ha ocurrido un error. Inténtalo de nuevo.",
+      "locationSelectLabel": "Local",
+      "partyDateHeading": "Comensales y fecha",
+      "seatingDisclosureLabel": "Elige una sección o mesa",
+      "specialRequestsLabel": "Peticiones especiales / alergias",
+      "summaryLine_one": "{{count}} comensal · {{when}} · {{time}}",
+      "summaryLine_other": "{{count}} comensales · {{when}} · {{time}}",
+      "today": "Hoy",
+      "yourDetailsHeading": "Tus datos"
+    },
+    "factsBand": {
+      "dateKey": "Fecha",
+      "dateTimeKey": "Fecha y hora",
+      "guestsKey": "Comensales",
+      "tableFor": "Mesa para {{count}}",
+      "timeKey": "Hora",
+      "until": "hasta las {{time}}"
+    },
+    "form": {
+      "autoAssignHint": "Te sentaremos en la mejor mesa disponible.",
+      "autoAssignHintAllSections": "Te sentaremos en la mejor mesa disponible de cualquier sección.",
+      "closedDayNotice": "El restaurante está cerrado ese día. Elige otra fecha.",
+      "confirmBookingLabel": "Confirmar reserva",
+      "confirmLabel": "Confirmar reserva",
+      "confirmingLabel": "Confirmando…",
+      "dateLabel": "Fecha",
+      "emailAccessibilityLabel": "Correo electrónico",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "fullNameAccessibilityLabel": "Nombre completo",
+      "fullNameLabel": "Nombre completo",
+      "fullNamePlaceholder": "Tu nombre completo",
+      "gdprText": "Al confirmar, aceptas que tu correo electrónico y los datos de la reserva se guarden para gestionar tu reserva. También usamos una cookie esencial para recordar tus reservas recientes en este dispositivo. No compartimos tus datos con terceros. Puedes solicitar su eliminación contactando con el restaurante.",
+      "guestsLabel": "Comensales",
+      "guestsSelectLabel": "Número de comensales",
+      "holdRequiredHint": "Es necesario retener una mesa antes de confirmar.",
+      "loadingTimesLabel": "Cargando horarios disponibles",
+      "noTablesAvailable_one": "No hay mesas disponibles para {{count}} comensal.",
+      "noTablesAvailable_other": "No hay mesas disponibles para {{count}} comensales.",
+      "numberOfGuestsLabel": "Número de comensales",
+      "oversizeConfirm": "Aviso: esta mesa solo tiene {{tableSeats}}, pero estás reservando para {{guests}}. ¿Quieres continuar?",
+      "partySize_one": "{{count}} comensal",
+      "partySize_other": "{{count}} comensales",
+      "popularTimesLabel": "Horarios populares",
+      "requestsAccessibilityLabel": "Peticiones especiales o alergias",
+      "requestsPlaceholder": "ej. alergia a los frutos secos, se necesita trona… (opcional)",
+      "routeTitle": "Reservar una mesa",
+      "seatsCount_one": "{{count}} plaza",
+      "seatsCount_other": "{{count}} plazas",
+      "sectionLabel": "Sección",
+      "selectSectionPlaceholder": "Selecciona una sección",
+      "selectTablePlaceholder": "Selecciona una mesa",
+      "specialRequestsLabel": "Peticiones especiales / alergias",
+      "tableLabel": "Mesa",
+      "timeLabel": "Hora",
+      "timezoneHint": "Todos los horarios están en {{timezone}} (allí son actualmente las {{time}})",
+      "walkInsOnlyReason": "Solo sin reserva"
+    },
+    "guestDetails": {
+      "bookedUnder": "Reservado a nombre de {{name}}",
+      "bookedWith": "Reservado con",
+      "specialRequestsLabel": "Peticiones especiales"
+    },
+    "hold": {
+      "checking": "Comprobando disponibilidad…",
+      "checkingA11y": "Comprobando disponibilidad",
+      "expiredMessage": "Tu retención de mesa ha expirado. La disponibilidad puede haber cambiado.",
+      "expiresIn": "- caduca en {{time}}",
+      "heldLabel": "Mesa retenida",
+      "refreshButton": "Actualizar página",
+      "refreshHint": "Vuelve a cargar la disponibilidad de esta fecha",
+      "unavailableDefault": "Mesa no disponible para esta fecha. Elige otra."
+    },
+    "largeParty": {
+      "body": "Nuestra mesa más grande tiene capacidad para {{count}}. Ponte en contacto para organizar una reserva para un grupo más grande.",
+      "callLabel": "Llamar al {{phone}}",
+      "contactAccessibilityLabel": "Contactar sobre un grupo grande",
+      "contactLink": "Contáctanos →",
+      "emailLabel": "Correo {{email}}",
+      "gotItLabel": "Entendido",
+      "modalMessage": "Nuestra mesa más grande tiene capacidad para {{count}}, así que una reserva para un grupo más grande debe organizarse directamente. Ponte en contacto con nosotros y encontraremos una solución.",
+      "noContactsMessage": "Todavía no hay datos de contacto disponibles. Ponte en contacto con nosotros directamente.",
+      "title": "Grupo grande"
+    },
+    "moveNotice": {
+      "body": "Hemos cambiado tu reserva en {{venue}}.\n\nAntes: {{previous}}\nAhora: {{next}}\n\nTodo lo demás de la reserva sigue igual.{{referenceLine}}\n\nSi el nuevo horario no te viene bien, responde a este correo y lo solucionaremos.",
+      "greetingGeneric": "Hola,",
+      "greetingNamed": "Hola {{name}},",
+      "referenceLine": "\n\nTu referencia de reserva no ha cambiado: {{ref}}.",
+      "subject": "Tu reserva en {{venue}} ha cambiado",
+      "venueFallback": "el restaurante"
+    },
+    "popularTimes": {
+      "availableTimesA11y": "Horarios disponibles",
+      "earlierA11y": "Mostrar horarios más tempranos",
+      "empty": "No hay horarios disponibles para este periodo.",
+      "laterA11y": "Mostrar horarios más tardíos"
+    },
+    "result": {
+      "cancelActionLabel": "Cancelar esta reserva",
+      "cancelButton": "Cancelar esta reserva",
+      "cancelHint": "Esta reserva no se puede modificar. Sin embargo, puedes cancelarla y volver a reservar si es necesario.",
+      "cancelledHint": "Esta reserva ha sido cancelada.",
+      "copiedButton": "Copiado",
+      "copyButton": "Copiar",
+      "copyReferenceLabel": "Copiar referencia de reserva",
+      "mapTitle": "Mapa de {{name}}",
+      "pastHint": "Esta reserva ya ha pasado y no se puede cancelar.",
+      "referenceCopiedLabel": "Referencia de reserva copiada",
+      "referenceLabel": "Referencia",
+      "routeTitleConfirmed": "Reserva confirmada",
+      "statusCancelled": "Reserva cancelada",
+      "statusConfirmed": "Reserva confirmada",
+      "statusFound": "Reserva encontrada",
+      "statusPassed": "La reserva ya ha pasado",
+      "unnamedRestaurant": "Restaurante"
+    },
+    "seating": {
+      "anySectionLabel": "Cualquier sección",
+      "seatsSuffix_one": "({{count}} plaza)",
+      "seatsSuffix_other": "({{count}} plazas)",
+      "tableFallbackName": "Mesa {{id}}"
+    },
+    "summaryHeader": {
+      "combinedTablesFallback": "Mesas combinadas"
+    },
+    "walkIn": {
+      "dayBodyGeneric": "La reserva online no está disponible para la fecha seleccionada. Elige otro día o simplemente pásate por aquí. Siempre son bienvenidos los clientes sin reserva.",
+      "dayBodyWithDays": "Este local no acepta reservas online los {{days}}. Elige otro día o simplemente pásate por aquí; siempre son bienvenidos los clientes sin reserva.",
+      "dayTitle": "Solo sin reserva ese día",
+      "daysBanner": "Solo sin reserva los {{days}} - la reserva online no está disponible esos días.",
+      "locationBody": "Este local no acepta reservas online. Las mesas se asignan por orden de llegada. Solo tienes que pasarte durante el horario de apertura.",
+      "locationTitle": "Solo sin reserva"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "confirm": "Confirmar",
+      "goHome": "Ir al inicio",
+      "scrollToTop": "Subir arriba",
+      "tryAgain": "Inténtalo de nuevo"
+    },
+    "alertModal": {
+      "defaultButtonLabel": "OK",
+      "defaultTitle": "Aviso"
+    },
+    "confirmModal": {
+      "defaultTitle": "Confirmar"
+    },
+    "footer": {
+      "adminLinkText": "Admin",
+      "restaurantAdminLabel": "Administración del restaurante"
+    },
+    "datePicker": {
+      "changeDate": "Cambiar fecha, actualmente {{date}}",
+      "chooseDate": "Elige una fecha",
+      "closeButtonLabel": "Cerrar el selector de fecha",
+      "nextMonth": "Mes siguiente",
+      "normallyClosed": "Normalmente cerrado",
+      "previousMonth": "Mes anterior",
+      "selectDate": "Selecciona una fecha"
+    },
+    "keyboardShortcuts": {
+      "closeLabel": "Cerrar atajos de teclado",
+      "title": "Atajos de teclado"
+    },
+    "language": {
+      "switcherLabel": "Idioma"
+    },
+    "modalCard": {
+      "defaultDismissLabel": "Cerrar"
+    },
+    "navbar": {
+      "brandBackToTop": "{{appName}}, subir arriba",
+      "brandHome": "{{appName}}, ir al inicio",
+      "goBack": "Volver",
+      "locationsLink": "Locales",
+      "myBookingsLink": "Mis reservas"
+    },
+    "overflowMenu": {
+      "closeHelp": "Cerrar ayuda",
+      "closeMenu": "Cerrar menú",
+      "findUsElsewhere": "Encuéntranos en otros sitios",
+      "help": "Ayuda",
+      "helpBody": "Abre la página de Locales para ver horarios, menús y horas disponibles de cada local. Elige una hora para abrir el formulario de reserva directamente, o usa «Mis reservas» para buscar una reserva existente con tu referencia.",
+      "moreOptions": "Más opciones",
+      "openMenu": "Abrir menú",
+      "switchToDarkMode": "Cambiar a modo oscuro",
+      "switchToLightMode": "Cambiar a modo claro",
+      "viewKeyboardShortcuts": "Ver atajos de teclado",
+      "visitWebsite": "Visitar nuestro sitio web"
+    },
+    "select": {
+      "closeListLabel": "Cerrar la lista de opciones",
+      "placeholder": "Selecciona una opción"
+    },
+    "slidePanel": {
+      "closeLabel": "Cerrar {{label}}"
+    },
+    "timePicker": {
+      "accessibilityLabel": "Hora",
+      "placeholder": "Selecciona una hora"
+    }
+  },
+  "errors": {
+    "generic": "Ha ocurrido un error",
+    "genericMessage": "Se ha producido un error inesperado. Inténtalo de nuevo.",
+    "title": "Error"
+  },
+  "lookup": {
+    "cancelModal": {
+      "confirm": "Cancelar reserva",
+      "confirming": "Cancelando…",
+      "keep": "Mantener reserva",
+      "message": "¿Seguro que quieres cancelar esta reserva? Esta acción no se puede deshacer.",
+      "title": "Cancelar reserva"
+    },
+    "connectionError": "No hemos podido conectar con el sistema de reservas. Tu reserva está a salvo.",
+    "form": {
+      "callLabel": "Llamar al {{phone}}",
+      "emailA11y": "Correo electrónico",
+      "emailContactLabel": "Correo {{email}}",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "El correo usado al reservar",
+      "helpText": "¿No encuentras tu reserva? Contacta directamente con el restaurante.",
+      "referenceA11y": "Referencia de reserva",
+      "referenceLabel": "Referencia de reserva",
+      "referencePlaceholder": "ej. crispy-basil-thyme",
+      "submitA11y": "Buscar mi reserva",
+      "submitButton": "Buscar"
+    },
+    "notFound": "No se ha encontrado ninguna reserva con esa referencia y correo.",
+    "routeTitle": "Buscar mi reserva",
+    "recent": {
+      "guestCount_one": "{{count}} comensal",
+      "guestCount_other": "{{count}} comensales",
+      "heading": "TUS RESERVAS RECIENTES",
+      "itemA11y": "Buscar la reserva {{ref}}",
+      "itemWithNameA11y": "Buscar la reserva {{ref}} en {{name}}",
+      "showAll": "Mostrar las {{count}}",
+      "showFewer": "Mostrar menos",
+      "storageNote": "Las reservas recientes se guardan en este dispositivo. Borrar la caché y las cookies, o desinstalar la aplicación, vaciará esta lista."
+    },
+    "resultPanelA11y": "Resultado de la reserva",
+    "subtitle": "Introduce tu referencia de reserva y tu correo para buscar tu reserva.",
+    "title": "Buscar mi reserva"
+  },
   "restaurant": {
+    "card": {
+      "availableSlots": "Horarios disponibles",
+      "bookAt": "Reservar {{time}} en {{name}}",
+      "closedBadge": "Cerrado",
+      "closedToday": "Cerrado hoy",
+      "directions": "Cómo llegar",
+      "guestsToday_one": "{{count}} comensal · hoy",
+      "guestsToday_other": "{{count}} comensales · hoy",
+      "hoursOpen": "Abierto {{hours}}",
+      "hoursToday": "Hoy {{hours}}",
+      "multipleAreas": "Varias zonas",
+      "noAvailableSlotsToday": "No hay horarios disponibles hoy",
+      "noReservationsRequired": "No se requiere reserva",
+      "openBookingPageNewTab": "Abrir la página de reserva en una pestaña nueva",
+      "openInAppleMaps": "Abrir en Apple Maps",
+      "openInGoogleMaps": "Abrir en Google Maps",
+      "openTill": "Abierto hasta las {{time}}",
+      "opensInHours": "Abre en {{hours}} h",
+      "opensInHoursMinutes": "Abre en {{hours}} h {{minutes}} min",
+      "opensInMinutes": "Abre en {{minutes}} min",
+      "seeDetails": "Ver detalles",
+      "seeDetailsFor": "Ver detalles de {{name}}",
+      "viewDetailsAndBook": "{{name}}, ver detalles y reservar"
+    },
+    "details": {
+      "directionsHeading": "Cómo llegar",
+      "openInProviderMaps": "Abrir en {{provider}} Maps",
+      "openMenu": "Abrir menú",
+      "openingHoursHeading": "Horario de apertura",
+      "routeTitle": "Restaurante",
+      "viewMenu": "Ver menú"
+    },
+    "filterBar": {
+      "all": "Todos",
+      "allTimes": "Todos los horarios",
+      "dinner": "Cena",
+      "guestCount_one": "{{count}} comensal",
+      "guestCount_other": "{{count}} comensales",
+      "lunch": "Comida",
+      "numberOfGuests": "Número de comensales",
+      "timeOfDay": "Momento del día",
+      "today": "Hoy",
+      "todayDate": "Hoy, {{date}}"
+    },
     "home": {
-      "heroSubtitle": "Desplázate hacia abajo para elegir un local, selecciona una hora, introduce tu correo electrónico, ¡y listo, tienes tu reserva!",
-      "highlightsHeading": "Destacados del restaurante",
-      "highlightsSubheading": "Seleccionados por el propietario",
-      "locationsHeading": "Nuestros locales"
+      "heroSubtitle": "Desplázate para elegir un local abajo, escoge un horario, indica tu correo electrónico, ¡y ya está reservado!",
+      "highlightsHeading": "Lo más destacado del restaurante",
+      "highlightsSubheading": "Seleccionado por el propietario",
+      "loadingLocations": "Cargando locales",
+      "locationsHeading": "Nuestros locales",
+      "opensInNewTab": "Se abre en una pestaña nueva"
+    },
+    "locationListItem": {
+      "bookNow": "Reservar ahora",
+      "bookTableAt": "Reservar una mesa en {{name}}",
+      "closedLabel": "Cerrado {{day}}",
+      "closedOpensNext": "{{closedLabel}} · abre {{day}} {{time}}",
+      "detailsLabel": "Detalles",
+      "hideDetails": "Ocultar detalles",
+      "hideDetailsFor": "Ocultar detalles de {{name}}",
+      "hoursRange": "{{open}} – {{close}} {{day}}",
+      "menuLabel": "Menú",
+      "noReservationsFirstCome": "No se requiere reserva, por orden de llegada",
+      "showDetails": "Mostrar detalles",
+      "showDetailsFor": "Mostrar detalles de {{name}}",
+      "today": "hoy",
+      "viewMenu": "Ver menú"
+    },
+    "locationsScreen": {
+      "availabilitySummary_one": "{{withTables}} de {{count}} local tiene mesas disponibles",
+      "availabilitySummary_other": "{{withTables}} de {{count}} locales tienen mesas disponibles",
+      "checkingAvailability": "Comprobando disponibilidad…",
+      "couldntLoad": "No se han podido cargar nuestros locales. Comprueba tu conexión e inténtalo de nuevo.",
+      "noLocationsYet": "Todavía no hay locales. Vuelve a comprobarlo pronto.",
+      "noTablesAtThisTime": "No hay mesas a esta hora",
+      "routeTitle": "Locales",
+      "subtitle": "Elige un horario y te guardaremos la mesa durante cinco minutos.",
+      "tablesAvailable": "Mesas disponibles",
+      "title": "Nuestros locales",
+      "tryAgain": "Inténtalo de nuevo"
+    },
+    "openingHours": {
+      "closed": "Cerrado",
+      "dayToday": "{{day}}  (hoy)",
+      "friday": "Viernes",
+      "monday": "Lunes",
+      "saturday": "Sábado",
+      "sunday": "Domingo",
+      "thursday": "Jueves",
+      "tuesday": "Martes",
+      "walkIn": "Sin reserva",
+      "wednesday": "Miércoles"
+    },
+    "seatingMap": {
+      "combinableHeading": "Mesas que podemos combinar",
+      "heading": "Distribución y mesas",
+      "seatsCount_one": "{{count}} plaza",
+      "seatsCount_other": "{{count}} plazas",
+      "seatsUpTo": "Hasta {{count}} plazas juntando mesas",
+      "tableFallbackName": "Mesa {{id}}"
+    },
+    "slotRow": {
+      "bookAt": "Reservar {{name}} a las {{time}}",
+      "moreLabel": "+{{count}} más",
+      "noTimesAvailable": "No hay horarios disponibles, prueba con otra fecha u otro número de comensales",
+      "showAllTimesFor": "Mostrar todos los horarios de {{name}}"
+    },
+    "tags": {
+      "moreTagsLabel_one": "{{count}} etiqueta más: {{list}}",
+      "moreTagsLabel_other": "{{count}} etiquetas más: {{list}}"
     }
   }
 }

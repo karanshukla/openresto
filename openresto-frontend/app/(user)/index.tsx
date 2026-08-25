@@ -327,7 +327,7 @@ export default function HomeScreen() {
                         key={h.id}
                         accessibilityRole="link"
                         accessibilityLabel={`${h.title}. ${h.body}`}
-                        accessibilityHint="Opens in a new tab"
+                        accessibilityHint={t("restaurant.home.opensInNewTab")}
                         onPress={() => Linking.openURL(h.link!)}
                         style={cardStyle}
                       >
@@ -354,7 +354,7 @@ export default function HomeScreen() {
             <View
               testID={loading ? "loading-screen" : undefined}
               aria-busy={loading}
-              accessibilityLabel={loading ? "Loading locations" : undefined}
+              accessibilityLabel={loading ? t("restaurant.home.loadingLocations") : undefined}
               style={[styles.grid, numColumns > 1 && styles.rowWrap]}
             >
               {loading
