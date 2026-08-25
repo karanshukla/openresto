@@ -1,4 +1,5 @@
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -40,15 +41,18 @@ export function LocationTagsSection({
   cardBg,
   surface2,
 }: LocationTagsSectionProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = usePersistedState("locations:tags:expanded", true);
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="pricetag-outline"
-        title="Location Tags"
+        title={t("admin.settings.locationTags.title")}
         subtitle={
-          tags.length === 0 ? "No tags yet" : `${tags.length} tag${tags.length === 1 ? "" : "s"}`
+          tags.length === 0
+            ? t("admin.settings.locationTags.noTags")
+            : t("admin.settings.locationTags.tagCount", { count: tags.length })
         }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -67,7 +71,7 @@ export function LocationTagsSection({
                     onPress={() => onRemoveTag(tag)}
                     testID={`remove-tag-${tag}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Remove tag ${tag}`}
+                    accessibilityLabel={t("admin.settings.locationTags.removeTagLabel", { tag })}
                     hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                   >
                     <Icon name="close" size="xs" color={mutedColor} />
@@ -81,7 +85,7 @@ export function LocationTagsSection({
               <Input
                 value={tagInput}
                 onChangeText={onSetTagInput}
-                placeholder="Add tag (press Enter)"
+                placeholder={t("admin.settings.locationTags.addTagPlaceholder")}
                 onSubmitEditing={() => onAddTag(tagInput)}
                 onBlur={() => tagInput.trim() && onAddTag(tagInput)}
               />
@@ -91,13 +95,13 @@ export function LocationTagsSection({
               icon="add"
               onPress={() => onAddTag(tagInput)}
               disabled={!tagInput.trim()}
-              accessibilityLabel="Add tag"
+              accessibilityLabel={t("admin.settings.locationTags.addTagLabel")}
             >
-              Add
+              {t("admin.settings.locationTags.addButton")}
             </Button>
           </View>
           <ThemedText style={[styles.hint, { color: mutedColor }]}>
-            Short labels shown on the public restaurant card (e.g. "Dog friendly", "Terrace").
+            {t("admin.settings.locationTags.hint")}
           </ThemedText>
         </View>
       </AnimatedAccordion>

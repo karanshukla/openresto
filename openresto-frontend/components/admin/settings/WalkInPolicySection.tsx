@@ -1,8 +1,9 @@
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
+import { getDayLabels, getDayShort, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./WalkInPolicySection.styles";
@@ -42,19 +43,22 @@ export function WalkInPolicySection({
   textColor,
   isDark,
 }: WalkInPolicySectionProps) {
+  const { t } = useTranslation();
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
   const [expanded, setExpanded] = usePersistedState("locations:walkIn:expanded", true);
+  const dayLabels = getDayLabels(t);
+  const dayShort = getDayShort(t);
   const subtitle = walkInOnly
-    ? "Walk-ins only, online booking is off"
+    ? t("admin.settings.walkInPolicy.subtitleWalkInOnly")
     : walkInDays.length > 0
-      ? `Walk-ins only on ${walkInDays.length} ${walkInDays.length === 1 ? "day" : "days"}`
-      : "Online bookings on every open day";
+      ? t("admin.settings.walkInPolicy.subtitleWalkInDays", { count: walkInDays.length })
+      : t("admin.settings.walkInPolicy.subtitleOnline");
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="walk-outline"
-        title="Walk-in Policy"
+        title={t("admin.settings.walkInPolicy.title")}
         subtitle={subtitle}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -72,14 +76,14 @@ export function WalkInPolicySection({
             ]}
           >
             {modeButton(
-              "Online bookings",
+              t("admin.settings.walkInPolicy.modeOnline"),
               !walkInOnly,
               () => onSetWalkInOnly(false),
               "walkin-mode-bookings",
               modeTheme
             )}
             {modeButton(
-              "Walk-ins only",
+              t("admin.settings.walkInPolicy.modeWalkInOnly"),
               walkInOnly,
               () => onSetWalkInOnly(true),
               "walkin-mode-walkin",
@@ -91,20 +95,22 @@ export function WalkInPolicySection({
             <View style={settingsStyles.policyNote}>
               <Icon name="walk-outline" size="xs" color={mutedColor} />
               <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-                The location stays listed publicly, but guests can't book online. They'll see a
-                walk-in notice instead. Toggle back anytime; nothing is deleted or archived.
+                {t("admin.settings.walkInPolicy.walkInOnlyHint")}
               </ThemedText>
             </View>
           ) : (
             <View style={settingsStyles.policyField}>
               <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                Walk-in only days
+                {t("admin.settings.walkInPolicy.walkInDaysLabel")}
               </ThemedText>
               <View style={settingsStyles.dayGrid}>
-                {DAY_SHORT.map((label, i) => {
+                {dayShort.map((label, i) => {
                   const day = i + 1;
                   const active = walkInDays.includes(day);
                   const closed = !openDays.includes(day);
+                  const dayState = active
+                    ? t("admin.settings.walkInPolicy.dayStateWalkInOnly")
+                    : t("admin.settings.walkInPolicy.dayStateOnlineBookings");
                   return (
                     <Pressable
                       key={day}
@@ -112,7 +118,10 @@ export function WalkInPolicySection({
                       testID={`walkin-day-${day}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "walk-ins only" : "online bookings"}. Tap to toggle.`}
+                      accessibilityLabel={t("admin.settings.walkInPolicy.dayToggleLabel", {
+                        day: dayLabels[i],
+                        state: dayState,
+                      })}
                       style={[
                         settingsStyles.dayBtn,
                         {
@@ -132,8 +141,7 @@ export function WalkInPolicySection({
                 })}
               </View>
               <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-                Highlighted days stay open but only take walk-ins. The booking form is disabled for
-                those dates. Dimmed days are currently marked closed.
+                {t("admin.settings.walkInPolicy.walkInDaysHint")}
               </ThemedText>
             </View>
           )}

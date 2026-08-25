@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { theme } from "@/theme/theme";
@@ -35,6 +36,7 @@ export function BrandSettingsCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const brand = useBrand();
   const { primaryColor } = useAppTheme();
   const [appName, setAppName] = useState(brand.appName);
@@ -52,9 +54,9 @@ export function BrandSettingsCard({
 
   // A withheld save has to say why: with no button to disable, silence reads as a broken card.
   const blockedReason = !appName.trim()
-    ? "Not saved: the app name can't be empty."
+    ? t("admin.settings.brandIdentity.blockedEmptyName")
     : !HEX_COLOR.test(brandPrimaryColor)
-      ? "Not saved: waiting for a full hex colour, like #0a7ea4."
+      ? t("admin.settings.brandIdentity.blockedInvalidColor")
       : null;
 
   const { status, error, retry, undo } = useAutosave({
@@ -102,7 +104,7 @@ export function BrandSettingsCard({
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="brush-outline"
-        title="Brand Identity"
+        title={t("admin.settings.brandIdentity.title")}
         subtitle={identitySummary}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -114,49 +116,55 @@ export function BrandSettingsCard({
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
           <View style={settingsStyles.field}>
             <View style={settingsStyles.fieldHeader}>
-              <ThemedText style={settingsStyles.fieldLabel}>App Name</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.brandIdentity.appNameLabel")}
+              </ThemedText>
               <ThemedText
                 style={[
                   settingsStyles.fieldCharCount,
                   { color: appName.length > 32 ? theme.colors.error : mutedColor },
                 ]}
               >
-                {appName.length}/32
+                {t("admin.settings.brandIdentity.charCount", { count: appName.length, max: 32 })}
               </ThemedText>
             </View>
             <Input
               value={appName}
               onChangeText={setAppName}
-              placeholder="Open Resto"
+              placeholder={t("admin.settings.brandIdentity.appNamePlaceholder")}
               maxLength={32}
             />
           </View>
 
           <View style={settingsStyles.field}>
             <View style={settingsStyles.fieldHeader}>
-              <ThemedText style={settingsStyles.fieldLabel}>Home Page Subtitle</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.brandIdentity.subtitleLabel")}
+              </ThemedText>
               <ThemedText
                 style={[
                   settingsStyles.fieldCharCount,
                   { color: subtitle.length > 160 ? theme.colors.error : mutedColor },
                 ]}
               >
-                {subtitle.length}/160
+                {t("admin.settings.brandIdentity.charCount", { count: subtitle.length, max: 160 })}
               </ThemedText>
             </View>
             <Input
               value={subtitle}
               onChangeText={setSubtitle}
-              placeholder="Scroll down to pick a location below…"
+              placeholder={t("admin.settings.brandIdentity.subtitlePlaceholder")}
               maxLength={160}
             />
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Tagline shown under the app name. Leave blank for the default text.
+              {t("admin.settings.brandIdentity.subtitleHint")}
             </ThemedText>
           </View>
 
           <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Primary Color</ThemedText>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.brandIdentity.primaryColorLabel")}
+            </ThemedText>
             <View style={styles.swatchRow}>
               {PRESET_COLORS.map((c) => (
                 <Pressable
@@ -164,7 +172,9 @@ export function BrandSettingsCard({
                   testID={`color-swatch-${c}`}
                   onPress={() => setBrandPrimaryColor(c)}
                   accessibilityRole="radio"
-                  accessibilityLabel={`Primary color ${c}`}
+                  accessibilityLabel={t("admin.settings.brandIdentity.primaryColorOptionLabel", {
+                    color: c,
+                  })}
                   accessibilityState={{ checked: brandPrimaryColor === c }}
                   style={[
                     styles.swatch,
@@ -179,14 +189,16 @@ export function BrandSettingsCard({
               <Input
                 value={brandPrimaryColor}
                 onChangeText={setBrandPrimaryColor}
-                placeholder="#0a7ea4"
+                placeholder={t("admin.settings.brandIdentity.hexPlaceholder")}
                 style={styles.hexInput}
               />
             </View>
           </View>
 
           <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Favicon Icon</ThemedText>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.brandIdentity.faviconLabel")}
+            </ThemedText>
             <View style={styles.faviconGrid}>
               {FAVICON_ICONS.map((icon) => {
                 const isSelected = faviconIcon === icon.id;
@@ -215,7 +227,9 @@ export function BrandSettingsCard({
             </View>
             {faviconIcon && (
               <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                {FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label} · tap to deselect
+                {t("admin.settings.brandIdentity.faviconDeselectHint", {
+                  label: FAVICON_ICONS.find((i) => i.id === faviconIcon)?.label ?? faviconIcon,
+                })}
               </ThemedText>
             )}
           </View>

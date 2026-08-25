@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -42,6 +44,25 @@ const emptyNewUser = (): NewUserState => ({
 });
 
 /**
+ * `role` is the identifier `roleLabel` resolves and the API/JWT compare against (mirrored from
+ * `constants/roles.ts`, owned by #375/PR4); only the label this returns localizes.
+ * @see [UsersCard.test.tsx](../../../tests/components/admin/settings/UsersCard.test.tsx)
+ * — pins that both roles render their translated label at every render site (badge, picker,
+ * and the outcome messages) while `adminUpdateUserRole` still receives the raw role string.
+ */
+function roleDisplayLabel(role: string, t: TFunction): string {
+  const resolved = roleLabel(role);
+  switch (resolved) {
+    case ROLES.owner:
+      return t("admin.settings.users.roleOwner");
+    case ROLES.manager:
+      return t("admin.settings.users.roleManager");
+    default:
+      return resolved;
+  }
+}
+
+/**
  * Owner-only management of the other admin accounts. Rendered behind `useCan("manage:users")`
  * so a Manager never sees a control the API would refuse — but the server is still the
  * authority, and every rejection it sends (last-Owner, duplicate email) is surfaced verbatim
@@ -56,6 +77,7 @@ export function UsersCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const { isDark, primaryColor } = useAppTheme();
   const { user: currentUser } = useAuth();
   const surface2 = isDark ? "#252729" : "#f9fafb";
@@ -75,9 +97,12 @@ export function UsersCard({
       // An empty list and a failed request both render as "no accounts", which is never true
       // — the caller is signed in — so say which one happened.
       if (list) setUsers(list);
-      else setMsg({ text: "Could not load accounts. Reload to try again.", ok: false });
+      else setMsg({ text: t("admin.settings.users.loadFailed"), ok: false });
       setLoading(false);
     });
+    // Runs once on mount only — `t`'s identity is stable across a locale switch, and
+    // re-running this fetch on every language change would be a wasted round trip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Every mutation returns the updated row, so the list is patched in place rather than refetched.
@@ -94,11 +119,14 @@ export function UsersCard({
   const handleCreate = async () => {
     const email = newUser.email.trim();
     if (!isValidEmail(email)) {
-      setMsg({ text: "Enter a valid email address.", ok: false });
+      setMsg({ text: t("admin.settings.users.invalidEmail"), ok: false });
       return;
     }
     if (newUser.password.length < MIN_PASSWORD_LENGTH) {
-      setMsg({ text: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`, ok: false });
+      setMsg({
+        text: t("admin.settings.users.passwordTooShort", { min: MIN_PASSWORD_LENGTH }),
+        ok: false,
+      });
       return;
     }
 
@@ -116,7 +144,10 @@ export function UsersCard({
       return;
     }
     setUsers((prev) => [...prev, result.user]);
-    setMsg({ text: `${result.user.email} can now sign in.`, ok: true });
+    setMsg({
+      text: t("admin.settings.users.createdMessage", { email: result.user.email }),
+      ok: true,
+    });
     setShowAddForm(false);
     setNewUser(emptyNewUser());
   };
@@ -125,7 +156,13 @@ export function UsersCard({
     setBusy(true);
     const result = await adminUpdateUserRole(target.id, role);
     setBusy(false);
-    applyResult(result, `${target.email} is now ${roleLabel(role)}.`);
+    applyResult(
+      result,
+      t("admin.settings.users.roleChangedMessage", {
+        email: target.email,
+        role: roleDisplayLabel(role, t),
+      })
+    );
   };
 
   const handleActiveToggle = async (target: AdminUserDto) => {
@@ -134,19 +171,26 @@ export function UsersCard({
     setBusy(false);
     applyResult(
       result,
-      target.isActive ? `${target.email} deactivated.` : `${target.email} reactivated.`
+      target.isActive
+        ? t("admin.settings.users.deactivatedMessage", { email: target.email })
+        : t("admin.settings.users.reactivatedMessage", { email: target.email })
     );
   };
 
   const handleResetPassword = async (target: AdminUserDto) => {
     if (resetPassword.length < MIN_PASSWORD_LENGTH) {
-      setMsg({ text: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`, ok: false });
+      setMsg({
+        text: t("admin.settings.users.passwordTooShort", { min: MIN_PASSWORD_LENGTH }),
+        ok: false,
+      });
       return;
     }
     setBusy(true);
     const result = await adminResetUserPassword(target.id, resetPassword);
     setBusy(false);
-    if (applyResult(result, `New password set for ${target.email}. Share it out of band.`)) {
+    if (
+      applyResult(result, t("admin.settings.users.passwordResetMessage", { email: target.email }))
+    ) {
       setResetForId(null);
       setResetPassword("");
     }
@@ -169,11 +213,11 @@ export function UsersCard({
     >
       <AccordionCardHeader
         icon="people-outline"
-        title="Users"
+        title={t("admin.settings.users.title")}
         subtitle={
           loading
-            ? "Loading…"
-            : `${users.length} account${users.length !== 1 ? "s" : ""} · Owners can manage users`
+            ? t("admin.settings.users.loading")
+            : t("admin.settings.users.subtitle", { count: users.length })
         }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -212,7 +256,7 @@ export function UsersCard({
                           {showsRoleBadge(u) && (
                             <View style={[styles.badge, { backgroundColor: `${primaryColor}14` }]}>
                               <ThemedText style={[styles.badgeText, { color: primaryColor }]}>
-                                {roleLabel(u.role)}
+                                {roleDisplayLabel(u.role, t)}
                               </ThemedText>
                             </View>
                           )}
@@ -221,7 +265,7 @@ export function UsersCard({
                               style={[styles.badge, { backgroundColor: `${theme.colors.error}22` }]}
                             >
                               <ThemedText style={[styles.badgeText, { color: theme.colors.error }]}>
-                                Deactivated
+                                {t("admin.settings.users.deactivatedBadge")}
                               </ThemedText>
                             </View>
                           )}
@@ -229,7 +273,7 @@ export function UsersCard({
                       )}
                       {isSelf(u) && (
                         <ThemedText style={[styles.selfNote, { color: mutedColor }]}>
-                          This is you. Change your own password on the Account page.
+                          {t("admin.settings.users.selfNote")}
                         </ThemedText>
                       )}
                       {/* Your own role is shown as the badge above but not offered as a
@@ -238,7 +282,7 @@ export function UsersCard({
                       {!isSelf(u) && (
                         <View style={styles.roleField}>
                           <ThemedText style={[styles.roleFieldLabel, { color: mutedColor }]}>
-                            Role
+                            {t("admin.settings.users.roleFieldLabel")}
                           </ThemedText>
                           <View style={styles.roleChoices}>
                             {ASSIGNABLE_ROLES.map((role) => {
@@ -249,7 +293,10 @@ export function UsersCard({
                                   disabled={busy || selected}
                                   onPress={() => handleRoleChange(u, role)}
                                   accessibilityRole="radio"
-                                  accessibilityLabel={`Make ${u.email} ${role}`}
+                                  accessibilityLabel={t("admin.settings.users.makeRoleLabel", {
+                                    email: u.email,
+                                    role: roleDisplayLabel(role, t),
+                                  })}
                                   accessibilityState={{ checked: selected, disabled: busy }}
                                   style={[
                                     styles.roleChoice,
@@ -262,7 +309,7 @@ export function UsersCard({
                                       { color: selected ? primaryColor : mutedColor },
                                     ]}
                                   >
-                                    {role}
+                                    {roleDisplayLabel(role, t)}
                                   </ThemedText>
                                 </Pressable>
                               );
@@ -273,10 +320,12 @@ export function UsersCard({
                     </View>
                     <View style={styles.actions}>
                       <RowTextButton
-                        label="Reset password"
+                        label={t("admin.settings.users.resetPassword")}
                         icon="key-outline"
                         color={mutedColor}
-                        accessibilityLabel={`Set a new password for ${u.email}`}
+                        accessibilityLabel={t("admin.settings.users.resetPasswordLabel", {
+                          email: u.email,
+                        })}
                         onPress={() => {
                           setMsg(null);
                           setResetPassword("");
@@ -285,12 +334,18 @@ export function UsersCard({
                       />
                       {!isSelf(u) && (
                         <RowTextButton
-                          label={u.isActive ? "Deactivate" : "Reactivate"}
+                          label={
+                            u.isActive
+                              ? t("admin.settings.users.deactivate")
+                              : t("admin.settings.users.reactivate")
+                          }
                           icon={u.isActive ? "ban-outline" : "checkmark-circle-outline"}
                           color={u.isActive ? theme.colors.error : primaryColor}
                           disabled={busy}
                           accessibilityLabel={
-                            u.isActive ? `Deactivate ${u.email}` : `Reactivate ${u.email}`
+                            u.isActive
+                              ? t("admin.settings.users.deactivateLabel", { email: u.email })
+                              : t("admin.settings.users.reactivateLabel", { email: u.email })
                           }
                           onPress={() => handleActiveToggle(u)}
                         />
@@ -301,7 +356,9 @@ export function UsersCard({
                   {resetForId === u.id && (
                     <View style={settingsStyles.addForm}>
                       <View style={settingsStyles.field}>
-                        <ThemedText style={settingsStyles.fieldLabel}>New password</ThemedText>
+                        <ThemedText style={settingsStyles.fieldLabel}>
+                          {t("admin.settings.users.newPasswordLabel")}
+                        </ThemedText>
                         <Input
                           value={resetPassword}
                           onChangeText={setResetPassword}
@@ -309,7 +366,7 @@ export function UsersCard({
                           placeholder="••••••••"
                         />
                         <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                          Share this with {u.email} out of band; they can change it once signed in.
+                          {t("admin.settings.users.resetPasswordHint", { email: u.email })}
                         </ThemedText>
                       </View>
                       <ButtonRow style={settingsStyles.formActions}>
@@ -319,10 +376,10 @@ export function UsersCard({
                           size="md"
                           onPress={() => setResetForId(null)}
                         >
-                          Cancel
+                          {t("common.actions.cancel")}
                         </Button>
                         <Button size="md" onPress={() => handleResetPassword(u)} loading={busy}>
-                          Set password
+                          {t("admin.settings.users.setPassword")}
                         </Button>
                       </ButtonRow>
                     </View>
@@ -340,7 +397,9 @@ export function UsersCard({
                 <View style={settingsStyles.addForm}>
                   <View style={settingsStyles.fieldRow}>
                     <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                      <ThemedText style={settingsStyles.fieldLabel}>Email</ThemedText>
+                      <ThemedText style={settingsStyles.fieldLabel}>
+                        {t("admin.settings.users.emailLabel")}
+                      </ThemedText>
                       <Input
                         value={newUser.email}
                         onChangeText={(email) => setNewUser((s) => ({ ...s, email }))}
@@ -351,7 +410,7 @@ export function UsersCard({
                     </View>
                     <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
                       <ThemedText style={settingsStyles.fieldLabel}>
-                        Display name (optional)
+                        {t("admin.settings.users.displayNameLabel")}
                       </ThemedText>
                       <Input
                         value={newUser.displayName}
@@ -361,7 +420,9 @@ export function UsersCard({
                     </View>
                   </View>
                   <View style={settingsStyles.field}>
-                    <ThemedText style={settingsStyles.fieldLabel}>Temporary password</ThemedText>
+                    <ThemedText style={settingsStyles.fieldLabel}>
+                      {t("admin.settings.users.temporaryPasswordLabel")}
+                    </ThemedText>
                     <Input
                       value={newUser.password}
                       onChangeText={(password) => setNewUser((s) => ({ ...s, password }))}
@@ -370,7 +431,9 @@ export function UsersCard({
                     />
                   </View>
                   <View style={settingsStyles.field}>
-                    <ThemedText style={settingsStyles.fieldLabel}>Role</ThemedText>
+                    <ThemedText style={settingsStyles.fieldLabel}>
+                      {t("admin.settings.users.roleFieldLabel")}
+                    </ThemedText>
                     <View style={styles.roleChoices}>
                       {ASSIGNABLE_ROLES.map((role) => {
                         const selected = newUser.role === role;
@@ -379,7 +442,9 @@ export function UsersCard({
                             key={role}
                             onPress={() => setNewUser((s) => ({ ...s, role }))}
                             accessibilityRole="button"
-                            accessibilityLabel={`New user role ${role}`}
+                            accessibilityLabel={t("admin.settings.users.newUserRoleLabel", {
+                              role: roleDisplayLabel(role, t),
+                            })}
                             accessibilityState={{ selected }}
                             style={[
                               styles.roleChoice,
@@ -392,7 +457,7 @@ export function UsersCard({
                                 { color: selected ? primaryColor : mutedColor },
                               ]}
                             >
-                              {role}
+                              {roleDisplayLabel(role, t)}
                             </ThemedText>
                           </Pressable>
                         );
@@ -410,16 +475,16 @@ export function UsersCard({
                         setMsg(null);
                       }}
                     >
-                      Cancel
+                      {t("common.actions.cancel")}
                     </Button>
                     <Button
                       size="md"
                       icon="add"
                       onPress={handleCreate}
                       loading={busy}
-                      accessibilityLabel="Add this user"
+                      accessibilityLabel={t("admin.settings.users.addThisUserLabel")}
                     >
-                      {busy ? "Adding…" : "Add"}
+                      {busy ? t("admin.settings.users.adding") : t("admin.settings.users.add")}
                     </Button>
                   </ButtonRow>
                 </View>
@@ -433,7 +498,7 @@ export function UsersCard({
                       setMsg(null);
                     }}
                   >
-                    Add user
+                    {t("admin.settings.users.addUser")}
                   </Button>
                 </ButtonRow>
               )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -72,6 +73,7 @@ export function TableRow({
   /** Disabled (already grouped) in selection mode. */
   disabledInSelection?: boolean;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(table.name ?? "");
   const [draftSeats, setDraftSeats] = useState(table.seats);
@@ -85,7 +87,7 @@ export function TableRow({
   const mutedColor = colors.muted;
   const { primaryColor } = useAppTheme();
 
-  const tableName = table.name ?? `Table ${table.id}`;
+  const tableName = table.name ?? t("admin.settings.tableRow.tableFallbackName", { id: table.id });
   // Shared with SocialLinkRow / HighlightsCard so the table tiles are indistinguishable from the
   // rest of the settings cards.
   const surface2 = isDark ? "#252729" : "#f9fafb";
@@ -138,12 +140,12 @@ export function TableRow({
         />
         <View style={settingsStyles.tileCopy}>
           <ThemedText style={settingsStyles.tileTitle} numberOfLines={1}>
-            {table.name ?? `T${table.id}`}
+            {table.name ?? t("admin.settings.tableRow.tableFallbackShort", { id: table.id })}
           </ThemedText>
           <View style={styles.seatsRow}>
             <Icon name="people-outline" size="xs" color={mutedColor} />
             <ThemedText style={[styles.seatsText, { color: mutedColor }]}>
-              {table.seats} seat{table.seats === 1 ? "" : "s"}
+              {t("admin.settings.tableRow.seatsCount", { count: table.seats })}
             </ThemedText>
             {isGrouped && group && (
               <View
@@ -188,14 +190,14 @@ export function TableRow({
           />
           <ThemedText style={settingsStyles.confirmText}>
             <ThemedText style={settingsStyles.confirmTextStrong}>
-              Delete &ldquo;{tableName}&rdquo;?
+              {t("admin.settings.tableRow.deleteConfirmTitle", { name: tableName })}
             </ThemedText>{" "}
             {impactLoading
-              ? "This will permanently remove the table."
+              ? t("admin.settings.tableRow.impactLoading")
               : impact && impact > 0
-                ? `${impact} future ${impact === 1 ? "booking" : "bookings"} will lose ${impact === 1 ? "its" : "their"} table reference.`
-                : "Future bookings on this table will lose their reference."}{" "}
-            This cannot be undone.
+                ? t("admin.settings.tableRow.impactCount", { count: impact })
+                : t("admin.settings.tableRow.impactUnknown")}{" "}
+            {t("admin.settings.tableRow.cannotBeUndone")}
           </ThemedText>
         </View>
         <ButtonRow>
@@ -207,7 +209,7 @@ export function TableRow({
             onPress={cancelDelete}
             disabled={deleting}
           >
-            Cancel
+            {t("common.actions.cancel")}
           </Button>
           <Button
             testID="table-delete-confirm-btn"
@@ -217,7 +219,9 @@ export function TableRow({
             loading={deleting}
             onPress={confirmDelete}
           >
-            {deleting ? "Deleting…" : "Yes, delete"}
+            {deleting
+              ? t("admin.settings.tableRow.deleting")
+              : t("admin.settings.tableRow.yesDelete")}
           </Button>
         </ButtonRow>
       </View>
@@ -233,12 +237,12 @@ export function TableRow({
 
         <View style={settingsStyles.tileCopy}>
           <ThemedText style={settingsStyles.tileTitle} numberOfLines={1}>
-            {table.name ?? `T${table.id}`}
+            {table.name ?? t("admin.settings.tableRow.tableFallbackShort", { id: table.id })}
           </ThemedText>
           <View style={styles.rowSeatsRow}>
             <Icon name="people-outline" size="xs" color={mutedColor} />
             <ThemedText style={[styles.seatsText, { color: mutedColor }]}>
-              {table.seats} seat{table.seats === 1 ? "" : "s"}
+              {t("admin.settings.tableRow.seatsCount", { count: table.seats })}
             </ThemedText>
             {group && (
               <View
@@ -257,7 +261,9 @@ export function TableRow({
                   testID={`table-unlink-btn-${table.id}`}
                   onPress={onUnlink}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${tableName} from group`}
+                  accessibilityLabel={t("admin.settings.tableRow.removeFromGroupLabel", {
+                    name: tableName,
+                  })}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   style={styles.unlinkBtn}
                 >
@@ -274,16 +280,16 @@ export function TableRow({
           {!group && (
             <RowTextButton
               testID={`table-link-btn-${table.id}`}
-              label="Combine"
+              label={t("admin.settings.tableRow.combine")}
               icon="link-outline"
               color={primaryColor}
               onPress={onLink}
-              accessibilityLabel={`Combine ${tableName} into a group`}
+              accessibilityLabel={t("admin.settings.tableRow.combineLabel", { name: tableName })}
             />
           )}
           <RowTextButton
             testID={`table-edit-btn-${table.id}`}
-            label="Edit"
+            label={t("admin.settings.tableRow.edit")}
             icon="pencil-outline"
             color={mutedColor}
             onPress={() => {
@@ -291,15 +297,15 @@ export function TableRow({
               setDraftSeats(table.seats);
               setEditing(true);
             }}
-            accessibilityLabel={`Edit ${tableName}`}
+            accessibilityLabel={t("admin.settings.tableRow.editLabel", { name: tableName })}
           />
           <RowTextButton
             testID={`table-delete-btn-${table.id}`}
-            label="Delete"
+            label={t("admin.settings.tableRow.delete")}
             icon="trash-outline"
             color={theme.colors.error}
             onPress={startDelete}
-            accessibilityLabel={`Delete ${tableName}`}
+            accessibilityLabel={t("admin.settings.tableRow.deleteLabel", { name: tableName })}
           />
         </View>
       </View>
@@ -317,20 +323,30 @@ export function TableRow({
       ]}
     >
       <ThemedText style={[styles.editHeading, { color: primaryColor }]}>
-        EDITING · {table.name ?? `Table ${table.id}`}
+        {t("admin.settings.tableRow.editingHeading", {
+          name: table.name ?? t("admin.settings.tableRow.tableFallbackName", { id: table.id }),
+        })}
       </ThemedText>
       <View style={styles.editFields}>
         <View style={styles.editNameField}>
-          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>NAME</ThemedText>
-          <Input value={draftName} onChangeText={setDraftName} placeholder="e.g. Table 1" />
+          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>
+            {t("admin.settings.tableRow.nameFieldLabel")}
+          </ThemedText>
+          <Input
+            value={draftName}
+            onChangeText={setDraftName}
+            placeholder={t("admin.settings.tableRow.namePlaceholder")}
+          />
         </View>
         <View style={styles.editSeatsField}>
-          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>SEATS</ThemedText>
+          <ThemedText style={[styles.editFieldLabel, { color: mutedColor }]}>
+            {t("admin.settings.tableRow.seatsFieldLabel")}
+          </ThemedText>
           <Select
             selectedValue={draftSeats}
             onSelect={(v) => setDraftSeats(v as number)}
             options={buildSeatOptions()}
-            placeholder="Seats"
+            placeholder={t("admin.settings.tableRow.seatsPlaceholder")}
           />
         </View>
       </View>
@@ -340,15 +356,15 @@ export function TableRow({
           tone="neutral"
           size="md"
           onPress={() => setEditing(false)}
-          accessibilityLabel={`Cancel editing ${tableName}`}
+          accessibilityLabel={t("admin.settings.tableRow.cancelEditLabel", { name: tableName })}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           size="md"
           disabled={saving}
           loading={saving}
-          accessibilityLabel={`Save ${tableName}`}
+          accessibilityLabel={t("admin.settings.tableRow.saveLabel", { name: tableName })}
           onPress={async () => {
             setSaving(true);
             const result = await updateTable(restaurantId, sectionId, table.id, {
@@ -362,7 +378,7 @@ export function TableRow({
             }
           }}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? t("admin.settings.tableRow.saving") : t("admin.settings.tableRow.save")}
         </Button>
       </ButtonRow>
     </View>

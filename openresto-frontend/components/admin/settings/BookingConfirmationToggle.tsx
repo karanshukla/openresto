@@ -1,4 +1,5 @@
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel, ToggleSwitch } from "./settingsShared";
 import { Icon } from "@/components/common/Icon";
@@ -33,9 +34,12 @@ export function BookingConfirmationToggle({
   surface2,
   accentSoft,
 }: BookingConfirmationToggleProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.wrapper}>
-      <SubLabel mutedColor={mutedColor}>Booking confirmations</SubLabel>
+      <SubLabel mutedColor={mutedColor}>
+        {t("admin.settings.bookingConfirmation.sectionLabel")}
+      </SubLabel>
       <View
         style={[
           styles.card,
@@ -50,7 +54,7 @@ export function BookingConfirmationToggle({
           }}
           role="switch"
           aria-checked={sendConfirmations}
-          accessibilityLabel="Send booking confirmation emails"
+          accessibilityLabel={t("admin.settings.bookingConfirmation.toggleLabel")}
           accessibilityState={{ checked: sendConfirmations, disabled: confirmDisabled }}
           style={styles.row}
         >
@@ -59,11 +63,13 @@ export function BookingConfirmationToggle({
           </View>
           <View style={styles.copy}>
             <View style={styles.titleRow}>
-              <ThemedText style={styles.title}>Booking confirmation</ThemedText>
+              <ThemedText style={styles.title}>
+                {t("admin.settings.bookingConfirmation.title")}
+              </ThemedText>
               <View style={[styles.badge, { backgroundColor: accentSoft }]} />
             </View>
             <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-              Sent the moment a guest books a table.
+              {t("admin.settings.bookingConfirmation.subtitle")}
             </ThemedText>
           </View>
           <ToggleSwitch
@@ -82,7 +88,7 @@ export function BookingConfirmationToggle({
           <View style={[styles.hint, { borderTopColor: borderColor, backgroundColor: cardBg }]}>
             <Icon name="shield-outline" size={13} color={mutedColor} />
             <ThemedText style={[styles.hintText, { color: mutedColor }]}>
-              Configure and test SMTP above to enable.
+              {t("admin.settings.bookingConfirmation.disabledHint")}
             </ThemedText>
           </View>
         )}

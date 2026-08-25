@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -83,6 +84,7 @@ export function HighlightsCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const { colors, isDark, primaryColor } = useAppTheme();
   const brand = useBrand();
   const surface2 = isDark ? "#252729" : "#f9fafb";
@@ -174,7 +176,7 @@ export function HighlightsCard({
     // is optional, so only validate when the admin actually entered something.
     const trimmedLink = editState.link.trim();
     if (trimmedLink && !isValidUrl(trimmedLink)) {
-      setHighlightMsg("Enter a valid link URL (e.g. https://example.com).");
+      setHighlightMsg(t("admin.settings.highlights.invalidLinkUrl"));
       return;
     }
     setHighlightMsg(null);
@@ -196,7 +198,7 @@ export function HighlightsCard({
         message = result.message;
       } else {
         ok = false;
-        message = "Couldn't reach the server. Please try again.";
+        message = t("admin.settings.highlights.serverUnreachable");
       }
     } else if (editingId != null) {
       const result = await adminUpdateHighlight(editingId, {
@@ -213,7 +215,7 @@ export function HighlightsCard({
         message = result.message;
       } else {
         ok = false;
-        message = "Couldn't reach the server. Please try again.";
+        message = t("admin.settings.highlights.serverUnreachable");
       }
     }
     setSaving(false);
@@ -233,13 +235,13 @@ export function HighlightsCard({
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="sparkles-outline"
-        title="Highlights"
+        title={t("admin.settings.highlights.title")}
         subtitle={
           loading
-            ? "Loading…"
+            ? t("admin.settings.highlights.loading")
             : highlights.length > 0
-              ? `${highlights.length} highlight${highlights.length !== 1 ? "s" : ""} · Home page`
-              : "None configured · Home page"
+              ? t("admin.settings.highlights.countSubtitle", { count: highlights.length })
+              : t("admin.settings.highlights.noneSubtitle")
         }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -251,24 +253,28 @@ export function HighlightsCard({
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor, gap: 12 }]}>
           <View style={settingsStyles.fieldRow}>
             <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Section Heading</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.highlights.headingLabel")}
+              </ThemedText>
               <Input
                 value={heading}
                 onChangeText={setHeading}
-                placeholder="Restaurant highlights"
+                placeholder={t("admin.settings.highlights.headingPlaceholder")}
                 maxLength={60}
               />
               <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Shown above the cards below. Leave blank for the default.
+                {t("admin.settings.highlights.headingHint")}
               </ThemedText>
             </View>
 
             <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Section Subheading</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.highlights.subheadingLabel")}
+              </ThemedText>
               <Input
                 value={subheading}
                 onChangeText={setSubheading}
-                placeholder="Curated by the owner"
+                placeholder={t("admin.settings.highlights.subheadingPlaceholder")}
                 maxLength={60}
               />
             </View>
@@ -293,7 +299,7 @@ export function HighlightsCard({
                 <View style={[settingsStyles.emptyState, { borderColor }]}>
                   <Icon name="sparkles-outline" size={22} color={mutedColor} />
                   <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
-                    No highlights yet. Press Add to create your first one.
+                    {t("admin.settings.highlights.emptyState")}
                   </ThemedText>
                 </View>
               )}
@@ -345,18 +351,22 @@ export function HighlightsCard({
                       </View>
                       <View style={styles.actions}>
                         <RowTextButton
-                          label="Edit"
+                          label={t("admin.settings.highlights.edit")}
                           icon="pencil-outline"
                           color={mutedColor}
                           onPress={() => startEdit(h)}
-                          accessibilityLabel={`Edit highlight ${h.title}`}
+                          accessibilityLabel={t("admin.settings.highlights.editLabel", {
+                            title: h.title,
+                          })}
                         />
                         <RowTextButton
-                          label="Delete"
+                          label={t("admin.settings.highlights.delete")}
                           icon="trash-outline"
                           color={theme.colors.error}
                           onPress={() => remove(h.id)}
-                          accessibilityLabel={`Delete highlight ${h.title}`}
+                          accessibilityLabel={t("admin.settings.highlights.deleteLabel", {
+                            title: h.title,
+                          })}
                         />
                       </View>
                     </View>
@@ -387,9 +397,9 @@ export function HighlightsCard({
                     size="md"
                     icon="add"
                     onPress={startNew}
-                    accessibilityLabel="Add highlight"
+                    accessibilityLabel={t("admin.settings.highlights.addLabel")}
                   >
-                    Add
+                    {t("admin.settings.highlights.add")}
                   </Button>
                 </ButtonRow>
               )}
@@ -430,17 +440,20 @@ function HighlightEditForm({
   /** Labels the commit as a create rather than a save — the same form serves both. */
   isNew?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={[settingsStyles.editForm, { backgroundColor: surface2, borderColor }]}>
       <View style={settingsStyles.editFormIconField}>
-        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+          {t("admin.settings.highlights.iconLabel")}
+        </ThemedText>
         <View style={settingsStyles.editFormIconGrid}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
               key={icon}
               onPress={() => onChange({ ...state, iconKey: icon })}
               accessibilityRole="radio"
-              accessibilityLabel={`${icon} icon`}
+              accessibilityLabel={t("admin.settings.highlights.iconOptionLabel", { icon })}
               accessibilityState={{ checked: state.iconKey === icon }}
               style={[
                 settingsStyles.editFormSwatch,
@@ -461,22 +474,24 @@ function HighlightEditForm({
       </View>
 
       <View style={settingsStyles.editFormField}>
-        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>Title</ThemedText>
+        <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+          {t("admin.settings.highlights.titleLabel")}
+        </ThemedText>
         <Input
           value={state.title}
           onChangeText={(v) => onChange({ ...state, title: v })}
-          placeholder="e.g. Wood-fired kitchen"
+          placeholder={t("admin.settings.highlights.titlePlaceholder")}
         />
       </View>
 
       <View style={settingsStyles.editFormField}>
         <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-          Description
+          {t("admin.settings.highlights.descriptionLabel")}
         </ThemedText>
         <Input
           value={state.body}
           onChangeText={(v) => onChange({ ...state, body: v })}
-          placeholder="Short sentence about this highlight"
+          placeholder={t("admin.settings.highlights.descriptionPlaceholder")}
           multiline
           numberOfLines={3}
           style={styles.bodyInput}
@@ -485,17 +500,17 @@ function HighlightEditForm({
 
       <View style={settingsStyles.editFormField}>
         <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-          Link (optional)
+          {t("admin.settings.highlights.linkLabel")}
         </ThemedText>
         <Input
           value={state.link}
           onChangeText={(v) => onChange({ ...state, link: v })}
-          placeholder="https://example.com/menu"
+          placeholder={t("admin.settings.highlights.linkPlaceholder")}
           autoCapitalize="none"
           keyboardType="url"
         />
         <ThemedText style={[styles.linkHint, { color: mutedColor }]}>
-          Makes the whole card clickable. Leave blank for a static highlight.
+          {t("admin.settings.highlights.linkHint")}
         </ThemedText>
       </View>
 
@@ -511,9 +526,9 @@ function HighlightEditForm({
           tone="neutral"
           size="md"
           onPress={onCancel}
-          accessibilityLabel="Cancel editing this highlight"
+          accessibilityLabel={t("admin.settings.highlights.cancelLabel")}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           size="md"
@@ -521,9 +536,19 @@ function HighlightEditForm({
           onPress={onSave}
           disabled={saving || !state.title.trim()}
           loading={saving}
-          accessibilityLabel={isNew ? "Add this highlight" : "Save this highlight"}
+          accessibilityLabel={
+            isNew
+              ? t("admin.settings.highlights.addThisLabel")
+              : t("admin.settings.highlights.saveThisLabel")
+          }
         >
-          {isNew ? (saving ? "Adding…" : "Add") : saving ? "Saving…" : "Save"}
+          {isNew
+            ? saving
+              ? t("admin.settings.highlights.adding")
+              : t("admin.settings.highlights.add")
+            : saving
+              ? t("admin.settings.highlights.saving")
+              : t("admin.settings.highlights.save")}
         </Button>
       </ButtonRow>
     </View>

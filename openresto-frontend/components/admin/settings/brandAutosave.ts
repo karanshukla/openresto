@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { saveBrandSettings, type BrandSettingsDto } from "@/api/admin";
 
 /**
@@ -7,6 +8,6 @@ import { saveBrandSettings, type BrandSettingsDto } from "@/api/admin";
  */
 export async function saveBrandFields(fields: BrandSettingsDto): Promise<string | null> {
   const result = await saveBrandSettings(fields);
-  if (!result) return "Couldn't reach the server.";
+  if (!result) return i18n.t("admin.settings.brandAutosave.serverUnreachable");
   return result.ok ? null : result.message;
 }

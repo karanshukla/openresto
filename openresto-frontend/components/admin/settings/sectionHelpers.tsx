@@ -1,4 +1,5 @@
 import { Pressable } from "react-native";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { styles } from "./sectionHelpers.styles";
 
@@ -7,17 +8,33 @@ import { styles } from "./sectionHelpers.styles";
  * Extracted from the original monolithic form during Bundle 9B-1 decomposition.
  */
 
-export const DAY_LABELS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+const WEEKDAY_KEYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 
-export const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_SHORT_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+/**
+ * `getDayLabels`/`getDayShort` return weekday display strings, indexed 0=Monday…6=Sunday to
+ * match the ISO day numbers (`day = index + 1`) that `OpeningHoursSection` and
+ * `WalkInPolicySection` store on the wire. Only the label localizes — the index arithmetic
+ * that turns it into an ISO day number is unaffected by the active locale.
+ * @see [sectionHelpers.test.tsx](../../../tests/components/admin/settings/sectionHelpers.test.tsx)
+ * — pins that the labels change with locale while the day count stays 7 in every locale.
+ */
+export function getDayLabels(t: TFunction): string[] {
+  return WEEKDAY_KEYS.map((key) => t(`admin.settings.weekdays.${key}`));
+}
+
+export function getDayShort(t: TFunction): string[] {
+  return WEEKDAY_SHORT_KEYS.map((key) => t(`admin.settings.weekdays.${key}`));
+}
 
 /** True when a closing time is at or before the opening time (i.e. closes after midnight). */
 export function isOvernight(open: string, close: string): boolean {

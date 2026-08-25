@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -24,6 +25,7 @@ export function SecurityCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const [pvqStatus, setPvqStatus] = useState<PvqStatus | null>(null);
   const { user, setUser } = useAuth();
   const email = user?.email ?? null;
@@ -97,8 +99,8 @@ export function SecurityCard({
     <View style={[styles.secCard, { backgroundColor: cardBg, borderColor }]} testID="security-card">
       <AccordionCardHeader
         icon="shield-checkmark-outline"
-        title="Account Security"
-        subtitle="Manage your password and identity verification"
+        title={t("admin.settings.security.title")}
+        subtitle={t("admin.settings.security.subtitle")}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
         primaryColor={primaryColor}
@@ -109,16 +111,18 @@ export function SecurityCard({
         <>
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={styles.secRowCopy}>
-              <ThemedText style={styles.secRowTitle}>Email</ThemedText>
+              <ThemedText style={styles.secRowTitle}>
+                {t("admin.settings.security.emailLabel")}
+              </ThemedText>
               <ThemedText style={[styles.secRowSub, { color: mutedColor }]} numberOfLines={1}>
-                {email ?? "Loading…"}
+                {email ?? t("admin.settings.security.loading")}
               </ThemedText>
             </View>
             <Button
               testID="email-change-button"
               variant="secondary"
               size="md"
-              accessibilityLabel="Change email address"
+              accessibilityLabel={t("admin.settings.security.changeEmailLabel")}
               accessibilityState={{ expanded: showEmailForm }}
               onPress={() => {
                 setShowEmailForm((v) => !v);
@@ -127,7 +131,7 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              Change
+              {t("admin.settings.security.change")}
             </Button>
           </View>
 
@@ -135,22 +139,26 @@ export function SecurityCard({
             <View style={[styles.secForm, { borderTopColor: borderColor }]}>
               <View style={styles.fieldRow}>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>New email</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.newEmailLabel")}
+                  </ThemedText>
                   <Input
                     value={newEmail}
                     onChangeText={setNewEmail}
-                    placeholder="new@email.com"
+                    placeholder={t("admin.settings.security.newEmailPlaceholder")}
                     autoCapitalize="none"
                     keyboardType="email-address"
                   />
                 </View>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>Current password</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.currentPasswordLabel")}
+                  </ThemedText>
                   <Input
                     value={currentPwForEmail}
                     onChangeText={setCurrentPwForEmail}
                     secureTextEntry
-                    placeholder="••••••••"
+                    placeholder={t("admin.settings.security.passwordPlaceholder")}
                   />
                 </View>
               </View>
@@ -165,16 +173,18 @@ export function SecurityCard({
                   tone="neutral"
                   size="md"
                   onPress={() => setShowEmailForm(false)}
-                  accessibilityLabel="Cancel email change"
+                  accessibilityLabel={t("admin.settings.security.cancelEmailLabel")}
                 >
-                  Cancel
+                  {t("common.actions.cancel")}
                 </Button>
                 <Button
                   size="md"
                   onPress={handleChangeEmail}
                   disabled={saving || !newEmail.trim() || !currentPwForEmail}
                 >
-                  {saving ? "Saving…" : "Update Email"}
+                  {saving
+                    ? t("admin.settings.security.saving")
+                    : t("admin.settings.security.updateEmail")}
                 </Button>
               </ButtonRow>
             </View>
@@ -182,21 +192,23 @@ export function SecurityCard({
 
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={[styles.secRowCopy, styles.policyHeaderCopy]}>
-              <ThemedText style={styles.secRowTitle}>Security Question</ThemedText>
+              <ThemedText style={styles.secRowTitle}>
+                {t("admin.settings.security.pvqLabel")}
+              </ThemedText>
               {pvqStatus?.isConfigured ? (
                 <ThemedText style={[styles.secRowSub, { color: mutedColor }]} numberOfLines={1}>
                   {pvqStatus.question}
                 </ThemedText>
               ) : (
                 <ThemedText style={[styles.secRowSub, { color: theme.colors.warning }]}>
-                  Not configured. Set one up to enable password reset.
+                  {t("admin.settings.security.pvqNotConfigured")}
                 </ThemedText>
               )}
             </View>
             <Button
               variant="secondary"
               size="md"
-              accessibilityLabel="Change password recovery question"
+              accessibilityLabel={t("admin.settings.security.changePvqLabel")}
               accessibilityState={{ expanded: showPvqForm }}
               onPress={() => {
                 setShowPvqForm((v) => !v);
@@ -205,7 +217,9 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              {pvqStatus?.isConfigured ? "Change" : "Set up"}
+              {pvqStatus?.isConfigured
+                ? t("admin.settings.security.change")
+                : t("admin.settings.security.setUp")}
             </Button>
           </View>
 
@@ -213,19 +227,23 @@ export function SecurityCard({
             <View style={[styles.secForm, { borderTopColor: borderColor }]}>
               <View style={styles.fieldRow}>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>Security question</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.pvqQuestionLabel")}
+                  </ThemedText>
                   <Input
                     value={pvqQuestion}
                     onChangeText={setPvqQuestion}
-                    placeholder="e.g. What was the name of your first pet?"
+                    placeholder={t("admin.settings.security.pvqQuestionPlaceholder")}
                   />
                 </View>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>Answer (not case-sensitive)</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.pvqAnswerLabel")}
+                  </ThemedText>
                   <Input
                     value={pvqAnswer}
                     onChangeText={setPvqAnswer}
-                    placeholder="Your answer"
+                    placeholder={t("admin.settings.security.pvqAnswerPlaceholder")}
                     autoCapitalize="none"
                   />
                 </View>
@@ -237,16 +255,18 @@ export function SecurityCard({
                   tone="neutral"
                   size="md"
                   onPress={() => setShowPvqForm(false)}
-                  accessibilityLabel="Cancel recovery question change"
+                  accessibilityLabel={t("admin.settings.security.cancelPvqLabel")}
                 >
-                  Cancel
+                  {t("common.actions.cancel")}
                 </Button>
                 <Button
                   size="md"
                   onPress={handleSavePvq}
                   disabled={saving || !pvqQuestion.trim() || !pvqAnswer.trim()}
                 >
-                  {saving ? "Saving…" : "Save Question"}
+                  {saving
+                    ? t("admin.settings.security.saving")
+                    : t("admin.settings.security.saveQuestion")}
                 </Button>
               </ButtonRow>
             </View>
@@ -254,15 +274,17 @@ export function SecurityCard({
 
           <View style={[styles.secRow, { borderTopColor: borderColor }]}>
             <View style={styles.secRowCopy}>
-              <ThemedText style={styles.secRowTitle}>Password</ThemedText>
+              <ThemedText style={styles.secRowTitle}>
+                {t("admin.settings.security.passwordLabel")}
+              </ThemedText>
               <ThemedText style={[styles.secRowSub, { color: mutedColor }]}>
-                Change your admin password
+                {t("admin.settings.security.passwordSubtitle")}
               </ThemedText>
             </View>
             <Button
               variant="secondary"
               size="md"
-              accessibilityLabel="Change password"
+              accessibilityLabel={t("admin.settings.security.changePasswordLabel")}
               accessibilityState={{ expanded: showPwForm }}
               onPress={() => {
                 setShowPwForm((v) => !v);
@@ -271,38 +293,44 @@ export function SecurityCard({
                 setMsg(null);
               }}
             >
-              Change
+              {t("admin.settings.security.change")}
             </Button>
           </View>
 
           {showPwForm && (
             <View style={[styles.secForm, { borderTopColor: borderColor }]}>
               <View style={styles.field}>
-                <ThemedText style={styles.fieldLabel}>Current password</ThemedText>
+                <ThemedText style={styles.fieldLabel}>
+                  {t("admin.settings.security.currentPasswordLabel")}
+                </ThemedText>
                 <Input
                   value={currentPw}
                   onChangeText={setCurrentPw}
                   secureTextEntry
-                  placeholder="••••••••"
+                  placeholder={t("admin.settings.security.passwordPlaceholder")}
                 />
               </View>
               <View style={styles.fieldRow}>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>New password</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.newPasswordLabel")}
+                  </ThemedText>
                   <Input
                     value={newPw}
                     onChangeText={setNewPw}
                     secureTextEntry
-                    placeholder="At least 6 characters"
+                    placeholder={t("admin.settings.security.newPasswordPlaceholder")}
                   />
                 </View>
                 <View style={[styles.field, styles.fieldFlex]}>
-                  <ThemedText style={styles.fieldLabel}>Confirm new password</ThemedText>
+                  <ThemedText style={styles.fieldLabel}>
+                    {t("admin.settings.security.confirmPasswordLabel")}
+                  </ThemedText>
                   <Input
                     value={confirmPw}
                     onChangeText={setConfirmPw}
                     secureTextEntry
-                    placeholder="Repeat password"
+                    placeholder={t("admin.settings.security.confirmPasswordPlaceholder")}
                   />
                 </View>
               </View>
@@ -317,16 +345,18 @@ export function SecurityCard({
                   tone="neutral"
                   size="md"
                   onPress={() => setShowPwForm(false)}
-                  accessibilityLabel="Cancel password change"
+                  accessibilityLabel={t("admin.settings.security.cancelPasswordLabel")}
                 >
-                  Cancel
+                  {t("common.actions.cancel")}
                 </Button>
                 <Button
                   size="md"
                   onPress={handleChangePw}
                   disabled={saving || !currentPw || newPw.length < 6}
                 >
-                  {saving ? "Saving…" : "Update Password"}
+                  {saving
+                    ? t("admin.settings.security.saving")
+                    : t("admin.settings.security.updatePassword")}
                 </Button>
               </ButtonRow>
             </View>

@@ -1,9 +1,10 @@
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import TimePicker from "@/components/common/TimePicker";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
-import { DAY_LABELS, DAY_SHORT, modeButton } from "./sectionHelpers";
+import { getDayLabels, getDayShort, modeButton } from "./sectionHelpers";
 import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./OpeningHoursSection.styles";
@@ -60,15 +61,23 @@ export function OpeningHoursSection({
   textColor,
   isDark,
 }: OpeningHoursSectionProps) {
+  const { t } = useTranslation();
   const modeTheme = { borderColor, mutedColor, textColor, isDark };
   const [expanded, setExpanded] = usePersistedState("locations:hours:expanded", true);
+  const dayLabels = getDayLabels(t);
+  const dayShort = getDayShort(t);
+  const modeUniformLabel = t("admin.settings.openingHours.modeUniform");
+  const modeCustomLabel = t("admin.settings.openingHours.modeCustom");
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="time-outline"
-        title="Opening Hours"
-        subtitle={`${openDays.length} of 7 days open · ${customHours ? "Custom per day" : "Same every day"}`}
+        title={t("admin.settings.openingHours.title")}
+        subtitle={t("admin.settings.openingHours.subtitle", {
+          count: openDays.length,
+          mode: customHours ? modeCustomLabel : modeUniformLabel,
+        })}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
         primaryColor={primaryColor}
@@ -85,14 +94,14 @@ export function OpeningHoursSection({
             ]}
           >
             {modeButton(
-              "Same every day",
+              modeUniformLabel,
               !customHours,
               () => onSetCustomHours(false),
               "hours-mode-uniform",
               modeTheme
             )}
             {modeButton(
-              "Custom per day",
+              modeCustomLabel,
               customHours,
               () => onSetCustomHours(true),
               "hours-mode-custom",
@@ -105,7 +114,7 @@ export function OpeningHoursSection({
               <View style={styles.uniformTimes}>
                 <View style={styles.uniformTimeField}>
                   <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                    Opens
+                    {t("admin.settings.openingHours.opensLabel")}
                   </ThemedText>
                   <TimePicker
                     selectedTime={openTime}
@@ -116,7 +125,7 @@ export function OpeningHoursSection({
                 </View>
                 <View style={styles.uniformTimeField}>
                   <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                    Closes
+                    {t("admin.settings.openingHours.closesLabel")}
                   </ThemedText>
                   <TimePicker
                     selectedTime={closeTime}
@@ -129,10 +138,10 @@ export function OpeningHoursSection({
 
               <View style={settingsStyles.policyField}>
                 <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
-                  Open days
+                  {t("admin.settings.openingHours.openDaysLabel")}
                 </ThemedText>
                 <View style={settingsStyles.dayGrid}>
-                  {DAY_LABELS.map((label, i) => {
+                  {dayLabels.map((label, i) => {
                     const day = i + 1;
                     const active = openDays.includes(day);
                     return (
@@ -162,16 +171,19 @@ export function OpeningHoursSection({
                   })}
                 </View>
                 <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-                  Tap a day to mark it open or closed.
+                  {t("admin.settings.openingHours.tapDayHint")}
                 </ThemedText>
               </View>
             </>
           ) : (
             <View style={styles.perDayList}>
-              {DAY_SHORT.map((label, i) => {
+              {dayShort.map((label, i) => {
                 const day = i + 1;
                 const active = openDays.includes(day);
                 const hours = weekHours[day];
+                const dayState = active
+                  ? t("admin.settings.openingHours.dayStateOpen")
+                  : t("admin.settings.openingHours.dayStateClosed");
                 return (
                   <View key={day} style={[styles.perDayRow, !active && styles.perDayRowClosed]}>
                     <Pressable
@@ -179,7 +191,10 @@ export function OpeningHoursSection({
                       testID={`day-toggle-${day}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={`${DAY_LABELS[i]}: ${active ? "open" : "closed"}. Tap to toggle.`}
+                      accessibilityLabel={t("admin.settings.openingHours.dayToggleLabel", {
+                        day: dayLabels[i],
+                        state: dayState,
+                      })}
                       style={[
                         styles.dayChip,
                         {
@@ -219,7 +234,9 @@ export function OpeningHoursSection({
                         <Pressable
                           onPress={() => onCopyHoursToAllDays(day)}
                           testID={`copy-hours-${day}`}
-                          accessibilityLabel={`Copy ${DAY_LABELS[i]}'s hours to every day`}
+                          accessibilityLabel={t("admin.settings.openingHours.copyHoursLabel", {
+                            day: dayLabels[i],
+                          })}
                           style={(state) => [
                             styles.copyBtn,
                             {
@@ -235,16 +252,14 @@ export function OpeningHoursSection({
                       </>
                     ) : (
                       <ThemedText style={[styles.closedLabel, { color: mutedColor }]}>
-                        Closed
+                        {t("admin.settings.openingHours.closedLabel")}
                       </ThemedText>
                     )}
                   </View>
                 );
               })}
               <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-                Tap a day to mark it open or closed. Use{" "}
-                <Icon name="copy-outline" size={11} color={mutedColor} /> to apply one day's hours
-                to the whole week.
+                {t("admin.settings.openingHours.copyHint")}
               </ThemedText>
             </View>
           )}
@@ -253,7 +268,7 @@ export function OpeningHoursSection({
             <View style={settingsStyles.policyNote}>
               <Icon name="moon-outline" size="xs" color={mutedColor} />
               <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
-                A closing time at or before opening means the restaurant closes after midnight.
+                {t("admin.settings.openingHours.overnightHint")}
               </ThemedText>
             </View>
           )}

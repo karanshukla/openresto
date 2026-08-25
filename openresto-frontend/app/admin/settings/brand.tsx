@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { BrandDraftProvider } from "@/components/admin/settings/BrandDraftContext";
 import { BrandPreview } from "@/components/admin/settings/BrandPreview";
 import { BrandSettingsCard } from "@/components/admin/settings/BrandSettingsCard";
@@ -8,13 +9,14 @@ import { HighlightsCard } from "@/components/admin/settings/HighlightsCard";
 import { SettingsPage, useSettingsPalette } from "@/components/admin/settings/SettingsPage";
 
 export default function BrandSettingsScreen() {
+  const { t } = useTranslation();
   const palette = useSettingsPalette();
 
   return (
     <BrandDraftProvider>
       <SettingsPage
-        title="Brand"
-        subtitle="How the site looks and what it says about you."
+        title={t("admin.settings.brandRoute.title")}
+        subtitle={t("admin.settings.brandRoute.subtitle")}
         aside={<BrandPreview {...palette} />}
       >
         <BrandSettingsCard {...palette} />

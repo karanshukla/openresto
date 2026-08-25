@@ -1,10 +1,12 @@
 import { Redirect } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { SettingsPage, useSettingsPalette } from "@/components/admin/settings/SettingsPage";
 import { UsersCard } from "@/components/admin/settings/UsersCard";
 import PageLoader from "@/components/common/PageLoader";
 import { useAuth, useCan } from "@/context/AuthContext";
 
 export default function UserSettingsScreen() {
+  const { t } = useTranslation();
   const palette = useSettingsPalette();
   const { status } = useAuth();
   // The API refuses these calls for a Manager, so the route is a dead end rather than a
@@ -17,7 +19,10 @@ export default function UserSettingsScreen() {
   if (!canManageUsers) return <Redirect href="/admin/settings/account" />;
 
   return (
-    <SettingsPage title="Users" subtitle="Who can sign in to this admin panel, and as what.">
+    <SettingsPage
+      title={t("admin.settings.usersRoute.title")}
+      subtitle={t("admin.settings.usersRoute.subtitle")}
+    >
       <UsersCard {...palette} />
     </SettingsPage>
   );

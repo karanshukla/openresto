@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import Input from "@/components/common/Input";
 import Select, { type SelectOption } from "@/components/common/Select";
 import Button from "@/components/common/Button";
@@ -25,6 +26,7 @@ export function AddRow({
    */
   extraOptions?: SelectOption[];
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [extra, setExtra] = useState("");
@@ -51,7 +53,7 @@ export function AddRow({
           <Input
             value={name}
             onChangeText={setName}
-            placeholder={placeholder ?? "Name"}
+            placeholder={placeholder ?? t("admin.settings.addRow.namePlaceholder")}
             autoFocus
           />
         </View>
@@ -85,9 +87,9 @@ export function AddRow({
             setName("");
             setExtra("");
           }}
-          accessibilityLabel="Cancel add"
+          accessibilityLabel={t("admin.settings.addRow.cancelLabel")}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           size="md"
@@ -102,7 +104,7 @@ export function AddRow({
             setOpen(false);
           }}
         >
-          {saving ? "Adding…" : "Add"}
+          {saving ? t("admin.settings.addRow.adding") : t("admin.settings.addRow.add")}
         </Button>
       </ButtonRow>
     </View>

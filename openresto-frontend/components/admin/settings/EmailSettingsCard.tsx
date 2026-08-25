@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -36,6 +37,7 @@ export function EmailSettingsCard({
   isDark: boolean;
   email: EmailSettingsState;
 }) {
+  const { t } = useTranslation();
   const { text: textColor } = getThemeColors(isDark);
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const borderStrong = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)";
@@ -80,8 +82,12 @@ export function EmailSettingsCard({
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="mail-outline"
-        title="Email (SMTP)"
-        subtitle={isConfigured ? `Connected · ${host}` : "Setup required"}
+        title={t("admin.settings.emailSettings.title")}
+        subtitle={
+          isConfigured
+            ? t("admin.settings.emailSettings.connectedSubtitle", { host })
+            : t("admin.settings.emailSettings.setupRequired")
+        }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
         primaryColor={primaryColor}
@@ -91,7 +97,9 @@ export function EmailSettingsCard({
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, styles.form, { borderTopColor: borderColor }]}>
           <View style={styles.providerBlock}>
-            <SubLabel mutedColor={mutedColor}>Provider</SubLabel>
+            <SubLabel mutedColor={mutedColor}>
+              {t("admin.settings.emailSettings.providerLabel")}
+            </SubLabel>
             <View style={styles.providerGrid}>
               {EMAIL_PROVIDERS.map((p) => {
                 const on = activeProviderId === p.id;
@@ -139,10 +147,14 @@ export function EmailSettingsCard({
           </View>
 
           <View style={styles.connectionBlock}>
-            <SubLabel mutedColor={mutedColor}>Connection</SubLabel>
+            <SubLabel mutedColor={mutedColor}>
+              {t("admin.settings.emailSettings.connectionLabel")}
+            </SubLabel>
 
             <View style={settingsStyles.field}>
-              <ThemedText style={settingsStyles.fieldLabel}>SMTP Host</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.emailSettings.hostLabel")}
+              </ThemedText>
               <Input
                 value={host}
                 onChangeText={setHost}
@@ -153,7 +165,9 @@ export function EmailSettingsCard({
 
             <View style={settingsStyles.fieldRow}>
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>Port</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.portLabel")}
+                </ThemedText>
                 <View style={styles.portRow}>
                   <View style={styles.portInput}>
                     <Input
@@ -169,7 +183,9 @@ export function EmailSettingsCard({
                         key={p}
                         onPress={() => setPort(String(p))}
                         accessibilityRole="radio"
-                        accessibilityLabel={`Use port ${p}`}
+                        accessibilityLabel={t("admin.settings.emailSettings.usePortLabel", {
+                          port: p,
+                        })}
                         accessibilityState={{ checked: port === String(p) }}
                         style={[
                           styles.portPreset,
@@ -194,12 +210,14 @@ export function EmailSettingsCard({
               </View>
 
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>Encryption</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.encryptionLabel")}
+                </ThemedText>
                 <View style={styles.encryptionRow}>
                   <Pressable
                     onPress={() => setEnableSsl(true)}
                     accessibilityRole="radio"
-                    accessibilityLabel="SSL/TLS encryption"
+                    accessibilityLabel={t("admin.settings.emailSettings.sslTlsA11yLabel")}
                     accessibilityState={{ checked: enableSsl }}
                     style={[
                       styles.encryptionOption,
@@ -222,13 +240,13 @@ export function EmailSettingsCard({
                         { color: enableSsl ? okColor : mutedColor },
                       ]}
                     >
-                      SSL/TLS
+                      {t("admin.settings.emailSettings.sslTls")}
                     </ThemedText>
                   </Pressable>
                   <Pressable
                     onPress={() => setEnableSsl(false)}
                     accessibilityRole="radio"
-                    accessibilityLabel="No encryption"
+                    accessibilityLabel={t("admin.settings.emailSettings.noEncryptionA11yLabel")}
                     accessibilityState={{ checked: !enableSsl }}
                     style={[
                       styles.encryptionOption,
@@ -245,7 +263,7 @@ export function EmailSettingsCard({
                         { color: !enableSsl ? textColor : mutedColor },
                       ]}
                     >
-                      None
+                      {t("admin.settings.emailSettings.none")}
                     </ThemedText>
                   </Pressable>
                 </View>
@@ -254,7 +272,9 @@ export function EmailSettingsCard({
 
             <View style={settingsStyles.fieldRow}>
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>Username</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.usernameLabel")}
+                </ThemedText>
                 <Input
                   value={username}
                   onChangeText={setUsername}
@@ -264,14 +284,16 @@ export function EmailSettingsCard({
               </View>
 
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>Password</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.passwordLabel")}
+                </ThemedText>
                 <View style={styles.passwordRow}>
                   <View style={styles.passwordInput}>
                     <Input
                       key={showPassword ? "pw-visible" : "pw-hidden"}
                       value={password}
                       onChangeText={setPassword}
-                      placeholder="SMTP password or app token"
+                      placeholder={t("admin.settings.emailSettings.passwordPlaceholder")}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
                     />
@@ -280,7 +302,11 @@ export function EmailSettingsCard({
                     onPress={() => setShowPassword((v) => !v)}
                     style={styles.passwordToggle}
                     accessibilityRole="button"
-                    accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                    accessibilityLabel={
+                      showPassword
+                        ? t("admin.settings.emailSettings.hidePassword")
+                        : t("admin.settings.emailSettings.showPassword")
+                    }
                     accessibilityState={{ expanded: showPassword }}
                   >
                     <Icon
@@ -295,14 +321,20 @@ export function EmailSettingsCard({
           </View>
 
           <View style={styles.connectionBlock}>
-            <SubLabel mutedColor={mutedColor}>Sender identity</SubLabel>
+            <SubLabel mutedColor={mutedColor}>
+              {t("admin.settings.emailSettings.senderIdentityLabel")}
+            </SubLabel>
             <View style={settingsStyles.fieldRow}>
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>From name</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.fromNameLabel")}
+                </ThemedText>
                 <Input value={fromName} onChangeText={setFromName} placeholder="OpenResto" />
               </View>
               <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-                <ThemedText style={settingsStyles.fieldLabel}>From email</ThemedText>
+                <ThemedText style={settingsStyles.fieldLabel}>
+                  {t("admin.settings.emailSettings.fromEmailLabel")}
+                </ThemedText>
                 <Input
                   value={fromEmail}
                   onChangeText={setFromEmail}
@@ -362,8 +394,8 @@ export function EmailSettingsCard({
               style={[settingsStyles.statusText, styles.footerHint, { color: mutedColor }]}
             >
               {testState === "ok"
-                ? "Connection verified · confirmations ready"
-                : "Test the connection before enabling confirmations"}
+                ? t("admin.settings.emailSettings.footerHintVerified")
+                : t("admin.settings.emailSettings.footerHintUnverified")}
             </ThemedText>
             <ButtonRow>
               <Button
@@ -372,7 +404,9 @@ export function EmailSettingsCard({
                 disabled={saving || !host || !username}
                 loading={saving}
               >
-                {saving ? "Saving…" : "Save SMTP settings"}
+                {saving
+                  ? t("admin.settings.emailSettings.saving")
+                  : t("admin.settings.emailSettings.saveButton")}
               </Button>
             </ButtonRow>
           </View>

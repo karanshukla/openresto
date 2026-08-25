@@ -1,4 +1,5 @@
 import { ActivityIndicator, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { Icon } from "@/components/common/Icon";
@@ -40,6 +41,7 @@ export function SaveStatus({
   blockedReason?: string | null;
   testID?: string;
 }) {
+  const { t } = useTranslation();
   if (blockedReason && status !== "saving") {
     return (
       <View testID={testID} style={styles.row} accessibilityLiveRegion="polite" role="status">
@@ -56,22 +58,26 @@ export function SaveStatus({
       {status === "saving" && (
         <>
           <ActivityIndicator size="small" color={mutedColor} />
-          <ThemedText style={[styles.text, { color: mutedColor }]}>Saving…</ThemedText>
+          <ThemedText style={[styles.text, { color: mutedColor }]}>
+            {t("admin.settings.saveStatus.saving")}
+          </ThemedText>
         </>
       )}
       {status === "saved" && (
         <>
           <Icon name="checkmark-circle" size="sm" color={theme.colors.success} />
-          <ThemedText style={[styles.text, { color: theme.colors.success }]}>Saved</ThemedText>
+          <ThemedText style={[styles.text, { color: theme.colors.success }]}>
+            {t("admin.settings.saveStatus.saved")}
+          </ThemedText>
           {onUndo && (
             <Button
               variant="ghost"
               tone="neutral"
               size="sm"
               onPress={onUndo}
-              accessibilityLabel="Undo the last save"
+              accessibilityLabel={t("admin.settings.saveStatus.undoLabel")}
             >
-              Undo
+              {t("admin.settings.saveStatus.undo")}
             </Button>
           )}
         </>
@@ -80,16 +86,16 @@ export function SaveStatus({
         <>
           <Icon name="alert-circle" size="sm" color={theme.colors.error} />
           <ThemedText style={[styles.text, styles.errorText, { color: theme.colors.error }]}>
-            {error || "Save failed"}
+            {error || t("admin.settings.saveStatus.saveFailed")}
           </ThemedText>
           <Button
             variant="ghost"
             tone="danger"
             size="sm"
             onPress={onRetry}
-            accessibilityLabel="Retry saving"
+            accessibilityLabel={t("admin.settings.saveStatus.retryLabel")}
           >
-            Retry
+            {t("admin.settings.saveStatus.retry")}
           </Button>
         </>
       )}

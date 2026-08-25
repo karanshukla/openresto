@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { SubLabel } from "./settingsShared";
 import type { EmailFailureDto } from "@/api/admin";
@@ -26,11 +27,12 @@ export function EmailFailuresList({
   dangerSoft,
   dangerColor,
 }: EmailFailuresListProps) {
+  const { t } = useTranslation();
   if (failures.length === 0) return null;
 
   return (
     <View style={styles.wrapper}>
-      <SubLabel mutedColor={mutedColor}>Send failures</SubLabel>
+      <SubLabel mutedColor={mutedColor}>{t("admin.settings.emailFailures.title")}</SubLabel>
       <View style={[styles.list, { borderColor: dangerBorder, backgroundColor: dangerSoft }]}>
         {failures.map((f, i) => {
           const date = new Date(f.attemptedAt);
@@ -52,7 +54,7 @@ export function EmailFailuresList({
               </View>
               {f.bookingRef && (
                 <ThemedText style={[styles.detail, { color: mutedColor }]}>
-                  Ref: {f.bookingRef}
+                  {t("admin.settings.emailFailures.refLine", { ref: f.bookingRef })}
                 </ThemedText>
               )}
               <ThemedText style={[styles.detail, { color: dangerColor }]} numberOfLines={2}>
