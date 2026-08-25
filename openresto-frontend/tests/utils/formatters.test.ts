@@ -150,7 +150,17 @@ describe("formatters - fmtNumber", () => {
   });
 });
 
+/**
+ * `relativeTime` passes `getActiveLocale()` to `Intl.RelativeTimeFormat`, and an unset
+ * locale means "follow the device" — so an assertion left unpinned reads the host's
+ * locale and only holds on a US-locale machine (`en-CA` renders "5 mins ago", `en-GB`
+ * "5 min ago"). Pin the locale the app itself defaults to.
+ */
 describe("formatters - relativeTime", () => {
+  beforeEach(() => {
+    setActiveLocale("en");
+  });
+
   it("returns 'now' for <1 minute", () => {
     const iso = new Date(Date.now() - 30_000).toISOString();
     expect(relativeTime(iso)).toBe("now");
