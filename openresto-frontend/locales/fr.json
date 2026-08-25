@@ -1,0 +1,10 @@
+{
+  "restaurant": {
+    "home": {
+      "heroSubtitle": "Faites défiler vers le bas pour choisir un établissement, sélectionnez une heure, indiquez votre adresse e-mail, et c'est réservé !",
+      "highlightsHeading": "Nos incontournables",
+      "highlightsSubheading": "Sélectionnés par le propriétaire",
+      "locationsHeading": "Nos établissements"
+    }
+  }
+}

@@ -8,6 +8,13 @@
  * shape for a specific module can still override it locally.
  */
 
+// Initializes the global i18next singleton with the "en" resources, synchronously, before any
+// test renders a `useTranslation()` consumer. Production gets this for free — `app/_layout.tsx`
+// imports `LocaleContext`, which imports this module — but most component tests render a
+// screen directly, without going through `_layout.tsx` or `LocaleProvider`, so `t()` would
+// otherwise hit an uninitialized instance.
+import "@/i18n";
+
 // Theme hook — every screen/component reads color scheme via this. Pinned to
 // "light" so snapshot/text assertions are deterministic across the suite.
 jest.mock("@/hooks/use-color-scheme", () => ({
@@ -19,6 +26,14 @@ jest.mock("@/hooks/use-color-scheme", () => ({
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
   MaterialCommunityIcons: () => null,
+}));
+
+// expo-localization's real implementation resolves to a native-module build under Jest's
+// default "ios" haste platform (`requireNativeModule`, which throws with no native host), so
+// every test that transitively imports LocaleContext needs this stubbed. Fixed "ltr" matches
+// every locale this app ships — real RTL detection is groundwork, not exercised yet.
+jest.mock("expo-localization", () => ({
+  getLocales: () => [{ textDirection: "ltr" }],
 }));
 
 // Brand fetch stub — BrandProvider fetches /api/brand on mount. Most screen

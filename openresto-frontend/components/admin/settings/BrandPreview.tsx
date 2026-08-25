@@ -6,7 +6,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getThemeColors, theme } from "@/theme/theme";
 import { buildFaviconDataUri } from "@/constants/faviconIcons";
-import { DEFAULT_COPY } from "@/constants/defaultCopy";
+import { useTranslation } from "react-i18next";
 import { hexToRgb } from "@/utils/colors";
 import { useBrandDraft } from "./BrandDraftContext";
 import { styles, domStyles } from "./BrandPreview.styles";
@@ -30,6 +30,7 @@ export function BrandPreview({
 }) {
   const draft = useBrandDraft();
   const { isDark: adminIsDark } = useAppTheme();
+  const { t } = useTranslation();
   const [expanded, setExpanded] = usePersistedState("settings:brand:preview:expanded", true);
   const [previewDark, setPreviewDark] = usePersistedState(
     "settings:brand:preview:dark",
@@ -43,10 +44,11 @@ export function BrandPreview({
 
   const hasHero = !!draft.headerImageUrl && Platform.OS === "web";
   const heroContain = draft.headerImageFit?.toLowerCase() === "contain";
-  const subtitle = draft.subtitle.trim() || DEFAULT_COPY.heroSubtitle;
-  const highlightsHeading = draft.highlightsHeading.trim() || DEFAULT_COPY.highlightsHeading;
+  const subtitle = draft.subtitle.trim() || t("restaurant.home.heroSubtitle");
+  const highlightsHeading =
+    draft.highlightsHeading.trim() || t("restaurant.home.highlightsHeading");
   const highlightsSubheading =
-    draft.highlightsSubheading.trim() || DEFAULT_COPY.highlightsSubheading;
+    draft.highlightsSubheading.trim() || t("restaurant.home.highlightsSubheading");
   const copyright =
     draft.copyrightText.trim() ||
     `© ${new Date().getFullYear()} ${draft.appName}. All rights reserved.`;
@@ -259,7 +261,7 @@ export function BrandPreview({
 
             <View style={styles.locations}>
               <ThemedText style={[styles.locationsTitle, { color: site.text }]}>
-                {DEFAULT_COPY.locationsSectionHeading}
+                {t("restaurant.home.locationsHeading")}
               </ThemedText>
               <View style={styles.locationsRow}>
                 {PLACEHOLDER_LOCATIONS.map((name) => (

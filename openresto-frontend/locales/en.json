@@ -1,0 +1,10 @@
+{
+  "restaurant": {
+    "home": {
+      "heroSubtitle": "Scroll down to pick a location below, choose a time, enter your email address, and you're booked!",
+      "highlightsHeading": "Restaurant highlights",
+      "highlightsSubheading": "Curated by the owner",
+      "locationsHeading": "Our locations"
+    }
+  }
+}
