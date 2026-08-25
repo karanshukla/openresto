@@ -1,5 +1,5 @@
+import i18n from "@/i18n";
 import {
-  ACTION_GROUPS,
   ANY_ID,
   PAGE_SIZE,
   REDACTED_MARKER,
@@ -10,6 +10,7 @@ import {
   formatChangeValue,
   formatExactTime,
   fromIdFilter,
+  getActionGroups,
   httpLine,
   isRedacted,
   personLabel,
@@ -19,24 +20,26 @@ import {
 } from "@/utils/audit";
 import { theme } from "@/theme/theme";
 
+const t = i18n.getFixedT("en");
+
 describe("actionLabel", () => {
   it("names a known action", () => {
-    expect(actionLabel("booking.cancel")).toBe("Cancelled booking");
-    expect(actionLabel("auth.login_failed")).toBe("Failed sign-in");
-    expect(actionLabel("table_group.update")).toBe("Updated table group");
+    expect(actionLabel("booking.cancel", t)).toBe("Cancelled booking");
+    expect(actionLabel("auth.login_failed", t)).toBe("Failed sign-in");
+    expect(actionLabel("table_group.update", t)).toBe("Updated table group");
   });
 
   it("names an undescribed request by its HTTP method", () => {
-    expect(actionLabel("http.post")).toBe("POST request");
-    expect(actionLabel("http.delete")).toBe("DELETE request");
+    expect(actionLabel("http.post", t)).toBe("POST request");
+    expect(actionLabel("http.delete", t)).toBe("DELETE request");
   });
 
   it("humanizes a key nobody has labelled yet", () => {
-    expect(actionLabel("widget.frobnicate_thing")).toBe("Widget frobnicate thing");
+    expect(actionLabel("widget.frobnicate_thing", t)).toBe("Widget frobnicate thing");
   });
 
   it("passes an empty key through rather than rendering blank", () => {
-    expect(actionLabel("")).toBe("");
+    expect(actionLabel("", t)).toBe("");
   });
 });
 
@@ -135,10 +138,10 @@ describe("formatExactTime", () => {
 
 describe("formatChangeValue", () => {
   it("distinguishes unset from empty from a real value", () => {
-    expect(formatChangeValue(null)).toBe("—");
-    expect(formatChangeValue("")).toBe("(empty)");
-    expect(formatChangeValue("   ")).toBe("(empty)");
-    expect(formatChangeValue("Bistro")).toBe("Bistro");
+    expect(formatChangeValue(null, t)).toBe("—");
+    expect(formatChangeValue("", t)).toBe("(empty)");
+    expect(formatChangeValue("   ", t)).toBe("(empty)");
+    expect(formatChangeValue("Bistro", t)).toBe("Bistro");
   });
 });
 
@@ -167,10 +170,11 @@ describe("id filter conversion", () => {
   });
 });
 
-describe("filter constants", () => {
+describe("getActionGroups", () => {
   it("offers an unfiltered option plus one prefix per group", () => {
-    expect(ACTION_GROUPS[0]).toEqual({ label: "All activity", value: "" });
-    expect(ACTION_GROUPS.map((g) => g.value)).toEqual([
+    const groups = getActionGroups(t);
+    expect(groups[0]).toEqual({ label: "All activity", value: "" });
+    expect(groups.map((g) => g.value)).toEqual([
       "",
       "booking",
       "restaurant",
@@ -182,6 +186,14 @@ describe("filter constants", () => {
     ]);
   });
 
+  it("translates the label while the value stays the machine prefix the API matches on", () => {
+    const groups = getActionGroups(i18n.getFixedT("fr"));
+    expect(groups.find((g) => g.value === "booking")?.label).toBe("Réservations");
+    expect(groups.find((g) => g.value === "booking")?.value).toBe("booking");
+  });
+});
+
+describe("PAGE_SIZE", () => {
   it("requests a page the API will not clamp", () => {
     expect(PAGE_SIZE).toBeGreaterThan(0);
     expect(PAGE_SIZE).toBeLessThanOrEqual(100);

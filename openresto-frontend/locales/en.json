@@ -209,6 +209,10 @@
       "viewKeyboardShortcuts": "View keyboard shortcuts",
       "visitWebsite": "Visit our website"
     },
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager"
+    },
     "select": {
       "closeListLabel": "Close the options list",
       "placeholder": "Select an option"
@@ -378,6 +382,108 @@
     }
   },
   "admin": {
+    "activity": {
+      "title": "Activity",
+      "loading": "Loading…",
+      "eventCount_one": "{{count}} recorded event",
+      "eventCount_other": "{{count}} recorded events",
+      "filters": {
+        "locationLabel": "Filter by location",
+        "activityLabel": "Filter by activity",
+        "personLabel": "Filter by person",
+        "allLocations": "All locations",
+        "anyone": "Anyone"
+      },
+      "actionGroups": {
+        "all": "All activity",
+        "bookings": "Bookings",
+        "locations": "Locations",
+        "accounts": "Accounts",
+        "signIns": "Sign-ins",
+        "brand": "Brand",
+        "email": "Email",
+        "media": "Media"
+      },
+      "error": {
+        "title": "Something went wrong",
+        "body": "Could not load the activity trail. Check your connection and try again."
+      },
+      "empty": {
+        "filteredTitle": "Nothing matches these filters",
+        "noneYetTitle": "No activity yet",
+        "filteredBody": "Try a wider location, activity type or person.",
+        "noneYetBody": "Every admin action lands here as it happens."
+      },
+      "loadMore": {
+        "action_one": "Show {{count}} more",
+        "action_other": "Show {{count}} more",
+        "accessibilityLabel_one": "Show {{count}} more event",
+        "accessibilityLabel_other": "Show {{count}} more events"
+      },
+      "detail": {
+        "changesHeading": "Changes",
+        "whenLabel": "When",
+        "requestLabel": "Request",
+        "fromLabel": "From",
+        "deviceLabel": "Device",
+        "unknownIp": "unknown",
+        "emptyValue": "(empty)",
+        "httpRequestLabel": "{{method}} request"
+      },
+      "actions": {
+        "bookingCreate": "Created booking",
+        "bookingUpdate": "Updated booking",
+        "bookingCancel": "Cancelled booking",
+        "bookingRestore": "Restored booking",
+        "bookingExtend": "Extended booking",
+        "bookingPurge": "Purged booking",
+        "bookingEmail": "Re-sent booking email",
+        "restaurantCreate": "Created location",
+        "restaurantUpdate": "Updated location",
+        "restaurantArchive": "Archived location",
+        "restaurantRestore": "Restored location",
+        "restaurantDelete": "Deleted location",
+        "restaurantPause": "Paused bookings",
+        "restaurantUnpause": "Resumed bookings",
+        "restaurantExtendBookings": "Extended bookings",
+        "restaurantReorderSections": "Reordered sections",
+        "sectionCreate": "Created section",
+        "sectionUpdate": "Updated section",
+        "sectionDelete": "Deleted section",
+        "tableCreate": "Created table",
+        "tableUpdate": "Updated table",
+        "tableDelete": "Deleted table",
+        "tableGroupCreate": "Created table group",
+        "tableGroupUpdate": "Updated table group",
+        "tableGroupDelete": "Deleted table group",
+        "userCreate": "Created user",
+        "userRoleChange": "Changed user role",
+        "userActivate": "Activated user",
+        "userDeactivate": "Deactivated user",
+        "userPasswordReset": "Reset user password",
+        "authLogin": "Signed in",
+        "authLoginFailed": "Failed sign-in",
+        "authLogout": "Signed out",
+        "authPasswordChange": "Changed own password",
+        "authEmailChange": "Changed own email",
+        "authPvqSetup": "Set security question",
+        "authPasswordReset": "Reset own password",
+        "brandUpdate": "Updated brand settings",
+        "emailSettingsUpdate": "Updated email settings",
+        "emailSettingsTest": "Sent test email",
+        "mediaUpload": "Uploaded media",
+        "mediaDelete": "Deleted media",
+        "highlightCreate": "Created highlight",
+        "highlightUpdate": "Updated highlight",
+        "highlightDelete": "Deleted highlight",
+        "socialLinkCreate": "Added social link",
+        "socialLinkUpdate": "Updated social link",
+        "socialLinkDelete": "Removed social link",
+        "notificationDelete": "Deleted notification",
+        "pushSubscribe": "Enabled push notifications",
+        "pushUnsubscribe": "Disabled push notifications"
+      }
+    },
     "bookings": {
       "pageTitle": "Bookings",
       "searchResultsTitle": "Search Results",
@@ -1158,8 +1264,6 @@
         "deactivatedMessage": "{{email}} deactivated.",
         "reactivatedMessage": "{{email}} reactivated.",
         "passwordResetMessage": "New password set for {{email}}. Share it out of band.",
-        "roleOwner": "Owner",
-        "roleManager": "Manager",
         "deactivatedBadge": "Deactivated",
         "selfNote": "This is you. Change your own password on the Account page.",
         "roleFieldLabel": "Role",

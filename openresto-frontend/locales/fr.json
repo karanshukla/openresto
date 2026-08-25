@@ -209,6 +209,10 @@
       "viewKeyboardShortcuts": "Afficher les raccourcis clavier",
       "visitWebsite": "Visiter notre site web"
     },
+    "roles": {
+      "owner": "Propriétaire",
+      "manager": "Gestionnaire"
+    },
     "select": {
       "closeListLabel": "Fermer la liste des options",
       "placeholder": "Sélectionner une option"
@@ -378,6 +382,108 @@
     }
   },
   "admin": {
+    "activity": {
+      "title": "Activité",
+      "loading": "Chargement…",
+      "eventCount_one": "{{count}} événement enregistré",
+      "eventCount_other": "{{count}} événements enregistrés",
+      "filters": {
+        "locationLabel": "Filtrer par établissement",
+        "activityLabel": "Filtrer par activité",
+        "personLabel": "Filtrer par personne",
+        "allLocations": "Tous les établissements",
+        "anyone": "N'importe qui"
+      },
+      "actionGroups": {
+        "all": "Toute l'activité",
+        "bookings": "Réservations",
+        "locations": "Établissements",
+        "accounts": "Comptes",
+        "signIns": "Connexions",
+        "brand": "Marque",
+        "email": "E-mail",
+        "media": "Médias"
+      },
+      "error": {
+        "title": "Une erreur est survenue",
+        "body": "Impossible de charger le journal d'activité. Vérifiez votre connexion et réessayez."
+      },
+      "empty": {
+        "filteredTitle": "Aucun résultat pour ces filtres",
+        "noneYetTitle": "Aucune activité pour le moment",
+        "filteredBody": "Essayez un établissement, un type d'activité ou une personne plus larges.",
+        "noneYetBody": "Chaque action d'administration apparaît ici dès qu'elle se produit."
+      },
+      "loadMore": {
+        "action_one": "Afficher {{count}} de plus",
+        "action_other": "Afficher {{count}} de plus",
+        "accessibilityLabel_one": "Afficher {{count}} événement de plus",
+        "accessibilityLabel_other": "Afficher {{count}} événements de plus"
+      },
+      "detail": {
+        "changesHeading": "Modifications",
+        "whenLabel": "Quand",
+        "requestLabel": "Requête",
+        "fromLabel": "Depuis",
+        "deviceLabel": "Appareil",
+        "unknownIp": "inconnue",
+        "emptyValue": "(vide)",
+        "httpRequestLabel": "Requête {{method}}"
+      },
+      "actions": {
+        "bookingCreate": "Réservation créée",
+        "bookingUpdate": "Réservation modifiée",
+        "bookingCancel": "Réservation annulée",
+        "bookingRestore": "Réservation restaurée",
+        "bookingExtend": "Réservation prolongée",
+        "bookingPurge": "Réservation purgée",
+        "bookingEmail": "E-mail de réservation renvoyé",
+        "restaurantCreate": "Établissement créé",
+        "restaurantUpdate": "Établissement modifié",
+        "restaurantArchive": "Établissement archivé",
+        "restaurantRestore": "Établissement restauré",
+        "restaurantDelete": "Établissement supprimé",
+        "restaurantPause": "Réservations mises en pause",
+        "restaurantUnpause": "Réservations reprises",
+        "restaurantExtendBookings": "Réservations prolongées",
+        "restaurantReorderSections": "Sections réorganisées",
+        "sectionCreate": "Section créée",
+        "sectionUpdate": "Section modifiée",
+        "sectionDelete": "Section supprimée",
+        "tableCreate": "Table créée",
+        "tableUpdate": "Table modifiée",
+        "tableDelete": "Table supprimée",
+        "tableGroupCreate": "Groupe de tables créé",
+        "tableGroupUpdate": "Groupe de tables modifié",
+        "tableGroupDelete": "Groupe de tables supprimé",
+        "userCreate": "Utilisateur créé",
+        "userRoleChange": "Rôle utilisateur modifié",
+        "userActivate": "Utilisateur activé",
+        "userDeactivate": "Utilisateur désactivé",
+        "userPasswordReset": "Mot de passe utilisateur réinitialisé",
+        "authLogin": "Connexion réussie",
+        "authLoginFailed": "Échec de connexion",
+        "authLogout": "Déconnexion",
+        "authPasswordChange": "Mot de passe personnel modifié",
+        "authEmailChange": "E-mail personnel modifié",
+        "authPvqSetup": "Question de sécurité définie",
+        "authPasswordReset": "Mot de passe personnel réinitialisé",
+        "brandUpdate": "Paramètres de marque mis à jour",
+        "emailSettingsUpdate": "Paramètres e-mail mis à jour",
+        "emailSettingsTest": "E-mail de test envoyé",
+        "mediaUpload": "Média importé",
+        "mediaDelete": "Média supprimé",
+        "highlightCreate": "Point fort créé",
+        "highlightUpdate": "Point fort modifié",
+        "highlightDelete": "Point fort supprimé",
+        "socialLinkCreate": "Lien social ajouté",
+        "socialLinkUpdate": "Lien social modifié",
+        "socialLinkDelete": "Lien social retiré",
+        "notificationDelete": "Notification supprimée",
+        "pushSubscribe": "Notifications push activées",
+        "pushUnsubscribe": "Notifications push désactivées"
+      }
+    },
     "bookings": {
       "pageTitle": "Réservations",
       "searchResultsTitle": "Résultats de recherche",
@@ -1158,8 +1264,6 @@
         "deactivatedMessage": "{{email}} désactivé.",
         "reactivatedMessage": "{{email}} réactivé.",
         "passwordResetMessage": "Nouveau mot de passe défini pour {{email}}. Partagez-le hors ligne.",
-        "roleOwner": "Propriétaire",
-        "roleManager": "Gestionnaire",
         "deactivatedBadge": "Désactivé",
         "selfNote": "C'est vous. Changez votre propre mot de passe sur la page Compte.",
         "roleFieldLabel": "Rôle",

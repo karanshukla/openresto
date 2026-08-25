@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, View } from "react-native";
 import { Redirect, Stack } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { usePersistedState } from "@/hooks/use-persisted-state";
@@ -13,10 +14,10 @@ import { fetchRestaurants } from "@/api/restaurants";
 import { adminListUsers } from "@/api/users";
 import { getAuditEntries, type AdminAuditEntryDto } from "@/api/audit";
 import {
-  ACTION_GROUPS,
   ANY_ID,
   PAGE_SIZE,
   fromIdFilter,
+  getActionGroups,
   personLabel,
   toIdFilter,
 } from "@/utils/audit";
@@ -34,6 +35,7 @@ import { styles } from "@/styles/admin/activity.styles";
  * resolving holds on the loader instead of being treated as roleless.
  */
 export default function ActivityScreen() {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
   const { status } = useAuth();
   const canViewAudit = useCan("view:audit");
@@ -119,28 +121,27 @@ export default function ActivityScreen() {
   const mutedColor = colors.muted;
 
   const locationOptions: SelectOption[] = [
-    { label: "All locations", value: ANY_ID },
+    { label: t("admin.activity.filters.allLocations"), value: ANY_ID },
     ...restaurants.map((r) => ({ label: r.name, value: r.id })),
   ];
 
-  const actionOptions: SelectOption[] = ACTION_GROUPS.map((group) => ({
-    label: group.label,
-    value: group.value,
-  }));
+  const actionOptions: SelectOption[] = getActionGroups(t);
 
   const personOptions: SelectOption[] = [
-    { label: "Anyone", value: ANY_ID },
+    { label: t("admin.activity.filters.anyone"), value: ANY_ID },
     ...actors.map((a) => ({ label: a.name, value: a.id })),
   ];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {Platform.OS !== "web" && <Stack.Screen options={{ title: "Activity" }} />}
+      {Platform.OS !== "web" && <Stack.Screen options={{ title: t("admin.activity.title") }} />}
 
       <View style={styles.pageHeader}>
-        <ThemedText type="h1">Activity</ThemedText>
+        <ThemedText type="h1">{t("admin.activity.title")}</ThemedText>
         <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-          {loading ? "Loading…" : `${totalCount} recorded event${totalCount !== 1 ? "s" : ""}`}
+          {loading
+            ? t("admin.activity.loading")
+            : t("admin.activity.eventCount", { count: totalCount })}
         </ThemedText>
       </View>
 
@@ -148,7 +149,7 @@ export default function ActivityScreen() {
         <View style={styles.filterControl}>
           <Select
             icon="storefront-outline"
-            accessibilityLabel="Filter by location"
+            accessibilityLabel={t("admin.activity.filters.locationLabel")}
             options={locationOptions}
             selectedValue={toIdFilter(selectedRestaurantId)}
             onSelect={(value) => setSelectedRestaurantId(fromIdFilter(value))}
@@ -157,7 +158,7 @@ export default function ActivityScreen() {
         <View style={styles.filterControl}>
           <Select
             icon="pricetags-outline"
-            accessibilityLabel="Filter by activity"
+            accessibilityLabel={t("admin.activity.filters.activityLabel")}
             options={actionOptions}
             selectedValue={selectedAction}
             onSelect={(value) => setSelectedAction(String(value))}
@@ -166,7 +167,7 @@ export default function ActivityScreen() {
         <View style={styles.filterControl}>
           <Select
             icon="person-outline"
-            accessibilityLabel="Filter by person"
+            accessibilityLabel={t("admin.activity.filters.personLabel")}
             options={personOptions}
             selectedValue={toIdFilter(selectedActorId)}
             onSelect={(value) => setSelectedActorId(fromIdFilter(value))}
@@ -184,10 +185,10 @@ export default function ActivityScreen() {
             <Icon name="warning-outline" size={28} color={mutedColor} />
           </View>
           <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-            Something went wrong
+            {t("admin.activity.error.title")}
           </ThemedText>
           <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
-            Could not load the activity trail. Check your connection and try again.
+            {t("admin.activity.error.body")}
           </ThemedText>
         </View>
       ) : items.length === 0 ? (
@@ -196,12 +197,14 @@ export default function ActivityScreen() {
             <Icon name="receipt-outline" size={28} color={mutedColor} />
           </View>
           <ThemedText style={[styles.emptyTitle, { color: colors.text }]}>
-            {filtered ? "Nothing matches these filters" : "No activity yet"}
+            {filtered
+              ? t("admin.activity.empty.filteredTitle")
+              : t("admin.activity.empty.noneYetTitle")}
           </ThemedText>
           <ThemedText style={[styles.emptyBody, { color: mutedColor }]}>
             {filtered
-              ? "Try a wider location, activity type or person."
-              : "Every admin action lands here as it happens."}
+              ? t("admin.activity.empty.filteredBody")
+              : t("admin.activity.empty.noneYetBody")}
           </ThemedText>
         </View>
       ) : (
@@ -234,9 +237,13 @@ export default function ActivityScreen() {
               onPress={handleLoadMore}
               disabled={loadingMore}
               loading={loadingMore}
-              accessibilityLabel={`Show ${totalCount - items.length} more events`}
+              accessibilityLabel={t("admin.activity.loadMore.accessibilityLabel", {
+                count: totalCount - items.length,
+              })}
             >
-              {loadingMore ? "Loading…" : `Show ${totalCount - items.length} more`}
+              {loadingMore
+                ? t("admin.activity.loading")
+                : t("admin.activity.loadMore.action", { count: totalCount - items.length })}
             </Button>
           )}
         </View>
