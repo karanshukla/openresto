@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import {
   RestaurantDto,
@@ -62,6 +63,7 @@ export function LocationCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const { primaryColor } = useAppTheme();
 
   const [imgUploading, setImgUploading] = useState(false);
@@ -81,7 +83,7 @@ export function LocationCard({
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > 2 * 1024 * 1024) {
-        setImgMsg({ text: "Image must be under 2 MB.", ok: false });
+        setImgMsg({ text: t("admin.settings.locationCard.imageTooLarge"), ok: false });
         return;
       }
       setImgUploading(true);
@@ -90,9 +92,9 @@ export function LocationCard({
       setImgUploading(false);
       if (url) {
         onSaved({ imageUrl: url });
-        setImgMsg({ text: "Image uploaded.", ok: true });
+        setImgMsg({ text: t("admin.settings.locationCard.imageUploaded"), ok: true });
       } else {
-        setImgMsg({ text: "Failed to upload image.", ok: false });
+        setImgMsg({ text: t("admin.settings.locationCard.imageUploadFailed"), ok: false });
       }
     };
     input.click();
@@ -104,9 +106,9 @@ export function LocationCard({
     setImgUploading(false);
     if (ok) {
       onSaved({ imageUrl: null });
-      setImgMsg({ text: "Image removed.", ok: true });
+      setImgMsg({ text: t("admin.settings.locationCard.imageRemoved"), ok: true });
     } else {
-      setImgMsg({ text: "Failed to remove image.", ok: false });
+      setImgMsg({ text: t("admin.settings.locationCard.imageRemoveFailed"), ok: false });
     }
   };
 
@@ -137,28 +139,31 @@ export function LocationCard({
   const sectionCount = restaurant.sections.length;
   const sectionsSubtitle =
     sectionCount === 0
-      ? "No sections yet"
-      : `${sectionCount} section${sectionCount === 1 ? "" : "s"} · ${tableCount} table${tableCount === 1 ? "" : "s"}`;
+      ? t("admin.settings.locationCard.noSectionsSubtitle")
+      : t("admin.settings.locationCard.sectionsSubtitle", {
+          sections: t("admin.settings.locationCard.sectionsCount", { count: sectionCount }),
+          tables: t("admin.settings.locationCard.tablesCount", { count: tableCount }),
+        });
 
   return (
     <>
       <View style={styles.statsRow}>
         <StatChip
-          label="Sections"
+          label={t("admin.settings.locationCard.sectionsStat")}
           value={restaurant.sections.length}
           isDark={isDark}
           borderColor={borderColor}
           mutedColor={mutedColor}
         />
         <StatChip
-          label="Tables"
+          label={t("admin.settings.locationCard.tablesStat")}
           value={tableCount}
           isDark={isDark}
           borderColor={borderColor}
           mutedColor={mutedColor}
         />
         <StatChip
-          label="Seats"
+          label={t("admin.settings.locationCard.seatsStat")}
           value={seatCount}
           isDark={isDark}
           borderColor={borderColor}
@@ -175,8 +180,12 @@ export function LocationCard({
       <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
         <AccordionCardHeader
           icon="image-outline"
-          title="Location Image"
-          subtitle={restaurant.imageUrl ? "Image set" : "No image set"}
+          title={t("admin.settings.locationCard.imageTitle")}
+          subtitle={
+            restaurant.imageUrl
+              ? t("admin.settings.locationCard.imageSet")
+              : t("admin.settings.locationCard.noImageSet")
+          }
           expanded={imageExpanded}
           onToggle={() => setImageExpanded((v) => !v)}
           primaryColor={primaryColor}
@@ -193,7 +202,11 @@ export function LocationCard({
                 ]}
               >
                 {restaurant.imageUrl ? (
-                  <img src={restaurant.imageUrl} alt="Location" style={domStyles.image} />
+                  <img
+                    src={restaurant.imageUrl}
+                    alt={t("admin.settings.locationCard.imageAlt")}
+                    style={domStyles.image}
+                  />
                 ) : (
                   <Icon name="image-outline" size="xl" color={mutedColor} />
                 )}
@@ -201,7 +214,7 @@ export function LocationCard({
 
               <View style={styles.imageCopy}>
                 <ThemedText style={[styles.imageHint, { color: mutedColor }]}>
-                  Shown on the restaurant card. JPEG, PNG or WebP, max 2 MB.
+                  {t("admin.settings.locationCard.imageHint")}
                 </ThemedText>
                 <View style={styles.imageActions}>
                   <Button
@@ -213,15 +226,19 @@ export function LocationCard({
                     loading={imgUploading}
                     accessibilityLabel={
                       restaurant.imageUrl
-                        ? `Change image for ${restaurant.name}`
-                        : `Upload image for ${restaurant.name}`
+                        ? t("admin.settings.locationCard.changeImageLabel", {
+                            name: restaurant.name,
+                          })
+                        : t("admin.settings.locationCard.uploadImageLabel", {
+                            name: restaurant.name,
+                          })
                     }
                   >
                     {imgUploading
-                      ? "Uploading…"
+                      ? t("admin.settings.locationCard.uploading")
                       : restaurant.imageUrl
-                        ? "Change image"
-                        : "Upload image"}
+                        ? t("admin.settings.locationCard.changeImage")
+                        : t("admin.settings.locationCard.uploadImage")}
                   </Button>
                   {restaurant.imageUrl && (
                     <Button
@@ -231,9 +248,11 @@ export function LocationCard({
                       icon="trash-outline"
                       onPress={handleDeleteImage}
                       disabled={imgUploading}
-                      accessibilityLabel={`Remove image for ${restaurant.name}`}
+                      accessibilityLabel={t("admin.settings.locationCard.removeImageLabel", {
+                        name: restaurant.name,
+                      })}
                     >
-                      Remove
+                      {t("admin.settings.locationCard.remove")}
                     </Button>
                   )}
                   {imgMsg && (
@@ -256,7 +275,7 @@ export function LocationCard({
       <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
         <AccordionCardHeader
           icon="grid-outline"
-          title="Sections & Tables"
+          title={t("admin.settings.locationCard.sectionsTablesTitle")}
           subtitle={sectionsSubtitle}
           expanded={sectionsExpanded}
           onToggle={() => setSectionsExpanded((v) => !v)}
@@ -267,7 +286,7 @@ export function LocationCard({
         <AnimatedAccordion expanded={sectionsExpanded}>
           <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
             <ThemedText style={[styles.sectionsSub, { color: mutedColor }]}>
-              Group tables into dining areas. Guests can book by section.
+              {t("admin.settings.locationCard.sectionsHint")}
             </ThemedText>
 
             <View style={styles.sectionsList}>
@@ -327,15 +346,15 @@ export function LocationCard({
               ))}
               {restaurant.sections.length === 0 && (
                 <ThemedText style={[styles.sectionsEmpty, { color: mutedColor }]}>
-                  No sections yet.
+                  {t("admin.settings.locationCard.noSectionsYet")}
                 </ThemedText>
               )}
             </View>
 
             <View style={styles.addSectionRow}>
               <AddRow
-                label="Add Section"
-                placeholder="e.g. Indoor, Patio, Bar"
+                label={t("admin.settings.locationCard.addSection")}
+                placeholder={t("admin.settings.locationCard.addSectionPlaceholder")}
                 onAdd={async (name) => {
                   const result = await addSection(restaurant.id, name);
                   if (result)

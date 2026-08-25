@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -106,20 +108,31 @@ const SLOT_INTERVAL_OPTIONS: SelectOption[] = [15, 30, 60].map((minutes) => ({
 // which a Select option value can't hold, so it travels through the picker as this sentinel.
 // The cap rejects a table when (table.seats - partySize) exceeds the selection.
 const OVERSIZE_OFF = "off";
-const OVERSIZE_OPTIONS: SelectOption[] = [
-  { value: OVERSIZE_OFF, label: "Off" },
-  ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((seats) => ({
-    value: seats,
-    label: `+${seats} seat${seats === 1 ? "" : "s"}`,
-  })),
-];
+
+/**
+ * `value` is the `MaxTableOversizeSeats` wire value (or the `OVERSIZE_OFF` sentinel for the
+ * server's null) — only `label` localizes.
+ * @see [RestaurantInfoForm.test.tsx](../../../tests/components/admin/settings/RestaurantInfoForm.test.tsx)
+ * — pins the singular "+1 seat" against the plural "+2 seats".
+ */
+function getOversizeOptions(t: TFunction): SelectOption[] {
+  return [
+    { value: OVERSIZE_OFF, label: t("admin.settings.restaurantInfo.oversizeOff") },
+    ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((seats) => ({
+      value: seats,
+      label: t("admin.settings.restaurantInfo.oversizeSeats", { count: seats }),
+    })),
+  ];
+}
 
 // Booking reference formats — values must match the backend BookingRefFormat member names,
 // which is what the API accepts and returns.
-const BOOKING_REF_FORMAT_OPTIONS: { value: BookingRefFormat; label: string }[] = [
-  { value: "AlphaNumeric", label: "Words (crispy-basil-saffron)" },
-  { value: "Numeric", label: "Numbers (48273910)" },
-];
+function getBookingRefFormatOptions(t: TFunction): { value: BookingRefFormat; label: string }[] {
+  return [
+    { value: "AlphaNumeric", label: t("admin.settings.restaurantInfo.refFormatWords") },
+    { value: "Numeric", label: t("admin.settings.restaurantInfo.refFormatNumbers") },
+  ];
+}
 
 // Mirrors the backend ContactLimits caps so the admin sees the ceiling before the round-trip.
 const MAX_PHONE_LENGTH = 32;
@@ -191,16 +204,18 @@ function TimezoneRebaseWarning({
   upcomingBookingsCount: number;
   warningColor: string;
 }) {
+  const { t } = useTranslation();
   if (upcomingBookingsCount <= 0) return null;
-
-  const bookings = `${upcomingBookingsCount} upcoming booking${upcomingBookingsCount === 1 ? "" : "s"}`;
 
   return (
     <View testID="timezone-rebase-warning" style={styles.fieldWarning}>
       <Icon name="alert-circle-outline" size="sm" color={warningColor} />
       <ThemedText style={[styles.fieldHint, styles.fieldWarningText, { color: warningColor }]}>
-        {bookings} on the books. Changing this does not move them — they are stored in UTC — but it
-        changes the local time each guest was told, and nothing is sent to them.
+        {t("admin.settings.restaurantInfo.timezoneRebaseWarning", {
+          bookings: t("admin.settings.restaurantInfo.upcomingBookingsCount", {
+            count: upcomingBookingsCount,
+          }),
+        })}
       </ThemedText>
     </View>
   );
@@ -219,6 +234,7 @@ export function RestaurantInfoForm({
   onSaved: (patch: Partial<RestaurantDto>) => void;
   upcomingBookingsCount?: number;
 }) {
+  const { t } = useTranslation();
   const { colors, isDark, primaryColor } = useAppTheme();
 
   const mutedColor = colors.muted;
@@ -314,7 +330,7 @@ export function RestaurantInfoForm({
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > MAX_MENU_BYTES) {
-        setMenuMsg({ text: "Menu file must be under 10 MB.", ok: false });
+        setMenuMsg({ text: t("admin.settings.restaurantInfo.menuTooLarge"), ok: false });
         return;
       }
       setMenuUploading(true);
@@ -326,9 +342,9 @@ export function RestaurantInfoForm({
         // doesn't read as stale text next to the newly-uploaded file indicator.
         setMenuUrl("");
         onSaved({ menuUrl: url });
-        setMenuMsg({ text: "Menu uploaded.", ok: true });
+        setMenuMsg({ text: t("admin.settings.restaurantInfo.menuUploaded"), ok: true });
       } else {
-        setMenuMsg({ text: "Failed to upload menu.", ok: false });
+        setMenuMsg({ text: t("admin.settings.restaurantInfo.menuUploadFailed"), ok: false });
       }
     };
     input.click();
@@ -340,9 +356,9 @@ export function RestaurantInfoForm({
     setMenuUploading(false);
     if (ok) {
       onSaved({ menuUrl: null });
-      setMenuMsg({ text: "Menu removed.", ok: true });
+      setMenuMsg({ text: t("admin.settings.restaurantInfo.menuRemoved"), ok: true });
     } else {
-      setMenuMsg({ text: "Failed to remove menu.", ok: false });
+      setMenuMsg({ text: t("admin.settings.restaurantInfo.menuRemoveFailed"), ok: false });
     }
   };
 
@@ -402,20 +418,20 @@ export function RestaurantInfoForm({
    * so the reason is stated in the footer instead of the write being silently withheld.
    */
   const blockedReason = ((): string | null => {
-    if (!name.trim()) return "Add a name to save.";
+    if (!name.trim()) return t("admin.settings.restaurantInfo.blockedNoName");
     const trimmedMenuUrl = menuUrl.trim();
     if (
       trimmedMenuUrl &&
       !isServedMenuFile(trimmedMenuUrl) &&
       !isValidUrl(trimmedMenuUrl, WEB_SCHEMES)
     ) {
-      return "Menu URL must be a valid http(s) link.";
+      return t("admin.settings.restaurantInfo.blockedInvalidMenuUrl");
     }
     if (phoneNumber.trim().length > MAX_PHONE_LENGTH) {
-      return `Phone number cannot exceed ${MAX_PHONE_LENGTH} characters.`;
+      return t("admin.settings.restaurantInfo.blockedPhoneTooLong", { max: MAX_PHONE_LENGTH });
     }
     if (emailAddress.trim() && !isValidEmail(emailAddress.trim())) {
-      return "Contact email must be a valid email address.";
+      return t("admin.settings.restaurantInfo.blockedInvalidEmail");
     }
     return null;
   })();
@@ -426,7 +442,7 @@ export function RestaurantInfoForm({
     canSave: !blockedReason,
     save: async (payload) => {
       const result = await updateRestaurant(restaurant.id, payload);
-      if (!result) return "Couldn't reach the server.";
+      if (!result) return t("admin.settings.restaurantInfo.saveUnreachable");
       onSaved({
         name: result.name,
         address: result.address,
@@ -502,25 +518,31 @@ export function RestaurantInfoForm({
     true
   );
 
-  const basicInfoSubtitle = [name.trim() || "Untitled location", address.trim()]
+  const basicInfoSubtitle = [
+    name.trim() || t("admin.settings.restaurantInfo.untitledLocation"),
+    address.trim(),
+  ]
     .filter(Boolean)
     .join(" · ");
   const menuSubtitle = menuUrlIsServedFile
-    ? "PDF uploaded"
+    ? t("admin.settings.restaurantInfo.menuPdfUploaded")
     : menuUrl.trim()
-      ? "Link set"
-      : "Not set";
+      ? t("admin.settings.restaurantInfo.menuLinkSet")
+      : t("admin.settings.restaurantInfo.menuNotSet");
   const contactSubtitle =
     [phoneNumber.trim(), emailAddress.trim()].filter(Boolean).join(" · ") ||
-    "Uses brand-wide contact details";
-  const bookingSubtitle = `${timezone.replace(/_/g, " ")} · ${formatDurationLabel(defaultBookingDurationMinutes)} bookings`;
+    t("admin.settings.restaurantInfo.contactUsesBrandWide");
+  const bookingSubtitle = t("admin.settings.restaurantInfo.bookingSubtitle", {
+    timezone: timezone.replace(/_/g, " "),
+    duration: formatDurationLabel(defaultBookingDurationMinutes),
+  });
 
   return (
     <>
       <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
         <AccordionCardHeader
           icon="storefront-outline"
-          title="Basic Info"
+          title={t("admin.settings.restaurantInfo.basicInfoTitle")}
           subtitle={basicInfoSubtitle}
           expanded={basicInfoExpanded}
           onToggle={() => setBasicInfoExpanded((v) => !v)}
@@ -531,32 +553,40 @@ export function RestaurantInfoForm({
           <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
             <View style={styles.field}>
               <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                Restaurant name
+                {t("admin.settings.restaurantInfo.nameLabel")}
               </ThemedText>
-              <Input value={name} onChangeText={setName} placeholder="Restaurant name" />
+              <Input
+                value={name}
+                onChangeText={setName}
+                placeholder={t("admin.settings.restaurantInfo.namePlaceholder")}
+              />
             </View>
 
             <View style={styles.field}>
               <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                Address
+                {t("admin.settings.restaurantInfo.addressLabel")}
               </ThemedText>
-              <Input value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
+              <Input
+                value={address}
+                onChangeText={setAddress}
+                placeholder={t("admin.settings.restaurantInfo.addressPlaceholder")}
+              />
             </View>
 
             <View style={styles.field}>
               <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                Description (optional)
+                {t("admin.settings.restaurantInfo.descriptionLabel")}
               </ThemedText>
               <Input
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Short blurb shown on the location page. Supports links like [menu](https://example.com)."
+                placeholder={t("admin.settings.restaurantInfo.descriptionPlaceholder")}
                 multiline
                 numberOfLines={4}
                 style={styles.descriptionInput}
               />
               <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                Shown on the public location page. Use [label](https://url) for links.
+                {t("admin.settings.restaurantInfo.descriptionHint")}
               </ThemedText>
             </View>
           </View>
@@ -566,7 +596,7 @@ export function RestaurantInfoForm({
       <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
         <AccordionCardHeader
           icon="document-text-outline"
-          title="Menu"
+          title={t("admin.settings.restaurantInfo.menuTitle")}
           subtitle={menuSubtitle}
           expanded={menuExpanded}
           onToggle={() => setMenuExpanded((v) => !v)}
@@ -579,7 +609,7 @@ export function RestaurantInfoForm({
               <View style={[styles.menuFileRow, { borderColor, backgroundColor: surface2 }]}>
                 <Icon name="document-text-outline" size="lg" color={primaryColor} />
                 <ThemedText style={styles.menuFileName} numberOfLines={1}>
-                  Uploaded menu PDF
+                  {t("admin.settings.restaurantInfo.uploadedMenuPdf")}
                 </ThemedText>
                 <Button
                   variant="secondary"
@@ -589,9 +619,11 @@ export function RestaurantInfoForm({
                   onPress={handleDeleteMenu}
                   disabled={menuUploading}
                   loading={menuUploading}
-                  accessibilityLabel="Remove the uploaded menu PDF"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.removeMenuPdfLabel")}
                 >
-                  {menuUploading ? "Removing…" : "Remove file"}
+                  {menuUploading
+                    ? t("admin.settings.restaurantInfo.removing")
+                    : t("admin.settings.restaurantInfo.removeFile")}
                 </Button>
               </View>
             ) : (
@@ -616,9 +648,11 @@ export function RestaurantInfoForm({
                   onPress={handlePickMenu}
                   disabled={menuUploading}
                   loading={menuUploading}
-                  accessibilityLabel="Upload a menu PDF"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.uploadMenuPdfLabel")}
                 >
-                  {menuUploading ? "Uploading…" : "Upload PDF"}
+                  {menuUploading
+                    ? t("admin.settings.restaurantInfo.uploading")
+                    : t("admin.settings.restaurantInfo.uploadPdf")}
                 </Button>
               )}
               {menuMsg && (
@@ -633,8 +667,7 @@ export function RestaurantInfoForm({
               )}
             </View>
             <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-              Upload a PDF (max 10 MB) or paste a link to your menu. Shown as a &quot;View
-              menu&quot; button on the location page.
+              {t("admin.settings.restaurantInfo.menuHint")}
             </ThemedText>
           </View>
         </AnimatedAccordion>
@@ -643,7 +676,7 @@ export function RestaurantInfoForm({
       <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
         <AccordionCardHeader
           icon="call-outline"
-          title="Contact"
+          title={t("admin.settings.restaurantInfo.contactTitle")}
           subtitle={contactSubtitle}
           expanded={contactExpanded}
           onToggle={() => setContactExpanded((v) => !v)}
@@ -655,12 +688,12 @@ export function RestaurantInfoForm({
             <View style={styles.fieldGrid}>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Contact phone (optional)
+                  {t("admin.settings.restaurantInfo.phoneLabel")}
                 </ThemedText>
                 <Input
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
-                  placeholder="e.g. +44 20 7946 0958"
+                  placeholder={t("admin.settings.restaurantInfo.phonePlaceholder")}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="phone-pad"
@@ -669,12 +702,12 @@ export function RestaurantInfoForm({
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Contact email (optional)
+                  {t("admin.settings.restaurantInfo.emailLabel")}
                 </ThemedText>
                 <Input
                   value={emailAddress}
                   onChangeText={setEmailAddress}
-                  placeholder="e.g. bookings@example.com"
+                  placeholder={t("admin.settings.restaurantInfo.emailPlaceholder")}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -683,8 +716,7 @@ export function RestaurantInfoForm({
               </View>
             </View>
             <ThemedText style={[styles.contactHint, { color: mutedColor }]}>
-              Shown to diners who need to arrange a booking directly (e.g. a large party). Leave
-              blank to use the brand-wide contact details from Settings.
+              {t("admin.settings.restaurantInfo.contactHint")}
             </ThemedText>
           </View>
         </AnimatedAccordion>
@@ -693,7 +725,7 @@ export function RestaurantInfoForm({
       <View style={[sharedStyles.secCard, { backgroundColor: colors.card, borderColor }]}>
         <AccordionCardHeader
           icon="options-outline"
-          title="Booking Settings"
+          title={t("admin.settings.restaurantInfo.bookingSettingsTitle")}
           subtitle={bookingSubtitle}
           expanded={bookingExpanded}
           onToggle={() => setBookingExpanded((v) => !v)}
@@ -705,17 +737,16 @@ export function RestaurantInfoForm({
             <View style={styles.fieldGrid}>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Timezone
+                  {t("admin.settings.restaurantInfo.timezoneLabel")}
                 </ThemedText>
                 <Select
-                  accessibilityLabel="Timezone"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.timezoneLabel")}
                   options={TIMEZONE_OPTIONS}
                   selectedValue={timezone}
                   onSelect={(value) => setTimezone(String(value))}
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  If this value differs from the customer&apos;s device timezone, a note will appear
-                  on the booking page.
+                  {t("admin.settings.restaurantInfo.timezoneHint")}
                 </ThemedText>
                 <TimezoneRebaseWarning
                   upcomingBookingsCount={upcomingBookingsCount}
@@ -724,60 +755,60 @@ export function RestaurantInfoForm({
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Default booking duration
+                  {t("admin.settings.restaurantInfo.durationLabel")}
                 </ThemedText>
                 <Select
-                  accessibilityLabel="Default booking duration"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.durationLabel")}
                   options={DURATION_OPTIONS}
                   selectedValue={defaultBookingDurationMinutes}
                   onSelect={(value) => setDefaultBookingDurationMinutes(Number(value))}
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  How long each new booking occupies a table by default.
+                  {t("admin.settings.restaurantInfo.durationHint")}
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Booking start-time interval
+                  {t("admin.settings.restaurantInfo.slotIntervalLabel")}
                 </ThemedText>
                 <Select
-                  accessibilityLabel="Booking start-time interval"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.slotIntervalLabel")}
                   options={SLOT_INTERVAL_OPTIONS}
                   selectedValue={bookingSlotIntervalMinutes}
                   onSelect={(value) => setBookingSlotIntervalMinutes(Number(value))}
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  How far apart selectable start times are, independent of booking duration.
+                  {t("admin.settings.restaurantInfo.slotIntervalHint")}
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Max table oversize
+                  {t("admin.settings.restaurantInfo.oversizeLabel")}
                 </ThemedText>
                 <Select
-                  accessibilityLabel="Max table oversize"
-                  options={OVERSIZE_OPTIONS}
+                  accessibilityLabel={t("admin.settings.restaurantInfo.oversizeLabel")}
+                  options={getOversizeOptions(t)}
                   selectedValue={maxTableOversizeSeats ?? OVERSIZE_OFF}
                   onSelect={(value) =>
                     setMaxTableOversizeSeats(value === OVERSIZE_OFF ? null : Number(value))
                   }
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  Don&apos;t offer tables more than this many seats larger than the party size.
+                  {t("admin.settings.restaurantInfo.oversizeHint")}
                 </ThemedText>
               </View>
               <View style={styles.gridField}>
                 <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  Booking reference format
+                  {t("admin.settings.restaurantInfo.refFormatLabel")}
                 </ThemedText>
                 <Select
-                  accessibilityLabel="Booking reference format"
-                  options={BOOKING_REF_FORMAT_OPTIONS}
+                  accessibilityLabel={t("admin.settings.restaurantInfo.refFormatLabel")}
+                  options={getBookingRefFormatOptions(t)}
                   selectedValue={bookingRefFormat}
                   onSelect={(value) => setBookingRefFormat(value as BookingRefFormat)}
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  What new booking references look like. Existing bookings keep theirs.
+                  {t("admin.settings.restaurantInfo.refFormatHint")}
                 </ThemedText>
               </View>
             </View>

@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { styles } from "./SmtpTestPanel.styles";
@@ -48,6 +49,7 @@ export function SmtpTestPanel({
   dangerSoft,
   dangerBorder,
 }: SmtpTestPanelProps) {
+  const { t } = useTranslation();
   return (
     <View
       style={[
@@ -79,16 +81,20 @@ export function SmtpTestPanel({
 
       <View style={styles.copy}>
         <ThemedText style={styles.title}>
-          {testState === "idle" && "Not yet tested"}
-          {testState === "testing" && "Testing connection…"}
-          {testState === "ok" && "Connection successful"}
-          {testState === "fail" && "Connection failed"}
+          {testState === "idle" && t("admin.settings.smtpTest.idleTitle")}
+          {testState === "testing" && t("admin.settings.smtpTest.testingTitle")}
+          {testState === "ok" && t("admin.settings.smtpTest.okTitle")}
+          {testState === "fail" && t("admin.settings.smtpTest.failTitle")}
         </ThemedText>
         <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-          {testState === "idle" && "Send a test to verify settings before going live."}
-          {testState === "testing" && `Reaching ${host || "host"}:${port}…`}
-          {testState === "ok" && (testMsg || "Authentication accepted. Test email delivered.")}
-          {testState === "fail" && (testMsg || "Check your credentials and try again.")}
+          {testState === "idle" && t("admin.settings.smtpTest.idleSubtitle")}
+          {testState === "testing" &&
+            t("admin.settings.smtpTest.testingSubtitle", {
+              host: host || t("admin.settings.smtpTest.hostFallback"),
+              port,
+            })}
+          {testState === "ok" && (testMsg || t("admin.settings.smtpTest.okFallback"))}
+          {testState === "fail" && (testMsg || t("admin.settings.smtpTest.failFallback"))}
         </ThemedText>
       </View>
 
@@ -96,14 +102,18 @@ export function SmtpTestPanel({
         variant="secondary"
         size="md"
         icon="flash-outline"
-        accessibilityLabel="Send a test email"
+        accessibilityLabel={t("admin.settings.smtpTest.sendTestLabel")}
         disabled={!host || !username}
         loading={testState === "testing"}
         onPress={() => {
           if (testState !== "testing" && host && username) onTest();
         }}
       >
-        {testState === "testing" ? "Testing…" : testState === "ok" ? "Re-test" : "Send test"}
+        {testState === "testing"
+          ? t("admin.settings.smtpTest.testingButton")
+          : testState === "ok"
+            ? t("admin.settings.smtpTest.retestButton")
+            : t("admin.settings.smtpTest.sendTestButton")}
       </Button>
     </View>
   );

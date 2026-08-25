@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -36,6 +37,7 @@ export function FooterSettingsCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const { colors, isDark, brand, primaryColor } = useAppTheme();
   const surface2 = isDark ? "#252729" : "#f9fafb";
 
@@ -110,7 +112,7 @@ export function FooterSettingsCard({
     // Client-side URL pre-flight (mirrors backend UrlValidator) — catches obvious typos and
     // dangerous schemes like javascript: without a round-trip. The server remains source of truth.
     if (!isValidUrl(editState.url.trim())) {
-      setLinkMsg("Enter a valid URL (e.g. https://example.com).");
+      setLinkMsg(t("admin.settings.footer.invalidUrl"));
       return;
     }
     setLinkMsg(null);
@@ -131,7 +133,7 @@ export function FooterSettingsCard({
         message = result.message;
       } else {
         ok = false;
-        message = "Couldn't reach the server. Please try again.";
+        message = t("admin.settings.footer.serverUnreachable");
       }
       // Unreachable: save() only ever runs while a form is open, which means editingId
       // is always "new" or a link id here, never null.
@@ -149,7 +151,7 @@ export function FooterSettingsCard({
         message = result.message;
       } else {
         ok = false;
-        message = "Couldn't reach the server. Please try again.";
+        message = t("admin.settings.footer.serverUnreachable");
       }
     }
     setSaving(false);
@@ -171,13 +173,13 @@ export function FooterSettingsCard({
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="link-outline"
-        title="Footer"
+        title={t("admin.settings.footer.title")}
         subtitle={
           loading
-            ? "Loading…"
+            ? t("admin.settings.footer.loading")
             : links.length > 0
-              ? `${links.length} social link${links.length !== 1 ? "s" : ""} configured`
-              : "Copyright text and social links"
+              ? t("admin.settings.footer.linksConfigured", { count: links.length })
+              : t("admin.settings.footer.noLinksSubtitle")
         }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -189,24 +191,32 @@ export function FooterSettingsCard({
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
           <View style={settingsStyles.field}>
             <View style={settingsStyles.fieldHeader}>
-              <ThemedText style={settingsStyles.fieldLabel}>Copyright Text</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.footer.copyrightLabel")}
+              </ThemedText>
               <ThemedText
                 style={[
                   settingsStyles.fieldCharCount,
                   { color: copyrightText.length > 200 ? theme.colors.error : mutedColor },
                 ]}
               >
-                {copyrightText.length}/200
+                {t("admin.settings.brandIdentity.charCount", {
+                  count: copyrightText.length,
+                  max: 200,
+                })}
               </ThemedText>
             </View>
             <Input
               value={copyrightText}
               onChangeText={setCopyrightText}
-              placeholder={`© ${new Date().getFullYear()} ${brand.appName}. All rights reserved.`}
+              placeholder={t("admin.settings.footer.copyrightPlaceholder", {
+                year: new Date().getFullYear(),
+                appName: brand.appName,
+              })}
               maxLength={200}
             />
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Shown in the site footer. Leave blank to use the default above.
+              {t("admin.settings.footer.copyrightHint")}
             </ThemedText>
             <SaveStatus
               status={copyrightAutosave.status}
@@ -221,7 +231,9 @@ export function FooterSettingsCard({
           <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
           <View style={styles.linksSection}>
-            <ThemedText style={settingsStyles.fieldLabel}>Social Links</ThemedText>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.footer.socialLinksLabel")}
+            </ThemedText>
 
             {loading ? (
               <ActivityIndicator color={primaryColor} />
@@ -231,7 +243,7 @@ export function FooterSettingsCard({
                   <View style={[settingsStyles.emptyState, { borderColor }]}>
                     <Icon name="link-outline" size={22} color={mutedColor} />
                     <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
-                      No links yet. Press Add to create your first one.
+                      {t("admin.settings.footer.noLinksEmptyState")}
                     </ThemedText>
                   </View>
                 )}
@@ -293,9 +305,9 @@ export function FooterSettingsCard({
                       size="md"
                       icon="add"
                       onPress={startNew}
-                      accessibilityLabel="Add social link"
+                      accessibilityLabel={t("admin.settings.footer.addLinkLabel")}
                     >
-                      Add
+                      {t("admin.settings.footer.addLink")}
                     </Button>
                   </ButtonRow>
                 )}

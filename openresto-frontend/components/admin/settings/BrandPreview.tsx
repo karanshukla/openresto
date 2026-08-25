@@ -51,7 +51,10 @@ export function BrandPreview({
     draft.highlightsSubheading.trim() || t("restaurant.home.highlightsSubheading");
   const copyright =
     draft.copyrightText.trim() ||
-    `© ${new Date().getFullYear()} ${draft.appName}. All rights reserved.`;
+    t("admin.settings.footer.copyrightPlaceholder", {
+      year: new Date().getFullYear(),
+      appName: draft.appName,
+    });
   const url = draft.websiteUrl.trim().replace(/^https?:\/\//, "") || "your-site.example";
 
   // Only the first three fit the row at this scale, and the point is the shape of the section
@@ -66,9 +69,11 @@ export function BrandPreview({
     <View style={[styles.panel, { backgroundColor: cardBg, borderColor }]}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <ThemedText style={styles.headerTitle}>Live preview</ThemedText>
+          <ThemedText style={styles.headerTitle}>
+            {t("admin.settings.brandPreview.title")}
+          </ThemedText>
           <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
-            Home page, before you save
+            {t("admin.settings.brandPreview.subtitle")}
           </ThemedText>
         </View>
 
@@ -76,17 +81,19 @@ export function BrandPreview({
           style={[styles.schemeGroup, { backgroundColor: previewDark ? "#00000030" : "#0000000d" }]}
         >
           {[
-            { label: "Light", dark: false },
-            { label: "Dark", dark: true },
+            { key: "light", label: t("admin.settings.brandPreview.lightMode"), dark: false },
+            { key: "dark", label: t("admin.settings.brandPreview.darkMode"), dark: true },
           ].map((mode) => {
             const active = previewDark === mode.dark;
             return (
               <Pressable
-                key={mode.label}
+                key={mode.key}
                 onPress={() => setPreviewDark(mode.dark)}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: active }}
-                accessibilityLabel={`Preview in ${mode.label.toLowerCase()} mode`}
+                accessibilityLabel={t("admin.settings.brandPreview.previewInModeLabel", {
+                  mode: mode.label.toLowerCase(),
+                })}
                 style={[styles.schemeBtn, active && { backgroundColor: `${accent}26` }]}
               >
                 <ThemedText style={[styles.schemeLabel, { color: active ? accent : mutedColor }]}>
@@ -100,7 +107,7 @@ export function BrandPreview({
         <Pressable
           onPress={() => setExpanded((v) => !v)}
           accessibilityRole="button"
-          accessibilityLabel="Live preview"
+          accessibilityLabel={t("admin.settings.brandPreview.title")}
           accessibilityState={{ expanded }}
           hitSlop={8}
         >
@@ -285,7 +292,9 @@ export function BrandPreview({
                         style={[styles.skeletonBar, { backgroundColor: site.border, width: "70%" }]}
                       />
                       <View style={[styles.locationCta, { backgroundColor: accent }]}>
-                        <ThemedText style={styles.locationCtaText}>Book</ThemedText>
+                        <ThemedText style={styles.locationCtaText}>
+                          {t("admin.settings.brandPreview.bookCta")}
+                        </ThemedText>
                       </View>
                     </View>
                   </View>
@@ -316,8 +325,7 @@ export function BrandPreview({
           </View>
 
           <ThemedText style={[styles.hint, { color: mutedColor }]}>
-            Locations are stand-ins. Everything else is your real content, including edits you
-            haven&apos;t saved yet.
+            {t("admin.settings.brandPreview.hint")}
           </ThemedText>
         </View>
       </AnimatedAccordion>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import { useBrand } from "@/context/BrandContext";
@@ -32,6 +33,7 @@ export function ContactSettingsCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const brand = useBrand();
   const { primaryColor } = useAppTheme();
   const [websiteUrl, setWebsiteUrl] = useState(brand.websiteUrl ?? "");
@@ -46,7 +48,7 @@ export function ContactSettingsCard({
   // A withheld save has to say why: with no button to disable, silence reads as a broken card.
   const blockedReason =
     emailAddress.trim() && !isValidEmail(emailAddress)
-      ? "Not saved: that isn't a valid email address yet."
+      ? t("admin.settings.contact.invalidEmailBlocked")
       : null;
 
   const { status, error, retry, undo } = useAutosave({
@@ -79,13 +81,13 @@ export function ContactSettingsCard({
 
   const summary =
     [phoneNumber.trim(), emailAddress.trim()].filter(Boolean).join(" · ") ||
-    "No fallback contact set";
+    t("admin.settings.contact.noFallback");
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="call-outline"
-        title="Contact & Website"
+        title={t("admin.settings.contact.title")}
         subtitle={summary}
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
@@ -96,47 +98,53 @@ export function ContactSettingsCard({
       <AnimatedAccordion expanded={expanded}>
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
           <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Website URL</ThemedText>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.contact.websiteUrlLabel")}
+            </ThemedText>
             <Input
               value={websiteUrl}
               onChangeText={setWebsiteUrl}
-              placeholder="https://bookings.example.com"
+              placeholder={t("admin.settings.contact.websiteUrlPlaceholder")}
               autoCapitalize="none"
               keyboardType="url"
             />
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              Used in confirmation email links and images. Must be the public URL of this app.
+              {t("admin.settings.contact.websiteUrlHint")}
             </ThemedText>
           </View>
 
           <View style={settingsStyles.fieldRow}>
             <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Contact Phone</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.contact.phoneLabel")}
+              </ThemedText>
               <Input
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
-                placeholder="+44 20 7946 0958"
+                placeholder={t("admin.settings.contact.phonePlaceholder")}
                 autoCapitalize="none"
                 keyboardType="phone-pad"
                 maxLength={MAX_CONTACT_PHONE_LENGTH}
               />
               <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Fallback contact shown when a location has no phone number of its own.
+                {t("admin.settings.contact.phoneHint")}
               </ThemedText>
             </View>
 
             <View style={[settingsStyles.field, settingsStyles.fieldFlex]}>
-              <ThemedText style={settingsStyles.fieldLabel}>Contact Email</ThemedText>
+              <ThemedText style={settingsStyles.fieldLabel}>
+                {t("admin.settings.contact.emailLabel")}
+              </ThemedText>
               <Input
                 value={emailAddress}
                 onChangeText={setEmailAddress}
-                placeholder="bookings@example.com"
+                placeholder={t("admin.settings.contact.emailPlaceholder")}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 maxLength={MAX_CONTACT_EMAIL_LENGTH}
               />
               <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-                Fallback contact shown when a location has no email of its own.
+                {t("admin.settings.contact.emailHint")}
               </ThemedText>
             </View>
           </View>

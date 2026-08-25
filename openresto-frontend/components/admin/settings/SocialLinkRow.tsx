@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import type { AdminSocialLinkDto } from "@/api/admin";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -33,6 +34,7 @@ export function SocialLinkRow({
   mutedColor,
   surface2,
 }: SocialLinkRowProps) {
+  const { t } = useTranslation();
   return (
     <View style={[settingsStyles.tile, { backgroundColor: surface2, borderColor }]}>
       <View style={[settingsStyles.tileIcon, { backgroundColor: cardBg, borderColor }]}>
@@ -46,18 +48,18 @@ export function SocialLinkRow({
       </View>
       <View style={styles.actions}>
         <RowTextButton
-          label="Edit"
+          label={t("admin.settings.socialLinkRow.edit")}
           icon="pencil-outline"
           color={mutedColor}
           onPress={() => onEdit(link)}
-          accessibilityLabel={`Edit ${link.label}`}
+          accessibilityLabel={t("admin.settings.socialLinkRow.editLabel", { label: link.label })}
         />
         <RowTextButton
-          label="Delete"
+          label={t("admin.settings.socialLinkRow.delete")}
           icon="trash-outline"
           color={theme.colors.error}
           onPress={() => onDelete(link.id)}
-          accessibilityLabel={`Delete ${link.label}`}
+          accessibilityLabel={t("admin.settings.socialLinkRow.deleteLabel", { label: link.label })}
         />
       </View>
     </View>

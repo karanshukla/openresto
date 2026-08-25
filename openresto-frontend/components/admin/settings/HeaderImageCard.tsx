@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { uploadHeroImage, deleteHeroImage } from "@/api/admin";
@@ -16,13 +17,23 @@ import { useBrandDraftPublish } from "./BrandDraftContext";
 import { saveBrandFields } from "./brandAutosave";
 import { SaveStatus } from "./SaveStatus";
 import { Icon } from "@/components/common/Icon";
+import type { TFunction } from "i18next";
 
 const MAX_HERO_MB = 5;
 
-const IMAGE_FIT_OPTIONS: SelectOption[] = [
-  { value: "Cover", label: "Cover (fill, may crop)" },
-  { value: "Contain", label: "Contain (show whole image)" },
-];
+/**
+ * `value` ("Cover"/"Contain") is the `BrandSettings.HeaderImageFit` wire value the Select commits
+ * — only `label` localizes.
+ * @see [HeaderImageCard.test.tsx](../../../tests/components/admin/settings/HeaderImageCard.test.tsx)
+ * — pins that the subtitle keeps showing the raw "Cover"/"Contain" value while the picker's own
+ * label translates.
+ */
+function getImageFitOptions(t: TFunction): SelectOption[] {
+  return [
+    { value: "Cover", label: t("admin.settings.headerImage.fitCoverLabel") },
+    { value: "Contain", label: t("admin.settings.headerImage.fitContainLabel") },
+  ];
+}
 
 /**
  * The home page's header image and how it fills its frame. Upload and removal take effect
@@ -38,6 +49,7 @@ export function HeaderImageCard({
   mutedColor: string;
   cardBg: string;
 }) {
+  const { t } = useTranslation();
   const brand = useBrand();
   const { primaryColor } = useAppTheme();
   const [headerImageFit, setHeaderImageFit] = useState(brand.headerImageFit ?? "Cover");
@@ -70,7 +82,10 @@ export function HeaderImageCard({
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > MAX_HERO_MB * 1024 * 1024) {
-        setMsg({ text: `Image must be under ${MAX_HERO_MB} MB.`, ok: false });
+        setMsg({
+          text: t("admin.settings.headerImage.tooLarge", { maxMb: MAX_HERO_MB }),
+          ok: false,
+        });
         return;
       }
       setHeroUploading(true);
@@ -79,9 +94,9 @@ export function HeaderImageCard({
       setHeroUploading(false);
       if (url) {
         setHeroPreview(url);
-        setMsg({ text: "Header image uploaded.", ok: true });
+        setMsg({ text: t("admin.settings.headerImage.uploaded"), ok: true });
       } else {
-        setMsg({ text: "Failed to upload image.", ok: false });
+        setMsg({ text: t("admin.settings.headerImage.uploadFailed"), ok: false });
       }
     };
     input.click();
@@ -92,15 +107,19 @@ export function HeaderImageCard({
     await deleteHeroImage();
     setHeroUploading(false);
     setHeroPreview(null);
-    setMsg({ text: "Header image removed.", ok: true });
+    setMsg({ text: t("admin.settings.headerImage.removed"), ok: true });
   };
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon="image-outline"
-        title="Homepage Header"
-        subtitle={heroPreview ? `Image set · ${headerImageFit}` : "No image · brand gradient"}
+        title={t("admin.settings.headerImage.title")}
+        subtitle={
+          heroPreview
+            ? t("admin.settings.headerImage.imageSetSubtitle", { fit: headerImageFit })
+            : t("admin.settings.headerImage.noImageSubtitle")
+        }
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
         primaryColor={primaryColor}
@@ -111,18 +130,22 @@ export function HeaderImageCard({
         <View style={[settingsStyles.secForm, { borderTopColor: borderColor }]}>
           <View style={settingsStyles.field}>
             <ThemedText style={settingsStyles.fieldLabel}>
-              Header image (max {MAX_HERO_MB} MB)
+              {t("admin.settings.headerImage.fieldLabel", { maxMb: MAX_HERO_MB })}
             </ThemedText>
             <View style={styles.heroBlock}>
               {heroPreview ? (
                 <View style={[styles.heroFrame, { borderColor }]}>
-                  <img src={heroPreview} alt="Header" style={domStyles.heroImage} />
+                  <img
+                    src={heroPreview}
+                    alt={t("admin.settings.headerImage.imageAlt")}
+                    style={domStyles.heroImage}
+                  />
                 </View>
               ) : (
                 <View style={[styles.heroPlaceholder, { borderColor }]}>
                   <Icon name="image-outline" size="xxl" color={mutedColor} />
                   <ThemedText style={[styles.heroPlaceholderText, { color: mutedColor }]}>
-                    No header image
+                    {t("admin.settings.headerImage.noImagePlaceholder")}
                   </ThemedText>
                 </View>
               )}
@@ -134,9 +157,17 @@ export function HeaderImageCard({
                   onPress={handlePickHero}
                   disabled={heroUploading}
                   loading={heroUploading}
-                  accessibilityLabel={heroPreview ? "Change header image" : "Upload header image"}
+                  accessibilityLabel={
+                    heroPreview
+                      ? t("admin.settings.headerImage.changeLabel")
+                      : t("admin.settings.headerImage.uploadLabel")
+                  }
                 >
-                  {heroUploading ? "Uploading…" : heroPreview ? "Change" : "Upload"}
+                  {heroUploading
+                    ? t("admin.settings.headerImage.uploading")
+                    : heroPreview
+                      ? t("admin.settings.headerImage.change")
+                      : t("admin.settings.headerImage.upload")}
                 </Button>
                 {heroPreview && (
                   <Button
@@ -146,9 +177,9 @@ export function HeaderImageCard({
                     icon="trash-outline"
                     onPress={handleDeleteHero}
                     disabled={heroUploading}
-                    accessibilityLabel="Remove header image"
+                    accessibilityLabel={t("admin.settings.headerImage.removeLabel")}
                   >
-                    Remove
+                    {t("admin.settings.headerImage.remove")}
                   </Button>
                 )}
               </View>
@@ -156,15 +187,17 @@ export function HeaderImageCard({
           </View>
 
           <View style={settingsStyles.field}>
-            <ThemedText style={settingsStyles.fieldLabel}>Image fit</ThemedText>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.headerImage.fitLabel")}
+            </ThemedText>
             <Select
-              accessibilityLabel="Image fit"
-              options={IMAGE_FIT_OPTIONS}
+              accessibilityLabel={t("admin.settings.headerImage.fitLabel")}
+              options={getImageFitOptions(t)}
               selectedValue={headerImageFit}
               onSelect={(value) => setHeaderImageFit(String(value))}
             />
             <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-              &quot;Contain&quot; avoids cropping on mobile; &quot;Cover&quot; fills the frame.
+              {t("admin.settings.headerImage.fitHint")}
             </ThemedText>
           </View>
 

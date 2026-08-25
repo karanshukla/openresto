@@ -1,4 +1,5 @@
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
@@ -83,17 +84,22 @@ export function SocialLinkEditForm({
   /** Labels the commit as a create rather than a save — the same form serves both. */
   isNew?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.editForm, { backgroundColor: surface2, borderColor }]}>
       <View style={styles.editFormIconField}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Icon</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>
+          {t("admin.settings.socialLinkEditForm.iconLabel")}
+        </ThemedText>
         <View style={styles.editFormIconGrid}>
           {ICON_OPTIONS.map((icon) => (
             <Pressable
               key={icon}
               onPress={() => onChange({ ...state, iconKey: icon })}
               accessibilityRole="radio"
-              accessibilityLabel={`${icon} icon`}
+              accessibilityLabel={t("admin.settings.socialLinkEditForm.iconOptionLabel", {
+                icon,
+              })}
               accessibilityState={{ checked: state.iconKey === icon }}
               style={[
                 styles.editFormSwatch,
@@ -114,20 +120,24 @@ export function SocialLinkEditForm({
       </View>
 
       <View style={styles.editFormField}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>Label</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>
+          {t("admin.settings.socialLinkEditForm.labelLabel")}
+        </ThemedText>
         <Input
           value={state.label}
           onChangeText={(v) => onChange({ ...state, label: v })}
-          placeholder="e.g. Instagram, Yelp, Menu PDF"
+          placeholder={t("admin.settings.socialLinkEditForm.labelPlaceholder")}
         />
       </View>
 
       <View style={styles.editFormField}>
-        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>URL</ThemedText>
+        <ThemedText style={[styles.fieldLabel, { color: mutedColor }]}>
+          {t("admin.settings.socialLinkEditForm.urlLabel")}
+        </ThemedText>
         <Input
           value={state.url}
           onChangeText={(v) => onChange({ ...state, url: v })}
-          placeholder="https://instagram.com/yourresto"
+          placeholder={t("admin.settings.socialLinkEditForm.urlPlaceholder")}
           autoCapitalize="none"
           keyboardType="url"
         />
@@ -143,9 +153,9 @@ export function SocialLinkEditForm({
           tone="neutral"
           size="md"
           onPress={onCancel}
-          accessibilityLabel="Cancel editing this link"
+          accessibilityLabel={t("admin.settings.socialLinkEditForm.cancelLabel")}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           size="md"
@@ -153,9 +163,19 @@ export function SocialLinkEditForm({
           onPress={onSave}
           disabled={saving || !state.label.trim() || !state.url.trim()}
           loading={saving}
-          accessibilityLabel={isNew ? "Add this link" : "Save this link"}
+          accessibilityLabel={
+            isNew
+              ? t("admin.settings.socialLinkEditForm.addLabel")
+              : t("admin.settings.socialLinkEditForm.saveLabel")
+          }
         >
-          {isNew ? (saving ? "Adding…" : "Add") : saving ? "Saving…" : "Save"}
+          {isNew
+            ? saving
+              ? t("admin.settings.socialLinkEditForm.adding")
+              : t("admin.settings.socialLinkEditForm.add")
+            : saving
+              ? t("admin.settings.socialLinkEditForm.saving")
+              : t("admin.settings.socialLinkEditForm.save")}
         </Button>
       </ButtonRow>
     </View>

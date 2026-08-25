@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -26,6 +27,7 @@ export function EmailDeliveryPanel({
   isDark: boolean;
   email: EmailSettingsState;
 }) {
+  const { t } = useTranslation();
   const { primaryColor } = useAppTheme();
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const okColor = theme.colors.success;
@@ -44,11 +46,13 @@ export function EmailDeliveryPanel({
           <Icon name="pulse-outline" size="xl" color={primaryColor} />
         </View>
         <View style={styles.headerCopy}>
-          <ThemedText style={styles.headerTitle}>Delivery</ThemedText>
+          <ThemedText style={styles.headerTitle}>
+            {t("admin.settings.emailDelivery.title")}
+          </ThemedText>
           <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
             {failures.length > 0
-              ? `${failures.length} recent failure${failures.length !== 1 ? "s" : ""}`
-              : "Connection and send history"}
+              ? t("admin.settings.emailDelivery.recentFailures", { count: failures.length })
+              : t("admin.settings.emailDelivery.subtitle")}
           </ThemedText>
         </View>
       </View>

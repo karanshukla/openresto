@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { View, Pressable } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import {
   SectionDto,
@@ -68,6 +69,7 @@ export function SectionBlock({
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
+  const { t } = useTranslation();
   const { primaryColor } = useAppTheme();
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
@@ -110,10 +112,20 @@ export function SectionBlock({
     return map;
   }, [groups]);
 
+  /**
+   * `g.name` is the admin-authored group label and `g.members`/`combinedSeats` are wire data
+   * (persisted `TableGroup` fields) — only the surrounding chrome ("(N seats)", "Tables … (N
+   * combined)") localizes.
+   * @see [SectionBlock.test.tsx](../../../tests/components/admin/settings/SectionBlock.test.tsx)
+   * — pins the section header's combinable-group count across locales.
+   */
   function groupLabel(g: TableGroupDto): string {
     return g.name
-      ? `${g.name} (${g.combinedSeats} seats)`
-      : `Tables ${g.members.map((m) => m.name ?? m.id).join(" + ")} (${g.combinedSeats} combined)`;
+      ? t("admin.settings.sectionBlock.namedGroupLabel", { name: g.name, seats: g.combinedSeats })
+      : t("admin.settings.sectionBlock.unnamedGroupLabel", {
+          members: g.members.map((m) => m.name ?? m.id).join(" + "),
+          combined: g.combinedSeats,
+        });
   }
 
   function groupContextFor(tableId: number): TableRowGroupContext | undefined {
@@ -244,17 +256,29 @@ export function SectionBlock({
             <Input
               value={draft}
               onChangeText={setDraft}
-              placeholder="e.g. Indoor, Patio"
+              placeholder={t("admin.settings.sectionBlock.namePlaceholder")}
               autoFocus
             />
           ) : (
             <>
               <ThemedText style={settingsStyles.editableValue}>{section.name}</ThemedText>
               <ThemedText style={[styles.headerSub, { color: mutedColor }]}>
-                {section.tables.length} tables · {totalSeats} seats
                 {sectionGroups.length > 0
-                  ? ` · ${sectionGroups.length} combinable group${sectionGroups.length > 1 ? "s" : ""}`
-                  : ""}
+                  ? t("admin.settings.sectionBlock.headerSubtitleWithGroups", {
+                      tables: t("admin.settings.locationCard.tablesCount", {
+                        count: section.tables.length,
+                      }),
+                      seats: t("admin.settings.tableRow.seatsCount", { count: totalSeats }),
+                      groups: t("admin.settings.sectionBlock.groupsCount", {
+                        count: sectionGroups.length,
+                      }),
+                    })
+                  : t("admin.settings.sectionBlock.headerSubtitle", {
+                      tables: t("admin.settings.locationCard.tablesCount", {
+                        count: section.tables.length,
+                      }),
+                      seats: t("admin.settings.tableRow.seatsCount", { count: totalSeats }),
+                    })}
               </ThemedText>
             </>
           )}
@@ -269,15 +293,19 @@ export function SectionBlock({
                 tone="neutral"
                 size="md"
                 onPress={() => setEditing(false)}
-                accessibilityLabel={`Cancel renaming ${section.name} section`}
+                accessibilityLabel={t("admin.settings.sectionBlock.cancelRenameLabel", {
+                  name: section.name,
+                })}
               >
-                Cancel
+                {t("common.actions.cancel")}
               </Button>
               <Button
                 size="md"
                 disabled={saving}
                 loading={saving}
-                accessibilityLabel={`Save ${section.name} section name`}
+                accessibilityLabel={t("admin.settings.sectionBlock.saveNameLabel", {
+                  name: section.name,
+                })}
                 onPress={async () => {
                   if (!draft.trim()) return;
                   setSaving(true);
@@ -287,7 +315,7 @@ export function SectionBlock({
                   setEditing(false);
                 }}
               >
-                Save
+                {t("admin.settings.sectionBlock.save")}
               </Button>
             </>
           ) : (
@@ -300,8 +328,10 @@ export function SectionBlock({
                 onPress={() => {
                   if (!isFirst) onMoveUp();
                 }}
-                accessibilityLabel={`Move ${section.name} section up`}
-                accessibilityHint="Moves this section earlier in the display order"
+                accessibilityLabel={t("admin.settings.sectionBlock.moveUpLabel", {
+                  name: section.name,
+                })}
+                accessibilityHint={t("admin.settings.sectionBlock.moveUpHint")}
               />
               <RowIconButton
                 testID="section-move-down-btn"
@@ -311,28 +341,34 @@ export function SectionBlock({
                 onPress={() => {
                   if (!isLast) onMoveDown();
                 }}
-                accessibilityLabel={`Move ${section.name} section down`}
-                accessibilityHint="Moves this section later in the display order"
+                accessibilityLabel={t("admin.settings.sectionBlock.moveDownLabel", {
+                  name: section.name,
+                })}
+                accessibilityHint={t("admin.settings.sectionBlock.moveDownHint")}
               />
               <RowTextButton
                 testID="section-edit-btn"
-                label="Edit"
+                label={t("admin.settings.sectionBlock.edit")}
                 icon="pencil-outline"
                 color={primaryColor}
                 onPress={() => {
                   setDraft(section.name);
                   setEditing(true);
                 }}
-                accessibilityLabel={`Rename ${section.name} section`}
+                accessibilityLabel={t("admin.settings.sectionBlock.renameLabel", {
+                  name: section.name,
+                })}
               />
               <RowTextButton
                 testID="section-delete-btn"
-                label="Delete"
+                label={t("admin.settings.sectionBlock.delete")}
                 icon="trash-outline"
                 color={theme.colors.error}
                 disabled={deleteStep === "confirm"}
                 onPress={startSectionDelete}
-                accessibilityLabel={`Delete ${section.name} section`}
+                accessibilityLabel={t("admin.settings.sectionBlock.deleteSectionLabel", {
+                  name: section.name,
+                })}
               />
             </>
           )}
@@ -362,14 +398,14 @@ export function SectionBlock({
             />
             <ThemedText style={settingsStyles.confirmText}>
               <ThemedText style={settingsStyles.confirmTextStrong}>
-                Delete section &ldquo;{section.name}&rdquo; and all its tables?
+                {t("admin.settings.sectionBlock.deleteConfirmTitle", { name: section.name })}
               </ThemedText>{" "}
               {impactLoading
                 ? ""
                 : impact && impact > 0
-                  ? `${impact} future ${impact === 1 ? "booking" : "bookings"} affected.`
-                  : "Future bookings in this section will lose their reference."}{" "}
-              This cannot be undone.
+                  ? t("admin.settings.sectionBlock.impactCount", { count: impact })
+                  : t("admin.settings.sectionBlock.impactUnknown")}{" "}
+              {t("admin.settings.tableRow.cannotBeUndone")}
             </ThemedText>
           </View>
           <ButtonRow>
@@ -381,7 +417,7 @@ export function SectionBlock({
               onPress={cancelSectionDelete}
               disabled={deleting}
             >
-              Cancel
+              {t("common.actions.cancel")}
             </Button>
             <Button
               testID="section-delete-confirm-btn"
@@ -391,7 +427,9 @@ export function SectionBlock({
               loading={deleting}
               onPress={confirmSectionDelete}
             >
-              {deleting ? "Deleting…" : "Yes, delete"}
+              {deleting
+                ? t("admin.settings.tableRow.deleting")
+                : t("admin.settings.tableRow.yesDelete")}
             </Button>
           </ButtonRow>
         </View>
@@ -412,9 +450,12 @@ export function SectionBlock({
           ]}
         >
           <ThemedText style={[styles.selectionLabel, { color: primaryColor }]}>
-            Select tables to combine with &ldquo;
-            {section.tables.find((t) => t.id === linkingFromId)?.name ?? `T${linkingFromId}`}
-            &rdquo; ({selectedIds.size} selected)
+            {t("admin.settings.sectionBlock.selectToCombine", {
+              source:
+                section.tables.find((t) => t.id === linkingFromId)?.name ??
+                t("admin.settings.tableRow.tableFallbackShort", { id: linkingFromId }),
+              count: selectedIds.size,
+            })}
           </ThemedText>
           <Button
             variant="secondary"
@@ -422,9 +463,9 @@ export function SectionBlock({
             size="md"
             onPress={cancelLink}
             disabled={combining}
-            accessibilityLabel="Cancel combining tables"
+            accessibilityLabel={t("admin.settings.sectionBlock.cancelCombineLabel")}
           >
-            Cancel
+            {t("common.actions.cancel")}
           </Button>
           <Button
             testID="section-combine-btn"
@@ -433,7 +474,7 @@ export function SectionBlock({
             loading={combining}
             onPress={confirmCombine}
           >
-            Combine
+            {t("admin.settings.sectionBlock.combine")}
           </Button>
         </View>
       )}
@@ -456,7 +497,9 @@ export function SectionBlock({
               ]}
             >
               <ThemedText style={[styles.groupEditLabel, { color: primaryColor }]}>
-                Edit combined seats · {groupLabel(g)}
+                {t("admin.settings.sectionBlock.editCombinedSeatsHeading", {
+                  label: groupLabel(g),
+                })}
               </ThemedText>
               <View style={styles.groupEditRow}>
                 <View style={styles.groupEditSelect}>
@@ -475,16 +518,16 @@ export function SectionBlock({
                   tone="neutral"
                   size="md"
                   onPress={() => setEditingGroupId(null)}
-                  accessibilityLabel="Cancel editing combined seats"
+                  accessibilityLabel={t("admin.settings.sectionBlock.cancelEditCombinedLabel")}
                 >
-                  Cancel
+                  {t("common.actions.cancel")}
                 </Button>
                 <Button
                   testID="group-save-combined-btn"
                   size="md"
                   onPress={() => saveCombinedSeats(g.id)}
                 >
-                  Save
+                  {t("admin.settings.sectionBlock.save")}
                 </Button>
               </View>
             </View>
@@ -517,7 +560,7 @@ export function SectionBlock({
           <View style={[settingsStyles.emptyState, { borderColor }]}>
             <Icon name="grid-outline" size={22} color={mutedColor} />
             <ThemedText style={[settingsStyles.emptyStateText, { color: mutedColor }]}>
-              No tables yet.
+              {t("admin.settings.sectionBlock.noTablesYet")}
             </ThemedText>
           </View>
         )}
@@ -529,7 +572,9 @@ export function SectionBlock({
           key={`group-edit-${g.id}`}
           testID={`group-edit-btn-${g.id}`}
           accessibilityRole="button"
-          accessibilityLabel={`Edit ${groupLabel(g)} combined seats`}
+          accessibilityLabel={t("admin.settings.sectionBlock.editGroupSeatsLabel", {
+            label: groupLabel(g),
+          })}
           style={[
             styles.groupEditTrigger,
             {
@@ -544,7 +589,7 @@ export function SectionBlock({
         >
           <Icon name="create-outline" size={13} color={primaryColor} />
           <ThemedText style={[styles.groupEditTriggerText, { color: primaryColor }]}>
-            Edit &ldquo;{groupLabel(g)}&rdquo; combined seats
+            {t("admin.settings.sectionBlock.editGroupSeatsTrigger", { label: groupLabel(g) })}
           </ThemedText>
         </Pressable>
       ))}
@@ -552,9 +597,9 @@ export function SectionBlock({
       {/* Add table */}
       <View style={styles.addTableRow}>
         <AddRow
-          label="Add Table"
-          placeholder="Table name (e.g. T1, Booth 1)"
-          extraPlaceholder="Seats"
+          label={t("admin.settings.sectionBlock.addTable")}
+          placeholder={t("admin.settings.sectionBlock.addTablePlaceholder")}
+          extraPlaceholder={t("admin.settings.sectionBlock.seatsPlaceholder")}
           extraOptions={buildSeatOptions()}
           onAdd={async (name, extra) => {
             const seats = parseInt(extra ?? "2", 10);

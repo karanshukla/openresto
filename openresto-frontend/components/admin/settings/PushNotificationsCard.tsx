@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { View, Platform, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -30,6 +31,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 type PushState = "loading" | "unconfigured" | "unavailable" | "denied" | "active" | "inactive";
 
 export function PushNotificationsCard() {
+  const { t } = useTranslation();
   const { colors, primaryColor } = useAppTheme();
   const borderColor = colors.border;
   const mutedColor = colors.muted;
@@ -80,7 +82,7 @@ export function PushNotificationsCard() {
       const permission = await Notification.requestPermission();
       if (permission === "denied") {
         setPushState("denied");
-        setErrorMsg("Notifications blocked. Enable them in your browser settings.");
+        setErrorMsg(t("admin.settings.pushNotifications.blockedError"));
         setWorking(false);
         return;
       }
@@ -110,7 +112,7 @@ export function PushNotificationsCard() {
       setPushState("active");
     } catch (err) {
       console.error("Push subscribe error:", err);
-      setErrorMsg("Failed to enable push notifications.");
+      setErrorMsg(t("admin.settings.pushNotifications.enableFailed"));
     }
     setWorking(false);
   };
@@ -128,7 +130,7 @@ export function PushNotificationsCard() {
       setPushState("inactive");
     } catch (err) {
       console.error("Push unsubscribe error:", err);
-      setErrorMsg("Failed to disable push notifications.");
+      setErrorMsg(t("admin.settings.pushNotifications.disableFailed"));
     }
     setWorking(false);
   };
@@ -144,23 +146,23 @@ export function PushNotificationsCard() {
 
   const stateSub =
     pushState === "loading"
-      ? "Checking status…"
+      ? t("admin.settings.pushNotifications.checkingStatus")
       : isActive
-        ? "Push notifications active for all locations"
+        ? t("admin.settings.pushNotifications.activeSubtitle")
         : isDenied
-          ? "Notifications are blocked. Enable them in your browser settings."
+          ? t("admin.settings.pushNotifications.deniedSubtitle")
           : isUnconfigured
-            ? "VAPID keys not configured"
+            ? t("admin.settings.pushNotifications.unconfiguredSubtitle")
             : pushState === "unavailable"
-              ? "Not supported in this browser"
-              : "Enable to receive real-time booking alerts";
+              ? t("admin.settings.pushNotifications.unavailableSubtitle")
+              : t("admin.settings.pushNotifications.inactiveSubtitle");
 
   return (
     <View style={[settingsStyles.secCard, { backgroundColor: cardBg, borderColor }]}>
       <AccordionCardHeader
         icon={stateIcon}
         iconColor={iconColor}
-        title="Push Notifications"
+        title={t("admin.settings.pushNotifications.title")}
         subtitle={stateSub}
         subtitleColor={isUnconfigured || isDenied ? theme.colors.warning : undefined}
         expanded={expanded}
@@ -186,9 +188,7 @@ export function PushNotificationsCard() {
                   style={styles.noticeIcon}
                 />
                 <ThemedText style={[styles.noticeText, { color: mutedColor }]}>
-                  Push notifications require VAPID keys to be configured in the server environment
-                  (VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY). Contact your administrator to set these
-                  up.
+                  {t("admin.settings.pushNotifications.unconfiguredNotice")}
                 </ThemedText>
               </View>
             ) : isDenied ? (
@@ -200,20 +200,19 @@ export function PushNotificationsCard() {
                   style={styles.noticeIcon}
                 />
                 <ThemedText style={[styles.noticeText, { color: mutedColor }]}>
-                  Push notifications are blocked by your browser. Open your browser&apos;s site
-                  settings to allow notifications, then reload this page.
+                  {t("admin.settings.pushNotifications.deniedNotice")}
                 </ThemedText>
               </View>
             ) : pushState === "unavailable" ? (
               <ThemedText style={[styles.bodyText, { color: mutedColor }]}>
-                Push notifications are not supported in this browser.
+                {t("admin.settings.pushNotifications.unavailableBody")}
               </ThemedText>
             ) : (
               <View style={styles.body}>
                 <ThemedText style={[styles.bodyText, { color: mutedColor }]}>
                   {isActive
-                    ? "You will receive push notifications for new bookings, cancellations, and capacity alerts across all locations."
-                    : "Enable push notifications to receive real-time alerts for new bookings, cancellations, and when a location is nearly full."}
+                    ? t("admin.settings.pushNotifications.activeBody")
+                    : t("admin.settings.pushNotifications.inactiveBody")}
                 </ThemedText>
 
                 {errorMsg && <ThemedText style={styles.error}>{errorMsg}</ThemedText>}
@@ -228,16 +227,18 @@ export function PushNotificationsCard() {
                     disabled={working}
                     loading={working}
                     accessibilityLabel={
-                      isActive ? "Disable push notifications" : "Enable push notifications"
+                      isActive
+                        ? t("admin.settings.pushNotifications.disableButton")
+                        : t("admin.settings.pushNotifications.enableButton")
                     }
                   >
                     {working
                       ? isActive
-                        ? "Disabling…"
-                        : "Enabling…"
+                        ? t("admin.settings.pushNotifications.disabling")
+                        : t("admin.settings.pushNotifications.enabling")
                       : isActive
-                        ? "Disable push notifications"
-                        : "Enable push notifications"}
+                        ? t("admin.settings.pushNotifications.disableButton")
+                        : t("admin.settings.pushNotifications.enableButton")}
                   </Button>
                 </ButtonRow>
               </View>
