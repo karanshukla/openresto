@@ -23,6 +23,9 @@ jest.mock("@/hooks/use-app-theme", () => ({
 
 jest.mock("@/context/ThemeContext", () => ({ useTheme: () => ({ toggle: mockToggle }) }));
 jest.mock("@/context/BrandContext", () => ({ useBrand: () => ({ appName: "Test App" }) }));
+jest.mock("@/context/LocaleContext", () => ({
+  useLocale: () => ({ locale: "en", setLocale: jest.fn() }),
+}));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("@/api/restaurants", () => ({ fetchSocialLinks: jest.fn() }));
 
@@ -59,6 +62,7 @@ describe("OverflowMenu dismissal", () => {
 
   const panelModal = () => screen.UNSAFE_getAllByType(Modal)[0];
   const helpModal = () => screen.UNSAFE_getAllByType(Modal)[1];
+  const languageModal = () => screen.UNSAFE_getAllByType(Modal)[2];
 
   it("opens the panel on the trigger press", () => {
     render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
@@ -116,5 +120,25 @@ describe("OverflowMenu dismissal", () => {
 
     expect(panelModal().props.visible).toBe(false);
     expect(onOpenShortcuts).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the panel before opening the language modal, so the two never stack", () => {
+    render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+    openMenu();
+    fireEvent.press(screen.getByLabelText("Language"));
+
+    expect(panelModal().props.visible).toBe(false);
+    expect(languageModal().props.visible).toBe(true);
+  });
+
+  it("closes the language modal on a hardware/Esc request", () => {
+    render(<OverflowMenu onOpenShortcuts={jest.fn()} />);
+    openMenu();
+    fireEvent.press(screen.getByLabelText("Language"));
+    expect(languageModal().props.visible).toBe(true);
+
+    fireEvent(languageModal(), "requestClose");
+
+    expect(languageModal().props.visible).toBe(false);
   });
 });

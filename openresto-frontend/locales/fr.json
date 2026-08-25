@@ -199,10 +199,12 @@
     },
     "overflowMenu": {
       "closeHelp": "Fermer l'aide",
+      "closeLanguage": "Fermer la langue",
       "closeMenu": "Fermer le menu",
       "findUsElsewhere": "Retrouvez-nous ailleurs",
       "help": "Aide",
       "helpBody": "Ouvrez la page Établissements pour consulter les horaires, les menus et les créneaux disponibles de chaque établissement. Choisissez un créneau pour ouvrir directement le formulaire de réservation, ou utilisez « Mes réservations » pour retrouver une réservation existante avec votre référence.",
+      "language": "Langue",
       "moreOptions": "Plus d'options",
       "openMenu": "Ouvrir le menu",
       "switchToDarkMode": "Passer au mode sombre",

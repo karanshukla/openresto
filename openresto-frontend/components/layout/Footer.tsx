@@ -13,7 +13,6 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
-import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
@@ -45,10 +44,6 @@ export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent)
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>
 
         <View style={styles.right}>
-          <View style={styles.languageSwitcher}>
-            <LanguageSwitcher />
-          </View>
-
           {socialLinks.length > 0 && (
             <View style={styles.social}>
               {socialLinks.map((link) => (

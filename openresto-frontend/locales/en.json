@@ -199,10 +199,12 @@
     },
     "overflowMenu": {
       "closeHelp": "Close help",
+      "closeLanguage": "Close language",
       "closeMenu": "Close menu",
       "findUsElsewhere": "Find us elsewhere",
       "help": "Help",
       "helpBody": "Open the Locations page to see hours, menus, and available times for each location. Pick a time slot to open the booking form right there, or use \"My Bookings\" to look up an existing reservation with your booking reference.",
+      "language": "Language",
       "moreOptions": "More options",
       "openMenu": "Open menu",
       "switchToDarkMode": "Switch to dark mode",
