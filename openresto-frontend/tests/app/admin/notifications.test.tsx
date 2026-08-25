@@ -8,6 +8,7 @@ import NotificationsScreen from "@/app/admin/notifications";
 import * as notificationsApi from "@/api/notifications";
 import * as restaurantsApi from "@/api/restaurants";
 import { PIN_STORAGE_KEY } from "@/utils/notifications";
+import { setActiveLocale } from "@/utils/locale";
 
 // Mock ReanimatedSwipeable — exposes onSwipeableOpen via a testID button so tests can
 // simulate swipe-to-delete without needing real gesture-handler infrastructure.
@@ -141,6 +142,9 @@ const mockNotificationsPage = {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(console, "error").mockImplementation(() => {});
+  // Rows render `relativeTime`, which follows the device when no locale is set — see
+  // tests/utils/formatters.test.ts for why an unpinned assertion only holds in en-US.
+  setActiveLocale("en");
 
   Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
 
@@ -181,6 +185,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.restoreAllMocks();
+  setActiveLocale(undefined);
   Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
 });
 

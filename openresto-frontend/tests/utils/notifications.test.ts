@@ -7,8 +7,19 @@ import {
   TYPE_LABELS,
   TYPE_FILTERS,
 } from "@/utils/notifications";
+import { setActiveLocale } from "@/utils/locale";
 
+// Re-exported from utils/formatters — see formatters.test.ts for why the locale is pinned
+// rather than left to follow the device.
 describe("relativeTime", () => {
+  beforeEach(() => {
+    setActiveLocale("en");
+  });
+
+  afterEach(() => {
+    setActiveLocale(undefined);
+  });
+
   it("returns 'now' for <1 minute", () => {
     const iso = new Date(Date.now() - 30_000).toISOString();
     expect(relativeTime(iso)).toBe("now");
