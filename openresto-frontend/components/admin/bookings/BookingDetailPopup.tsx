@@ -428,7 +428,7 @@ export function BookingDetailPopup({
                     accessibilityLabel={t("admin.bookings.detail.saveChangesLabel")}
                   >
                     {editLoading
-                      ? t("admin.bookings.detail.saving")
+                      ? t("common.status.saving")
                       : t("admin.bookings.detail.saveChanges")}
                   </Button>
                 </>

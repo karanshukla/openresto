@@ -221,7 +221,9 @@
       "closeLabel": "Fermer {{label}}"
     },
     "status": {
-      "loading": "Chargement…"
+      "loading": "Chargement…",
+      "saving": "Enregistrement…",
+      "adding": "Ajout…"
     },
     "timePicker": {
       "accessibilityLabel": "Heure",
@@ -587,7 +589,6 @@
         "editLabel": "Modifier la réservation",
         "discardChangesLabel": "Annuler les modifications",
         "saveChanges": "Enregistrer les modifications",
-        "saving": "Enregistrement…",
         "saveChangesLabel": "Enregistrer les modifications",
         "notFound": "Réservation introuvable.",
         "invalidSeats": "Nombre de couverts invalide",
@@ -750,7 +751,6 @@
         "subtitle": "Ajoutez votre premier établissement pour commencer à accepter des réservations."
       },
       "pauseButton": {
-        "saving": "Enregistrement…",
         "resumeLabel": "Reprendre les réservations de {{name}}",
         "pauseLabel": "Suspendre la prochaine heure de réservations à {{name}}",
         "resumeUntil": "Reprendre les nouvelles réservations maintenant (suspendues jusqu'à {{time}})",
@@ -769,8 +769,7 @@
       "addForm": {
         "namePlaceholder": "Nom de l'établissement (p. ex. Centre-ville, Rive ouest)",
         "cancelLabel": "Annuler l'ajout d'un établissement",
-        "add": "Ajouter",
-        "adding": "Ajout…"
+        "add": "Ajouter"
       },
       "archiveRow": {
         "title": "Archiver l'établissement",
@@ -901,7 +900,6 @@
         "hint": "Libellés courts affichés sur la fiche publique du restaurant (par ex. « Chiens acceptés », « Terrasse »)."
       },
       "saveStatus": {
-        "saving": "Enregistrement…",
         "saved": "Enregistré",
         "undoLabel": "Annuler le dernier enregistrement",
         "undo": "Annuler",
@@ -912,7 +910,6 @@
       "addRow": {
         "namePlaceholder": "Nom",
         "cancelLabel": "Annuler l'ajout",
-        "adding": "Ajout…",
         "add": "Ajouter"
       },
       "socialLinkRow": {
@@ -977,9 +974,7 @@
         "cancelLabel": "Annuler la modification de ce lien",
         "addLabel": "Ajouter ce lien",
         "saveLabel": "Enregistrer ce lien",
-        "adding": "Ajout…",
         "add": "Ajouter",
-        "saving": "Enregistrement…",
         "save": "Enregistrer"
       },
       "headerImage": {
@@ -1086,8 +1081,6 @@
         "cancelLabel": "Annuler la modification de ce point fort",
         "addThisLabel": "Ajouter ce point fort",
         "saveThisLabel": "Enregistrer ce point fort",
-        "adding": "Ajout…",
-        "saving": "Enregistrement…",
         "save": "Enregistrer",
         "invalidLinkUrl": "Saisissez une URL de lien valide (ex. https://example.com).",
         "serverUnreachable": "Impossible de joindre le serveur. Veuillez réessayer."
@@ -1103,7 +1096,6 @@
         "currentPasswordLabel": "Mot de passe actuel",
         "passwordPlaceholder": "••••••••",
         "cancelEmailLabel": "Annuler le changement d'e-mail",
-        "saving": "Enregistrement…",
         "updateEmail": "Mettre à jour l'e-mail",
         "pvqLabel": "Question de sécurité",
         "pvqNotConfigured": "Non configurée. Configurez-en une pour activer la réinitialisation du mot de passe.",
@@ -1185,7 +1177,6 @@
         "seatsPlaceholder": "Places",
         "cancelEditLabel": "Annuler la modification de {{name}}",
         "saveLabel": "Enregistrer {{name}}",
-        "saving": "Enregistrement…",
         "save": "Enregistrer"
       },
       "sectionBlock": {
@@ -1247,7 +1238,6 @@
         "fromEmailLabel": "E-mail de l'expéditeur",
         "footerHintVerified": "Connexion vérifiée · confirmations prêtes",
         "footerHintUnverified": "Testez la connexion avant d'activer les confirmations",
-        "saving": "Enregistrement…",
         "saveButton": "Enregistrer les paramètres SMTP"
       },
       "users": {
@@ -1280,7 +1270,6 @@
         "temporaryPasswordLabel": "Mot de passe temporaire",
         "newUserRoleLabel": "Rôle du nouvel utilisateur {{role}}",
         "addThisUserLabel": "Ajouter cet utilisateur",
-        "adding": "Ajout…",
         "add": "Ajouter",
         "addUser": "Ajouter un utilisateur"
       },

@@ -171,10 +171,10 @@ export function SocialLinkEditForm({
         >
           {isNew
             ? saving
-              ? t("admin.settings.socialLinkEditForm.adding")
+              ? t("common.status.adding")
               : t("admin.settings.socialLinkEditForm.add")
             : saving
-              ? t("admin.settings.socialLinkEditForm.saving")
+              ? t("common.status.saving")
               : t("admin.settings.socialLinkEditForm.save")}
         </Button>
       </ButtonRow>

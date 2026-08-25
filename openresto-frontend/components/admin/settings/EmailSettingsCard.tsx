@@ -404,9 +404,7 @@ export function EmailSettingsCard({
                 disabled={saving || !host || !username}
                 loading={saving}
               >
-                {saving
-                  ? t("admin.settings.emailSettings.saving")
-                  : t("admin.settings.emailSettings.saveButton")}
+                {saving ? t("common.status.saving") : t("admin.settings.emailSettings.saveButton")}
               </Button>
             </ButtonRow>
           </View>

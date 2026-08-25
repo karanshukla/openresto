@@ -221,7 +221,9 @@
       "closeLabel": "Close {{label}}"
     },
     "status": {
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "saving": "Saving…",
+      "adding": "Adding…"
     },
     "timePicker": {
       "accessibilityLabel": "Time",
@@ -587,7 +589,6 @@
         "editLabel": "Edit booking",
         "discardChangesLabel": "Discard changes",
         "saveChanges": "Save Changes",
-        "saving": "Saving…",
         "saveChangesLabel": "Save changes",
         "notFound": "Booking not found.",
         "invalidSeats": "Invalid seats value",
@@ -750,7 +751,6 @@
         "subtitle": "Add your first location to start accepting bookings."
       },
       "pauseButton": {
-        "saving": "Saving…",
         "resumeLabel": "Resume bookings for {{name}}",
         "pauseLabel": "Pause the next hour of bookings at {{name}}",
         "resumeUntil": "Resume New Bookings now (paused up to {{time}})",
@@ -769,8 +769,7 @@
       "addForm": {
         "namePlaceholder": "Location name (e.g. Downtown, Westside)",
         "cancelLabel": "Cancel adding a location",
-        "add": "Add",
-        "adding": "Adding…"
+        "add": "Add"
       },
       "archiveRow": {
         "title": "Archive location",
@@ -901,7 +900,6 @@
         "hint": "Short labels shown on the public restaurant card (e.g. \"Dog friendly\", \"Terrace\")."
       },
       "saveStatus": {
-        "saving": "Saving…",
         "saved": "Saved",
         "undoLabel": "Undo the last save",
         "undo": "Undo",
@@ -912,7 +910,6 @@
       "addRow": {
         "namePlaceholder": "Name",
         "cancelLabel": "Cancel add",
-        "adding": "Adding…",
         "add": "Add"
       },
       "socialLinkRow": {
@@ -977,9 +974,7 @@
         "cancelLabel": "Cancel editing this link",
         "addLabel": "Add this link",
         "saveLabel": "Save this link",
-        "adding": "Adding…",
         "add": "Add",
-        "saving": "Saving…",
         "save": "Save"
       },
       "headerImage": {
@@ -1086,8 +1081,6 @@
         "cancelLabel": "Cancel editing this highlight",
         "addThisLabel": "Add this highlight",
         "saveThisLabel": "Save this highlight",
-        "adding": "Adding…",
-        "saving": "Saving…",
         "save": "Save",
         "invalidLinkUrl": "Enter a valid link URL (e.g. https://example.com).",
         "serverUnreachable": "Couldn't reach the server. Please try again."
@@ -1103,7 +1096,6 @@
         "currentPasswordLabel": "Current password",
         "passwordPlaceholder": "••••••••",
         "cancelEmailLabel": "Cancel email change",
-        "saving": "Saving…",
         "updateEmail": "Update Email",
         "pvqLabel": "Security Question",
         "pvqNotConfigured": "Not configured. Set one up to enable password reset.",
@@ -1185,7 +1177,6 @@
         "seatsPlaceholder": "Seats",
         "cancelEditLabel": "Cancel editing {{name}}",
         "saveLabel": "Save {{name}}",
-        "saving": "Saving…",
         "save": "Save"
       },
       "sectionBlock": {
@@ -1247,7 +1238,6 @@
         "fromEmailLabel": "From email",
         "footerHintVerified": "Connection verified · confirmations ready",
         "footerHintUnverified": "Test the connection before enabling confirmations",
-        "saving": "Saving…",
         "saveButton": "Save SMTP settings"
       },
       "users": {
@@ -1280,7 +1270,6 @@
         "temporaryPasswordLabel": "Temporary password",
         "newUserRoleLabel": "New user role {{role}}",
         "addThisUserLabel": "Add this user",
-        "adding": "Adding…",
         "add": "Add",
         "addUser": "Add user"
       },

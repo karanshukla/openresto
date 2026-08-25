@@ -221,7 +221,9 @@
       "closeLabel": "{{label}} schließen"
     },
     "status": {
-      "loading": "Wird geladen…"
+      "loading": "Wird geladen…",
+      "saving": "Wird gespeichert…",
+      "adding": "Wird hinzugefügt…"
     },
     "timePicker": {
       "accessibilityLabel": "Uhrzeit",
@@ -587,7 +589,6 @@
         "editLabel": "Buchung bearbeiten",
         "discardChangesLabel": "Änderungen verwerfen",
         "saveChanges": "Änderungen speichern",
-        "saving": "Wird gespeichert…",
         "saveChangesLabel": "Änderungen speichern",
         "notFound": "Buchung nicht gefunden.",
         "invalidSeats": "Ungültige Personenzahl",
@@ -750,7 +751,6 @@
         "subtitle": "Fügen Sie Ihren ersten Standort hinzu, um Buchungen entgegenzunehmen."
       },
       "pauseButton": {
-        "saving": "Wird gespeichert…",
         "resumeLabel": "Buchungen für {{name}} fortsetzen",
         "pauseLabel": "Die nächste Stunde Buchungen bei {{name}} pausieren",
         "resumeUntil": "Neue Buchungen jetzt fortsetzen (pausiert bis {{time}})",
@@ -769,8 +769,7 @@
       "addForm": {
         "namePlaceholder": "Name des Standorts (z. B. Innenstadt, Westseite)",
         "cancelLabel": "Hinzufügen eines Standorts abbrechen",
-        "add": "Hinzufügen",
-        "adding": "Wird hinzugefügt…"
+        "add": "Hinzufügen"
       },
       "archiveRow": {
         "title": "Standort archivieren",
@@ -901,7 +900,6 @@
         "hint": "Kurze Bezeichnungen, die auf der öffentlichen Restaurantkarte angezeigt werden (z. B. „Hunde willkommen“, „Terrasse“)."
       },
       "saveStatus": {
-        "saving": "Wird gespeichert…",
         "saved": "Gespeichert",
         "undoLabel": "Letztes Speichern rückgängig machen",
         "undo": "Rückgängig",
@@ -912,7 +910,6 @@
       "addRow": {
         "namePlaceholder": "Name",
         "cancelLabel": "Hinzufügen abbrechen",
-        "adding": "Wird hinzugefügt…",
         "add": "Hinzufügen"
       },
       "socialLinkRow": {
@@ -977,9 +974,7 @@
         "cancelLabel": "Bearbeitung dieses Links abbrechen",
         "addLabel": "Diesen Link hinzufügen",
         "saveLabel": "Diesen Link speichern",
-        "adding": "Wird hinzugefügt…",
         "add": "Hinzufügen",
-        "saving": "Wird gespeichert…",
         "save": "Speichern"
       },
       "headerImage": {
@@ -1086,8 +1081,6 @@
         "cancelLabel": "Bearbeitung dieses Highlights abbrechen",
         "addThisLabel": "Dieses Highlight hinzufügen",
         "saveThisLabel": "Dieses Highlight speichern",
-        "adding": "Wird hinzugefügt…",
-        "saving": "Wird gespeichert…",
         "save": "Speichern",
         "invalidLinkUrl": "Geben Sie eine gültige Link-URL ein (z. B. https://example.com).",
         "serverUnreachable": "Server konnte nicht erreicht werden. Bitte versuchen Sie es erneut."
@@ -1103,7 +1096,6 @@
         "currentPasswordLabel": "Aktuelles Passwort",
         "passwordPlaceholder": "••••••••",
         "cancelEmailLabel": "E-Mail-Änderung abbrechen",
-        "saving": "Wird gespeichert…",
         "updateEmail": "E-Mail aktualisieren",
         "pvqLabel": "Sicherheitsfrage",
         "pvqNotConfigured": "Nicht konfiguriert. Richten Sie eine ein, um die Passwortzurücksetzung zu aktivieren.",
@@ -1185,7 +1177,6 @@
         "seatsPlaceholder": "Sitzplätze",
         "cancelEditLabel": "Bearbeitung von {{name}} abbrechen",
         "saveLabel": "{{name}} speichern",
-        "saving": "Wird gespeichert…",
         "save": "Speichern"
       },
       "sectionBlock": {
@@ -1247,7 +1238,6 @@
         "fromEmailLabel": "Absender-E-Mail",
         "footerHintVerified": "Verbindung geprüft · Bestätigungen bereit",
         "footerHintUnverified": "Testen Sie die Verbindung, bevor Sie Bestätigungen aktivieren",
-        "saving": "Wird gespeichert…",
         "saveButton": "SMTP-Einstellungen speichern"
       },
       "users": {
@@ -1280,7 +1270,6 @@
         "temporaryPasswordLabel": "Temporäres Passwort",
         "newUserRoleLabel": "Rolle des neuen Benutzers {{role}}",
         "addThisUserLabel": "Diesen Benutzer hinzufügen",
-        "adding": "Wird hinzugefügt…",
         "add": "Hinzufügen",
         "addUser": "Benutzer hinzufügen"
       },

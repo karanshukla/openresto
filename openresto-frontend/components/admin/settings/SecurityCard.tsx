@@ -182,9 +182,7 @@ export function SecurityCard({
                   onPress={handleChangeEmail}
                   disabled={saving || !newEmail.trim() || !currentPwForEmail}
                 >
-                  {saving
-                    ? t("admin.settings.security.saving")
-                    : t("admin.settings.security.updateEmail")}
+                  {saving ? t("common.status.saving") : t("admin.settings.security.updateEmail")}
                 </Button>
               </ButtonRow>
             </View>
@@ -264,9 +262,7 @@ export function SecurityCard({
                   onPress={handleSavePvq}
                   disabled={saving || !pvqQuestion.trim() || !pvqAnswer.trim()}
                 >
-                  {saving
-                    ? t("admin.settings.security.saving")
-                    : t("admin.settings.security.saveQuestion")}
+                  {saving ? t("common.status.saving") : t("admin.settings.security.saveQuestion")}
                 </Button>
               </ButtonRow>
             </View>
@@ -354,9 +350,7 @@ export function SecurityCard({
                   onPress={handleChangePw}
                   disabled={saving || !currentPw || newPw.length < 6}
                 >
-                  {saving
-                    ? t("admin.settings.security.saving")
-                    : t("admin.settings.security.updatePassword")}
+                  {saving ? t("common.status.saving") : t("admin.settings.security.updatePassword")}
                 </Button>
               </ButtonRow>
             </View>

@@ -544,10 +544,10 @@ function HighlightEditForm({
         >
           {isNew
             ? saving
-              ? t("admin.settings.highlights.adding")
+              ? t("common.status.adding")
               : t("admin.settings.highlights.add")
             : saving
-              ? t("admin.settings.highlights.saving")
+              ? t("common.status.saving")
               : t("admin.settings.highlights.save")}
         </Button>
       </ButtonRow>

@@ -292,7 +292,7 @@ export default function AdminLocationsScreen() {
               }}
             >
               {pausing
-                ? t("admin.locations.pauseButton.saving")
+                ? t("common.status.saving")
                 : isPaused
                   ? t("admin.locations.pauseButton.resumeUntil", { time: pausedUntilText })
                   : t("admin.locations.pauseButton.pauseFor60")}
