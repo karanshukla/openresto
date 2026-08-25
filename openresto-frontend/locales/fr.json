@@ -651,10 +651,12 @@
       "extendButton": {
         "a11yLabel": "Prolonger toutes les réservations actives de {{name}} d'une heure",
         "extending": "Prolongation…",
-        "extended": "{{count}} réservations actives prolongées de 60 min",
         "noActiveToExtend": "Aucune réservation active à prolonger",
-        "extend": "Prolonger {{count}} réservations actives de 60 min",
-        "noActive": "Aucune réservation active"
+        "noActive": "Aucune réservation active",
+        "extend_one": "Prolonger {{count}} réservation active de 60 min",
+        "extend_other": "Prolonger {{count}} réservations actives de 60 min",
+        "extended_one": "{{count}} réservation active prolongée de 60 min",
+        "extended_other": "{{count}} réservations actives prolongées de 60 min"
       },
       "addForm": {
         "namePlaceholder": "Nom de l'établissement (p. ex. Centre-ville, Rive ouest)",

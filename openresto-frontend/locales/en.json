@@ -651,10 +651,12 @@
       "extendButton": {
         "a11yLabel": "Extend all active bookings at {{name}} by an hour",
         "extending": "Extending…",
-        "extended": "Extended {{count}} active bookings +60m",
         "noActiveToExtend": "No active bookings to extend",
-        "extend": "Extend {{count}} active Bookings by 60m",
-        "noActive": "No active bookings"
+        "noActive": "No active bookings",
+        "extend_one": "Extend {{count}} active Booking by 60m",
+        "extend_other": "Extend {{count}} active Bookings by 60m",
+        "extended_one": "Extended {{count}} active booking +60m",
+        "extended_other": "Extended {{count}} active bookings +60m"
       },
       "addForm": {
         "namePlaceholder": "Location name (e.g. Downtown, Westside)",
@@ -671,7 +673,7 @@
         "archiving": "Archiving…",
         "confirmTitle": "Archive {{name}}?",
         "confirmYes": "Yes, archive",
-        "confirmMessageWithBookings_one": "{{name}} comes off the public site, and customers can no longer find or book it. Its {{count}} upcoming booking stay intact in the admin, but the guests can no longer look them up on the site. You can restore it at any time.",
+        "confirmMessageWithBookings_one": "{{name}} comes off the public site, and customers can no longer find or book it. Its {{count}} upcoming booking stays intact in the admin, but the guests can no longer look it up on the site. You can restore it at any time.",
         "confirmMessageWithBookings_other": "{{name}} comes off the public site, and customers can no longer find or book it. Its {{count}} upcoming bookings stay intact in the admin, but the guests can no longer look them up on the site. You can restore it at any time.",
         "confirmMessageNoBookings": "{{name}} comes off the public site, and customers can no longer find or book it. Existing bookings stay intact. You can restore it at any time."
       },
@@ -716,7 +718,7 @@
         "archivedLabel": "{{name}}, archived"
       },
       "scheduleConflicts": {
-        "title_one": "{{count}} upcoming booking no longer fit this schedule",
+        "title_one": "{{count}} upcoming booking no longer fits this schedule",
         "title_other": "{{count}} upcoming bookings no longer fit this schedule",
         "subtitle": "These were taken before the current hours and are still on the books. Move or cancel them — the guests have not been told anything changed.",
         "allClear": "Every upcoming booking fits this schedule.",

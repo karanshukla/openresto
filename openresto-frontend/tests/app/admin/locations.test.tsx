@@ -294,10 +294,10 @@ describe("AdminLocationsScreen", () => {
     await act(async () => {
       fireEvent.press(screen.getByText("Extend 2 active Bookings by 60m"));
     });
-    await waitFor(() => expect(screen.getByText("Extended 1 active bookings +60m")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Extended 1 active booking +60m")).toBeTruthy());
     expect(extendRestaurantBookings).toHaveBeenCalledWith(1, 60);
     // Pressing again must not re-extend (button is locked)
-    fireEvent.press(screen.getByText("Extended 1 active bookings +60m"));
+    fireEvent.press(screen.getByText("Extended 1 active booking +60m"));
     expect(extendRestaurantBookings).toHaveBeenCalledTimes(1);
   });
 
@@ -332,7 +332,7 @@ describe("AdminLocationsScreen", () => {
     await act(async () => {
       fireEvent.press(screen.getByText("Extend 2 active Bookings by 60m"));
     });
-    await waitFor(() => expect(screen.getByText("Extended 1 active bookings +60m")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Extended 1 active booking +60m")).toBeTruthy());
     fireEvent.press(screen.getByText("Resto 2"));
     await waitFor(() => expect(screen.getByText("Extend 2 active Bookings by 60m")).toBeTruthy());
   });

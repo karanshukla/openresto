@@ -651,10 +651,12 @@
       "extendButton": {
         "a11yLabel": "Alle aktiven Buchungen bei {{name}} um eine Stunde verlängern",
         "extending": "Wird verlängert…",
-        "extended": "{{count}} aktive Buchungen um 60 Min. verlängert",
         "noActiveToExtend": "Keine aktiven Buchungen zum Verlängern",
-        "extend": "{{count}} aktive Buchungen um 60 Min. verlängern",
-        "noActive": "Keine aktiven Buchungen"
+        "noActive": "Keine aktiven Buchungen",
+        "extend_one": "{{count}} aktive Buchung um 60 Min. verlängern",
+        "extend_other": "{{count}} aktive Buchungen um 60 Min. verlängern",
+        "extended_one": "{{count}} aktive Buchung um 60 Min. verlängert",
+        "extended_other": "{{count}} aktive Buchungen um 60 Min. verlängert"
       },
       "addForm": {
         "namePlaceholder": "Name des Standorts (z. B. Innenstadt, Westseite)",
