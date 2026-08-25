@@ -1,4 +1,5 @@
 import { Brand } from "@/types";
+import { DEFAULT_LOCALE } from "@/constants/locales";
 
 /**
  * The brand shown before `/api/brand` resolves (and the fallback for any field
@@ -8,4 +9,5 @@ import { Brand } from "@/types";
 export const DEFAULT_BRAND: Brand = {
   appName: "Open Resto",
   primaryColor: "#0a7ea4",
+  defaultLocale: DEFAULT_LOCALE,
 };

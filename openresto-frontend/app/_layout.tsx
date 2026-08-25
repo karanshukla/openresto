@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/context/ThemeContext";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
+import { LocaleProvider } from "@/context/LocaleContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 // Synchronous theme init — runs at module load, before React mounts.
@@ -102,9 +103,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <BrandProvider>
-        <AppThemeProvider>
-          <AppWithTheme />
-        </AppThemeProvider>
+        <LocaleProvider>
+          <AppThemeProvider>
+            <AppWithTheme />
+          </AppThemeProvider>
+        </LocaleProvider>
       </BrandProvider>
     </SafeAreaProvider>
   );

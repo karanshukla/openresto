@@ -34,6 +34,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             highlightsHeading: data.highlightsHeading || undefined,
             highlightsSubheading: data.highlightsSubheading || undefined,
             headerImageFit: data.headerImageFit || undefined,
+            defaultLocale: data.defaultLocale || DEFAULT_BRAND.defaultLocale,
           });
         }
       })

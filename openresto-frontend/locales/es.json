@@ -1,0 +1,10 @@
+{
+  "restaurant": {
+    "home": {
+      "heroSubtitle": "Desplázate hacia abajo para elegir un local, selecciona una hora, introduce tu correo electrónico, ¡y listo, tienes tu reserva!",
+      "highlightsHeading": "Destacados del restaurante",
+      "highlightsSubheading": "Seleccionados por el propietario",
+      "locationsHeading": "Nuestros locales"
+    }
+  }
+}
