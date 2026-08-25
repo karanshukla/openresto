@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import ConfirmModal from "@/components/common/ConfirmModal";
@@ -16,13 +18,11 @@ export interface ArchiveLocationRowProps {
   onArchive: () => void;
 }
 
-function archiveMessage(name: string, upcoming: number): string {
-  const base = `${name} comes off the public site, and customers can no longer find or book it.`;
-  const bookings =
-    upcoming > 0
-      ? ` Its ${upcoming} upcoming booking${upcoming === 1 ? "" : "s"} stay intact in the admin, but the guests can no longer look them up on the site.`
-      : " Existing bookings stay intact.";
-  return `${base}${bookings} You can restore it at any time.`;
+function archiveMessage(name: string, upcoming: number, t: TFunction): string {
+  if (upcoming > 0) {
+    return t("admin.locations.archiveRow.confirmMessageWithBookings", { name, count: upcoming });
+  }
+  return t("admin.locations.archiveRow.confirmMessageNoBookings", { name });
 }
 
 /**
@@ -36,6 +36,7 @@ export function ArchiveLocationRow({
   failed,
   onArchive,
 }: ArchiveLocationRowProps) {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const [confirming, setConfirming] = useState(false);
 
@@ -45,13 +46,13 @@ export function ArchiveLocationRow({
         <Icon name="archive-outline" size="xl" color={colors.warning} />
       </View>
       <View style={styles.copy}>
-        <ThemedText style={styles.title}>Archive location</ThemedText>
+        <ThemedText style={styles.title}>{t("admin.locations.archiveRow.title")}</ThemedText>
         <ThemedText style={[styles.sub, { color: colors.muted }]}>
-          Takes {name} off the public site. All data is kept and you can restore it at any time.
+          {t("admin.locations.archiveRow.subtitle", { name })}
         </ThemedText>
         {failed && (
           <ThemedText style={[styles.error, { color: colors.warning }]}>
-            Failed to archive. Please try again.
+            {t("admin.locations.archiveRow.failed")}
           </ThemedText>
         )}
       </View>
@@ -63,16 +64,18 @@ export function ArchiveLocationRow({
         disabled={archiving}
         loading={archiving}
         onPress={() => setConfirming(true)}
-        accessibilityLabel={`Archive ${name}`}
+        accessibilityLabel={t("admin.locations.archiveRow.archiveLabel", { name })}
       >
-        {archiving ? "Archiving…" : "Archive"}
+        {archiving
+          ? t("admin.locations.archiveRow.archiving")
+          : t("admin.locations.archiveRow.archiveButton")}
       </Button>
 
       <ConfirmModal
         visible={confirming}
-        title={`Archive ${name}?`}
-        message={archiveMessage(name, upcomingBookingsCount)}
-        confirmLabel="Yes, archive"
+        title={t("admin.locations.archiveRow.confirmTitle", { name })}
+        message={archiveMessage(name, upcomingBookingsCount, t)}
+        confirmLabel={t("admin.locations.archiveRow.confirmYes")}
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           setConfirming(false);

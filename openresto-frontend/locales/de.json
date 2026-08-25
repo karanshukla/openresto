@@ -625,6 +625,112 @@
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, storniert",
         "meta": "{{seats}} · {{restaurant}}"
       }
+    },
+    "locations": {
+      "pageTitle": "Standorte",
+      "addLocation": "Standort hinzufügen",
+      "deletedNotice": "{{name}} wurde endgültig gelöscht.",
+      "permanentlyDeleteLabel": "{{name}} endgültig löschen",
+      "summary": {
+        "none": "Keine Standorte konfiguriert",
+        "activeOnly_one": "{{count}} aktiv",
+        "activeOnly_other": "{{count}} aktiv",
+        "withArchived": "{{active}} aktiv · {{archived}} archiviert"
+      },
+      "empty": {
+        "title": "Noch keine Standorte",
+        "subtitle": "Fügen Sie Ihren ersten Standort hinzu, um Buchungen entgegenzunehmen."
+      },
+      "pauseButton": {
+        "saving": "Wird gespeichert…",
+        "resumeLabel": "Buchungen für {{name}} fortsetzen",
+        "pauseLabel": "Die nächste Stunde Buchungen bei {{name}} pausieren",
+        "resumeUntil": "Neue Buchungen jetzt fortsetzen (pausiert bis {{time}})",
+        "pauseFor60": "Neue Buchungen für die nächsten 60 Minuten pausieren"
+      },
+      "extendButton": {
+        "a11yLabel": "Alle aktiven Buchungen bei {{name}} um eine Stunde verlängern",
+        "extending": "Wird verlängert…",
+        "noActiveToExtend": "Keine aktiven Buchungen zum Verlängern",
+        "noActive": "Keine aktiven Buchungen",
+        "extend_one": "{{count}} aktive Buchung um 60 Min. verlängern",
+        "extend_other": "{{count}} aktive Buchungen um 60 Min. verlängern",
+        "extended_one": "{{count}} aktive Buchung um 60 Min. verlängert",
+        "extended_other": "{{count}} aktive Buchungen um 60 Min. verlängert"
+      },
+      "addForm": {
+        "namePlaceholder": "Name des Standorts (z. B. Innenstadt, Westseite)",
+        "cancelLabel": "Hinzufügen eines Standorts abbrechen",
+        "add": "Hinzufügen",
+        "adding": "Wird hinzugefügt…"
+      },
+      "archiveRow": {
+        "title": "Standort archivieren",
+        "subtitle": "Entfernt {{name}} von der öffentlichen Website. Alle Daten bleiben erhalten und Sie können den Standort jederzeit wiederherstellen.",
+        "failed": "Archivieren fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "archiveLabel": "{{name}} archivieren",
+        "archiveButton": "Archivieren",
+        "archiving": "Wird archiviert…",
+        "confirmTitle": "{{name}} archivieren?",
+        "confirmYes": "Ja, archivieren",
+        "confirmMessageWithBookings_one": "{{name}} wird von der öffentlichen Website entfernt, Kunden können den Standort nicht mehr finden oder buchen. Die {{count}} bevorstehende Buchung bleibt in der Verwaltung erhalten, aber Gäste können sie auf der Website nicht mehr nachschlagen. Sie können den Standort jederzeit wiederherstellen.",
+        "confirmMessageWithBookings_other": "{{name}} wird von der öffentlichen Website entfernt, Kunden können den Standort nicht mehr finden oder buchen. Die {{count}} bevorstehenden Buchungen bleiben in der Verwaltung erhalten, aber Gäste können sie auf der Website nicht mehr nachschlagen. Sie können den Standort jederzeit wiederherstellen.",
+        "confirmMessageNoBookings": "{{name}} wird von der öffentlichen Website entfernt, Kunden können den Standort nicht mehr finden oder buchen. Bestehende Buchungen bleiben erhalten. Sie können den Standort jederzeit wiederherstellen."
+      },
+      "archivedPanel": {
+        "badge": "Archiviert",
+        "subtitle": "Von der öffentlichen Website ausgeblendet und nicht buchbar. Bereiche, Tische und Buchungen sind alle noch vorhanden. Stellen Sie den Standort wieder her, um ihn erneut zu bearbeiten.",
+        "restoreFailed": "Wiederherstellen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "restoreLabel": "{{name}} wiederherstellen",
+        "restoring": "Wird wiederhergestellt…",
+        "restore": "Wiederherstellen",
+        "deleteTitle": "Diesen Standort löschen",
+        "deleteSubtitle": "Löscht {{name}} zusammen mit allen Bereichen, Tischen und Buchungen. Dies kann nicht rückgängig gemacht werden.",
+        "deleteHint": "Öffnet eine Bestätigung, die Sie auffordert, den Namen des Standorts einzugeben",
+        "deleteButton": "Löschen…"
+      },
+      "deleteModal": {
+        "title": "{{name}} löschen?",
+        "cancelDeletionLabel": "Löschen abbrechen",
+        "lead": "Dies löscht den Standort und alles, was damit verbunden ist, endgültig. Dies kann nicht rückgängig gemacht werden.",
+        "loadingImpact": "Auswirkungen werden geladen",
+        "impactUnavailable": "Es konnte nicht geladen werden, was gelöscht würde. Das Löschen unten entfernt trotzdem alle Bereiche, Tische und Buchungen.",
+        "impact": {
+          "sections_one": "{{count}} Bereich",
+          "sections_other": "{{count}} Bereiche",
+          "tables_one": "{{count}} Tisch",
+          "tables_other": "{{count}} Tische",
+          "combinableGroups_one": "{{count}} kombinierbare Gruppe",
+          "combinableGroups_other": "{{count}} kombinierbare Gruppen",
+          "bookings_one": "{{count}} Buchung",
+          "bookings_other": "{{count}} Buchungen",
+          "bookingsWithUpcoming_one": "{{count}} Buchung, {{upcoming}} noch bevorstehend",
+          "bookingsWithUpcoming_other": "{{count}} Buchungen, {{upcoming}} noch bevorstehend"
+        },
+        "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen",
+        "typeToConfirmA11y": "Geben Sie {{name}} ein, um das Löschen zu bestätigen",
+        "failed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "deleting": "Wird gelöscht…",
+        "deletePermanently": "Endgültig löschen"
+      },
+      "pills": {
+        "label": "Standorte",
+        "archivedLabel": "{{name}}, archiviert"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} bevorstehende Buchung passt nicht mehr in diesen Zeitplan",
+        "title_other": "{{count}} bevorstehende Buchungen passen nicht mehr in diesen Zeitplan",
+        "subtitle": "Diese wurden vor den aktuellen Öffnungszeiten vorgenommen und stehen weiterhin im Buch. Verschieben oder stornieren Sie sie — die Gäste wurden nicht über die Änderung informiert.",
+        "allClear": "Alle bevorstehenden Buchungen passen in diesen Zeitplan.",
+        "reason": {
+          "closedDay": "Jetzt ein Schließtag",
+          "outsideHours": "Jetzt außerhalb der Öffnungszeiten"
+        },
+        "guestCount_one": "{{count}} Gast",
+        "guestCount_other": "{{count}} Gäste",
+        "openLabel": "Öffnen",
+        "openBookingLabel": "Buchung {{ref}} öffnen"
+      }
     }
   }
 }

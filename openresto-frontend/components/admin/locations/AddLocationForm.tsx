@@ -1,4 +1,5 @@
 import { TextInput, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import Button from "@/components/common/Button";
 import { theme } from "@/theme/theme";
 import { Icon } from "@/components/common/Icon";
@@ -27,6 +28,7 @@ export function AddLocationForm({
   onSubmit,
   onCancel,
 }: AddLocationFormProps) {
+  const { t } = useTranslation();
   return (
     <View
       style={{
@@ -45,7 +47,7 @@ export function AddLocationForm({
       <TextInput
         value={value}
         onChangeText={onValueChange}
-        placeholder="Location name (e.g. Downtown, Westside)"
+        placeholder={t("admin.locations.addForm.namePlaceholder")}
         placeholderTextColor={mutedColor}
         autoFocus
         style={{
@@ -60,18 +62,18 @@ export function AddLocationForm({
         tone="neutral"
         size="md"
         onPress={onCancel}
-        accessibilityLabel="Cancel adding a location"
+        accessibilityLabel={t("admin.locations.addForm.cancelLabel")}
       >
-        Cancel
+        {t("common.actions.cancel")}
       </Button>
       <Button
         size="md"
         disabled={saving || !value.trim()}
         loading={saving}
         onPress={onSubmit}
-        accessibilityLabel="Add location"
+        accessibilityLabel={t("admin.locations.addLocation")}
       >
-        {saving ? "Adding…" : "Add"}
+        {saving ? t("admin.locations.addForm.adding") : t("admin.locations.addForm.add")}
       </Button>
     </View>
   );

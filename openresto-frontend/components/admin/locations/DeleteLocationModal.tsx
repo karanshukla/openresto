@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -21,22 +23,37 @@ export interface DeleteLocationModalProps {
   onConfirm: () => void;
 }
 
-const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
-
-function impactLines(preview: RestaurantDeletePreview): { icon: IconName; text: string }[] {
+function impactLines(
+  preview: RestaurantDeletePreview,
+  t: TFunction
+): { icon: IconName; text: string }[] {
   const lines: { icon: IconName; text: string }[] = [
-    { icon: "grid-outline", text: plural(preview.sectionCount, "section") },
-    { icon: "restaurant-outline", text: plural(preview.tableCount, "table") },
+    {
+      icon: "grid-outline",
+      text: t("admin.locations.deleteModal.impact.sections", { count: preview.sectionCount }),
+    },
+    {
+      icon: "restaurant-outline",
+      text: t("admin.locations.deleteModal.impact.tables", { count: preview.tableCount }),
+    },
   ];
   if (preview.tableGroupCount > 0) {
-    lines.push({ icon: "link-outline", text: plural(preview.tableGroupCount, "combinable group") });
+    lines.push({
+      icon: "link-outline",
+      text: t("admin.locations.deleteModal.impact.combinableGroups", {
+        count: preview.tableGroupCount,
+      }),
+    });
   }
   lines.push({
     icon: "calendar-outline",
     text:
       preview.upcomingBookingCount > 0
-        ? `${plural(preview.bookingCount, "booking")}, ${preview.upcomingBookingCount} still upcoming`
-        : plural(preview.bookingCount, "booking"),
+        ? t("admin.locations.deleteModal.impact.bookingsWithUpcoming", {
+            count: preview.bookingCount,
+            upcoming: preview.upcomingBookingCount,
+          })
+        : t("admin.locations.deleteModal.impact.bookings", { count: preview.bookingCount }),
   });
   return lines;
 }
@@ -56,6 +73,7 @@ export function DeleteLocationModal({
   onCancel,
   onConfirm,
 }: DeleteLocationModalProps) {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const [typedName, setTypedName] = useState("");
 
@@ -67,18 +85,19 @@ export function DeleteLocationModal({
   // not reproducing its capitalisation on a tablet keyboard.
   const nameMatches = typedName.trim().toLowerCase() === name.trim().toLowerCase();
   const dangerSurface = `${colors.error}14`;
+  const cancelDeletionLabel = t("admin.locations.deleteModal.cancelDeletionLabel");
 
   return (
     <ModalCard
       visible={visible}
-      title={`Delete ${name}?`}
+      title={t("admin.locations.deleteModal.title", { name })}
       onDismiss={onCancel}
       alert
-      dismissLabel="Cancel deletion"
+      dismissLabel={cancelDeletionLabel}
       testID="delete-location-modal"
     >
       <ThemedText style={[styles.lead, { color: colors.muted }]}>
-        This permanently destroys the location and everything attached to it. It cannot be undone.
+        {t("admin.locations.deleteModal.lead")}
       </ThemedText>
 
       <View style={[styles.impact, { borderColor: colors.border, backgroundColor: dangerSurface }]}>
@@ -86,10 +105,10 @@ export function DeleteLocationModal({
           <ActivityIndicator
             size="small"
             color={colors.error}
-            accessibilityLabel="Loading impact"
+            accessibilityLabel={t("admin.locations.deleteModal.loadingImpact")}
           />
         ) : preview ? (
-          impactLines(preview).map((line) => (
+          impactLines(preview, t).map((line) => (
             <View key={line.text} style={styles.impactRow}>
               <Icon name={line.icon} size="sm" color={colors.error} />
               <ThemedText style={styles.impactText}>{line.text}</ThemedText>
@@ -97,14 +116,13 @@ export function DeleteLocationModal({
           ))
         ) : (
           <ThemedText style={[styles.impactEmpty, { color: colors.muted }]}>
-            Could not load what this would delete. The deletion below still removes every section,
-            table and booking.
+            {t("admin.locations.deleteModal.impactUnavailable")}
           </ThemedText>
         )}
       </View>
 
       <ThemedText style={[styles.confirmLabel, { color: colors.muted }]}>
-        Type {name} to confirm
+        {t("admin.locations.deleteModal.typeToConfirm", { name })}
       </ThemedText>
       <Input
         value={typedName}
@@ -112,13 +130,13 @@ export function DeleteLocationModal({
         placeholder={name}
         autoCapitalize="none"
         autoCorrect={false}
-        accessibilityLabel={`Type ${name} to confirm deletion`}
+        accessibilityLabel={t("admin.locations.deleteModal.typeToConfirmA11y", { name })}
         testID="delete-location-name-input"
       />
 
       {failed && (
         <ThemedText style={[styles.error, { color: colors.error }]}>
-          Failed to delete. Please try again.
+          {t("admin.locations.deleteModal.failed")}
         </ThemedText>
       )}
 
@@ -130,9 +148,9 @@ export function DeleteLocationModal({
           style={styles.action}
           onPress={onCancel}
           disabled={deleting}
-          accessibilityLabel="Cancel deletion"
+          accessibilityLabel={cancelDeletionLabel}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           variant="danger"
@@ -141,9 +159,11 @@ export function DeleteLocationModal({
           onPress={onConfirm}
           disabled={!nameMatches || deleting}
           loading={deleting}
-          accessibilityLabel={`Permanently delete ${name}`}
+          accessibilityLabel={t("admin.locations.permanentlyDeleteLabel", { name })}
         >
-          {deleting ? "Deleting…" : "Delete permanently"}
+          {deleting
+            ? t("admin.locations.deleteModal.deleting")
+            : t("admin.locations.deleteModal.deletePermanently")}
         </Button>
       </View>
     </ModalCard>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, View, Platform } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Button from "@/components/common/Button";
@@ -29,13 +31,19 @@ import { styles } from "@/components/admin/settings/settings.styles";
 import { Icon } from "@/components/common/Icon";
 import { fmtTime } from "@/utils/formatters";
 
-function locationCountSummary(activeCount: number, archivedCount: number): string {
-  if (activeCount + archivedCount === 0) return "No locations configured";
-  const active = `${activeCount} active`;
-  return archivedCount > 0 ? `${active} · ${archivedCount} archived` : active;
+function locationCountSummary(activeCount: number, archivedCount: number, t: TFunction): string {
+  if (activeCount + archivedCount === 0) return t("admin.locations.summary.none");
+  if (archivedCount > 0) {
+    return t("admin.locations.summary.withArchived", {
+      active: activeCount,
+      archived: archivedCount,
+    });
+  }
+  return t("admin.locations.summary.activeOnly", { count: activeCount });
 }
 
 export default function AdminLocationsScreen() {
+  const { t } = useTranslation();
   const { location } = useLocalSearchParams<{ location?: string }>();
   const requestedId = location ? Number(location) : null;
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -174,13 +182,15 @@ export default function AdminLocationsScreen() {
   return (
     <>
       <ScrollView contentContainerStyle={styles.container}>
-        {Platform.OS !== "web" && <Stack.Screen options={{ title: "Locations" }} />}
+        {Platform.OS !== "web" && (
+          <Stack.Screen options={{ title: t("admin.locations.pageTitle") }} />
+        )}
 
         <View style={styles.pageHeader}>
           <View style={{ gap: 2 }}>
-            <ThemedText type="h1">Locations</ThemedText>
+            <ThemedText type="h1">{t("admin.locations.pageTitle")}</ThemedText>
             <ThemedText style={[styles.pageSub, { color: mutedColor }]}>
-              {locationCountSummary(allRestaurants.length - archivedCount, archivedCount)}
+              {locationCountSummary(allRestaurants.length - archivedCount, archivedCount, t)}
             </ThemedText>
           </View>
           <Button
@@ -188,9 +198,9 @@ export default function AdminLocationsScreen() {
             icon="add"
             onPress={() => setAddingLocation(true)}
             disabled={addingLocation}
-            accessibilityLabel="Add location"
+            accessibilityLabel={t("admin.locations.addLocation")}
           >
-            Add location
+            {t("admin.locations.addLocation")}
           </Button>
         </View>
 
@@ -198,7 +208,7 @@ export default function AdminLocationsScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Icon name="checkmark-circle-outline" size="lg" color={colors.success} />
             <ThemedText style={{ fontSize: 13, color: mutedColor }}>
-              {deletedName} was permanently deleted.
+              {t("admin.locations.deletedNotice", { name: deletedName })}
             </ThemedText>
           </View>
         )}
@@ -251,8 +261,8 @@ export default function AdminLocationsScreen() {
               loading={pausing}
               accessibilityLabel={
                 isPaused
-                  ? `Resume bookings for ${selectedRestaurant.name}`
-                  : `Pause the next hour of bookings at ${selectedRestaurant.name}`
+                  ? t("admin.locations.pauseButton.resumeLabel", { name: selectedRestaurant.name })
+                  : t("admin.locations.pauseButton.pauseLabel", { name: selectedRestaurant.name })
               }
               onPress={async () => {
                 setPausing(true);
@@ -282,10 +292,10 @@ export default function AdminLocationsScreen() {
               }}
             >
               {pausing
-                ? "Saving…"
+                ? t("admin.locations.pauseButton.saving")
                 : isPaused
-                  ? `Resume New Bookings now (paused up to ${pausedUntilText})`
-                  : "Pause New Bookings for the next 60m"}
+                  ? t("admin.locations.pauseButton.resumeUntil", { time: pausedUntilText })
+                  : t("admin.locations.pauseButton.pauseFor60")}
             </Button>
 
             <Button
@@ -297,7 +307,9 @@ export default function AdminLocationsScreen() {
                 extending || extendedBookings !== null || extendNoActive || activeCount === 0
               }
               loading={extending}
-              accessibilityLabel={`Extend all active bookings at ${selectedRestaurant.name} by an hour`}
+              accessibilityLabel={t("admin.locations.extendButton.a11yLabel", {
+                name: selectedRestaurant.name,
+              })}
               onPress={async () => {
                 setExtending(true);
                 const result = await extendRestaurantBookings(selectedRestaurant.id, 60);
@@ -312,14 +324,14 @@ export default function AdminLocationsScreen() {
               }}
             >
               {extending
-                ? "Extending…"
+                ? t("admin.locations.extendButton.extending")
                 : extendedBookings !== null
-                  ? `Extended ${extendedBookings.length} active bookings +60m`
+                  ? t("admin.locations.extendButton.extended", { count: extendedBookings.length })
                   : extendNoActive
-                    ? "No active bookings to extend"
+                    ? t("admin.locations.extendButton.noActiveToExtend")
                     : activeCount > 0
-                      ? `Extend ${activeCount} active Bookings by 60m`
-                      : "No active bookings"}
+                      ? t("admin.locations.extendButton.extend", { count: activeCount })
+                      : t("admin.locations.extendButton.noActive")}
             </Button>
           </View>
         )}
@@ -348,7 +360,7 @@ export default function AdminLocationsScreen() {
               <Icon name="storefront-outline" size={28} color={mutedColor} />
             </View>
             <ThemedText style={{ fontSize: 16, fontWeight: "700", textAlign: "center" }}>
-              No locations yet
+              {t("admin.locations.empty.title")}
             </ThemedText>
             <ThemedText
               style={{
@@ -359,7 +371,7 @@ export default function AdminLocationsScreen() {
                 lineHeight: 22,
               }}
             >
-              Add your first location to start accepting bookings.
+              {t("admin.locations.empty.subtitle")}
             </ThemedText>
           </View>
         ) : selectedSummary && isArchived ? (

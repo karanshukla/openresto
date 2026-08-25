@@ -625,6 +625,112 @@
         "itemLabelCancelled": "{{time}}, {{guest}}, {{seats}}, {{restaurant}}, cancelada",
         "meta": "{{seats}} · {{restaurant}}"
       }
+    },
+    "locations": {
+      "pageTitle": "Locales",
+      "addLocation": "Agregar local",
+      "deletedNotice": "{{name}} se eliminó definitivamente.",
+      "permanentlyDeleteLabel": "Eliminar definitivamente {{name}}",
+      "summary": {
+        "none": "No hay locales configurados",
+        "activeOnly_one": "{{count}} activo",
+        "activeOnly_other": "{{count}} activos",
+        "withArchived": "{{active}} activos · {{archived}} archivados"
+      },
+      "empty": {
+        "title": "Todavía no hay locales",
+        "subtitle": "Agrega tu primer local para empezar a aceptar reservas."
+      },
+      "pauseButton": {
+        "saving": "Guardando…",
+        "resumeLabel": "Reanudar reservas de {{name}}",
+        "pauseLabel": "Pausar la próxima hora de reservas en {{name}}",
+        "resumeUntil": "Reanudar nuevas reservas ahora (pausadas hasta las {{time}})",
+        "pauseFor60": "Pausar nuevas reservas durante los próximos 60 min"
+      },
+      "extendButton": {
+        "a11yLabel": "Ampliar todas las reservas activas de {{name}} una hora",
+        "extending": "Ampliando…",
+        "noActiveToExtend": "No hay reservas activas para ampliar",
+        "noActive": "No hay reservas activas",
+        "extend_one": "Ampliar {{count}} reserva activa 60 min",
+        "extend_other": "Ampliar {{count}} reservas activas 60 min",
+        "extended_one": "{{count}} reserva activa ampliada +60 min",
+        "extended_other": "{{count}} reservas activas ampliadas +60 min"
+      },
+      "addForm": {
+        "namePlaceholder": "Nombre del local (p. ej. Centro, Zona oeste)",
+        "cancelLabel": "Cancelar la creación del local",
+        "add": "Agregar",
+        "adding": "Agregando…"
+      },
+      "archiveRow": {
+        "title": "Archivar local",
+        "subtitle": "Retira {{name}} del sitio público. Todos los datos se conservan y puedes restaurarlo en cualquier momento.",
+        "failed": "No se pudo archivar. Inténtalo de nuevo.",
+        "archiveLabel": "Archivar {{name}}",
+        "archiveButton": "Archivar",
+        "archiving": "Archivando…",
+        "confirmTitle": "¿Archivar {{name}}?",
+        "confirmYes": "Sí, archivar",
+        "confirmMessageWithBookings_one": "{{name}} se retira del sitio público, y los clientes ya no pueden encontrarlo ni reservarlo. Su {{count}} reserva próxima sigue intacta en la administración, pero los clientes ya no pueden consultarla en el sitio. Puedes restaurarlo en cualquier momento.",
+        "confirmMessageWithBookings_other": "{{name}} se retira del sitio público, y los clientes ya no pueden encontrarlo ni reservarlo. Sus {{count}} reservas próximas siguen intactas en la administración, pero los clientes ya no pueden consultarlas en el sitio. Puedes restaurarlo en cualquier momento.",
+        "confirmMessageNoBookings": "{{name}} se retira del sitio público, y los clientes ya no pueden encontrarlo ni reservarlo. Las reservas existentes siguen intactas. Puedes restaurarlo en cualquier momento."
+      },
+      "archivedPanel": {
+        "badge": "Archivado",
+        "subtitle": "Oculto del sitio público y no reservable. Sus secciones, mesas y reservas siguen todas aquí. Restáuralo para volver a editarlo.",
+        "restoreFailed": "No se pudo restaurar. Inténtalo de nuevo.",
+        "restoreLabel": "Restaurar {{name}}",
+        "restoring": "Restaurando…",
+        "restore": "Restaurar",
+        "deleteTitle": "Eliminar este local",
+        "deleteSubtitle": "Destruye {{name}} junto con todas sus secciones, mesas y reservas. Esta acción no se puede deshacer.",
+        "deleteHint": "Abre una confirmación que te pide escribir el nombre del local",
+        "deleteButton": "Eliminar…"
+      },
+      "deleteModal": {
+        "title": "¿Eliminar {{name}}?",
+        "cancelDeletionLabel": "Cancelar la eliminación",
+        "lead": "Esta acción destruye definitivamente el local y todo lo relacionado con él. No se puede deshacer.",
+        "loadingImpact": "Cargando el impacto",
+        "impactUnavailable": "No se pudo cargar lo que se eliminaría. La eliminación de abajo igual quita todas las secciones, mesas y reservas.",
+        "impact": {
+          "sections_one": "{{count}} sección",
+          "sections_other": "{{count}} secciones",
+          "tables_one": "{{count}} mesa",
+          "tables_other": "{{count}} mesas",
+          "combinableGroups_one": "{{count}} grupo combinable",
+          "combinableGroups_other": "{{count}} grupos combinables",
+          "bookings_one": "{{count}} reserva",
+          "bookings_other": "{{count}} reservas",
+          "bookingsWithUpcoming_one": "{{count}} reserva, {{upcoming}} aún próxima",
+          "bookingsWithUpcoming_other": "{{count}} reservas, {{upcoming}} aún próximas"
+        },
+        "typeToConfirm": "Escribe {{name}} para confirmar",
+        "typeToConfirmA11y": "Escribe {{name}} para confirmar la eliminación",
+        "failed": "No se pudo eliminar. Inténtalo de nuevo.",
+        "deleting": "Eliminando…",
+        "deletePermanently": "Eliminar definitivamente"
+      },
+      "pills": {
+        "label": "Locales",
+        "archivedLabel": "{{name}}, archivado"
+      },
+      "scheduleConflicts": {
+        "title_one": "{{count}} reserva próxima ya no encaja en este horario",
+        "title_other": "{{count}} reservas próximas ya no encajan en este horario",
+        "subtitle": "Se tomaron antes del horario actual y siguen en el libro. Muévelas o cancélalas — a los clientes no se les avisó del cambio.",
+        "allClear": "Todas las reservas próximas encajan en este horario.",
+        "reason": {
+          "closedDay": "Ahora es un día de cierre",
+          "outsideHours": "Ahora está fuera del horario de apertura"
+        },
+        "guestCount_one": "{{count}} comensal",
+        "guestCount_other": "{{count}} comensales",
+        "openLabel": "Abrir",
+        "openBookingLabel": "Abrir la reserva {{ref}}"
+      }
     }
   }
 }

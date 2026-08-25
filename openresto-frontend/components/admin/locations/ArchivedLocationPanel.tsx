@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import { Icon } from "@/components/common/Icon";
@@ -38,6 +39,7 @@ export function ArchivedLocationPanel({
   canDelete,
   onDeleted,
 }: ArchivedLocationPanelProps) {
+  const { t } = useTranslation();
   const { colors } = useAppTheme();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [preview, setPreview] = useState<RestaurantDeletePreview | null>(null);
@@ -77,16 +79,17 @@ export function ArchivedLocationPanel({
           <View style={styles.titleRow}>
             <ThemedText style={styles.title}>{name}</ThemedText>
             <View style={[styles.badge, { borderColor: colors.border }]}>
-              <ThemedText style={[styles.badgeText, { color: colors.muted }]}>Archived</ThemedText>
+              <ThemedText style={[styles.badgeText, { color: colors.muted }]}>
+                {t("admin.locations.archivedPanel.badge")}
+              </ThemedText>
             </View>
           </View>
           <ThemedText style={[styles.sub, { color: colors.muted }]}>
-            Hidden from the public site and not bookable. Its sections, tables and bookings are all
-            still here. Restore it to edit it again.
+            {t("admin.locations.archivedPanel.subtitle")}
           </ThemedText>
           {restoreFailed && (
             <ThemedText style={[styles.error, { color: colors.warning }]}>
-              Failed to restore. Please try again.
+              {t("admin.locations.archivedPanel.restoreFailed")}
             </ThemedText>
           )}
         </View>
@@ -98,9 +101,11 @@ export function ArchivedLocationPanel({
           disabled={restoring}
           loading={restoring}
           onPress={onRestore}
-          accessibilityLabel={`Restore ${name}`}
+          accessibilityLabel={t("admin.locations.archivedPanel.restoreLabel", { name })}
         >
-          {restoring ? "Restoring…" : "Restore"}
+          {restoring
+            ? t("admin.locations.archivedPanel.restoring")
+            : t("admin.locations.archivedPanel.restore")}
         </Button>
       </View>
 
@@ -110,9 +115,11 @@ export function ArchivedLocationPanel({
             <Icon name="trash-outline" size="xl" color={colors.error} />
           </View>
           <View style={styles.copy}>
-            <ThemedText style={styles.rowTitle}>Delete this location</ThemedText>
+            <ThemedText style={styles.rowTitle}>
+              {t("admin.locations.archivedPanel.deleteTitle")}
+            </ThemedText>
             <ThemedText style={[styles.rowSub, { color: colors.muted }]}>
-              Destroys {name} along with every section, table and booking. This cannot be undone.
+              {t("admin.locations.archivedPanel.deleteSubtitle", { name })}
             </ThemedText>
           </View>
           <Button
@@ -121,10 +128,10 @@ export function ArchivedLocationPanel({
             size="md"
             icon="trash-outline"
             onPress={openDelete}
-            accessibilityLabel={`Permanently delete ${name}`}
-            accessibilityHint="Opens a confirmation that asks you to type the location name"
+            accessibilityLabel={t("admin.locations.permanentlyDeleteLabel", { name })}
+            accessibilityHint={t("admin.locations.archivedPanel.deleteHint")}
           >
-            Delete…
+            {t("admin.locations.archivedPanel.deleteButton")}
           </Button>
         </View>
       )}
