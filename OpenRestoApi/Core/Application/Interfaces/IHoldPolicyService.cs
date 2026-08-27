@@ -28,11 +28,14 @@ public record HoldPolicyResult(
     Restaurant? Restaurant = null,
     DateTime BookingDate = default,
     string? FailureMessage = null,
-    string? Code = null)
+    string? Code = null,
+    IReadOnlyDictionary<string, object>? Args = null)
 {
     public static HoldPolicyResult NotFound() => new(HoldPolicyStatus.NotFound, Code: ErrorCodes.RestaurantNotFound);
-    public static HoldPolicyResult Rejected(string message, string? code = null) => new(HoldPolicyStatus.Rejected, FailureMessage: message, Code: code);
-    public static HoldPolicyResult Booked(string message, string? code = null) => new(HoldPolicyStatus.Booked, FailureMessage: message, Code: code);
+    public static HoldPolicyResult Rejected(string message, string? code = null, IReadOnlyDictionary<string, object>? args = null)
+        => new(HoldPolicyStatus.Rejected, FailureMessage: message, Code: code, Args: args);
+    public static HoldPolicyResult Booked(string message, string? code = null, IReadOnlyDictionary<string, object>? args = null)
+        => new(HoldPolicyStatus.Booked, FailureMessage: message, Code: code, Args: args);
     public static HoldPolicyResult Eligible(Restaurant restaurant, DateTime bookingDate)
         => new(HoldPolicyStatus.Eligible, restaurant, bookingDate);
 }

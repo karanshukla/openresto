@@ -31,7 +31,7 @@ public static class UserFields
         {
             throw new ValidationException(
                 $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.")
-            { Code = ErrorCodes.UserEmailTooLong };
+            { Code = ErrorCodes.UserEmailTooLong, Args = new Dictionary<string, object> { ["max"] = ContactLimits.MaxEmailLength } };
         }
 
         return normalized;
@@ -54,7 +54,7 @@ public static class UserFields
         {
             throw new ValidationException(
                 $"Display name cannot exceed {MaxDisplayNameLength} characters.")
-            { Code = ErrorCodes.UserDisplayNameTooLong };
+            { Code = ErrorCodes.UserDisplayNameTooLong, Args = new Dictionary<string, object> { ["max"] = MaxDisplayNameLength } };
         }
 
         return trimmed;
@@ -73,7 +73,7 @@ public static class UserFields
     {
         if (string.IsNullOrEmpty(password) || password.Length < MinPasswordLength)
         {
-            throw new ValidationException($"Password must be at least {MinPasswordLength} characters.") { Code = ErrorCodes.UserPasswordTooShort };
+            throw new ValidationException($"Password must be at least {MinPasswordLength} characters.") { Code = ErrorCodes.UserPasswordTooShort, Args = new Dictionary<string, object> { ["min"] = MinPasswordLength } };
         }
     }
 
@@ -83,6 +83,9 @@ public static class UserFields
         return UserRoles.Normalise(role)
             ?? throw new ValidationException(
                 $"Role must be one of: {string.Join(", ", UserRoles.Assignable.Order())}.")
-            { Code = ErrorCodes.UserRoleInvalid };
+            {
+                Code = ErrorCodes.UserRoleInvalid,
+                Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", UserRoles.Assignable.Order()) }
+            };
     }
 }

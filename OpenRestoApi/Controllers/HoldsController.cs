@@ -71,8 +71,8 @@ public class HoldsController(
         return policy.Status switch
         {
             HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found.", Code = policy.Code }),
-            HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
-            HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
+            HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code, Args = policy.Args }),
+            HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code, Args = policy.Args }),
             _ => autoAssign
                 ? await PlaceAutoAssignedHold(request, policy)
                 : PlaceEligibleHold(request, policy)
@@ -93,8 +93,8 @@ public class HoldsController(
             return policy.Status switch
             {
                 HoldPolicyStatus.NotFound => NotFound(new MessageResponse { Message = "Restaurant not found.", Code = policy.Code }),
-                HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
-                HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code }),
+                HoldPolicyStatus.Rejected => BadRequest(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code, Args = policy.Args }),
+                HoldPolicyStatus.Booked => Conflict(new MessageResponse { Message = policy.FailureMessage!, Code = policy.Code, Args = policy.Args }),
                 _ => BadRequest(new MessageResponse { Message = "Hold not available.", Code = ErrorCodes.HoldUnavailable })
             };
         }

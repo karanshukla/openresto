@@ -1,4 +1,5 @@
 import { post, del } from "./client";
+import { apiErrorMessage } from "@/api/errors";
 
 export interface HoldRequest {
   restaurantId: number;
@@ -49,7 +50,7 @@ export async function createHold(request: HoldRequest): Promise<HoldResult> {
     // both carry a descriptive { message } from the backend — surface it
     // instead of discarding it so the customer sees the real reason.
     const body = await res.json().catch(() => ({}));
-    return { ok: false, message: body?.message ?? GENERIC_UNAVAILABLE };
+    return { ok: false, message: apiErrorMessage(body, GENERIC_UNAVAILABLE) };
   } catch (err) {
     // Network failure or non-JSON body — fall back to a generic message.
     console.error("createHold error:", err);

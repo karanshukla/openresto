@@ -20,6 +20,15 @@ public abstract class OpenRestoException : Exception
     /// </summary>
     public string? Code { get; init; }
 
+    /// <summary>
+    /// The runtime values <see cref="Exception.Message"/> interpolated, keyed by the placeholder
+    /// name the client's copy for <see cref="Code"/> uses. A client that renders its own wording
+    /// for a code has no way to recover "4" and "6" out of the finished English sentence, so a
+    /// throw site that interpolates anything supplies it here too. Null where the message is a
+    /// constant, which is most of them.
+    /// </summary>
+    public IReadOnlyDictionary<string, object>? Args { get; init; }
+
     protected OpenRestoException() { }
     protected OpenRestoException(string message) : base(message) { }
     protected OpenRestoException(string message, Exception inner) : base(message, inner) { }

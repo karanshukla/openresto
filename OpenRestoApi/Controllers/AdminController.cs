@@ -186,7 +186,12 @@ public class AdminController(AdminService adminService) : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new MessageResponse { Message = $"Failed to send: {ex.Message}", Code = ErrorCodes.BookingEmailSendFailed });
+            return BadRequest(new MessageResponse
+            {
+                Message = $"Failed to send: {ex.Message}",
+                Code = ErrorCodes.BookingEmailSendFailed,
+                Args = new Dictionary<string, object> { ["detail"] = ex.Message }
+            });
         }
     }
 

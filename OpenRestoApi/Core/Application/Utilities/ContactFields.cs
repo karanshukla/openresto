@@ -29,7 +29,7 @@ public static class ContactFields
         {
             throw new ValidationException(
                 $"Phone number cannot exceed {ContactLimits.MaxPhoneLength} characters.")
-            { Code = ErrorCodes.ContactPhoneTooLong };
+            { Code = ErrorCodes.ContactPhoneTooLong, Args = new Dictionary<string, object> { ["max"] = ContactLimits.MaxPhoneLength } };
         }
 
         return trimmed;
@@ -53,7 +53,7 @@ public static class ContactFields
         {
             throw new ValidationException(
                 $"Email address cannot exceed {ContactLimits.MaxEmailLength} characters.")
-            { Code = ErrorCodes.ContactEmailTooLong };
+            { Code = ErrorCodes.ContactEmailTooLong, Args = new Dictionary<string, object> { ["max"] = ContactLimits.MaxEmailLength } };
         }
 
         if (!EmailValidator.IsValid(trimmed))

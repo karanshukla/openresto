@@ -234,9 +234,144 @@
     }
   },
   "errors": {
+    "admin": {
+      "password_not_configured": "Admin:Password doit être configuré avant la première utilisation. Définissez-le via la variable d'environnement ADMIN_PASSWORD."
+    },
+    "auth": {
+      "email_already_in_use": "Cette adresse e-mail est déjà utilisée.",
+      "email_unchanged": "La nouvelle adresse e-mail doit être différente de l'actuelle.",
+      "invalid_reset_token": "Jeton de réinitialisation invalide ou expiré.",
+      "no_account_for_session": "Aucun compte ne correspond à la session connectée.",
+      "pvq_fields_required": "La question et la réponse sont obligatoires.",
+      "pvq_not_configured": "Aucune question de sécurité n'est configurée pour ce compte."
+    },
+    "booking": {
+      "all_tables_held": "Toutes les tables adaptées sont actuellement réservées par d'autres utilisateurs. Veuillez réessayer dans un instant.",
+      "already_active": "La réservation est déjà active.",
+      "already_past": "Impossible d'annuler une réservation déjà passée.",
+      "ambiguous_table_selection": "Indiquez à la fois TableId et SectionId, ou aucun des deux pour l'attribution automatique.",
+      "cancel_email_required": "Une adresse e-mail est requise pour annuler une réservation.",
+      "email_fields_required": "L'objet et le message sont obligatoires.",
+      "email_send_failed": "Échec de l'envoi : {{detail}}",
+      "invalid_table_for_restaurant": "Table invalide pour ce restaurant.",
+      "lookup_email_required": "Une adresse e-mail est requise pour retrouver une réservation.",
+      "lookup_not_found": "Aucune réservation ne correspond à cette référence et à cette adresse e-mail.",
+      "move_conflict": "Cette modification entrerait en conflit avec une réservation existante.",
+      "no_customer_email": "L'adresse e-mail du client n'est pas disponible.",
+      "no_tables_available": "Aucune table n'est disponible pour l'horaire et le nombre de convives demandés.",
+      "party_size_out_of_range": "Le nombre de convives doit être compris entre {{min}} et {{max}}.",
+      "past_date": "Impossible de créer une réservation dans le passé.",
+      "paused": "Les réservations sont suspendues jusqu'à {{until}}. Veuillez choisir un horaire plus tardif.",
+      "paused_indefinitely": "Les réservations pour ce restaurant sont actuellement suspendues. Veuillez réessayer plus tard.",
+      "section_mismatch": "Cette salle n'appartient pas à ce restaurant.",
+      "table_conflict": "Cette table a déjà une réservation qui chevauche l'horaire demandé.",
+      "table_held": "Cette table est déjà réservée par un autre utilisateur. Veuillez choisir une autre table ou réessayer dans un instant.",
+      "table_id_required_for_section_change": "Indiquez tableId lors d'un changement de salle.",
+      "table_not_in_section": "Table introuvable dans la salle indiquée.",
+      "walk_in_only": "Cet établissement accepte uniquement les visites sans réservation et ne prend pas de réservations en ligne.",
+      "walk_in_only_today": "Cet établissement accepte uniquement les visites sans réservation le jour sélectionné. Choisissez un autre jour ou présentez-vous sur place."
+    },
+    "brand": {
+      "accent_color_invalid": "Code hexadécimal de couleur d'accentuation invalide.",
+      "app_name_too_long": "Le nom de l'application ne peut pas dépasser 32 caractères.",
+      "copyright_too_long": "Le texte de copyright ne peut pas dépasser 200 caractères.",
+      "favicon_invalid": "Icône de favicon invalide.",
+      "header_image_fit_invalid": "HeaderImageFit doit être l'une des valeurs suivantes : {{allowed}}.",
+      "highlights_heading_too_long": "Le titre des points forts ne peut pas dépasser 60 caractères.",
+      "highlights_subheading_too_long": "Le sous-titre des points forts ne peut pas dépasser 60 caractères.",
+      "primary_color_invalid": "Code hexadécimal de couleur principale invalide.",
+      "subtitle_too_long": "Le sous-titre ne peut pas dépasser 160 caractères."
+    },
+    "contact": {
+      "email_invalid": "L'adresse e-mail doit être une adresse valide.",
+      "email_too_long": "L'adresse e-mail ne peut pas dépasser {{max}} caractères.",
+      "phone_too_long": "Le numéro de téléphone ne peut pas dépasser {{max}} caractères."
+    },
+    "email": {
+      "connection_failed": "Échec de la connexion : {{detail}}",
+      "not_configured": "L'e-mail n'est pas configuré."
+    },
     "generic": "Une erreur s'est produite",
     "genericMessage": "Une erreur inattendue s'est produite. Réessayez.",
-    "title": "Erreur"
+    "highlight": {
+      "body_too_long": "Le texte du point fort ne peut pas dépasser {{max}} caractères.",
+      "link_invalid": "Le lien du point fort doit être une URL absolue valide (http, https, mailto, tel ou sms).",
+      "title_required": "Le titre du point fort ne peut pas être vide.",
+      "title_too_long": "Le titre du point fort ne peut pas dépasser {{max}} caractères."
+    },
+    "hold": {
+      "ambiguous_group_and_table": "Indiquez soit TableId, soit TableGroupId, mais pas les deux.",
+      "auto_assign_seats_required": "Le nombre de convives est requis pour l'attribution automatique afin que le serveur choisisse une table adaptée.",
+      "group_seats_required": "Le nombre de convives est requis pour une réservation de groupe afin que le serveur vérifie la capacité combinée.",
+      "unavailable": "Réservation temporaire indisponible."
+    },
+    "icon": {
+      "invalid": "La clé d'icône doit correspondre à l'une des icônes prises en charge."
+    },
+    "media": {
+      "hero_too_large": "L'image principale doit faire moins de 5 Mo.",
+      "location_image_too_large": "L'image de l'établissement doit faire moins de 2 Mo.",
+      "menu_too_large": "Le fichier du menu doit faire moins de 10 Mo.",
+      "unsupported_image_type": "Seules les images JPEG, PNG et WebP sont acceptées.",
+      "unsupported_menu_type": "Seuls les menus au format PDF sont acceptés."
+    },
+    "restaurant": {
+      "archive_before_delete": "Archivez cet établissement avant de le supprimer. L'archivage le retire du site public et peut être annulé ; la suppression non.",
+      "booking_ref_format_invalid": "BookingRefFormat doit être l'une des valeurs suivantes : {{allowed}}.",
+      "closed_at_time": "Le restaurant est fermé à l'horaire demandé.",
+      "duration_invalid": "DefaultBookingDurationMinutes doit être l'une des valeurs suivantes : {{allowed}}.",
+      "menu_url_invalid": "L'URL du menu doit être une URL http(s) absolue valide.",
+      "name_required": "Le nom est obligatoire.",
+      "no_sections": "Restaurant introuvable ou sans salle.",
+      "not_found": "Restaurant invalide.",
+      "open_hours_day_invalid": "Les entrées OpenHours doivent utiliser les numéros de jour ISO de 1 (lundi) à 7 (dimanche).",
+      "open_hours_duplicate_day": "OpenHours contient plusieurs entrées pour le jour {{day}}.",
+      "open_hours_time_invalid": "Les horaires OpenHours doivent être des valeurs HH:mm valides (00:00–23:59).",
+      "oversize_cap_invalid": "MaxTableOversizeSeats doit être supérieur ou égal à zéro, ou null pour désactiver.",
+      "section_ids_mismatch": "sectionIds doit contenir exactement les salles actuelles du restaurant, sans doublon.",
+      "slot_interval_invalid": "BookingSlotIntervalMinutes doit être l'une des valeurs suivantes : {{allowed}}.",
+      "walk_in_days_invalid": "WalkInDays doit être une liste de numéros de jour ISO de 1 (lundi) à 7 (dimanche), séparés par des virgules."
+    },
+    "social_link": {
+      "label_required": "Le libellé du lien social ne peut pas être vide.",
+      "label_too_long": "Le libellé du lien social ne peut pas dépasser {{max}} caractères.",
+      "url_invalid": "L'URL du lien social doit être une URL absolue valide (http, https, mailto, tel ou sms).",
+      "url_required": "L'URL du lien social ne peut pas être vide."
+    },
+    "table": {
+      "oversize_cap": "Cette table compte {{seats}} places, ce qui est trop grand pour un groupe de {{partySize}} personnes.",
+      "seats_exceeded": "Cette table ne compte que {{seats}} places, mais {{requested}} convives ont été demandés.",
+      "seats_out_of_range": "Le nombre de places doit être compris entre {{min}} et {{max}}."
+    },
+    "table_group": {
+      "booking_conflict": "L'une des tables combinées est déjà réservée pour cet horaire.",
+      "combined_seats_exceeds_sum": "CombinedSeats ({{combined}}) ne peut pas dépasser la somme des places des tables membres ({{sum}}).",
+      "combined_seats_not_worth_combining": "CombinedSeats ({{combined}}) doit être supérieur à la plus grande table membre ({{largest}}). Combiner ces tables ne permettrait pas d'accueillir un groupe plus grand.",
+      "disbanded": "Ces tables ne peuvent plus être combinées. Veuillez choisir un autre horaire ou une autre table.",
+      "duplicate_member": "Un groupe de tables combinables ne peut pas contenir deux fois la même table.",
+      "hold_conflict": "L'une des tables combinées est déjà réservée par un autre utilisateur. Veuillez réessayer dans un instant.",
+      "invalid_members": "Toutes les tables membres doivent exister et appartenir à ce restaurant.",
+      "member_already_grouped": "La table {{tableId}} appartient déjà à un autre groupe combinable ({{groupId}}).",
+      "min_members": "Un groupe de tables combinables doit compter au moins deux membres.",
+      "no_members": "Ce groupe de tables n'a aucun membre.",
+      "not_found": "Groupe de tables introuvable.",
+      "oversize_cap": "Ce groupe compte {{seats}} places combinées, ce qui est trop grand pour un groupe de {{partySize}} personnes.",
+      "seats_exceeded": "Ce groupe ne compte que {{seats}} places combinées, mais {{requested}} convives ont été demandés."
+    },
+    "title": "Erreur",
+    "user": {
+      "cannot_change_own_role": "Vous ne pouvez pas modifier votre propre rôle.",
+      "cannot_deactivate_self": "Vous ne pouvez pas désactiver votre propre compte.",
+      "display_name_too_long": "Le nom affiché ne peut pas dépasser {{max}} caractères.",
+      "email_already_exists": "Un compte avec cette adresse e-mail existe déjà.",
+      "email_invalid": "Une adresse e-mail valide est requise.",
+      "email_too_long": "L'adresse e-mail ne peut pas dépasser {{max}} caractères.",
+      "last_active_owner_deactivate": "Impossible de désactiver le dernier propriétaire actif. Promouvez d'abord un autre utilisateur.",
+      "last_active_owner_demote": "Impossible de rétrograder le dernier propriétaire actif. Promouvez d'abord un autre utilisateur.",
+      "not_found": "Utilisateur {{id}} introuvable.",
+      "password_too_short": "Le mot de passe doit comporter au moins {{min}} caractères.",
+      "role_invalid": "Le rôle doit être l'une des valeurs suivantes : {{allowed}}."
+    }
   },
   "lookup": {
     "cancelModal": {
