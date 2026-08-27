@@ -261,6 +261,33 @@ describe("AdminBookingsScreen", () => {
     });
   });
 
+  it("shows search results as a list even when the timetable is the persisted view", async () => {
+    // The timetable draws one location on one day; a search matches across all of both, so it
+    // has nothing to render the matches in. Persist timetable explicitly so the assertion is
+    // about the search overriding it, not about whichever mode a previous test left behind.
+    localStorage.setItem("bookings:viewMode", JSON.stringify("timetable"));
+    mockSearchParams.query = "john@example.com";
+
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByText("Search Results")).toBeTruthy());
+    expect(screen.getByText("john@example.com")).toBeTruthy();
+  });
+
+  it("hides the view toggle and status tabs while a search is active", async () => {
+    // The search fetch ignores location, status and view mode, so a control that appears to
+    // filter it would do nothing at all.
+    localStorage.setItem("bookings:viewMode", JSON.stringify("timetable"));
+    mockSearchParams.query = "john@example.com";
+
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByText("Search Results")).toBeTruthy());
+    expect(screen.queryByTestId("view-toggle-timetable")).toBeNull();
+    expect(screen.queryByTestId("view-toggle-list")).toBeNull();
+    expect(screen.queryByText("Past")).toBeNull();
+  });
+
   it("shows clear button when searchQuery is present", async () => {
     mockSearchParams.query = "john@example.com";
     render(<AdminBookingsScreen />);
