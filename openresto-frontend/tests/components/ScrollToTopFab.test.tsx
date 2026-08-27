@@ -2,11 +2,10 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, fireEvent, act } from "@testing-library/react-native";
-import { Animated, StyleSheet } from "react-native";
+import { screen, fireEvent } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 import ScrollToTopFab, {
   fabGutter,
-  fabTravel,
   FAB_MIN_GUTTER,
   SHOW_AFTER_SCROLL_Y,
 } from "@/components/common/ScrollToTopFab";
@@ -29,9 +28,18 @@ describe("ScrollToTopFab", () => {
     expect(screen.getByRole("button")).toBeTruthy();
   });
 
-  it("does not render when not visible", () => {
+  // The lane stays mounted while hidden so it keeps its measured width; unmounting it dropped
+  // that to zero and the FAB reappeared against the fallback gutter for a frame before layout put
+  // it back beside the content column — a sideways jump every time it came back.
+  it("keeps its place in the layout while hidden, so it does not jump back in", () => {
     renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
+    expect(screen.getByTestId("scroll-to-top-lane")).toBeTruthy();
+    // Present in the layout, but gone from the a11y tree and from the press target.
     expect(screen.queryByRole("button")).toBeNull();
+    expect(
+      screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }).props
+        .accessibilityElementsHidden
+    ).toBe(true);
   });
 
   // The FAB used to be gated to portrait phones under 700px wide, which hid it
@@ -95,36 +103,27 @@ describe("ScrollToTopFab", () => {
     expect(StyleSheet.flatten(lane.props.style).paddingRight).toBe(FAB_MIN_GUTTER);
   });
 
-  // The lift is what keeps the FAB off the footer's own links at the end of a scroll; see
-  // useScrollToTopFab for where the number comes from.
-  describe("fabTravel", () => {
-    it("stays put while the lift is inside ground the FAB already covers", () => {
-      expect(fabTravel(0, 34)).toBe(0);
-      expect(fabTravel(34, 34)).toBe(0);
-    });
+  // The FAB used to climb over the footer, recomputing an offset on every scroll event and
+  // sliding an element that reads as pinned up the page (#399). It holds one place now.
+  it("rests on the same gutter whether it is showing or not", () => {
+    const { unmount } = renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
+    const shown = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+    unmount();
 
-    it("rises by whatever the lift exceeds that by, so the two never stack", () => {
-      expect(fabTravel(35, 34)).toBe(1);
-      expect(fabTravel(88, 34)).toBe(88 - 34);
-      expect(fabTravel(88, 0)).toBe(88);
-    });
+    renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
+    const hidden = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+
+    expect(hidden.bottom).toBe(shown.bottom);
+    expect(hidden.transform).toBeUndefined();
   });
 
-  // The rise is a transform, not a change of `bottom`: it moves on every scroll event, and
-  // putting the browser through layout for each of those is what made it judder.
-  it("rests on the gutter and rises by a transform rather than by moving its bottom", () => {
-    const travel = new Animated.Value(0);
-    renderWithProviders(<ScrollToTopFab visible travel={travel} onPress={jest.fn()} />);
+  it("takes no presses once it has faded out", () => {
+    const onPress = jest.fn();
+    renderWithProviders(<ScrollToTopFab visible={false} onPress={onPress} />);
 
-    const style = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
-    expect(style.bottom).toBe(FAB_MIN_GUTTER);
-    expect(style.transform).toBeDefined();
+    fireEvent.press(screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }));
 
-    act(() => travel.setValue(88));
-    // The bottom is fixed; the movement is the transform's, so `bottom` must not have followed.
-    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
-      FAB_MIN_GUTTER
-    );
+    expect(onPress).not.toHaveBeenCalled();
   });
 
   it("calls onPress when pressed", () => {

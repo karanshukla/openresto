@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Animated, LayoutChangeEvent, Pressable } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, LayoutChangeEvent, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -13,22 +13,8 @@ export const SHOW_AFTER_SCROLL_Y = 300;
 /** Inset used once the container is no wider than the content column and has no gutter to sit in. */
 export const FAB_MIN_GUTTER = 20;
 
-/**
- * How far the FAB travels up from where it rests, given the lift it has been handed and the
- * safe-area inset it is already sitting on. The footer carries that inset itself, so the two
- * never stack — the FAB only moves once the lift exceeds ground it already covers.
- *
- * The travel is applied as a transform rather than by moving the FAB's `bottom`, because it
- * changes on every scroll event once the footer is entering view: `bottom` puts the browser
- * through layout for each of those, a frame behind the scroll that caused it, which is what made
- * the FAB judder up and down the page on web. A transform is composited and moves with it.
- *
- * @see [ScrollToTopFab.test.tsx](../../tests/components/ScrollToTopFab.test.tsx) — pins that the
- * FAB stays put while the lift is inside the inset it already clears, and rises by the excess.
- */
-export function fabTravel(lift: number, bottomInset: number): number {
-  return Math.max(0, lift - bottomInset);
-}
+/** Long enough to read as a fade rather than a flicker, short enough not to trail the scroll. */
+export const FADE_MS = 160;
 
 /**
  * Right inset for the FAB inside a container of `containerWidth`. Above the content
@@ -47,15 +33,19 @@ export function fabGutter(containerWidth: number): number {
 interface Props {
   visible: boolean;
   onPress: () => void;
-  /**
-   * How far to rise off the resting gutter, so the FAB clears a footer scrolling into view
-   * underneath it. An `Animated.Value` rather than a number because it changes on every scroll
-   * event: see `useScrollToTopFab` for why that must not go through React.
-   */
-  travel?: Animated.Value;
 }
 
-export default function ScrollToTopFab({ visible, onPress, travel }: Props) {
+/**
+ * The return-to-top shortcut. It holds one position for the whole scroll and fades out where the
+ * footer would otherwise be underneath it; `useScrollToTopFab` decides when.
+ *
+ * Nothing here tracks the scroll position. An earlier version rode above the footer, which meant
+ * recomputing an offset on every scroll event and moving an element that reads as pinned (#399).
+ *
+ * @see [ScrollToTopFab.test.tsx](../../tests/components/ScrollToTopFab.test.tsx) — pins that it
+ * rests on the same gutter whether shown or hidden, and takes no presses once faded.
+ */
+export default function ScrollToTopFab({ visible, onPress }: Props) {
   const { primaryColor } = useAppTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -64,11 +54,14 @@ export default function ScrollToTopFab({ visible, onPress, travel }: Props) {
   // follows the column it belongs to rather than the window.
   const [laneWidth, setLaneWidth] = useState(0);
 
-  // Negated because a positive travel means "further up the page", and translateY grows downward.
-  const rise = useMemo(
-    () => (travel ? Animated.multiply(travel, -1) : new Animated.Value(0)),
-    [travel]
-  );
+  const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: visible ? 1 : 0,
+      duration: FADE_MS,
+      useNativeDriver: true,
+    }).start();
+  }, [visible, opacity]);
 
   // The lane stays mounted while the FAB is hidden so it keeps its measured width. Unmounting it
   // dropped that back to zero on every hide, and the FAB reappeared against the fallback gutter
@@ -76,7 +69,7 @@ export default function ScrollToTopFab({ visible, onPress, travel }: Props) {
   // it came back. Deliberately not gated on width or orientation: every screen that mounts this
   // is long enough to bury its own header on a desktop window too.
   return (
-    <Animated.View
+    <View
       testID="scroll-to-top-lane"
       pointerEvents="box-none"
       onLayout={(e: LayoutChangeEvent) => setLaneWidth(e.nativeEvent.layout.width)}
@@ -85,20 +78,23 @@ export default function ScrollToTopFab({ visible, onPress, travel }: Props) {
         {
           bottom: insets.bottom + FAB_MIN_GUTTER,
           paddingRight: fabGutter(laneWidth),
-          transform: [{ translateY: rise }],
         },
       ]}
     >
-      {visible && (
+      <Animated.View style={{ opacity }} pointerEvents={visible ? "auto" : "none"}>
         <Pressable
+          testID="scroll-to-top-fab"
           style={[styles.fab, { backgroundColor: primaryColor }]}
           onPress={onPress}
+          disabled={!visible}
+          accessibilityElementsHidden={!visible}
+          importantForAccessibility={visible ? "auto" : "no-hide-descendants"}
           accessibilityLabel={t("common.actions.scrollToTop")}
           accessibilityRole="button"
         >
           <Icon name="chevron-up" size={22} color="#fff" />
         </Pressable>
-      )}
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }

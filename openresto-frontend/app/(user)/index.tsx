@@ -372,10 +372,10 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Footer onLayout={fab.measureFooter} />
+        <Footer />
       </ScrollView>
 
-      <ScrollToTopFab visible={fab.visible} travel={fab.travel} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
     </ThemedView>
   );
 }

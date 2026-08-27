@@ -324,7 +324,7 @@ export default function LookupScreen({
           </View>
         </PageContainer>
 
-        <Footer onLayout={fab.measureFooter} />
+        <Footer />
       </ScrollView>
 
       {isCompact && showPanel && (
@@ -337,7 +337,7 @@ export default function LookupScreen({
         </SlidePanel>
       )}
 
-      <ScrollToTopFab visible={fab.visible} travel={fab.travel} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
 
       {showCancelConfirm && (
         <ConfirmModal

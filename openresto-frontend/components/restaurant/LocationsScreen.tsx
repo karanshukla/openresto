@@ -136,13 +136,6 @@ export default function LocationsScreen({
     itemRefs.current[id] = ref;
   }, []);
 
-  // With the footer out of the column there is nothing left in this scroll for the FAB to
-  // climb over, and a height measured before the drawer opened would lift it over nothing.
-  const { setFooterHeight } = fab;
-  useEffect(() => {
-    if (sideDrawer) setFooterHeight(0);
-  }, [sideDrawer, setFooterHeight]);
-
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -297,10 +290,10 @@ export default function LocationsScreen({
               )}
             </PageContainer>
 
-            {!sideDrawer && <Footer onLayout={fab.measureFooter} />}
+            {!sideDrawer && <Footer />}
           </ScrollView>
 
-          <ScrollToTopFab visible={fab.visible} travel={fab.travel} onPress={scrollToTop} />
+          <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         </View>
 
         {drawer && (

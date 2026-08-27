@@ -452,29 +452,29 @@ describe("LocationsScreen", () => {
 
     // The FAB used to rest in the column's own bottom corner whatever was under it, so at
     // the end of the list it landed on the footer's links.
+    /** Whether the FAB is currently offered, rather than faded out under the footer. */
     /**
-     * The FAB's rise, read off the transform driving it. It moves by transform rather than by its
-     * `bottom` because it changes on every scroll event; see ScrollToTopFab.
+     * Whether the FAB is being offered. Read off the control rather than by querying for it: it
+     * stays mounted while hidden so it keeps its measured place, and fades rather than unmounting,
+     * so a role query answers "is it painted" rather than "is it offered".
      */
-    const fabRise = (): number => {
-      const style = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
-      const translate = (style.transform as { translateY: unknown }[])[0];
-      const value = translate.translateY as number | { __getValue(): number };
-      return -(typeof value === "number" ? value : value.__getValue());
-    };
+    const fabShowing = (): boolean =>
+      screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }).props
+        .accessibilityElementsHidden !== true;
 
-    it("lifts the FAB over the footer it measured once the list reaches the end", async () => {
+    // The FAB used to climb over the footer and then to stand down over it. The climb slid an
+    // element that reads as pinned up the page on every scroll near the bottom; standing down took
+    // the shortcut away at the end of the page, which is where it is most wanted (#399). It sits
+    // in the gutter beside the content column, which the footer's own row does not reach.
+    it("keeps the FAB to the very end of the list", async () => {
       (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
       renderWithProviders(<LocationsScreen />);
       await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
 
-      fireEvent(screen.getByTestId("mock-footer"), "layout", {
-        nativeEvent: { layout: { height: 88, width: 1280, x: 0, y: 0 } },
-      });
       const scrollView = screen.UNSAFE_getByType(ScrollView);
 
       fireEvent.scroll(scrollView, scrollEvent(400));
-      expect(fabRise()).toBe(0);
+      expect(fabShowing()).toBe(true);
 
       fireEvent.scroll(scrollView, {
         nativeEvent: {
@@ -483,17 +483,14 @@ describe("LocationsScreen", () => {
           layoutMeasurement: { height: 900 },
         },
       });
-      expect(fabRise()).toBe(88);
+      expect(fabShowing()).toBe(true);
     });
 
-    it("drops the lift again when the drawer takes the footer out of the column", async () => {
+    it("keeps the FAB with the drawer open, which takes the footer out of the column", async () => {
       (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
       renderWithProviders(<LocationsScreen />);
       await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
 
-      fireEvent(screen.getByTestId("mock-footer"), "layout", {
-        nativeEvent: { layout: { height: 88, width: 1280, x: 0, y: 0 } },
-      });
       const scrollView = screen.UNSAFE_getByType(ScrollView);
       const atEnd = {
         nativeEvent: {
@@ -502,14 +499,12 @@ describe("LocationsScreen", () => {
           layoutMeasurement: { height: 900 },
         },
       };
-      fireEvent.scroll(scrollView, atEnd);
-      const lifted = fabRise();
 
       fireEvent.press(screen.getByTestId("book-1"));
       await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
       fireEvent.scroll(scrollView, atEnd);
 
-      expect(fabRise()).toBeLessThan(lifted);
+      expect(fabShowing()).toBe(true);
     });
 
     it("leaves the footer in the column for the phone sheet, which takes no width off it", async () => {
