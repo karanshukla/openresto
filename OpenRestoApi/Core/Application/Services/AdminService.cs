@@ -208,7 +208,7 @@ public class AdminService(
 
         if (req.Seats > table.Seats)
         {
-            throw new ConflictException($"This table only has {table.Seats} seats, but {req.Seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
+            throw new ConflictException($"This table only has {table.Seats} seats, but {req.Seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded, Args = new Dictionary<string, object> { ["seats"] = table.Seats, ["requested"] = req.Seats } };
         }
 
         var booking = new Booking
@@ -393,7 +393,7 @@ public class AdminService(
                 Table? currentTable = await _tableRepository.FindByIdAsync(resolvedTableId.Value);
                 if (currentTable != null && req.Seats.Value > currentTable.Seats)
                 {
-                    throw new BusinessRuleException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
+                    throw new BusinessRuleException($"This table only has {currentTable.Seats} seats, but {req.Seats.Value} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded, Args = new Dictionary<string, object> { ["seats"] = currentTable.Seats, ["requested"] = req.Seats.Value } };
                 }
             }
             booking.Seats = req.Seats.Value;

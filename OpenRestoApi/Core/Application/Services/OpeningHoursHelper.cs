@@ -82,7 +82,7 @@ public static class OpeningHoursHelper
 
             if (byDay.ContainsKey(entry.Day))
             {
-                throw new ValidationException($"OpenHours contains more than one entry for day {entry.Day}.") { Code = ErrorCodes.RestaurantOpenHoursDuplicateDay };
+                throw new ValidationException($"OpenHours contains more than one entry for day {entry.Day}.") { Code = ErrorCodes.RestaurantOpenHoursDuplicateDay, Args = new Dictionary<string, object> { ["day"] = entry.Day } };
             }
 
             if (!TryParseTime(entry.Open, out int openH, out int openM)

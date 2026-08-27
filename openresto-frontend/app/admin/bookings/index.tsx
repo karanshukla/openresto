@@ -95,6 +95,12 @@ export default function AdminBookingsScreen() {
   }>();
   const searchQuery = queryParam || null;
 
+  // A search matches across every location and every date, which is exactly what the timetable
+  // cannot draw — it renders one location on one day. So a search forces the list regardless of
+  // the persisted toggle, and the location chips, status tabs and view toggle come down with it:
+  // the search fetch ignores all three, so leaving them up offers filters that do nothing.
+  const effectiveViewMode: ViewMode = searchQuery ? "list" : viewMode;
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (create === "1") setShowNewModal(true);
@@ -111,7 +117,7 @@ export default function AdminBookingsScreen() {
     loadGrid,
     handleGridDateChange,
     resetToToday,
-  } = useBookingsGrid({ restaurantId: selectedRestaurantId, viewMode });
+  } = useBookingsGrid({ restaurantId: selectedRestaurantId, viewMode: effectiveViewMode });
 
   const selectedRestaurant = restaurants.find((r) => r.id === selectedRestaurantId);
   const gridIsoDay = gridDate.getDay() === 0 ? 7 : gridDate.getDay();
@@ -209,7 +215,7 @@ export default function AdminBookingsScreen() {
 
   const reconcileAfterBookingMutation = () => {
     setRefreshKey((key) => key + 1);
-    if (selectedRestaurantId && viewMode === "timetable") {
+    if (selectedRestaurantId && effectiveViewMode === "timetable") {
       loadGrid(selectedRestaurantId, gridDate);
     }
   };
@@ -245,7 +251,7 @@ export default function AdminBookingsScreen() {
   const listShortcutsBlocked = selectedBookingId !== null || showNewModal || !!cancelTarget;
 
   useKeyboardShortcuts(
-    viewMode === "list" && sorted.length > 0 && !listShortcutsBlocked
+    effectiveViewMode === "list" && sorted.length > 0 && !listShortcutsBlocked
       ? {
           j: () => moveRowFocus(1),
           ArrowDown: () => moveRowFocus(1),
@@ -294,7 +300,7 @@ export default function AdminBookingsScreen() {
         <Stack.Screen
           options={{
             title:
-              viewMode === "timetable"
+              effectiveViewMode === "timetable"
                 ? fmtDate(gridDate)
                 : statusFilter === "past"
                   ? t("admin.bookings.screenTitle.past")
@@ -366,123 +372,132 @@ export default function AdminBookingsScreen() {
         </View>
       </View>
 
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 8,
-        }}
-      >
-        {restaurants.length > 1 &&
-          restaurants.map((r) => (
-            <Pressable
-              key={r.id}
-              style={[
-                styles.chip,
-                { borderColor },
-                r.id === selectedRestaurantId && { backgroundColor: PRIMARY, borderColor: PRIMARY },
-              ]}
-              onPress={() => handleSelectRestaurant(r.id)}
-            >
-              <ThemedText
-                style={
-                  r.id === selectedRestaurantId
-                    ? styles.chipTextActive
-                    : [styles.chipText, { color: mutedColor }]
-                }
-              >
-                {r.name}
-              </ThemedText>
-            </Pressable>
-          ))}
-
-        <View style={{ flex: 1 }} />
-
-        {viewMode === "list" && (
-          <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
-            {(
-              [
-                { key: "active", label: t("admin.bookings.tabs.active"), color: PRIMARY },
-                { key: "past", label: t("admin.bookings.tabs.past"), color: "#7c3aed" },
-                {
-                  key: "cancelled",
-                  label: t("admin.bookings.tabs.cancelled"),
-                  color: theme.status.cancelled.text,
-                },
-              ] as const
-            ).map(({ key, label, color }) => (
+      {!searchQuery && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          {restaurants.length > 1 &&
+            restaurants.map((r) => (
               <Pressable
-                key={key}
-                style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
-                onPress={() => setStatusFilter(key)}
-                accessibilityRole="radio"
-                accessibilityLabel={t("admin.bookings.tabs.showLabel", {
-                  tab: label.toLowerCase(),
-                })}
-                accessibilityState={{ checked: statusFilter === key }}
+                key={r.id}
+                style={[
+                  styles.chip,
+                  { borderColor },
+                  r.id === selectedRestaurantId && {
+                    backgroundColor: PRIMARY,
+                    borderColor: PRIMARY,
+                  },
+                ]}
+                onPress={() => handleSelectRestaurant(r.id)}
               >
                 <ThemedText
-                  style={[
-                    styles.modeBtnText,
-                    { color: statusFilter === key ? "#fff" : mutedColor },
-                  ]}
+                  style={
+                    r.id === selectedRestaurantId
+                      ? styles.chipTextActive
+                      : [styles.chipText, { color: mutedColor }]
+                  }
                 >
-                  {label}
+                  {r.name}
                 </ThemedText>
               </Pressable>
             ))}
+
+          <View style={{ flex: 1 }} />
+
+          {viewMode === "list" && (
+            <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
+              {(
+                [
+                  { key: "active", label: t("admin.bookings.tabs.active"), color: PRIMARY },
+                  { key: "past", label: t("admin.bookings.tabs.past"), color: "#7c3aed" },
+                  {
+                    key: "cancelled",
+                    label: t("admin.bookings.tabs.cancelled"),
+                    color: theme.status.cancelled.text,
+                  },
+                ] as const
+              ).map(({ key, label, color }) => (
+                <Pressable
+                  key={key}
+                  style={[styles.modeBtn, statusFilter === key && { backgroundColor: color }]}
+                  onPress={() => setStatusFilter(key)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={t("admin.bookings.tabs.showLabel", {
+                    tab: label.toLowerCase(),
+                  })}
+                  accessibilityState={{ checked: statusFilter === key }}
+                >
+                  <ThemedText
+                    style={[
+                      styles.modeBtnText,
+                      { color: statusFilter === key ? "#fff" : mutedColor },
+                    ]}
+                  >
+                    {label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
+            <Pressable
+              testID="view-toggle-timetable"
+              style={[styles.modeBtn, viewMode === "timetable" && { backgroundColor: PRIMARY }]}
+              onPress={switchToTimetable}
+              accessibilityRole="radio"
+              accessibilityLabel={t("admin.bookings.viewToggle.timetableLabel")}
+              accessibilityState={{ checked: viewMode === "timetable" }}
+            >
+              <Icon
+                name="grid-outline"
+                size={15}
+                color={viewMode === "timetable" ? "#fff" : mutedColor}
+              />
+              {isWide && (
+                <ThemedText
+                  style={[
+                    styles.modeBtnText,
+                    { color: viewMode === "timetable" ? "#fff" : mutedColor },
+                  ]}
+                >
+                  {t("admin.bookings.viewToggle.timetable")}
+                </ThemedText>
+              )}
+            </Pressable>
+            <Pressable
+              testID="view-toggle-list"
+              style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
+              onPress={() => setViewMode("list")}
+              accessibilityRole="radio"
+              accessibilityLabel={t("admin.bookings.viewToggle.listLabel")}
+              accessibilityState={{ checked: viewMode === "list" }}
+            >
+              <Icon
+                name="list-outline"
+                size={15}
+                color={viewMode === "list" ? "#fff" : mutedColor}
+              />
+              {isWide && (
+                <ThemedText
+                  style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}
+                >
+                  {t("admin.bookings.viewToggle.list")}
+                </ThemedText>
+              )}
+            </Pressable>
           </View>
-        )}
-
-        <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
-          <Pressable
-            testID="view-toggle-timetable"
-            style={[styles.modeBtn, viewMode === "timetable" && { backgroundColor: PRIMARY }]}
-            onPress={switchToTimetable}
-            accessibilityRole="radio"
-            accessibilityLabel={t("admin.bookings.viewToggle.timetableLabel")}
-            accessibilityState={{ checked: viewMode === "timetable" }}
-          >
-            <Icon
-              name="grid-outline"
-              size={15}
-              color={viewMode === "timetable" ? "#fff" : mutedColor}
-            />
-            {isWide && (
-              <ThemedText
-                style={[
-                  styles.modeBtnText,
-                  { color: viewMode === "timetable" ? "#fff" : mutedColor },
-                ]}
-              >
-                {t("admin.bookings.viewToggle.timetable")}
-              </ThemedText>
-            )}
-          </Pressable>
-          <Pressable
-            testID="view-toggle-list"
-            style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
-            onPress={() => setViewMode("list")}
-            accessibilityRole="radio"
-            accessibilityLabel={t("admin.bookings.viewToggle.listLabel")}
-            accessibilityState={{ checked: viewMode === "list" }}
-          >
-            <Icon name="list-outline" size={15} color={viewMode === "list" ? "#fff" : mutedColor} />
-            {isWide && (
-              <ThemedText
-                style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}
-              >
-                {t("admin.bookings.viewToggle.list")}
-              </ThemedText>
-            )}
-          </Pressable>
         </View>
-      </View>
+      )}
 
-      {loading && viewMode === "list" ? (
+      {loading && effectiveViewMode === "list" ? (
         <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
-      ) : viewMode === "timetable" ? (
+      ) : effectiveViewMode === "timetable" ? (
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
           <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
             <Pressable

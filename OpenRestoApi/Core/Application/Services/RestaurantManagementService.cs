@@ -42,7 +42,10 @@ public class RestaurantManagementService(
         {
             throw new ValidationException(
                 $"BookingRefFormat must be one of: {string.Join(", ", Enum.GetNames<BookingRefFormat>())}.")
-            { Code = ErrorCodes.RestaurantBookingRefFormatInvalid };
+            {
+                Code = ErrorCodes.RestaurantBookingRefFormatInvalid,
+                Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", Enum.GetNames<BookingRefFormat>()) }
+            };
         }
 
         return parsed;
@@ -186,7 +189,10 @@ public class RestaurantManagementService(
             {
                 throw new ValidationException(
                     $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", _allowedBookingDurationsMinutes.Order())}.")
-                { Code = ErrorCodes.RestaurantDurationInvalid };
+                {
+                    Code = ErrorCodes.RestaurantDurationInvalid,
+                    Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", _allowedBookingDurationsMinutes.Order()) }
+                };
             }
 
             r.DefaultBookingDurationMinutes = req.DefaultBookingDurationMinutes.Value;
@@ -198,7 +204,10 @@ public class RestaurantManagementService(
             {
                 throw new ValidationException(
                     $"BookingSlotIntervalMinutes must be one of: {string.Join(", ", _allowedBookingSlotIntervalsMinutes.Order())}.")
-                { Code = ErrorCodes.RestaurantSlotIntervalInvalid };
+                {
+                    Code = ErrorCodes.RestaurantSlotIntervalInvalid,
+                    Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", _allowedBookingSlotIntervalsMinutes.Order()) }
+                };
             }
 
             r.BookingSlotIntervalMinutes = req.BookingSlotIntervalMinutes.Value;
@@ -497,7 +506,7 @@ public class RestaurantManagementService(
         {
             throw new ValidationException(
                 $"Seats must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.")
-            { Code = ErrorCodes.TableSeatsOutOfRange };
+            { Code = ErrorCodes.TableSeatsOutOfRange, Args = new Dictionary<string, object> { ["min"] = BookingLimits.MinSeats, ["max"] = BookingLimits.MaxSeats } };
         }
     }
 
@@ -518,7 +527,7 @@ public class RestaurantManagementService(
         {
             throw new ValidationException(
                 $"CombinedSeats ({combinedSeats}) cannot exceed the sum of member seats ({memberSeatsSum}).")
-            { Code = ErrorCodes.TableGroupCombinedSeatsExceedsSum };
+            { Code = ErrorCodes.TableGroupCombinedSeatsExceedsSum, Args = new Dictionary<string, object> { ["combined"] = combinedSeats, ["sum"] = memberSeatsSum } };
         }
 
         int largestMemberSeats = members.Max(t => t.Seats);
@@ -527,7 +536,10 @@ public class RestaurantManagementService(
             throw new ValidationException(
                 $"CombinedSeats ({combinedSeats}) must be more than the largest member table ({largestMemberSeats}). "
                 + "combining these tables would not seat a bigger party.")
-            { Code = ErrorCodes.TableGroupCombinedSeatsNotWorthCombining };
+            {
+                Code = ErrorCodes.TableGroupCombinedSeatsNotWorthCombining,
+                Args = new Dictionary<string, object> { ["combined"] = combinedSeats, ["largest"] = largestMemberSeats }
+            };
         }
     }
 
@@ -809,7 +821,7 @@ public class RestaurantManagementService(
             {
                 throw new ValidationException(
                     $"Table {t.Id} already belongs to another combinable group ({ownerGroupId}).")
-                { Code = ErrorCodes.TableGroupMemberAlreadyGrouped };
+                { Code = ErrorCodes.TableGroupMemberAlreadyGrouped, Args = new Dictionary<string, object> { ["tableId"] = t.Id, ["groupId"] = ownerGroupId } };
             }
         }
 

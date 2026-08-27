@@ -234,9 +234,144 @@
     }
   },
   "errors": {
+    "admin": {
+      "password_not_configured": "Admin:Password must be configured before first use. Set it via ADMIN_PASSWORD env var."
+    },
+    "auth": {
+      "email_already_in_use": "That email address is already in use.",
+      "email_unchanged": "New email must be different from the current email.",
+      "invalid_reset_token": "Invalid or expired reset token.",
+      "no_account_for_session": "No account matches the signed-in session.",
+      "pvq_fields_required": "Question and answer are required.",
+      "pvq_not_configured": "Security question not configured for this account."
+    },
+    "booking": {
+      "all_tables_held": "All suitable tables are currently being held by other users. Please try again shortly.",
+      "already_active": "Booking is already active.",
+      "already_past": "Cannot cancel a booking that has already passed.",
+      "ambiguous_table_selection": "Specify both TableId and SectionId, or omit both for auto-assign.",
+      "cancel_email_required": "Email is required to cancel a booking.",
+      "email_fields_required": "Subject and body are required.",
+      "email_send_failed": "Failed to send: {{detail}}",
+      "invalid_table_for_restaurant": "Invalid table for this restaurant.",
+      "lookup_email_required": "Email is required to look up a booking.",
+      "lookup_not_found": "No booking found matching that reference and email.",
+      "move_conflict": "This update would cause a conflict with an existing booking.",
+      "no_customer_email": "Customer email is not available.",
+      "no_tables_available": "No tables are available for the requested time and party size.",
+      "party_size_out_of_range": "Party size must be between {{min}} and {{max}}.",
+      "past_date": "Cannot create a booking in the past.",
+      "paused": "Bookings are paused until {{until}}. Please choose a later time.",
+      "paused_indefinitely": "Bookings for this restaurant are currently paused. Please try again later.",
+      "section_mismatch": "Section does not belong to this restaurant.",
+      "table_conflict": "This table already has a booking that overlaps with the requested time.",
+      "table_held": "This table is already held by another user. Please select a different table or try again shortly.",
+      "table_id_required_for_section_change": "Provide tableId when reassigning to a different section.",
+      "table_not_in_section": "Table not found in the specified section.",
+      "walk_in_only": "This location accepts walk-ins only and does not take online bookings.",
+      "walk_in_only_today": "This location accepts walk-ins only on the selected day. Please choose another day or just come in."
+    },
+    "brand": {
+      "accent_color_invalid": "Invalid accent color hex code.",
+      "app_name_too_long": "App name cannot exceed 32 characters.",
+      "copyright_too_long": "Copyright text cannot exceed 200 characters.",
+      "favicon_invalid": "Invalid favicon icon.",
+      "header_image_fit_invalid": "HeaderImageFit must be one of: {{allowed}}.",
+      "highlights_heading_too_long": "Highlights heading cannot exceed 60 characters.",
+      "highlights_subheading_too_long": "Highlights subheading cannot exceed 60 characters.",
+      "primary_color_invalid": "Invalid primary color hex code.",
+      "subtitle_too_long": "Subtitle cannot exceed 160 characters."
+    },
+    "contact": {
+      "email_invalid": "Email address must be a valid email address.",
+      "email_too_long": "Email address cannot exceed {{max}} characters.",
+      "phone_too_long": "Phone number cannot exceed {{max}} characters."
+    },
+    "email": {
+      "connection_failed": "Connection failed: {{detail}}",
+      "not_configured": "Email is not configured."
+    },
     "generic": "Something went wrong",
     "genericMessage": "An unexpected error occurred. Try again.",
-    "title": "Error"
+    "highlight": {
+      "body_too_long": "Highlight body cannot exceed {{max}} characters.",
+      "link_invalid": "Highlight link must be a valid absolute URL (http, https, mailto, tel, or sms).",
+      "title_required": "Highlight title cannot be empty.",
+      "title_too_long": "Highlight title cannot exceed {{max}} characters."
+    },
+    "hold": {
+      "ambiguous_group_and_table": "Specify either TableId or TableGroupId, not both.",
+      "auto_assign_seats_required": "Seats is required for auto-assign so the server can pick a table that fits your party.",
+      "group_seats_required": "Seats is required for a group hold so the server can validate combined capacity.",
+      "unavailable": "Hold not available."
+    },
+    "icon": {
+      "invalid": "Icon key must be one of the supported icons."
+    },
+    "media": {
+      "hero_too_large": "Hero image must be under 5 MB.",
+      "location_image_too_large": "Location image must be under 2 MB.",
+      "menu_too_large": "Menu file must be under 10 MB.",
+      "unsupported_image_type": "Only JPEG, PNG, and WebP images are accepted.",
+      "unsupported_menu_type": "Only PDF menu files are accepted."
+    },
+    "restaurant": {
+      "archive_before_delete": "Archive this location before deleting it. Archiving takes it off the public site and can be undone; deleting cannot.",
+      "booking_ref_format_invalid": "BookingRefFormat must be one of: {{allowed}}.",
+      "closed_at_time": "The restaurant is closed at the requested time.",
+      "duration_invalid": "DefaultBookingDurationMinutes must be one of: {{allowed}}.",
+      "menu_url_invalid": "Menu URL must be a valid absolute http(s) URL.",
+      "name_required": "Name is required.",
+      "no_sections": "Restaurant not found or has no sections.",
+      "not_found": "Invalid restaurant.",
+      "open_hours_day_invalid": "OpenHours entries must use ISO day numbers 1 (Monday) through 7 (Sunday).",
+      "open_hours_duplicate_day": "OpenHours contains more than one entry for day {{day}}.",
+      "open_hours_time_invalid": "OpenHours times must be valid HH:mm values (00:00–23:59).",
+      "oversize_cap_invalid": "MaxTableOversizeSeats must be zero or greater, or null to disable.",
+      "section_ids_mismatch": "sectionIds must include exactly the restaurant's current sections, with no duplicates.",
+      "slot_interval_invalid": "BookingSlotIntervalMinutes must be one of: {{allowed}}.",
+      "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday)."
+    },
+    "social_link": {
+      "label_required": "Social link label cannot be empty.",
+      "label_too_long": "Social link label cannot exceed {{max}} characters.",
+      "url_invalid": "Social link URL must be a valid absolute URL (http, https, mailto, tel, or sms).",
+      "url_required": "Social link URL cannot be empty."
+    },
+    "table": {
+      "oversize_cap": "This table has {{seats}} seats, which is too large for a party of {{partySize}}.",
+      "seats_exceeded": "This table only has {{seats}} seats, but {{requested}} guests were requested.",
+      "seats_out_of_range": "Seats must be between {{min}} and {{max}}."
+    },
+    "table_group": {
+      "booking_conflict": "One of the combined tables is already booked for that time.",
+      "combined_seats_exceeds_sum": "CombinedSeats ({{combined}}) cannot exceed the sum of member seats ({{sum}}).",
+      "combined_seats_not_worth_combining": "CombinedSeats ({{combined}}) must be more than the largest member table ({{largest}}). combining these tables would not seat a bigger party.",
+      "disbanded": "These tables can no longer be combined. Please pick another time or table.",
+      "duplicate_member": "A combinable table group cannot list the same table twice.",
+      "hold_conflict": "One of the combined tables is already held by another user. Please try again shortly.",
+      "invalid_members": "All member tables must exist and belong to this restaurant.",
+      "member_already_grouped": "Table {{tableId}} already belongs to another combinable group ({{groupId}}).",
+      "min_members": "A combinable table group must have at least two members.",
+      "no_members": "This table group has no members.",
+      "not_found": "Table group not found.",
+      "oversize_cap": "This group has {{seats}} combined seats, which is too large for a party of {{partySize}}.",
+      "seats_exceeded": "This group only has {{seats}} combined seats, but {{requested}} guests were requested."
+    },
+    "title": "Error",
+    "user": {
+      "cannot_change_own_role": "You cannot change your own role.",
+      "cannot_deactivate_self": "You cannot deactivate your own account.",
+      "display_name_too_long": "Display name cannot exceed {{max}} characters.",
+      "email_already_exists": "An account with that email address already exists.",
+      "email_invalid": "A valid email address is required.",
+      "email_too_long": "Email address cannot exceed {{max}} characters.",
+      "last_active_owner_deactivate": "Cannot deactivate the last active Owner. Promote another user first.",
+      "last_active_owner_demote": "Cannot demote the last active Owner. Promote another user first.",
+      "not_found": "User {{id}} not found.",
+      "password_too_short": "Password must be at least {{min}} characters.",
+      "role_invalid": "Role must be one of: {{allowed}}."
+    }
   },
   "lookup": {
     "cancelModal": {

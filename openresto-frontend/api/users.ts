@@ -1,5 +1,6 @@
 import { get, patch, post } from "./client";
 import type { AssignableRole } from "@/constants/roles";
+import { apiErrorMessage } from "@/api/errors";
 
 /** An admin account as listed by the Owner-only user management API. */
 export interface AdminUserDto {
@@ -24,7 +25,7 @@ export type UserMutationResult = { ok: true; user: AdminUserDto } | { ok: false;
 async function toResult(res: Response): Promise<UserMutationResult> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    return { ok: false, message: body.message ?? "Request failed." };
+    return { ok: false, message: apiErrorMessage(body, "Request failed.") };
   }
   return { ok: true, user: body as AdminUserDto };
 }

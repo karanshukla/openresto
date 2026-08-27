@@ -234,9 +234,144 @@
     }
   },
   "errors": {
+    "admin": {
+      "password_not_configured": "Admin:Password muss vor der ersten Nutzung konfiguriert werden. Legen Sie es über die Umgebungsvariable ADMIN_PASSWORD fest."
+    },
+    "auth": {
+      "email_already_in_use": "Diese E-Mail-Adresse wird bereits verwendet.",
+      "email_unchanged": "Die neue E-Mail-Adresse muss sich von der aktuellen unterscheiden.",
+      "invalid_reset_token": "Ungültiges oder abgelaufenes Zurücksetzungs-Token.",
+      "no_account_for_session": "Kein Konto passt zur angemeldeten Sitzung.",
+      "pvq_fields_required": "Frage und Antwort sind erforderlich.",
+      "pvq_not_configured": "Für dieses Konto ist keine Sicherheitsfrage konfiguriert."
+    },
+    "booking": {
+      "all_tables_held": "Alle passenden Tische sind derzeit von anderen Nutzern reserviert. Bitte versuchen Sie es gleich noch einmal.",
+      "already_active": "Die Buchung ist bereits aktiv.",
+      "already_past": "Eine bereits vergangene Buchung kann nicht storniert werden.",
+      "ambiguous_table_selection": "Geben Sie sowohl TableId als auch SectionId an – oder keines von beiden für die automatische Zuweisung.",
+      "cancel_email_required": "Für die Stornierung einer Buchung ist eine E-Mail-Adresse erforderlich.",
+      "email_fields_required": "Betreff und Nachricht sind erforderlich.",
+      "email_send_failed": "Senden fehlgeschlagen: {{detail}}",
+      "invalid_table_for_restaurant": "Ungültiger Tisch für dieses Restaurant.",
+      "lookup_email_required": "Für die Suche nach einer Buchung ist eine E-Mail-Adresse erforderlich.",
+      "lookup_not_found": "Keine Buchung zu dieser Referenz und E-Mail-Adresse gefunden.",
+      "move_conflict": "Diese Änderung würde mit einer bestehenden Buchung kollidieren.",
+      "no_customer_email": "Die E-Mail-Adresse des Gastes ist nicht verfügbar.",
+      "no_tables_available": "Für die gewünschte Zeit und Personenzahl sind keine Tische verfügbar.",
+      "party_size_out_of_range": "Die Personenzahl muss zwischen {{min}} und {{max}} liegen.",
+      "past_date": "Eine Buchung in der Vergangenheit kann nicht erstellt werden.",
+      "paused": "Buchungen sind bis {{until}} Uhr pausiert. Bitte wählen Sie eine spätere Zeit.",
+      "paused_indefinitely": "Buchungen für dieses Restaurant sind derzeit pausiert. Bitte versuchen Sie es später erneut.",
+      "section_mismatch": "Dieser Bereich gehört nicht zu diesem Restaurant.",
+      "table_conflict": "Für diesen Tisch besteht bereits eine Buchung, die sich mit der gewünschten Zeit überschneidet.",
+      "table_held": "Dieser Tisch ist bereits von einem anderen Nutzer reserviert. Bitte wählen Sie einen anderen Tisch oder versuchen Sie es gleich noch einmal.",
+      "table_id_required_for_section_change": "Geben Sie tableId an, wenn Sie in einen anderen Bereich umbuchen.",
+      "table_not_in_section": "Tisch im angegebenen Bereich nicht gefunden.",
+      "walk_in_only": "Dieser Standort nimmt nur spontane Gäste an und akzeptiert keine Onlinebuchungen.",
+      "walk_in_only_today": "Dieser Standort nimmt am gewählten Tag nur spontane Gäste an. Bitte wählen Sie einen anderen Tag oder kommen Sie einfach vorbei."
+    },
+    "brand": {
+      "accent_color_invalid": "Ungültiger Hexcode für die Akzentfarbe.",
+      "app_name_too_long": "Der App-Name darf höchstens 32 Zeichen lang sein.",
+      "copyright_too_long": "Der Copyright-Text darf höchstens 200 Zeichen lang sein.",
+      "favicon_invalid": "Ungültiges Favicon-Symbol.",
+      "header_image_fit_invalid": "HeaderImageFit muss einer dieser Werte sein: {{allowed}}.",
+      "highlights_heading_too_long": "Die Überschrift der Highlights darf höchstens 60 Zeichen lang sein.",
+      "highlights_subheading_too_long": "Die Unterüberschrift der Highlights darf höchstens 60 Zeichen lang sein.",
+      "primary_color_invalid": "Ungültiger Hexcode für die Primärfarbe.",
+      "subtitle_too_long": "Der Untertitel darf höchstens 160 Zeichen lang sein."
+    },
+    "contact": {
+      "email_invalid": "Die E-Mail-Adresse muss gültig sein.",
+      "email_too_long": "Die E-Mail-Adresse darf höchstens {{max}} Zeichen lang sein.",
+      "phone_too_long": "Die Telefonnummer darf höchstens {{max}} Zeichen lang sein."
+    },
+    "email": {
+      "connection_failed": "Verbindung fehlgeschlagen: {{detail}}",
+      "not_configured": "E-Mail ist nicht konfiguriert."
+    },
     "generic": "Etwas ist schiefgelaufen",
     "genericMessage": "Ein unerwarteter Fehler ist aufgetreten. Versuchen Sie es erneut.",
-    "title": "Fehler"
+    "highlight": {
+      "body_too_long": "Der Text des Highlights darf höchstens {{max}} Zeichen lang sein.",
+      "link_invalid": "Der Link des Highlights muss eine gültige absolute URL sein (http, https, mailto, tel oder sms).",
+      "title_required": "Der Titel des Highlights darf nicht leer sein.",
+      "title_too_long": "Der Titel des Highlights darf höchstens {{max}} Zeichen lang sein."
+    },
+    "hold": {
+      "ambiguous_group_and_table": "Geben Sie entweder TableId oder TableGroupId an, nicht beides.",
+      "auto_assign_seats_required": "Für die automatische Zuweisung ist die Personenzahl erforderlich, damit der Server einen passenden Tisch wählen kann.",
+      "group_seats_required": "Für eine Gruppenreservierung ist die Personenzahl erforderlich, damit der Server die kombinierte Kapazität prüfen kann.",
+      "unavailable": "Reservierung nicht verfügbar."
+    },
+    "icon": {
+      "invalid": "Der Symbolschlüssel muss einem der unterstützten Symbole entsprechen."
+    },
+    "media": {
+      "hero_too_large": "Das Titelbild muss kleiner als 5 MB sein.",
+      "location_image_too_large": "Das Standortbild muss kleiner als 2 MB sein.",
+      "menu_too_large": "Die Menüdatei muss kleiner als 10 MB sein.",
+      "unsupported_image_type": "Es werden nur JPEG-, PNG- und WebP-Bilder akzeptiert.",
+      "unsupported_menu_type": "Es werden nur Menüdateien im PDF-Format akzeptiert."
+    },
+    "restaurant": {
+      "archive_before_delete": "Archivieren Sie diesen Standort, bevor Sie ihn löschen. Das Archivieren nimmt ihn von der öffentlichen Website und lässt sich rückgängig machen – das Löschen nicht.",
+      "booking_ref_format_invalid": "BookingRefFormat muss einer dieser Werte sein: {{allowed}}.",
+      "closed_at_time": "Das Restaurant ist zur gewünschten Zeit geschlossen.",
+      "duration_invalid": "DefaultBookingDurationMinutes muss einer dieser Werte sein: {{allowed}}.",
+      "menu_url_invalid": "Die Menü-URL muss eine gültige absolute http(s)-URL sein.",
+      "name_required": "Der Name ist erforderlich.",
+      "no_sections": "Restaurant nicht gefunden oder ohne Bereiche.",
+      "not_found": "Ungültiges Restaurant.",
+      "open_hours_day_invalid": "OpenHours-Einträge müssen ISO-Tagesnummern von 1 (Montag) bis 7 (Sonntag) verwenden.",
+      "open_hours_duplicate_day": "OpenHours enthält mehr als einen Eintrag für Tag {{day}}.",
+      "open_hours_time_invalid": "OpenHours-Zeiten müssen gültige HH:mm-Werte sein (00:00–23:59).",
+      "oversize_cap_invalid": "MaxTableOversizeSeats muss null oder größer sein – oder null, um die Begrenzung zu deaktivieren.",
+      "section_ids_mismatch": "sectionIds muss genau die aktuellen Bereiche des Restaurants enthalten, ohne Duplikate.",
+      "slot_interval_invalid": "BookingSlotIntervalMinutes muss einer dieser Werte sein: {{allowed}}.",
+      "walk_in_days_invalid": "WalkInDays muss eine durch Kommas getrennte Liste von ISO-Tagesnummern von 1 (Montag) bis 7 (Sonntag) sein."
+    },
+    "social_link": {
+      "label_required": "Die Bezeichnung des Social-Media-Links darf nicht leer sein.",
+      "label_too_long": "Die Bezeichnung des Social-Media-Links darf höchstens {{max}} Zeichen lang sein.",
+      "url_invalid": "Die URL des Social-Media-Links muss eine gültige absolute URL sein (http, https, mailto, tel oder sms).",
+      "url_required": "Die URL des Social-Media-Links darf nicht leer sein."
+    },
+    "table": {
+      "oversize_cap": "Dieser Tisch hat {{seats}} Plätze und ist damit zu groß für eine Gruppe von {{partySize}} Personen.",
+      "seats_exceeded": "Dieser Tisch hat nur {{seats}} Plätze, angefragt wurden aber {{requested}} Gäste.",
+      "seats_out_of_range": "Die Platzzahl muss zwischen {{min}} und {{max}} liegen."
+    },
+    "table_group": {
+      "booking_conflict": "Einer der kombinierten Tische ist zu dieser Zeit bereits gebucht.",
+      "combined_seats_exceeds_sum": "CombinedSeats ({{combined}}) darf die Summe der Plätze der Mitgliedstische ({{sum}}) nicht überschreiten.",
+      "combined_seats_not_worth_combining": "CombinedSeats ({{combined}}) muss größer sein als der größte Mitgliedstisch ({{largest}}). Das Kombinieren dieser Tische würde keiner größeren Gruppe Platz bieten.",
+      "disbanded": "Diese Tische lassen sich nicht mehr kombinieren. Bitte wählen Sie eine andere Zeit oder einen anderen Tisch.",
+      "duplicate_member": "Eine kombinierbare Tischgruppe darf denselben Tisch nicht zweimal enthalten.",
+      "hold_conflict": "Einer der kombinierten Tische ist bereits von einem anderen Nutzer reserviert. Bitte versuchen Sie es gleich noch einmal.",
+      "invalid_members": "Alle Mitgliedstische müssen existieren und zu diesem Restaurant gehören.",
+      "member_already_grouped": "Tisch {{tableId}} gehört bereits zu einer anderen kombinierbaren Gruppe ({{groupId}}).",
+      "min_members": "Eine kombinierbare Tischgruppe muss mindestens zwei Mitglieder haben.",
+      "no_members": "Diese Tischgruppe hat keine Mitglieder.",
+      "not_found": "Tischgruppe nicht gefunden.",
+      "oversize_cap": "Diese Gruppe hat {{seats}} kombinierte Plätze und ist damit zu groß für eine Gruppe von {{partySize}} Personen.",
+      "seats_exceeded": "Diese Gruppe hat nur {{seats}} kombinierte Plätze, angefragt wurden aber {{requested}} Gäste."
+    },
+    "title": "Fehler",
+    "user": {
+      "cannot_change_own_role": "Sie können Ihre eigene Rolle nicht ändern.",
+      "cannot_deactivate_self": "Sie können Ihr eigenes Konto nicht deaktivieren.",
+      "display_name_too_long": "Der Anzeigename darf höchstens {{max}} Zeichen lang sein.",
+      "email_already_exists": "Ein Konto mit dieser E-Mail-Adresse existiert bereits.",
+      "email_invalid": "Eine gültige E-Mail-Adresse ist erforderlich.",
+      "email_too_long": "Die E-Mail-Adresse darf höchstens {{max}} Zeichen lang sein.",
+      "last_active_owner_deactivate": "Der letzte aktive Eigentümer kann nicht deaktiviert werden. Befördern Sie zuerst einen anderen Nutzer.",
+      "last_active_owner_demote": "Der letzte aktive Eigentümer kann nicht herabgestuft werden. Befördern Sie zuerst einen anderen Nutzer.",
+      "not_found": "Benutzer {{id}} nicht gefunden.",
+      "password_too_short": "Das Passwort muss mindestens {{min}} Zeichen lang sein.",
+      "role_invalid": "Die Rolle muss einer dieser Werte sein: {{allowed}}."
+    }
   },
   "lookup": {
     "cancelModal": {

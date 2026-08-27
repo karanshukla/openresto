@@ -1,4 +1,5 @@
 import { get, post, patch, del, put, buildUrl } from "./client";
+import { apiErrorMessage } from "@/api/errors";
 
 export interface AdminOverviewDto {
   totalRestaurants: number;
@@ -192,7 +193,7 @@ export async function adminCreateBooking(
 
   if (res.status === 409) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? "This table is already booked on that date.");
+    throw new Error(apiErrorMessage(body, "This table is already booked on that date."));
   }
 
   if (!res.ok) throw new Error("Failed to create booking");
@@ -218,7 +219,7 @@ export async function adminDeleteBooking(id: number): Promise<true> {
     const res = await post(`/admin/bookings/${id}/cancel`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.message ?? "Failed to cancel the booking.");
+      throw new Error(apiErrorMessage(body, "Failed to cancel the booking."));
     }
     return true;
   } catch (err) {
@@ -256,7 +257,7 @@ export async function adminRestoreBooking(id: number): Promise<boolean> {
     const res = await post(`/admin/bookings/${id}/restore`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.message ?? "Failed to restore booking");
+      throw new Error(apiErrorMessage(body, "Failed to restore booking"));
     }
     return true;
   } catch (err) {
@@ -284,7 +285,7 @@ export async function adminUpdateBookingFull(
     const res = await put(`/admin/bookings/${id}`, req);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.message ?? "Failed to update booking");
+      throw new Error(apiErrorMessage(body, "Failed to update booking"));
     }
     return await res.json();
   } catch (err) {
@@ -554,7 +555,7 @@ export async function saveBrandSettings(
     const res = await patch("/brand", data);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { ok: false, message: err?.message ?? "Failed to save." };
+      return { ok: false, message: apiErrorMessage(err, "Failed to save.") };
     }
     return { ok: true, data: await res.json() };
   } catch {
@@ -642,7 +643,7 @@ export async function adminCreateHighlight(
     const res = await post("/highlights", req);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { ok: false, message: err?.message ?? "Failed to create highlight." };
+      return { ok: false, message: apiErrorMessage(err, "Failed to create highlight.") };
     }
     return { ok: true, data: await res.json() };
   } catch (err) {
@@ -659,7 +660,7 @@ export async function adminUpdateHighlight(
     const res = await put(`/highlights/${id}`, req);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { ok: false, message: err?.message ?? "Failed to update highlight." };
+      return { ok: false, message: apiErrorMessage(err, "Failed to update highlight.") };
     }
     return { ok: true, data: await res.json() };
   } catch (err) {
@@ -718,7 +719,7 @@ export async function adminCreateSocialLink(
     const res = await post("/social-links", req);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { ok: false, message: err?.message ?? "Failed to create social link." };
+      return { ok: false, message: apiErrorMessage(err, "Failed to create social link.") };
     }
     return { ok: true, data: await res.json() };
   } catch (err) {
@@ -735,7 +736,7 @@ export async function adminUpdateSocialLink(
     const res = await put(`/social-links/${id}`, req);
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      return { ok: false, message: err?.message ?? "Failed to update social link." };
+      return { ok: false, message: apiErrorMessage(err, "Failed to update social link.") };
     }
     return { ok: true, data: await res.json() };
   } catch (err) {

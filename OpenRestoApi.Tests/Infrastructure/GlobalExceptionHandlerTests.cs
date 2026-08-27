@@ -46,6 +46,48 @@ public class GlobalExceptionHandlerTests
     }
 
     [Fact]
+    public async Task Args_AreSerializedOntoTheResponse()
+    {
+        // A client renders its own copy per code, so it cannot recover "4" and "6" from the
+        // finished English sentence — the args are the only way its wording names the same two.
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx,
+            new ConflictException("This table only has 4 seats, but 6 guests were requested.")
+            {
+                Code = ErrorCodes.TableSeatsExceeded,
+                Args = new Dictionary<string, object> { ["seats"] = 4, ["requested"] = 6 }
+            },
+            default);
+
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.Equal(ErrorCodes.TableSeatsExceeded, doc.RootElement.GetProperty("code").GetString());
+        JsonElement args = doc.RootElement.GetProperty("args");
+        Assert.Equal(4, args.GetProperty("seats").GetInt32());
+        Assert.Equal(6, args.GetProperty("requested").GetInt32());
+    }
+
+    [Fact]
+    public async Task Args_AreOmittedWhenTheMessageIsAConstant()
+    {
+        // Additive: a response for a message with nothing to interpolate keeps its old shape.
+        GlobalExceptionHandler handler = CreateHandler();
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx,
+            new ConflictException("Cannot create a booking in the past.") { Code = ErrorCodes.BookingPastDate },
+            default);
+
+        ctx.Response.Body.Position = 0;
+        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Response.Body);
+        Assert.False(doc.RootElement.TryGetProperty("args", out _));
+    }
+
+    [Fact]
     public async Task NotFoundException_MapsTo_404()
     {
         GlobalExceptionHandler handler = CreateHandler();

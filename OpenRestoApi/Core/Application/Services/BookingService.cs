@@ -120,7 +120,8 @@ public class BookingService(
 
         if (restaurant.IsPausedFor(bookingDate))
         {
-            throw new ConflictException(PauseHelper.RejectionMessage(restaurant)) { Code = ErrorCodes.BookingPaused };
+            PauseHelper.Rejection pause = PauseHelper.RejectionFor(restaurant);
+            throw new ConflictException(pause.Message) { Code = pause.Code, Args = pause.Args };
         }
 
         if (restaurant.IsWalkInOnlyAt(bookingDate))
@@ -142,7 +143,7 @@ public class BookingService(
         {
             throw new ValidationException(
                 $"Party size must be between {BookingLimits.MinSeats} and {BookingLimits.MaxSeats}.")
-            { Code = ErrorCodes.BookingPartySizeOutOfRange };
+            { Code = ErrorCodes.BookingPartySizeOutOfRange, Args = new Dictionary<string, object> { ["min"] = BookingLimits.MinSeats, ["max"] = BookingLimits.MaxSeats } };
         }
     }
 
@@ -155,14 +156,14 @@ public class BookingService(
 
         if (seats > table.Seats)
         {
-            throw new ConflictException($"This table only has {table.Seats} seats, but {seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded };
+            throw new ConflictException($"This table only has {table.Seats} seats, but {seats} guests were requested.") { Code = ErrorCodes.TableSeatsExceeded, Args = new Dictionary<string, object> { ["seats"] = table.Seats, ["requested"] = seats } };
         }
 
         if (restaurant?.ExceedsOversizeCap(table.Seats, seats) == true)
         {
             throw new ConflictException(
                 $"This table has {table.Seats} seats, which is too large for a party of {seats}.")
-            { Code = ErrorCodes.TableOversizeCap };
+            { Code = ErrorCodes.TableOversizeCap, Args = new Dictionary<string, object> { ["seats"] = table.Seats, ["partySize"] = seats } };
         }
     }
 
@@ -346,14 +347,14 @@ public class BookingService(
         {
             throw new ConflictException(
                 $"This group only has {group.CombinedSeats} combined seats, but {seats} guests were requested.")
-            { Code = ErrorCodes.TableGroupSeatsExceeded };
+            { Code = ErrorCodes.TableGroupSeatsExceeded, Args = new Dictionary<string, object> { ["seats"] = group.CombinedSeats, ["requested"] = seats } };
         }
 
         if (restaurant.ExceedsOversizeCap(group.CombinedSeats, seats))
         {
             throw new ConflictException(
                 $"This group has {group.CombinedSeats} combined seats, which is too large for a party of {seats}.")
-            { Code = ErrorCodes.TableGroupOversizeCap };
+            { Code = ErrorCodes.TableGroupOversizeCap, Args = new Dictionary<string, object> { ["seats"] = group.CombinedSeats, ["partySize"] = seats } };
         }
     }
 

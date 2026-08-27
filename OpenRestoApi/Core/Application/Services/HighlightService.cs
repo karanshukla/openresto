@@ -118,13 +118,13 @@ public class HighlightService(IHighlightRepository highlightRepository, IAuditSc
         }
         if (title.Length > MaxTitleLength)
         {
-            throw new ValidationException($"Highlight title cannot exceed {MaxTitleLength} characters.") { Code = ErrorCodes.HighlightTitleTooLong };
+            throw new ValidationException($"Highlight title cannot exceed {MaxTitleLength} characters.") { Code = ErrorCodes.HighlightTitleTooLong, Args = new Dictionary<string, object> { ["max"] = MaxTitleLength } };
         }
 
         body = (rawBody ?? string.Empty).Trim();
         if (body.Length > MaxBodyLength)
         {
-            throw new ValidationException($"Highlight body cannot exceed {MaxBodyLength} characters.") { Code = ErrorCodes.HighlightBodyTooLong };
+            throw new ValidationException($"Highlight body cannot exceed {MaxBodyLength} characters.") { Code = ErrorCodes.HighlightBodyTooLong, Args = new Dictionary<string, object> { ["max"] = MaxBodyLength } };
         }
 
         iconKey = (rawIconKey ?? string.Empty).Trim();

@@ -18,6 +18,7 @@ public static class ErrorCodes
     // ── Bookings ─────────────────────────────────────────────────────────────
     public const string BookingPastDate = "booking.past_date";
     public const string BookingPaused = "booking.paused";
+    public const string BookingPausedIndefinitely = "booking.paused_indefinitely";
     public const string BookingWalkInOnly = "booking.walk_in_only";
     public const string BookingWalkInOnlyToday = "booking.walk_in_only_today";
     public const string BookingTableConflict = "booking.table_conflict";
@@ -84,7 +85,8 @@ public static class ErrorCodes
     public const string UserEmailAlreadyExists = "user.email_already_exists";
     public const string UserCannotChangeOwnRole = "user.cannot_change_own_role";
     public const string UserCannotDeactivateSelf = "user.cannot_deactivate_self";
-    public const string UserLastActiveOwner = "user.last_active_owner";
+    public const string UserLastActiveOwnerDemote = "user.last_active_owner_demote";
+    public const string UserLastActiveOwnerDeactivate = "user.last_active_owner_deactivate";
     public const string UserNotFound = "user.not_found";
     public const string UserEmailInvalid = "user.email_invalid";
     public const string UserEmailTooLong = "user.email_too_long";

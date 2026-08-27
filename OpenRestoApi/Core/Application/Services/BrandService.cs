@@ -144,7 +144,10 @@ public class BrandService(
         {
             throw new ValidationException(
                 $"HeaderImageFit must be one of: {string.Join(", ", AllowedHeaderImageFits.Order())}.")
-            { Code = ErrorCodes.BrandHeaderImageFitInvalid };
+            {
+                Code = ErrorCodes.BrandHeaderImageFitInvalid,
+                Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", AllowedHeaderImageFits.Order()) }
+            };
         }
 
         BrandSettings? brand = await _brandRepository.GetAsync();

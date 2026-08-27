@@ -73,7 +73,12 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
         }
         catch (Exception ex)
         {
-            return BadRequest(new MessageResponse { Message = $"Connection failed: {ex.Message}", Code = ErrorCodes.EmailConnectionFailed });
+            return BadRequest(new MessageResponse
+            {
+                Message = $"Connection failed: {ex.Message}",
+                Code = ErrorCodes.EmailConnectionFailed,
+                Args = new Dictionary<string, object> { ["detail"] = ex.Message }
+            });
         }
     }
 }

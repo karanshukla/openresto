@@ -74,7 +74,7 @@ public class UserService(
                 throw new BusinessRuleException("You cannot change your own role.") { Code = ErrorCodes.UserCannotChangeOwnRole };
             }
 
-            await EnsureAnotherActiveOwnerRemainsAsync(user, "demote");
+            await EnsureAnotherActiveOwnerRemainsAsync(user, "demote", ErrorCodes.UserLastActiveOwnerDemote);
             string previousRole = user.Role;
             user.Role = role;
             await _credentialRepository.SaveChangesAsync();
@@ -100,7 +100,7 @@ public class UserService(
                     throw new BusinessRuleException("You cannot deactivate your own account.") { Code = ErrorCodes.UserCannotDeactivateSelf };
                 }
 
-                await EnsureAnotherActiveOwnerRemainsAsync(user, "deactivate");
+                await EnsureAnotherActiveOwnerRemainsAsync(user, "deactivate", ErrorCodes.UserLastActiveOwnerDeactivate);
             }
 
             user.IsActive = req.IsActive;
@@ -149,7 +149,7 @@ public class UserService(
 
     private async Task<AdminCredential> RequireUserAsync(int id)
         => await _credentialRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"User {id} not found.") { Code = ErrorCodes.UserNotFound };
+            ?? throw new NotFoundException($"User {id} not found.") { Code = ErrorCodes.UserNotFound, Args = new Dictionary<string, object> { ["id"] = id } };
 
     private bool IsSelf(AdminCredential user)
         => _currentUser.UserId == user.Id
@@ -158,7 +158,10 @@ public class UserService(
     // Losing the last active Owner would leave the instance with nobody able to manage users —
     // unrecoverable through the UI. Only an active Owner counts, so deactivating one and then
     // demoting it isn't a way around the rule either.
-    private async Task EnsureAnotherActiveOwnerRemainsAsync(AdminCredential user, string action)
+    // The action is part of the rule rather than a value inside it: a client renders its own
+    // wording per code, and both the verb and the role name are words it would have to translate
+    // out of an English sentence it cannot parse.
+    private async Task EnsureAnotherActiveOwnerRemainsAsync(AdminCredential user, string action, string code)
     {
         if (user.Role != UserRoles.Owner || !user.IsActive)
         {
@@ -170,7 +173,7 @@ public class UserService(
         {
             throw new BusinessRuleException(
                 $"Cannot {action} the last active {UserRoles.Owner}. Promote another user first.")
-            { Code = ErrorCodes.UserLastActiveOwner };
+            { Code = code };
         }
     }
 }

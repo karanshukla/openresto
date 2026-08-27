@@ -105,7 +105,7 @@ public class SocialLinkService(ISocialLinkRepository socialLinkRepository, IAudi
         }
         if (label.Length > MaxLabelLength)
         {
-            throw new ValidationException($"Social link label cannot exceed {MaxLabelLength} characters.") { Code = ErrorCodes.SocialLinkLabelTooLong };
+            throw new ValidationException($"Social link label cannot exceed {MaxLabelLength} characters.") { Code = ErrorCodes.SocialLinkLabelTooLong, Args = new Dictionary<string, object> { ["max"] = MaxLabelLength } };
         }
 
         url = (rawUrl ?? string.Empty).Trim();

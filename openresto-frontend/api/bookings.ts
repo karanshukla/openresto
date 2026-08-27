@@ -1,4 +1,5 @@
 import { get, post, del } from "./client";
+import { apiErrorMessage } from "@/api/errors";
 
 export interface BookingDto {
   id: number;
@@ -72,7 +73,7 @@ export async function createBooking(booking: BookingCreationDto): Promise<Bookin
 
   if (res.status === 409) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? "This table is no longer available.");
+    throw new Error(apiErrorMessage(body, "This table is no longer available."));
   }
 
   if (!res.ok) throw new Error("Failed to create booking");
@@ -135,7 +136,7 @@ export async function cancelBookingByRef(bookingRef: string, email: string): Pro
     const res = await post(`/bookings/ref/${bookingRef}/cancel`, { email });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.message ?? "Failed to cancel booking.");
+      throw new Error(apiErrorMessage(body, "Failed to cancel booking."));
     }
     return true;
   } catch (err) {

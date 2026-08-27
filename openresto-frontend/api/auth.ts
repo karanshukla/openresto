@@ -1,4 +1,5 @@
 import { get, post } from "./client";
+import { apiErrorMessage } from "@/api/errors";
 
 export async function login(email: string, password: string): Promise<{ message: string } | null> {
   try {
@@ -48,7 +49,10 @@ export async function changePassword(
   try {
     const res = await post("/admin/auth/change-password", { currentPassword, newPassword });
     const body = await res.json().catch(() => ({}));
-    return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Request failed.") };
+    return {
+      ok: res.ok,
+      message: res.ok ? (body.message ?? "Done.") : apiErrorMessage(body, "Request failed."),
+    };
   } catch {
     return { ok: false, message: "Network error." };
   }
@@ -63,7 +67,7 @@ export async function changeEmail(
     const body = await res.json().catch(() => ({}));
     return {
       ok: res.ok,
-      message: body.message ?? (res.ok ? "Done." : "Request failed."),
+      message: res.ok ? (body.message ?? "Done.") : apiErrorMessage(body, "Request failed."),
       email: body.email,
     };
   } catch {
@@ -107,7 +111,10 @@ export async function setupPvq(
   try {
     const res = await post("/admin/auth/pvq/setup", { question, answer });
     const body = await res.json().catch(() => ({}));
-    return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Failed.") };
+    return {
+      ok: res.ok,
+      message: res.ok ? (body.message ?? "Done.") : apiErrorMessage(body, "Failed."),
+    };
   } catch {
     return { ok: false, message: "Network error." };
   }
@@ -135,7 +142,10 @@ export async function resetPassword(
   try {
     const res = await post("/admin/auth/reset-password", { resetToken, newPassword });
     const body = await res.json().catch(() => ({}));
-    return { ok: res.ok, message: body.message ?? (res.ok ? "Done." : "Failed.") };
+    return {
+      ok: res.ok,
+      message: res.ok ? (body.message ?? "Done.") : apiErrorMessage(body, "Failed."),
+    };
   } catch {
     return { ok: false, message: "Network error." };
   }

@@ -12,14 +12,39 @@ namespace OpenRestoApi.Core.Application.Services;
 /// </summary>
 public static class PauseHelper
 {
-    public static string RejectionMessage(Restaurant restaurant)
+    /// <summary>
+    /// How a paused restaurant turns a booking or hold away: the English wording, the code a
+    /// client renders its own wording from, and the values that wording interpolates. A pause
+    /// with an end and one without are different sentences, so they carry different codes —
+    /// a client cannot branch on the presence of an argument.
+    /// </summary>
+    public readonly record struct Rejection(
+        string Message,
+        string Code,
+        IReadOnlyDictionary<string, object>? Args);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso>PauseHelperTests.Rejection_WithEndTime_NamesTheTimeAndCarriesItAsAnArg</seealso>
+    /// <seealso>PauseHelperTests.Rejection_WithoutEndTime_UsesTheIndefiniteCode</seealso>
+    public static Rejection RejectionFor(Restaurant restaurant)
     {
         if (!restaurant.BookingsPausedUntil.HasValue)
         {
-            return "Bookings for this restaurant are currently paused. Please try again later.";
+            return new Rejection(
+                "Bookings for this restaurant are currently paused. Please try again later.",
+                ErrorCodes.BookingPausedIndefinitely,
+                null);
         }
 
         DateTime localEnd = TimeZoneHelper.ConvertUtcToLocal(restaurant.BookingsPausedUntil.Value, restaurant.Timezone);
-        return $"Bookings are paused until {localEnd.ToString("HH:mm", CultureInfo.InvariantCulture)}. Please choose a later time.";
+        string until = localEnd.ToString("HH:mm", CultureInfo.InvariantCulture);
+        return new Rejection(
+            $"Bookings are paused until {until}. Please choose a later time.",
+            ErrorCodes.BookingPaused,
+            new Dictionary<string, object> { ["until"] = until });
     }
+
+    public static string RejectionMessage(Restaurant restaurant) => RejectionFor(restaurant).Message;
 }

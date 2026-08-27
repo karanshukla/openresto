@@ -211,6 +211,14 @@ public class MessageResponse
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Code { get; set; }
+
+    /// <summary>
+    /// Values <see cref="Message"/> interpolated, keyed by placeholder name, so a client
+    /// rendering its own copy for <see cref="Code"/> can rebuild the same sentence in its own
+    /// language. Additive and omitted when null, like <see cref="Code"/>.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyDictionary<string, object>? Args { get; set; }
 }
 
 public class PvqStatusDto
