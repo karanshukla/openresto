@@ -21,6 +21,7 @@ import Button from "@/components/common/Button";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { styles } from "./AdminSidebar.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { BrandGlyph } from "@/components/common/BrandGlyph";
 
 interface NavItem {
   id: string;
@@ -200,7 +201,7 @@ export default function AdminSidebar() {
     >
       <View style={styles.brand}>
         <View style={[styles.brandIcon, { backgroundColor: PRIMARY }]}>
-          <Icon name="restaurant-outline" size="md" color={theme.colors.white} />
+          <BrandGlyph iconId={brand.faviconIcon} size="md" color={theme.colors.white} />
         </View>
         <View style={styles.brandTextGroup}>
           <ThemedText style={styles.brandName} numberOfLines={1}>

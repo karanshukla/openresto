@@ -33,6 +33,27 @@ export const styles = StyleSheet.create({
   },
   chipText: { ...theme.typography.label },
   chipTextActive: { color: "#fff", fontWeight: "600", fontSize: 13 },
+  /**
+   * The screen's filter chrome, stacked rather than one wrapping row. A single row put the
+   * location chips, a flexible spacer and the toggles together, so where the toggles landed
+   * depended on how many chips fit beside them — and on which mode was showing, since the status
+   * tabs only exist in list view. Giving each its own row fixes the toggles in place.
+   */
+  filterBar: { gap: theme.spacing.sm },
+  locationChips: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
+  },
+  /** Sits above the list it filters, so it does not stretch to the screen's width. */
+  statusTabs: { alignSelf: "flex-start" },
+  viewControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.spacing.sm,
+  },
   modeToggle: {
     flexDirection: "row",
     borderWidth: 1,

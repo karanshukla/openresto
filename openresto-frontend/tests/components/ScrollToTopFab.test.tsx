@@ -28,9 +28,18 @@ describe("ScrollToTopFab", () => {
     expect(screen.getByRole("button")).toBeTruthy();
   });
 
-  it("does not render when not visible", () => {
+  // The lane stays mounted while hidden so it keeps its measured width; unmounting it dropped
+  // that to zero and the FAB reappeared against the fallback gutter for a frame before layout put
+  // it back beside the content column — a sideways jump every time it came back.
+  it("keeps its place in the layout while hidden, so it does not jump back in", () => {
     renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
+    expect(screen.getByTestId("scroll-to-top-lane")).toBeTruthy();
+    // Present in the layout, but gone from the a11y tree and from the press target.
     expect(screen.queryByRole("button")).toBeNull();
+    expect(
+      screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }).props
+        .accessibilityElementsHidden
+    ).toBe(true);
   });
 
   // The FAB used to be gated to portrait phones under 700px wide, which hid it
@@ -94,19 +103,27 @@ describe("ScrollToTopFab", () => {
     expect(StyleSheet.flatten(lane.props.style).paddingRight).toBe(FAB_MIN_GUTTER);
   });
 
-  // The lift is what keeps the FAB off the footer's own links at the end of a scroll; see
-  // useScrollToTopFab for where the number comes from.
-  it("rises off the bottom by the lift it is given", () => {
+  // The FAB used to climb over the footer, recomputing an offset on every scroll event and
+  // sliding an element that reads as pinned up the page (#399). It holds one place now.
+  it("rests on the same gutter whether it is showing or not", () => {
     const { unmount } = renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
-    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
-      FAB_MIN_GUTTER
-    );
+    const shown = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
     unmount();
 
-    renderWithProviders(<ScrollToTopFab visible lift={88} onPress={jest.fn()} />);
-    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
-      88 + FAB_MIN_GUTTER
-    );
+    renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
+    const hidden = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+
+    expect(hidden.bottom).toBe(shown.bottom);
+    expect(hidden.transform).toBeUndefined();
+  });
+
+  it("takes no presses once it has faded out", () => {
+    const onPress = jest.fn();
+    renderWithProviders(<ScrollToTopFab visible={false} onPress={onPress} />);
+
+    fireEvent.press(screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }));
+
+    expect(onPress).not.toHaveBeenCalled();
   });
 
   it("calls onPress when pressed", () => {

@@ -172,7 +172,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={fab.trackScroll}
-        scrollEventThrottle={100}
+        scrollEventThrottle={16}
         {...(HOME_SCROLL_TIMELINE as object)}
       >
         <View style={{ flex: 1 }}>
@@ -372,10 +372,10 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Footer onLayout={fab.measureFooter} />
+        <Footer />
       </ScrollView>
 
-      <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
     </ThemedView>
   );
 }

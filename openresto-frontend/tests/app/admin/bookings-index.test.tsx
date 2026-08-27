@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { Platform } from "react-native";
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react-native";
+import { render, screen, waitFor, fireEvent, act, within } from "@testing-library/react-native";
 import AdminBookingsScreen from "@/app/admin/bookings/index";
 import {
   getAdminBookings,
@@ -910,5 +910,64 @@ describe("AdminBookingsScreen filter persistence", () => {
     await waitFor(() => {
       expect(JSON.parse(localStorage.getItem("bookings:restaurantId") as string)).toBe(2);
     });
+  });
+});
+
+describe("AdminBookingsScreen toolbar", () => {
+  const originalPlatform = Platform.OS;
+
+  beforeEach(() => {
+    localStorage.clear();
+    jest.clearAllMocks();
+    (getAdminBookings as jest.Mock).mockResolvedValue([]);
+    (adminGetTables as jest.Mock).mockResolvedValue([]);
+    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
+    Object.keys(mockSearchParams).forEach((k) => delete mockSearchParams[k]);
+    // The persisted view mode only reaches the screen on web, and these are all about what the
+    // toolbar holds in a given mode.
+    Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(Platform, "OS", { value: originalPlatform, configurable: true });
+  });
+
+  // The toolbar used to carry the status tabs, which only apply to the list, so switching view
+  // rearranged it. It now holds the same controls in every mode.
+  it("keeps the status tabs out of the toolbar", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("list"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("status-tab-active")).toBeTruthy());
+    const toolbar = screen.getByTestId("bookings-toolbar");
+
+    expect(within(toolbar).queryByTestId("status-tab-active")).toBeNull();
+    expect(within(toolbar).getByTestId("view-toggle-list")).toBeTruthy();
+  });
+
+  it("offers the same view toggle in every mode", async () => {
+    for (const mode of ["timetable", "service", "list"]) {
+      localStorage.setItem("bookings:viewMode", JSON.stringify(mode));
+      const view = render(<AdminBookingsScreen />);
+
+      await waitFor(() => expect(screen.getByTestId("bookings-toolbar")).toBeTruthy());
+      const toolbar = screen.getByTestId("bookings-toolbar");
+      for (const key of ["timetable", "service", "list"]) {
+        expect(within(toolbar).getByTestId(`view-toggle-${key}`)).toBeTruthy();
+      }
+      view.unmount();
+    }
+  });
+
+  it("filters the list by status from below the toolbar", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("list"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("status-tab-cancelled")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("status-tab-cancelled"));
+
+    await waitFor(() =>
+      expect(getAdminBookings).toHaveBeenCalledWith(expect.anything(), undefined, "cancelled")
+    );
   });
 });

@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Pressable,
-  Linking,
-  useWindowDimensions,
-  type LayoutChangeEvent,
-} from "react-native";
+import { View, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -16,8 +10,7 @@ import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
-/** `onLayout` reports the band's height to a screen whose scroll-to-top FAB has to clear it. */
-export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
+export default function Footer() {
   const { brand, colors } = useAppTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
@@ -37,7 +30,6 @@ export default function Footer({ onLayout }: { onLayout?: (e: LayoutChangeEvent)
 
   return (
     <ThemedView
-      onLayout={onLayout}
       style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
     >
       <View style={[styles.inner, isMobile && styles.innerMobile]}>
