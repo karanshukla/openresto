@@ -36,9 +36,10 @@ describe("ScrollToTopFab", () => {
     expect(screen.getByTestId("scroll-to-top-lane")).toBeTruthy();
     // Present in the layout, but gone from the a11y tree and from the press target.
     expect(screen.queryByRole("button")).toBeNull();
+    // `aria-hidden` rather than the native-only accessibilityElementsHidden pair, because
+    // react-native-web forwards this one and drops those — see ScrollToTopFab.tsx.
     expect(
-      screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }).props
-        .accessibilityElementsHidden
+      screen.getByTestId("scroll-to-top-fab", { includeHiddenElements: true }).props["aria-hidden"]
     ).toBe(true);
   });
 

@@ -107,8 +107,12 @@ test.describe("Customer navigation", () => {
         timeout: 15_000,
       });
 
-      // FAB is hidden at the top.
-      const fab = page.getByLabel("Scroll to top");
+      // FAB is hidden at the top. The lane it sits in stays mounted the whole time so it
+      // keeps its measured width (ScrollToTopFab.tsx), so "hidden" is a fade to nothing plus
+      // `aria-hidden` — not an unmount. A role locator is what reads that: it skips an
+      // aria-hidden subtree, where getByLabel matches the attribute on a faded-out element
+      // and toBeVisible counts opacity 0 as visible.
+      const fab = page.getByRole("button", { name: "Scroll to top" });
       await expect(fab).toHaveCount(0);
 
       // The home screen uses a react-native-web ScrollView, not window scroll —
@@ -118,8 +122,8 @@ test.describe("Customer navigation", () => {
       await page.mouse.wheel(0, 800);
       await expect(fab).toBeVisible({ timeout: 5_000 });
 
-      // Tap FAB → the RN ScrollView scrolls back up → scrollY drops ≤ 300 → FAB
-      // unmounts. The FAB disappearing IS the proof the press fired the scroll
+      // Tap FAB → the RN ScrollView scrolls back up → scrollY drops ≤ 300 → FAB leaves the
+      // a11y tree again. The FAB disappearing IS the proof the press fired the scroll
       // callback; we can't easily read RN's internal scroll offset from DOM.
       await fab.click();
       await expect(fab).toHaveCount(0);

@@ -87,8 +87,11 @@ export default function ScrollToTopFab({ visible, onPress }: Props) {
           style={[styles.fab, { backgroundColor: primaryColor }]}
           onPress={onPress}
           disabled={!visible}
-          accessibilityElementsHidden={!visible}
-          importantForAccessibility={visible ? "auto" : "no-hide-descendants"}
+          // `aria-hidden`, not accessibilityElementsHidden/importantForAccessibility: React
+          // Native maps this one onto both of those, and react-native-web forwards it to the DOM
+          // — the native-only pair is dropped there, leaving a labelled button in the web a11y
+          // tree for the whole scroll.
+          aria-hidden={!visible}
           accessibilityLabel={t("common.actions.scrollToTop")}
           accessibilityRole="button"
         >
