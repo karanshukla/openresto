@@ -2,10 +2,11 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { screen, fireEvent, act } from "@testing-library/react-native";
+import { Animated, StyleSheet } from "react-native";
 import ScrollToTopFab, {
   fabGutter,
+  fabTravel,
   FAB_MIN_GUTTER,
   SHOW_AFTER_SCROLL_Y,
 } from "@/components/common/ScrollToTopFab";
@@ -96,16 +97,33 @@ describe("ScrollToTopFab", () => {
 
   // The lift is what keeps the FAB off the footer's own links at the end of a scroll; see
   // useScrollToTopFab for where the number comes from.
-  it("rises off the bottom by the lift it is given", () => {
-    const { unmount } = renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
+  describe("fabTravel", () => {
+    it("stays put while the lift is inside ground the FAB already covers", () => {
+      expect(fabTravel(0, 34)).toBe(0);
+      expect(fabTravel(34, 34)).toBe(0);
+    });
+
+    it("rises by whatever the lift exceeds that by, so the two never stack", () => {
+      expect(fabTravel(35, 34)).toBe(1);
+      expect(fabTravel(88, 34)).toBe(88 - 34);
+      expect(fabTravel(88, 0)).toBe(88);
+    });
+  });
+
+  // The rise is a transform, not a change of `bottom`: it moves on every scroll event, and
+  // putting the browser through layout for each of those is what made it judder.
+  it("rests on the gutter and rises by a transform rather than by moving its bottom", () => {
+    const travel = new Animated.Value(0);
+    renderWithProviders(<ScrollToTopFab visible travel={travel} onPress={jest.fn()} />);
+
+    const style = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+    expect(style.bottom).toBe(FAB_MIN_GUTTER);
+    expect(style.transform).toBeDefined();
+
+    act(() => travel.setValue(88));
+    // The bottom is fixed; the movement is the transform's, so `bottom` must not have followed.
     expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
       FAB_MIN_GUTTER
-    );
-    unmount();
-
-    renderWithProviders(<ScrollToTopFab visible lift={88} onPress={jest.fn()} />);
-    expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom).toBe(
-      88 + FAB_MIN_GUTTER
     );
   });
 

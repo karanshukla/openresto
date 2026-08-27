@@ -452,6 +452,17 @@ describe("LocationsScreen", () => {
 
     // The FAB used to rest in the column's own bottom corner whatever was under it, so at
     // the end of the list it landed on the footer's links.
+    /**
+     * The FAB's rise, read off the transform driving it. It moves by transform rather than by its
+     * `bottom` because it changes on every scroll event; see ScrollToTopFab.
+     */
+    const fabRise = (): number => {
+      const style = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+      const translate = (style.transform as { translateY: unknown }[])[0];
+      const value = translate.translateY as number | { __getValue(): number };
+      return -(typeof value === "number" ? value : value.__getValue());
+    };
+
     it("lifts the FAB over the footer it measured once the list reaches the end", async () => {
       (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
       renderWithProviders(<LocationsScreen />);
@@ -463,8 +474,7 @@ describe("LocationsScreen", () => {
       const scrollView = screen.UNSAFE_getByType(ScrollView);
 
       fireEvent.scroll(scrollView, scrollEvent(400));
-      const lane = () => StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
-      const resting = lane().bottom;
+      expect(fabRise()).toBe(0);
 
       fireEvent.scroll(scrollView, {
         nativeEvent: {
@@ -473,7 +483,7 @@ describe("LocationsScreen", () => {
           layoutMeasurement: { height: 900 },
         },
       });
-      expect(lane().bottom).toBe(resting + 88);
+      expect(fabRise()).toBe(88);
     });
 
     it("drops the lift again when the drawer takes the footer out of the column", async () => {
@@ -493,17 +503,13 @@ describe("LocationsScreen", () => {
         },
       };
       fireEvent.scroll(scrollView, atEnd);
-      const lifted = StyleSheet.flatten(
-        screen.getByTestId("scroll-to-top-lane").props.style
-      ).bottom;
+      const lifted = fabRise();
 
       fireEvent.press(screen.getByTestId("book-1"));
       await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
       fireEvent.scroll(scrollView, atEnd);
 
-      expect(
-        StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style).bottom
-      ).toBeLessThan(lifted);
+      expect(fabRise()).toBeLessThan(lifted);
     });
 
     it("leaves the footer in the column for the phone sheet, which takes no width off it", async () => {

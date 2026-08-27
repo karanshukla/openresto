@@ -234,7 +234,7 @@ export default function LocationsScreen({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
-            scrollEventThrottle={100}
+            scrollEventThrottle={16}
           >
             <PageContainer style={styles.page}>
               <View style={styles.header}>
@@ -300,7 +300,7 @@ export default function LocationsScreen({
             {!sideDrawer && <Footer onLayout={fab.measureFooter} />}
           </ScrollView>
 
-          <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
+          <ScrollToTopFab visible={fab.visible} travel={fab.travel} onPress={scrollToTop} />
         </View>
 
         {drawer && (

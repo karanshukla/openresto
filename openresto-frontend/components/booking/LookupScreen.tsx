@@ -210,7 +210,7 @@ export default function LookupScreen({
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         onScroll={fab.trackScroll}
-        scrollEventThrottle={100}
+        scrollEventThrottle={16}
       >
         <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
           <View style={styles.header}>
@@ -337,7 +337,7 @@ export default function LookupScreen({
         </SlidePanel>
       )}
 
-      <ScrollToTopFab visible={fab.visible} lift={fab.lift} onPress={scrollToTop} />
+      <ScrollToTopFab visible={fab.visible} travel={fab.travel} onPress={scrollToTop} />
 
       {showCancelConfirm && (
         <ConfirmModal
