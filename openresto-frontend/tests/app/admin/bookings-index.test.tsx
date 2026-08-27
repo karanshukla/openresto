@@ -56,6 +56,17 @@ jest.mock("@/components/admin/bookings/AvailabilityGrid", () => ({
   },
 }));
 
+jest.mock("@/components/admin/bookings/ServiceView", () => ({
+  ServiceView: ({ onBookingPress }: any) => {
+    const { Pressable, Text } = require("react-native");
+    return (
+      <Pressable testID="service-press-booking" onPress={() => onBookingPress({ id: 43 })}>
+        <Text>ServiceFloor</Text>
+      </Pressable>
+    );
+  },
+}));
+
 jest.mock("@/components/admin/bookings/BookingDetailPopup", () => ({
   BookingDetailPopup: ({ onClose, onMutated }: any) => {
     const { Pressable, Text } = require("react-native");
@@ -286,6 +297,50 @@ describe("AdminBookingsScreen", () => {
     expect(screen.queryByTestId("view-toggle-timetable")).toBeNull();
     expect(screen.queryByTestId("view-toggle-list")).toBeNull();
     expect(screen.queryByText("Past")).toBeNull();
+  });
+
+  it("draws the service floor when the service view is chosen", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("timetable"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("view-toggle-service")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("view-toggle-service"));
+
+    await waitFor(() => expect(screen.getByText("ServiceFloor")).toBeTruthy());
+    expect(screen.queryByText("GridBooking")).toBeNull();
+  });
+
+  // The service view reads the same grid fetch as the timetable, so entering it has to load one.
+  it("loads the day's grid when switching into the service view", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("list"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("view-toggle-service")).toBeTruthy());
+    (adminGetTables as jest.Mock).mockClear();
+    fireEvent.press(screen.getByTestId("view-toggle-service"));
+
+    await waitFor(() => expect(adminGetTables).toHaveBeenCalledWith(1));
+  });
+
+  it("opens a booking pressed on the service floor", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("service"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("view-toggle-service")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("view-toggle-service"));
+
+    await waitFor(() => expect(screen.getByTestId("service-press-booking")).toBeTruthy());
+    fireEvent.press(screen.getByTestId("service-press-booking"));
+
+    expect(screen.getByTestId("popup-close")).toBeTruthy();
+  });
+
+  it("keeps the day navigation on both grid-backed views", async () => {
+    localStorage.setItem("bookings:viewMode", JSON.stringify("service"));
+    render(<AdminBookingsScreen />);
+
+    await waitFor(() => expect(screen.getByTestId("grid-nav-next")).toBeTruthy());
+    expect(screen.getByTestId("grid-nav-prev")).toBeTruthy();
   });
 
   it("shows clear button when searchQuery is present", async () => {

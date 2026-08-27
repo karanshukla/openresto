@@ -651,7 +651,9 @@
         "timetable": "Zeitplan",
         "list": "Liste",
         "timetableLabel": "Zeitplanansicht",
-        "listLabel": "Listenansicht"
+        "listLabel": "Listenansicht",
+        "service": "Service",
+        "serviceLabel": "Serviceansicht"
       },
       "timetable": {
         "previousDay": "Vorheriger Tag",
@@ -671,6 +673,40 @@
         "peopleAbbrev": "{{count}}P",
         "sittingLabel": "{{guest}}, {{seats}} Gedecke an {{unit}}, {{start}} bis {{end}}",
         "sittingLabelWithRemaining": "{{guest}}, {{seats}} Gedecke an {{unit}}, {{start}} bis {{end}}, {{remaining}}"
+      },
+      "service": {
+        "now": "Jetzt",
+        "backToNowLabel": "Der aktuellen Uhrzeit folgen",
+        "earlier": "{{minutes}} Minuten früher",
+        "later": "{{minutes}} Minuten später",
+        "scrubLabel": "Im Raum angezeigte Uhrzeit",
+        "expandLabel": "Raumplan im Vollbild anzeigen",
+        "collapseLabel": "Raumplan wieder einbetten",
+        "expandedLabel": "Raumplan, Vollbild",
+        "status": {
+          "seated": "Belegt",
+          "turning": "Wechsel",
+          "free": "Frei"
+        },
+        "summary": {
+          "seated_one": "{{count}} belegt",
+          "seated_other": "{{count}} belegt",
+          "turning_one": "{{count}} im Wechsel",
+          "turning_other": "{{count}} im Wechsel",
+          "free_one": "{{count}} frei",
+          "free_other": "{{count}} frei",
+          "covers_one": "{{count}} Gedeck",
+          "covers_other": "{{count}} Gedecke"
+        },
+        "sittingRange": "{{start}} – {{end}}",
+        "remaining": "noch {{duration}}",
+        "nextUp": "Nächste {{time}} · in {{duration}}",
+        "nothingElse": "Heute nichts weiter",
+        "durationHm": "{{hours}} Std. {{minutes}} Min.",
+        "durationH": "{{hours}} Std.",
+        "durationM": "{{minutes}} Min.",
+        "seatedUnitLabel": "{{unit}}, {{guest}}, {{seats}} Gedecke, noch {{remaining}}",
+        "freeUnitLabel": "{{unit}}, frei"
       },
       "sort": {
         "time": "Uhrzeit",

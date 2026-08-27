@@ -651,7 +651,9 @@
         "timetable": "Timetable",
         "list": "List",
         "timetableLabel": "Timetable view",
-        "listLabel": "List view"
+        "listLabel": "List view",
+        "service": "Service",
+        "serviceLabel": "Service view"
       },
       "timetable": {
         "previousDay": "Previous day",
@@ -671,6 +673,40 @@
         "peopleAbbrev": "{{count}}p",
         "sittingLabel": "{{guest}}, {{seats}} covers on {{unit}}, {{start}} to {{end}}",
         "sittingLabelWithRemaining": "{{guest}}, {{seats}} covers on {{unit}}, {{start}} to {{end}}, {{remaining}}"
+      },
+      "service": {
+        "now": "Now",
+        "backToNowLabel": "Follow the current time",
+        "earlier": "{{minutes}} minutes earlier",
+        "later": "{{minutes}} minutes later",
+        "scrubLabel": "Time shown on the floor",
+        "expandLabel": "Fill the screen with the floor",
+        "collapseLabel": "Return the floor to the page",
+        "expandedLabel": "Service floor, full screen",
+        "status": {
+          "seated": "Seated",
+          "turning": "Turning",
+          "free": "Free"
+        },
+        "summary": {
+          "seated_one": "{{count}} seated",
+          "seated_other": "{{count}} seated",
+          "turning_one": "{{count}} turning",
+          "turning_other": "{{count}} turning",
+          "free_one": "{{count}} free",
+          "free_other": "{{count}} free",
+          "covers_one": "{{count}} cover",
+          "covers_other": "{{count}} covers"
+        },
+        "sittingRange": "{{start}} – {{end}}",
+        "remaining": "{{duration}} left",
+        "nextUp": "Next {{time}} · in {{duration}}",
+        "nothingElse": "Nothing else today",
+        "durationHm": "{{hours}}h {{minutes}}m",
+        "durationH": "{{hours}}h",
+        "durationM": "{{minutes}}m",
+        "seatedUnitLabel": "{{unit}}, {{guest}}, {{seats}} covers, {{remaining}} left",
+        "freeUnitLabel": "{{unit}}, free"
       },
       "sort": {
         "time": "Time",

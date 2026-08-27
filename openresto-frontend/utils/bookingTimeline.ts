@@ -270,6 +270,15 @@ export function nowOffset(
   return offset >= timeline.startOffset && offset <= timeline.endOffset ? offset : null;
 }
 
+/**
+ * The restaurant-local clock time a timeline offset falls on. Offsets are measured from the day's
+ * open time, so a view that draws its own labels needs this rather than re-deriving the open
+ * minute — and it stays right on a day with no bookings to read one off.
+ */
+export function clockMinutesAt(openTime: string, offset: number): number {
+  return parseClockMinutes(openTime) + offset;
+}
+
 /** Compact "1h 30m left" / "45m left" for what is left of a sitting. */
 export function formatRemaining(minutes: number): string {
   if (minutes <= 0) return "ending";

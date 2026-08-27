@@ -29,6 +29,8 @@ import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 import { AvailabilityGrid } from "@/components/admin/bookings/AvailabilityGrid";
+import { ServiceView } from "@/components/admin/bookings/ServiceView";
+import { GridDateBar } from "@/components/admin/bookings/GridDateBar";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import { BookingsWideTable } from "@/components/admin/bookings/BookingsWideTable";
 import { BookingsCardList } from "@/components/admin/bookings/BookingsCardList";
@@ -46,7 +48,17 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { fmtDate, isoDate } from "@/utils/formatters";
 import { Icon } from "@/components/common/Icon";
 
-type ViewMode = "timetable" | "list";
+type ViewMode = "timetable" | "service" | "list";
+
+/**
+ * Modes drawn from the grid fetch (sections + that day's bookings) rather than the list fetch, so
+ * both have to load the grid on entry, on a location switch and after a mutation.
+ */
+const GRID_MODES: readonly ViewMode[] = ["timetable", "service"];
+
+function usesGrid(mode: ViewMode): boolean {
+  return GRID_MODES.includes(mode);
+}
 
 export default function AdminBookingsScreen() {
   const { t } = useTranslation();
@@ -191,7 +203,7 @@ export default function AdminBookingsScreen() {
     if (id === selectedRestaurantId) return;
     setSelectedRestaurantId(id);
     setPersistedRestaurantId(id);
-    if (viewMode === "timetable") loadGrid(id, gridDate);
+    if (usesGrid(viewMode)) loadGrid(id, gridDate);
   };
 
   // When the user switches status filter, reset the sort to that tab's
@@ -208,14 +220,14 @@ export default function AdminBookingsScreen() {
     setSort(defaultSortFor(statusFilter));
   }, [statusFilter, setSort]);
 
-  const switchToTimetable = () => {
-    setViewMode("timetable");
+  const switchToGridMode = (mode: ViewMode) => {
+    setViewMode(mode);
     if (selectedRestaurantId) loadGrid(selectedRestaurantId, gridDate);
   };
 
   const reconcileAfterBookingMutation = () => {
     setRefreshKey((key) => key + 1);
-    if (selectedRestaurantId && effectiveViewMode === "timetable") {
+    if (selectedRestaurantId && usesGrid(effectiveViewMode)) {
       loadGrid(selectedRestaurantId, gridDate);
     }
   };
@@ -299,14 +311,13 @@ export default function AdminBookingsScreen() {
       {Platform.OS !== "web" && (
         <Stack.Screen
           options={{
-            title:
-              effectiveViewMode === "timetable"
-                ? fmtDate(gridDate)
-                : statusFilter === "past"
-                  ? t("admin.bookings.screenTitle.past")
-                  : statusFilter === "cancelled"
-                    ? t("admin.bookings.screenTitle.cancelled")
-                    : t("admin.bookings.screenTitle.live"),
+            title: usesGrid(effectiveViewMode)
+              ? fmtDate(gridDate)
+              : statusFilter === "past"
+                ? t("admin.bookings.screenTitle.past")
+                : statusFilter === "cancelled"
+                  ? t("admin.bookings.screenTitle.cancelled")
+                  : t("admin.bookings.screenTitle.live"),
           }}
         />
       )}
@@ -446,148 +457,52 @@ export default function AdminBookingsScreen() {
           )}
 
           <View style={[styles.modeToggle, { borderColor, backgroundColor: cardBg }]}>
-            <Pressable
-              testID="view-toggle-timetable"
-              style={[styles.modeBtn, viewMode === "timetable" && { backgroundColor: PRIMARY }]}
-              onPress={switchToTimetable}
-              accessibilityRole="radio"
-              accessibilityLabel={t("admin.bookings.viewToggle.timetableLabel")}
-              accessibilityState={{ checked: viewMode === "timetable" }}
-            >
-              <Icon
-                name="grid-outline"
-                size={15}
-                color={viewMode === "timetable" ? "#fff" : mutedColor}
-              />
-              {isWide && (
-                <ThemedText
-                  style={[
-                    styles.modeBtnText,
-                    { color: viewMode === "timetable" ? "#fff" : mutedColor },
-                  ]}
-                >
-                  {t("admin.bookings.viewToggle.timetable")}
-                </ThemedText>
-              )}
-            </Pressable>
-            <Pressable
-              testID="view-toggle-list"
-              style={[styles.modeBtn, viewMode === "list" && { backgroundColor: PRIMARY }]}
-              onPress={() => setViewMode("list")}
-              accessibilityRole="radio"
-              accessibilityLabel={t("admin.bookings.viewToggle.listLabel")}
-              accessibilityState={{ checked: viewMode === "list" }}
-            >
-              <Icon
-                name="list-outline"
-                size={15}
-                color={viewMode === "list" ? "#fff" : mutedColor}
-              />
-              {isWide && (
-                <ThemedText
-                  style={[styles.modeBtnText, { color: viewMode === "list" ? "#fff" : mutedColor }]}
-                >
-                  {t("admin.bookings.viewToggle.list")}
-                </ThemedText>
-              )}
-            </Pressable>
+            {(
+              [
+                { key: "timetable", icon: "grid-outline" },
+                { key: "service", icon: "restaurant-outline" },
+                { key: "list", icon: "list-outline" },
+              ] as const
+            ).map(({ key, icon }) => (
+              <Pressable
+                key={key}
+                testID={`view-toggle-${key}`}
+                style={[styles.modeBtn, viewMode === key && { backgroundColor: PRIMARY }]}
+                onPress={() => (usesGrid(key) ? switchToGridMode(key) : setViewMode(key))}
+                accessibilityRole="radio"
+                accessibilityLabel={t(`admin.bookings.viewToggle.${key}Label`)}
+                accessibilityState={{ checked: viewMode === key }}
+              >
+                <Icon name={icon} size={15} color={viewMode === key ? "#fff" : mutedColor} />
+                {isWide && (
+                  <ThemedText
+                    style={[styles.modeBtnText, { color: viewMode === key ? "#fff" : mutedColor }]}
+                  >
+                    {t(`admin.bookings.viewToggle.${key}`)}
+                  </ThemedText>
+                )}
+              </Pressable>
+            ))}
           </View>
         </View>
       )}
 
       {loading && effectiveViewMode === "list" ? (
         <ActivityIndicator style={styles.spinner} size="large" color={PRIMARY} />
-      ) : effectiveViewMode === "timetable" ? (
+      ) : usesGrid(effectiveViewMode) ? (
         <View style={[styles.gridCard, { backgroundColor: cardBg, borderColor }]}>
-          <View style={[styles.gridDateBar, { borderBottomColor: borderColor }]}>
-            <Pressable
-              testID="grid-nav-prev"
-              style={styles.gridNavBtn}
-              onPress={() => handleGridDateChange(-1)}
-              accessibilityRole="button"
-              accessibilityLabel={t("admin.bookings.timetable.previousDay")}
-            >
-              <Icon name="chevron-back" size="lg" color={PRIMARY} />
-            </Pressable>
-            <Pressable
-              onPress={resetToToday}
-              style={styles.gridDateLabel}
-              accessibilityRole="button"
-              accessibilityLabel={t("admin.bookings.timetable.jumpToTodayLabel", {
-                date: fmtDate(gridDate),
-              })}
-            >
-              <ThemedText style={styles.gridDateText}>{fmtDate(gridDate)}</ThemedText>
-              {gridDate.toDateString() !== new Date().toDateString() && (
-                <ThemedText style={[styles.gridTodayHint, { color: PRIMARY }]}>
-                  {t("admin.bookings.timetable.tapForToday")}
-                </ThemedText>
-              )}
-            </Pressable>
-            <Pressable
-              testID="grid-nav-next"
-              style={styles.gridNavBtn}
-              onPress={() => handleGridDateChange(1)}
-              accessibilityRole="button"
-              accessibilityLabel={t("admin.bookings.timetable.nextDay")}
-            >
-              <Icon name="chevron-forward" size="lg" color={PRIMARY} />
-            </Pressable>
-          </View>
-
-          <View style={[styles.gridLegend, { borderBottomColor: borderColor }]}>
-            <View
-              style={[
-                styles.legendItem,
-                {
-                  backgroundColor: `${PRIMARY}22`,
-                  borderRadius: 6,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                },
-              ]}
-            >
-              <View style={[styles.legendDot, { backgroundColor: PRIMARY }]} />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
-                {t("admin.bookings.timetable.legend.seatedNow")}
-              </ThemedText>
-            </View>
-            <View
-              style={[
-                styles.legendItem,
-                { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-              ]}
-            >
-              <View style={[styles.legendDot, { backgroundColor: `${PRIMARY}44` }]} />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
-                {t("admin.bookings.timetable.legend.booked")}
-              </ThemedText>
-            </View>
-            <View
-              style={[
-                styles.legendItem,
-                { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-              ]}
-            >
-              <View
-                style={[
-                  styles.legendDot,
-                  { width: 3, backgroundColor: colors.error, borderRadius: 0 },
-                ]}
-              />
-              <ThemedText style={[styles.legendText, { color: mutedColor }]}>
-                {t("admin.bookings.timetable.legend.now")}
-              </ThemedText>
-            </View>
-            <ThemedText style={[styles.legendText, { color: mutedColor, marginLeft: 4 }]}>
-              {t("admin.bookings.timetable.legend.tapHint")}
-            </ThemedText>
-          </View>
+          <GridDateBar
+            date={gridDate}
+            onChangeDay={handleGridDateChange}
+            onResetToToday={resetToToday}
+            borderColor={borderColor}
+            primaryColor={PRIMARY}
+          />
 
           {gridLoading ? (
             <ActivityIndicator style={{ padding: 40 }} size="large" color={PRIMARY} />
-          ) : (
-            <AvailabilityGrid
+          ) : effectiveViewMode === "service" ? (
+            <ServiceView
               sections={gridSections}
               bookings={gridBookings}
               isDark={isDark}
@@ -600,6 +515,70 @@ export default function AdminBookingsScreen() {
               gridDateIso={isoDate(gridDate)}
               dateLabel={fmtDate(gridDate)}
             />
+          ) : (
+            <>
+              <View style={[styles.gridLegend, { borderBottomColor: borderColor }]}>
+                <View
+                  style={[
+                    styles.legendItem,
+                    {
+                      backgroundColor: `${PRIMARY}22`,
+                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    },
+                  ]}
+                >
+                  <View style={[styles.legendDot, { backgroundColor: PRIMARY }]} />
+                  <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                    {t("admin.bookings.timetable.legend.seatedNow")}
+                  </ThemedText>
+                </View>
+                <View
+                  style={[
+                    styles.legendItem,
+                    { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+                  ]}
+                >
+                  <View style={[styles.legendDot, { backgroundColor: `${PRIMARY}44` }]} />
+                  <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                    {t("admin.bookings.timetable.legend.booked")}
+                  </ThemedText>
+                </View>
+                <View
+                  style={[
+                    styles.legendItem,
+                    { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { width: 3, backgroundColor: colors.error, borderRadius: 0 },
+                    ]}
+                  />
+                  <ThemedText style={[styles.legendText, { color: mutedColor }]}>
+                    {t("admin.bookings.timetable.legend.now")}
+                  </ThemedText>
+                </View>
+                <ThemedText style={[styles.legendText, { color: mutedColor, marginLeft: 4 }]}>
+                  {t("admin.bookings.timetable.legend.tapHint")}
+                </ThemedText>
+              </View>
+              <AvailabilityGrid
+                sections={gridSections}
+                bookings={gridBookings}
+                isDark={isDark}
+                onBookingPress={(b) => openBooking(b.id)}
+                groups={selectedRestaurant?.groups ?? []}
+                openTime={openTime}
+                closeTime={closeTime}
+                timezone={timezone}
+                defaultDurationMinutes={selectedRestaurant?.defaultBookingDurationMinutes ?? 90}
+                gridDateIso={isoDate(gridDate)}
+                dateLabel={fmtDate(gridDate)}
+              />
+            </>
           )}
         </View>
       ) : sorted.length === 0 ? (
