@@ -10,8 +10,8 @@ import { isoDate } from "@/utils/formatters";
 export interface UseBookingsGridOptions {
   /** Currently selected restaurant; the grid (re)loads when this changes. */
   restaurantId: number | null;
-  /** Active view mode — the grid only loads on restaurant change when this is "timetable". */
-  viewMode: "timetable" | "list";
+  /** Active view mode — the grid only loads on restaurant change for a grid-backed mode. */
+  viewMode: "timetable" | "service" | "list";
 }
 
 export interface UseBookingsGridResult {
@@ -76,9 +76,9 @@ export function useBookingsGrid({
     if (restaurantId) loadGrid(restaurantId, today);
   }, [restaurantId, loadGrid]);
 
-  // Load timetable on mount / when the selected restaurant changes (only in timetable view).
+  // Load the grid on mount / when the selected restaurant changes (grid-backed views only).
   useEffect(() => {
-    if (restaurantId && viewMode === "timetable") {
+    if (restaurantId && viewMode !== "list") {
       loadGrid(restaurantId, gridDate);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

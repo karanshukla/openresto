@@ -651,7 +651,9 @@
         "timetable": "Planning",
         "list": "Liste",
         "timetableLabel": "Vue planning",
-        "listLabel": "Vue liste"
+        "listLabel": "Vue liste",
+        "service": "Salle",
+        "serviceLabel": "Vue salle"
       },
       "timetable": {
         "previousDay": "Jour précédent",
@@ -671,6 +673,37 @@
         "peopleAbbrev": "{{count}}p",
         "sittingLabel": "{{guest}}, {{seats}} couverts à {{unit}}, de {{start}} à {{end}}",
         "sittingLabelWithRemaining": "{{guest}}, {{seats}} couverts à {{unit}}, de {{start}} à {{end}}, {{remaining}}"
+      },
+      "service": {
+        "now": "Maintenant",
+        "backToNowLabel": "Suivre l'heure actuelle",
+        "earlier": "{{minutes}} minutes plus tôt",
+        "later": "{{minutes}} minutes plus tard",
+        "scrubLabel": "Heure affichée sur le plan de salle",
+        "status": {
+          "seated": "Occupée",
+          "turning": "En rotation",
+          "free": "Libre"
+        },
+        "summary": {
+          "seated_one": "{{count}} occupée",
+          "seated_other": "{{count}} occupées",
+          "turning_one": "{{count}} en rotation",
+          "turning_other": "{{count}} en rotation",
+          "free_one": "{{count}} libre",
+          "free_other": "{{count}} libres",
+          "covers_one": "{{count}} couvert",
+          "covers_other": "{{count}} couverts"
+        },
+        "sittingRange": "{{start}} – {{end}}",
+        "remaining": "{{duration}} restantes",
+        "nextUp": "Suivant {{time}} · dans {{duration}}",
+        "nothingElse": "Rien d'autre aujourd'hui",
+        "durationHm": "{{hours}} h {{minutes}} min",
+        "durationH": "{{hours}} h",
+        "durationM": "{{minutes}} min",
+        "seatedUnitLabel": "{{unit}}, {{guest}}, {{seats}} couverts, {{remaining}} restantes",
+        "freeUnitLabel": "{{unit}}, libre"
       },
       "sort": {
         "time": "Heure",

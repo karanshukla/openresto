@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ScrollView, View, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -10,6 +10,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
 import { Icon } from "@/components/common/Icon";
 import { getNowInTimezone } from "@/utils/date";
+import { useMinuteTick } from "@/hooks/use-minute-tick";
 import {
   buildTimeline,
   buildUnitRows,
@@ -31,23 +32,8 @@ export const LANE_H = 38;
 export const ROW_MIN_H = 48;
 const LANE_GAP = 4;
 const PX_PER_MINUTE = HOUR_W / 60;
-const MINUTE_TICK_MS = 60_000;
-
 function rowHeight(lanes: number): number {
   return Math.max(ROW_MIN_H, lanes * LANE_H + LANE_GAP * 2);
-}
-
-/**
- * Re-renders once a minute so the "now" marker and every bar's remaining time track the clock. A
- * timetable a front-of-house tablet is parked on all service is wrong the moment it stops moving.
- */
-function useMinuteTick(): number {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), MINUTE_TICK_MS);
-    return () => clearInterval(id);
-  }, []);
-  return tick;
 }
 
 type SittingState = "past" | "current" | "upcoming";
