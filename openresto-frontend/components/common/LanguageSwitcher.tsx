@@ -9,8 +9,10 @@ const LANGUAGE_OPTIONS = SUPPORTED_LOCALES.map((locale) => ({
 }));
 
 /**
- * The one language picker in the app — guest footer and admin sidebar footer both render
- * this rather than hand-rolling their own. Writes through `LocaleContext.setLocale`, which
+ * The admin sidebar's language picker. The guest surface reaches the same `setLocale` through
+ * `components/layout/OverflowMenu`'s Language row instead, which lists the locales itself
+ * rather than nesting this `Select`'s `AnchoredPanel` inside a menu item (issue #387).
+ * Writes through `LocaleContext.setLocale`, which
  * persists the pick to `localStorage["openresto.locale"]` and applies it live (i18next +
  * `setActiveLocale`, so date/time formatting follows the switch immediately, not just text).
  */

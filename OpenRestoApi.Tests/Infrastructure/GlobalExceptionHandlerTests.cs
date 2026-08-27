@@ -114,12 +114,73 @@ public class GlobalExceptionHandlerTests
         HttpContext ctx = CreateContext();
 
         bool handled = await handler.TryHandleAsync(
-            ctx, new InfrastructureException("Email is not configured."), default);
+            ctx,
+            new InfrastructureException("Email is not configured.")
+            {
+                Code = ErrorCodes.EmailNotConfigured
+            },
+            default);
 
         Assert.True(handled);
         (int status, string message) = await ReadResponse(ctx);
         Assert.Equal((int)HttpStatusCode.InternalServerError, status);
         Assert.Equal("Email is not configured.", message);
+    }
+
+    [Fact]
+    public async Task InfrastructureException_Production_WithCode_KeepsMessage()
+    {
+        // A Code marks the message as copy the throw site wrote for a client, so it survives
+        // Production — this is what EmailService's "Email is not configured." relies on.
+        GlobalExceptionHandler handler = CreateHandler(isDevelopment: false);
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx,
+            new InfrastructureException("Email is not configured.")
+            {
+                Code = ErrorCodes.EmailNotConfigured
+            },
+            default);
+
+        (int status, string message) = await ReadResponse(ctx);
+        Assert.Equal((int)HttpStatusCode.InternalServerError, status);
+        Assert.Equal("Email is not configured.", message);
+    }
+
+    [Fact]
+    public async Task InfrastructureException_Production_WithoutCode_IsGeneric()
+    {
+        // The other side of that boundary: an uncoded infrastructure failure is whatever the
+        // underlying library said, so its message must not reach the client in Production.
+        GlobalExceptionHandler handler = CreateHandler(isDevelopment: false);
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx,
+            new InfrastructureException("SMTP connect to mail.internal:587 failed for postmaster"),
+            default);
+
+        (int status, string message) = await ReadResponse(ctx);
+        Assert.Equal((int)HttpStatusCode.InternalServerError, status);
+        Assert.Equal("An unexpected error occurred.", message);
+        Assert.DoesNotContain("mail.internal", message);
+    }
+
+    [Fact]
+    public async Task InfrastructureException_Development_WithoutCode_KeepsMessage()
+    {
+        // In Development the same uncoded failure stays legible for debugging.
+        GlobalExceptionHandler handler = CreateHandler(isDevelopment: true);
+        HttpContext ctx = CreateContext();
+
+        await handler.TryHandleAsync(
+            ctx,
+            new InfrastructureException("SMTP connect to mail.internal:587 failed for postmaster"),
+            default);
+
+        (_, string message) = await ReadResponse(ctx);
+        Assert.Contains("mail.internal", message);
     }
 
     [Fact]

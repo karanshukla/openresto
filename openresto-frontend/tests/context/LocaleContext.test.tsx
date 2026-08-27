@@ -7,6 +7,7 @@ import { Platform, Text } from "react-native";
 import { LocaleProvider, useLocale } from "@/context/LocaleContext";
 import i18n from "@/i18n";
 import { setActiveLocale } from "@/utils/locale";
+import { LOCALE_DIRECTIONS } from "@/constants/locales";
 
 // StorageService (and therefore localStorage["openresto.locale"]) only reads on web.
 Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
@@ -113,8 +114,7 @@ describe("LocaleContext", () => {
     await waitFor(() => expect(screen.getByTestId("locale").props.children).toBe("en"));
   });
 
-  it("sets document.documentElement.lang and dir from expo-localization on web", async () => {
-    mockGetLocales.mockReturnValue([{ textDirection: "ltr" }]);
+  it("sets document.documentElement.lang and dir from the active locale on web", async () => {
     mockBrand = { defaultLocale: "fr" };
 
     render(
@@ -124,11 +124,12 @@ describe("LocaleContext", () => {
     );
 
     await waitFor(() => expect(document.documentElement.lang).toBe("fr"));
-    expect(document.documentElement.dir).toBe("ltr");
+    expect(document.documentElement.dir).toBe(LOCALE_DIRECTIONS.fr);
   });
 
-  it("defaults dir to ltr when expo-localization reports no locales", async () => {
-    mockGetLocales.mockReturnValue([]);
+  it("takes dir from the chosen locale, not from an RTL device", async () => {
+    mockGetLocales.mockReturnValue([{ textDirection: "rtl" }]);
+    mockBrand = { defaultLocale: "de" };
 
     render(
       <LocaleProvider>
@@ -136,7 +137,7 @@ describe("LocaleContext", () => {
       </LocaleProvider>
     );
 
-    await waitFor(() => expect(document.documentElement.lang).toBe("en"));
+    await waitFor(() => expect(document.documentElement.lang).toBe("de"));
     expect(document.documentElement.dir).toBe("ltr");
   });
 
