@@ -18,8 +18,13 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
+const mockBrand: { primaryColor: string; appName: string; faviconIcon?: string } = {
+  primaryColor: "#0a7ea4",
+  appName: "Open Resto",
+};
+
 jest.mock("@/context/BrandContext", () => ({
-  useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
+  useBrand: () => mockBrand,
 }));
 
 jest.mock("@/context/ThemeContext", () => ({
@@ -116,6 +121,29 @@ describe("AdminSidebar", () => {
     );
     await waitFor(() => expect(screen.getByText("CONFIGURE")).toBeTruthy());
     expect(screen.queryByText("Users")).toBeNull();
+  });
+
+  it("wears the mark the brand settings selected, not a generic one", async () => {
+    mockBrand.faviconIcon = "wine";
+    try {
+      render(
+        <AuthProvider>
+          <AdminSidebar />
+        </AuthProvider>
+      );
+      expect(await screen.findByTestId("brand-glyph")).toBeTruthy();
+    } finally {
+      delete mockBrand.faviconIcon;
+    }
+  });
+
+  it("wears the generic mark when the brand has selected none", () => {
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    expect(screen.queryByTestId("brand-glyph")).toBeNull();
   });
 
   it("navigates to brand settings when Brand is pressed", async () => {
