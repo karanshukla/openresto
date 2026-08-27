@@ -680,6 +680,9 @@
         "earlier": "{{minutes}} Minuten früher",
         "later": "{{minutes}} Minuten später",
         "scrubLabel": "Im Raum angezeigte Uhrzeit",
+        "expandLabel": "Raumplan im Vollbild anzeigen",
+        "collapseLabel": "Raumplan wieder einbetten",
+        "expandedLabel": "Raumplan, Vollbild",
         "status": {
           "seated": "Belegt",
           "turning": "Wechsel",

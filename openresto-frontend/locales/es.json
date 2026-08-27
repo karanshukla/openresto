@@ -680,6 +680,9 @@
         "earlier": "{{minutes}} minutos antes",
         "later": "{{minutes}} minutos después",
         "scrubLabel": "Hora mostrada en la sala",
+        "expandLabel": "Ver la sala a pantalla completa",
+        "collapseLabel": "Devolver la sala a la página",
+        "expandedLabel": "Sala, pantalla completa",
         "status": {
           "seated": "Ocupada",
           "turning": "En rotación",

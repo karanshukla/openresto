@@ -680,6 +680,9 @@
         "earlier": "{{minutes}} minutes plus tôt",
         "later": "{{minutes}} minutes plus tard",
         "scrubLabel": "Heure affichée sur le plan de salle",
+        "expandLabel": "Afficher le plan de salle en plein écran",
+        "collapseLabel": "Réduire le plan de salle",
+        "expandedLabel": "Plan de salle, plein écran",
         "status": {
           "seated": "Occupée",
           "turning": "En rotation",

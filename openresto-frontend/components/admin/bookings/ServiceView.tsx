@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Modal,
   Pressable,
   ScrollView,
   View,
@@ -14,6 +15,7 @@ import Button from "@/components/common/Button";
 import { getThemeColors } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useMinuteTick } from "@/hooks/use-minute-tick";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { hexToRgba } from "@/utils/colors";
 import { getNowInTimezone } from "@/utils/date";
 import type { BookingDetailDto, SectionWithTables } from "@/api/admin";
@@ -110,6 +112,13 @@ export function ServiceView({
   /** Null means "follow the clock" — the floor only pins to an offset once staff scrub it. */
   const [scrubbed, setScrubbed] = useState<number | null>(null);
 
+  // A large room runs to more tables than the page's card can show without scrolling, so the floor
+  // can take the whole screen. It is a dialog rather than a wider card because the admin chrome
+  // around it is not what staff are reading during service.
+  const [expanded, setExpanded] = useState(false);
+  const sheetRef = useRef<View>(null);
+  useDialogFocus(expanded, sheetRef);
+
   // A day with no "now" on it (any day but today) has nothing to follow, so the floor opens on its
   // first sitting rather than on the window's edge, which is an hour of empty room by construction.
   const firstSitting = timeline.placements.length
@@ -179,8 +188,8 @@ export function ServiceView({
 
   const hasUnits = rowGroups.some((row) => row.units.length > 0);
 
-  return (
-    <View>
+  const body = (
+    <>
       <View style={[styles.scrubBar, { borderBottomColor: borderColor }]}>
         <IconButton
           name="chevron-back"
@@ -245,6 +254,18 @@ export function ServiceView({
             {t("admin.bookings.service.now")}
           </Button>
         )}
+
+        <IconButton
+          name={expanded ? "contract-outline" : "expand-outline"}
+          accessibilityLabel={t(
+            expanded ? "admin.bookings.service.collapseLabel" : "admin.bookings.service.expandLabel"
+          )}
+          onPress={() => setExpanded((open) => !open)}
+          color={mutedColor}
+          selected={expanded}
+          style={styles.scrubNavBtn}
+          testID="service-expand"
+        />
       </View>
 
       <View style={[styles.summary, { borderBottomColor: borderColor }]}>
@@ -269,7 +290,10 @@ export function ServiceView({
           </ThemedText>
         </View>
       ) : (
-        <ScrollView style={{ maxHeight: 640 }} contentContainerStyle={styles.floor}>
+        <ScrollView
+          style={expanded ? styles.floorExpanded : styles.floorInset}
+          contentContainerStyle={styles.floor}
+        >
           {floor.map((section) => (
             <View key={section.key} style={styles.section}>
               <ThemedText style={[styles.sectionLabel, { color: mutedColor }]}>
@@ -302,7 +326,26 @@ export function ServiceView({
           )}
         </ScrollView>
       )}
-    </View>
+    </>
+  );
+
+  if (!expanded) return <View>{body}</View>;
+
+  return (
+    <Modal visible animationType="fade" onRequestClose={() => setExpanded(false)}>
+      <View
+        ref={sheetRef}
+        role="dialog"
+        aria-modal
+        accessibilityViewIsModal
+        accessibilityLabel={t("admin.bookings.service.expandedLabel")}
+        tabIndex={-1}
+        style={[styles.expandedSheet, { backgroundColor: colors.page }]}
+        testID="service-expanded"
+      >
+        {body}
+      </View>
+    </Modal>
   );
 }
 

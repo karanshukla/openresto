@@ -54,6 +54,10 @@ export const styles = StyleSheet.create({
   summaryCovers: { ...theme.typography.caption, fontWeight: "600" },
 
   floor: { padding: theme.spacing.lg, gap: theme.spacing.xl },
+  /** Capped inside the page's card, which has the rest of the screen's chrome above it. */
+  floorInset: { maxHeight: 640 },
+  floorExpanded: { flex: 1 },
+  expandedSheet: { flex: 1 },
   section: { gap: theme.spacing.sm },
   sectionLabel: { ...theme.typography.labelSmall, letterSpacing: 0.8 },
   unitGrid: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },

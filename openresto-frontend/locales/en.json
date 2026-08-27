@@ -680,6 +680,9 @@
         "earlier": "{{minutes}} minutes earlier",
         "later": "{{minutes}} minutes later",
         "scrubLabel": "Time shown on the floor",
+        "expandLabel": "Fill the screen with the floor",
+        "collapseLabel": "Return the floor to the page",
+        "expandedLabel": "Service floor, full screen",
         "status": {
           "seated": "Seated",
           "turning": "Turning",

@@ -1,4 +1,5 @@
 import React from "react";
+import { Modal } from "react-native";
 import { render, screen, fireEvent, within } from "@testing-library/react-native";
 import { ServiceView } from "@/components/admin/bookings/ServiceView";
 
@@ -229,6 +230,47 @@ describe("ServiceView", () => {
       />
     );
     expect(within(screen.getByTestId("service-unit-table:101")).getByText("Guest")).toBeTruthy();
+  });
+
+  it("fills the screen with the floor when maximised, and gives the page back on collapse", () => {
+    render(<ServiceView {...props} />);
+
+    expect(screen.queryByTestId("service-expanded")).toBeNull();
+
+    fireEvent.press(screen.getByTestId("service-expand"));
+    expect(screen.getByTestId("service-expanded")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("service-expand"));
+    expect(screen.queryByTestId("service-expanded")).toBeNull();
+  });
+
+  it("gives the page back when the platform asks the sheet to close", () => {
+    render(<ServiceView {...props} />);
+    fireEvent.press(screen.getByTestId("service-expand"));
+
+    fireEvent(screen.UNSAFE_getByType(Modal), "requestClose");
+
+    expect(screen.queryByTestId("service-expanded")).toBeNull();
+  });
+
+  it("keeps the scrubbed time across maximising, so the floor does not jump", () => {
+    render(<ServiceView {...props} />);
+
+    fireEvent.press(screen.getByTestId("service-scrub-forward"));
+    const scrubbed = screen.getByTestId("service-scrub-clock").props.children;
+
+    fireEvent.press(screen.getByTestId("service-expand"));
+
+    expect(screen.getByTestId("service-scrub-clock").props.children).toBe(scrubbed);
+  });
+
+  it("still lays the room out while maximised", () => {
+    render(<ServiceView {...props} />);
+
+    fireEvent.press(screen.getByTestId("service-expand"));
+
+    expect(screen.getByText("Table 1")).toBeTruthy();
+    expect(within(screen.getByTestId("service-unit-table:101")).getByText(/Seated/)).toBeTruthy();
   });
 
   it("names no day in the empty state when it was not given one", () => {
