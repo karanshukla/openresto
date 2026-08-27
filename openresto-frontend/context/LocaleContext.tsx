@@ -1,18 +1,22 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getLocales } from "expo-localization";
 import i18n from "@/i18n";
 import { setActiveLocale } from "@/utils/locale";
 import { StorageService } from "@/services/storage";
 import { useBrand } from "@/context/BrandContext";
-import { DEFAULT_LOCALE, isSupportedLocale, type SupportedLocale } from "@/constants/locales";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_DIRECTIONS,
+  isSupportedLocale,
+  type SupportedLocale,
+} from "@/constants/locales";
 
 const STORAGE_KEY = "openresto.locale";
 
 /**
  * Resolution order, highest priority first:
- *  1. The viewer's own pick, in `localStorage["openresto.locale"]` — nothing writes this key
- *     yet, the switcher that does ships in #373; this layer exists so it activates the moment
- *     that lands, with no further wiring here.
+ *  1. The viewer's own pick, in `localStorage["openresto.locale"]`, written by `setLocale`
+ *     below — the admin sidebar's `LanguageSwitcher` and the guest navbar's overflow menu
+ *     both go through it. A value outside `SUPPORTED_LOCALES` is ignored, not trusted.
  *  2. `brand.defaultLocale`, the self-hoster's `Locale:Default` / `OPENRESTO_DEFAULT_LOCALE`.
  *  3. `DEFAULT_LOCALE` ("en"), hardcoded.
  *
@@ -56,7 +60,7 @@ function applyLocale(locale: SupportedLocale): void {
   /* istanbul ignore else -- native has no `document`; every test runs under jsdom */
   if (typeof document !== "undefined") {
     document.documentElement.lang = locale;
-    document.documentElement.dir = getLocales()[0]?.textDirection ?? "ltr";
+    document.documentElement.dir = LOCALE_DIRECTIONS[locale];
   }
 }
 

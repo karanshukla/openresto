@@ -395,7 +395,7 @@ export function UsersCard({
                       <Input
                         value={newUser.displayName}
                         onChangeText={(displayName) => setNewUser((s) => ({ ...s, displayName }))}
-                        placeholder="Alex Rivera"
+                        placeholder={t("admin.settings.users.displayNamePlaceholder")}
                       />
                     </View>
                   </View>

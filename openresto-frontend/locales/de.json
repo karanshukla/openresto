@@ -1414,6 +1414,7 @@
         "setPassword": "Passwort festlegen",
         "emailLabel": "E-Mail",
         "displayNameLabel": "Anzeigename (optional)",
+        "displayNamePlaceholder": "Alex Rivera",
         "temporaryPasswordLabel": "Temporäres Passwort",
         "newUserRoleLabel": "Rolle des neuen Benutzers {{role}}",
         "addThisUserLabel": "Diesen Benutzer hinzufügen",

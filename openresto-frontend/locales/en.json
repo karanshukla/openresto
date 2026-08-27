@@ -1414,6 +1414,7 @@
         "setPassword": "Set password",
         "emailLabel": "Email",
         "displayNameLabel": "Display name (optional)",
+        "displayNamePlaceholder": "Alex Rivera",
         "temporaryPasswordLabel": "Temporary password",
         "newUserRoleLabel": "New user role {{role}}",
         "addThisUserLabel": "Add this user",
