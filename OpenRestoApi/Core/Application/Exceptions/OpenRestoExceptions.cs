@@ -64,7 +64,9 @@ public sealed class BusinessRuleException : OpenRestoException
 }
 
 // 500 — infrastructure/config failure (email not configured, admin password missing,
-// SMTP). Surfaces to the client as a generic 500 in non-Development environments.
+// SMTP). Outside Development the message reaches the client only when the throw site set a
+// Code, marking it as deliberate client-facing copy; an uncoded one is reported generically
+// so a library's message cannot carry infrastructure detail out with it.
 [Serializable]
 public sealed class InfrastructureException : OpenRestoException
 {

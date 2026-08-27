@@ -10,11 +10,29 @@ namespace OpenRestoApi.Infrastructure.Exceptions;
 // status discriminator; the handler switch-es on it.
 //
 // Fallback (untyped) exceptions → 500. In Development the underlying message is
-// surfaced for debugging; elsewhere a generic message is returned.
+// surfaced for debugging; elsewhere a generic message is returned. InfrastructureException
+// is held to the same disclosure rule unless it carries an ErrorCodes value — see
+// DiscloseableMessage.
 public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
     IHostEnvironment env) : IExceptionHandler
 {
+    private const string GenericFailureMessage = "An unexpected error occurred.";
+
+    /// <summary>
+    /// An <see cref="InfrastructureException"/> carrying a <see cref="OpenRestoException.Code"/>
+    /// was shaped for a client by its throw site, so its message is deliberate and safe to return.
+    /// An uncoded one is an unclassified failure whose message is whatever the underlying library
+    /// said — an SMTP host, a connection string, a file path — so outside Development it is
+    /// withheld exactly like an untyped exception's.
+    /// </summary>
+    /// <seealso>GlobalExceptionHandlerTests.InfrastructureException_Production_WithoutCode_IsGeneric</seealso>
+    /// <seealso>GlobalExceptionHandlerTests.InfrastructureException_Production_WithCode_KeepsMessage</seealso>
+    private string DiscloseableMessage(InfrastructureException exception) =>
+        exception.Code is not null || env.IsDevelopment()
+            ? exception.Message
+            : GenericFailureMessage;
+
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -26,12 +44,14 @@ public sealed class GlobalExceptionHandler(
             ValidationException => (StatusCodes.Status400BadRequest, exception.Message),
             ConflictException => (StatusCodes.Status409Conflict, exception.Message),
             BusinessRuleException => (StatusCodes.Status400BadRequest, exception.Message),
-            InfrastructureException => (StatusCodes.Status500InternalServerError, exception.Message),
+            InfrastructureException infrastructure => (
+                StatusCodes.Status500InternalServerError,
+                DiscloseableMessage(infrastructure)),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 env.IsDevelopment()
                     ? $"An unexpected error occurred: {exception.Message}"
-                    : "An unexpected error occurred.")
+                    : GenericFailureMessage)
         };
 
         // 5xx are genuine failures worth a stack trace; 4xx are expected domain
