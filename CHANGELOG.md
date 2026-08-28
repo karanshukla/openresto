@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The hidden scroll-to-top button no longer sits in the web accessibility tree.** The FAB stays mounted while hidden so it keeps its measured width, and hid itself with `accessibilityElementsHidden` and `importantForAccessibility`. Both are native-only: react-native-web drops them, so on the web build a screen reader was offered a "Scroll to top" button for the whole page, including at the top where pressing it does nothing. It now hides with `aria-hidden`, which React Native maps onto that same native pair and react-native-web forwards to the DOM.
+
 ## [1.9.0] - 2026-08-27
 
 Hi all! The headline this time is languages. OpenResto now speaks English, French, Spanish and German across the guest site and the whole admin, with a switcher on the page you are already on and a default a self-hoster can set from the environment. Alongside that, the admin timetable has been rebuilt around real sittings, and narrowing a location's hours now tells you which bookings you just stranded instead of leaving you to hear it from the guest.
