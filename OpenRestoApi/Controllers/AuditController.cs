@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -22,6 +23,7 @@ namespace OpenRestoApi.Controllers;
 [ApiController]
 [Route("api/admin/audit")]
 [Authorize(Policy = AuthPolicies.RequireOwner)]
+[RequiresScope(ApiKeyScopes.Audit, ApiKeyScopes.Read)]
 public class AuditController(AuditQueryService audit) : ControllerBase
 {
     private readonly AuditQueryService _audit = audit;

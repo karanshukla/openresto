@@ -20,4 +20,19 @@ public interface ICurrentUserService
 
     /// <summary>The caller's role claim, or null when unauthenticated.</summary>
     string? Role { get; }
+
+    /// <summary>
+    /// True when the caller authenticated via an admin API key (issue #319) rather than a
+    /// JWT/browser session. A key carries scope claims narrowing what it can do; a JWT/browser
+    /// session carries none and is never scope-restricted.
+    /// </summary>
+    bool IsApiKeyAuthenticated { get; }
+
+    /// <summary>
+    /// True when the caller holds the given <c>{resource}:{access}</c> scope (write also
+    /// satisfies a read requirement — see <c>ApiKeyClaimTypes.HasScope</c>). Always true for a
+    /// JWT/browser session, which carries no scopes and is unrestricted by design; only ever
+    /// false for a key that was minted without the scope.
+    /// </summary>
+    bool HasScope(string resource, string access);
 }

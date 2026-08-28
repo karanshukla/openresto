@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -27,6 +28,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> Post(RestaurantDto dto)
     {
         RestaurantDto created = await _service.CreateAsync(dto);
@@ -35,6 +37,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPut("{id}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> Put(int id, UpdateRestaurantRequest req)
     {
         // ValidationException (bad DefaultBookingDurationMinutes) → 400 is mapped
@@ -47,6 +50,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPost("{id}/sections")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> AddSection(int id, CreateSectionRequest req)
     {
         SectionDto? result = await _service.AddSectionAsync(id, req.Name);
@@ -55,6 +59,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPut("{id}/sections/{sectionId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> UpdateSection(int id, int sectionId, UpdateSectionRequest req)
     {
         SectionDto? result = await _service.UpdateSectionAsync(id, sectionId, req.Name);
@@ -63,6 +68,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpDelete("{id}/sections/{sectionId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> DeleteSection(int id, int sectionId)
         => await _service.DeleteSectionAsync(id, sectionId) ? NoContent() : NotFound();
 
@@ -72,6 +78,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // to generic copy rather than blocking the delete.
     [HttpGet("{id}/sections/{sectionId}/impact")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetSectionDeleteImpact(int id, int sectionId)
     {
         DeleteImpactDto? result = await _service.GetSectionDeleteImpactAsync(id, sectionId);
@@ -82,6 +89,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPost("{id}/sections/{sectionId}/tables")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> AddTable(int id, int sectionId, CreateTableRequest req)
     {
         TableDto? result = await _service.AddTableAsync(id, sectionId, req.Name, req.Seats);
@@ -90,6 +98,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPut("{id}/sections/{sectionId}/tables/{tableId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
     {
         TableDto? result = await _service.UpdateTableAsync(id, sectionId, tableId, req.Name, req.Seats);
@@ -98,6 +107,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpDelete("{id}/sections/{sectionId}/tables/{tableId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> DeleteTable(int id, int sectionId, int tableId)
         => await _service.DeleteTableAsync(id, sectionId, tableId) ? NoContent() : NotFound();
 
@@ -106,6 +116,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // doesn't exist / doesn't belong to the restaurant+section, so the UI can fall back to generic copy.
     [HttpGet("{id}/sections/{sectionId}/tables/{tableId}/impact")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetTableDeleteImpact(int id, int sectionId, int tableId)
     {
         DeleteImpactDto? result = await _service.GetTableDeleteImpactAsync(id, sectionId, tableId);
@@ -116,8 +127,10 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     // silent by design — it leaves existing rows alone — so the admin UI reads this after an edit
     // to show who is now booked into a service the location no longer runs. 404 when the
     // restaurant doesn't exist, so the caller can drop the panel rather than block the form.
+    // Scoped under locations — this is a restaurant-schedule read, not a table/section shape read.
     [HttpGet("{id}/schedule-conflicts")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetScheduleConflicts(int id)
     {
         List<ScheduleConflictDto>? result = await _service.GetScheduleConflictsAsync(id);
@@ -132,6 +145,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPost("{id}/groups")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> AddTableGroup(int id, CreateTableGroupRequest req)
     {
         TableGroupDto? result = await _service.AddTableGroupAsync(id, req);
@@ -140,6 +154,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpPut("{id}/groups/{groupId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> UpdateTableGroup(int id, int groupId, UpdateTableGroupRequest req)
     {
         TableGroupDto? result = await _service.UpdateTableGroupAsync(id, groupId, req);
@@ -148,6 +163,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
 
     [HttpDelete("{id}/groups/{groupId}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> DeleteTableGroup(int id, int groupId)
         => await _service.DeleteTableGroupAsync(id, groupId) ? NoContent() : NotFound();
 }

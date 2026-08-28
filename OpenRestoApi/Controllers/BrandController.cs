@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -95,6 +96,7 @@ public class BrandController(BrandService brandService) : ControllerBase
 
     [HttpPatch]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Brand, ApiKeyScopes.Write)]
     public async Task<IActionResult> Save([FromBody] BrandRequest req)
     {
         // ValidationException (bad app-name/color/favicon/copyright) → 400 is mapped

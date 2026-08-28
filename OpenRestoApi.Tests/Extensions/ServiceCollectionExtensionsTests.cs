@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Extensions;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Tests.Extensions;
 
@@ -45,8 +47,55 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
         var envMock = new Mock<IWebHostEnvironment>();
         envMock.Setup(e => e.EnvironmentName).Returns("Production");
-        
+
         services.AddCustomRateLimiting(envMock.Object);
+    }
+
+    // ── Global-limiter partitioning (issue #319 Phase 2 review fix) ──────────
+    //
+    // The limiter runs pre-authentication, so it only ever sees "does this request carry the
+    // X-API-Key header", never whether the key is valid. Partitioning on the header's own value
+    // let an attacker rotate garbage header values to mint unlimited fresh buckets, escaping the
+    // per-IP global ceiling entirely. Partitioning on the client IP instead means every request
+    // from that IP bearing the header — genuine key or not — lands in the one shared bucket.
+
+    private static HttpContext ContextFor(string ip, string? apiKeyHeaderValue = null)
+    {
+        var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = System.Net.IPAddress.Parse(ip);
+        if (apiKeyHeaderValue is not null)
+        {
+            context.Request.Headers[ApiKeyClaimTypes.HeaderName] = apiKeyHeaderValue;
+        }
+        return context;
+    }
+
+    [Fact]
+    public void GlobalPartitionKey_RotatingTheHeaderValueStaysInOneBucketPerIp()
+    {
+        string first = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("203.0.113.5", "orst_1_aaaa"));
+        string second = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("203.0.113.5", "orst_2_completely-different-garbage"));
+
+        Assert.Equal(first, second);
+        Assert.StartsWith(ServiceCollectionExtensions.ApiKeyIpPartitionPrefix, first, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GlobalPartitionKey_DifferentIpsWithTheSameHeaderGetDifferentBuckets()
+    {
+        string first = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("203.0.113.5", "orst_1_aaaa"));
+        string second = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("198.51.100.9", "orst_1_aaaa"));
+
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void GlobalPartitionKey_NoHeaderUsesThePlainIpBucket()
+    {
+        string key = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("203.0.113.5"));
+
+        Assert.Equal("203.0.113.5", key);
+        Assert.DoesNotContain(ServiceCollectionExtensions.ApiKeyIpPartitionPrefix, key, StringComparison.Ordinal);
     }
 
     [Fact]

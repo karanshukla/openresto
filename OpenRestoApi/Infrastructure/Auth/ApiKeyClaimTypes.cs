@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Infrastructure.Auth;
 
@@ -31,6 +32,20 @@ public static class ApiKeyClaimTypes
     public static bool IsApiKeyAuthenticated(this ClaimsPrincipal user)
         => string.Equals(user.Identity?.AuthenticationType, Scheme, StringComparison.Ordinal);
 
+    /// <summary>
+    /// True when the principal carries the exact <c>{resource}:{access}</c> scope claim, or — for
+    /// a <see cref="ApiKeyScopes.Read"/> requirement only — the corresponding
+    /// <see cref="ApiKeyScopes.Write"/> claim instead: a key trusted to mutate a resource is
+    /// trusted to view it, so minting both to read what you can already write would be a scope
+    /// that does nothing. The reverse never holds — a read grant does not satisfy a write
+    /// requirement.
+    /// <seealso>ApiKeyClaimTypesTests.HasScope_WriteScopeSatisfiesAReadRequirement</seealso>
+    /// <seealso>ApiKeyClaimTypesTests.HasScope_ReadScopeDoesNotSatisfyAWriteRequirement</seealso>
+    /// </summary>
     public static bool HasScope(this ClaimsPrincipal user, string resource, string access)
-        => user.FindAll(Scope).Any(c => c.Value == $"{resource}:{access}");
+    {
+        HashSet<string> granted = user.FindAll(Scope).Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
+        return granted.Contains($"{resource}:{access}")
+            || (access == ApiKeyScopes.Read && granted.Contains($"{resource}:{ApiKeyScopes.Write}"));
+    }
 }

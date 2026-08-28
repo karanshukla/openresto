@@ -17,7 +17,8 @@ public class BookingService(
     TableAutoAssigner autoAssigner,
     ITableGroupRepository tableGroupRepository,
     IBookingConfirmationService? confirmationService = null,
-    INotificationQueue? notificationQueue = null)
+    INotificationQueue? notificationQueue = null,
+    ICurrentUserService? currentUser = null)
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
@@ -29,6 +30,7 @@ public class BookingService(
     private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
     private readonly IBookingConfirmationService? _confirmationService = confirmationService;
     private readonly INotificationQueue? _notificationQueue = notificationQueue;
+    private readonly ICurrentUserService _currentUser = currentUser ?? NullCurrentUserService.Instance;
 
     public virtual async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
@@ -358,10 +360,13 @@ public class BookingService(
         }
     }
 
+    // Admin-only read (see BookingsController) — the only path here that needs guest-visibility
+    // redaction. GetBookingByRefAsync below is the customer's own unauthenticated lookup and must
+    // never be redacted, so it deliberately does not route through BookingGuestVisibility.
     public virtual async Task<BookingDto?> GetBookingByIdAsync(int id)
     {
         Booking? booking = await _bookingRepository.GetByIdAsync(id);
-        return booking == null ? null : _mapper.ToDtoWithGroup(booking);
+        return booking == null ? null : BookingGuestVisibility.Apply(_mapper.ToDtoWithGroup(booking), _currentUser);
     }
 
     public virtual async Task<BookingDto?> GetBookingByRefAsync(string bookingRef)
@@ -370,10 +375,11 @@ public class BookingService(
         return booking == null ? null : _mapper.ToDtoWithGroup(booking);
     }
 
+    // Admin-only read (see BookingsController) — see the note on GetBookingByIdAsync above.
     public virtual async Task<IEnumerable<BookingDto>> GetBookingsByRestaurantAsync(int restaurantId)
     {
         IEnumerable<Booking> bookings = await _bookingRepository.GetBookingsByRestaurantIdAsync(restaurantId);
-        return _mapper.ToDtoWithGroupList(bookings);
+        return BookingGuestVisibility.Apply(_mapper.ToDtoWithGroupList(bookings), _currentUser);
     }
 
     public virtual async Task UpdateBookingAsync(int id, BookingDto bookingDto)

@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
+// Every action here is an upload or a delete — no reads — so the whole controller is brand:write
+// (media is grouped with brand/highlights/social-links in the issue's resource table).
 [ApiController]
 [Route("api/media")]
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
+[RequiresScope(ApiKeyScopes.Brand, ApiKeyScopes.Write)]
 [EnableRateLimiting("public")]
 public class MediaController(MediaService mediaService) : ControllerBase
 {

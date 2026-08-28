@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -23,6 +24,7 @@ public class SocialLinksController(SocialLinkService socialLinkService) : Contro
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Brand, ApiKeyScopes.Write)]
     public async Task<IActionResult> Create([FromBody] CreateSocialLinkRequest req)
     {
         var dto = await _socialLinks.CreateAsync(req);
@@ -31,6 +33,7 @@ public class SocialLinksController(SocialLinkService socialLinkService) : Contro
 
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Brand, ApiKeyScopes.Write)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSocialLinkRequest req)
     {
         var dto = await _socialLinks.UpdateAsync(id, req);
@@ -44,6 +47,7 @@ public class SocialLinksController(SocialLinkService socialLinkService) : Contro
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [RequiresScope(ApiKeyScopes.Brand, ApiKeyScopes.Write)]
     public async Task<IActionResult> Delete(int id)
     {
         bool deleted = await _socialLinks.DeleteAsync(id);

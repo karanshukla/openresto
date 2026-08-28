@@ -54,6 +54,38 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>Client IP as ASP.NET Core resolved it (after <c>UseForwardedHeaders</c>) — the
+    /// partition key for every plain per-IP limiter, including the non-API-key branch of the
+    /// global limiter.</summary>
+    private static string IpKey(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    /// <summary>Marks a global-limiter bucket as the elevated API-key ceiling rather than the
+    /// plain per-IP ceiling — see <see cref="GlobalPartitionKey"/>.</summary>
+    internal const string ApiKeyIpPartitionPrefix = "apikey-ip:";
+
+    /// <summary>
+    /// The global limiter's partition key for one request. The limiter runs before
+    /// authentication, so a key's validity isn't known yet — only whether the header is present.
+    /// This used to hash the header value itself, so every distinct (even garbage) header value
+    /// minted its own bucket at the elevated <c>apiKeyLimit</c> ceiling: rotating the header
+    /// per request bypassed the per-IP global ceiling entirely and left key brute-forcing
+    /// effectively unthrottled. Partitioning on the requester's IP instead keeps the elevated
+    /// ceiling available to a genuine caller (a headless CLI is one caller, not one browser tab)
+    /// without letting it be multiplied by rotating the header value — every request from that IP
+    /// bearing the header shares the same one bucket, so the ceiling can't be rotated away.
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_RotatingTheHeaderValueStaysInOneBucketPerIp</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_DifferentIpsWithTheSameHeaderGetDifferentBuckets</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_NoHeaderUsesThePlainIpBucket</seealso>
+    /// </summary>
+    internal static string GlobalPartitionKey(HttpContext ctx)
+    {
+        bool hasApiKeyHeader = ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
+            && values.Count > 0
+            && !string.IsNullOrEmpty(values[0]);
+        string ip = IpKey(ctx);
+        return hasApiKeyHeader ? $"{ApiKeyIpPartitionPrefix}{ip}" : ip;
+    }
+
     public static IServiceCollection AddCustomRateLimiting(this IServiceCollection services, IWebHostEnvironment env)
     {
         bool isTesting = env.EnvironmentName == "Testing";
@@ -61,20 +93,6 @@ public static class ServiceCollectionExtensions
         int publicLimit = isTesting ? 10000 : 120;  // per IP: ~2 req/s, covers normal browsing
         int globalLimit = isTesting ? 10000 : 300;  // per IP: overall ceiling
         int apiKeyLimit = isTesting ? 10000 : 1000; // per key: a headless CLI is one caller, not one browser tab
-
-        static string IpKey(HttpContext ctx) =>
-            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        // The limiter runs before authentication, so a key's validity isn't known yet — only the
-        // presence of the header. Hashing the raw value (never the value itself) still gives a
-        // genuine key its own bucket, and spreads garbage headers across many buckets instead of
-        // letting an attacker concentrate load in one by reusing a single id segment.
-        static string? ApiKeyPartition(HttpContext ctx) =>
-            ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
-            && values.Count > 0
-            && !string.IsNullOrEmpty(values[0])
-                ? ApiKeyCrypto.Hash(values[0]!)
-                : null;
 
         services.AddRateLimiter(options =>
         {
@@ -100,22 +118,15 @@ public static class ServiceCollectionExtensions
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
             {
-                string? apiKeyPartition = ApiKeyPartition(ctx);
-                return apiKeyPartition is not null
-                    ? RateLimitPartition.GetFixedWindowLimiter($"apikey:{apiKeyPartition}", _ => new FixedWindowRateLimiterOptions
-                    {
-                        AutoReplenishment = true,
-                        PermitLimit = apiKeyLimit,
-                        QueueLimit = 0,
-                        Window = TimeSpan.FromMinutes(1),
-                    })
-                    : RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
-                    {
-                        AutoReplenishment = true,
-                        PermitLimit = globalLimit,
-                        QueueLimit = 0,
-                        Window = TimeSpan.FromMinutes(1),
-                    });
+                string partitionKey = GlobalPartitionKey(ctx);
+                bool isApiKeyPartition = partitionKey.StartsWith(ApiKeyIpPartitionPrefix, StringComparison.Ordinal);
+                return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = isApiKeyPartition ? apiKeyLimit : globalLimit,
+                    QueueLimit = 0,
+                    Window = TimeSpan.FromMinutes(1),
+                });
             });
         });
 

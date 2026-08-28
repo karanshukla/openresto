@@ -19,10 +19,10 @@ public class BookingsControllerUnitTests
     public BookingsControllerUnitTests()
     {
         // BookingService has 8 required ctor params (incl. TableAutoAssigner for "Any section"
-        // auto-assign and ITableGroupRepository for combinable-group bookings) + 2 optional. Moq
+        // auto-assign and ITableGroupRepository for combinable-group bookings) + 3 optional. Moq
         // needs a value per param to create the proxy; null! skips real initialization since these
         // tests mock the methods directly.
-        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
+        _mockBookingService = new Mock<BookingService>(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
 
         var mockProvider = new Mock<IDataProtectionProvider>();
         mockProvider.Setup(p => p.CreateProtector(It.IsAny<string>())).Returns(new Mock<IDataProtector>().Object);

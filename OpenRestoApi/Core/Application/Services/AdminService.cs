@@ -37,7 +37,8 @@ public class AdminService(
     IEmailService emailService,
     BrandService? brandService = null,
     INotificationQueue? notificationQueue = null,
-    IAuditScope? audit = null)
+    IAuditScope? audit = null,
+    ICurrentUserService? currentUser = null)
 {
     /// <summary>
     /// Castle's generated proxy constructors drop default values, so a Moq class mock reaches only
@@ -54,10 +55,11 @@ public class AdminService(
         BrandService? brand,
         INotificationQueue? notifications)
         : this(bookings, bookingFilters, restaurants, sections, tables, holds, email, brand,
-            notifications, null)
+            notifications, null, null)
     { }
 
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
+    private readonly ICurrentUserService _currentUser = currentUser ?? NullCurrentUserService.Instance;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly IBookingFilterRepository _bookingFilterRepository = bookingFilterRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
@@ -780,7 +782,10 @@ public class AdminService(
 
     // ── Mapping ─────────────────────────────────────────────────────────────
 
-    private static BookingDetailDto ToDetailDto(Booking b)
+    // Instance rather than static so the single mapping choke point can also apply
+    // BookingGuestVisibility — every caller returning a BookingDetailDto routes through here, so
+    // that is the one place the redaction rule needs to live.
+    private BookingDetailDto ToDetailDto(Booking b)
     {
         DateTime dateUtc = AsUtc(b.Date);
         DateTime? endTimeUtc = b.EndTime.HasValue ? AsUtc(b.EndTime.Value) : null;
@@ -797,7 +802,7 @@ public class AdminService(
         }
         tableName ??= "Table";
 
-        return new BookingDetailDto
+        var dto = new BookingDetailDto
         {
             Id = b.Id,
             RestaurantId = b.RestaurantId,
@@ -819,5 +824,6 @@ public class AdminService(
             IsCancelled = b.IsCancelled,
             CancelledAt = cancelledAtUtc,
         };
+        return BookingGuestVisibility.Apply(dto, _currentUser);
     }
 }
