@@ -1625,7 +1625,7 @@
           "guests": "Guests"
         },
         "expiryLabel": "Expiry",
-        "expiryHint": "Leave on \"No expiry\" for a key that never expires.",
+        "expiryHint": "Defaults to 1 year. Choose \"No expiry\" for a key that never expires.",
         "expiryPreset": {
           "none": "No expiry",
           "thirtyDays": "30 days",

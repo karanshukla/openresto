@@ -69,7 +69,7 @@ interface NewKeyState {
 const emptyNewKey = (): NewKeyState => ({
   name: "",
   scopes: emptyScopeState(),
-  expiryPreset: "none",
+  expiryPreset: "1y",
 });
 
 /**
@@ -135,11 +135,11 @@ export function ApiKeysCard({
     }
 
     setBusy(true);
-    const result = await adminCreateApiKey({
-      name,
-      scopes,
-      expiresAt: expiryIsoFor(newKey.expiryPreset),
-    });
+    const result = await adminCreateApiKey(
+      newKey.expiryPreset === "none"
+        ? { name, scopes, neverExpires: true }
+        : { name, scopes, expiresAt: expiryIsoFor(newKey.expiryPreset) }
+    );
     setBusy(false);
 
     if (!result.ok) {

@@ -85,9 +85,10 @@ extensive set by default (i.e., untagged).
 
 ```bash
 # 1. Add a ## [x.y.z] - YYYY-MM-DD section to CHANGELOG.md
-# 2. Bump "version" in package.json (root) and openresto-frontend/package.json
-#    to the tag without the v prefix, then regenerate both lockfiles:
-npm install --package-lock-only && npm install --package-lock-only --prefix openresto-frontend
+# 2. Bump "version" in package.json (root), openresto-frontend/package.json, and
+#    openresto-cli/package.json to the tag without the v prefix, then regenerate
+#    all three lockfiles:
+npm install --package-lock-only && npm install --package-lock-only --prefix openresto-frontend && npm install --package-lock-only --prefix openresto-cli
 # 3. Confirm everything agrees before tagging (CI runs this too):
 ./scripts/check-release-version.sh v1.0.0
 git tag v1.0.0
@@ -98,11 +99,11 @@ Never hand-edit the lockfiles; `--package-lock-only` is what keeps their top-lev
 
 **Pick the number by semver, not by habit.** A release containing any new feature is a minor bump, even a small one. Patch is for fixes only.
 
-`scripts/check-release-version.sh` is the guard against a half-finished bump: it asserts the two `package.json`s, the two `package-lock.json`s, and a CHANGELOG section all agree with the tag. The `verify-version` job in `release.yml` gates all three image builds on it, so a mismatch fails the release before anything reaches GHCR. v1.6.0 shipped with all four version fields still reading `1.5.0`, which is what this exists to prevent.
+`scripts/check-release-version.sh` is the guard against a half-finished bump: it asserts the three `package.json`s, the three `package-lock.json`s, and a CHANGELOG section all agree with the tag. The `verify-version` job in `release.yml` gates all four image builds on it, so a mismatch fails the release before anything reaches GHCR. v1.6.0 shipped with all four version fields still reading `1.5.0`, which is what this exists to prevent.
 
 The frontend's Expo config takes its `version` from `openresto-frontend/package.json` (`app.config.ts` imports it), so there is nothing to bump there. `app.json` deliberately carries no `version` key: `app.config.ts` overrides everything it sets, so a value there is silently dead.
 
-This triggers `.github/workflows/release.yml`, which builds `linux/amd64` + `linux/arm64` images for backend, frontend, and nginx; pushes them to GHCR (`ghcr.io/karanshukla/openresto-{backend,frontend,nginx}:<tag>`); and creates a GitHub Release with the per-version CHANGELOG section as notes and a pinned `docker-compose.yml` as a downloadable asset.
+This triggers `.github/workflows/release.yml`, which builds `linux/amd64` + `linux/arm64` images for backend, frontend, nginx, and the CLI; pushes them to GHCR (`ghcr.io/karanshukla/openresto-{backend,frontend,nginx,cli}:<tag>`); and creates a GitHub Release with the per-version CHANGELOG section as notes and a pinned `docker-compose.yml` as a downloadable asset.
 
 `docker-compose.release.yml` in the repo is the self-hoster install template. It references `${OPENRESTO_VERSION:-latest}` — the release workflow substitutes the actual tag before attaching it to the release. Self-hosters can also run any version directly:
 
@@ -260,7 +261,7 @@ Five invariants:
 
 ### The CLI and its OpenAPI contract
 
-`openresto-cli/` is a standalone TypeScript package (Node 24, `commander` as the only runtime dep), versioned independently at 0.1.0 — deliberately **not** wired into `scripts/check-release-version.sh` or the release workflow, and not published to npm yet. User docs live in `openresto-cli/README.md`. Two conventions are load-bearing:
+`openresto-cli/` is a standalone TypeScript package (Node 24, `commander` as the only runtime dep). It is not its own product — it's an extension of OpenResto — so its `package.json` version stays synced with the root/frontend version on every release (`scripts/check-release-version.sh` enforces this the same way it does for the other two packages) and it ships only as a Docker image (`ghcr.io/karanshukla/openresto-cli:<tag>`, built by `release.yml` alongside backend/frontend/nginx); it is not published to npm. User docs live in `openresto-cli/README.md`. Two conventions are load-bearing:
 
 - **The API key is never accepted as argv** (`ps` exposure — the same rule `scripts/demo_data.py` follows for the admin password). `auth login` prompts with hidden input or reads stdin; `OPENRESTO_URL`/`OPENRESTO_API_KEY` env vars override the `~/.config/openresto/config.json` profile (written mode 0600).
 - **The committed contract must match the controllers byte-for-byte.** `tools/OpenApiExport` boots the real API in-process (`WebApplicationFactory`, in-memory SQLite — build-time MSBuild generation was tried and rejected; the tool's doc comment says why) and writes `openresto-cli/openapi/v1.json`; `openapi-typescript` compiles it to `openresto-cli/src/generated/api.d.ts`. The `openapi-drift` CI job regenerates both and fails on any diff, so an API-shape change must ship with:

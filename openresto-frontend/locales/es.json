@@ -1625,7 +1625,7 @@
           "guests": "Comensales"
         },
         "expiryLabel": "Caducidad",
-        "expiryHint": "Deja «Sin caducidad» para una clave que nunca expire.",
+        "expiryHint": "El valor predeterminado es 1 año. Elige «Sin caducidad» para una clave que nunca expire.",
         "expiryPreset": {
           "none": "Sin caducidad",
           "thirtyDays": "30 días",

@@ -175,6 +175,48 @@ public class ApiKeyServiceTests
         Assert.Equal(BaseTime.AddDays(30), created.ExpiresAt);
     }
 
+    [Fact]
+    public async Task CreateAsync_DefaultsToOneYearExpiry_WhenExpiryIsOmitted()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_DefaultsToOneYearExpiry_WhenExpiryIsOmitted));
+        AdminCredential owner = SeedUser(db, "owner@example.com");
+        var clock = new FakeClock(BaseTime);
+        ApiKeyService svc = CreateService(db, owner.Id, clock);
+
+        ApiKeyCreatedDto created = await svc.CreateAsync(ValidRequest());
+
+        Assert.Equal(BaseTime.AddYears(1), created.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task CreateAsync_NeverExpires_ProducesNoExpiry()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_NeverExpires_ProducesNoExpiry));
+        AdminCredential owner = SeedUser(db, "owner@example.com");
+        ApiKeyService svc = CreateService(db, owner.Id);
+        CreateApiKeyRequest req = ValidRequest();
+        req.NeverExpires = true;
+
+        ApiKeyCreatedDto created = await svc.CreateAsync(req);
+
+        Assert.Null(created.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RejectsAnExpiresAtCombinedWithNeverExpires()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_RejectsAnExpiresAtCombinedWithNeverExpires));
+        AdminCredential owner = SeedUser(db, "owner@example.com");
+        var clock = new FakeClock(BaseTime);
+        ApiKeyService svc = CreateService(db, owner.Id, clock);
+        CreateApiKeyRequest req = ValidRequest();
+        req.ExpiresAt = BaseTime.AddDays(30);
+        req.NeverExpires = true;
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateAsync(req));
+        Assert.Equal(ErrorCodes.ApiKeyExpiresAtWithNeverExpires, ex.Code);
+    }
+
     // ── GetAllAsync ──────────────────────────────────────────────────────────
 
     [Fact]

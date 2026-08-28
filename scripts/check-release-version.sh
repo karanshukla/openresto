@@ -27,6 +27,8 @@ VERSIONED_FILES=(
   package-lock.json
   openresto-frontend/package.json
   openresto-frontend/package-lock.json
+  openresto-cli/package.json
+  openresto-cli/package-lock.json
 )
 
 failures=0
@@ -52,7 +54,7 @@ if [ "$failures" -gt 0 ]; then
   cat >&2 <<EOF
 
 $failures check(s) failed. To fix:
-  - bump "version" in package.json and openresto-frontend/package.json to $VERSION
+  - bump "version" in package.json, openresto-frontend/package.json, and openresto-cli/package.json to $VERSION
   - run 'npm install --package-lock-only' in each of those directories
   - add a '## [$VERSION] - YYYY-MM-DD' section to CHANGELOG.md
 EOF

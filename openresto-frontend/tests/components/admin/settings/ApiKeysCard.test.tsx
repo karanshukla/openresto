@@ -182,11 +182,17 @@ describe("ApiKeysCard", () => {
     fireEvent.press(screen.getByLabelText("Add this key"));
 
     await waitFor(() => expect(screen.getByText('"New service" created.')).toBeTruthy());
-    expect(apiKeysApi.adminCreateApiKey).toHaveBeenCalledWith({
-      name: "New service",
-      scopes: [{ resource: "bookings", access: "read" }],
-      expiresAt: undefined,
-    });
+    // Default preset is 1 year, so an explicit expiresAt goes out even though the caller
+    // never touched the expiry field.
+    const call = (apiKeysApi.adminCreateApiKey as jest.Mock).mock.calls[0][0];
+    expect(call).toEqual(
+      expect.objectContaining({
+        name: "New service",
+        scopes: [{ resource: "bookings", access: "read" }],
+      })
+    );
+    expect(typeof call.expiresAt).toBe("string");
+    expect(call.neverExpires).toBeUndefined();
     // The secret modal opens showing the full value exactly once.
     expect(screen.getByTestId("api-key-secret-value")).toHaveTextContent(
       "orst_55_thefullsecretvalue"
@@ -238,6 +244,40 @@ describe("ApiKeysCard", () => {
     const call = (apiKeysApi.adminCreateApiKey as jest.Mock).mock.calls[0][0];
     expect(typeof call.expiresAt).toBe("string");
     expect(new Date(call.expiresAt).getTime()).toBeGreaterThan(Date.now());
+    expect(call.neverExpires).toBeUndefined();
+  });
+
+  it("defaults the expiry preset to 1 year", async () => {
+    await renderLoaded();
+    await openAddForm();
+
+    expect(screen.getByLabelText("1 year").props.accessibilityState.checked).toBe(true);
+    expect(screen.getByLabelText("No expiry").props.accessibilityState.checked).toBe(false);
+  });
+
+  it("sends neverExpires and no expiresAt when No expiry is chosen explicitly", async () => {
+    (apiKeysApi.adminCreateApiKey as jest.Mock).mockResolvedValue({
+      ok: true,
+      key: { ...BOOKINGS_KEY, id: 9, secret: "orst_09_x", expiresAt: null },
+    });
+    await renderLoaded();
+    await openAddForm();
+    fireEvent.changeText(
+      screen.getByPlaceholderText("e.g. Reservations widget"),
+      "Forever service"
+    );
+    fireEvent.press(screen.getByLabelText("Read access to Bookings"));
+    fireEvent.press(screen.getByLabelText("No expiry"));
+
+    fireEvent.press(screen.getByLabelText("Add this key"));
+
+    await waitFor(() =>
+      expect(apiKeysApi.adminCreateApiKey).toHaveBeenCalledWith({
+        name: "Forever service",
+        scopes: [{ resource: "bookings", access: "read" }],
+        neverExpires: true,
+      })
+    );
   });
 
   it("surfaces a server rejection verbatim", async () => {

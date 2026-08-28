@@ -51,6 +51,7 @@ export interface CreateApiKeyInput {
   name: string;
   scopes: ApiKeyScope[];
   expiresAt?: string;
+  neverExpires?: boolean;
 }
 
 /** The one response that ever carries the full secret — shown once, then gone. */

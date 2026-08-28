@@ -13,4 +13,8 @@ public static class ApiKeyFields
     public const int MaxPrefixLength = 16;
 
     public const int MaxScopesJsonLength = 2000;
+
+    /// <summary>The safe-by-default expiry window applied when a create request omits
+    /// <c>ExpiresAt</c> and does not opt into <c>NeverExpires</c>.</summary>
+    public const int DefaultExpiryYears = 1;
 }

@@ -1625,7 +1625,7 @@
           "guests": "Gäste"
         },
         "expiryLabel": "Ablauf",
-        "expiryHint": "Lasse „Kein Ablauf“ ausgewählt für einen Schlüssel, der nie abläuft.",
+        "expiryHint": "Standardmäßig 1 Jahr. Wähle „Kein Ablauf“ für einen Schlüssel, der nie abläuft.",
         "expiryPreset": {
           "none": "Kein Ablauf",
           "thirtyDays": "30 Tage",
