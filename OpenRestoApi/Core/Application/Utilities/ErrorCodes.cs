@@ -94,6 +94,16 @@ public static class ErrorCodes
     public const string UserPasswordTooShort = "user.password_too_short";
     public const string UserRoleInvalid = "user.role_invalid";
 
+    // ── API keys ─────────────────────────────────────────────────────────────
+    public const string ApiKeyNameRequired = "api_key.name_required";
+    public const string ApiKeyNameTooLong = "api_key.name_too_long";
+    public const string ApiKeyScopesRequired = "api_key.scopes_required";
+    public const string ApiKeyScopeInvalid = "api_key.scope_invalid";
+    public const string ApiKeyExpiresAtInPast = "api_key.expires_at_in_past";
+    public const string ApiKeyNotFound = "api_key.not_found";
+    public const string ApiKeyScopeMissing = "api_key.scope_missing";
+    public const string ApiKeyNotAllowed = "api_key.not_allowed";
+
     public const string AuthEmailUnchanged = "auth.email_unchanged";
     public const string AuthEmailAlreadyInUse = "auth.email_already_in_use";
     public const string AuthPvqFieldsRequired = "auth.pvq_fields_required";

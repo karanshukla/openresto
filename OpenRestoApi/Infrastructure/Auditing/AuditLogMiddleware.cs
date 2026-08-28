@@ -3,6 +3,7 @@ using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Infrastructure.Auditing;
 
@@ -113,6 +114,15 @@ internal sealed class AuditLogMiddleware(
             displayName = account?.DisplayName;
             email ??= account?.Email;
             role ??= account?.Role;
+        }
+
+        // An API-key request acts as the underlying user, but "who" isn't the whole story for a
+        // headless caller — "which key" is the point of the key's Name field (issue #319), so it
+        // rides along on the same display-name slot rather than adding a column.
+        string? apiKeyName = context.User.FindFirst(ApiKeyClaimTypes.KeyName)?.Value;
+        if (!string.IsNullOrEmpty(apiKeyName))
+        {
+            displayName = $"{displayName ?? email ?? "?"} (API key \"{apiKeyName}\")";
         }
 
         return new AuditActor(userId, email ?? string.Empty, displayName, role ?? string.Empty);

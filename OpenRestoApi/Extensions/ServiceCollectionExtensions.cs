@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -12,6 +13,11 @@ using OpenRestoApi.Infrastructure.Auth;
 using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 using WebPush;
+// Microsoft.AspNetCore.Authentication (needed for the API-key AuthenticationSchemeOptions
+// registration below) carries its own (deprecated) ISystemClock/SystemClock; alias ours so the
+// two don't collide.
+using ISystemClock = OpenRestoApi.Core.Application.Interfaces.ISystemClock;
+using SystemClock = OpenRestoApi.Core.Application.Interfaces.SystemClock;
 
 namespace OpenRestoApi.Extensions;
 
@@ -54,9 +60,21 @@ public static class ServiceCollectionExtensions
         int authLimit = isTesting ? 10000 : 10;   // per IP: brute-force protection on /login
         int publicLimit = isTesting ? 10000 : 120;  // per IP: ~2 req/s, covers normal browsing
         int globalLimit = isTesting ? 10000 : 300;  // per IP: overall ceiling
+        int apiKeyLimit = isTesting ? 10000 : 1000; // per key: a headless CLI is one caller, not one browser tab
 
         static string IpKey(HttpContext ctx) =>
             ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        // The limiter runs before authentication, so a key's validity isn't known yet — only the
+        // presence of the header. Hashing the raw value (never the value itself) still gives a
+        // genuine key its own bucket, and spreads garbage headers across many buckets instead of
+        // letting an attacker concentrate load in one by reusing a single id segment.
+        static string? ApiKeyPartition(HttpContext ctx) =>
+            ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
+            && values.Count > 0
+            && !string.IsNullOrEmpty(values[0])
+                ? ApiKeyCrypto.Hash(values[0]!)
+                : null;
 
         services.AddRateLimiter(options =>
         {
@@ -81,13 +99,24 @@ public static class ServiceCollectionExtensions
                 }));
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-                RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
-                {
-                    AutoReplenishment = true,
-                    PermitLimit = globalLimit,
-                    QueueLimit = 0,
-                    Window = TimeSpan.FromMinutes(1),
-                }));
+            {
+                string? apiKeyPartition = ApiKeyPartition(ctx);
+                return apiKeyPartition is not null
+                    ? RateLimitPartition.GetFixedWindowLimiter($"apikey:{apiKeyPartition}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = apiKeyLimit,
+                        QueueLimit = 0,
+                        Window = TimeSpan.FromMinutes(1),
+                    })
+                    : RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = globalLimit,
+                        QueueLimit = 0,
+                        Window = TimeSpan.FromMinutes(1),
+                    });
+            });
         });
 
         return services;
@@ -107,8 +136,26 @@ public static class ServiceCollectionExtensions
                 "Generate one with: openssl rand -base64 48");
         }
 
+        // A policy scheme in front of JWT Bearer and the API-key handler: every existing
+        // [Authorize(Policy = ...)] keeps naming a policy, never a scheme, so accepting a second
+        // credential type is zero controller changes. Routing on the presence of the API-key
+        // header (rather than trying JWT first and falling back) keeps the two schemes from ever
+        // both attempting to parse the same request's credentials.
         services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = "AdminAuth";
+                options.DefaultAuthenticateScheme = "AdminAuth";
+                options.DefaultChallengeScheme = "AdminAuth";
+            })
+            .AddPolicyScheme("AdminAuth", "JWT Bearer or API Key", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey(ApiKeyClaimTypes.HeaderName)
+                        ? ApiKeyClaimTypes.Scheme
+                        : JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyClaimTypes.Scheme, _ => { })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -190,6 +237,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHighlightRepository, HighlightRepository>();
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
         services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
+        services.AddScoped<IAdminApiKeyRepository, AdminApiKeyRepository>();
 
         // One instance per request, reachable both as the write-only contract services enrich
         // through and as the concrete draft the audit middleware reads back.
@@ -207,6 +255,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISecurityQuestionsService, SecurityQuestionsService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<UserService>();
+        services.AddScoped<ApiKeyService>();
         services.AddScoped<BookingService>();
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();

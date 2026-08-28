@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdminNotification> AdminNotifications { get; set; } = null!;
     public DbSet<AdminPushSubscription> AdminPushSubscriptions { get; set; } = null!;
     public DbSet<AdminAuditEntry> AdminAuditEntries { get; set; } = null!;
+    public DbSet<AdminApiKey> AdminApiKeys { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -158,6 +159,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.ActorUserId, x.OccurredAt });
             e.HasIndex(x => new { x.RestaurantId, x.OccurredAt });
             e.HasIndex(x => x.Action);
+        });
+
+        modelBuilder.Entity<AdminApiKey>(k =>
+        {
+            k.HasKey(x => x.Id);
+            // The credentials table is wiped and reseeded on every demo reset — a cascading
+            // delete is what keeps that from orphaning keys rather than something to guard
+            // against.
+            k.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            k.Property(x => x.Name).IsRequired().HasMaxLength(ApiKeyFields.MaxNameLength);
+            k.Property(x => x.KeyHash).IsRequired().HasMaxLength(ApiKeyFields.KeyHashLength);
+            k.Property(x => x.Prefix).IsRequired().HasMaxLength(ApiKeyFields.MaxPrefixLength);
+            k.Property(x => x.ScopesJson).IsRequired().HasMaxLength(ApiKeyFields.MaxScopesJsonLength);
+            k.HasIndex(x => x.KeyHash).IsUnique();
+            k.HasIndex(x => x.UserId);
         });
 
         modelBuilder.Entity<AdminPushSubscription>(s =>
