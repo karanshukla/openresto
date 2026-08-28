@@ -13,6 +13,20 @@ const LIST_COLUMNS = [
   "status",
 ];
 
+/**
+ * `BookingDto` carries `isCancelled`, not a `status` string, so the table view derives one; the
+ * `--json` output stays the raw DTO.
+ */
+function withDerivedStatus(result: unknown): unknown {
+  if (!Array.isArray(result)) {
+    return result;
+  }
+  return (result as Record<string, unknown>[]).map((row) => ({
+    ...row,
+    status: row.isCancelled ? "cancelled" : "active",
+  }));
+}
+
 export function registerBookingsCommands(program: Command): void {
   const bookings = program.command("bookings").description("Manage bookings");
 
@@ -53,7 +67,11 @@ export function registerBookingsCommands(program: Command): void {
               query: options.query,
             },
           });
-          printResult(result, Boolean(globals.json), LIST_COLUMNS);
+          printResult(
+            globals.json ? result : withDerivedStatus(result),
+            Boolean(globals.json),
+            LIST_COLUMNS,
+          );
         },
       ),
     );

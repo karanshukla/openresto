@@ -197,3 +197,26 @@ describe("Client", () => {
     assert.equal(seenUrl, "https://api.example/api/brand");
   });
 });
+
+describe("connection failures", () => {
+  test("an unreachable server names the origin and the underlying cause, not bare fetch failed", async () => {
+    const client = new Client({
+      baseUrl: "https://gone.example",
+      fetchImpl: (async () => {
+        throw new Error("fetch failed", {
+          cause: new Error("getaddrinfo ENOTFOUND gone.example"),
+        });
+      }) as typeof fetch,
+    });
+
+    await assert.rejects(
+      () => client.get("/api/brand"),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.match(err.message, /https:\/\/gone\.example/);
+        assert.match(err.message, /ENOTFOUND/);
+        return true;
+      },
+    );
+  });
+});

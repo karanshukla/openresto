@@ -70,11 +70,18 @@ export class Client {
       body = JSON.stringify(options.body);
     }
 
-    const response = await this.fetchImpl(url.toString(), {
-      method,
-      headers,
-      body,
-    });
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url.toString(), {
+        method,
+        headers,
+        body,
+      });
+    } catch (err) {
+      throw new Error(
+        `Could not reach ${url.origin}: ${describeFetchFailure(err)}`,
+      );
+    }
 
     if (response.status === 204) {
       return undefined as T;
@@ -118,6 +125,17 @@ export class Client {
 /** The server's error bodies are `{ message, code? }` (MessageResponse) or ASP.NET Core's
  * ProblemDetails (`{ title, detail? }`) for bare status-code responses. Falls back to a generic
  * message keyed by status code when neither shape is recognized. */
+/**
+ * Node's fetch reports every connection-level failure as a bare "fetch failed", hiding the
+ * actionable part (ENOTFOUND, ECONNREFUSED, …) one level down in `cause` — surface that instead.
+ */
+function describeFetchFailure(err: unknown): string {
+  if (err instanceof Error) {
+    return err.cause instanceof Error ? err.cause.message : err.message;
+  }
+  return String(err);
+}
+
 function extractError(
   body: unknown,
   status: number,
