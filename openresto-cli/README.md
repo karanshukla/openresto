@@ -1,14 +1,31 @@
 # openresto-cli
 
 A command-line client for the OpenResto admin API, authenticated with an
-[admin API key](../OpenRestoApi/Controllers/ApiKeysController.cs) rather than a browser session.
+[admin API key](https://github.com/karanshukla/openresto/blob/main/OpenRestoApi/Controllers/ApiKeysController.cs)
+rather than a browser session.
 
-It isn't its own product — it's an extension of OpenResto — so its version tracks the main
-project's on every release and it's distributed as a Docker image only (not published to npm).
+[OpenResto](https://github.com/karanshukla/openresto) is a self-hosted restaurant booking system: guests browse locations, hold a
+table in real time and book; staff run reservations, tables, sections and branding from an admin
+dashboard. This CLI drives that same admin API from a terminal. If you don't have a server yet,
+start at the [main repository](https://github.com/karanshukla/openresto#readme).
+
+This isn't its own product, it's an extension of OpenResto, so its version tracks the main
+project's on every release. Pick the release that matches your server.
 
 ## Install
 
-### Docker (recommended)
+### npm (recommended)
+
+```bash
+npx openresto-cli@1.9.0 --help      # no install
+npm install -g openresto-cli@1.9.0  # or put `openresto` on your PATH
+```
+
+Requires Node 24+. Installing globally is what gives you the `openresto` command and a
+persistent profile at `~/.config/openresto/config.json`, so it's the option to use if you run
+more than the occasional one-off command.
+
+### Docker
 
 ```bash
 docker run --rm \
@@ -31,10 +48,13 @@ docker run --rm -v openresto-cli-config:/home/node/.config/openresto \
 
 (`auth login` needs `-it` so its hidden-input prompt has a real terminal; later commands don't.)
 
+Use this when the machine has Docker but no Node 24.
+
 ### From source
 
 ```bash
-cd openresto-cli
+git clone https://github.com/karanshukla/openresto.git
+cd openresto/openresto-cli
 npm install
 npm run build
 npm link   # optional: puts `openresto` on your PATH
@@ -63,7 +83,8 @@ Requires Node 24+.
    ```
 
    **The key is never accepted as a command-line argument** — the same reason
-   `scripts/demo_data.py` won't take a password on argv: anything passed as `argv` is visible to
+   [`scripts/demo_data.py`](https://github.com/karanshukla/openresto/blob/main/scripts/demo_data.py) won't take a password on argv:
+   anything passed as `argv` is visible to
    every other process on the machine via `ps`. `auth login` either prompts for it with the
    terminal's input hidden, or reads it from stdin when piped, e.g. in a script:
 
@@ -217,6 +238,8 @@ time.
 
 ## Development
 
+These run inside a clone of the [OpenResto repository](https://github.com/karanshukla/openresto), not against the published package.
+
 ```bash
 npm run typecheck   # tsc --noEmit
 npm test            # builds, then runs the node:test suite in dist/
@@ -231,7 +254,8 @@ the shape of requests/responses for the hand-written fetch transport (`src/trans
 on — **generated operation names never dictate the CLI's command structure**; the command tree
 above is designed by hand and mapped onto the real endpoints.
 
-Both files are committed, and CI's `OpenAPI Drift` job (`.github/workflows/ci.yml`) fails if
+Both files are committed, and CI's `OpenAPI Drift` job
+([`.github/workflows/ci.yml`](https://github.com/karanshukla/openresto/blob/main/.github/workflows/ci.yml)) fails if
 either goes stale. To regenerate them after an API change:
 
 ```bash
@@ -241,5 +265,5 @@ dotnet build
 (cd openresto-cli && npm run generate:types)
 ```
 
-See `tools/OpenApiExport/Program.cs` for why the document is emitted by booting the API
+See [`tools/OpenApiExport/Program.cs`](https://github.com/karanshukla/openresto/blob/main/tools/OpenApiExport/Program.cs) for why the document is emitted by booting the API
 in-process (`WebApplicationFactory`) rather than via MSBuild's build-time document generation.

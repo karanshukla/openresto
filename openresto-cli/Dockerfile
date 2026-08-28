@@ -1,5 +1,5 @@
-# openresto-cli ships only as a Docker image (no npm publish) — see CLAUDE.md's
-# "The CLI and its OpenAPI contract". Multi-stage so the published image carries
+# The image is the no-Node-24 install path for the CLI; npm is the default one — see
+# CLAUDE.md's "The CLI and its OpenAPI contract". Multi-stage so the published image carries
 # only the compiled dist/ and production dependencies (just `commander`), not
 # TypeScript/openapi-typescript or the generated OpenAPI contract's build tooling.
 

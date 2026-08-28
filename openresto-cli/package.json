@@ -1,8 +1,25 @@
 {
   "name": "openresto-cli",
   "version": "1.9.0",
-  "private": true,
   "description": "Command-line client for the OpenResto admin API, driven by admin API keys.",
+  "keywords": [
+    "openresto",
+    "restaurant",
+    "reservations",
+    "booking",
+    "cli"
+  ],
+  "homepage": "https://github.com/karanshukla/openresto/tree/main/openresto-cli#readme",
+  "bugs": {
+    "url": "https://github.com/karanshukla/openresto/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/karanshukla/openresto.git",
+    "directory": "openresto-cli"
+  },
+  "license": "MIT",
+  "author": "Karan Shukla",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -11,14 +28,19 @@
     "openresto": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.test.js"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "generate:types": "node scripts/generate-types.mjs",
     "test": "npm run build && node --test 'dist/**/*.test.js'",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "commander": "^12.1.0"

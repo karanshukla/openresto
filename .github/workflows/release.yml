@@ -170,10 +170,41 @@ jobs:
           cache-from: type=gha,scope=cli
           cache-to: type=gha,mode=max,scope=cli
 
+  publish-npm:
+    name: Publish CLI to npm
+    runs-on: ubuntu-latest
+    needs: [verify-version]
+    # Overrides the workflow-level grant: publishing needs no write on contents or
+    # packages, and does need id-token for the provenance attestation below.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-cli/package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Install and test
+        working-directory: ./openresto-cli
+        run: |
+          npm ci
+          npm test
+
+      - name: Publish
+        working-directory: ./openresto-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance
+
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend, build-nginx, build-cli]
+    needs: [build-backend, build-frontend, build-nginx, build-cli, publish-npm]
     steps:
       - uses: actions/checkout@v7
 

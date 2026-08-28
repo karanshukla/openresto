@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`openresto-cli` is now on npm**, so the CLI installs with `npx openresto-cli@<version>` or `npm install -g openresto-cli` instead of only through a Docker container. Docker was a poor fit for a CLI: saved profiles needed a mounted volume, `auth login`'s hidden prompt needed `-it`, and every invocation carried the full `docker run` preamble. The image still ships for hosts that have Docker but no Node 24. The `publish-npm` release job is gated on the same `verify-version` check as the four image builds and on the CLI's own test suite, and publishes with `--provenance` so the tarball on npm is attested back to the workflow run that built it.
+
 ### Fixed
 
 - **The hidden scroll-to-top button no longer sits in the web accessibility tree.** The FAB stays mounted while hidden so it keeps its measured width, and hid itself with `accessibilityElementsHidden` and `importantForAccessibility`. Both are native-only: react-native-web drops them, so on the web build a screen reader was offered a "Scroll to top" button for the whole page, including at the top where pressing it does nothing. It now hides with `aria-hidden`, which React Native maps onto that same native pair and react-native-web forwards to the DOM.
