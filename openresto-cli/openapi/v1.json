@@ -3269,6 +3269,18 @@
           }
         }
       }
+    },
+    "/api/version": {
+      "get": {
+        "tags": [
+          "Version"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4679,6 +4691,9 @@
     },
     {
       "name": "Users"
+    },
+    {
+      "name": "Version"
     }
   ]
 }

@@ -27,7 +27,8 @@ export interface ClientOptions {
 export interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
-  /** Skip the X-API-Key header for this one call (unused today, kept for symmetry/testing). */
+  /** Skip the X-API-Key header for this one call — used by the `/api/version` mismatch check,
+   * a public endpoint the profile's key has no bearing on. */
   anonymous?: boolean;
 }
 

@@ -86,8 +86,8 @@ extensive set by default (i.e., untagged).
 ```bash
 # 1. Add a ## [x.y.z] - YYYY-MM-DD section to CHANGELOG.md
 # 2. Bump "version" in package.json (root), openresto-frontend/package.json, and
-#    openresto-cli/package.json to the tag without the v prefix, then regenerate
-#    all three lockfiles:
+#    openresto-cli/package.json, and <Version> in OpenRestoApi/OpenRestoApi.csproj, to the
+#    tag without the v prefix, then regenerate the three lockfiles:
 npm install --package-lock-only && npm install --package-lock-only --prefix openresto-frontend && npm install --package-lock-only --prefix openresto-cli
 # 3. Confirm everything agrees before tagging (CI runs this too):
 ./scripts/check-release-version.sh v1.0.0

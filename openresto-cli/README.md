@@ -77,6 +77,14 @@ Requires Node 24+.
    openresto auth whoami
    ```
 
+`auth login` and `auth whoami` also check the server's version against the CLI's own (major.minor
+only — a patch difference is expected and silent) and print a one-line `warning:` to stderr on a
+mismatch, e.g. `warning: server is 1.8.0, CLI is 1.9.0 — commands may not match the server's API`.
+A self-hosted server can lag behind the CLI it's paired with, so this is advisory, not fatal — it
+never fails the command it's attached to, and it never appears in `--json` output since it always
+goes to stderr. An older server that predates this check (no `/api/version` endpoint) gets its own
+"server version is unknown" warning instead of a silent skip.
+
 ## Profiles
 
 Multiple servers/keys can be saved as named profiles in `~/.config/openresto/config.json`

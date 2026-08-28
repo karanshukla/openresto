@@ -43,6 +43,18 @@ for file in "${VERSIONED_FILES[@]}"; do
   fi
 done
 
+CSPROJ_FILE="OpenRestoApi/OpenRestoApi.csproj"
+csproj_actual="$(xmllint --xpath 'string(//Version)' "$REPO_ROOT/$CSPROJ_FILE" 2>/dev/null || true)"
+if [ -z "$csproj_actual" ]; then
+  csproj_actual="<missing>"
+fi
+if [ "$csproj_actual" != "$VERSION" ]; then
+  echo "FAIL $CSPROJ_FILE: version is '$csproj_actual', expected '$VERSION'" >&2
+  failures=$((failures + 1))
+else
+  echo "ok   $CSPROJ_FILE"
+fi
+
 if grep -q "^## \[$VERSION\]" "$REPO_ROOT/CHANGELOG.md"; then
   echo "ok   CHANGELOG.md has a [$VERSION] section"
 else
@@ -55,6 +67,7 @@ if [ "$failures" -gt 0 ]; then
 
 $failures check(s) failed. To fix:
   - bump "version" in package.json, openresto-frontend/package.json, and openresto-cli/package.json to $VERSION
+  - bump <Version> in OpenRestoApi/OpenRestoApi.csproj to $VERSION
   - run 'npm install --package-lock-only' in each of those directories
   - add a '## [$VERSION] - YYYY-MM-DD' section to CHANGELOG.md
 EOF
