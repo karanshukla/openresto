@@ -12,7 +12,9 @@
   "paths": {
     "/api/health": {
       "get": {
-        "tags": ["OpenRestoApi"],
+        "tags": [
+          "OpenRestoApi"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -22,7 +24,9 @@
     },
     "/api/Admin/overview": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -32,14 +36,19 @@
     },
     "/api/Admin/bookings": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -96,7 +105,9 @@
         }
       },
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -126,7 +137,9 @@
     },
     "/api/Admin/bookings/{id}": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -134,7 +147,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -146,7 +162,9 @@
         }
       },
       "delete": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -154,7 +172,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -166,7 +187,9 @@
         }
       },
       "put": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -174,7 +197,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -208,7 +234,9 @@
     },
     "/api/Admin/bookings/{id}/extend": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -216,7 +244,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -250,7 +281,9 @@
     },
     "/api/Admin/bookings/{id}/cancel": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -258,7 +291,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -272,7 +308,9 @@
     },
     "/api/Admin/restaurants": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -300,7 +338,9 @@
         }
       },
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -310,7 +350,9 @@
     },
     "/api/Admin/restaurants/{id}": {
       "patch": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -318,7 +360,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -350,7 +395,9 @@
         }
       },
       "delete": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -358,7 +405,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -372,7 +422,9 @@
     },
     "/api/Admin/restaurants/{id}/delete-preview": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -380,7 +432,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -394,7 +449,9 @@
     },
     "/api/Admin/restaurants/{id}/pause": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -402,7 +459,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -436,7 +496,9 @@
     },
     "/api/Admin/restaurants/{id}/unpause": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -444,7 +506,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -458,7 +523,9 @@
     },
     "/api/Admin/restaurants/{id}/extend": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -466,7 +533,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -500,7 +570,9 @@
     },
     "/api/Admin/restaurants/{restaurantId}/sections": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
@@ -508,7 +580,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -522,7 +597,9 @@
     },
     "/api/Admin/restaurants/{id}/sections/reorder": {
       "patch": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -530,7 +607,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -564,7 +644,9 @@
     },
     "/api/Admin/restaurants/{restaurantId}/tables": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
@@ -572,7 +654,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -586,7 +671,9 @@
     },
     "/api/Admin/bookings/{id}/email": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -594,7 +681,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -628,7 +718,9 @@
     },
     "/api/Admin/bookings/{id}/restore": {
       "post": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -636,7 +728,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -650,7 +745,9 @@
     },
     "/api/admin/api-keys": {
       "get": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -658,7 +755,9 @@
         }
       },
       "post": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -688,7 +787,9 @@
     },
     "/api/admin/api-keys/{id}/revoke": {
       "post": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -710,7 +811,9 @@
     },
     "/api/admin/api-keys/self": {
       "get": {
-        "tags": ["ApiKeys"],
+        "tags": [
+          "ApiKeys"
+        ],
         "summary": "Key metadata only (id/name/prefix/scopes) plus the acting user\u0027s email/role \u2014 never the\nhash or secret. A JWT/browser session gets 400 rather than a lookup: it authenticated\nwithout a key, so there is nothing to introspect.",
         "responses": {
           "200": {
@@ -721,7 +824,9 @@
     },
     "/api/admin/audit": {
       "get": {
-        "tags": ["Audit"],
+        "tags": [
+          "Audit"
+        ],
         "summary": "GET /api/admin/audit?actorUserId=1\u0026amp;action=booking\u0026amp;targetType=Booking\u0026amp;restaurantId=2\u0026amp;from=\u2026\u0026amp;to=\u2026\u0026amp;page=1\u0026amp;pageSize=25\n\u0060action\u0060 matches by prefix. Same envelope as the notification history.",
         "parameters": [
           {
@@ -729,7 +834,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -752,7 +860,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -777,7 +888,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32",
               "default": 1
             }
@@ -787,7 +901,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32",
               "default": 25
             }
@@ -802,7 +919,9 @@
     },
     "/api/admin/auth/login": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -832,7 +951,9 @@
     },
     "/api/admin/auth/logout": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "The endpoint takes no token by design \u2014 clearing a cookie that was never set has to\nsucceed \u2014 so an anonymous POST would land an actor-less row, and could be repeated to bury\nthe entries that matter. Only a real session is recorded.\n\u003Cseealso\u003EAuditTrailTests.Logout_IsRecordedForASessionAndIgnoredWithoutOne\u003C/seealso\u003E",
         "responses": {
           "200": {
@@ -843,7 +964,9 @@
     },
     "/api/admin/auth/me": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -853,7 +976,9 @@
     },
     "/api/admin/auth/change-password": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -883,7 +1008,9 @@
     },
     "/api/admin/auth/change-email": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -913,7 +1040,9 @@
     },
     "/api/admin/auth/pvq": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "The security question for a given account, for the forgot-password screen (which has no\nsession yet). This confirms whether an address has an account with a question configured\n\u2014 an accepted trade-off for a self-hosted, internal tool, bounded by the \u0060auth\u0060\nrate-limit policy. The signed-in equivalent is \u0060GET pvq/me\u0060.",
         "parameters": [
           {
@@ -933,7 +1062,9 @@
     },
     "/api/admin/auth/pvq/me": {
       "get": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -943,7 +1074,9 @@
     },
     "/api/admin/auth/pvq/setup": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -973,7 +1106,9 @@
     },
     "/api/admin/auth/pvq/verify": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1003,7 +1138,9 @@
     },
     "/api/admin/auth/reset-password": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1033,7 +1170,9 @@
     },
     "/api/restaurants/{restaurantId}/availability": {
       "get": {
-        "tags": ["Availability"],
+        "tags": [
+          "Availability"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
@@ -1041,7 +1180,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -1058,7 +1200,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1072,7 +1217,9 @@
     },
     "/api/restaurants/{restaurantId}/bookings": {
       "get": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
@@ -1080,7 +1227,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1094,7 +1244,9 @@
     },
     "/api/Bookings/{id}": {
       "get": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1102,7 +1254,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1114,7 +1269,9 @@
         }
       },
       "put": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1122,7 +1279,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1154,7 +1314,9 @@
         }
       },
       "delete": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1162,7 +1324,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1176,7 +1341,9 @@
     },
     "/api/Bookings/ref/{bookingRef}": {
       "get": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "bookingRef",
@@ -1203,7 +1370,9 @@
     },
     "/api/Bookings": {
       "post": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1233,7 +1402,9 @@
     },
     "/api/Bookings/my-recent": {
       "get": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "summary": "Returns the user\u0027s recent bookings from their encrypted HttpOnly cookie.",
         "responses": {
           "200": {
@@ -1244,7 +1415,9 @@
     },
     "/api/Bookings/ref/{bookingRef}/cancel": {
       "post": {
-        "tags": ["Bookings"],
+        "tags": [
+          "Bookings"
+        ],
         "parameters": [
           {
             "name": "bookingRef",
@@ -1284,7 +1457,9 @@
     },
     "/api/brand": {
       "get": {
-        "tags": ["Brand"],
+        "tags": [
+          "Brand"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1292,7 +1467,9 @@
         }
       },
       "patch": {
-        "tags": ["Brand"],
+        "tags": [
+          "Brand"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1322,7 +1499,9 @@
     },
     "/api/brand/pwa-icon.svg": {
       "get": {
-        "tags": ["Brand"],
+        "tags": [
+          "Brand"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1332,7 +1511,9 @@
     },
     "/api/brand/pwa-icon-{size}.png": {
       "get": {
-        "tags": ["Brand"],
+        "tags": [
+          "Brand"
+        ],
         "parameters": [
           {
             "name": "size",
@@ -1340,7 +1521,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1354,7 +1538,9 @@
     },
     "/api/admin/email-settings": {
       "get": {
-        "tags": ["EmailSettings"],
+        "tags": [
+          "EmailSettings"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1362,7 +1548,9 @@
         }
       },
       "patch": {
-        "tags": ["EmailSettings"],
+        "tags": [
+          "EmailSettings"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1392,7 +1580,9 @@
     },
     "/api/admin/email-settings/failures": {
       "get": {
-        "tags": ["EmailSettings"],
+        "tags": [
+          "EmailSettings"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1402,7 +1592,9 @@
     },
     "/api/admin/email-settings/test": {
       "post": {
-        "tags": ["EmailSettings"],
+        "tags": [
+          "EmailSettings"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1412,7 +1604,9 @@
     },
     "/api/highlights": {
       "get": {
-        "tags": ["Highlights"],
+        "tags": [
+          "Highlights"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1420,7 +1614,9 @@
         }
       },
       "post": {
-        "tags": ["Highlights"],
+        "tags": [
+          "Highlights"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1450,7 +1646,9 @@
     },
     "/api/highlights/{id}": {
       "put": {
-        "tags": ["Highlights"],
+        "tags": [
+          "Highlights"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1490,7 +1688,9 @@
         }
       },
       "delete": {
-        "tags": ["Highlights"],
+        "tags": [
+          "Highlights"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1512,7 +1712,9 @@
     },
     "/api/Holds": {
       "post": {
-        "tags": ["Holds"],
+        "tags": [
+          "Holds"
+        ],
         "summary": "Places a temporary hold on a table for a given date.\nReturns 409 Conflict if the table is already held by someone else.\nWhen int? PlaceHoldRequest.TableId/int? PlaceHoldRequest.SectionId\nare omitted, the server auto-assigns the best available table across all sections.\nWhen int? PlaceHoldRequest.TableGroupId is set, the server reserves all member\ntables of that combinable group as one hold (#272).",
         "requestBody": {
           "content": {
@@ -1543,7 +1745,9 @@
     },
     "/api/Holds/{holdId}": {
       "delete": {
-        "tags": ["Holds"],
+        "tags": [
+          "Holds"
+        ],
         "summary": "Releases a hold early (e.g., when the user navigates away).\nSafe to call even if the hold has already expired.",
         "parameters": [
           {
@@ -1564,7 +1768,9 @@
     },
     "/api/media/hero": {
       "post": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -1587,7 +1793,9 @@
         }
       },
       "delete": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1597,7 +1805,9 @@
     },
     "/api/media/location/{id}": {
       "post": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1632,7 +1842,9 @@
         }
       },
       "delete": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1654,7 +1866,9 @@
     },
     "/api/media/menu/{id}": {
       "post": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1689,7 +1903,9 @@
         }
       },
       "delete": {
-        "tags": ["Media"],
+        "tags": [
+          "Media"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1711,7 +1927,9 @@
     },
     "/api/admin/notifications": {
       "get": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "List notification history with optional filters, newest first.\nGET /api/admin/notifications?restaurantId=1\u0026amp;type=BookingCreated\u0026amp;unreadOnly=true\u0026amp;page=1\u0026amp;pageSize=20\nrestaurantId is optional \u2014 omit to see all restaurants.\ntype values: BookingCreated | BookingCancelled | RestaurantNearlyFull",
         "parameters": [
           {
@@ -1719,7 +1937,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -1742,7 +1963,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32",
               "default": 1
             }
@@ -1752,7 +1976,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32",
               "default": 20
             }
@@ -1765,7 +1992,9 @@
         }
       },
       "delete": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1773,7 +2002,10 @@
                 "type": "array",
                 "items": {
                   "pattern": "^-?(?:0|[1-9]\\d*)$",
-                  "type": ["integer", "string"],
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
                   "format": "int32"
                 }
               }
@@ -1783,7 +2015,10 @@
                 "type": "array",
                 "items": {
                   "pattern": "^-?(?:0|[1-9]\\d*)$",
-                  "type": ["integer", "string"],
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
                   "format": "int32"
                 }
               }
@@ -1793,7 +2028,10 @@
                 "type": "array",
                 "items": {
                   "pattern": "^-?(?:0|[1-9]\\d*)$",
-                  "type": ["integer", "string"],
+                  "type": [
+                    "integer",
+                    "string"
+                  ],
                   "format": "int32"
                 }
               }
@@ -1810,7 +2048,9 @@
     },
     "/api/admin/notifications/unread-count": {
       "get": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Unread count badge. Omit restaurantId to get total across all restaurants.\nGET /api/admin/notifications/unread-count\nGET /api/admin/notifications/unread-count?restaurantId=1",
         "parameters": [
           {
@@ -1818,7 +2058,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1832,7 +2075,9 @@
     },
     "/api/admin/notifications/{id}/read": {
       "patch": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Mark a single notification as read.\nPATCH /api/admin/notifications/{id}/read",
         "parameters": [
           {
@@ -1855,7 +2100,9 @@
     },
     "/api/admin/notifications/read-all": {
       "patch": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Mark all notifications for a restaurant as read.\nPATCH /api/admin/notifications/read-all?restaurantId=1",
         "parameters": [
           {
@@ -1863,7 +2110,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1877,7 +2127,9 @@
     },
     "/api/admin/push/vapid-public-key": {
       "get": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Returns the VAPID public key for the frontend to use when subscribing.\nGET /api/admin/push/vapid-public-key\nReturns 204 if VAPID is not configured (push disabled).",
         "responses": {
           "200": {
@@ -1888,7 +2140,9 @@
     },
     "/api/admin/push/subscribe": {
       "post": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Register a browser push subscription.\nPOST /api/admin/push/subscribe?restaurantId=1\nBody: { endpoint, p256dh, auth, userAgent? }",
         "parameters": [
           {
@@ -1896,7 +2150,10 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -1928,7 +2185,9 @@
         }
       },
       "delete": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "summary": "Remove a push subscription (logout / permission revoked).\nDELETE /api/admin/push/subscribe\nBody: \u0022https://fcm.googleapis.com/...\u0022",
         "requestBody": {
           "content": {
@@ -1959,14 +2218,19 @@
     },
     "/api/admin/notifications/all": {
       "delete": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "parameters": [
           {
             "name": "restaurantId",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -1994,7 +2258,9 @@
     },
     "/api/admin/notifications/{id}": {
       "delete": {
-        "tags": ["Notifications"],
+        "tags": [
+          "Notifications"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2016,7 +2282,9 @@
     },
     "/api/Restaurants": {
       "get": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -2024,7 +2292,9 @@
         }
       },
       "post": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2054,7 +2324,9 @@
     },
     "/api/Restaurants/{id}": {
       "get": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2062,7 +2334,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2074,7 +2349,9 @@
         }
       },
       "put": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2082,7 +2359,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2116,7 +2396,9 @@
     },
     "/api/Restaurants/{id}/sections": {
       "post": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2124,7 +2406,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2158,7 +2443,9 @@
     },
     "/api/Restaurants/{id}/sections/{sectionId}": {
       "put": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2166,7 +2453,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2176,7 +2466,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2208,7 +2501,9 @@
         }
       },
       "delete": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2216,7 +2511,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2226,7 +2524,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2240,7 +2541,9 @@
     },
     "/api/Restaurants/{id}/sections/{sectionId}/impact": {
       "get": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2248,7 +2551,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2258,7 +2564,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2272,7 +2581,9 @@
     },
     "/api/Restaurants/{id}/sections/{sectionId}/tables": {
       "post": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2280,7 +2591,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2290,7 +2604,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2324,7 +2641,9 @@
     },
     "/api/Restaurants/{id}/sections/{sectionId}/tables/{tableId}": {
       "put": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2332,7 +2651,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2342,7 +2664,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2352,7 +2677,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2384,7 +2712,9 @@
         }
       },
       "delete": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2392,7 +2722,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2402,7 +2735,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2412,7 +2748,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2426,7 +2765,9 @@
     },
     "/api/Restaurants/{id}/sections/{sectionId}/tables/{tableId}/impact": {
       "get": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2434,7 +2775,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2444,7 +2788,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2454,7 +2801,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2468,7 +2818,9 @@
     },
     "/api/Restaurants/{id}/schedule-conflicts": {
       "get": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2476,7 +2828,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2490,7 +2845,9 @@
     },
     "/api/Restaurants/{id}/groups": {
       "post": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2498,7 +2855,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2532,7 +2892,9 @@
     },
     "/api/Restaurants/{id}/groups/{groupId}": {
       "put": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2540,7 +2902,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2550,7 +2915,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2582,7 +2950,9 @@
         }
       },
       "delete": {
-        "tags": ["Restaurants"],
+        "tags": [
+          "Restaurants"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2590,7 +2960,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -2600,7 +2973,10 @@
             "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           }
@@ -2614,7 +2990,9 @@
     },
     "/api/social-links": {
       "get": {
-        "tags": ["SocialLinks"],
+        "tags": [
+          "SocialLinks"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -2622,7 +3000,9 @@
         }
       },
       "post": {
-        "tags": ["SocialLinks"],
+        "tags": [
+          "SocialLinks"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2652,7 +3032,9 @@
     },
     "/api/social-links/{id}": {
       "put": {
-        "tags": ["SocialLinks"],
+        "tags": [
+          "SocialLinks"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2692,7 +3074,9 @@
         }
       },
       "delete": {
-        "tags": ["SocialLinks"],
+        "tags": [
+          "SocialLinks"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2714,7 +3098,9 @@
     },
     "/api/admin/users": {
       "get": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -2722,7 +3108,9 @@
         }
       },
       "post": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2752,7 +3140,9 @@
     },
     "/api/admin/users/{id}/role": {
       "patch": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2794,7 +3184,9 @@
     },
     "/api/admin/users/{id}/active": {
       "patch": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2836,7 +3228,9 @@
     },
     "/api/admin/users/{id}/reset-password": {
       "post": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -2884,17 +3278,26 @@
         "properties": {
           "restaurantId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "sectionId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tableId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "date": {
@@ -2905,13 +3308,19 @@
             "type": "string"
           },
           "customerName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "seats": {
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -2920,7 +3329,10 @@
         "type": "object",
         "properties": {
           "isArchived": {
-            "type": ["null", "boolean"]
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -2929,38 +3341,66 @@
         "properties": {
           "restaurantId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "sectionId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tableId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "date": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "seats": {
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "customerEmail": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "customerName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "specialRequests": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2981,37 +3421,61 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tableId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "sectionId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tableGroupId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "When set, this booking reserves a combinable-table group (#272) instead of a single table.\nIReadOnlyList\u0026lt;int\u0026gt;? BookingDto.MemberTableIds carries the group\u0027s member ids for the conflict check; both are\nresolved server-side. Only int? BookingDto.TableGroupId is persisted on the booking entity.",
             "format": "int32"
           },
           "memberTableIds": {
-            "type": ["null", "array"],
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             },
             "description": "Member table ids the server resolved for int? BookingDto.TableGroupId while auto-assigning.\nNever read back from a client request \u2014 the booking path always re-resolves the members from\nthe persisted group, so a caller can\u0027t shrink this list to dodge a conflict check."
           },
           "restaurantId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "date": {
@@ -3019,16 +3483,25 @@
             "format": "date-time"
           },
           "customerEmail": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "customerName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "seats": {
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "Party size. Bounded to [int BookingLimits.MinSeats, int BookingLimits.MaxSeats] on create.",
             "format": "int32"
           },
@@ -3036,35 +3509,60 @@
             "type": "boolean"
           },
           "specialRequests": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "bookingRef": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "endTime": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "tableName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "sectionName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "tableSeats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "isCancelled": {
             "type": "boolean"
           },
           "cancelledAt": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "holdId": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional hold ID obtained from POST /api/holds.\nProvide this when creating a booking to validate and consume the hold.\nNot returned in responses."
           }
         }
@@ -3078,54 +3576,90 @@
           "appName": {
             "maxLength": 32,
             "minLength": 0,
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "primaryColor": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "accentColor": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "faviconIcon": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "websiteUrl": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "phoneNumber": {
             "maxLength": 32,
             "minLength": 0,
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Default contact phone. Empty string clears it; null leaves the stored value unchanged."
           },
           "emailAddress": {
             "maxLength": 254,
             "minLength": 0,
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Default contact email. Empty string clears it; null leaves the stored value unchanged."
           },
           "copyrightText": {
             "maxLength": 200,
             "minLength": 0,
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "subtitle": {
             "maxLength": 160,
             "minLength": 0,
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "highlightsHeading": {
             "maxLength": 60,
             "minLength": 0,
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "highlightsSubheading": {
             "maxLength": 60,
             "minLength": 0,
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "headerImageFit": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "\u0022Cover\u0022 (default) or \u0022Contain\u0022. Null means leave the stored value unchanged."
           }
         }
@@ -3173,7 +3707,10 @@
             }
           },
           "expiresAt": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
@@ -3192,11 +3729,17 @@
           },
           "sortOrder": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "link": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3207,7 +3750,10 @@
             "type": "string"
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3233,7 +3779,10 @@
           },
           "sortOrder": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3242,13 +3791,19 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "members": {
             "type": "array",
             "items": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             },
             "description": "Ids of the member tables to combine. Must be \u0026gt;= 2, all owned by the restaurant, none already grouped."
@@ -3257,7 +3812,10 @@
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "Stored combined seating capacity; validated \u0026gt;= sum of member seats and \u0026lt;= int BookingLimits.MaxSeats.",
             "format": "int32"
           }
@@ -3267,13 +3825,19 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "seats": {
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3288,7 +3852,10 @@
             "type": "string"
           },
           "displayName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "role": {
             "type": "string"
@@ -3300,7 +3867,10 @@
         "properties": {
           "day": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "ISO 8601 day number: 1=Monday \u2026 7=Sunday.",
             "format": "int32"
           },
@@ -3320,23 +3890,35 @@
           },
           "port": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "username": {
             "type": "string"
           },
           "password": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "enableSsl": {
             "type": "boolean"
           },
           "fromName": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "fromEmail": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "sendBookingConfirmations": {
             "type": "boolean"
@@ -3348,7 +3930,10 @@
         "properties": {
           "minutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "Additional minutes to add to the booking\u0027s EndTime.",
             "format": "int32"
           }
@@ -3359,7 +3944,10 @@
         "properties": {
           "minutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3384,7 +3972,10 @@
         "properties": {
           "minutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3394,30 +3985,48 @@
         "properties": {
           "restaurantId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tableId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Specific table to hold. When null (and int? PlaceHoldRequest.SectionId is also null), the\nserver auto-assigns the best available table across all sections (\u0022Any section\u0022 flow).",
             "format": "int32"
           },
           "sectionId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Specific section of int? PlaceHoldRequest.TableId. When null (and int? PlaceHoldRequest.TableId is\nalso null), the server auto-assigns. Must be provided whenever int? PlaceHoldRequest.TableId is.",
             "format": "int32"
           },
           "tableGroupId": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Combinable-table group to hold (#272). When set, the server resolves the group\u0027s members and\nplaces a single hold reserving all of them. Mutually exclusive with int? PlaceHoldRequest.TableId.",
             "format": "int32"
           },
           "seats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "Party size. Required for auto-assign and group holds (so the server can validate capacity);\nignored for explicit-table holds (the capacity check happens at booking time).",
             "format": "int32"
           },
@@ -3427,13 +4036,20 @@
             "format": "date-time"
           },
           "currentHoldId": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "If the caller already holds this ID, the backend atomically replaces it."
           }
         }
       },
       "PushSubscribeRequest": {
-        "required": ["endpoint", "p256dh", "auth"],
+        "required": [
+          "endpoint",
+          "p256dh",
+          "auth"
+        ],
         "type": "object",
         "properties": {
           "endpoint": {
@@ -3446,7 +4062,10 @@
             "type": "string"
           },
           "userAgent": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3457,7 +4076,10 @@
             "type": "array",
             "items": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             },
             "description": "The restaurant\u0027s sections, in the desired display order. Must contain exactly the\nsame set of section IDs the restaurant currently has (no additions/removals here)."
@@ -3488,14 +4110,20 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "name": {
             "type": "string"
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "openTime": {
             "type": "string"
@@ -3523,22 +4151,37 @@
             }
           },
           "imageUrl": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "description": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional blurb shown on the public location detail page (null when none)."
           },
           "menuUrl": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional link to this location\u0027s menu (null when none)."
           },
           "phoneNumber": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional contact phone for this location (null when none \u2014 callers fall back to the brand phone)."
           },
           "emailAddress": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional contact email for this location (null when none \u2014 callers fall back to the brand email)."
           },
           "isArchived": {
@@ -3554,18 +4197,28 @@
           },
           "defaultBookingDurationMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "bookingSlotIntervalMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "Step (minutes) between selectable booking start times (default 30).",
             "format": "int32"
           },
           "maxTableOversizeSeats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Max allowed spare seats over party size, or null for unrestricted (off).",
             "format": "int32"
           },
@@ -3593,7 +4246,10 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "name": {
@@ -3601,7 +4257,10 @@
           },
           "sortOrder": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "tables": {
@@ -3647,15 +4306,24 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "seats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3665,15 +4333,24 @@
         "properties": {
           "id": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "combinedSeats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "members": {
@@ -3699,11 +4376,17 @@
           },
           "sortOrder": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "link": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3714,73 +4397,127 @@
             "type": "string"
           },
           "address": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "openTime": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "closeTime": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "openDays": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "description": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional freeform blurb shown on the public location detail page. Supports basic\nmarkdown-style inline links. Empty string clears the field; null leaves it untouched."
           },
           "menuUrl": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional link to this location\u0027s menu (PDF, page, etc.). Empty string clears the\nfield; null leaves it untouched."
           },
           "phoneNumber": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional contact phone number for this location, overriding the global brand phone.\nEmpty string clears the field; null leaves it untouched."
           },
           "emailAddress": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Optional contact email address for this location, overriding the global brand email.\nEmpty string clears the field; null leaves it untouched."
           },
           "openHours": {
-            "type": ["null", "array"],
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "$ref": "#/components/schemas/DayHoursDto"
             },
             "description": "Per-day opening hours (ISO day 1=Monday \u2026 7=Sunday). When provided, takes\nprecedence over OpenTime/CloseTime; identical hours for all 7 days collapse\nback into the uniform OpenTime/CloseTime pair."
           },
           "timezone": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "tags": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "defaultBookingDurationMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "format": "int32"
           },
           "bookingSlotIntervalMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Step, in minutes, between selectable booking start times. Null leaves the stored\nvalue untouched (PATCH-style); validated server-side against the allowed set (15/30/60).",
             "format": "int32"
           },
           "maxTableOversizeSeats": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["null", "integer", "string"],
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
             "description": "Max allowed \u0060table.Seats - partySize\u0060 before a table is considered too large to\noffer/book. Null clears the setting (unrestricted). Always assigned from the settings\nform so \u0022Off\u0022 can be re-saved; validated server-side as non-negative.",
             "format": "int32"
           },
           "bookingRefFormat": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Booking reference format for new bookings \u2014 \u0022AlphaNumeric\u0022 (three words) or \u0022Numeric\u0022\n(digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).\nSent as a string rather than the enum because the API has no string-enum converter\nconfigured, and a bare int would be an opaque contract for the client."
           },
           "walkInOnly": {
-            "type": ["null", "boolean"],
+            "type": [
+              "null",
+              "boolean"
+            ],
             "description": "When true the whole location becomes walk-in only (no online bookings)."
           },
           "walkInDays": {
-            "type": ["null", "string"],
+            "type": [
+              "null",
+              "string"
+            ],
             "description": "Comma-separated ISO days (1=Monday \u2026 7=Sunday) that are walk-in only. Empty string clears."
           }
         }
@@ -3807,7 +4544,10 @@
           },
           "sortOrder": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3816,13 +4556,19 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "members": {
             "type": "array",
             "items": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": ["integer", "string"],
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
@@ -3830,7 +4576,10 @@
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
@@ -3839,13 +4588,19 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": ["null", "string"]
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "seats": {
             "maximum": 50,
             "minimum": 1,
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": [
+              "integer",
+              "string"
+            ],
             "format": "int32"
           }
         }
