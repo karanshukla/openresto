@@ -248,6 +248,31 @@ openresto-frontend/
 
 **Customer bookings** — no auth. Customers identify via `BookingRef` (short random string) or the encrypted recent-bookings cookie.
 
+**Admin API keys** — the headless credential for `openresto-cli` and integrations (issue #319). `AdminApiKey` rows hold a SHA-256 of the raw `orst_<id>_<secret>` key (deliberately a fast hash, not `IPasswordService` PBKDF2 — the secret is 256 bits of CSPRNG output verified on every request; `ApiKeyCrypto` documents this). Presented via `X-API-Key`, never `Authorization`; the `AdminAuth` policy scheme forwards to the `ApiKey` handler when the header is present, else JWT, so policy-gated controllers accept either. Role and active status resolve live from the `AdminCredential` row at auth time — nothing is baked into the key. Keys are self-scoped PAT-style: an Owner mints/lists/revokes only their own, revoke is soft (`RevokedAt`) so audit entries keep resolving.
+
+Five invariants:
+
+- **Every `RequireAdmin`/`RequireOwner` action carries exactly one of `[RequiresScope]`, `[NoApiKeyAccess]`, or `[AllowAnyApiKey]`** — `ApiKeyScopeCoverageTests` reflects over all of them and fails otherwise, same structural floor as the audit coverage test. Scope resources (`ApiKeyScopes`) mirror the `AuditActions` noun groups; `audit` and `guests` are read-only; a `write` grant satisfies a `read` requirement, never the reverse.
+- **The v1-excluded surface stays excluded**: auth self-service, email settings, notifications/push, and key management itself are `[NoApiKeyAccess]`. The one any-key endpoint is `GET api/admin/api-keys/self` (backs `openresto auth whoami`).
+- **`guests` is a DTO redaction, not a gate**: a key with `bookings:read` but no `guests:read` gets bookings with customer name/email nulled, through `BookingGuestVisibility` only — never re-derive the condition at a call site.
+- **The global rate limiter partitions keyed requests per client IP** (`apikey-ip:<ip>`, higher ceiling), never per header value — the limiter runs pre-auth, so a per-value partition would let rotated garbage headers mint unlimited buckets.
+- **Audit rows name the acting key** (`AuditLogMiddleware` appends the key name to the actor display name), which is why `Name` is required at mint.
+
+### The CLI and its OpenAPI contract
+
+`openresto-cli/` is a standalone TypeScript package (Node 24, `commander` as the only runtime dep), versioned independently at 0.1.0 — deliberately **not** wired into `scripts/check-release-version.sh` or the release workflow, and not published to npm yet. User docs live in `openresto-cli/README.md`. Two conventions are load-bearing:
+
+- **The API key is never accepted as argv** (`ps` exposure — the same rule `scripts/demo_data.py` follows for the admin password). `auth login` prompts with hidden input or reads stdin; `OPENRESTO_URL`/`OPENRESTO_API_KEY` env vars override the `~/.config/openresto/config.json` profile (written mode 0600).
+- **The committed contract must match the controllers byte-for-byte.** `tools/OpenApiExport` boots the real API in-process (`WebApplicationFactory`, in-memory SQLite — build-time MSBuild generation was tried and rejected; the tool's doc comment says why) and writes `openresto-cli/openapi/v1.json`; `openapi-typescript` compiles it to `openresto-cli/src/generated/api.d.ts`. The `openapi-drift` CI job regenerates both and fails on any diff, so an API-shape change must ship with:
+
+  ```bash
+  dotnet build
+  cd tools/OpenApiExport && dotnet run --no-build -- ../../openresto-cli/openapi/v1.json
+  cd ../../openresto-cli && npm run generate:types
+  ```
+
+  Both files are listed in `.prettierignore` on purpose: the drift check compares against what the generators emit, so no formatter may touch them. Commands are hand-written over the generated types — don't let generated operation names dictate CLI structure.
+
 ### Admin audit trail
 
 `AdminAuditEntry` is an append-only record of who did what, surfaced at `/admin/activity`. Six things about it are easy to get wrong:
