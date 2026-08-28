@@ -12,10 +12,12 @@ namespace OpenRestoApi.Infrastructure.Auth;
 /// exists to narrow what a headless credential can do, not to add a second permission system on
 /// top of roles for a human signed into the admin UI.
 /// <para>
-/// Phase 1 applies this only to <c>ApiKeysController</c> (which also carries
-/// <see cref="NoApiKeyAccessAttribute"/>, so it never actually fires there). Blanket application
-/// across every controller, reflection-checked the way <c>AuditCoverageTests</c> checks policy
-/// gating, is the next phase.
+/// Applied across every admin-gated controller action, reflection-checked by
+/// <c>ApiKeyScopeCoverageTests</c> the way <c>AuditCoverageTests</c> checks policy gating.
+/// <c>ApiKeysController</c>'s management actions carry <see cref="NoApiKeyAccessAttribute"/>
+/// instead (a key must never mint or revoke keys); its one exception,
+/// <c>ApiKeysController.Self</c>, carries <see cref="AllowAnyApiKeyAttribute"/> so any key can
+/// introspect itself.
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]

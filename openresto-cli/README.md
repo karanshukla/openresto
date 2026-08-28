@@ -1,0 +1,197 @@
+# openresto-cli
+
+A command-line client for the OpenResto admin API, authenticated with an
+[admin API key](../OpenRestoApi/Controllers/ApiKeysController.cs) rather than a browser session.
+
+## Install
+
+```bash
+cd openresto-cli
+npm install
+npm run build
+npm link   # optional: puts `openresto` on your PATH
+```
+
+Or run it straight from source without linking:
+
+```bash
+node dist/index.js --help
+```
+
+Requires Node 24+.
+
+## Set up an API key and log in
+
+1. In the admin UI, go to **Settings → API Keys** (Owner role required) and create a key. Give
+   it only the scopes you actually need — see [Scopes](#scopes) below — and copy the secret
+   (`orst_<id>_<secret>`); it is shown exactly once.
+2. Log the CLI in:
+
+   ```bash
+   openresto auth login
+   Server URL: https://booking.example.com
+   API key: ••••••••••••••••••••••••••••••••••
+   Saved profile "default" for https://booking.example.com.
+   ```
+
+   **The key is never accepted as a command-line argument** — the same reason
+   `scripts/demo_data.py` won't take a password on argv: anything passed as `argv` is visible to
+   every other process on the machine via `ps`. `auth login` either prompts for it with the
+   terminal's input hidden, or reads it from stdin when piped, e.g. in a script:
+
+   ```bash
+   printf '%s' "$OPENRESTO_KEY" | openresto auth login --url https://booking.example.com
+   ```
+
+3. Confirm it works:
+
+   ```bash
+   openresto auth whoami
+   ```
+
+## Profiles
+
+Multiple servers/keys can be saved as named profiles in `~/.config/openresto/config.json`
+(written at mode `0600`):
+
+```bash
+openresto --profile staging auth login
+openresto --profile staging bookings list
+```
+
+Environment variables always win over a stored profile, field by field — useful for CI or a
+one-off override without touching the saved config:
+
+| Variable            | Overrides                                  |
+| ------------------- | ------------------------------------------ |
+| `OPENRESTO_URL`     | the profile's server URL                   |
+| `OPENRESTO_API_KEY` | the profile's API key                      |
+| `OPENRESTO_PROFILE` | which profile is active (like `--profile`) |
+
+```bash
+OPENRESTO_URL=https://booking.example.com OPENRESTO_API_KEY="$CI_OPENRESTO_KEY" \
+  openresto bookings list --json
+```
+
+`openresto auth logout` removes the saved key for the active profile (the server URL stays, so
+`auth login` next time only needs to ask for a new key).
+
+## Output
+
+Every command prints a human-readable table by default. Pass `--json` (before or after the
+subcommand) for machine-readable output:
+
+```bash
+openresto bookings list --json | jq '.[] | select(.seats > 6)'
+```
+
+## Command groups
+
+Run `openresto <group> --help` or `openresto <group> <command> --help` for full flag lists. One
+example per group:
+
+- **auth** — `login`, `whoami`, `logout`.
+
+  ```bash
+  openresto auth whoami
+  ```
+
+- **bookings** — `list`, `get`, `create`, `update`, `cancel`, `restore`, `purge`.
+
+  ```bash
+  openresto bookings list --location 1 --status upcoming
+  ```
+
+  `purge` permanently deletes a booking (the GDPR purge path) and asks for confirmation; pass
+  `--yes` to skip the prompt, which is required when stdin isn't a terminal (scripts/CI).
+
+- **availability** — `check` (public endpoint, no key needed for this one call, but the CLI
+  still sends one if configured).
+
+  ```bash
+  openresto availability check --location 1 --date 2026-09-01 --seats 4
+  ```
+
+- **locations** — `list` (includes archived locations), `get`, `create`, `pause`, `unpause`,
+  `archive`, `restore`, `delete`.
+
+  ```bash
+  openresto locations pause 1 --minutes 60
+  ```
+
+  `delete` requires the location to already be archived (the server enforces this — see
+  `RestaurantManagementService` — and the CLI surfaces that error with a pointer to run
+  `locations archive` first) and shows a delete-preview (section/table/booking counts) before
+  asking for confirmation.
+
+- **tables** — `list` (a location's sections and tables together, since a table can't be
+  created/edited/deleted without naming its section), `create`, `update`, `delete`. There is no
+  separate `sections` command group; use `tables list --location <id>` to find a section's id,
+  then pass it as `--section` to the other table commands. Full section CRUD (rename, reorder)
+  is left to the admin UI.
+
+  ```bash
+  openresto tables list --location 1
+  openresto tables create --location 1 --section 2 --name "T5" --seats 4
+  ```
+
+- **brand** — `get`, `set` (via flags, or `--from-json <file>` / `--from-json -` for stdin — an
+  empty string clears a field, an omitted one leaves it unchanged, matching `PATCH /api/brand`).
+
+  ```bash
+  openresto brand set --app-name "My Restaurant" --primary-color "#0a7ea4"
+  ```
+
+- **users** — `list`, `create`, `role`, `activate`, `deactivate`. Owner-only server-side; a key
+  without the `users` scope (or one whose underlying account isn't an Owner) gets a clear 403.
+
+  ```bash
+  openresto users role 3 --role Manager
+  ```
+
+- **audit** — `list`, with the same filters as the admin activity trail (`actorUserId`, an
+  `action` prefix, `targetType`, `location`, `from`/`to`, `page`/`pageSize`). Owner-only.
+
+  ```bash
+  openresto audit list --action booking --from 2026-08-01
+  ```
+
+## Scopes
+
+Every admin endpoint the CLI calls is gated by a `{resource}:{access}` scope on the key
+(`bookings`, `locations`, `tables`, `brand`, `users`, `audit`, `guests` × `read`/`write`; a
+`write` grant also satisfies the matching `read` requirement). **Mint the narrowest key that does
+the job** — a read-only reporting script should get `bookings:read` and nothing else, never a
+key with every resource at `write`. A 403 from the CLI names exactly which scope is missing
+(`This API key is missing the 'bookings:write' scope.`), so widening a key later is a quick,
+deliberate step rather than a guess made up front. `auth whoami` shows a key's own scopes at any
+time.
+
+## Development
+
+```bash
+npm run typecheck   # tsc --noEmit
+npm test            # builds, then runs the node:test suite in dist/
+npm run build       # compile TypeScript to dist/
+```
+
+### Regenerating the transport types
+
+`src/generated/api.d.ts` is generated from the backend's OpenAPI document
+(`openresto-cli/openapi/v1.json`) via [`openapi-typescript`](https://openapi-ts.dev/). It types
+the shape of requests/responses for the hand-written fetch transport (`src/transport.ts`) to lean
+on — **generated operation names never dictate the CLI's command structure**; the command tree
+above is designed by hand and mapped onto the real endpoints.
+
+Both files are committed, and CI's `OpenAPI Drift` job (`.github/workflows/ci.yml`) fails if
+either goes stale. To regenerate them after an API change:
+
+```bash
+# from the repo root
+dotnet build
+(cd tools/OpenApiExport && dotnet run --no-build -- ../../openresto-cli/openapi/v1.json)
+(cd openresto-cli && npm run generate:types)
+```
+
+See `tools/OpenApiExport/Program.cs` for why the document is emitted by booting the API
+in-process (`WebApplicationFactory`) rather than via MSBuild's build-time document generation.

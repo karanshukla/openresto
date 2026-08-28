@@ -10,9 +10,10 @@ namespace OpenRestoApi.Tests.Integration;
 /// <summary>
 /// The structural guarantee behind issue #319 Phase 2: every controller action gated by
 /// <c>AuthPolicies.RequireAdmin</c>/<c>RequireOwner</c> must carry exactly one of
-/// <see cref="RequiresScopeAttribute"/> or <see cref="NoApiKeyAccessAttribute"/> — on the action
-/// itself or its controller. Modeled on <c>AuditCoverageTests</c>: the floor is structural rather
-/// than a maintained list, so an admin endpoint added next year is scoped (or explicitly excluded)
+/// <see cref="RequiresScopeAttribute"/>, <see cref="NoApiKeyAccessAttribute"/>, or
+/// <see cref="AllowAnyApiKeyAttribute"/> — on the action itself or its controller. Modeled on
+/// <c>AuditCoverageTests</c>: the floor is structural rather than a maintained list, so an admin
+/// endpoint added next year is scoped (or explicitly excluded, or explicitly opened to any key)
 /// the day it ships, instead of silently inheriting whatever an API key can already do.
 /// </summary>
 public class ApiKeyScopeCoverageTests
@@ -54,41 +55,48 @@ public class ApiKeyScopeCoverageTests
         => controller.GetCustomAttribute<NoApiKeyAccessAttribute>() is not null
             || method.GetCustomAttribute<NoApiKeyAccessAttribute>() is not null;
 
+    private static bool HasAllowAnyApiKey(Type controller, MethodInfo method)
+        => controller.GetCustomAttribute<AllowAnyApiKeyAttribute>() is not null
+            || method.GetCustomAttribute<AllowAnyApiKeyAttribute>() is not null;
+
+    private static int MarkerCount(Type controller, MethodInfo method)
+        => (HasRequiresScope(controller, method) ? 1 : 0)
+            + (HasNoApiKeyAccess(controller, method) ? 1 : 0)
+            + (HasAllowAnyApiKey(controller, method) ? 1 : 0);
+
     /// <summary>
-    /// The hole this whole test exists to close: an admin-gated action with neither attribute is
-    /// reachable by any API key regardless of scope — <see cref="RequiresScopeAttribute"/> and
-    /// <see cref="NoApiKeyAccessAttribute"/> are both no-ops for a request that never authenticated
-    /// as a key in the first place, so a JWT session is unaffected either way, but a key would
-    /// simply pass straight through.
+    /// The hole this whole test exists to close: an admin-gated action with none of the three
+    /// markers is reachable by any API key regardless of scope — all three are no-ops for a
+    /// request that never authenticated as a key in the first place, so a JWT session is
+    /// unaffected either way, but a key would simply pass straight through.
     /// </summary>
     [Fact]
-    public void EveryAdminGatedAction_CarriesRequiresScopeOrNoApiKeyAccess()
+    public void EveryAdminGatedAction_CarriesExactlyOneAccessMarker()
     {
-        List<ActionInfo> unscoped = [.. AdminGatedActions()
-            .Where(a => !HasRequiresScope(a.Controller, a.Method) && !HasNoApiKeyAccess(a.Controller, a.Method))
+        List<ActionInfo> unmarked = [.. AdminGatedActions()
+            .Where(a => MarkerCount(a.Controller, a.Method) == 0)
             .Select(a => a.Info)];
 
-        Assert.True(unscoped.Count == 0,
-            "These admin-gated actions carry neither [RequiresScope] nor [NoApiKeyAccess] (on "
-            + "themselves or their controller), so any API key can reach them regardless of its "
-            + "scopes:\n  " + string.Join("\n  ", unscoped));
+        Assert.True(unmarked.Count == 0,
+            "These admin-gated actions carry none of [RequiresScope], [NoApiKeyAccess], or "
+            + "[AllowAnyApiKey] (on themselves or their controller), so any API key can reach "
+            + "them regardless of its scopes:\n  " + string.Join("\n  ", unmarked));
     }
 
     /// <summary>
-    /// The complementary mistake: an action can't simultaneously declare a scope requirement and a
-    /// blanket key ban — <see cref="NoApiKeyAccessAttribute"/> would make the scope check
-    /// unreachable dead code, and it signals the mapping was applied without deciding which rule
-    /// actually governs the endpoint.
+    /// The complementary mistake: an action can't simultaneously declare two of the three markers
+    /// — each would make another's check unreachable dead code, and it signals the mapping was
+    /// applied without deciding which single rule actually governs the endpoint.
     /// </summary>
     [Fact]
-    public void NoAdminGatedAction_CarriesBothRequiresScopeAndNoApiKeyAccess()
+    public void NoAdminGatedAction_CarriesMoreThanOneAccessMarker()
     {
         List<ActionInfo> conflicting = [.. AdminGatedActions()
-            .Where(a => HasRequiresScope(a.Controller, a.Method) && HasNoApiKeyAccess(a.Controller, a.Method))
+            .Where(a => MarkerCount(a.Controller, a.Method) > 1)
             .Select(a => a.Info)];
 
         Assert.True(conflicting.Count == 0,
-            "These admin-gated actions carry both [RequiresScope] and [NoApiKeyAccess] — pick one "
-            + "rule for the endpoint:\n  " + string.Join("\n  ", conflicting));
+            "These admin-gated actions carry more than one of [RequiresScope], [NoApiKeyAccess], "
+            + "[AllowAnyApiKey] — pick one rule for the endpoint:\n  " + string.Join("\n  ", conflicting));
     }
 }

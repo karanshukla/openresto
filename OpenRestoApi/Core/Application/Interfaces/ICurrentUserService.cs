@@ -29,6 +29,14 @@ public interface ICurrentUserService
     bool IsApiKeyAuthenticated { get; }
 
     /// <summary>
+    /// The <c>AdminApiKey.Id</c> that authenticated this request, or null for a JWT/browser
+    /// session (or a malformed/legacy key claim). Only meaningful alongside
+    /// <see cref="IsApiKeyAuthenticated"/> — used by <c>ApiKeyService.GetSelfAsync</c> to look the
+    /// calling key back up for introspection.
+    /// </summary>
+    int? KeyId { get; }
+
+    /// <summary>
     /// True when the caller holds the given <c>{resource}:{access}</c> scope (write also
     /// satisfies a read requirement — see <c>ApiKeyClaimTypes.HasScope</c>). Always true for a
     /// JWT/browser session, which carries no scopes and is unrestricted by design; only ever

@@ -19,5 +19,6 @@ public sealed class NullCurrentUserService : ICurrentUserService
     public string? Email => null;
     public string? Role => null;
     public bool IsApiKeyAuthenticated => false;
+    public int? KeyId => null;
     public bool HasScope(string resource, string access) => true;
 }

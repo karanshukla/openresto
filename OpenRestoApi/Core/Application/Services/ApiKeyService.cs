@@ -96,6 +96,44 @@ public class ApiKeyService(
         return ToDto(key);
     }
 
+    /// <summary>
+    /// Self-introspection for the calling key (issue #319 Phase 2, <c>GET api/admin/api-keys/self</c>):
+    /// any authenticated key may call this regardless of scope, unlike every other action on this
+    /// controller. A JWT/browser session carries no key to introspect and gets
+    /// <see cref="ApiKeySelfStatus.NotAnApiKeySession"/> rather than a lookup.
+    /// <seealso>ApiKeyServiceTests.GetSelfAsync_ReturnsNotAnApiKeySession_ForAJwtCaller</seealso>
+    /// <seealso>ApiKeyServiceTests.GetSelfAsync_ReturnsTheCallingKeyAndItsOwner_ForAnApiKeyCaller</seealso>
+    /// </summary>
+    public async Task<ApiKeySelfResult> GetSelfAsync()
+    {
+        if (!_currentUser.IsApiKeyAuthenticated || _currentUser.KeyId is not int keyId)
+        {
+            return ApiKeySelfResult.NotAnApiKeySession;
+        }
+
+        AdminApiKey? key = await _apiKeyRepository.GetByIdAsync(keyId);
+        if (key is null)
+        {
+            return ApiKeySelfResult.KeyNotFound;
+        }
+
+        ApiKeyDto dto = ToDto(key);
+        return ApiKeySelfResult.Found(new ApiKeySelfDto
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Prefix = dto.Prefix,
+            Scopes = dto.Scopes,
+            CreatedAt = dto.CreatedAt,
+            LastUsedAt = dto.LastUsedAt,
+            ExpiresAt = dto.ExpiresAt,
+            RevokedAt = dto.RevokedAt,
+            UserId = key.UserId,
+            Email = _currentUser.Email ?? string.Empty,
+            Role = _currentUser.Role ?? string.Empty,
+        });
+    }
+
     private void Describe(string action, AdminApiKey key, string summary)
         => _audit.Describe(action, AuditTargets.ApiKey, AuditTargets.IdOf(key.Id), key.Name, summary: summary);
 

@@ -139,4 +139,91 @@ public class ApiKeysControllerTests(TestWebAppFactory factory) : IClassFixture<T
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    // ── self (issue #319 Phase 2) ───────────────────────────────────────────
+
+    [Fact]
+    public async Task Self_AsJwtSession_Returns400()
+    {
+        HttpClient client = OwnerClient();
+
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys/self");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ErrorCodes.ApiKeyNotASession, body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Self_AsApiKey_ReturnsTheKeysOwnMetadataAndItsOwner()
+    {
+        HttpClient ownerClient = OwnerClient();
+        HttpResponseMessage createResponse = await ownerClient.PostAsJsonAsync(
+            "/api/admin/api-keys", ValidCreateBody("Self-probe"));
+        JsonElement created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string secret = created.GetProperty("secret").GetString()!;
+        int id = created.GetProperty("id").GetInt32();
+
+        using HttpClient client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-API-Key", secret);
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys/self");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(id, body.GetProperty("id").GetInt32());
+        Assert.Equal("Self-probe", body.GetProperty("name").GetString());
+        Assert.False(body.TryGetProperty("secret", out _));
+        Assert.False(body.TryGetProperty("keyHash", out _));
+    }
+
+    [Fact]
+    public async Task Self_AsApiKey_WorksRegardlessOfTheKeysOwnScopes()
+    {
+        // The point of AllowAnyApiKey: a key minted with no relevant scope at all can still
+        // introspect itself, unlike every other action on this controller.
+        HttpClient ownerClient = OwnerClient();
+        HttpResponseMessage createResponse = await ownerClient.PostAsJsonAsync("/api/admin/api-keys", new
+        {
+            name = "Narrowly scoped",
+            scopes = new[] { new { resource = "brand", access = "read" } },
+        });
+        JsonElement created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string secret = created.GetProperty("secret").GetString()!;
+
+        using HttpClient client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-API-Key", secret);
+        HttpResponseMessage response = await client.GetAsync("/api/admin/api-keys/self");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Self_IsAllowedForAKeyWhoseUnderlyingAccountIsAManager()
+    {
+        // Self carries its own [Authorize(RequireAdmin)] rather than the RequireOwner every
+        // management action on this controller carries individually — a Manager's key can
+        // introspect itself even though it could never call GetAll/Create/Revoke.
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+        (string hash, string salt) = passwords.Hash("seeded-password");
+        var user = new AdminCredential { Email = "apikeys-self-manager@test.com", PasswordHash = hash, PasswordSalt = salt, Role = UserRoles.Owner };
+        db.AdminCredentials.Add(user);
+        await db.SaveChangesAsync();
+        HttpClient client = _factory.CreateClientWithToken(TestWebAppFactory.GenerateJwt(user.Id, user.Email, user.Role));
+        HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/admin/api-keys", ValidCreateBody("Later demoted"));
+        JsonElement created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        string secret = created.GetProperty("secret").GetString()!;
+
+        user.Role = UserRoles.Manager;
+        await db.SaveChangesAsync();
+
+        using HttpClient keyClient = _factory.CreateClient();
+        keyClient.DefaultRequestHeaders.Add("X-API-Key", secret);
+        HttpResponseMessage response = await keyClient.GetAsync("/api/admin/api-keys/self");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(UserRoles.Manager, body.GetProperty("role").GetString());
+    }
 }

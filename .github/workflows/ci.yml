@@ -109,6 +109,55 @@ jobs:
       - name: Check Doc Links
         run: npm run check:doc-links
 
+  openapi-drift:
+    name: OpenAPI Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-cli/package-lock.json
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build Solution
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Regenerate OpenAPI document
+        working-directory: tools/OpenApiExport
+        run: dotnet run --no-build --configuration Release -- ../../openresto-cli/openapi/v1.json
+
+      - name: Install CLI Dependencies
+        working-directory: openresto-cli
+        run: npm ci
+
+      - name: Regenerate CLI transport types
+        working-directory: openresto-cli
+        run: npm run generate:types
+
+      # Same shape as the frontend's Route Manifest job: the committed file is the source of
+      # truth, and this job's only job is to prove `dotnet build` + the type generator still
+      # reproduce it byte-for-byte. A diff here means someone changed an API shape without
+      # regenerating openresto-cli/openapi/v1.json and src/generated/api.d.ts.
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code -- openresto-cli/openapi/v1.json openresto-cli/src/generated/api.d.ts; then
+            echo "::error::openresto-cli/openapi/v1.json and/or src/generated/api.d.ts are out of date."
+            echo "Run: dotnet build && (cd tools/OpenApiExport && dotnet run --no-build -- ../../openresto-cli/openapi/v1.json) && (cd openresto-cli && npm run generate:types)"
+            exit 1
+          fi
+
   backend:
     name: Backend CI
     runs-on: ubuntu-latest

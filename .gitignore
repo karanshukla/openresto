@@ -5,6 +5,7 @@ node_modules/
 openresto-frontend/.expo/
 openresto-frontend/dist/
 openresto-frontend/web-build/
+openresto-cli/dist/
 
 # .NET build outputs
 **/bin/

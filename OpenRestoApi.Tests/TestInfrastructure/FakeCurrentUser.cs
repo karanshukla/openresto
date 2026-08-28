@@ -15,6 +15,7 @@ internal sealed class FakeCurrentUser : ICurrentUserService
     public string? Email { get; set; }
     public string? Role { get; set; }
     public bool IsApiKeyAuthenticated { get; set; }
+    public int? KeyId { get; set; }
 
     /// <summary>Scopes held when <see cref="IsApiKeyAuthenticated"/> is true. Ignored (every
     /// scope is satisfied) for a JWT/browser session, matching <c>CurrentUserService</c>.</summary>
@@ -44,6 +45,7 @@ internal sealed class FakeCurrentUser : ICurrentUserService
     public static FakeCurrentUser ApiKey(params (string Resource, string Access)[] scopes) => new()
     {
         IsApiKeyAuthenticated = true,
+        KeyId = 1,
         Scopes = scopes.Select(s => $"{s.Resource}:{s.Access}").ToHashSet(),
     };
 }

@@ -103,6 +103,7 @@ public static class ErrorCodes
     public const string ApiKeyNotFound = "api_key.not_found";
     public const string ApiKeyScopeMissing = "api_key.scope_missing";
     public const string ApiKeyNotAllowed = "api_key.not_allowed";
+    public const string ApiKeyNotASession = "api_key.not_a_session";
 
     public const string AuthEmailUnchanged = "auth.email_unchanged";
     public const string AuthEmailAlreadyInUse = "auth.email_already_in_use";

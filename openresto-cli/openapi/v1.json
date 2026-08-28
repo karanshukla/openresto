@@ -1,0 +1,3924 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "OpenRestoApi | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost/"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["OpenRestoApi"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/overview": {
+      "get": {
+        "tags": ["Admin"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings": {
+      "get": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "$ref": "#/components/schemas/bookingStatus"
+            }
+          },
+          {
+            "name": "cancelled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bookingRef",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateBookingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateBookingRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings/{id}": {
+      "get": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateBookingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateBookingRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings/{id}/extend": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendBookingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendBookingRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings/{id}/cancel": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants": {
+      "post": {
+        "tags": ["Admin"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestaurantRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestaurantRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRestaurantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Admin"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRestaurantPatchRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRestaurantPatchRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRestaurantPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}/delete-preview": {
+      "get": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}/pause": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRestaurantRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRestaurantRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRestaurantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}/unpause": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}/extend": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendRestaurantRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendRestaurantRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendRestaurantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{restaurantId}/sections": {
+      "get": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{id}/sections/reorder": {
+      "patch": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSectionsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSectionsRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSectionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/restaurants/{restaurantId}/tables": {
+      "get": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings/{id}/email": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendBookingEmailRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendBookingEmailRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SendBookingEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Admin/bookings/{id}/restore": {
+      "post": {
+        "tags": ["Admin"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/api-keys": {
+      "get": {
+        "tags": ["ApiKeys"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["ApiKeys"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/api-keys/{id}/revoke": {
+      "post": {
+        "tags": ["ApiKeys"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/api-keys/self": {
+      "get": {
+        "tags": ["ApiKeys"],
+        "summary": "Key metadata only (id/name/prefix/scopes) plus the acting user\u0027s email/role \u2014 never the\nhash or secret. A JWT/browser session gets 400 rather than a lookup: it authenticated\nwithout a key, so there is nothing to introspect.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "tags": ["Audit"],
+        "summary": "GET /api/admin/audit?actorUserId=1\u0026amp;action=booking\u0026amp;targetType=Booking\u0026amp;restaurantId=2\u0026amp;from=\u2026\u0026amp;to=\u2026\u0026amp;page=1\u0026amp;pageSize=25\n\u0060action\u0060 matches by prefix. Same envelope as the notification history.",
+        "parameters": [
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "The endpoint takes no token by design \u2014 clearing a cookie that was never set has to\nsucceed \u2014 so an anonymous POST would land an actor-less row, and could be repeated to bury\nthe entries that matter. Only a real session is recorded.\n\u003Cseealso\u003EAuditTrailTests.Logout_IsRecordedForASessionAndIgnoredWithoutOne\u003C/seealso\u003E",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/change-password": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/change-email": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/pvq": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "The security question for a given account, for the forgot-password screen (which has no\nsession yet). This confirms whether an address has an account with a question configured\n\u2014 an accepted trade-off for a self-hosted, internal tool, bounded by the \u0060auth\u0060\nrate-limit policy. The signed-in equivalent is \u0060GET pvq/me\u0060.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/pvq/me": {
+      "get": {
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/pvq/setup": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupPvqRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupPvqRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupPvqRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/pvq/verify": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPvqRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPvqRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPvqRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/reset-password": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/restaurants/{restaurantId}/availability": {
+      "get": {
+        "tags": ["Availability"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/restaurants/{restaurantId}/bookings": {
+      "get": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/{id}": {
+      "get": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/ref/{bookingRef}": {
+      "get": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings": {
+      "post": {
+        "tags": ["Bookings"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/my-recent": {
+      "get": {
+        "tags": ["Bookings"],
+        "summary": "Returns the user\u0027s recent bookings from their encrypted HttpOnly cookie.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/ref/{bookingRef}/cancel": {
+      "post": {
+        "tags": ["Bookings"],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingByRefRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingByRefRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingByRefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/brand": {
+      "get": {
+        "tags": ["Brand"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Brand"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrandRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrandRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/BrandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/brand/pwa-icon.svg": {
+      "get": {
+        "tags": ["Brand"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/brand/pwa-icon-{size}.png": {
+      "get": {
+        "tags": ["Brand"],
+        "parameters": [
+          {
+            "name": "size",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/email-settings": {
+      "get": {
+        "tags": ["EmailSettings"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["EmailSettings"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailSettingsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailSettingsRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/email-settings/failures": {
+      "get": {
+        "tags": ["EmailSettings"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/email-settings/test": {
+      "post": {
+        "tags": ["EmailSettings"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/highlights": {
+      "get": {
+        "tags": ["Highlights"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Highlights"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHighlightRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHighlightRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHighlightRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/highlights/{id}": {
+      "put": {
+        "tags": ["Highlights"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHighlightRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHighlightRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHighlightRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Highlights"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Holds": {
+      "post": {
+        "tags": ["Holds"],
+        "summary": "Places a temporary hold on a table for a given date.\nReturns 409 Conflict if the table is already held by someone else.\nWhen int? PlaceHoldRequest.TableId/int? PlaceHoldRequest.SectionId\nare omitted, the server auto-assigns the best available table across all sections.\nWhen int? PlaceHoldRequest.TableGroupId is set, the server reserves all member\ntables of that combinable group as one hold (#272).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceHoldRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceHoldRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceHoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Holds/{holdId}": {
+      "delete": {
+        "tags": ["Holds"],
+        "summary": "Releases a hold early (e.g., when the user navigates away).\nSafe to call even if the hold has already expired.",
+        "parameters": [
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/media/hero": {
+      "post": {
+        "tags": ["Media"],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Media"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/media/location/{id}": {
+      "post": {
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/media/menu/{id}": {
+      "post": {
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "List notification history with optional filters, newest first.\nGET /api/admin/notifications?restaurantId=1\u0026amp;type=BookingCreated\u0026amp;unreadOnly=true\u0026amp;page=1\u0026amp;pageSize=20\nrestaurantId is optional \u2014 omit to see all restaurants.\ntype values: BookingCreated | BookingCancelled | RestaurantNearlyFull",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notifications"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "pattern": "^-?(?:0|[1-9]\\d*)$",
+                  "type": ["integer", "string"],
+                  "format": "int32"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "pattern": "^-?(?:0|[1-9]\\d*)$",
+                  "type": ["integer", "string"],
+                  "format": "int32"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "pattern": "^-?(?:0|[1-9]\\d*)$",
+                  "type": ["integer", "string"],
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/unread-count": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Unread count badge. Omit restaurantId to get total across all restaurants.\nGET /api/admin/notifications/unread-count\nGET /api/admin/notifications/unread-count?restaurantId=1",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/{id}/read": {
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark a single notification as read.\nPATCH /api/admin/notifications/{id}/read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/read-all": {
+      "patch": {
+        "tags": ["Notifications"],
+        "summary": "Mark all notifications for a restaurant as read.\nPATCH /api/admin/notifications/read-all?restaurantId=1",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/push/vapid-public-key": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Returns the VAPID public key for the frontend to use when subscribing.\nGET /api/admin/push/vapid-public-key\nReturns 204 if VAPID is not configured (push disabled).",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/push/subscribe": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Register a browser push subscription.\nPOST /api/admin/push/subscribe?restaurantId=1\nBody: { endpoint, p256dh, auth, userAgent? }",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Remove a push subscription (logout / permission revoked).\nDELETE /api/admin/push/subscribe\nBody: \u0022https://fcm.googleapis.com/...\u0022",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/all": {
+      "delete": {
+        "tags": ["Notifications"],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/{id}": {
+      "delete": {
+        "tags": ["Notifications"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants": {
+      "get": {
+        "tags": ["Restaurants"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Restaurants"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantDto"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}": {
+      "get": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRestaurantRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRestaurantRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRestaurantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections": {
+      "post": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections/{sectionId}": {
+      "put": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections/{sectionId}/impact": {
+      "get": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections/{sectionId}/tables": {
+      "post": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections/{sectionId}/tables/{tableId}": {
+      "put": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/sections/{sectionId}/tables/{tableId}/impact": {
+      "get": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/schedule-conflicts": {
+      "get": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/groups": {
+      "post": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableGroupRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableGroupRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTableGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Restaurants/{id}/groups/{groupId}": {
+      "put": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableGroupRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableGroupRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTableGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Restaurants"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/social-links": {
+      "get": {
+        "tags": ["SocialLinks"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["SocialLinks"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialLinkRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialLinkRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/social-links/{id}": {
+      "put": {
+        "tags": ["SocialLinks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSocialLinkRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSocialLinkRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSocialLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["SocialLinks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/role": {
+      "patch": {
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/active": {
+      "patch": {
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserActiveRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserActiveRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/reset-password": {
+      "post": {
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminCreateBookingRequest": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "sectionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "tableId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customerEmail": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": ["null", "string"]
+          },
+          "seats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "AdminRestaurantPatchRequest": {
+        "type": "object",
+        "properties": {
+          "isArchived": {
+            "type": ["null", "boolean"]
+          }
+        }
+      },
+      "AdminUpdateBookingRequest": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "sectionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "tableId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "date": {
+            "type": ["null", "string"],
+            "format": "date-time"
+          },
+          "seats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "customerEmail": {
+            "type": ["null", "string"]
+          },
+          "customerName": {
+            "type": ["null", "string"]
+          },
+          "specialRequests": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "ApiKeyScopeDto": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string"
+          }
+        },
+        "description": "One \u0060{resource, access}\u0060 pair \u2014 see ApiKeyScopes\nfor the allow-list. Doubles as the shape persisted in \u0060AdminApiKey.ScopesJson\u0060, so the\ncodec lives here rather than in the service: the read side (the authentication handler) and\nthe write side (the management service) both need it and neither owns the other."
+      },
+      "BookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "tableId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "sectionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "tableGroupId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "When set, this booking reserves a combinable-table group (#272) instead of a single table.\nIReadOnlyList\u0026lt;int\u0026gt;? BookingDto.MemberTableIds carries the group\u0027s member ids for the conflict check; both are\nresolved server-side. Only int? BookingDto.TableGroupId is persisted on the booking entity.",
+            "format": "int32"
+          },
+          "memberTableIds": {
+            "type": ["null", "array"],
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            },
+            "description": "Member table ids the server resolved for int? BookingDto.TableGroupId while auto-assigning.\nNever read back from a client request \u2014 the booking path always re-resolves the members from\nthe persisted group, so a caller can\u0027t shrink this list to dodge a conflict check."
+          },
+          "restaurantId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customerEmail": {
+            "type": ["null", "string"]
+          },
+          "customerName": {
+            "type": ["null", "string"]
+          },
+          "seats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "Party size. Bounded to [int BookingLimits.MinSeats, int BookingLimits.MaxSeats] on create.",
+            "format": "int32"
+          },
+          "isHeld": {
+            "type": "boolean"
+          },
+          "specialRequests": {
+            "type": ["null", "string"]
+          },
+          "bookingRef": {
+            "type": ["null", "string"]
+          },
+          "endTime": {
+            "type": ["null", "string"],
+            "format": "date-time"
+          },
+          "tableName": {
+            "type": ["null", "string"]
+          },
+          "sectionName": {
+            "type": ["null", "string"]
+          },
+          "tableSeats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "isCancelled": {
+            "type": "boolean"
+          },
+          "cancelledAt": {
+            "type": ["null", "string"],
+            "format": "date-time"
+          },
+          "holdId": {
+            "type": ["null", "string"],
+            "description": "Optional hold ID obtained from POST /api/holds.\nProvide this when creating a booking to validate and consume the hold.\nNot returned in responses."
+          }
+        }
+      },
+      "bookingStatus": {
+        "type": "integer"
+      },
+      "BrandRequest": {
+        "type": "object",
+        "properties": {
+          "appName": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": ["null", "string"]
+          },
+          "primaryColor": {
+            "type": ["null", "string"]
+          },
+          "accentColor": {
+            "type": ["null", "string"]
+          },
+          "faviconIcon": {
+            "type": ["null", "string"]
+          },
+          "websiteUrl": {
+            "type": ["null", "string"]
+          },
+          "phoneNumber": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": ["null", "string"],
+            "description": "Default contact phone. Empty string clears it; null leaves the stored value unchanged."
+          },
+          "emailAddress": {
+            "maxLength": 254,
+            "minLength": 0,
+            "type": ["null", "string"],
+            "description": "Default contact email. Empty string clears it; null leaves the stored value unchanged."
+          },
+          "copyrightText": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": ["null", "string"]
+          },
+          "subtitle": {
+            "maxLength": 160,
+            "minLength": 0,
+            "type": ["null", "string"]
+          },
+          "highlightsHeading": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": ["null", "string"]
+          },
+          "highlightsSubheading": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": ["null", "string"]
+          },
+          "headerImageFit": {
+            "type": ["null", "string"],
+            "description": "\u0022Cover\u0022 (default) or \u0022Contain\u0022. Null means leave the stored value unchanged."
+          }
+        }
+      },
+      "CancelBookingByRefRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangeEmailRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newEmail": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyScopeDto"
+            }
+          },
+          "expiresAt": {
+            "type": ["null", "string"],
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateHighlightRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "link": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "CreateRestaurantRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "CreateSectionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSocialLinkRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "CreateTableGroupRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["null", "string"]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            },
+            "description": "Ids of the member tables to combine. Must be \u0026gt;= 2, all owned by the restaurant, none already grouped."
+          },
+          "combinedSeats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "Stored combined seating capacity; validated \u0026gt;= sum of member seats and \u0026lt;= int BookingLimits.MaxSeats.",
+            "format": "int32"
+          }
+        }
+      },
+      "CreateTableRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["null", "string"]
+          },
+          "seats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": ["null", "string"]
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "DayHoursDto": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "ISO 8601 day number: 1=Monday \u2026 7=Sunday.",
+            "format": "int32"
+          },
+          "open": {
+            "type": "string"
+          },
+          "close": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": ["null", "string"]
+          },
+          "enableSsl": {
+            "type": "boolean"
+          },
+          "fromName": {
+            "type": ["null", "string"]
+          },
+          "fromEmail": {
+            "type": ["null", "string"]
+          },
+          "sendBookingConfirmations": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ExtendBookingRequest": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "Additional minutes to add to the booking\u0027s EndTime.",
+            "format": "int32"
+          }
+        }
+      },
+      "ExtendRestaurantRequest": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "PauseRestaurantRequest": {
+        "type": "object",
+        "properties": {
+          "minutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "PlaceHoldRequest": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "tableId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Specific table to hold. When null (and int? PlaceHoldRequest.SectionId is also null), the\nserver auto-assigns the best available table across all sections (\u0022Any section\u0022 flow).",
+            "format": "int32"
+          },
+          "sectionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Specific section of int? PlaceHoldRequest.TableId. When null (and int? PlaceHoldRequest.TableId is\nalso null), the server auto-assigns. Must be provided whenever int? PlaceHoldRequest.TableId is.",
+            "format": "int32"
+          },
+          "tableGroupId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Combinable-table group to hold (#272). When set, the server resolves the group\u0027s members and\nplaces a single hold reserving all of them. Mutually exclusive with int? PlaceHoldRequest.TableId.",
+            "format": "int32"
+          },
+          "seats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "Party size. Required for auto-assign and group holds (so the server can validate capacity);\nignored for explicit-table holds (the capacity check happens at booking time).",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "description": "Full ISO 8601 datetime of the intended booking.",
+            "format": "date-time"
+          },
+          "currentHoldId": {
+            "type": ["null", "string"],
+            "description": "If the caller already holds this ID, the backend atomically replaces it."
+          }
+        }
+      },
+      "PushSubscribeRequest": {
+        "required": ["endpoint", "p256dh", "auth"],
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "p256dh": {
+            "type": "string"
+          },
+          "auth": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "ReorderSectionsRequest": {
+        "type": "object",
+        "properties": {
+          "sectionIds": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            },
+            "description": "The restaurant\u0027s sections, in the desired display order. Must contain exactly the\nsame set of section IDs the restaurant currently has (no additions/removals here)."
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "ResetUserPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "RestaurantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": ["null", "string"]
+          },
+          "openTime": {
+            "type": "string"
+          },
+          "closeTime": {
+            "type": "string"
+          },
+          "openHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayHoursDto"
+            },
+            "description": "Resolved hours for every day of the week (always 7 entries)."
+          },
+          "openDays": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "imageUrl": {
+            "type": ["null", "string"]
+          },
+          "description": {
+            "type": ["null", "string"],
+            "description": "Optional blurb shown on the public location detail page (null when none)."
+          },
+          "menuUrl": {
+            "type": ["null", "string"],
+            "description": "Optional link to this location\u0027s menu (null when none)."
+          },
+          "phoneNumber": {
+            "type": ["null", "string"],
+            "description": "Optional contact phone for this location (null when none \u2014 callers fall back to the brand phone)."
+          },
+          "emailAddress": {
+            "type": ["null", "string"],
+            "description": "Optional contact email for this location (null when none \u2014 callers fall back to the brand email)."
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "walkInOnly": {
+            "type": "boolean",
+            "description": "When true the whole location is walk-in only \u2014 the booking flow is disabled."
+          },
+          "walkInDays": {
+            "type": "string",
+            "description": "Comma-separated ISO days (1=Monday \u2026 7=Sunday) that are walk-in only (\u0022\u0022 when none)."
+          },
+          "defaultBookingDurationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "bookingSlotIntervalMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "description": "Step (minutes) between selectable booking start times (default 30).",
+            "format": "int32"
+          },
+          "maxTableOversizeSeats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Max allowed spare seats over party size, or null for unrestricted (off).",
+            "format": "int32"
+          },
+          "bookingRefFormat": {
+            "type": "string",
+            "description": "Format of references minted for new bookings: \u0022AlphaNumeric\u0022 or \u0022Numeric\u0022."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionDto"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableGroupDto"
+            },
+            "description": "Combinable-table groups defined for this restaurant (#271). Empty when none."
+          }
+        }
+      },
+      "SectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableDto"
+            }
+          }
+        }
+      },
+      "SendBookingEmailRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "SetupPvqRequest": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      },
+      "SetUserActiveRequest": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TableDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "name": {
+            "type": ["null", "string"]
+          },
+          "seats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "TableGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "name": {
+            "type": ["null", "string"]
+          },
+          "combinedSeats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableDto"
+            }
+          }
+        },
+        "description": "A combinable-table group (#271): physical tables an admin flagged as combinable, bookable as one\nunit for larger parties. \u0060CombinedSeats\u0060 is the stored capacity; \u0060Members\u0060 are the\nphysical tables pushed together."
+      },
+      "UpdateHighlightRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          },
+          "link": {
+            "type": ["null", "string"]
+          }
+        }
+      },
+      "UpdateRestaurantRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": ["null", "string"]
+          },
+          "openTime": {
+            "type": ["null", "string"]
+          },
+          "closeTime": {
+            "type": ["null", "string"]
+          },
+          "openDays": {
+            "type": ["null", "string"]
+          },
+          "description": {
+            "type": ["null", "string"],
+            "description": "Optional freeform blurb shown on the public location detail page. Supports basic\nmarkdown-style inline links. Empty string clears the field; null leaves it untouched."
+          },
+          "menuUrl": {
+            "type": ["null", "string"],
+            "description": "Optional link to this location\u0027s menu (PDF, page, etc.). Empty string clears the\nfield; null leaves it untouched."
+          },
+          "phoneNumber": {
+            "type": ["null", "string"],
+            "description": "Optional contact phone number for this location, overriding the global brand phone.\nEmpty string clears the field; null leaves it untouched."
+          },
+          "emailAddress": {
+            "type": ["null", "string"],
+            "description": "Optional contact email address for this location, overriding the global brand email.\nEmpty string clears the field; null leaves it untouched."
+          },
+          "openHours": {
+            "type": ["null", "array"],
+            "items": {
+              "$ref": "#/components/schemas/DayHoursDto"
+            },
+            "description": "Per-day opening hours (ISO day 1=Monday \u2026 7=Sunday). When provided, takes\nprecedence over OpenTime/CloseTime; identical hours for all 7 days collapse\nback into the uniform OpenTime/CloseTime pair."
+          },
+          "timezone": {
+            "type": ["null", "string"]
+          },
+          "tags": {
+            "type": ["null", "string"]
+          },
+          "defaultBookingDurationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "format": "int32"
+          },
+          "bookingSlotIntervalMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Step, in minutes, between selectable booking start times. Null leaves the stored\nvalue untouched (PATCH-style); validated server-side against the allowed set (15/30/60).",
+            "format": "int32"
+          },
+          "maxTableOversizeSeats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["null", "integer", "string"],
+            "description": "Max allowed \u0060table.Seats - partySize\u0060 before a table is considered too large to\noffer/book. Null clears the setting (unrestricted). Always assigned from the settings\nform so \u0022Off\u0022 can be re-saved; validated server-side as non-negative.",
+            "format": "int32"
+          },
+          "bookingRefFormat": {
+            "type": ["null", "string"],
+            "description": "Booking reference format for new bookings \u2014 \u0022AlphaNumeric\u0022 (three words) or \u0022Numeric\u0022\n(digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).\nSent as a string rather than the enum because the API has no string-enum converter\nconfigured, and a bare int would be an opaque contract for the client."
+          },
+          "walkInOnly": {
+            "type": ["null", "boolean"],
+            "description": "When true the whole location becomes walk-in only (no online bookings)."
+          },
+          "walkInDays": {
+            "type": ["null", "string"],
+            "description": "Comma-separated ISO days (1=Monday \u2026 7=Sunday) that are walk-in only. Empty string clears."
+          }
+        }
+      },
+      "UpdateSectionRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateSocialLinkRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateTableGroupRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["null", "string"]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": ["integer", "string"],
+              "format": "int32"
+            }
+          },
+          "combinedSeats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateTableRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["null", "string"]
+          },
+          "seats": {
+            "maximum": 50,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": ["integer", "string"],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "VerifyPvqRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "OpenRestoApi"
+    },
+    {
+      "name": "Admin"
+    },
+    {
+      "name": "ApiKeys"
+    },
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Availability"
+    },
+    {
+      "name": "Bookings"
+    },
+    {
+      "name": "Brand"
+    },
+    {
+      "name": "EmailSettings"
+    },
+    {
+      "name": "Highlights"
+    },
+    {
+      "name": "Holds"
+    },
+    {
+      "name": "Media"
+    },
+    {
+      "name": "Notifications"
+    },
+    {
+      "name": "Restaurants"
+    },
+    {
+      "name": "SocialLinks"
+    },
+    {
+      "name": "Users"
+    }
+  ]
+}

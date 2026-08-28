@@ -32,6 +32,17 @@ internal sealed class CurrentUserService(IHttpContextAccessor httpContextAccesso
 
     public bool IsApiKeyAuthenticated => Principal?.IsApiKeyAuthenticated() ?? false;
 
+    public int? KeyId
+    {
+        get
+        {
+            string? raw = Claim(ApiKeyClaimTypes.KeyId);
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id)
+                ? id
+                : null;
+        }
+    }
+
     public bool HasScope(string resource, string access)
         => !IsApiKeyAuthenticated || (Principal?.HasScope(resource, access) ?? false);
 

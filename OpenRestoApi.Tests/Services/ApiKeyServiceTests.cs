@@ -19,6 +19,12 @@ public class ApiKeyServiceTests
             new FakeCurrentUser { UserId = callerId },
             clock ?? new FakeClock(BaseTime));
 
+    private static ApiKeyService CreateApiKeySessionService(AppDbContext db, int? keyId, string email, string role, FakeClock? clock = null)
+        => new(
+            new AdminApiKeyRepository(db),
+            new FakeCurrentUser { IsApiKeyAuthenticated = true, KeyId = keyId, Email = email, Role = role },
+            clock ?? new FakeClock(BaseTime));
+
     private static AdminCredential SeedUser(AppDbContext db, string email)
     {
         var user = new AdminCredential
@@ -250,5 +256,64 @@ public class ApiKeyServiceTests
         ApiKeyService svc = CreateService(db, owner.Id);
 
         await Assert.ThrowsAsync<NotFoundException>(() => svc.RevokeAsync(999));
+    }
+
+    // ── GetSelfAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetSelfAsync_ReturnsNotAnApiKeySession_ForAJwtCaller()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSelfAsync_ReturnsNotAnApiKeySession_ForAJwtCaller));
+        AdminCredential owner = SeedUser(db, "owner@example.com");
+        ApiKeyService svc = CreateService(db, owner.Id);
+
+        ApiKeySelfResult result = await svc.GetSelfAsync();
+
+        Assert.Equal(ApiKeySelfStatus.NotAnApiKeySession, result.Status);
+        Assert.Null(result.Key);
+    }
+
+    [Fact]
+    public async Task GetSelfAsync_ReturnsTheCallingKeyAndItsOwner_ForAnApiKeyCaller()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSelfAsync_ReturnsTheCallingKeyAndItsOwner_ForAnApiKeyCaller));
+        AdminCredential owner = SeedUser(db, "owner@example.com");
+        ApiKeyCreatedDto created = await CreateService(db, owner.Id).CreateAsync(ValidRequest("CLI key"));
+        ApiKeyService keySvc = CreateApiKeySessionService(db, created.Id, owner.Email, owner.Role);
+
+        ApiKeySelfResult result = await keySvc.GetSelfAsync();
+
+        Assert.Equal(ApiKeySelfStatus.Ok, result.Status);
+        Assert.Equal(created.Id, result.Key!.Id);
+        Assert.Equal("CLI key", result.Key.Name);
+        Assert.Equal(created.Prefix, result.Key.Prefix);
+        Assert.Equal(owner.Id, result.Key.UserId);
+        Assert.Equal(owner.Email, result.Key.Email);
+        Assert.Equal(owner.Role, result.Key.Role);
+        Assert.Single(result.Key.Scopes);
+    }
+
+    [Fact]
+    public async Task GetSelfAsync_ReturnsKeyNotFound_WhenTheClaimedKeyIdNoLongerExists()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSelfAsync_ReturnsKeyNotFound_WhenTheClaimedKeyIdNoLongerExists));
+        ApiKeyService svc = CreateApiKeySessionService(db, 999, "ghost@example.com", UserRoles.Owner);
+
+        ApiKeySelfResult result = await svc.GetSelfAsync();
+
+        Assert.Equal(ApiKeySelfStatus.KeyNotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task GetSelfAsync_ReturnsNotAnApiKeySession_WhenApiKeyAuthenticatedButKeyIdClaimIsMissing()
+    {
+        // Defensive: a malformed/legacy key claim set shouldn't be treated as "key not found" —
+        // there is no key id to look up at all, same as a JWT session.
+        using AppDbContext db = TestDbFactory.Create(nameof(GetSelfAsync_ReturnsNotAnApiKeySession_WhenApiKeyAuthenticatedButKeyIdClaimIsMissing));
+        ApiKeyService svc = CreateApiKeySessionService(db, null, "ghost@example.com", UserRoles.Owner);
+
+        ApiKeySelfResult result = await svc.GetSelfAsync();
+
+        Assert.Equal(ApiKeySelfStatus.NotAnApiKeySession, result.Status);
     }
 }

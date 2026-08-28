@@ -51,3 +51,37 @@ public class CreateApiKeyRequest
     public List<ApiKeyScopeDto> Scopes { get; set; } = [];
     public DateTime? ExpiresAt { get; set; }
 }
+
+/// <summary>
+/// A key's view of itself (<c>GET api/admin/api-keys/self</c>, issue #319 Phase 2) — the same
+/// metadata as <see cref="ApiKeyDto"/> plus who it belongs to, so a CLI's <c>auth whoami</c> can
+/// confirm both the key and the account it acts as without a separate call.
+/// </summary>
+public class ApiKeySelfDto : ApiKeyDto
+{
+    public int UserId { get; set; }
+    public string Email { get; set; } = null!;
+    public string Role { get; set; } = null!;
+}
+
+public enum ApiKeySelfStatus
+{
+    /// <summary>The caller is not authenticated via an API key — a JWT/browser session has no
+    /// key to introspect.</summary>
+    NotAnApiKeySession,
+
+    /// <summary>The key claimed on the principal no longer exists (should not happen in practice
+    /// since revoking/deleting never removes the row mid-request, but handled defensively).</summary>
+    KeyNotFound,
+    Ok,
+}
+
+public class ApiKeySelfResult
+{
+    public ApiKeySelfStatus Status { get; init; }
+    public ApiKeySelfDto? Key { get; init; }
+
+    public static readonly ApiKeySelfResult NotAnApiKeySession = new() { Status = ApiKeySelfStatus.NotAnApiKeySession };
+    public static readonly ApiKeySelfResult KeyNotFound = new() { Status = ApiKeySelfStatus.KeyNotFound };
+    public static ApiKeySelfResult Found(ApiKeySelfDto key) => new() { Status = ApiKeySelfStatus.Ok, Key = key };
+}
