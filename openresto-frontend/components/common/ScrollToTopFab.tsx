@@ -30,17 +30,33 @@ export function fabGutter(containerWidth: number): number {
   return Math.max(FAB_MIN_GUTTER, columnEdge - FAB_SIZE);
 }
 
+/**
+ * Height a page-ending row keeps clear so the FAB doesn't come to rest on it. Above the
+ * content cap the FAB sits in the gutter beside the column and the row it ends on is
+ * already clear of it, so nothing is reserved; below the cap there is no gutter, and the
+ * FAB lands on whatever the page ends with — the footer's links — once the scroll stops.
+ *
+ * @see [Footer.test.tsx](../../tests/components/layout/Footer.test.tsx) — pins that the
+ * footer reserves this below the cap and nothing above it.
+ */
+export function fabRestingBand(containerWidth: number): number {
+  if (fabGutter(containerWidth) > FAB_MIN_GUTTER) return 0;
+  return FAB_MIN_GUTTER + FAB_SIZE + FAB_MIN_GUTTER;
+}
+
 interface Props {
   visible: boolean;
   onPress: () => void;
 }
 
 /**
- * The return-to-top shortcut. It holds one position for the whole scroll and fades out where the
- * footer would otherwise be underneath it; `useScrollToTopFab` decides when.
+ * The return-to-top shortcut. It holds one position for the whole scroll; `useScrollToTopFab`
+ * decides when it is offered.
  *
  * Nothing here tracks the scroll position. An earlier version rode above the footer, which meant
  * recomputing an offset on every scroll event and moving an element that reads as pinned (#399).
+ * The footer keeps out of the FAB's way instead, by reserving `fabRestingBand` at the widths
+ * where the gutter is too narrow to hold the FAB beside the column.
  *
  * @see [ScrollToTopFab.test.tsx](../../tests/components/ScrollToTopFab.test.tsx) — pins that it
  * rests on the same gutter whether shown or hidden, and takes no presses once faded.

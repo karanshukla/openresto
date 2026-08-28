@@ -6,6 +6,7 @@ import { screen, fireEvent } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import ScrollToTopFab, {
   fabGutter,
+  fabRestingBand,
   FAB_MIN_GUTTER,
   SHOW_AFTER_SCROLL_Y,
 } from "@/components/common/ScrollToTopFab";
@@ -88,6 +89,28 @@ describe("ScrollToTopFab", () => {
       const tight = CONTENT_MAX_WIDTH + 2 * (FAB_SIZE + FAB_MIN_GUTTER - CONTENT_PADDING_H);
       expect(fabGutter(tight)).toBe(FAB_MIN_GUTTER);
       expect(fabGutter(tight + 2)).toBeGreaterThan(FAB_MIN_GUTTER);
+    });
+  });
+
+  describe("fabRestingBand", () => {
+    // Wide enough for the gutter to hold the FAB beside the column, so the row the page ends
+    // on is already clear of it and reserves nothing.
+    it.each([1440, 1680, 2560])("reserves nothing at %ipx, where the FAB has a gutter", (width) => {
+      expect(fabRestingBand(width)).toBe(0);
+    });
+
+    // No gutter: the FAB is over the content column, so the page's last row keeps the band it
+    // rests in clear — its own inset, the FAB, and a gap above it.
+    it.each([1320, 768, 390])("reserves the FAB's band at %ipx, where it has none", (width) => {
+      expect(fabRestingBand(width)).toBe(FAB_MIN_GUTTER + FAB_SIZE + FAB_MIN_GUTTER);
+    });
+
+    // Same boundary the gutter itself switches on, so the reserve can never be dropped while
+    // the FAB is still over the column.
+    it("switches over exactly where the gutter becomes wide enough", () => {
+      const tight = CONTENT_MAX_WIDTH + 2 * (FAB_SIZE + FAB_MIN_GUTTER - CONTENT_PADDING_H);
+      expect(fabRestingBand(tight)).toBeGreaterThan(0);
+      expect(fabRestingBand(tight + 2)).toBe(0);
     });
   });
 

@@ -11,8 +11,9 @@ import { SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
  * reads as pinned sliding the footer's height up the page on every scroll near the bottom, driven
  * by a value that changed on every scroll event: the judder in #399. Standing down instead took
  * the shortcut away at the bottom of the page, which is exactly where it is most wanted. Neither
- * was needed: the FAB sits in the gutter beside the content column, and the footer's own row ends
- * on that same edge, so they never overlapped in the first place.
+ * was needed: above the content cap the FAB sits in the gutter beside the column, where the
+ * footer's own row already ends, and below it the footer reserves the band the FAB rests in
+ * (`fabRestingBand`) — so the FAB can stay put and still never land on the footer's links.
  *
  * Visibility is the only thing a scroll changes here, and it changes twice in a scroll rather than
  * continuously — so this hook, which the *screen* calls, re-renders the page twice rather than on
