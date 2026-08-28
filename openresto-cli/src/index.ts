@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { Command } from "commander";
 import { registerAuthCommands } from "./commands/auth.js";
 import { registerBookingsCommands } from "./commands/bookings.js";
@@ -12,15 +9,9 @@ import { registerSectionsCommands } from "./commands/sections.js";
 import { registerBrandCommands } from "./commands/brand.js";
 import { registerUsersCommands } from "./commands/users.js";
 import { registerAuditCommands } from "./commands/audit.js";
+import { getCliVersion } from "./version.js";
 
-// The CLI isn't its own product — it's versioned in lockstep with OpenResto (package.json's
-// "version" is bumped alongside the root/frontend one on every release, per
-// scripts/check-release-version.sh), so `--version` reads it from package.json rather than
-// carrying a second hardcoded number that would drift.
-const packageDir = path.dirname(fileURLToPath(import.meta.url));
-const { version } = JSON.parse(
-  readFileSync(path.join(packageDir, "..", "package.json"), "utf-8"),
-) as { version: string };
+const version = getCliVersion();
 
 const program = new Command();
 

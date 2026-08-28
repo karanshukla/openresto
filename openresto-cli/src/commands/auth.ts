@@ -8,6 +8,8 @@ import { ApiError, Client } from "../transport.js";
 import { promptHidden, promptText, readAllStdin } from "../prompt.js";
 import { clientFor, getGlobalOptions, handle } from "../context.js";
 import { printResult } from "../output.js";
+import { getCliVersion } from "../version.js";
+import { warnOnServerVersionMismatch } from "../versionCheck.js";
 
 export function registerAuthCommands(program: Command): void {
   const auth = program
@@ -55,6 +57,7 @@ export function registerAuthCommands(program: Command): void {
 
         upsertProfile(profileName, { url, apiKey });
         console.log(`Saved profile "${profileName}" for ${url}.`);
+        await warnOnServerVersionMismatch(client, getCliVersion());
       }),
     );
 
@@ -67,6 +70,7 @@ export function registerAuthCommands(program: Command): void {
         const globals = getGlobalOptions(command);
         const self = await client.get("/api/admin/api-keys/self");
         printResult(self, Boolean(globals.json));
+        await warnOnServerVersionMismatch(client, getCliVersion());
       }),
     );
 

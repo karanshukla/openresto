@@ -89,3 +89,4 @@ docs/*
 # Python bytecode (scripts/demo_data.py)
 __pycache__/
 *.pyc
+.claude/worktrees/
