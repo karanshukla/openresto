@@ -21,18 +21,27 @@ export const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: "700" },
   revokedRow: { opacity: 0.6 },
-  scopeField: { gap: theme.spacing.xs },
-  scopeGrid: { gap: theme.spacing.xs },
+  // Wider than settings.styles' 480px `field` because a row carries a description and up to
+  // three choices, but still capped: without one the row stretches to the full 1200px card and
+  // leaves a resource name stranded a screen away from the control that grants it.
+  scopeField: { gap: theme.spacing.xs, width: "100%", maxWidth: 620 },
+  scopeGrid: { marginTop: theme.spacing.xxs },
   scopeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     flexWrap: "wrap",
     gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+    borderTopWidth: 1,
   },
-  scopeResourceLabel: { fontSize: 13, fontWeight: "600", minWidth: 90 },
-  scopeToggles: { flexDirection: "row", gap: theme.spacing.xs },
+  // minWidth pairs with the row's flexWrap the way settings.styles' fieldFlex does: above it
+  // the text column absorbs the slack, below it the choices drop to their own line instead of
+  // squeezing against a wrapped description.
+  scopeRowText: { flex: 1, minWidth: 160, gap: 1 },
+  scopeResourceLabel: { fontSize: 13, fontWeight: "600" },
+  scopeResourceHint: { fontSize: 11, lineHeight: 15 },
+  scopeToggles: { flexDirection: "row", gap: theme.spacing.xs, flexShrink: 0 },
   scopeChip: {
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,

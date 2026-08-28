@@ -17,7 +17,6 @@ import {
   adminListApiKeys,
   adminRevokeApiKey,
   READ_ONLY_SCOPE_RESOURCES,
-  SCOPE_ACCESS_LEVELS,
   SCOPE_RESOURCES,
   type ApiKeyDto,
   type ApiKeyScope,
@@ -30,7 +29,20 @@ import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./ApiKeysCard.styles";
 
-type ScopeState = Record<ScopeResource, Record<ScopeAccess, boolean>>;
+/**
+ * What one resource is granted. Not two independent booleans: a write grant already satisfies a
+ * read requirement server-side, so "read and write" is not a fourth state, it is `write` spelled
+ * twice — a scope pair that does nothing. Modelling the choice as one level per resource is what
+ * stops the form from offering it.
+ * @see [ApiKeysCard.test.tsx](../../../tests/components/admin/settings/ApiKeysCard.test.tsx) —
+ * pins that picking Write sends the write pair alone, and that moving Read to Write replaces the
+ * grant rather than accumulating both.
+ */
+type ScopeLevel = "none" | "read" | "write";
+type ScopeState = Record<ScopeResource, ScopeLevel>;
+
+const SCOPE_LEVELS: readonly ScopeLevel[] = ["none", "read", "write"];
+const READ_ONLY_SCOPE_LEVELS: readonly ScopeLevel[] = ["none", "read"];
 
 const EXPIRY_PRESETS = ["none", "30d", "90d", "1y"] as const;
 type ExpiryPreset = (typeof EXPIRY_PRESETS)[number];
@@ -41,18 +53,14 @@ const EXPIRY_DAYS: Record<Exclude<ExpiryPreset, "none">, number> = {
 };
 
 function emptyScopeState(): ScopeState {
-  return Object.fromEntries(
-    SCOPE_RESOURCES.map((resource) => [resource, { read: false, write: false }])
-  ) as ScopeState;
+  return Object.fromEntries(SCOPE_RESOURCES.map((resource) => [resource, "none"])) as ScopeState;
 }
 
 function scopesFromState(state: ScopeState): ApiKeyScope[] {
-  return SCOPE_RESOURCES.flatMap((resource) =>
-    SCOPE_ACCESS_LEVELS.filter((access) => state[resource][access]).map((access) => ({
-      resource,
-      access,
-    }))
-  );
+  return SCOPE_RESOURCES.flatMap((resource) => {
+    const level = state[resource];
+    return level === "none" ? [] : [{ resource, access: level }];
+  });
 }
 
 function expiryIsoFor(preset: ExpiryPreset): string | undefined {
@@ -112,14 +120,8 @@ export function ApiKeysCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleScope = (resource: ScopeResource, access: ScopeAccess) => {
-    setNewKey((s) => ({
-      ...s,
-      scopes: {
-        ...s.scopes,
-        [resource]: { ...s.scopes[resource], [access]: !s.scopes[resource][access] },
-      },
-    }));
+  const setScopeLevel = (resource: ScopeResource, level: ScopeLevel) => {
+    setNewKey((s) => ({ ...s, scopes: { ...s.scopes, [resource]: level } }));
   };
 
   const handleCreate = async () => {
@@ -204,6 +206,39 @@ export function ApiKeysCard({
         return t("admin.settings.apiKeys.scopeResource.audit");
       case "guests":
         return t("admin.settings.apiKeys.scopeResource.guests");
+    }
+  };
+
+  const scopeLevelLabel = (level: ScopeLevel) => {
+    switch (level) {
+      case "none":
+        return t("admin.settings.apiKeys.scopeLevel.none");
+      case "read":
+        return t("admin.settings.apiKeys.scopeReadLabel");
+      case "write":
+        return t("admin.settings.apiKeys.scopeWriteLabel");
+    }
+  };
+
+  // Same literal-per-case reason as resourceLabel above. What each grant actually reaches is
+  // not guessable from the noun — "Guests" in particular decides whether customer names and
+  // emails come back at all, rather than naming a resource of its own.
+  const resourceDescription = (resource: ScopeResource) => {
+    switch (resource) {
+      case "bookings":
+        return t("admin.settings.apiKeys.scopeDescription.bookings");
+      case "locations":
+        return t("admin.settings.apiKeys.scopeDescription.locations");
+      case "tables":
+        return t("admin.settings.apiKeys.scopeDescription.tables");
+      case "brand":
+        return t("admin.settings.apiKeys.scopeDescription.brand");
+      case "users":
+        return t("admin.settings.apiKeys.scopeDescription.users");
+      case "audit":
+        return t("admin.settings.apiKeys.scopeDescription.audit");
+      case "guests":
+        return t("admin.settings.apiKeys.scopeDescription.guests");
     }
   };
 
@@ -354,47 +389,67 @@ export function ApiKeysCard({
                       {t("admin.settings.apiKeys.scopesLabel")}
                     </ThemedText>
                     <View style={styles.scopeGrid}>
-                      {SCOPE_RESOURCES.map((resource) => (
-                        <View key={resource} style={styles.scopeRow}>
-                          <ThemedText style={styles.scopeResourceLabel}>
-                            {resourceLabel(resource)}
-                          </ThemedText>
-                          <View style={styles.scopeToggles}>
-                            {SCOPE_ACCESS_LEVELS.map((access) => {
-                              if (access === "write" && READ_ONLY_SCOPE_RESOURCES.has(resource))
-                                return null;
-                              const checked = newKey.scopes[resource][access];
-                              const label = scopeLabel(access);
-                              return (
-                                <Pressable
-                                  key={access}
-                                  accessibilityRole="checkbox"
-                                  accessibilityState={{ checked }}
-                                  accessibilityLabel={t("admin.settings.apiKeys.scopeToggleLabel", {
-                                    resource: resourceLabel(resource),
-                                    access: label,
-                                  })}
-                                  onPress={() => toggleScope(resource, access)}
-                                  style={[
-                                    styles.scopeChip,
-                                    { borderColor: checked ? primaryColor : borderColor },
-                                    checked && { backgroundColor: primaryColor },
-                                  ]}
-                                >
-                                  <ThemedText
+                      {SCOPE_RESOURCES.map((resource) => {
+                        const levels = READ_ONLY_SCOPE_RESOURCES.has(resource)
+                          ? READ_ONLY_SCOPE_LEVELS
+                          : SCOPE_LEVELS;
+                        return (
+                          <View
+                            key={resource}
+                            style={[styles.scopeRow, { borderTopColor: borderColor }]}
+                          >
+                            <View style={styles.scopeRowText}>
+                              <ThemedText style={styles.scopeResourceLabel}>
+                                {resourceLabel(resource)}
+                              </ThemedText>
+                              <ThemedText style={[styles.scopeResourceHint, { color: mutedColor }]}>
+                                {resourceDescription(resource)}
+                              </ThemedText>
+                            </View>
+                            <View
+                              accessibilityRole="radiogroup"
+                              accessibilityLabel={resourceLabel(resource)}
+                              style={styles.scopeToggles}
+                            >
+                              {levels.map((level) => {
+                                const selected = newKey.scopes[resource] === level;
+                                return (
+                                  <Pressable
+                                    key={level}
+                                    accessibilityRole="radio"
+                                    accessibilityState={{ checked: selected }}
+                                    accessibilityLabel={
+                                      level === "none"
+                                        ? t("admin.settings.apiKeys.scopeNoneToggleLabel", {
+                                            resource: resourceLabel(resource),
+                                          })
+                                        : t("admin.settings.apiKeys.scopeToggleLabel", {
+                                            resource: resourceLabel(resource),
+                                            access: scopeLevelLabel(level),
+                                          })
+                                    }
+                                    onPress={() => setScopeLevel(resource, level)}
                                     style={[
-                                      styles.scopeChipText,
-                                      { color: checked ? theme.colors.white : mutedColor },
+                                      styles.scopeChip,
+                                      { borderColor: selected ? primaryColor : borderColor },
+                                      selected && { backgroundColor: `${primaryColor}14` },
                                     ]}
                                   >
-                                    {label}
-                                  </ThemedText>
-                                </Pressable>
-                              );
-                            })}
+                                    <ThemedText
+                                      style={[
+                                        styles.scopeChipText,
+                                        { color: selected ? primaryColor : mutedColor },
+                                      ]}
+                                    >
+                                      {scopeLevelLabel(level)}
+                                    </ThemedText>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
                           </View>
-                        </View>
-                      ))}
+                        );
+                      })}
                     </View>
                   </View>
 

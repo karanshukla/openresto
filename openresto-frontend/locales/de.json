@@ -1614,6 +1614,7 @@
         "scopeReadLabel": "Lesen",
         "scopeWriteLabel": "Schreiben",
         "scopeToggleLabel": "{{access}}-Zugriff auf {{resource}}",
+        "scopeNoneToggleLabel": "Kein Zugriff auf {{resource}}",
         "scopeBadge": "{{resource}} · {{access}}",
         "scopeResource": {
           "bookings": "Buchungen",
@@ -1623,6 +1624,18 @@
           "users": "Benutzer",
           "audit": "Aktivitätsprotokoll",
           "guests": "Gäste"
+        },
+        "scopeLevel": {
+          "none": "Keine"
+        },
+        "scopeDescription": {
+          "bookings": "Reservierungen und ihre Details",
+          "locations": "Restaurants, ihre Öffnungszeiten und Einstellungen",
+          "tables": "Bereiche, Tische und kombinierbare Gruppen",
+          "brand": "Seitenname, Farben, Kontaktdaten, Highlights und Medien",
+          "users": "Administratorkonten und ihre Rollen",
+          "audit": "Das Administrations-Aktivitätsprotokoll",
+          "guests": "Kundennamen und E-Mails auf Reservierungen. Ohne dies kommen sie leer zurück."
         },
         "expiryLabel": "Ablauf",
         "expiryHint": "Standardmäßig 1 Jahr. Wähle „Kein Ablauf“ für einen Schlüssel, der nie abläuft.",

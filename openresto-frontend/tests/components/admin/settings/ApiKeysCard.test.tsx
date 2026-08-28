@@ -202,7 +202,29 @@ describe("ApiKeysCard", () => {
     await waitFor(() => expect(screen.queryByTestId("api-key-secret-modal")).toBeNull());
   });
 
-  it("includes both read and write scopes when both are checked for a resource", async () => {
+  // A write grant already satisfies a read requirement server-side, so the form grants one
+  // level per resource rather than two independent checkboxes. These three pin that: write
+  // travels alone, moving the level replaces the previous grant, and None takes it away.
+  it("sends the write scope alone when Write is picked, never a redundant read alongside it", async () => {
+    (apiKeysApi.adminCreateApiKey as jest.Mock).mockResolvedValue({
+      ok: true,
+      key: { ...BOOKINGS_KEY, id: 9, secret: "orst_09_x" },
+    });
+    await renderLoaded();
+    await openAddForm();
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Reservations widget"), "Full access");
+    fireEvent.press(screen.getByLabelText("Write access to Bookings"));
+
+    fireEvent.press(screen.getByLabelText("Add this key"));
+
+    await waitFor(() =>
+      expect(apiKeysApi.adminCreateApiKey).toHaveBeenCalledWith(
+        expect.objectContaining({ scopes: [{ resource: "bookings", access: "write" }] })
+      )
+    );
+  });
+
+  it("replaces the previous level rather than accumulating when Read is changed to Write", async () => {
     (apiKeysApi.adminCreateApiKey as jest.Mock).mockResolvedValue({
       ok: true,
       key: { ...BOOKINGS_KEY, id: 9, secret: "orst_09_x" },
@@ -217,14 +239,22 @@ describe("ApiKeysCard", () => {
 
     await waitFor(() =>
       expect(apiKeysApi.adminCreateApiKey).toHaveBeenCalledWith(
-        expect.objectContaining({
-          scopes: expect.arrayContaining([
-            { resource: "bookings", access: "read" },
-            { resource: "bookings", access: "write" },
-          ]),
-        })
+        expect.objectContaining({ scopes: [{ resource: "bookings", access: "write" }] })
       )
     );
+  });
+
+  it("takes the grant away again when a resource is set back to No access", async () => {
+    await renderLoaded();
+    await openAddForm();
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. Reservations widget"), "Nothing");
+    fireEvent.press(screen.getByLabelText("Read access to Bookings"));
+    fireEvent.press(screen.getByLabelText("No access to Bookings"));
+
+    fireEvent.press(screen.getByLabelText("Add this key"));
+
+    await waitFor(() => expect(screen.getByText("Select at least one permission.")).toBeTruthy());
+    expect(apiKeysApi.adminCreateApiKey).not.toHaveBeenCalled();
   });
 
   it("sends a computed expiry when a preset other than no-expiry is chosen", async () => {

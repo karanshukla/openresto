@@ -1614,6 +1614,7 @@
         "scopeReadLabel": "Lectura",
         "scopeWriteLabel": "Escritura",
         "scopeToggleLabel": "Acceso de {{access}} a {{resource}}",
+        "scopeNoneToggleLabel": "Sin acceso a {{resource}}",
         "scopeBadge": "{{resource}} · {{access}}",
         "scopeResource": {
           "bookings": "Reservas",
@@ -1623,6 +1624,18 @@
           "users": "Usuarios",
           "audit": "Registro de actividad",
           "guests": "Comensales"
+        },
+        "scopeLevel": {
+          "none": "Ninguno"
+        },
+        "scopeDescription": {
+          "bookings": "Las reservas y sus detalles",
+          "locations": "Los restaurantes, sus horarios y sus ajustes",
+          "tables": "Las zonas, las mesas y los grupos combinables",
+          "brand": "Nombre del sitio, colores, datos de contacto, destacados y medios",
+          "users": "Las cuentas de administrador y sus roles",
+          "audit": "El registro de actividad de administración",
+          "guests": "Nombres y correos de los clientes en las reservas. Sin esto vuelven vacíos."
         },
         "expiryLabel": "Caducidad",
         "expiryHint": "El valor predeterminado es 1 año. Elige «Sin caducidad» para una clave que nunca expire.",

@@ -1614,6 +1614,7 @@
         "scopeReadLabel": "Read",
         "scopeWriteLabel": "Write",
         "scopeToggleLabel": "{{access}} access to {{resource}}",
+        "scopeNoneToggleLabel": "No access to {{resource}}",
         "scopeBadge": "{{resource}} · {{access}}",
         "scopeResource": {
           "bookings": "Bookings",
@@ -1623,6 +1624,18 @@
           "users": "Users",
           "audit": "Activity log",
           "guests": "Guests"
+        },
+        "scopeLevel": {
+          "none": "None"
+        },
+        "scopeDescription": {
+          "bookings": "Reservations and their details",
+          "locations": "Restaurants, their opening hours and settings",
+          "tables": "Sections, tables and combinable groups",
+          "brand": "Site name, colours, contact details, highlights and media",
+          "users": "Admin accounts and their roles",
+          "audit": "The admin activity trail",
+          "guests": "Customer names and emails on bookings. Without this they come back blank."
         },
         "expiryLabel": "Expiry",
         "expiryHint": "Defaults to 1 year. Choose \"No expiry\" for a key that never expires.",

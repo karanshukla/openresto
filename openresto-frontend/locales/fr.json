@@ -1614,6 +1614,7 @@
         "scopeReadLabel": "Lecture",
         "scopeWriteLabel": "Écriture",
         "scopeToggleLabel": "Accès en {{access}} à {{resource}}",
+        "scopeNoneToggleLabel": "Aucun accès à {{resource}}",
         "scopeBadge": "{{resource}} · {{access}}",
         "scopeResource": {
           "bookings": "Réservations",
@@ -1623,6 +1624,18 @@
           "users": "Utilisateurs",
           "audit": "Journal d'activité",
           "guests": "Clients"
+        },
+        "scopeLevel": {
+          "none": "Aucun"
+        },
+        "scopeDescription": {
+          "bookings": "Les réservations et leurs détails",
+          "locations": "Les restaurants, leurs horaires et leurs réglages",
+          "tables": "Les espaces, les tables et les groupes combinables",
+          "brand": "Nom du site, couleurs, coordonnées, points forts et médias",
+          "users": "Les comptes administrateur et leurs rôles",
+          "audit": "Le journal d'activité de l'administration",
+          "guests": "Les noms et e-mails des clients sur les réservations. Sans ceci, ils reviennent vides."
         },
         "expiryLabel": "Expiration",
         "expiryHint": "Par défaut, 1 an. Choisissez « Sans expiration » pour une clé qui n'expire jamais.",
