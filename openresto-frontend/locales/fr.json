@@ -1592,6 +1592,64 @@
         "add": "Ajouter",
         "addUser": "Ajouter un utilisateur"
       },
+      "apiKeys": {
+        "title": "Clés API",
+        "subtitle_one": "{{count}} clé · Accès limité pour d'autres services",
+        "subtitle_other": "{{count}} clés · Accès limité pour d'autres services",
+        "loadFailed": "Impossible de charger les clés API. Rechargez pour réessayer.",
+        "nameRequired": "Donnez un nom à la clé.",
+        "scopeRequired": "Sélectionnez au moins une autorisation.",
+        "createdMessage": "« {{name}} » créée.",
+        "revokedMessage": "« {{name}} » révoquée.",
+        "revokedBadge": "Révoquée",
+        "revoke": "Révoquer",
+        "revokeLabel": "Révoquer {{name}}",
+        "revoking": "Révocation…",
+        "confirmRevokeTitle": "Révoquer cette clé ?",
+        "confirmRevokeMessage": "« {{name}} » cessera de fonctionner immédiatement. Cette action est irréversible.",
+        "confirmRevokeConfirmLabel": "Révoquer la clé",
+        "nameLabel": "Nom",
+        "namePlaceholder": "ex. Widget de réservation",
+        "scopesLabel": "Autorisations",
+        "scopeReadLabel": "Lecture",
+        "scopeWriteLabel": "Écriture",
+        "scopeToggleLabel": "Accès en {{access}} à {{resource}}",
+        "scopeBadge": "{{resource}} · {{access}}",
+        "scopeResource": {
+          "bookings": "Réservations",
+          "locations": "Établissements",
+          "tables": "Tables",
+          "brand": "Marque",
+          "users": "Utilisateurs",
+          "audit": "Journal d'activité",
+          "guests": "Clients"
+        },
+        "expiryLabel": "Expiration",
+        "expiryHint": "Laissez sur « Sans expiration » pour une clé qui n'expire jamais.",
+        "expiryPreset": {
+          "none": "Sans expiration",
+          "thirtyDays": "30 jours",
+          "ninetyDays": "90 jours",
+          "oneYear": "1 an"
+        },
+        "prefixValue": "{{prefix}}…",
+        "createdLabel": "Créée le {{date}}",
+        "lastUsedLabel": "Dernière utilisation {{date}}",
+        "neverUsedLabel": "Jamais utilisée",
+        "expiresLabel": "Expire le {{date}}",
+        "addThisKeyLabel": "Ajouter cette clé",
+        "add": "Ajouter",
+        "addKey": "Ajouter une clé API",
+        "secretModal": {
+          "title": "Copiez votre nouvelle clé",
+          "warning": "C'est la seule fois où cette clé sera affichée en entier. Conservez-la en lieu sûr — vous ne pourrez plus la revoir.",
+          "copyButton": "Copier",
+          "copiedButton": "Copié",
+          "copyLabel": "Copier la clé API dans le presse-papiers",
+          "copiedLabel": "Clé API copiée",
+          "doneButton": "Terminé, je l'ai enregistrée"
+        }
+      },
       "brandPreview": {
         "title": "Aperçu en direct",
         "subtitle": "Page d'accueil, avant enregistrement",
@@ -1677,6 +1735,10 @@
         "title": "Utilisateurs",
         "subtitle": "Qui peut se connecter à ce panneau d'administration, et avec quel rôle."
       },
+      "apiKeysRoute": {
+        "title": "Clés API",
+        "subtitle": "Clés utilisées par d'autres services pour appeler l'API OpenResto en votre nom."
+      },
       "brandAutosave": {
         "serverUnreachable": "Impossible de joindre le serveur."
       }
@@ -1696,6 +1758,7 @@
           "brand": "Marque",
           "emailPush": "E-mail et push",
           "users": "Utilisateurs",
+          "apiKeys": "Clés API",
           "account": "Compte"
         },
         "unreadLabel_one": "{{label}}, {{count}} non lue",

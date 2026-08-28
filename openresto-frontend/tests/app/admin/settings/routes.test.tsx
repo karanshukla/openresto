@@ -8,6 +8,7 @@ import BrandSettingsScreen from "@/app/admin/settings/brand";
 import EmailSettingsScreen from "@/app/admin/settings/email";
 import AccountSettingsScreen from "@/app/admin/settings/account";
 import UserSettingsScreen from "@/app/admin/settings/users";
+import ApiKeysSettingsScreen from "@/app/admin/settings/api-keys";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 const mockRedirect = jest.fn();
@@ -69,6 +70,9 @@ jest.mock("@/components/admin/settings/SecurityCard", () => ({
 }));
 jest.mock("@/components/admin/settings/UsersCard", () => ({
   UsersCard: stub("UsersCard"),
+}));
+jest.mock("@/components/admin/settings/ApiKeysCard", () => ({
+  ApiKeysCard: stub("ApiKeysCard"),
 }));
 
 // The Users route gates on the signed-in role, so it needs an auth context.
@@ -137,5 +141,17 @@ describe("admin settings routes", () => {
     renderWithProviders(<UserSettingsScreen />, { withAuth: true });
     await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith("/admin/settings/account"));
     expect(screen.queryByText("UsersCard")).toBeNull();
+  });
+
+  it("shows the API keys card to an Owner", async () => {
+    renderWithProviders(<ApiKeysSettingsScreen />, { withAuth: true });
+    await waitFor(() => expect(screen.getByText("ApiKeysCard")).toBeTruthy());
+  });
+
+  it("redirects a Manager away from the API keys route", async () => {
+    asRole("Manager");
+    renderWithProviders(<ApiKeysSettingsScreen />, { withAuth: true });
+    await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith("/admin/settings/account"));
+    expect(screen.queryByText("ApiKeysCard")).toBeNull();
   });
 });

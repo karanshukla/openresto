@@ -1592,6 +1592,64 @@
         "add": "Hinzufügen",
         "addUser": "Benutzer hinzufügen"
       },
+      "apiKeys": {
+        "title": "API-Schlüssel",
+        "subtitle_one": "{{count}} Schlüssel · Eingeschränkter Zugriff für andere Dienste",
+        "subtitle_other": "{{count}} Schlüssel · Eingeschränkter Zugriff für andere Dienste",
+        "loadFailed": "API-Schlüssel konnten nicht geladen werden. Zum erneuten Versuch neu laden.",
+        "nameRequired": "Gib dem Schlüssel einen Namen.",
+        "scopeRequired": "Wähle mindestens eine Berechtigung aus.",
+        "createdMessage": "„{{name}}“ erstellt.",
+        "revokedMessage": "„{{name}}“ widerrufen.",
+        "revokedBadge": "Widerrufen",
+        "revoke": "Widerrufen",
+        "revokeLabel": "{{name}} widerrufen",
+        "revoking": "Wird widerrufen…",
+        "confirmRevokeTitle": "Diesen Schlüssel widerrufen?",
+        "confirmRevokeMessage": "„{{name}}“ funktioniert danach sofort nicht mehr. Dies kann nicht rückgängig gemacht werden.",
+        "confirmRevokeConfirmLabel": "Schlüssel widerrufen",
+        "nameLabel": "Name",
+        "namePlaceholder": "z. B. Reservierungs-Widget",
+        "scopesLabel": "Berechtigungen",
+        "scopeReadLabel": "Lesen",
+        "scopeWriteLabel": "Schreiben",
+        "scopeToggleLabel": "{{access}}-Zugriff auf {{resource}}",
+        "scopeBadge": "{{resource}} · {{access}}",
+        "scopeResource": {
+          "bookings": "Buchungen",
+          "locations": "Standorte",
+          "tables": "Tische",
+          "brand": "Marke",
+          "users": "Benutzer",
+          "audit": "Aktivitätsprotokoll",
+          "guests": "Gäste"
+        },
+        "expiryLabel": "Ablauf",
+        "expiryHint": "Lasse „Kein Ablauf“ ausgewählt für einen Schlüssel, der nie abläuft.",
+        "expiryPreset": {
+          "none": "Kein Ablauf",
+          "thirtyDays": "30 Tage",
+          "ninetyDays": "90 Tage",
+          "oneYear": "1 Jahr"
+        },
+        "prefixValue": "{{prefix}}…",
+        "createdLabel": "Erstellt am {{date}}",
+        "lastUsedLabel": "Zuletzt verwendet {{date}}",
+        "neverUsedLabel": "Nie verwendet",
+        "expiresLabel": "Läuft ab am {{date}}",
+        "addThisKeyLabel": "Diesen Schlüssel hinzufügen",
+        "add": "Hinzufügen",
+        "addKey": "API-Schlüssel hinzufügen",
+        "secretModal": {
+          "title": "Neuen Schlüssel kopieren",
+          "warning": "Dies ist das einzige Mal, dass du diesen Schlüssel vollständig siehst. Bewahre ihn sicher auf — du kannst ihn danach nicht mehr einsehen.",
+          "copyButton": "Kopieren",
+          "copiedButton": "Kopiert",
+          "copyLabel": "API-Schlüssel in die Zwischenablage kopieren",
+          "copiedLabel": "API-Schlüssel kopiert",
+          "doneButton": "Fertig, ich habe ihn gespeichert"
+        }
+      },
       "brandPreview": {
         "title": "Live-Vorschau",
         "subtitle": "Startseite, vor dem Speichern",
@@ -1677,6 +1735,10 @@
         "title": "Benutzer",
         "subtitle": "Wer sich bei diesem Admin-Panel anmelden kann, und mit welcher Rolle."
       },
+      "apiKeysRoute": {
+        "title": "API-Schlüssel",
+        "subtitle": "Schlüssel, mit denen andere Dienste die OpenResto-API in deinem Namen aufrufen."
+      },
       "brandAutosave": {
         "serverUnreachable": "Server konnte nicht erreicht werden."
       }
@@ -1696,6 +1758,7 @@
           "brand": "Marke",
           "emailPush": "E-Mail & Push",
           "users": "Benutzer",
+          "apiKeys": "API-Schlüssel",
           "account": "Konto"
         },
         "unreadLabel_one": "{{label}}, {{count}} ungelesen",

@@ -21,12 +21,13 @@ export const ASSIGNABLE_ROLES = [ROLES.owner, ROLES.manager] as const;
 export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 /** Things a role may or may not do. One entry per gated capability. */
-export type Capability = "manage:users" | "delete:location" | "view:audit";
+export type Capability = "manage:users" | "delete:location" | "view:audit" | "manage:api-keys";
 
 const CAPABILITY_ROLES: Record<Capability, readonly string[]> = {
   "manage:users": [ROLES.owner, ROLES.legacyAdmin],
   "delete:location": [ROLES.owner, ROLES.legacyAdmin],
   "view:audit": [ROLES.owner, ROLES.legacyAdmin],
+  "manage:api-keys": [ROLES.owner, ROLES.legacyAdmin],
 };
 
 export function roleCan(role: string | null | undefined, capability: Capability): boolean {

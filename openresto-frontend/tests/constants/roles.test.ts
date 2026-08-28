@@ -17,6 +17,12 @@ describe("roles", () => {
       expect(roleCan(ROLES.manager, "manage:users")).toBe(false);
     });
 
+    it("lets only an Owner manage API keys", () => {
+      expect(roleCan(ROLES.owner, "manage:api-keys")).toBe(true);
+      expect(roleCan(ROLES.legacyAdmin, "manage:api-keys")).toBe(true);
+      expect(roleCan(ROLES.manager, "manage:api-keys")).toBe(false);
+    });
+
     it("lets only an Owner delete a location", () => {
       expect(roleCan(ROLES.owner, "delete:location")).toBe(true);
       expect(roleCan(ROLES.legacyAdmin, "delete:location")).toBe(true);

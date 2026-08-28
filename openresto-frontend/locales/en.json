@@ -1592,6 +1592,64 @@
         "add": "Add",
         "addUser": "Add user"
       },
+      "apiKeys": {
+        "title": "API Keys",
+        "subtitle_one": "{{count}} key · Scoped access for other services",
+        "subtitle_other": "{{count}} keys · Scoped access for other services",
+        "loadFailed": "Could not load API keys. Reload to try again.",
+        "nameRequired": "Give the key a name.",
+        "scopeRequired": "Select at least one permission.",
+        "createdMessage": "\"{{name}}\" created.",
+        "revokedMessage": "\"{{name}}\" revoked.",
+        "revokedBadge": "Revoked",
+        "revoke": "Revoke",
+        "revokeLabel": "Revoke {{name}}",
+        "revoking": "Revoking…",
+        "confirmRevokeTitle": "Revoke this key?",
+        "confirmRevokeMessage": "\"{{name}}\" will stop working immediately. This can't be undone.",
+        "confirmRevokeConfirmLabel": "Revoke key",
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g. Reservations widget",
+        "scopesLabel": "Permissions",
+        "scopeReadLabel": "Read",
+        "scopeWriteLabel": "Write",
+        "scopeToggleLabel": "{{access}} access to {{resource}}",
+        "scopeBadge": "{{resource}} · {{access}}",
+        "scopeResource": {
+          "bookings": "Bookings",
+          "locations": "Locations",
+          "tables": "Tables",
+          "brand": "Brand",
+          "users": "Users",
+          "audit": "Activity log",
+          "guests": "Guests"
+        },
+        "expiryLabel": "Expiry",
+        "expiryHint": "Leave on \"No expiry\" for a key that never expires.",
+        "expiryPreset": {
+          "none": "No expiry",
+          "thirtyDays": "30 days",
+          "ninetyDays": "90 days",
+          "oneYear": "1 year"
+        },
+        "prefixValue": "{{prefix}}…",
+        "createdLabel": "Created {{date}}",
+        "lastUsedLabel": "Last used {{date}}",
+        "neverUsedLabel": "Never used",
+        "expiresLabel": "Expires {{date}}",
+        "addThisKeyLabel": "Add this key",
+        "add": "Add",
+        "addKey": "Add API key",
+        "secretModal": {
+          "title": "Copy your new key",
+          "warning": "This is the only time you'll see this key in full. Store it somewhere safe — you won't be able to view it again.",
+          "copyButton": "Copy",
+          "copiedButton": "Copied",
+          "copyLabel": "Copy API key to clipboard",
+          "copiedLabel": "API key copied",
+          "doneButton": "Done, I've saved it"
+        }
+      },
       "brandPreview": {
         "title": "Live preview",
         "subtitle": "Home page, before you save",
@@ -1677,6 +1735,10 @@
         "title": "Users",
         "subtitle": "Who can sign in to this admin panel, and as what."
       },
+      "apiKeysRoute": {
+        "title": "API Keys",
+        "subtitle": "Keys other services use to call the OpenResto API on your behalf."
+      },
       "brandAutosave": {
         "serverUnreachable": "Couldn't reach the server."
       }
@@ -1696,6 +1758,7 @@
           "brand": "Brand",
           "emailPush": "Email & Push",
           "users": "Users",
+          "apiKeys": "API Keys",
           "account": "Account"
         },
         "unreadLabel_one": "{{label}}, {{count}} unread",
