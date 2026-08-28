@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using CustomAccessibility.Attributes;
 using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -61,6 +62,9 @@ public static class ServiceCollectionExtensions
 
     /// <summary>Marks a global-limiter bucket as the elevated API-key ceiling rather than the
     /// plain per-IP ceiling — see <see cref="GlobalPartitionKey"/>.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal const string ApiKeyIpPartitionPrefix = "apikey-ip:";
 
     /// <summary>
@@ -77,6 +81,9 @@ public static class ServiceCollectionExtensions
     /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_DifferentIpsWithTheSameHeaderGetDifferentBuckets</seealso>
     /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_NoHeaderUsesThePlainIpBucket</seealso>
     /// </summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal static string GlobalPartitionKey(HttpContext ctx)
     {
         bool hasApiKeyHeader = ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
