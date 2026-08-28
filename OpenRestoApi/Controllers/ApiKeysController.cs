@@ -35,8 +35,8 @@ public class ApiKeysController(ApiKeyService apiKeys) : ControllerBase
     [NoApiKeyAccess]
     public async Task<IActionResult> Create([FromBody] CreateApiKeyRequest req)
     {
-        // ValidationException (missing name/scopes, invalid scope pair, past expiry) → 400,
-        // mapped by GlobalExceptionHandler.
+        // ValidationException (missing name/scopes, invalid scope pair, past expiry, or an
+        // expiry combined with neverExpires) → 400, mapped by GlobalExceptionHandler.
         ApiKeyCreatedDto created = await _apiKeys.CreateAsync(req);
         return CreatedAtAction(nameof(GetAll), new { }, created);
     }

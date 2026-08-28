@@ -100,6 +100,7 @@ public static class ErrorCodes
     public const string ApiKeyScopesRequired = "api_key.scopes_required";
     public const string ApiKeyScopeInvalid = "api_key.scope_invalid";
     public const string ApiKeyExpiresAtInPast = "api_key.expires_at_in_past";
+    public const string ApiKeyExpiresAtWithNeverExpires = "api_key.expires_at_with_never_expires";
     public const string ApiKeyNotFound = "api_key.not_found";
     public const string ApiKeyScopeMissing = "api_key.scope_missing";
     public const string ApiKeyNotAllowed = "api_key.not_allowed";

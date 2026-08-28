@@ -1625,7 +1625,7 @@
           "guests": "Clients"
         },
         "expiryLabel": "Expiration",
-        "expiryHint": "Laissez sur « Sans expiration » pour une clé qui n'expire jamais.",
+        "expiryHint": "Par défaut, 1 an. Choisissez « Sans expiration » pour une clé qui n'expire jamais.",
         "expiryPreset": {
           "none": "Sans expiration",
           "thirtyDays": "30 jours",

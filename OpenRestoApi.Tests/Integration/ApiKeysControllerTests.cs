@@ -140,6 +140,20 @@ public class ApiKeysControllerTests(TestWebAppFactory factory) : IClassFixture<T
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Revoke_AsManager_Returns403()
+    {
+        HttpClient owner = OwnerClient();
+        HttpResponseMessage createResponse = await owner.PostAsJsonAsync(
+            "/api/admin/api-keys", ValidCreateBody("Owner's key"));
+        int id = (await createResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        HttpClient manager = await ManagerClientAsync("apikeys-manager-revoke@test.com");
+        HttpResponseMessage response = await manager.PostAsync($"/api/admin/api-keys/{id}/revoke", null);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     // ── self (issue #319 Phase 2) ───────────────────────────────────────────
 
     [Fact]

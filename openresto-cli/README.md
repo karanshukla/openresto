@@ -3,7 +3,35 @@
 A command-line client for the OpenResto admin API, authenticated with an
 [admin API key](../OpenRestoApi/Controllers/ApiKeysController.cs) rather than a browser session.
 
+It isn't its own product — it's an extension of OpenResto — so its version tracks the main
+project's on every release and it's distributed as a Docker image only (not published to npm).
+
 ## Install
+
+### Docker (recommended)
+
+```bash
+docker run --rm \
+  -e OPENRESTO_URL=https://booking.example.com \
+  -e OPENRESTO_API_KEY=orst_1_your-secret \
+  ghcr.io/karanshukla/openresto-cli:<tag> bookings list
+```
+
+Use `latest` for the newest release, or pin a specific version (e.g. `1.9.0`) to match your
+server. Env vars are the simplest way to configure a one-off container since there's no
+persistent home directory; to use saved profiles (`~/.config/openresto/config.json`) instead,
+mount a config directory across runs:
+
+```bash
+docker run --rm -it -v openresto-cli-config:/home/node/.config/openresto \
+  ghcr.io/karanshukla/openresto-cli:<tag> auth login
+docker run --rm -v openresto-cli-config:/home/node/.config/openresto \
+  ghcr.io/karanshukla/openresto-cli:<tag> bookings list
+```
+
+(`auth login` needs `-it` so its hidden-input prompt has a real terminal; later commands don't.)
+
+### From source
 
 ```bash
 cd openresto-cli
@@ -125,15 +153,27 @@ example per group:
   asking for confirmation.
 
 - **tables** — `list` (a location's sections and tables together, since a table can't be
-  created/edited/deleted without naming its section), `create`, `update`, `delete`. There is no
-  separate `sections` command group; use `tables list --location <id>` to find a section's id,
-  then pass it as `--section` to the other table commands. Full section CRUD (rename, reorder)
-  is left to the admin UI.
+  created/edited/deleted without naming its section), `create`, `update`, `delete`. Use
+  `tables list --location <id>` or `sections list --location <id>` to find a section's id, then
+  pass it as `--section` to the other table commands.
 
   ```bash
   openresto tables list --location 1
   openresto tables create --location 1 --section 2 --name "T5" --seats 4
   ```
+
+- **sections** — `list`, `create`, `update` (rename), `delete`. Reordering sections is left to
+  the admin UI (no CLI command for it yet).
+
+  ```bash
+  openresto sections create --location 1 --name "Patio"
+  openresto sections delete 2 --location 1
+  ```
+
+  `delete` removes the section's tables along with it; any upcoming bookings referencing the
+  section or one of its tables keep their booking and only lose that reference (the server nulls
+  the FK rather than cascading — see CLAUDE.md's "Deletion & cascade behaviour"). The CLI previews
+  how many bookings that affects before asking for confirmation.
 
 - **brand** — `get`, `set` (via flags, or `--from-json <file>` / `--from-json -` for stdin — an
   empty string clears a field, an omitted one leaves it unchanged, matching `PATCH /api/brand`).

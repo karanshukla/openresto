@@ -89,6 +89,17 @@ describe("adminCreateApiKey", () => {
     });
   });
 
+  it("passes neverExpires when the caller opts out of expiry entirely", async () => {
+    okWith({ ...CREATED, expiresAt: null });
+
+    await adminCreateApiKey({ ...input, neverExpires: true });
+
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+      ...input,
+      neverExpires: true,
+    });
+  });
+
   it("surfaces the server's rejection message", async () => {
     failWith({ message: "A key with that name already exists." });
 

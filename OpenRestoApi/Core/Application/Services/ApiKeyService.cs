@@ -41,7 +41,7 @@ public class ApiKeyService(
         int userId = RequireCallerId();
         string name = NormalizeName(req.Name);
         List<ApiKeyScopeDto> scopes = NormalizeScopes(req.Scopes);
-        DateTime? expiresAt = NormalizeExpiresAt(req.ExpiresAt);
+        DateTime? expiresAt = ResolveExpiresAt(req.ExpiresAt, req.NeverExpires);
 
         var entity = new AdminApiKey
         {
@@ -210,9 +210,26 @@ public class ApiKeyService(
         return normalized;
     }
 
-    private DateTime? NormalizeExpiresAt(DateTime? expiresAt)
+    /// <summary>
+    /// An explicit <c>expiresAt</c> must be in the future and rules out <c>neverExpires</c>;
+    /// omitting it defaults to <see cref="ApiKeyFields.DefaultExpiryYears"/> from now unless
+    /// <c>neverExpires</c> opts out entirely.
+    /// <seealso>ApiKeyServiceTests.CreateAsync_DefaultsToOneYearExpiry_WhenExpiryIsOmitted</seealso>
+    /// <seealso>ApiKeyServiceTests.CreateAsync_NeverExpires_ProducesNoExpiry</seealso>
+    /// <seealso>ApiKeyServiceTests.CreateAsync_RejectsAnExpiresAtCombinedWithNeverExpires</seealso>
+    /// </summary>
+    private DateTime? ResolveExpiresAt(DateTime? expiresAt, bool neverExpires)
     {
-        if (expiresAt is null) return null;
+        if (expiresAt is null)
+        {
+            return neverExpires ? null : _clock.UtcNow.AddYears(ApiKeyFields.DefaultExpiryYears);
+        }
+
+        if (neverExpires)
+        {
+            throw new ValidationException("An expiry date cannot be combined with never expiring.")
+            { Code = ErrorCodes.ApiKeyExpiresAtWithNeverExpires };
+        }
 
         DateTime utc = expiresAt.Value.Kind == DateTimeKind.Utc ? expiresAt.Value : expiresAt.Value.ToUniversalTime();
         if (utc <= _clock.UtcNow)

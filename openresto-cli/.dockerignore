@@ -1,0 +1,5 @@
+node_modules
+dist
+openapi
+*.md
+.gitignore
