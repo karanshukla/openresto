@@ -22,7 +22,11 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: theme.spacing.md,
   },
-  secretText: { flex: 1, fontSize: 13, fontWeight: "600" },
+  // The secret is one unbroken ~50-character token, so its min-content width is the whole
+  // string. A flex item defaults to min-width:auto and so refuses to shrink below that,
+  // which pushed the Copy button clean outside the modal. minWidth:0 lets it shrink, and
+  // react-native-web's Text already carries word-wrap:break-word to wrap what's left.
+  secretText: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: "600" },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

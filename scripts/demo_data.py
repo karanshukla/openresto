@@ -706,9 +706,17 @@ def emit_accounts(accounts, now_utc):
     Replaces every admin account with the curated pair. Wiping first is the point on
     the demo: its admin password is public, so an account a visitor invited themselves
     must not survive the reset, for the same reason their uploads don't.
+
+    API keys are deleted explicitly rather than left to the AdminApiKeys -> AdminCredentials
+    cascade, because this script runs under PRAGMA foreign_keys=OFF and the cascade therefore
+    never fires. Without the explicit delete a visitor's key outlived every reset: the wipe
+    reseeds AdminCredentials from Id 1, so the orphaned row's UserId lands back on the new
+    Owner and the key keeps authenticating, for the whole year until it expires.
     """
     out = [
         "-- ── Admin accounts: the bootstrap Owner + a demo Manager ──",
+        "DELETE FROM AdminApiKeys;",
+        "DELETE FROM sqlite_sequence WHERE name = 'AdminApiKeys';",
         "DELETE FROM AdminCredentials;",
         "DELETE FROM sqlite_sequence WHERE name = 'AdminCredentials';",
     ]

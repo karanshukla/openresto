@@ -6,7 +6,7 @@
 #   1. generate the demo dataset SQL on the host (before touching anything)
 #   2. restore restaurant config    (brand, locations, sections, tables, groups)
 #   3. reseed bookings + notifications with fresh dates relative to now
-#   4. reset admin accounts (the Owner from .env, plus the demo Manager)
+#   4. reset admin accounts and API keys (the Owner from .env, plus the demo Manager)
 #   5. restore uploaded media from data/media-snapshot/
 #   6. point ImageUrl/HeaderImageUrl/MenuUrl at the files that now exist
 #
@@ -125,11 +125,13 @@ count() { docker exec "$CONTAINER" sqlite3 "$DB" "SELECT COUNT(*) FROM $1;"; }
 log "Applied. Locations: $(count Restaurants), tables: $(count Tables), bookings: $(count Bookings), notifications: $(count AdminNotifications)"
 
 # --- 4. Reset admin accounts -------------------------------------------------
-# The demo's admin password is public, so a visitor can invite themselves a colleague.
-# The generator's accounts section wipes every row and puts back only the curated pair,
-# for the same reason visitor uploads don't survive a reset.
+# The demo's admin password is public, so a visitor can invite themselves a colleague or
+# mint an API key. The generator's accounts section wipes both tables and puts back only
+# the curated pair, for the same reason visitor uploads don't survive a reset. A key is the
+# more durable of the two: it is bearer credential with a one-year expiry that keeps working
+# from anywhere long after the session that made it is gone.
 if [[ $SEED_ACCOUNTS -eq 1 ]]; then
-  log "Resetting admin accounts (Owner $ADMIN_EMAIL + demo Manager)..."
+  log "Resetting admin accounts and API keys (Owner $ADMIN_EMAIL + demo Manager)..."
   docker exec -i "$CONTAINER" sqlite3 "$DB" < "$ACCOUNTS_SQL_FILE"
 
   OWNERS="$(docker exec "$CONTAINER" sqlite3 "$DB" \
@@ -139,7 +141,10 @@ if [[ $SEED_ACCOUNTS -eq 1 ]]; then
   ACCOUNT_COUNT="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM AdminCredentials;')"
   [[ "$ACCOUNT_COUNT" == "$EXPECTED_ACCOUNTS" ]] \
     || die "expected $EXPECTED_ACCOUNTS admin accounts after reset, found $ACCOUNT_COUNT."
-  log "Account reset done ($ACCOUNT_COUNT accounts)."
+  KEY_COUNT="$(docker exec "$CONTAINER" sqlite3 "$DB" 'SELECT COUNT(*) FROM AdminApiKeys;')"
+  [[ "$KEY_COUNT" == "0" ]] \
+    || die "expected no API keys after reset, found $KEY_COUNT."
+  log "Account reset done ($ACCOUNT_COUNT accounts, 0 API keys)."
 fi
 
 # --- 5. Restore media --------------------------------------------------------

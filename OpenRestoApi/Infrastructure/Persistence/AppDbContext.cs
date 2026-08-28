@@ -164,9 +164,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AdminApiKey>(k =>
         {
             k.HasKey(x => x.Id);
-            // The credentials table is wiped and reseeded on every demo reset — a cascading
-            // delete is what keeps that from orphaning keys rather than something to guard
-            // against.
+            // Cascade so deleting a user through EF takes their keys with it. It does not
+            // cover the demo reset: that applies raw SQL under PRAGMA foreign_keys=OFF, where
+            // no cascade fires, so scripts/demo_data.py deletes AdminApiKeys explicitly.
             k.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             k.Property(x => x.Name).IsRequired().HasMaxLength(ApiKeyFields.MaxNameLength);
             k.Property(x => x.KeyHash).IsRequired().HasMaxLength(ApiKeyFields.KeyHashLength);
