@@ -105,6 +105,14 @@ function getNavSections(t: TFunction): { heading: string; items: NavItem[] }[] {
           capability: "manage:users" as const,
         },
         {
+          id: "apiKeys",
+          label: t("admin.sidebar.nav.items.apiKeys"),
+          icon: "key-outline" as const,
+          href: "/admin/settings/api-keys" as const,
+          match: (p: string) => p === "/admin/settings/api-keys",
+          capability: "manage:api-keys" as const,
+        },
+        {
           id: "account",
           label: t("admin.sidebar.nav.items.account"),
           icon: "person-circle-outline" as const,

@@ -1,1 +1,6 @@
 .claude/
+
+# Generated API contract artifacts — the openapi-drift CI job diffs these byte-for-byte
+# against what tools/OpenApiExport and openapi-typescript emit, so no formatter may touch them.
+openresto-cli/openapi/
+openresto-cli/src/generated/

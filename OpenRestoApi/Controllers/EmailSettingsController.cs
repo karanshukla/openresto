@@ -4,12 +4,17 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
+// Deliberately excluded from the API-key surface entirely (issue #319): a key must never be able
+// to read or change the SMTP credentials the server sends mail with, or flip
+// SendBookingConfirmations.
 [ApiController]
 [Route("api/admin/email-settings")]
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
+[NoApiKeyAccess]
 public class EmailSettingsController(EmailSettingsService emailSettings) : ControllerBase
 {
     private readonly EmailSettingsService _emailSettings = emailSettings;

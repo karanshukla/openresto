@@ -64,6 +64,22 @@ public partial class AdminServiceTests : IDisposable
             notificationQueue: notificationQueue);
     }
 
+    private AdminService CreateService(ICurrentUserService currentUser)
+    {
+        return new AdminService(
+            new BookingRepository(_db),
+            new BookingFilterRepository(_db),
+            new RestaurantRepository(_db),
+            new SectionRepository(_db),
+            new TableRepository(_db),
+            _holdServiceMock.Object,
+            _emailServiceMock.Object,
+            brandService: null,
+            notificationQueue: null,
+            audit: null,
+            currentUser: currentUser);
+    }
+
     private void SeedBase(int restaurantId = 1)
     {
         _db.Restaurants.Add(new Restaurant { Id = restaurantId, Name = "Test", Timezone = "UTC" });

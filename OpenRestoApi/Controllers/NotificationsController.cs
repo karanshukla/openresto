@@ -3,12 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
+// Deliberately excluded from the API-key surface entirely (issue #319), notification history and
+// the push-subscription endpoints alike — a key has no legitimate reason to read an admin's
+// notification feed or register/unregister their browser's push endpoint.
 [ApiController]
 [Route("api/admin")]
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
+[NoApiKeyAccess]
 public class NotificationsController(INotificationService notificationService) : ControllerBase
 {
     private readonly INotificationService _notifications = notificationService;

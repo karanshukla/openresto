@@ -4,6 +4,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -15,11 +16,18 @@ public class AdminController(AdminService adminService) : ControllerBase
     public enum bookingStatus { active, cancelled, all, past, upcoming }
     private readonly AdminService _adminService = adminService;
 
+    // Aggregates counts/lists across restaurants and bookings; gated on the dominant resource
+    // (bookings — TodayBookingsList and the booking counts/occupancy chart are the bulk of the
+    // payload) rather than split across two scopes for one read. A key without bookings:read
+    // cannot see the dashboard at all; TodayBookingsList is still guest-redacted independently
+    // by BookingGuestVisibility when the key also lacks guests:read.
     [HttpGet("overview")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Read)]
     public async Task<IActionResult> Overview()
         => Ok(await _adminService.GetOverviewAsync());
 
     [HttpGet("bookings")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetBookings(
         [FromQuery] int? restaurantId,
         [FromQuery] DateTime? date,
@@ -35,6 +43,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpGet("bookings/{id}")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetBooking(int id)
     {
         BookingDetailDto? result = await _adminService.GetBookingAsync(id);
@@ -42,6 +51,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("bookings")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> CreateBooking([FromBody] AdminCreateBookingRequest req)
     {
         // ValidationException (bad table/section) → 400, ConflictException (overlap/seats) → 409
@@ -51,6 +61,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("bookings/{id}/extend")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> ExtendBooking(int id, [FromBody] ExtendBookingRequest req)
     {
         DateTime? endTime = await _adminService.ExtendBookingAsync(id, req.Minutes);
@@ -58,6 +69,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("bookings/{id}/cancel")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> CancelBooking(int id)
     {
         // ConflictException (past booking) → 409 is mapped by GlobalExceptionHandler.
@@ -65,10 +77,12 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpDelete("bookings/{id}")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> PurgeBooking(int id)
         => await _adminService.PurgeBookingAsync(id) ? NoContent() : NotFound();
 
     [HttpPost("restaurants")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> CreateRestaurant([FromBody] CreateRestaurantRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Name))
@@ -81,6 +95,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPatch("restaurants/{id}")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> PatchRestaurant(int id, [FromBody] AdminRestaurantPatchRequest req)
     {
         if (req.IsArchived.HasValue)
@@ -93,6 +108,7 @@ public class AdminController(AdminService adminService) : ControllerBase
 
     [HttpGet("restaurants/{id}/delete-preview")]
     [Authorize(Policy = AuthPolicies.RequireOwner)]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetRestaurantDeletePreview(int id)
     {
         RestaurantDeletePreviewDto? preview = await _adminService.GetRestaurantDeletePreviewAsync(id);
@@ -102,10 +118,12 @@ public class AdminController(AdminService adminService) : ControllerBase
     // Owner-only: the one irreversible cascade in the admin, gated like user management.
     [HttpDelete("restaurants/{id}")]
     [Authorize(Policy = AuthPolicies.RequireOwner)]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> DeleteRestaurant(int id)
         => await _adminService.DeleteRestaurantAsync(id) ? NoContent() : NotFound();
 
     [HttpPost("restaurants/{id}/pause")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> PauseBookings(int id, [FromBody] PauseRestaurantRequest req)
     {
         bool success = await _adminService.PauseRestaurantBookingsAsync(id, req.Minutes);
@@ -113,6 +131,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("restaurants/{id}/unpause")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> UnpauseBookings(int id)
     {
         bool success = await _adminService.UnpauseRestaurantBookingsAsync(id);
@@ -120,6 +139,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("restaurants/{id}/extend")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> ExtendBookings(int id, [FromBody] ExtendRestaurantRequest req)
     {
         List<BookingDetailDto>? extendedBookings = await _adminService.ExtendAllActiveBookingsAsync(id, req.Minutes);
@@ -129,6 +149,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpGet("restaurants")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetRestaurants()
     {
         List<LookupDto> restaurants = await _adminService.GetRestaurantsAsync();
@@ -136,13 +157,17 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpGet("restaurants/{restaurantId}/sections")]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetSections(int restaurantId)
     {
         List<LookupDto> sections = await _adminService.GetSectionsAsync(restaurantId);
         return Ok(sections);
     }
 
+    // Scoped under locations (not tables) — this reorders a restaurant's section list, which the
+    // issue's resource table groups with the other restaurant/location-shape mutations.
     [HttpPatch("restaurants/{id}/sections/reorder")]
+    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> ReorderSections(int id, [FromBody] ReorderSectionsRequest req)
     {
         bool? result = await _adminService.ReorderSectionsAsync(id, req.SectionIds);
@@ -155,6 +180,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpGet("restaurants/{restaurantId}/tables")]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetTables(int restaurantId)
     {
         List<SectionDto>? result = await _adminService.GetTablesAsync(restaurantId);
@@ -166,6 +192,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("bookings/{id}/email")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
     {
         // Intentionally keeps its catch: SMTP/transport failures (SmtpException,
@@ -196,6 +223,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPost("bookings/{id}/restore")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> RestoreBooking(int id)
     {
         // BusinessRuleException (booking already active) → 400 is mapped by GlobalExceptionHandler.
@@ -204,6 +232,7 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     [HttpPut("bookings/{id}")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> AdminUpdateBooking(int id, [FromBody] AdminUpdateBookingRequest req)
     {
         // ValidationException (bad restaurant/table) and BusinessRuleException

@@ -123,6 +123,34 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Users")).toBeNull();
   });
 
+  it("shows the API Keys entry to an Owner", async () => {
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("API Keys")).toBeTruthy());
+    fireEvent.press(screen.getByText("API Keys"));
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings/api-keys");
+  });
+
+  it("hides the API Keys entry from a Manager", async () => {
+    const { checkSession } = require("@/api/auth");
+    (checkSession as jest.Mock).mockResolvedValueOnce({
+      id: 2,
+      email: "manager@test.com",
+      displayName: "Manager Person",
+      role: "Manager",
+    });
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("CONFIGURE")).toBeTruthy());
+    expect(screen.queryByText("API Keys")).toBeNull();
+  });
+
   it("wears the mark the brand settings selected, not a generic one", async () => {
     mockBrand.faviconIcon = "wine";
     try {

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -11,12 +12,14 @@ namespace OpenRestoApi.Tests.Services;
 
 public class RestaurantManagementServiceTests
 {
-    private static RestaurantManagementService CreateService(AppDbContext db) => new(
+    private static RestaurantManagementService CreateService(AppDbContext db, ICurrentUserService? currentUser = null) => new(
         new RestaurantRepository(db),
         new SectionRepository(db),
         new TableRepository(db),
         new BookingRepository(db),
-        new TableGroupRepository(db));
+        new TableGroupRepository(db),
+        audit: null,
+        currentUser: currentUser);
 
     [Fact]
     public async Task GetScheduleConflictsAsync_ReturnsNull_WhenRestaurantNotFound()
@@ -39,6 +42,35 @@ public class RestaurantManagementServiceTests
         Assert.Equal("ABC123", conflict.BookingRef);
         Assert.Equal("Ada", conflict.CustomerName);
         Assert.Equal(2, conflict.Seats);
+    }
+
+    // Issue #319 Phase 2: this DTO carries CustomerName too, so it needs the same
+    // BookingGuestVisibility redaction as the booking-read paths in AdminService/BookingService.
+    [Fact]
+    public async Task GetScheduleConflictsAsync_RedactsCustomerName_ForAnApiKeyWithoutGuestsRead()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_RedactsCustomerName_ForAnApiKeyWithoutGuestsRead));
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 12);
+
+        List<ScheduleConflictDto>? conflicts = await CreateService(
+            db, FakeCurrentUser.ApiKey((ApiKeyScopes.Locations, ApiKeyScopes.Read))).GetScheduleConflictsAsync(1);
+
+        Assert.Null(Assert.Single(conflicts!).CustomerName);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_ReturnsCustomerName_ForAnApiKeyWithGuestsRead()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_ReturnsCustomerName_ForAnApiKeyWithGuestsRead));
+        await SeedScheduleFixtureAsync(db, openTime: "17:00", bookingHourUtc: 12);
+
+        List<ScheduleConflictDto>? conflicts = await CreateService(
+            db,
+            FakeCurrentUser.ApiKey(
+                (ApiKeyScopes.Locations, ApiKeyScopes.Read),
+                (ApiKeyScopes.Guests, ApiKeyScopes.Read))).GetScheduleConflictsAsync(1);
+
+        Assert.Equal("Ada", Assert.Single(conflicts!).CustomerName);
     }
 
     [Fact]

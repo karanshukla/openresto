@@ -1,6 +1,8 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using CustomAccessibility.Attributes;
 using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -12,6 +14,11 @@ using OpenRestoApi.Infrastructure.Auth;
 using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 using WebPush;
+// Microsoft.AspNetCore.Authentication (needed for the API-key AuthenticationSchemeOptions
+// registration below) carries its own (deprecated) ISystemClock/SystemClock; alias ours so the
+// two don't collide.
+using ISystemClock = OpenRestoApi.Core.Application.Interfaces.ISystemClock;
+using SystemClock = OpenRestoApi.Core.Application.Interfaces.SystemClock;
 
 namespace OpenRestoApi.Extensions;
 
@@ -48,15 +55,51 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>Client IP as ASP.NET Core resolved it (after <c>UseForwardedHeaders</c>) — the
+    /// partition key for every plain per-IP limiter, including the non-API-key branch of the
+    /// global limiter.</summary>
+    private static string IpKey(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    /// <summary>Marks a global-limiter bucket as the elevated API-key ceiling rather than the
+    /// plain per-IP ceiling — see <see cref="GlobalPartitionKey"/>.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
+    internal const string ApiKeyIpPartitionPrefix = "apikey-ip:";
+
+    /// <summary>
+    /// The global limiter's partition key for one request. The limiter runs before
+    /// authentication, so a key's validity isn't known yet — only whether the header is present.
+    /// This used to hash the header value itself, so every distinct (even garbage) header value
+    /// minted its own bucket at the elevated <c>apiKeyLimit</c> ceiling: rotating the header
+    /// per request bypassed the per-IP global ceiling entirely and left key brute-forcing
+    /// effectively unthrottled. Partitioning on the requester's IP instead keeps the elevated
+    /// ceiling available to a genuine caller (a headless CLI is one caller, not one browser tab)
+    /// without letting it be multiplied by rotating the header value — every request from that IP
+    /// bearing the header shares the same one bucket, so the ceiling can't be rotated away.
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_RotatingTheHeaderValueStaysInOneBucketPerIp</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_DifferentIpsWithTheSameHeaderGetDifferentBuckets</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_NoHeaderUsesThePlainIpBucket</seealso>
+    /// </summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
+    internal static string GlobalPartitionKey(HttpContext ctx)
+    {
+        bool hasApiKeyHeader = ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
+            && values.Count > 0
+            && !string.IsNullOrEmpty(values[0]);
+        string ip = IpKey(ctx);
+        return hasApiKeyHeader ? $"{ApiKeyIpPartitionPrefix}{ip}" : ip;
+    }
+
     public static IServiceCollection AddCustomRateLimiting(this IServiceCollection services, IWebHostEnvironment env)
     {
         bool isTesting = env.EnvironmentName == "Testing";
         int authLimit = isTesting ? 10000 : 10;   // per IP: brute-force protection on /login
         int publicLimit = isTesting ? 10000 : 120;  // per IP: ~2 req/s, covers normal browsing
         int globalLimit = isTesting ? 10000 : 300;  // per IP: overall ceiling
-
-        static string IpKey(HttpContext ctx) =>
-            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        int apiKeyLimit = isTesting ? 10000 : 1000; // per key: a headless CLI is one caller, not one browser tab
 
         services.AddRateLimiter(options =>
         {
@@ -81,13 +124,17 @@ public static class ServiceCollectionExtensions
                 }));
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-                RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+            {
+                string partitionKey = GlobalPartitionKey(ctx);
+                bool isApiKeyPartition = partitionKey.StartsWith(ApiKeyIpPartitionPrefix, StringComparison.Ordinal);
+                return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
                 {
                     AutoReplenishment = true,
-                    PermitLimit = globalLimit,
+                    PermitLimit = isApiKeyPartition ? apiKeyLimit : globalLimit,
                     QueueLimit = 0,
                     Window = TimeSpan.FromMinutes(1),
-                }));
+                });
+            });
         });
 
         return services;
@@ -107,8 +154,26 @@ public static class ServiceCollectionExtensions
                 "Generate one with: openssl rand -base64 48");
         }
 
+        // A policy scheme in front of JWT Bearer and the API-key handler: every existing
+        // [Authorize(Policy = ...)] keeps naming a policy, never a scheme, so accepting a second
+        // credential type is zero controller changes. Routing on the presence of the API-key
+        // header (rather than trying JWT first and falling back) keeps the two schemes from ever
+        // both attempting to parse the same request's credentials.
         services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = "AdminAuth";
+                options.DefaultAuthenticateScheme = "AdminAuth";
+                options.DefaultChallengeScheme = "AdminAuth";
+            })
+            .AddPolicyScheme("AdminAuth", "JWT Bearer or API Key", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey(ApiKeyClaimTypes.HeaderName)
+                        ? ApiKeyClaimTypes.Scheme
+                        : JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyClaimTypes.Scheme, _ => { })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -190,6 +255,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHighlightRepository, HighlightRepository>();
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
         services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
+        services.AddScoped<IAdminApiKeyRepository, AdminApiKeyRepository>();
 
         // One instance per request, reachable both as the write-only contract services enrich
         // through and as the concrete draft the audit middleware reads back.
@@ -207,6 +273,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISecurityQuestionsService, SecurityQuestionsService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<UserService>();
+        services.AddScoped<ApiKeyService>();
         services.AddScoped<BookingService>();
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();

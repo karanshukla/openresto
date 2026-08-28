@@ -13,7 +13,8 @@ public class RestaurantManagementService(
     ITableRepository tableRepository,
     IBookingRepository bookingRepository,
     ITableGroupRepository tableGroupRepository,
-    IAuditScope? audit = null)
+    IAuditScope? audit = null,
+    ICurrentUserService? currentUser = null)
 {
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly ISectionRepository _sectionRepository = sectionRepository;
@@ -21,6 +22,7 @@ public class RestaurantManagementService(
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableGroupRepository _tableGroupRepository = tableGroupRepository;
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
+    private readonly ICurrentUserService _currentUser = currentUser ?? NullCurrentUserService.Instance;
 
     private static readonly HashSet<int> _allowedBookingDurationsMinutes =
         [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
@@ -616,7 +618,7 @@ public class RestaurantManagementService(
 
         List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(restaurantId, DateTime.UtcNow);
 
-        return ScheduleConflictHelper.Conflicting(restaurant, upcoming)
+        List<ScheduleConflictDto> conflicts = ScheduleConflictHelper.Conflicting(restaurant, upcoming)
             .Select(x => new ScheduleConflictDto
             {
                 BookingId = x.Booking.Id,
@@ -627,6 +629,7 @@ public class RestaurantManagementService(
                 Reason = ReasonKey(x.Reason),
             })
             .ToList();
+        return BookingGuestVisibility.Apply(conflicts, _currentUser);
     }
 
     private static string ReasonKey(ScheduleConflictReason reason) => reason switch

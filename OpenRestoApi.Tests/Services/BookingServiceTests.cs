@@ -22,7 +22,8 @@ public partial class BookingServiceTests
         AppDbContext db,
         IHoldService? holdService = null,
         IBookingConfirmationService? confirmationService = null,
-        INotificationQueue? notificationQueue = null)
+        INotificationQueue? notificationQueue = null,
+        ICurrentUserService? currentUser = null)
     {
         // Auto-assign tests need a real in-memory HoldService so PlaceAutoHold actually places
         // holds (a loose Mock<IHoldService> returns null from PlaceAutoHold, which the service
@@ -39,7 +40,8 @@ public partial class BookingServiceTests
             new TableAutoAssigner(new BookingRepository(db), holdService),
             new TableGroupRepository(db),
             confirmationService,
-            notificationQueue);
+            notificationQueue,
+            currentUser);
     }
 
     private sealed class UtcClock : ISystemClock

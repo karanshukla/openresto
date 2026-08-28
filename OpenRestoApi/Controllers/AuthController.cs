@@ -6,6 +6,7 @@ using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Controllers;
 
@@ -52,6 +53,7 @@ public class AuthController(
 
     [HttpGet("me")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [NoApiKeyAccess]
     [EnableRateLimiting("public")]
     public async Task<IActionResult> Me()
     {
@@ -65,6 +67,7 @@ public class AuthController(
 
     [HttpPost("change-password")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [NoApiKeyAccess]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
         // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
@@ -76,6 +79,7 @@ public class AuthController(
 
     [HttpPost("change-email")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [NoApiKeyAccess]
     public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest req)
     {
         // ValidationException (invalid email) and BusinessRuleException (same email)
@@ -102,6 +106,7 @@ public class AuthController(
 
     [HttpGet("pvq/me")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [NoApiKeyAccess]
     public async Task<IActionResult> GetMyPvqStatus()
     {
         return Ok(await _securityQuestions.GetStatusForCurrentUserAsync());
@@ -109,6 +114,7 @@ public class AuthController(
 
     [HttpPost("pvq/setup")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [NoApiKeyAccess]
     public async Task<IActionResult> SetupPvq([FromBody] SetupPvqRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Question) || string.IsNullOrWhiteSpace(req.Answer))

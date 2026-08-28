@@ -48,6 +48,9 @@ public static class AuditActions
     public const string UserDeactivate = "user.deactivate";
     public const string UserPasswordReset = "user.password_reset";
 
+    public const string ApiKeyCreate = "api_key.create";
+    public const string ApiKeyRevoke = "api_key.revoke";
+
     public const string AuthLogin = "auth.login";
     public const string AuthLoginFailed = "auth.login_failed";
     public const string AuthLogout = "auth.logout";
@@ -101,6 +104,7 @@ public static class AuditTargets
     public const string Table = "Table";
     public const string TableGroup = "TableGroup";
     public const string User = "User";
+    public const string ApiKey = "ApiKey";
     public const string Brand = "Brand";
     public const string EmailSettings = "EmailSettings";
     public const string Media = "Media";

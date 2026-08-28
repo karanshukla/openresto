@@ -16,6 +16,7 @@
 /admin/login
 /admin/notifications
 /admin/settings/account
+/admin/settings/api-keys
 /admin/settings/brand
 /admin/settings/email
 /admin/settings/index
