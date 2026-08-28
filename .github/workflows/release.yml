@@ -174,8 +174,11 @@ jobs:
     name: Publish CLI to npm
     runs-on: ubuntu-latest
     needs: [verify-version]
-    # Overrides the workflow-level grant: publishing needs no write on contents or
-    # packages, and does need id-token for the provenance attestation below.
+    # Authentication is npm trusted publishing, so the id-token grant below IS the
+    # credential and there is no NPM_TOKEN to leak or rotate. npmjs.com pins the trusted
+    # publisher to this workflow's *filename*, so renaming release.yml stops publishing
+    # until the package's trusted-publisher settings are changed to match. This block also
+    # overrides the workflow-level grant: publishing needs no write on contents or packages.
     permissions:
       contents: read
       id-token: write
@@ -189,17 +192,27 @@ jobs:
           cache-dependency-path: openresto-cli/package-lock.json
           registry-url: https://registry.npmjs.org
 
+      # Node has bundled a new enough npm since 24.5.0, so this should never fire. Without
+      # it, an older runner fails at the last step with a bare "need auth token", which
+      # reads as a broken trusted-publisher config rather than an out-of-date toolchain.
+      - name: Require an npm that can publish over OIDC
+        run: |
+          installed="$(npm -v)"
+          if [ "$(printf '%s\n11.5.1\n' "$installed" | sort -V | head -1)" != "11.5.1" ]; then
+            echo "npm $installed cannot use trusted publishing (needs >= 11.5.1)" >&2
+            exit 1
+          fi
+
       - name: Install and test
         working-directory: ./openresto-cli
         run: |
           npm ci
           npm test
 
+      # No --provenance flag: publishing over OIDC attaches the attestation on its own.
       - name: Publish
         working-directory: ./openresto-cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance
+        run: npm publish
 
   create-release:
     name: Create GitHub Release
