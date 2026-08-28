@@ -94,16 +94,15 @@ test.describe("Admin keyboard shortcuts", () => {
     });
   });
 
-  test("/ focuses the sidebar Lookup Booking input", async ({ page }) => {
+  test("/ opens the bookings list and focuses its lookup input", async ({ page }) => {
     await gotoAdminDashboard(page);
 
-    // .first() = the AdminSidebar's global lookup input (present on every
-    // admin route) — the page-local bookings-list search is a separate
-    // instance further down the DOM. See issue #140 Correction #7/#8.
-    const sidebarLookupInput = page.getByPlaceholder("Name, email or reference…").first();
     await page.keyboard.press("/");
 
-    await expect(sidebarLookupInput).toBeFocused();
+    await page.waitForURL(/.*\/admin\/bookings.*/, { timeout: 10_000 });
+    await expect(page.getByPlaceholder("Name, email or reference…")).toBeFocused({
+      timeout: 10_000,
+    });
   });
 
   test("Esc closes an open booking detail popup", async ({ page }) => {
@@ -131,7 +130,7 @@ test.describe("Admin keyboard shortcuts", () => {
     const createdBookingId = booking.id ?? booking.Id;
 
     try {
-      // Page-local search (nth(1)) — a single match auto-opens the detail popup.
+      // A single match auto-opens the detail popup.
       // The search API sits behind the shared rate-limit window; if it 429s the
       // page shows "No booking found." even though the booking exists. Reload +
       // re-search until the detail popup actually opens.
@@ -144,7 +143,7 @@ test.describe("Admin keyboard shortcuts", () => {
         } else {
           await page.goto("/admin/bookings");
         }
-        const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
+        const searchInput = page.getByPlaceholder("Name, email or reference…");
         await expect(searchInput).toBeVisible({ timeout: 10_000 });
         await searchInput.fill(uniqueEmail);
         await page.getByText("Find", { exact: true }).click();

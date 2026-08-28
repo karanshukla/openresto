@@ -1780,15 +1780,6 @@
       "managingLocations_one": "Managing {{count}} location",
       "managingLocations_other": "Managing {{count}} locations",
       "adminPanel": "Admin Panel",
-      "lookup": {
-        "label": "Lookup Booking",
-        "placeholder": "Name, email or reference…",
-        "searchLabel": "Search bookings",
-        "searchButton": "Search",
-        "notFound": "No booking found.",
-        "showingMatches": "Showing all matches…",
-        "partialMatchHint": "Partial matching search is supported"
-      },
       "backToSite": "Back to site",
       "themeToggle": {
         "switchToLight": "Switch to light mode",

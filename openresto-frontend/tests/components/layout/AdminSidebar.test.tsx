@@ -45,14 +45,6 @@ jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
 }));
 
-jest.mock("@/api/admin", () => ({
-  adminLookupBookings: jest.fn().mockResolvedValue([]),
-}));
-
-jest.mock("@/components/admin/bookings/BookingDetailPopup", () => ({
-  BookingDetailPopup: () => null,
-}));
-
 describe("AdminSidebar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -231,116 +223,6 @@ describe("AdminSidebar", () => {
     await waitFor(() => expect(screen.getByText("Back to site")).toBeTruthy());
     fireEvent.press(screen.getByText("Back to site"));
     expect(mockPush).toHaveBeenCalledWith("/");
-  });
-
-  it("shows lookup input and Search button", async () => {
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
-    );
-    expect(screen.getByText("Search")).toBeTruthy();
-  });
-
-  it("shows not_found when lookup returns empty", async () => {
-    const { adminLookupBookings } = require("@/api/admin");
-    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
-    );
-    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "unknown");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Search"));
-    });
-    await waitFor(() => expect(screen.getByText("No booking found.")).toBeTruthy());
-  });
-
-  it("opens booking popup when lookup returns single result", async () => {
-    const { adminLookupBookings } = require("@/api/admin");
-    (adminLookupBookings as jest.Mock).mockResolvedValue([{ id: 42 }]);
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
-    );
-    fireEvent.changeText(
-      screen.getByPlaceholderText("Name, email or reference…"),
-      "john@example.com"
-    );
-    await act(async () => {
-      fireEvent.press(screen.getByText("Search"));
-    });
-    await waitFor(() => expect(adminLookupBookings).toHaveBeenCalledWith("john@example.com"));
-  });
-
-  it("navigates to bookings with email param when multiple results", async () => {
-    const { adminLookupBookings } = require("@/api/admin");
-    (adminLookupBookings as jest.Mock).mockResolvedValue([{ id: 1 }, { id: 2 }]);
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
-    );
-    fireEvent.changeText(
-      screen.getByPlaceholderText("Name, email or reference…"),
-      "multi@example.com"
-    );
-    await act(async () => {
-      fireEvent.press(screen.getByText("Search"));
-    });
-    await waitFor(() =>
-      expect(mockPush).toHaveBeenCalledWith(
-        expect.objectContaining({ pathname: "/admin/bookings" })
-      )
-    );
-  });
-
-  it("does not call lookup when query is empty", async () => {
-    const { adminLookupBookings } = require("@/api/admin");
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() => expect(screen.getByText("Search")).toBeTruthy());
-    await act(async () => {
-      fireEvent.press(screen.getByText("Search"));
-    });
-    expect(adminLookupBookings).not.toHaveBeenCalled();
-  });
-
-  it("clears lookup status when query changes", async () => {
-    const { adminLookupBookings } = require("@/api/admin");
-    (adminLookupBookings as jest.Mock).mockResolvedValue([]);
-    render(
-      <AuthProvider>
-        <AdminSidebar />
-      </AuthProvider>
-    );
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("Name, email or reference…")).toBeTruthy()
-    );
-    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "test");
-    await act(async () => {
-      fireEvent.press(screen.getByText("Search"));
-    });
-    await waitFor(() => expect(screen.getByText("No booking found.")).toBeTruthy());
-    fireEvent.changeText(screen.getByPlaceholderText("Name, email or reference…"), "new");
-    expect(screen.queryByText("No booking found.")).toBeNull();
   });
 
   it("shows dark mode toggle text", async () => {

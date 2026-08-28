@@ -1,7 +1,9 @@
+import { useEffect, useRef } from "react";
 import { TextInput, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
+import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { theme } from "@/theme/theme";
 
 export type LookupStatus = "idle" | "not_found" | "multiple";
@@ -20,7 +22,8 @@ export interface BookingLookupBarProps {
 }
 
 /**
- * Email/reference lookup input + Find button + status messages.
+ * Email/reference lookup input + Find button + status messages. Owns the admin's
+ * `admin-lookup` focus target, which the "/" shortcut routes here to reach.
  */
 export function BookingLookupBar({
   query,
@@ -35,10 +38,18 @@ export function BookingLookupBar({
   primaryColor,
 }: BookingLookupBarProps) {
   const { t } = useTranslation();
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    registerFocusTarget("admin-lookup", inputRef);
+    return () => unregisterFocusTarget("admin-lookup");
+  }, []);
+
   return (
     <>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <TextInput
+          ref={inputRef}
           style={[
             {
               height: theme.formSizes.inputSmHeight,

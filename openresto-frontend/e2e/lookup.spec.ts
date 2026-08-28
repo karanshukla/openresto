@@ -147,8 +147,7 @@ test.describe("Booking lookup", { tag: "@smoke" }, () => {
     await gotoAdminDashboard(page);
     await page.goto("/admin/bookings");
 
-    // .nth(1) = the bookings-page header search input (AdminSidebar has its own at nth(0))
-    const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
+    const searchInput = page.getByPlaceholder("Name, email or reference…");
     await expect(searchInput).toBeVisible({ timeout: 10_000 });
     await searchInput.fill(lookupEmail);
     await page.getByText("Find", { exact: true }).click();
@@ -163,8 +162,7 @@ test.describe("Booking lookup", { tag: "@smoke" }, () => {
     await gotoAdminDashboard(page);
     await page.goto("/admin/bookings");
 
-    // .nth(1) = the bookings-page header search input (AdminSidebar has its own at nth(0))
-    const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
+    const searchInput = page.getByPlaceholder("Name, email or reference…");
     await expect(searchInput).toBeVisible({ timeout: 10_000 });
     await searchInput.fill(bookingRef);
     await page.getByText("Find", { exact: true }).click();

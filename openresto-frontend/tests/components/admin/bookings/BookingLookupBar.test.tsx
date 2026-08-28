@@ -1,9 +1,15 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import { BookingLookupBar } from "@/components/admin/bookings/BookingLookupBar";
+import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
+}));
+
+jest.mock("@/utils/focusRegistry", () => ({
+  registerFocusTarget: jest.fn(),
+  unregisterFocusTarget: jest.fn(),
 }));
 
 const theme = {
@@ -111,5 +117,24 @@ describe("BookingLookupBar", () => {
     expect(find.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
     fireEvent.press(find);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("owns the admin lookup focus target while mounted", () => {
+    const { unmount } = render(
+      <BookingLookupBar
+        query=""
+        loading={false}
+        status="idle"
+        onQueryChange={() => {}}
+        onSubmit={() => {}}
+        {...theme}
+      />
+    );
+    const [key, ref] = (registerFocusTarget as jest.Mock).mock.calls[0];
+    expect(key).toBe("admin-lookup");
+    expect(ref.current).toBe(screen.getByPlaceholderText("Name, email or reference…").instance);
+
+    unmount();
+    expect(unregisterFocusTarget).toHaveBeenCalledWith("admin-lookup");
   });
 });

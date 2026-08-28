@@ -85,7 +85,7 @@ test.describe("Cancel a past booking (#159)", () => {
     await gotoAdminDashboard(page);
     await page.goto("/admin/bookings");
 
-    const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
+    const searchInput = page.getByPlaceholder("Name, email or reference…");
     await expect(searchInput).toBeVisible({ timeout: 10_000 });
     await searchInput.fill(bookingRef);
     await page.getByText("Find", { exact: true }).click();
@@ -105,7 +105,7 @@ test.describe("Cancel a past booking (#159)", () => {
     await gotoAdminDashboard(page);
     await page.goto("/admin/bookings");
 
-    const searchInput = page.getByPlaceholder("Name, email or reference…").nth(1);
+    const searchInput = page.getByPlaceholder("Name, email or reference…");
     await expect(searchInput).toBeVisible({ timeout: 10_000 });
     await searchInput.fill(bookingRef);
     await page.getByText("Find", { exact: true }).click();

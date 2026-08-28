@@ -12,10 +12,10 @@ describe("keyboardShortcuts registry", () => {
     expect(keys).toEqual(["?", "Esc", "l"].sort());
   });
 
-  it("binds admin '/' to the global lookup, not a page-local one", () => {
+  it("binds admin '/' to the bookings search", () => {
     const slash = ADMIN_SHORTCUTS.find((s) => s.keys === "/");
     expect(slash).toBeDefined();
-    expect(slash?.description.toLowerCase()).toContain("lookup");
+    expect(slash?.description.toLowerCase()).toContain("search bookings");
   });
 
   it("includes the gopher-style admin navigation sequences", () => {

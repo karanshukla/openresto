@@ -1,4 +1,4 @@
-import { View, Pressable, Platform, TextInput, type ViewStyle } from "react-native";
+import { View, Pressable, Platform, type ViewStyle } from "react-native";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -11,13 +11,9 @@ import { roleDisplayLabel, type Capability } from "@/constants/roles";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchRestaurants } from "@/api/restaurants";
-import { adminLookupBookings } from "@/api/admin";
 import { getUnreadCount } from "@/api/notifications";
-import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
-import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
-import Button from "@/components/common/Button";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher";
 import { styles } from "./AdminSidebar.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -136,12 +132,6 @@ export default function AdminSidebar() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const insets = useSafeAreaInsets();
 
-  const [lookupQuery, setLookupQuery] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupStatus, setLookupStatus] = useState<"idle" | "not_found" | "multiple">("idle");
-  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
-  const lookupInputRef = useRef<TextInput>(null);
-
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
   const activeBg = isDark ? hexToRgba(PRIMARY, 0.18) : hexToRgba(PRIMARY, 0.09);
 
@@ -150,34 +140,8 @@ export default function AdminSidebar() {
   }, []);
 
   useEffect(() => {
-    registerFocusTarget("admin-lookup", lookupInputRef);
-    return () => unregisterFocusTarget("admin-lookup");
-  }, []);
-
-  useEffect(() => {
     getUnreadCount().then(setUnreadNotifCount);
   }, [pathname]);
-
-  const handleLookup = async () => {
-    const q = lookupQuery.trim();
-    if (!q) return;
-    setLookupLoading(true);
-    setLookupStatus("idle");
-    try {
-      const results = await adminLookupBookings(q);
-      if (results.length === 0) {
-        setLookupStatus("not_found");
-      } else if (results.length === 1) {
-        setLookupQuery("");
-        setSelectedBookingId(results[0].id);
-      } else {
-        setLookupStatus("multiple");
-        router.push({ pathname: "/admin/bookings", params: { query: q } });
-      }
-    } finally {
-      setLookupLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await signOut();
@@ -288,64 +252,6 @@ export default function AdminSidebar() {
       </View>
 
       <View style={styles.spacer} />
-
-      <View style={styles.ctaWrapper}>
-        <ThemedText style={[styles.lookupLabel, { color: colors.muted }]}>
-          {t("admin.sidebar.lookup.label")}
-        </ThemedText>
-        <TextInput
-          ref={lookupInputRef}
-          style={[
-            styles.lookupInput,
-            {
-              color: colors.text,
-              borderColor: colors.border,
-              backgroundColor: colors.input,
-            },
-          ]}
-          placeholder={t("admin.sidebar.lookup.placeholder")}
-          placeholderTextColor={colors.muted}
-          value={lookupQuery}
-          onChangeText={(text) => {
-            setLookupQuery(text);
-            if (lookupStatus !== "idle") setLookupStatus("idle");
-          }}
-          autoCapitalize="none"
-          returnKeyType="search"
-          onSubmitEditing={handleLookup}
-        />
-        <Button
-          size="sm"
-          fullWidth
-          icon="search-outline"
-          onPress={handleLookup}
-          disabled={!lookupQuery.trim()}
-          loading={lookupLoading}
-          accessibilityLabel={t("admin.sidebar.lookup.searchLabel")}
-        >
-          {t("admin.sidebar.lookup.searchButton")}
-        </Button>
-        {lookupStatus === "not_found" && (
-          <ThemedText style={[styles.lookupHint, { color: theme.colors.error }]}>
-            {t("admin.sidebar.lookup.notFound")}
-          </ThemedText>
-        )}
-        {lookupStatus === "multiple" && (
-          <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
-            {t("admin.sidebar.lookup.showingMatches")}
-          </ThemedText>
-        )}
-        {lookupStatus === "idle" && (
-          <ThemedText style={[styles.lookupHint, { color: PRIMARY }]}>
-            {t("admin.sidebar.lookup.partialMatchHint")}
-          </ThemedText>
-        )}
-      </View>
-
-      <BookingDetailPopup
-        bookingId={selectedBookingId}
-        onClose={() => setSelectedBookingId(null)}
-      />
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 

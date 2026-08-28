@@ -172,9 +172,9 @@ export function pastUtcISO(minutesAgo: number): string {
  * before the admin layout's async `checkSession()` call resolves and renders
  * the authenticated UI (AdminSidebar, and the keyboard-shortcut listeners
  * that only attach once authState === "authenticated"). Waiting for the
- * sidebar's lookup input — present on every admin route — closes that race
- * so callers can interact with the page (including keyboard shortcuts)
- * immediately after this resolves.
+ * sidebar's identity block — present on every admin route once the session has
+ * resolved — closes that race so callers can interact with the page (including
+ * keyboard shortcuts) immediately after this resolves.
  */
 export async function gotoAdminDashboard(page: Page, loginFirst = false): Promise<void> {
   if (loginFirst) {
@@ -187,7 +187,7 @@ export async function gotoAdminDashboard(page: Page, loginFirst = false): Promis
   }
   await page.goto("/admin/dashboard");
   await page.waitForURL(/.*dashboard.*/, { timeout: 20_000 });
-  await page.waitForSelector('input[placeholder="Name, email or reference…"]', { timeout: 10_000 });
+  await page.waitForSelector('[data-testid="sidebar-identity"]', { timeout: 10_000 });
 }
 
 /** @deprecated Use gotoAdminDashboard instead. */

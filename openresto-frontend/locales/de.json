@@ -1780,15 +1780,6 @@
       "managingLocations_one": "Verwaltung von {{count}} Standort",
       "managingLocations_other": "Verwaltung von {{count}} Standorten",
       "adminPanel": "Admin-Bereich",
-      "lookup": {
-        "label": "Buchung suchen",
-        "placeholder": "Name, E-Mail oder Referenz…",
-        "searchLabel": "Buchungen suchen",
-        "searchButton": "Suchen",
-        "notFound": "Keine Buchung gefunden.",
-        "showingMatches": "Alle Treffer werden angezeigt…",
-        "partialMatchHint": "Teilweise Übereinstimmung wird unterstützt"
-      },
       "backToSite": "Zurück zur Website",
       "themeToggle": {
         "switchToLight": "Zu hellem Modus wechseln",

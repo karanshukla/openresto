@@ -103,9 +103,10 @@ describe("AdminLayout keyboard shortcuts", () => {
     expect(mockRouter.push).toHaveBeenCalledWith("/admin/settings/brand");
   });
 
-  it("focuses the sidebar lookup input on '/'", async () => {
+  it("opens the bookings list and focuses its lookup input on '/'", async () => {
     await renderAuthenticated();
     dispatchKeydown("/");
+    expect(mockRouter.push).toHaveBeenCalledWith("/admin/bookings");
     expect(focusTarget).toHaveBeenCalledWith("admin-lookup");
   });
 

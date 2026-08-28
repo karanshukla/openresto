@@ -1780,15 +1780,6 @@
       "managingLocations_one": "Gestionando {{count}} local",
       "managingLocations_other": "Gestionando {{count}} locales",
       "adminPanel": "Panel de administración",
-      "lookup": {
-        "label": "Buscar reserva",
-        "placeholder": "Nombre, correo o referencia…",
-        "searchLabel": "Buscar reservas",
-        "searchButton": "Buscar",
-        "notFound": "No se encontró ninguna reserva.",
-        "showingMatches": "Mostrando todas las coincidencias…",
-        "partialMatchHint": "Se admite la búsqueda por coincidencia parcial"
-      },
       "backToSite": "Volver al sitio",
       "themeToggle": {
         "switchToLight": "Cambiar a modo claro",

@@ -1780,15 +1780,6 @@
       "managingLocations_one": "Gestion de {{count}} établissement",
       "managingLocations_other": "Gestion de {{count}} établissements",
       "adminPanel": "Panneau d'administration",
-      "lookup": {
-        "label": "Rechercher une réservation",
-        "placeholder": "Nom, e-mail ou référence…",
-        "searchLabel": "Rechercher des réservations",
-        "searchButton": "Rechercher",
-        "notFound": "Aucune réservation trouvée.",
-        "showingMatches": "Affichage de toutes les correspondances…",
-        "partialMatchHint": "La recherche par correspondance partielle est prise en charge"
-      },
       "backToSite": "Retour au site",
       "themeToggle": {
         "switchToLight": "Passer en mode clair",

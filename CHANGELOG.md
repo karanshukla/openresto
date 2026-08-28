@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The admin sidebar no longer carries its own booking lookup.** It duplicated the search already sitting in the bookings list header, and a second copy of one control is what made the sidebar feel busy. The `/` shortcut now opens the bookings list and focuses that search, so the keystroke reaches the same place from anywhere in the admin.
 - **Choosing an API key's permissions is now one choice per resource rather than two checkboxes.** A write grant already satisfies a read requirement, so "read and write" was never a fourth state, it was `write` selected twice. Each resource now takes None, Read or Write, and carries a line saying what it actually reaches — most usefully Guests, which decides whether customer names and emails come back on a booking at all rather than naming a resource of its own. The permissions block also picks up the width cap every other settings field already had, so a resource name no longer sits a card's width away from the control that grants it.
 
 ### Fixed

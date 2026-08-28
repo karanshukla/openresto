@@ -112,6 +112,7 @@ function AdminLayoutInner() {
           "g s": () => router.push("/admin/settings/brand"),
           "/": (e) => {
             e.preventDefault();
+            router.push("/admin/bookings");
             focusTarget("admin-lookup");
           },
           c: () => router.push({ pathname: "/admin/bookings", params: { create: "1" } }),

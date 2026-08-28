@@ -99,27 +99,6 @@ export const styles = StyleSheet.create({
   spacer: {
     flex: 1,
   },
-  ctaWrapper: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    gap: 6,
-  },
-  lookupLabel: {
-    ...theme.typography.labelSmall,
-    fontWeight: "700",
-    paddingLeft: 2,
-  },
-  lookupInput: {
-    height: theme.formSizes.inputSmHeight,
-    paddingHorizontal: theme.formSizes.inputPaddingH,
-    fontSize: 13,
-    borderRadius: theme.formSizes.inputBorderRadius,
-    borderWidth: 1,
-  },
-  lookupHint: {
-    ...theme.typography.captionSmall,
-    paddingLeft: 2,
-  },
   footer: {
     paddingTop: 4,
     paddingHorizontal: 8,
