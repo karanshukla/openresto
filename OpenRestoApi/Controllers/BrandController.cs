@@ -37,6 +37,9 @@ public class BrandController(BrandService brandService) : ControllerBase
             HighlightsSubheading = brand.HighlightsSubheading,
             HeaderImageFit = brand.HeaderImageFit,
             DefaultLocale = _brand.GetDefaultLocale(brand),
+            CliPackageUrl = _brand.GetCliPackageUrl(),
+            ApiDocsUrl = _brand.GetApiDocsUrl(),
+            RepositoryUrl = _brand.GetRepositoryUrl(),
         });
     }
 
@@ -167,4 +170,13 @@ public class BrandResponse
     public string? HighlightsSubheading { get; set; }
     public string? HeaderImageFit { get; set; }
     public string DefaultLocale { get; set; } = SupportedLocales.Default;
+
+    /// <summary>Where the CLI this server's API keys drive is published. See <see cref="BrandService.GetCliPackageUrl"/>.</summary>
+    public string? CliPackageUrl { get; set; }
+
+    /// <summary>The guide to calling this API over raw HTTP with a key.</summary>
+    public string? ApiDocsUrl { get; set; }
+
+    /// <summary>The source repository this deployment is built from.</summary>
+    public string? RepositoryUrl { get; set; }
 }

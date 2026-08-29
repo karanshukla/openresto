@@ -1663,6 +1663,21 @@
           "doneButton": "Terminé, je l'ai enregistrée"
         }
       },
+      "apiKeyUsage": {
+        "title": "Utiliser vos clés",
+        "subtitle": "Appelez l'API depuis la ligne de commande, un script ou votre propre application",
+        "httpHeading": "Appeler l'API directement",
+        "httpBody": "Envoyez la clé dans l'en-tête X-API-Key, pas Authorization. Chaque point d'accès admin l'accepte et vérifie la permission correspondante sur la clé.",
+        "httpHint": "Ce point d'accès renvoie les permissions de la clé et fonctionne quelles qu'elles soient : c'est donc le moyen le plus rapide de vérifier qu'une clé fonctionne. Remplacez YOUR_KEY par le secret que vous avez copié.",
+        "copyButton": "Copier",
+        "copiedButton": "Copié",
+        "copyLabel": "Copier l'exemple de requête dans le presse-papiers",
+        "copiedLabel": "Exemple de requête copié",
+        "linksHeading": "En savoir plus",
+        "cliLink": "Client en ligne de commande",
+        "docsLink": "Guide de l'API HTTP",
+        "repoLink": "Dépôt du code source"
+      },
       "brandPreview": {
         "title": "Aperçu en direct",
         "subtitle": "Page d'accueil, avant enregistrement",

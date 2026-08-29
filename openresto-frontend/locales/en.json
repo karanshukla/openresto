@@ -1663,6 +1663,21 @@
           "doneButton": "Done, I've saved it"
         }
       },
+      "apiKeyUsage": {
+        "title": "Using your keys",
+        "subtitle": "Call the API from the command line, a script, or your own app",
+        "httpHeading": "Call the API directly",
+        "httpBody": "Send the key on the X-API-Key header, not Authorization. Every admin endpoint accepts it and checks the matching permission on the key.",
+        "httpHint": "This endpoint answers with the key's own permissions and works whatever they are, so it is the quickest way to prove a key works. Replace YOUR_KEY with the secret you copied.",
+        "copyButton": "Copy",
+        "copiedButton": "Copied",
+        "copyLabel": "Copy example request to clipboard",
+        "copiedLabel": "Example request copied",
+        "linksHeading": "Learn more",
+        "cliLink": "Command-line client",
+        "docsLink": "HTTP API guide",
+        "repoLink": "Source repository"
+      },
       "brandPreview": {
         "title": "Live preview",
         "subtitle": "Home page, before you save",

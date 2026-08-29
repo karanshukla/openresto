@@ -1663,6 +1663,21 @@
           "doneButton": "Fertig, ich habe ihn gespeichert"
         }
       },
+      "apiKeyUsage": {
+        "title": "Schlüssel verwenden",
+        "subtitle": "Rufen Sie die API über die Kommandozeile, ein Skript oder Ihre eigene App auf",
+        "httpHeading": "Die API direkt aufrufen",
+        "httpBody": "Senden Sie den Schlüssel im Header X-API-Key, nicht in Authorization. Jeder Admin-Endpunkt akzeptiert ihn und prüft die passende Berechtigung des Schlüssels.",
+        "httpHint": "Dieser Endpunkt gibt die Berechtigungen des Schlüssels zurück und funktioniert unabhängig davon, welche das sind — der schnellste Weg zu prüfen, ob ein Schlüssel funktioniert. Ersetzen Sie YOUR_KEY durch das kopierte Geheimnis.",
+        "copyButton": "Kopieren",
+        "copiedButton": "Kopiert",
+        "copyLabel": "Beispielanfrage in die Zwischenablage kopieren",
+        "copiedLabel": "Beispielanfrage kopiert",
+        "linksHeading": "Mehr erfahren",
+        "cliLink": "Kommandozeilen-Client",
+        "docsLink": "HTTP-API-Leitfaden",
+        "repoLink": "Quellcode-Repository"
+      },
       "brandPreview": {
         "title": "Live-Vorschau",
         "subtitle": "Startseite, vor dem Speichern",
