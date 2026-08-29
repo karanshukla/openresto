@@ -192,7 +192,10 @@ public class AdminController(AdminService adminService) : ControllerBase
     }
 
     /// <summary>
-    /// 
+    /// Sends an admin-authored email to the guest on a booking. Failures are 400s split by cause:
+    /// a server with no SMTP settings answers <c>email.not_configured</c>, a send that reached the
+    /// transport and failed answers <c>booking.email_send_failed</c>. A caller cannot retry its way
+    /// out of the first.
     /// </summary>
     /// <seealso>AdminControllerEmailTests.SendEmail_WhenEmailIsNotConfigured_ReturnsTheNotConfiguredCode</seealso>
     /// <seealso>AdminControllerEmailTests.SendEmail_WhenTheTransportFails_ReturnsTheSendFailedCode</seealso>

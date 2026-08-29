@@ -677,6 +677,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Sends an admin-authored email to the guest on a booking. Failures are 400s split by cause:
+         *     a server with no SMTP settings answers `email.not_configured`, a send that reached the
+         *     transport and failed answers `booking.email_send_failed`. A caller cannot retry its way
+         *     out of the first.
+         */
         post: {
             parameters: {
                 query?: never;

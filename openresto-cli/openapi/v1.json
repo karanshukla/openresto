@@ -674,6 +674,7 @@
         "tags": [
           "Admin"
         ],
+        "summary": "Sends an admin-authored email to the guest on a booking. Failures are 400s split by cause:\na server with no SMTP settings answers \u0060email.not_configured\u0060, a send that reached the\ntransport and failed answers \u0060booking.email_send_failed\u0060. A caller cannot retry its way\nout of the first.",
         "parameters": [
           {
             "name": "id",
