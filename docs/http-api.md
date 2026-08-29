@@ -41,7 +41,7 @@ curl -H "X-API-Key: orst_1_your-secret" \
 {
   "id": 1,
   "name": "Reservations widget",
-  "prefix": "orst_1_A1b2C3d4",
+  "prefix": "orst_1_A1b2C3d4E",
   "scopes": [{ "resource": "bookings", "access": "read" }],
   "createdAt": "2026-01-04T10:12:33Z",
   "lastUsedAt": "2026-01-31T08:02:11Z",
@@ -67,9 +67,10 @@ curl -H "X-API-Key: $OPENRESTO_API_KEY" \
 curl -X POST -H "X-API-Key: $OPENRESTO_API_KEY" \
   https://bookings.example.com/api/admin/bookings/57/cancel
 
-# Record a walk-in
+# Record one taken over the phone
 curl -X POST -H "X-API-Key: $OPENRESTO_API_KEY" -H "Content-Type: application/json" \
-  -d '{"restaurantId":2,"customerName":"Ada","partySize":2,"bookingTime":"2026-01-31T19:00:00Z"}' \
+  -d '{"restaurantId":2,"sectionId":3,"tableId":11,"seats":2,
+       "date":"2026-01-31T19:00:00Z","customerEmail":"ada@example.com","customerName":"Ada"}' \
   https://bookings.example.com/api/admin/bookings
 ```
 
@@ -91,18 +92,36 @@ Every admin endpoint is gated on a `{resource}:{access}` scope:
 | `users`     | `read`/`write` | Admin accounts and their roles                            |
 | `audit`     | `read`         | The admin activity trail                                  |
 | `guests`    | `read`         | Customer names and emails on bookings                     |
+| `email`     | `read`         | Whether outgoing mail is configured and delivering        |
 
-A `write` grant satisfies a `read` requirement; the reverse is never true. `audit` and `guests`
-are read-only, so `audit:write` and `guests:write` are rejected at mint time rather than accepted
-as scopes nothing checks.
+A `write` grant satisfies a `read` requirement; the reverse is never true. `audit`, `guests` and
+`email` are read-only, so `audit:write`, `guests:write` and `email:write` are rejected at mint
+time rather than accepted as scopes nothing checks.
 
 `guests` is a redaction, not a gate: a key with `bookings:read` but no `guests:read` still gets
 every booking, with the customer's name and email blanked. Grant it only where the caller
-genuinely needs to identify people.
+genuinely needs to identify people. The same redaction covers the recipient on an email
+delivery failure.
+
+`email` answers whether guests are receiving anything at all. Booking confirmations are
+best-effort — a send failure is recorded and the booking goes through regardless — so a script
+creating bookings otherwise has no way to notice that none of them are being delivered:
+
+```bash
+# Is mail configured, and are confirmations switched on? Two causes, one visible effect.
+curl -H "X-API-Key: $OPENRESTO_API_KEY" \
+  https://bookings.example.com/api/admin/email-settings/status
+
+# Recent delivery failures
+curl -H "X-API-Key: $OPENRESTO_API_KEY" \
+  https://bookings.example.com/api/admin/email-settings/failures
+```
 
 Some of the admin surface is deliberately out of reach of any key, no matter its scopes: auth
-self-service (password, email, security question), email/SMTP settings, push notifications, and
-API key management itself. Those need a browser session.
+self-service (password, email, security question), the SMTP settings themselves, push
+notifications, and API key management itself. Those need a browser session. There is no
+`email:write` for the same reason: a key that could rewrite the SMTP host, username and password
+would be a mail-interception tool sitting in a CI secret.
 
 ## What a key cannot do
 
