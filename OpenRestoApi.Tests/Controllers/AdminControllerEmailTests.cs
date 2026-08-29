@@ -4,7 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Tests.TestInfrastructure;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -161,12 +164,129 @@ namespace OpenRestoApi.Tests.Controllers
             Assert.Equal("Customer email is not available.", response.Message);
         }
 
+        /// <summary>
+        /// The pair that pins issue #407: a server with no SMTP settings and a server whose
+        /// send throws are both failures on the same endpoint, and a caller has to be able to
+        /// tell "fix your configuration" from "retry later" apart from the code alone.
+        /// </summary>
+        [Fact]
+        public async Task SendEmail_WhenEmailIsNotConfigured_ReturnsTheNotConfiguredCode()
+        {
+            AdminController controller = ControllerWith(new ThrowingEmailService(
+                new InfrastructureException("Email is not configured.") { Code = ErrorCodes.EmailNotConfigured }));
+
+            IActionResult result = await controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
+
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequest.Value);
+            Assert.Equal(ErrorCodes.EmailNotConfigured, response.Code);
+            Assert.Equal("Email is not configured.", response.Message);
+        }
+
+        [Fact]
+        public async Task SendEmail_WhenTheTransportFails_ReturnsTheSendFailedCode()
+        {
+            AdminController controller = ControllerWith(new ThrowingEmailService(
+                new InvalidOperationException("Connection refused.")));
+
+            IActionResult result = await controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
+
+            BadRequestObjectResult badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(badRequest.Value);
+            Assert.Equal(ErrorCodes.BookingEmailSendFailed, response.Code);
+            Assert.Contains("Connection refused.", response.Message);
+        }
+
+        /// <summary>
+        /// The pair that keeps the guests redaction from becoming a send gate: `guests:read`
+        /// decides what a caller may see, not who the server may write to. Without it, a key
+        /// holding `bookings:write` was told a booking carrying an address had none, which made
+        /// the whole command useless to exactly the keys meant to run it.
+        /// </summary>
+        [Fact]
+        public async Task SendEmail_WithoutGuestScope_StillReachesTheGuest()
+        {
+            var emailService = new RecordingEmailService();
+            AdminController controller = ControllerWith(
+                emailService, FakeCurrentUser.ApiKey((ApiKeyScopes.Bookings, ApiKeyScopes.Write)));
+
+            IActionResult result = await controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
+
+            Assert.IsType<OkObjectResult>(result);
+            Assert.Equal("guest@test.com", emailService.Recipient);
+        }
+
+        [Fact]
+        public async Task SendEmail_WithoutGuestScope_DoesNotEchoTheAddressBack()
+        {
+            AdminController controller = ControllerWith(
+                new RecordingEmailService(), FakeCurrentUser.ApiKey((ApiKeyScopes.Bookings, ApiKeyScopes.Write)));
+
+            IActionResult result = await controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
+
+            OkObjectResult ok = Assert.IsType<OkObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(ok.Value);
+            Assert.DoesNotContain("guest@test.com", response.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task SendEmail_WithGuestScope_EchoesTheRecipient()
+        {
+            AdminController controller = ControllerWith(
+                new RecordingEmailService(),
+                FakeCurrentUser.ApiKey(
+                    (ApiKeyScopes.Bookings, ApiKeyScopes.Write),
+                    (ApiKeyScopes.Guests, ApiKeyScopes.Read)));
+
+            IActionResult result = await controller.SendEmail(1, new SendBookingEmailRequest { Subject = "S", Body = "B" });
+
+            OkObjectResult ok = Assert.IsType<OkObjectResult>(result);
+            MessageResponse response = Assert.IsType<MessageResponse>(ok.Value);
+            Assert.Contains("guest@test.com", response.Message, StringComparison.Ordinal);
+        }
+
+        private AdminController ControllerWith(
+            IEmailService emailService, ICurrentUserService? currentUser = null)
+            => new(new OpenRestoApi.Core.Application.Services.AdminService(
+                new BookingRepository(_dbContext),
+                new BookingFilterRepository(_dbContext),
+                new RestaurantRepository(_dbContext),
+                new SectionRepository(_dbContext),
+                new TableRepository(_dbContext),
+                new Mock<IHoldService>().Object,
+                emailService,
+                brandService: null,
+                notificationQueue: null,
+                audit: null,
+                currentUser: currentUser));
+
         public void Dispose()
         {
             _dbContext.Dispose();
             _serviceProvider.Dispose();
             GC.SuppressFinalize(this);
         }
+    }
+
+    internal sealed class RecordingEmailService : IEmailService
+    {
+        public string? Recipient { get; private set; }
+
+        public Task<bool> TestConnectionAsync() => Task.FromResult(true);
+
+        public Task SendEmailAsync(string recipient, string subject, string htmlBody)
+        {
+            Recipient = recipient;
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class ThrowingEmailService(Exception failure) : IEmailService
+    {
+        private readonly Exception _failure = failure;
+
+        public Task<bool> TestConnectionAsync() => Task.FromResult(false);
+        public Task SendEmailAsync(string recipient, string subject, string htmlBody) => throw _failure;
     }
 
     // Re-use MockEmailService if not globally available, or ideally it should be in a shared file

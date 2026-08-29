@@ -10,7 +10,9 @@ namespace OpenRestoApi.Controllers;
 
 // Deliberately excluded from the API-key surface entirely (issue #319): a key must never be able
 // to read or change the SMTP credentials the server sends mail with, or flip
-// SendBookingConfirmations.
+// SendBookingConfirmations. The read-only half — whether mail is configured at all, and what has
+// failed to send — lives in EmailStatusController under the email:read scope instead, so an
+// integration can find out its guests are receiving nothing without touching this.
 [ApiController]
 [Route("api/admin/email-settings")]
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
@@ -51,21 +53,6 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
         return Ok(new { message = "Email settings saved." });
     }
 
-    [HttpGet("failures")]
-    public async Task<IActionResult> GetFailures()
-    {
-        IReadOnlyList<EmailFailure> failures = await _emailSettings.GetFailuresAsync();
-        var response = failures.Select(f => new EmailFailureResponse
-        {
-            Id = f.Id,
-            BookingRef = f.BookingRef,
-            RecipientEmail = f.RecipientEmail,
-            ErrorMessage = f.ErrorMessage,
-            AttemptedAt = f.AttemptedAt,
-        });
-        return Ok(response);
-    }
-
     [HttpPost("test")]
     public async Task<IActionResult> Test()
     {
@@ -98,15 +85,6 @@ public class EmailSettingsRequest
     public string? FromName { get; set; }
     public string? FromEmail { get; set; }
     public bool SendBookingConfirmations { get; set; }
-}
-
-public class EmailFailureResponse
-{
-    public int Id { get; set; }
-    public string? BookingRef { get; set; }
-    public string RecipientEmail { get; set; } = string.Empty;
-    public string ErrorMessage { get; set; } = string.Empty;
-    public DateTime AttemptedAt { get; set; }
 }
 
 public class EmailSettingsResponse

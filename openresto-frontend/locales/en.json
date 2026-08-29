@@ -1623,7 +1623,8 @@
           "brand": "Brand",
           "users": "Users",
           "audit": "Activity log",
-          "guests": "Guests"
+          "guests": "Guests",
+          "email": "Email status"
         },
         "scopeLevel": {
           "none": "None"
@@ -1635,7 +1636,8 @@
           "brand": "Site name, colours, contact details, highlights and media",
           "users": "Admin accounts and their roles",
           "audit": "The admin activity trail",
-          "guests": "Customer names and emails on bookings. Without this they come back blank."
+          "guests": "Customer names and emails on bookings. Without this they come back blank.",
+          "email": "Whether outgoing email is set up and what has failed to send. Never the SMTP credentials."
         },
         "expiryLabel": "Expiry",
         "expiryHint": "Defaults to 1 year. Choose \"No expiry\" for a key that never expires.",

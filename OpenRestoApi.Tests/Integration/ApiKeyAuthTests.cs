@@ -185,6 +185,53 @@ public class ApiKeyAuthTests(TestWebAppFactory factory) : IClassFixture<TestWebA
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    private static object EmailRead(string name) => new
+    {
+        name,
+        scopes = new[] { new { resource = "email", access = "read" } },
+    };
+
+    /// <summary>
+    /// The boundary issue #407 draws: a key may learn whether outgoing mail works, so an
+    /// integration can discover its guests are receiving nothing, but the SMTP credentials that
+    /// make it work stay out of reach — a key able to rewrite host/username/password would
+    /// redirect every outgoing mail to a relay the caller controls.
+    /// </summary>
+    [Fact]
+    public async Task EmailReadKey_ReachesTheStatusEndpoint()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        string secret = await CreateKeyAsync(owner, EmailRead("Mail watcher"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).GetAsync("/api/admin/email-settings/status");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task EmailReadKey_CannotReachTheCredentialSurface()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        string secret = await CreateKeyAsync(owner, EmailRead("Mail watcher"));
+        HttpClient client = ClientWithKey(secret);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/admin/email-settings")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PatchAsJsonAsync(
+            "/api/admin/email-settings",
+            new { host = "relay.attacker.test", port = 587, username = "u", password = "p", enableSsl = true })).StatusCode);
+    }
+
+    [Fact]
+    public async Task KeyWithoutEmailScope_CannotReadTheStatusEndpoint()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        string secret = await CreateKeyAsync(owner, BookingsRead("No mail scope"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).GetAsync("/api/admin/email-settings/status");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     [Fact]
     public async Task MutatingRequest_AuthenticatedByApiKey_RecordsAnAuditEntryNamingTheKey()
     {

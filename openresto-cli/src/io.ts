@@ -1,6 +1,17 @@
 import { readFileSync } from "node:fs";
 import { readAllStdin } from "./prompt.js";
 
+/**
+ * Reads text from a file path, or from stdin when given `-`. Multi-line values (an email body)
+ * take this route rather than a flag: a flag would put the whole message into the shell history
+ * and make newlines the caller's escaping problem.
+ */
+export async function readTextInput(pathOrDash: string): Promise<string> {
+  return pathOrDash === "-"
+    ? await readAllStdin()
+    : readFileSync(pathOrDash, "utf8");
+}
+
 /** Reads JSON from a file path, or from stdin when given `-` — used by `--from-json`. */
 export async function readJsonInput(pathOrDash: string): Promise<unknown> {
   const raw =

@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { clientFor, getGlobalOptions, handle } from "../context.js";
 import { printResult } from "../output.js";
 import { confirmOrExit } from "../confirm.js";
-import { omitUndefined } from "../io.js";
+import { omitUndefined, readTextInput } from "../io.js";
+import { readAllStdin } from "../prompt.js";
 
 const LIST_COLUMNS = [
   "id",
@@ -209,6 +210,57 @@ export function registerBookingsCommands(program: Command): void {
     );
 
   bookings
+    .command("extend <id>")
+    .description("Push one booking's end time out by N minutes")
+    .requiredOption("--minutes <n>", "Minutes to add to the end time", Number)
+    .action(
+      handle(
+        async (id: string, options: { minutes: number }, command: Command) => {
+          const { client } = clientFor(command);
+          const globals = getGlobalOptions(command);
+          const result = await client.post(
+            `/api/admin/bookings/${encodeURIComponent(id)}/extend`,
+            { body: { minutes: options.minutes } },
+          );
+          printResult(result, Boolean(globals.json));
+        },
+      ),
+    );
+
+  bookings
+    .command("email <id>")
+    .description(
+      "Email the guest on a booking. The body is read from --body-file, or from stdin when " +
+        "that is piped — never a flag, since a message is multi-line.",
+    )
+    .requiredOption("--subject <subject>", "Subject line")
+    .option(
+      "--body-file <path>",
+      "File holding the message body, or - to read stdin",
+    )
+    .action(
+      handle(
+        async (
+          id: string,
+          options: { subject: string; bodyFile?: string },
+          command: Command,
+        ) => {
+          const body = await readEmailBody(options.bodyFile);
+          if (!body.trim()) {
+            throw new Error("The email body is empty.");
+          }
+          const { client } = clientFor(command);
+          const globals = getGlobalOptions(command);
+          const result = await client.post(
+            `/api/admin/bookings/${encodeURIComponent(id)}/email`,
+            { body: { subject: options.subject, body } },
+          );
+          printResult(result, Boolean(globals.json));
+        },
+      ),
+    );
+
+  bookings
     .command("purge <id>")
     .description("Permanently delete a booking (GDPR purge) — cannot be undone")
     .option("--yes", "Skip the confirmation prompt")
@@ -226,4 +278,20 @@ export function registerBookingsCommands(program: Command): void {
         },
       ),
     );
+}
+
+/**
+ * Refuses rather than blocking on a prompt nobody can answer: with no `--body-file` and an
+ * interactive terminal there is nothing to read, and waiting on stdin would look like a hang.
+ */
+async function readEmailBody(bodyFile: string | undefined): Promise<string> {
+  if (bodyFile) {
+    return readTextInput(bodyFile);
+  }
+  if (process.stdin.isTTY) {
+    throw new Error(
+      "No message body. Pass --body-file <path>, or pipe the body into stdin.",
+    );
+  }
+  return readAllStdin();
 }
