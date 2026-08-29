@@ -12,6 +12,15 @@ const LIST_COLUMNS = [
   "upcomingBookingsCount",
 ];
 
+const CONFLICT_COLUMNS = [
+  "bookingId",
+  "bookingRef",
+  "date",
+  "seats",
+  "customerName",
+  "reason",
+];
+
 export function registerLocationsCommands(program: Command): void {
   const locations = program
     .command("locations")
@@ -99,6 +108,43 @@ export function registerLocationsCommands(program: Command): void {
           `/api/admin/restaurants/${encodeURIComponent(id)}/unpause`,
         );
         console.log(`Location ${id} unpaused.`);
+      }),
+    );
+
+  locations
+    .command("extend <id>")
+    .description(
+      'Push every active booking at a location out by N minutes ("we\'re running late tonight")',
+    )
+    .requiredOption("--minutes <n>", "Minutes to add to each end time", Number)
+    .action(
+      handle(
+        async (id: string, options: { minutes: number }, command: Command) => {
+          const { client } = clientFor(command);
+          const globals = getGlobalOptions(command);
+          const result = await client.post(
+            `/api/admin/restaurants/${encodeURIComponent(id)}/extend`,
+            { body: { minutes: options.minutes } },
+          );
+          printResult(result, Boolean(globals.json));
+        },
+      ),
+    );
+
+  locations
+    .command("conflicts <id>")
+    .description(
+      "Bookings stranded by a narrowed schedule — taken under hours or open days the location " +
+        "no longer runs. Editing the schedule leaves existing bookings alone by design.",
+    )
+    .action(
+      handle(async (id: string, _options: unknown, command: Command) => {
+        const { client } = clientFor(command);
+        const globals = getGlobalOptions(command);
+        const result = await client.get(
+          `/api/restaurants/${encodeURIComponent(id)}/schedule-conflicts`,
+        );
+        printResult(result, Boolean(globals.json), CONFLICT_COLUMNS);
       }),
     );
 

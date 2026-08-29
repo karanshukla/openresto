@@ -1623,7 +1623,8 @@
           "brand": "Marke",
           "users": "Benutzer",
           "audit": "Aktivitätsprotokoll",
-          "guests": "Gäste"
+          "guests": "Gäste",
+          "email": "E-Mail-Status"
         },
         "scopeLevel": {
           "none": "Keine"
@@ -1635,7 +1636,8 @@
           "brand": "Seitenname, Farben, Kontaktdaten, Highlights und Medien",
           "users": "Administratorkonten und ihre Rollen",
           "audit": "Das Administrations-Aktivitätsprotokoll",
-          "guests": "Kundennamen und E-Mails auf Reservierungen. Ohne dies kommen sie leer zurück."
+          "guests": "Kundennamen und E-Mails auf Reservierungen. Ohne dies kommen sie leer zurück.",
+          "email": "Ob der E-Mail-Versand eingerichtet ist und was nicht zugestellt werden konnte. Niemals die SMTP-Zugangsdaten."
         },
         "expiryLabel": "Ablauf",
         "expiryHint": "Standardmäßig 1 Jahr. Wähle „Kein Ablauf“ für einen Schlüssel, der nie abläuft.",

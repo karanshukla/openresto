@@ -191,6 +191,14 @@ public class AdminController(AdminService adminService) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Sends an admin-authored email to the guest on a booking. Failures are 400s split by cause:
+    /// a server with no SMTP settings answers <c>email.not_configured</c>, a send that reached the
+    /// transport and failed answers <c>booking.email_send_failed</c>. A caller cannot retry its way
+    /// out of the first.
+    /// </summary>
+    /// <seealso>AdminControllerEmailTests.SendEmail_WhenEmailIsNotConfigured_ReturnsTheNotConfiguredCode</seealso>
+    /// <seealso>AdminControllerEmailTests.SendEmail_WhenTheTransportFails_ReturnsTheSendFailedCode</seealso>
     [HttpPost("bookings/{id}/email")]
     [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
     public async Task<IActionResult> SendEmail(int id, [FromBody] SendBookingEmailRequest req)
@@ -208,8 +216,23 @@ public class AdminController(AdminService adminService) : ControllerBase
                 SendBookingEmailStatus.NotFound => NotFound(),
                 SendBookingEmailStatus.MissingFields => BadRequest(new MessageResponse { Message = "Subject and body are required.", Code = ErrorCodes.BookingEmailFieldsRequired }),
                 SendBookingEmailStatus.NoCustomerEmail => BadRequest(new MessageResponse { Message = "Customer email is not available.", Code = ErrorCodes.BookingNoCustomerEmail }),
-                _ => Ok(new MessageResponse { Message = $"Email sent to {result.Recipient}." })
+                _ => Ok(new MessageResponse
+                {
+                    Message = result.Recipient == null ? "Email sent." : $"Email sent to {result.Recipient}."
+                })
             };
+        }
+        catch (InfrastructureException ex) when (ex.Code == ErrorCodes.EmailNotConfigured)
+        {
+            // A server with no SMTP settings at all is a permanent setup problem, not the
+            // transient send failure the catch below describes. Flattening both into
+            // booking.email_send_failed left an API-key caller unable to tell "fix your
+            // configuration" from "retry later".
+            return BadRequest(new MessageResponse
+            {
+                Message = ex.Message,
+                Code = ErrorCodes.EmailNotConfigured,
+            });
         }
         catch (Exception ex)
         {

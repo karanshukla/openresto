@@ -147,20 +147,41 @@ openresto bookings list --json | jq '.[] | select(.seats > 6)'
 Run `openresto <group> --help` or `openresto <group> <command> --help` for full flag lists. One
 example per group:
 
+- **status** — the admin overview: booking totals, today's covers, paused locations and the
+  schedule-conflict count. Server state, where `auth whoami` answers for the key itself.
+
+  ```bash
+  openresto status
+  ```
+
 - **auth** — `login`, `whoami`, `logout`.
 
   ```bash
   openresto auth whoami
   ```
 
-- **bookings** — `list`, `get`, `create`, `update`, `cancel`, `restore`, `purge`.
+- **bookings** — `list`, `get`, `create`, `update`, `extend`, `email`, `cancel`, `restore`,
+  `purge`.
 
   ```bash
   openresto bookings list --location 1 --status upcoming
+  openresto bookings extend 42 --minutes 30
   ```
 
   `purge` permanently deletes a booking (the GDPR purge path) and asks for confirmation; pass
   `--yes` to skip the prompt, which is required when stdin isn't a terminal (scripts/CI).
+
+  `email` sends a one-off message to the guest on a booking. The body is multi-line, so it comes
+  from a file or from stdin rather than a flag:
+
+  ```bash
+  openresto bookings email 42 --subject "Your table tonight" --body-file note.html
+  printf 'Running 20 minutes late — see you soon.' | openresto bookings email 42 --subject "Update"
+  ```
+
+  On a server with no SMTP settings this fails with the code `email.not_configured` rather than a
+  wrapped transport error, so a script can tell a permanent setup problem from a transient one.
+  `openresto email status` answers the same question without sending anything.
 
 - **availability** — `check` (public endpoint, no key needed for this one call, but the CLI
   still sends one if configured).
@@ -170,11 +191,16 @@ example per group:
   ```
 
 - **locations** — `list` (includes archived locations), `get`, `create`, `pause`, `unpause`,
-  `archive`, `restore`, `delete`.
+  `extend`, `conflicts`, `archive`, `restore`, `delete`.
 
   ```bash
   openresto locations pause 1 --minutes 60
+  openresto locations extend 1 --minutes 30   # every active booking: "we're running late"
   ```
+
+  `conflicts` lists bookings stranded by a narrowed schedule — taken under opening hours, open
+  days or a walk-in policy the location no longer runs. Editing a schedule deliberately leaves
+  existing bookings alone, so this is how you find who needs calling.
 
   `delete` requires the location to already be archived (the server enforces this — see
   `RestaurantManagementService` — and the CLI surfaces that error with a pointer to run
@@ -211,12 +237,18 @@ example per group:
   openresto brand set --app-name "My Restaurant" --primary-color "#0a7ea4"
   ```
 
-- **users** — `list`, `create`, `role`, `activate`, `deactivate`. Owner-only server-side; a key
-  without the `users` scope (or one whose underlying account isn't an Owner) gets a clear 403.
+- **users** — `list`, `create`, `role`, `reset-password`, `activate`, `deactivate`. Owner-only
+  server-side; a key without the `users` scope (or one whose underlying account isn't an Owner)
+  gets a clear 403.
 
   ```bash
   openresto users role 3 --role Manager
+  openresto users reset-password 3          # prompts, hidden
+  cat new-password.txt | openresto users reset-password 3
   ```
+
+  `reset-password` takes no password flag, for the same reason `auth login` takes no key flag: an
+  argument is visible to every other process on the host through `ps`.
 
 - **audit** — `list`, with the same filters as the admin activity trail (`actorUserId`, an
   `action` prefix, `targetType`, `location`, `from`/`to`, `page`/`pageSize`). Owner-only.
@@ -225,11 +257,29 @@ example per group:
   openresto audit list --action booking --from 2026-08-01
   ```
 
+- **email** — `status`, `failures`. Read-only: the SMTP credentials are unreachable with an API
+  key by design, so there is no `email set` to pair with these.
+
+  ```bash
+  openresto email status
+  openresto email failures
+  ```
+
+  Booking confirmations are best-effort server-side — a send failure is recorded and the booking
+  goes through regardless — so an integration creating bookings by key would otherwise never
+  learn its guests are receiving nothing. `status` separates the two causes with the same visible
+  effect: `isConfigured` false means no SMTP settings at all, `sendBookingConfirmations` false
+  means they are configured but switched off. `failures` blanks the recipient address for a key
+  without `guests:read`, the same redaction the booking endpoints apply.
+
 ## Scopes
 
 Every admin endpoint the CLI calls is gated by a `{resource}:{access}` scope on the key
-(`bookings`, `locations`, `tables`, `brand`, `users`, `audit`, `guests` × `read`/`write`; a
-`write` grant also satisfies the matching `read` requirement). **Mint the narrowest key that does
+(`bookings`, `locations`, `tables`, `brand`, `users`, `audit`, `guests`, `email` × `read`/`write`;
+a `write` grant also satisfies the matching `read` requirement). `audit`, `guests` and `email` are
+read-only — there is no write level to mint. `email` in particular reaches only whether mail is
+configured and what has failed to send: a key that could rewrite the SMTP host and credentials
+would be able to redirect every outgoing mail to a relay it controls. **Mint the narrowest key that does
 the job** — a read-only reporting script should get `bookings:read` and nothing else, never a
 key with every resource at `write`. A 403 from the CLI names exactly which scope is missing
 (`This API key is missing the 'bookings:write' scope.`), so widening a key later is a quick,

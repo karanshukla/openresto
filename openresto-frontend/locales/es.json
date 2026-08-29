@@ -1623,7 +1623,8 @@
           "brand": "Marca",
           "users": "Usuarios",
           "audit": "Registro de actividad",
-          "guests": "Comensales"
+          "guests": "Comensales",
+          "email": "Estado del correo"
         },
         "scopeLevel": {
           "none": "Ninguno"
@@ -1635,7 +1636,8 @@
           "brand": "Nombre del sitio, colores, datos de contacto, destacados y medios",
           "users": "Las cuentas de administrador y sus roles",
           "audit": "El registro de actividad de administración",
-          "guests": "Nombres y correos de los clientes en las reservas. Sin esto vuelven vacíos."
+          "guests": "Nombres y correos de los clientes en las reservas. Sin esto vuelven vacíos.",
+          "email": "Si el envío de correo está configurado y qué no se ha podido enviar. Nunca las credenciales SMTP."
         },
         "expiryLabel": "Caducidad",
         "expiryHint": "El valor predeterminado es 1 año. Elige «Sin caducidad» para una clave que nunca expire.",

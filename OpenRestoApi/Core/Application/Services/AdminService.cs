@@ -16,12 +16,14 @@ public enum SendBookingEmailStatus { Sent, NotFound, MissingFields, NoCustomerEm
 /// <summary>
 /// Result of <see cref="AdminService.SendBookingEmailAsync"/>. <see cref="Recipient"/> is populated
 /// only on <see cref="Sent"/> so the controller can echo it back in the success message without a
-/// second fetch. SMTP/transport failures are NOT surfaced here — they propagate as exceptions for
-/// the controller to map to a 400, preserving the prior behaviour.
+/// second fetch — and left null there for a caller that may not see guest identities, which is
+/// what <see cref="SentToHiddenRecipient"/> names. SMTP/transport failures are NOT surfaced here —
+/// they propagate as exceptions for the controller to map to a 400, preserving the prior behaviour.
 /// </summary>
 public record SendBookingEmailResult(SendBookingEmailStatus Status, string? Recipient = null)
 {
     public static SendBookingEmailResult Sent(string recipient) => new(SendBookingEmailStatus.Sent, recipient);
+    public static SendBookingEmailResult SentToHiddenRecipient() => new(SendBookingEmailStatus.Sent);
     public static SendBookingEmailResult NotFound() => new(SendBookingEmailStatus.NotFound);
     public static SendBookingEmailResult MissingFields() => new(SendBookingEmailStatus.MissingFields);
     public static SendBookingEmailResult NoCustomerEmail() => new(SendBookingEmailStatus.NoCustomerEmail);
@@ -753,10 +755,19 @@ public class AdminService(
     /// template (via <see cref="EmailHelper.BuildEmailContentFromBrand"/>), and dispatches via
     /// <see cref="IEmailService.SendEmailAsync"/>. SMTP/transport failures propagate as exceptions
     /// — the controller catches them to map a 400, preserving the prior behaviour.
+    /// <para>
+    /// Reads the recipient off the entity rather than <see cref="ToDetailDto"/>'s output, which is
+    /// guest-redacted: <see cref="ApiKeyScopes.Guests"/> governs what a caller may <em>see</em>,
+    /// not what the server may send to, so a key holding <c>bookings:write</c> without it would
+    /// otherwise be told a booking with an address on it has none. What that caller must not get
+    /// back is the address itself, so the echoed recipient — and only that — is redacted.
+    /// </para>
+    /// <seealso>AdminControllerEmailTests.SendEmail_WithoutGuestScope_StillReachesTheGuest</seealso>
+    /// <seealso>AdminControllerEmailTests.SendEmail_WithoutGuestScope_DoesNotEchoTheAddressBack</seealso>
     /// </summary>
     public virtual async Task<SendBookingEmailResult> SendBookingEmailAsync(int bookingId, SendBookingEmailRequest req)
     {
-        BookingDetailDto? booking = await GetBookingAsync(bookingId);
+        Booking? booking = await _bookingRepository.GetByIdAsync(bookingId);
         if (booking == null)
         {
             return SendBookingEmailResult.NotFound();
@@ -777,7 +788,9 @@ public class AdminService(
 
         DescribeBooking(AuditActions.BookingEmail, booking,
             $"Emailed the guest on booking {booking.BookingRef}");
-        return SendBookingEmailResult.Sent(booking.CustomerEmail);
+        return BookingGuestVisibility.IsRedactedFor(_currentUser)
+            ? SendBookingEmailResult.SentToHiddenRecipient()
+            : SendBookingEmailResult.Sent(booking.CustomerEmail);
     }
 
     // ── Mapping ─────────────────────────────────────────────────────────────

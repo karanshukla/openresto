@@ -9,6 +9,8 @@ import { registerSectionsCommands } from "./commands/sections.js";
 import { registerBrandCommands } from "./commands/brand.js";
 import { registerUsersCommands } from "./commands/users.js";
 import { registerAuditCommands } from "./commands/audit.js";
+import { registerEmailCommands } from "./commands/email.js";
+import { registerStatusCommand } from "./commands/status.js";
 import { getCliVersion } from "./version.js";
 
 const version = getCliVersion();
@@ -23,6 +25,7 @@ program
   .option("--json", "Output raw JSON instead of a table")
   .option("--yes", "Skip confirmation prompts on destructive commands");
 
+registerStatusCommand(program);
 registerAuthCommands(program);
 registerBookingsCommands(program);
 registerAvailabilityCommands(program);
@@ -32,5 +35,6 @@ registerSectionsCommands(program);
 registerBrandCommands(program);
 registerUsersCommands(program);
 registerAuditCommands(program);
+registerEmailCommands(program);
 
 await program.parseAsync(process.argv);

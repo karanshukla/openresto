@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { clientFor, getGlobalOptions, handle } from "../context.js";
 import { printResult } from "../output.js";
+import { promptHidden, readAllStdin } from "../prompt.js";
 
 const LIST_COLUMNS = ["id", "email", "displayName", "role", "isActive"];
 
@@ -76,6 +77,31 @@ export function registerUsersCommands(program: Command): void {
           printResult(result, Boolean(globals.json));
         },
       ),
+    );
+
+  users
+    .command("reset-password <id>")
+    .description(
+      "Set another account's password (Owner-only). Prompts with hidden input, or reads the " +
+        "password from stdin when piped — never pass it as an argument.",
+    )
+    .action(
+      handle(async (id: string, _options: unknown, command: Command) => {
+        const newPassword = process.stdin.isTTY
+          ? await promptHidden("New password")
+          : await readAllStdin();
+        if (!newPassword) {
+          throw new Error("A new password is required.");
+        }
+
+        const { client } = clientFor(command);
+        const globals = getGlobalOptions(command);
+        const result = await client.post(
+          `/api/admin/users/${encodeURIComponent(id)}/reset-password`,
+          { body: { newPassword } },
+        );
+        printResult(result, Boolean(globals.json));
+      }),
     );
 
   users

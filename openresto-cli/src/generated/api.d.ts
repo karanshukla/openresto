@@ -677,6 +677,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Sends an admin-authored email to the guest on a booking. Failures are 400s split by cause:
+         *     a server with no SMTP settings answers `email.not_configured`, a send that reached the
+         *     transport and failed answers `booking.email_send_failed`. A caller cannot retry its way
+         *     out of the first.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1782,39 +1788,6 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/admin/email-settings/failures": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/email-settings/test": {
         parameters: {
             query?: never;
@@ -1842,6 +1815,84 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/email-settings/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether outgoing mail can be sent at all, and whether booking confirmations are switched
+         *     on — two different causes with the same visible effect (guests receive nothing), which a
+         *     script has to be able to tell apart. Carries no host, username or password, masked or
+         *     otherwise.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/email-settings/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent delivery failures. The recipient is a customer's email address, so it goes through
+         *     the same BookingGuestVisibility gate a booking read does — otherwise a key
+         *     holding `email:read` but not `guests:read` would read guest identities out of
+         *     the failure list that the booking endpoints redact.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
