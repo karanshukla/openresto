@@ -1623,7 +1623,8 @@
           "brand": "Marque",
           "users": "Utilisateurs",
           "audit": "Journal d'activité",
-          "guests": "Clients"
+          "guests": "Clients",
+          "email": "État des e-mails"
         },
         "scopeLevel": {
           "none": "Aucun"
@@ -1635,7 +1636,8 @@
           "brand": "Nom du site, couleurs, coordonnées, points forts et médias",
           "users": "Les comptes administrateur et leurs rôles",
           "audit": "Le journal d'activité de l'administration",
-          "guests": "Les noms et e-mails des clients sur les réservations. Sans ceci, ils reviennent vides."
+          "guests": "Les noms et e-mails des clients sur les réservations. Sans ceci, ils reviennent vides.",
+          "email": "Si l'envoi d'e-mails est configuré et ce qui n'a pas pu partir. Jamais les identifiants SMTP."
         },
         "expiryLabel": "Expiration",
         "expiryHint": "Par défaut, 1 an. Choisissez « Sans expiration » pour une clé qui n'expire jamais.",

@@ -1,6 +1,9 @@
 import { test, describe, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { Command } from "commander";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { registerBookingsCommands } from "./bookings.js";
 
 function buildProgram(): Command {
@@ -95,5 +98,82 @@ describe("bookings list status column", () => {
     assert.equal(parsed.length, 2);
     assert.ok(!("status" in parsed[0]));
     assert.equal(parsed[1].isCancelled, true);
+  });
+});
+
+function capturingFetch(sent: { body: unknown }[]): typeof fetch {
+  return (async (_input: string, init?: { body?: string }) => {
+    sent.push({ body: init?.body ? JSON.parse(init.body) : undefined });
+    return new Response(JSON.stringify({ message: "Email sent to a@b.com." }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as unknown as typeof fetch;
+}
+
+describe("bookings email", () => {
+  /**
+   * A message body is multi-line, so it comes from a file or stdin rather than a flag — a flag
+   * would land the whole message in the shell history and make newlines the caller's escaping
+   * problem.
+   */
+  test("sends the body read from --body-file verbatim, newlines included", async () => {
+    const path = join(
+      mkdtempSync(join(tmpdir(), "openresto-cli-")),
+      "body.txt",
+    );
+    writeFileSync(path, "Dear guest,\n\nYour table is ready.\n");
+    const sent: { body: unknown }[] = [];
+    globalThis.fetch = capturingFetch(sent);
+    const { restore } = captureLogs();
+
+    try {
+      await buildProgram().parseAsync(
+        [
+          "bookings",
+          "email",
+          "7",
+          "--subject",
+          "Your table",
+          "--body-file",
+          path,
+        ],
+        { from: "user" },
+      );
+    } finally {
+      restore();
+    }
+
+    assert.deepEqual(sent[0].body, {
+      subject: "Your table",
+      body: "Dear guest,\n\nYour table is ready.\n",
+    });
+  });
+
+  test("refuses an empty body instead of sending a blank email", async () => {
+    const path = join(
+      mkdtempSync(join(tmpdir(), "openresto-cli-")),
+      "empty.txt",
+    );
+    writeFileSync(path, "   \n");
+    const sent: { body: unknown }[] = [];
+    globalThis.fetch = capturingFetch(sent);
+    const { lines, restore } = captureLogs();
+
+    try {
+      await buildProgram().parseAsync(
+        ["bookings", "email", "7", "--subject", "S", "--body-file", path],
+        { from: "user" },
+      );
+    } finally {
+      restore();
+    }
+
+    assert.equal(sent.length, 0);
+    assert.match(lines.join("\n"), /body is empty/);
+    // `handle` reports a failed command through the exit code; clear it so it doesn't leak
+    // into this test file's own exit status.
+    assert.equal(process.exitCode, 1);
+    process.exitCode = 0;
   });
 });

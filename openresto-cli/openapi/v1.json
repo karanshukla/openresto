@@ -1578,8 +1578,8 @@
         }
       }
     },
-    "/api/admin/email-settings/failures": {
-      "get": {
+    "/api/admin/email-settings/test": {
+      "post": {
         "tags": [
           "EmailSettings"
         ],
@@ -1590,11 +1590,25 @@
         }
       }
     },
-    "/api/admin/email-settings/test": {
-      "post": {
+    "/api/admin/email-settings/status": {
+      "get": {
         "tags": [
-          "EmailSettings"
+          "EmailStatus"
         ],
+        "summary": "Whether outgoing mail can be sent at all, and whether booking confirmations are switched\non \u2014 two different causes with the same visible effect (guests receive nothing), which a\nscript has to be able to tell apart. Carries no host, username or password, masked or\notherwise.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/email-settings/failures": {
+      "get": {
+        "tags": [
+          "EmailStatus"
+        ],
+        "summary": "Recent delivery failures. The recipient is a customer\u0027s email address, so it goes through\nthe same BookingGuestVisibility gate a booking read does \u2014 otherwise a key\nholding \u0060email:read\u0060 but not \u0060guests:read\u0060 would read guest identities out of\nthe failure list that the booking endpoints redact.",
         "responses": {
           "200": {
             "description": "OK"
@@ -4670,6 +4684,9 @@
     },
     {
       "name": "EmailSettings"
+    },
+    {
+      "name": "EmailStatus"
     },
     {
       "name": "Highlights"

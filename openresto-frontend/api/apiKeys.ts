@@ -13,6 +13,7 @@ export const SCOPE_RESOURCES = [
   "users",
   "audit",
   "guests",
+  "email",
 ] as const;
 
 export type ScopeResource = (typeof SCOPE_RESOURCES)[number];
@@ -23,11 +24,17 @@ export type ScopeAccess = (typeof SCOPE_ACCESS_LEVELS)[number];
 
 /**
  * Resources with no write surface at all: the audit trail is append-only with no admin write
- * endpoint (see CLAUDE.md's audit-trail section), and guest visibility is a read-time redaction
- * toggle rather than a mutable resource. Mirrors the backend's `ApiKeyScopes.ReadOnlyResources`
- * — minting either as `write` is rejected server-side, so the picker never offers it.
+ * endpoint (see CLAUDE.md's audit-trail section), guest visibility is a read-time redaction
+ * toggle rather than a mutable resource, and email is deliberately read-only — a key that could
+ * rewrite the SMTP host and credentials would redirect every outgoing mail to a relay it
+ * controls. Mirrors the backend's `ApiKeyScopes.ReadOnlyResources` — minting any of them as
+ * `write` is rejected server-side, so the picker never offers it.
  */
-export const READ_ONLY_SCOPE_RESOURCES: ReadonlySet<ScopeResource> = new Set(["audit", "guests"]);
+export const READ_ONLY_SCOPE_RESOURCES: ReadonlySet<ScopeResource> = new Set([
+  "audit",
+  "guests",
+  "email",
+]);
 
 export interface ApiKeyScope {
   resource: ScopeResource;
