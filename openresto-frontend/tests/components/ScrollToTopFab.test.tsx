@@ -4,13 +4,8 @@
 import React from "react";
 import { screen, fireEvent } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
-import ScrollToTopFab, {
-  fabGutter,
-  fabRestingBand,
-  FAB_MIN_GUTTER,
-  SHOW_AFTER_SCROLL_Y,
-} from "@/components/common/ScrollToTopFab";
-import { FAB_SIZE } from "@/components/common/ScrollToTopFab.styles";
+import ScrollToTopFab, { fabGutter, SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
+import { FAB_MIN_GUTTER, FAB_SIZE } from "@/components/common/ScrollToTopFab.styles";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H } from "@/constants/breakpoints";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -29,12 +24,12 @@ describe("ScrollToTopFab", () => {
     expect(screen.getByRole("button")).toBeTruthy();
   });
 
-  // The lane stays mounted while hidden so it keeps its measured width; unmounting it dropped
+  // The rail stays mounted while hidden so it keeps its measured width; unmounting it dropped
   // that to zero and the FAB reappeared against the fallback gutter for a frame before layout put
   // it back beside the content column — a sideways jump every time it came back.
   it("keeps its place in the layout while hidden, so it does not jump back in", () => {
     renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
-    expect(screen.getByTestId("scroll-to-top-lane")).toBeTruthy();
+    expect(screen.getByTestId("scroll-to-top-rail")).toBeTruthy();
     // Present in the layout, but gone from the a11y tree and from the press target.
     expect(screen.queryByRole("button")).toBeNull();
     // `aria-hidden` rather than the native-only accessibilityElementsHidden pair, because
@@ -92,50 +87,52 @@ describe("ScrollToTopFab", () => {
     });
   });
 
-  describe("fabRestingBand", () => {
-    // Wide enough for the gutter to hold the FAB beside the column, so the row the page ends
-    // on is already clear of it and reserves nothing.
-    it.each([1440, 1680, 2560])("reserves nothing at %ipx, where the FAB has a gutter", (width) => {
-      expect(fabRestingBand(width)).toBe(0);
+  // The rail is a row of the scroll content, not an overlay on it: it is what holds the page's
+  // last row — the footer — off the FAB, so the FAB comes to rest above the footer rather than
+  // on its links. Its height is the FAB plus the inset it keeps underneath.
+  describe("the rail it rides", () => {
+    it("reserves the FAB's band above whatever follows it", () => {
+      renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
+      expect(StyleSheet.flatten(screen.getByTestId("scroll-to-top-rail").props.style).height).toBe(
+        FAB_SIZE + FAB_MIN_GUTTER
+      );
     });
 
-    // No gutter: the FAB is over the content column, so the page's last row keeps the band it
-    // rests in clear — its own inset, the FAB, and a gap above it.
-    it.each([1320, 768, 390])("reserves the FAB's band at %ipx, where it has none", (width) => {
-      expect(fabRestingBand(width)).toBe(FAB_MIN_GUTTER + FAB_SIZE + FAB_MIN_GUTTER);
-    });
-
-    // Same boundary the gutter itself switches on, so the reserve can never be dropped while
-    // the FAB is still over the column.
-    it("switches over exactly where the gutter becomes wide enough", () => {
-      const tight = CONTENT_MAX_WIDTH + 2 * (FAB_SIZE + FAB_MIN_GUTTER - CONTENT_PADDING_H);
-      expect(fabRestingBand(tight)).toBeGreaterThan(0);
-      expect(fabRestingBand(tight + 2)).toBe(0);
+    // Sticky is what replaced the per-scroll-event offset of #399: the browser holds the rail on
+    // the viewport while the page has further to go and lets it settle above the footer at the
+    // end, with nothing re-rendering in between.
+    it("sticks to the scrollport on web", () => {
+      jest.isolateModules(() => {
+        const rn = require("react-native");
+        rn.Platform.OS = "web";
+        const { styles } = require("@/components/common/ScrollToTopFab.styles");
+        expect(rn.StyleSheet.flatten(styles.rail).position).toBe("sticky");
+      });
     });
   });
 
-  // The lane measures the box the FAB was mounted into, not the window: on Locations the
+  // The rail measures the box the FAB was mounted into, not the window: on Locations the
   // FAB sits in the list column, which the booking drawer takes half of.
   it("lays the FAB out against the column it was mounted in, not the window", () => {
     renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
-    const lane = screen.getByTestId("scroll-to-top-lane");
+    const rail = screen.getByTestId("scroll-to-top-rail");
 
-    fireEvent(lane, "layout", { nativeEvent: { layout: { width: 1680, height: 48 } } });
-    expect(StyleSheet.flatten(lane.props.style).paddingRight).toBe(fabGutter(1680));
+    fireEvent(rail, "layout", { nativeEvent: { layout: { width: 1680, height: 48 } } });
+    expect(StyleSheet.flatten(rail.props.style).paddingRight).toBe(fabGutter(1680));
 
-    fireEvent(lane, "layout", { nativeEvent: { layout: { width: 760, height: 48 } } });
-    expect(StyleSheet.flatten(lane.props.style).paddingRight).toBe(FAB_MIN_GUTTER);
+    fireEvent(rail, "layout", { nativeEvent: { layout: { width: 760, height: 48 } } });
+    expect(StyleSheet.flatten(rail.props.style).paddingRight).toBe(FAB_MIN_GUTTER);
   });
 
   // The FAB used to climb over the footer, recomputing an offset on every scroll event and
   // sliding an element that reads as pinned up the page (#399). It holds one place now.
   it("rests on the same gutter whether it is showing or not", () => {
     const { unmount } = renderWithProviders(<ScrollToTopFab visible onPress={jest.fn()} />);
-    const shown = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+    const shown = StyleSheet.flatten(screen.getByTestId("scroll-to-top-rail").props.style);
     unmount();
 
     renderWithProviders(<ScrollToTopFab visible={false} onPress={jest.fn()} />);
-    const hidden = StyleSheet.flatten(screen.getByTestId("scroll-to-top-lane").props.style);
+    const hidden = StyleSheet.flatten(screen.getByTestId("scroll-to-top-rail").props.style);
 
     expect(hidden.bottom).toBe(shown.bottom);
     expect(hidden.transform).toBeUndefined();

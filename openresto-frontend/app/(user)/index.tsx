@@ -372,10 +372,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         <Footer />
       </ScrollView>
-
-      <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
     </ThemedView>
   );
 }

@@ -290,10 +290,9 @@ export default function LocationsScreen({
               )}
             </PageContainer>
 
+            <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
             {!sideDrawer && <Footer />}
           </ScrollView>
-
-          <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         </View>
 
         {drawer && (

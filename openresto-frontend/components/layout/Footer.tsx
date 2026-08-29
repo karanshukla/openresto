@@ -9,7 +9,6 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
-import { fabRestingBand } from "@/components/common/ScrollToTopFab";
 
 export default function Footer() {
   const { brand, colors } = useAppTheme();
@@ -32,15 +31,7 @@ export default function Footer() {
   return (
     <ThemedView
       testID="site-footer"
-      style={[
-        styles.footer,
-        {
-          borderTopColor: colors.border,
-          // The footer is the last thing on every screen that carries the scroll-to-top FAB,
-          // so it is what the FAB comes to rest on when the gutter is too narrow to hold it.
-          paddingBottom: insets.bottom + fabRestingBand(width),
-        },
-      ]}
+      style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
     >
       <View style={[styles.inner, isMobile && styles.innerMobile]}>
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>

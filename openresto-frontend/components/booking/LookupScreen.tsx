@@ -324,6 +324,7 @@ export default function LookupScreen({
           </View>
         </PageContainer>
 
+        <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         <Footer />
       </ScrollView>
 
@@ -336,8 +337,6 @@ export default function LookupScreen({
           {panelContent}
         </SlidePanel>
       )}
-
-      <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
 
       {showCancelConfirm && (
         <ConfirmModal

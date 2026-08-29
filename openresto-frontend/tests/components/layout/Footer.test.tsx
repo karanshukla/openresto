@@ -5,7 +5,6 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import { Linking, StyleSheet, useWindowDimensions } from "react-native";
 import Footer from "@/components/layout/Footer";
-import { fabRestingBand } from "@/components/common/ScrollToTopFab";
 import { fetchSocialLinks } from "@/api/restaurants";
 
 jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
@@ -97,18 +96,10 @@ describe("Footer", () => {
     expect(screen.getByText("Admin")).toBeTruthy();
   });
 
-  // The footer is the last row on every screen carrying the scroll-to-top FAB, so below the
-  // width where the FAB gets its own gutter it has to keep the FAB's resting band clear.
-  it("reserves the FAB's resting band at a width with no gutter for it", () => {
+  // The footer ends the page, so nothing of its own is reserved for the scroll-to-top FAB: the
+  // FAB's rail is a row of the scroll content above it and holds its own band clear.
+  it("ends the page on its own height, with no band reserved under it", () => {
     (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1024, height: 768 });
-    render(<Footer />);
-    expect(StyleSheet.flatten(screen.getByTestId("site-footer").props.style).paddingBottom).toBe(
-      fabRestingBand(1024)
-    );
-  });
-
-  it("reserves nothing once the FAB has a gutter to sit in", () => {
-    (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1680, height: 900 });
     render(<Footer />);
     expect(StyleSheet.flatten(screen.getByTestId("site-footer").props.style).paddingBottom).toBe(0);
   });
