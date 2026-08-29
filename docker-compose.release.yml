@@ -39,6 +39,12 @@ services:
       # Optional — default UI locale served on GET /api/brand. Valid values: en, fr, es, de.
       # Unset or unsupported falls back to en.
       # - OPENRESTO_DEFAULT_LOCALE=${OPENRESTO_DEFAULT_LOCALE:-en}
+      # Optional — where the admin's API Keys screen links out to, served on GET /api/brand.
+      # Defaults to the upstream OpenResto package, guide and repository. Set these if you run
+      # a fork that ships its own client or documentation. Non-http(s) values are ignored.
+      # - OPENRESTO_CLI_PACKAGE_URL=${OPENRESTO_CLI_PACKAGE_URL:-}
+      # - OPENRESTO_API_DOCS_URL=${OPENRESTO_API_DOCS_URL:-}
+      # - OPENRESTO_REPOSITORY_URL=${OPENRESTO_REPOSITORY_URL:-}
       # Optional SMTP — leave empty to disable email
       - EmailSettings__Host=${SMTP_HOST:-}
       - EmailSettings__Port=${SMTP_PORT:-587}

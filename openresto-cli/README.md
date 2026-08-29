@@ -12,6 +12,11 @@ start at the [main repository](https://github.com/karanshukla/openresto#readme).
 This isn't its own product, it's an extension of OpenResto, so its version tracks the main
 project's on every release. Pick the release that matches your server.
 
+Nothing about the API requires this client: the same key works on a plain HTTP request from a
+script or your own backend. See
+[`docs/http-api.md`](https://github.com/karanshukla/openresto/blob/main/docs/http-api.md) for
+that route.
+
 ## Install
 
 ### npm (recommended)

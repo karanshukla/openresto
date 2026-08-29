@@ -2,6 +2,7 @@ import { Redirect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SettingsPage, useSettingsPalette } from "@/components/admin/settings/SettingsPage";
 import { ApiKeysCard } from "@/components/admin/settings/ApiKeysCard";
+import { ApiKeyUsageCard } from "@/components/admin/settings/ApiKeyUsageCard";
 import PageLoader from "@/components/common/PageLoader";
 import { useAuth, useCan } from "@/context/AuthContext";
 
@@ -24,6 +25,7 @@ export default function ApiKeysSettingsScreen() {
       subtitle={t("admin.settings.apiKeysRoute.subtitle")}
     >
       <ApiKeysCard {...palette} />
+      <ApiKeyUsageCard {...palette} />
     </SettingsPage>
   );
 }

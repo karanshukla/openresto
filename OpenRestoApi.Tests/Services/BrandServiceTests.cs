@@ -463,4 +463,102 @@ public class BrandServiceTests
             Environment.SetEnvironmentVariable("OPENRESTO_DEFAULT_LOCALE", null);
         }
     }
+
+    // ── Project links (#409) ───────────────────────────────────────────────────
+
+    [Fact]
+    public void GetCliPackageUrl_UsesConfiguredValue()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:CliPackage"]).Returns("https://npm.example.com/package/fork-cli");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetCliPackageUrl_UsesConfiguredValue)), config.Object);
+
+        Assert.Equal("https://npm.example.com/package/fork-cli", svc.GetCliPackageUrl());
+    }
+
+    [Fact]
+    public void GetCliPackageUrl_UsesEnvVar_WhenConfigMissing()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetCliPackageUrl_UsesEnvVar_WhenConfigMissing)));
+        Environment.SetEnvironmentVariable("OPENRESTO_CLI_PACKAGE_URL", "https://npm.example.com/package/env-cli");
+
+        try
+        {
+            Assert.Equal("https://npm.example.com/package/env-cli", svc.GetCliPackageUrl());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_CLI_PACKAGE_URL", null);
+        }
+    }
+
+    [Fact]
+    public void GetApiDocsUrl_ConfigTakesPriority_OverEnvVar()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:ApiDocs"]).Returns("https://docs.example.com/http");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetApiDocsUrl_ConfigTakesPriority_OverEnvVar)), config.Object);
+        Environment.SetEnvironmentVariable("OPENRESTO_API_DOCS_URL", "https://ignored.example.com");
+
+        try
+        {
+            Assert.Equal("https://docs.example.com/http", svc.GetApiDocsUrl());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OPENRESTO_API_DOCS_URL", null);
+        }
+    }
+
+    [Fact]
+    public void GetApiDocsUrl_TrimsSurroundingWhitespace()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:ApiDocs"]).Returns("  https://docs.example.com/http  ");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetApiDocsUrl_TrimsSurroundingWhitespace)), config.Object);
+
+        Assert.Equal("https://docs.example.com/http", svc.GetApiDocsUrl());
+    }
+
+    [Fact]
+    public void GetRepositoryUrl_UsesConfiguredValue()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:Repository"]).Returns("http://git.example.com/fork");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetRepositoryUrl_UsesConfiguredValue)), config.Object);
+
+        Assert.Equal("http://git.example.com/fork", svc.GetRepositoryUrl());
+    }
+
+    [Fact]
+    public void GetRepositoryUrl_FallsBackToUpstream_WhenUnset()
+    {
+        var svc = CreateService(TestDbFactory.Create(nameof(GetRepositoryUrl_FallsBackToUpstream_WhenUnset)));
+
+        Assert.Equal("https://github.com/karanshukla/openresto", svc.GetRepositoryUrl());
+        Assert.Equal("https://www.npmjs.com/package/openresto-cli", svc.GetCliPackageUrl());
+        Assert.Equal(
+            "https://github.com/karanshukla/openresto/blob/main/docs/http-api.md",
+            svc.GetApiDocsUrl());
+    }
+
+    [Fact]
+    public void GetRepositoryUrl_IgnoresNonWebScheme()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:Repository"]).Returns("javascript:alert(1)");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetRepositoryUrl_IgnoresNonWebScheme)), config.Object);
+
+        Assert.Equal("https://github.com/karanshukla/openresto", svc.GetRepositoryUrl());
+    }
+
+    [Fact]
+    public void GetRepositoryUrl_IgnoresBlankValue()
+    {
+        var config = new Mock<IConfiguration>();
+        config.Setup(c => c["Links:Repository"]).Returns("   ");
+        var svc = CreateService(TestDbFactory.Create(nameof(GetRepositoryUrl_IgnoresBlankValue)), config.Object);
+
+        Assert.Equal("https://github.com/karanshukla/openresto", svc.GetRepositoryUrl());
+    }
 }

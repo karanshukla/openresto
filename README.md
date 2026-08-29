@@ -66,6 +66,8 @@ docker compose up -d
 Pre-built `linux/amd64` and `linux/arm64` images are pulled from GHCR — no build step, works on Pi/NAS boxes out of the box. The backend applies any pending database migrations automatically before accepting traffic.
 
 For backup and restore procedures, see [`docs/backup-restore.md`](docs/backup-restore.md).
+To drive the admin API from your own scripts with an API key, see
+[`docs/http-api.md`](docs/http-api.md).
 
 ### Docker (build from source)
 
@@ -103,6 +105,12 @@ Set via environment variables or `appsettings.json`:
 | `CORS_ORIGINS`      | Comma-separated allowed origins | localhost ports              |
 | `Admin:Email`       | Default admin email             | Set in appsettings           |
 | `Admin:Password`    | Default admin password          | Set in appsettings           |
+
+The API Keys settings screen links out to the CLI package, the HTTP API guide and the source
+repository. Those three URLs default to this project's and are overridable per deployment with
+`OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL` and `OPENRESTO_REPOSITORY_URL` (or the
+`Links:CliPackage`, `Links:ApiDocs` and `Links:Repository` configuration keys) — useful if you
+run a fork with its own client or docs.
 
 ### Frontend
 

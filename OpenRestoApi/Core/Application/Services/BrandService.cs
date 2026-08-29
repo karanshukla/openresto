@@ -15,6 +15,11 @@ public class BrandService(
     private readonly IConfiguration _configuration = configuration;
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
+    private const string DefaultCliPackageUrl = "https://www.npmjs.com/package/openresto-cli";
+    private const string DefaultApiDocsUrl =
+        "https://github.com/karanshukla/openresto/blob/main/docs/http-api.md";
+    private const string DefaultRepositoryUrl = "https://github.com/karanshukla/openresto";
+
     /// <summary>Permitted values for <see cref="BrandSettings.HeaderImageFit"/> (case-insensitive).</summary>
     public static readonly HashSet<string> AllowedHeaderImageFits =
         new(StringComparer.OrdinalIgnoreCase) { "Cover", "Contain" };
@@ -68,6 +73,43 @@ public class BrandService(
             ? configured!.Trim().ToLowerInvariant()
             : SupportedLocales.Default;
     }
+
+    /// <summary>
+    /// Where the admin's API-keys screen sends someone who wants to call the API themselves:
+    /// the published CLI package, the guide to raw HTTP calls, and the source repository.
+    /// Each resolves from configuration, then the environment, then the upstream OpenResto URL,
+    /// so a fork that ships its own client or docs redirects them without a frontend rebuild —
+    /// the same reason <see cref="GetDefaultLocale"/> lives here rather than in an
+    /// <c>EXPO_PUBLIC_*</c> build arg.
+    /// </summary>
+    /// <seealso>BrandServiceTests.GetCliPackageUrl_UsesConfiguredValue</seealso>
+    /// <seealso>BrandServiceTests.GetRepositoryUrl_FallsBackToUpstream_WhenUnset</seealso>
+    public string GetCliPackageUrl()
+        => ResolveLink("Links:CliPackage", "OPENRESTO_CLI_PACKAGE_URL", DefaultCliPackageUrl);
+
+    /// <inheritdoc cref="GetCliPackageUrl"/>
+    public string GetApiDocsUrl()
+        => ResolveLink("Links:ApiDocs", "OPENRESTO_API_DOCS_URL", DefaultApiDocsUrl);
+
+    /// <inheritdoc cref="GetCliPackageUrl"/>
+    public string GetRepositoryUrl()
+        => ResolveLink("Links:Repository", "OPENRESTO_REPOSITORY_URL", DefaultRepositoryUrl);
+
+    private string ResolveLink(string configKey, string environmentVariable, string fallback)
+    {
+        string? configured = _configuration[configKey]
+            ?? Environment.GetEnvironmentVariable(environmentVariable);
+
+        return IsWebUrl(configured) ? configured!.Trim() : fallback;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso>BrandServiceTests.GetRepositoryUrl_IgnoresNonWebScheme</seealso>
+    private static bool IsWebUrl(string? value)
+        => Uri.TryCreate(value?.Trim(), UriKind.Absolute, out Uri? uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     public async Task<BrandSettings> GetAsync()
     {

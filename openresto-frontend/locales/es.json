@@ -1665,6 +1665,21 @@
           "doneButton": "Listo, la he guardado"
         }
       },
+      "apiKeyUsage": {
+        "title": "Usar tus claves",
+        "subtitle": "Llama a la API desde la línea de comandos, un script o tu propia aplicación",
+        "httpHeading": "Llamar a la API directamente",
+        "httpBody": "Envía la clave en la cabecera X-API-Key, no en Authorization. Todos los endpoints de administración la aceptan y comprueban el permiso correspondiente de la clave.",
+        "httpHint": "Este endpoint responde con los permisos de la propia clave y funciona sean cuales sean, así que es la forma más rápida de comprobar que una clave funciona. Sustituye YOUR_KEY por el secreto que copiaste.",
+        "copyButton": "Copiar",
+        "copiedButton": "Copiado",
+        "copyLabel": "Copiar la petición de ejemplo al portapapeles",
+        "copiedLabel": "Petición de ejemplo copiada",
+        "linksHeading": "Más información",
+        "cliLink": "Cliente de línea de comandos",
+        "docsLink": "Guía de la API HTTP",
+        "repoLink": "Repositorio de código"
+      },
       "brandPreview": {
         "title": "Vista previa en vivo",
         "subtitle": "Página de inicio, antes de guardar",

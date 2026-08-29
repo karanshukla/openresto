@@ -25,6 +25,18 @@ export interface Brand {
   /** How the hero image is fit: "Cover" (default) or "Contain". */
   headerImageFit?: string;
   /**
+   * Where the admin's API-keys screen points someone who wants to drive the API themselves:
+   * the published CLI package, the raw-HTTP guide, and the source repository. Resolved
+   * server-side (`Links:*` / `OPENRESTO_*_URL`) and defaulted to the upstream OpenResto URLs,
+   * so a fork redirects them without rebuilding this app — the same reason `defaultLocale`
+   * arrives on `/api/brand` rather than an `EXPO_PUBLIC_*` build arg.
+   */
+  cliPackageUrl?: string;
+  /** @see {@link cliPackageUrl} */
+  apiDocsUrl?: string;
+  /** @see {@link cliPackageUrl} */
+  repositoryUrl?: string;
+  /**
    * The self-hoster's configured UI language (`Locale:Default` / `OPENRESTO_DEFAULT_LOCALE`),
    * one of `constants/locales.ts`'s `SUPPORTED_LOCALES`. Always populated by the API —
    * `BrandService.GetDefaultLocale` falls back to `"en"` server-side — but optional here to
