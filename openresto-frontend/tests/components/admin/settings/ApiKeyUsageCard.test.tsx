@@ -1,6 +1,6 @@
 import React from "react";
 import { Linking, Platform } from "react-native";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import { ApiKeyUsageCard } from "@/components/admin/settings/ApiKeyUsageCard";
 import type { Brand } from "@/types";
 
@@ -56,10 +56,22 @@ describe("ApiKeyUsageCard", () => {
     );
   });
 
+  it("shows a fetch example against this deployment's own API", () => {
+    render(<ApiKeyUsageCard {...palette} />);
+
+    expect(screen.getByTestId("api-key-fetch-example").props.children).toBe(
+      [
+        'const res = await fetch("https://bookings.example.com/api/admin/bookings", {',
+        '  headers: { "X-API-Key": process.env.API_KEY },',
+        "});",
+      ].join("\n")
+    );
+  });
+
   it("names the header the key goes on", () => {
     render(<ApiKeyUsageCard {...palette} />);
 
-    expect(screen.getByText(/X-API-Key header, not Authorization/)).toBeTruthy();
+    expect(screen.getByText(/X-API-Key header, never on Authorization/)).toBeTruthy();
   });
 
   it("opens each configured destination", () => {
@@ -98,47 +110,82 @@ describe("ApiKeyUsageCard", () => {
     expect(screen.getByTestId("api-key-curl-example")).toBeTruthy();
   });
 
-  it("copies the example on web and confirms, then reverts", async () => {
+  it("copies the terminal example on web and confirms, then reverts", async () => {
     const writeText = jest.fn();
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
 
     render(<ApiKeyUsageCard {...palette} />);
-    fireEvent.press(screen.getByLabelText("Copy example request to clipboard"));
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
 
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("https://bookings.example.com/api/admin/api-keys/self")
     );
-    await waitFor(() => expect(screen.getByLabelText("Example request copied")).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText("Terminal example copied")).toBeTruthy());
     await waitFor(
-      () => expect(screen.getByLabelText("Copy example request to clipboard")).toBeTruthy(),
+      () => expect(screen.getByLabelText("Copy the terminal example to clipboard")).toBeTruthy(),
       { timeout: 3000 }
     );
+  });
+
+  it("confirms only the example that was copied", async () => {
+    const writeText = jest.fn();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+
+    render(<ApiKeyUsageCard {...palette} />);
+    fireEvent.press(screen.getByLabelText("Copy the code example to clipboard"));
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("process.env.API_KEY"));
+    await waitFor(() => expect(screen.getByLabelText("Code example copied")).toBeTruthy());
+    expect(screen.getByLabelText("Copy the terminal example to clipboard")).toBeTruthy();
+  });
+
+  it("keeps the second confirmation when the first example's timer expires", () => {
+    const writeText = jest.fn();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    jest.useFakeTimers();
+
+    try {
+      render(<ApiKeyUsageCard {...palette} />);
+      fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+      act(() => jest.advanceTimersByTime(1500));
+      fireEvent.press(screen.getByLabelText("Copy the code example to clipboard"));
+
+      // The terminal copy's own timer lands mid-confirmation for the code example, and must
+      // clear only the confirmation it started.
+      act(() => jest.advanceTimersByTime(700));
+
+      expect(screen.getByLabelText("Code example copied")).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("still confirms the copy when the browser exposes no clipboard", () => {
     Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
 
     render(<ApiKeyUsageCard {...palette} />);
-    fireEvent.press(screen.getByLabelText("Copy example request to clipboard"));
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
 
-    expect(screen.getByLabelText("Example request copied")).toBeTruthy();
+    expect(screen.getByLabelText("Terminal example copied")).toBeTruthy();
   });
 
-  it("hides the copy button off web", () => {
+  it("hides the copy buttons off web", () => {
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
     try {
       render(<ApiKeyUsageCard {...palette} />);
-      expect(screen.queryByLabelText("Copy example request to clipboard")).toBeNull();
+      expect(screen.queryByLabelText("Copy the terminal example to clipboard")).toBeNull();
+      expect(screen.queryByLabelText("Copy the code example to clipboard")).toBeNull();
     } finally {
       Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
     }
   });
 
-  it("keeps the example legible on the dark surface", () => {
+  it("keeps the examples legible on the dark surface", () => {
     colorScheme.current = "dark";
     render(<ApiKeyUsageCard {...palette} />);
 
     expect(screen.getByTestId("api-key-curl-example")).toBeTruthy();
+    expect(screen.getByTestId("api-key-fetch-example")).toBeTruthy();
   });
 
   it("collapses and expands the card", () => {
