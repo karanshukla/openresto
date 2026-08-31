@@ -76,11 +76,16 @@ export class Client {
         method,
         headers,
         body,
+        redirect: "manual",
       });
     } catch (err) {
       throw new Error(
         `Could not reach ${url.origin}: ${describeFetchFailure(err)}`,
       );
+    }
+
+    if (REDIRECT_STATUSES.has(response.status)) {
+      throw new Error(describeRedirect(response, url));
     }
 
     if (response.status === 204) {
@@ -134,6 +139,47 @@ function describeFetchFailure(err: unknown): string {
     return err.cause instanceof Error ? err.cause.message : err.message;
   }
   return String(err);
+}
+
+const REDIRECT_STATUSES: ReadonlySet<number> = new Set([
+  301, 302, 303, 307, 308,
+]);
+
+/**
+ * The fetch spec strips `Authorization`, `Cookie` and `Proxy-Authorization` across a cross-origin
+ * redirect but leaves custom headers alone, so a followed redirect would hand `X-API-Key` to
+ * whichever origin the server names — including one a MITM on a plain-http deployment picked.
+ * Requests therefore go out `redirect: "manual"` and a 3xx is reported rather than followed.
+ *
+ * @see [transport.test.ts](./transport.test.ts) — pins that a redirected request delivers the key
+ * to the configured origin only, and that the error names the redirect target.
+ */
+function describeRedirect(response: Response, requestUrl: URL): string {
+  const target = resolveRedirectTarget(
+    response.headers.get("location"),
+    requestUrl,
+  );
+  const destination = target
+    ? `to ${target.href}`
+    : "without a usable Location header";
+  const remedy = target
+    ? `If ${target.origin} is your server's real address, configure that instead`
+    : "Configure the server's real address";
+  return `${requestUrl.origin} redirected ${destination} (HTTP ${response.status}). The CLI does not follow redirects, because that would send your admin API key to the redirect target. ${remedy} — run \`openresto auth login\` or set OPENRESTO_URL.`;
+}
+
+function resolveRedirectTarget(
+  location: string | null,
+  requestUrl: URL,
+): URL | null {
+  if (!location) {
+    return null;
+  }
+  try {
+    return new URL(location, requestUrl);
+  } catch {
+    return null;
+  }
 }
 
 function extractError(

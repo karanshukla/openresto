@@ -198,6 +198,107 @@ describe("Client", () => {
   });
 });
 
+describe("redirects", () => {
+  function redirectingFetch(
+    seen: {
+      url: string;
+      apiKey: string | null;
+      redirect?: RequestInit["redirect"];
+    }[],
+    location: string | null,
+    status = 301,
+  ): typeof fetch {
+    return (async (input: string | URL | Request, init?: RequestInit) => {
+      seen.push({
+        url: input.toString(),
+        apiKey: new Headers(init?.headers).get("X-API-Key"),
+        redirect: init?.redirect,
+      });
+      return new Response(null, {
+        status,
+        headers: location ? { Location: location } : {},
+      });
+    }) as typeof fetch;
+  }
+
+  test("a redirect is refused, so the API key is never sent to the redirect target", async () => {
+    const seen: {
+      url: string;
+      apiKey: string | null;
+      redirect?: RequestInit["redirect"];
+    }[] = [];
+    const client = new Client({
+      baseUrl: "https://api.example",
+      apiKey: "orst_1_secret",
+      fetchImpl: redirectingFetch(seen, "https://evil.example/api/brand"),
+    });
+
+    await assert.rejects(() => client.get("/api/brand"));
+
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0].url, "https://api.example/api/brand");
+    assert.equal(seen[0].apiKey, "orst_1_secret");
+    assert.equal(seen[0].redirect, "manual");
+  });
+
+  test("the refusal names the redirect target and the origin to configure instead", async () => {
+    const client = new Client({
+      baseUrl: "http://openresto.example",
+      apiKey: "orst_1_secret",
+      fetchImpl: redirectingFetch(
+        [],
+        "https://openresto.example/api/brand",
+        308,
+      ),
+    });
+
+    await assert.rejects(
+      () => client.get("/api/brand"),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.match(err.message, /https:\/\/openresto\.example\/api\/brand/);
+        assert.match(err.message, /308/);
+        assert.match(err.message, /OPENRESTO_URL/);
+        return true;
+      },
+    );
+  });
+
+  test("a redirect carrying no usable Location header is still refused", async () => {
+    const client = new Client({
+      baseUrl: "https://api.example",
+      apiKey: "orst_1_secret",
+      fetchImpl: redirectingFetch([], null, 302),
+    });
+
+    await assert.rejects(
+      () => client.get("/api/brand"),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.match(err.message, /Location header/);
+        return true;
+      },
+    );
+  });
+
+  test("a malformed Location is reported, not thrown from URL parsing", async () => {
+    const client = new Client({
+      baseUrl: "https://api.example",
+      apiKey: "orst_1_secret",
+      fetchImpl: redirectingFetch([], "http://", 307),
+    });
+
+    await assert.rejects(
+      () => client.get("/api/brand"),
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        assert.match(err.message, /Location header/);
+        return true;
+      },
+    );
+  });
+});
+
 describe("connection failures", () => {
   test("an unreachable server names the origin and the underlying cause, not bare fetch failed", async () => {
     const client = new Client({
