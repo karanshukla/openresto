@@ -27,6 +27,7 @@ export const styles = StyleSheet.create({
   // which pushed the Copy button clean outside the modal. minWidth:0 lets it shrink, and
   // react-native-web's Text already carries word-wrap:break-word to wrap what's left.
   secretText: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: "600" },
+  copyFailed: { fontSize: 12, lineHeight: 17, marginTop: theme.spacing.sm },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

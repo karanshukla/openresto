@@ -418,13 +418,15 @@ public class BookingService(
         Booking? booking = await _bookingRepository.GetByRefAsync(bookingRef);
         if (booking == null)
         {
-            Console.WriteLine($"[CancelBookingAsync] Booking not found for ref: {bookingRef}");
             return false;
         }
 
+        // Both misses return the same false, and neither is logged. A guessed ref is the whole
+        // attack against this endpoint, so writing the stored address beside the supplied one put
+        // a victim's email into stdout on every failed guess — the same PII the audit trail is
+        // careful never to record. The 404 is the only thing a caller learns either way.
         if (!string.Equals(booking.CustomerEmail?.Trim(), email.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine($"[CancelBookingAsync] Email mismatch for ref: {bookingRef}. DB: {booking.CustomerEmail}, Input: {email}");
             return false;
         }
 

@@ -669,6 +669,9 @@
         "noTablesFound": "Aucune table trouvée. Ajoutez des sections et des tables dans le gestionnaire d'établissement.",
         "noBookingsOnDay": "Aucune réservation le {{date}}",
         "noBookingsGeneric": "Aucune réservation ce jour-là",
+        "combinedRow": "Tables combinées",
+        "unassignedRow": "Non attribué",
+        "unassignedUnit": "Sans table",
         "guestFallback": "Client",
         "peopleAbbrev": "{{count}}p",
         "sittingLabel": "{{guest}}, {{seats}} couverts à {{unit}}, de {{start}} à {{end}}",
@@ -1634,7 +1637,7 @@
           "locations": "Les restaurants, leurs horaires et leurs réglages",
           "tables": "Les espaces, les tables et les groupes combinables",
           "brand": "Nom du site, couleurs, coordonnées, points forts et médias",
-          "users": "Les comptes administrateur et leurs rôles",
+          "users": "Lister les comptes d'administration ; Écriture les active et les désactive. La création de comptes, le changement de rôle et la réinitialisation des mots de passe ne sont jamais accessibles avec une clé.",
           "audit": "Le journal d'activité de l'administration",
           "guests": "Les noms et e-mails des clients sur les réservations. Sans ceci, ils reviennent vides.",
           "email": "Si l'envoi d'e-mails est configuré et ce qui n'a pas pu partir. Jamais les identifiants SMTP."
@@ -1662,7 +1665,8 @@
           "copiedButton": "Copié",
           "copyLabel": "Copier la clé API dans le presse-papiers",
           "copiedLabel": "Clé API copiée",
-          "doneButton": "Terminé, je l'ai enregistrée"
+          "doneButton": "Terminé, je l'ai enregistrée",
+          "copyFailed": "Impossible de copier dans le presse-papiers. Sélectionnez la clé ci-dessus et copiez-la manuellement avant de fermer cette fenêtre."
         }
       },
       "apiKeyUsage": {
@@ -1682,7 +1686,8 @@
         "linksHeading": "En savoir plus",
         "cliLink": "Client en ligne de commande",
         "docsLink": "Guide de l'API HTTP",
-        "repoLink": "Dépôt du code source"
+        "repoLink": "Dépôt du code source",
+        "copyFailed": "Impossible de copier dans le presse-papiers. Sélectionnez l'exemple ci-dessus et copiez-le manuellement."
       },
       "brandPreview": {
         "title": "Aperçu en direct",

@@ -1,6 +1,7 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react-native";
+import { act, render, screen, fireEvent } from "@testing-library/react-native";
 import { AvailabilityGrid } from "@/components/admin/bookings/AvailabilityGrid";
+import i18n from "@/i18n";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -216,6 +217,46 @@ describe("AvailabilityGrid", () => {
       render(<AvailabilityGrid {...props} bookings={[]} />);
 
       expect(screen.queryByTestId("now-marker")).toBeNull();
+    });
+  });
+
+  // The combined and unassigned blocks are the grid's own words rather than the admin's, so they
+  // are translated like every other string on the screen.
+  describe("in the reader's language", () => {
+    afterEach(async () => {
+      // The mounted tree re-renders on the language change, so the restore is a React update too.
+      await act(() => i18n.changeLanguage("en"));
+    });
+
+    it("names the combined-tables block in French rather than in English", async () => {
+      await act(() => i18n.changeLanguage("fr"));
+
+      render(
+        <AvailabilityGrid
+          {...props}
+          groups={
+            [{ id: 5, name: "Window booths", combinedSeats: 7, members: [{ id: 101 }] }] as never
+          }
+          bookings={[booking(12, "19:00", 90, { tableId: null, tableGroupId: 5 })] as never}
+        />
+      );
+
+      expect(screen.getByText("TABLES COMBINÉES")).toBeTruthy();
+      expect(screen.queryByText("COMBINED TABLES")).toBeNull();
+    });
+
+    it("names the unassigned block and its row in French rather than in English", async () => {
+      await act(() => i18n.changeLanguage("fr"));
+
+      render(
+        <AvailabilityGrid
+          {...props}
+          bookings={[booking(13, "19:00", 90, { tableId: null, tableGroupId: null })] as never}
+        />
+      );
+
+      expect(screen.getByText("NON ATTRIBUÉ")).toBeTruthy();
+      expect(screen.getByText("Sans table")).toBeTruthy();
     });
   });
 });

@@ -89,7 +89,7 @@ Every admin endpoint is gated on a `{resource}:{access}` scope:
 | `locations` | `read`/`write` | Restaurants, opening hours and their settings             |
 | `tables`    | `read`/`write` | Sections, tables and combinable groups                    |
 | `brand`     | `read`/`write` | Site name, colours, contact details, highlights and media |
-| `users`     | `read`/`write` | Admin accounts and their roles                            |
+| `users`     | `read`/`write` | List accounts; `write` activates and deactivates them     |
 | `audit`     | `read`         | The admin activity trail                                  |
 | `guests`    | `read`         | Customer names and emails on bookings                     |
 | `email`     | `read`         | Whether outgoing mail is configured and delivering        |
@@ -119,9 +119,17 @@ curl -H "X-API-Key: $OPENRESTO_API_KEY" \
 
 Some of the admin surface is deliberately out of reach of any key, no matter its scopes: auth
 self-service (password, email, security question), the SMTP settings themselves, push
-notifications, and API key management itself. Those need a browser session. There is no
-`email:write` for the same reason: a key that could rewrite the SMTP host, username and password
-would be a mail-interception tool sitting in a CI secret.
+notifications, API key management itself, and creating an account, changing a role or resetting a
+password. Those need a browser session. There is no `email:write` for the same reason: a key that
+could rewrite the SMTP host, username and password would be a mail-interception tool sitting in a
+CI secret.
+
+The three excluded `users` verbs are the same argument one step further back. A key that could
+mint a login, or take over an existing one, would not be confined by its scopes at all: its holder
+signs into the admin UI as that account and reaches every endpoint above, including minting
+themselves an unscoped key. Restricting which role a key may create would not close it, because
+the excluded surface is gated on being an admin rather than on being an Owner, so a Manager login
+is enough. `users:write` therefore reaches activation only, which grants no session.
 
 ## What a key cannot do
 

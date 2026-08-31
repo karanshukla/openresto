@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Extensions;
 using OpenRestoApi.Infrastructure.Auth;
 
@@ -41,6 +42,42 @@ public class ServiceCollectionExtensionsTests
         services.AddCustomCors(config);
     }
 
+    // ── The guest booking-lookup ceiling ────────────────────────────────────
+    //
+    // A booking reference is a guessable secret with no account behind it, so the two endpoints
+    // that take one are throttled like login rather than like browsing. The ceiling is defence in
+    // depth on top of the reference's width, never instead of it — see BookingRefGenerator.
+
+    [Fact]
+    public void BookingLookupLimit_IsAsTightAsTheLoginLimit()
+    {
+        Assert.True(ServiceCollectionExtensions.BookingLookupLimit <= ServiceCollectionExtensions.AuthLimit);
+    }
+
+    [Fact]
+    public void BookingLookupLimit_IsFarTighterThanPublicBrowsing()
+    {
+        Assert.True(ServiceCollectionExtensions.BookingLookupLimit * 10 <= ServiceCollectionExtensions.PublicLimit);
+    }
+
+    [Fact]
+    public void BookingLookupLimit_LeavesRoomForAGuestRetryingATypo()
+    {
+        // The other side of the boundary: tight enough to matter, loose enough that a guest who
+        // mistypes their email two or three times and then cancels is nowhere near the ceiling.
+        Assert.True(ServiceCollectionExtensions.BookingLookupLimit >= 5);
+    }
+
+    [Fact]
+    public void BookingLookupLimit_KeepsTheTestingEscapeHatch()
+    {
+        // The Playwright suite drives the whole app from one address; every policy is lifted to
+        // TestingLimit under ASPNETCORE_ENVIRONMENT=Testing, and this one must not be the
+        // exception that starts returning 429 mid-suite.
+        Assert.Equal(10000, ServiceCollectionExtensions.TestingLimit);
+        Assert.True(ServiceCollectionExtensions.TestingLimit > ServiceCollectionExtensions.BookingLookupLimit);
+    }
+
     [Fact]
     public void AddCustomRateLimiting_HandlesProduction()
     {
@@ -53,11 +90,12 @@ public class ServiceCollectionExtensionsTests
 
     // ── Global-limiter partitioning (issue #319 Phase 2 review fix) ──────────
     //
-    // The limiter runs pre-authentication, so it only ever sees "does this request carry the
-    // X-API-Key header", never whether the key is valid. Partitioning on the header's own value
-    // let an attacker rotate garbage header values to mint unlimited fresh buckets, escaping the
-    // per-IP global ceiling entirely. Partitioning on the client IP instead means every request
-    // from that IP bearing the header — genuine key or not — lands in the one shared bucket.
+    // The limiter runs pre-authentication, so it can only judge the header's shape, never whether
+    // the key is real. Partitioning on the header's own value let an attacker rotate garbage
+    // values to mint unlimited fresh buckets, escaping the per-IP global ceiling entirely;
+    // accepting any non-empty value then let one junk header lift an anonymous client's own
+    // ceiling to the elevated one. So: the value must parse as a key this scheme could have
+    // issued to reach the elevated bucket, and every such request from an IP shares one bucket.
 
     private static HttpContext ContextFor(string ip, string? apiKeyHeaderValue = null)
     {
@@ -96,6 +134,24 @@ public class ServiceCollectionExtensionsTests
 
         Assert.Equal("203.0.113.5", key);
         Assert.DoesNotContain(ServiceCollectionExtensions.ApiKeyIpPartitionPrefix, key, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GlobalPartitionKey_AMalformedHeaderUsesThePlainIpBucket()
+    {
+        string key = ServiceCollectionExtensions.GlobalPartitionKey(ContextFor("203.0.113.5", "x"));
+
+        Assert.Equal("203.0.113.5", key);
+        Assert.DoesNotContain(ServiceCollectionExtensions.ApiKeyIpPartitionPrefix, key, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GlobalPartitionKey_AWellFormedKeyUsesTheElevatedBucket()
+    {
+        string key = ServiceCollectionExtensions.GlobalPartitionKey(
+            ContextFor("203.0.113.5", ApiKeyCrypto.GenerateRawKey(7)));
+
+        Assert.Equal($"{ServiceCollectionExtensions.ApiKeyIpPartitionPrefix}203.0.113.5", key);
     }
 
     [Fact]

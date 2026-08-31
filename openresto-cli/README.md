@@ -242,18 +242,19 @@ example per group:
   openresto brand set --app-name "My Restaurant" --primary-color "#0a7ea4"
   ```
 
-- **users** — `list`, `create`, `role`, `reset-password`, `activate`, `deactivate`. Owner-only
-  server-side; a key without the `users` scope (or one whose underlying account isn't an Owner)
-  gets a clear 403.
+- **users** — `list`, `activate`, `deactivate`. Owner-only server-side; a key without the `users`
+  scope (or one whose underlying account isn't an Owner) gets a clear 403.
 
   ```bash
-  openresto users role 3 --role Manager
-  openresto users reset-password 3          # prompts, hidden
-  cat new-password.txt | openresto users reset-password 3
+  openresto users list
+  openresto users deactivate 3
   ```
 
-  `reset-password` takes no password flag, for the same reason `auth login` takes no key flag: an
-  argument is visible to every other process on the host through `ps`.
+  There is deliberately no way to create an account, change a role or set a password from here.
+  Those three hand out or move interactive privilege, and the server refuses them to any API-key
+  session: a key that could mint a login would be a way to escalate out of its own scopes into the
+  full admin UI. Use the admin UI, signed in as an Owner, for those. `list` needs `users:read`;
+  `activate`/`deactivate` need `users:write`.
 
 - **audit** — `list`, with the same filters as the admin activity trail (`actorUserId`, an
   `action` prefix, `targetType`, `location`, `from`/`to`, `page`/`pageSize`). Owner-only.

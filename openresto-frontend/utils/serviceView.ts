@@ -26,6 +26,8 @@ export interface UnitOccupancy {
 
 export interface ServiceSection {
   key: string;
+  /** Carried through from the row block, so the view can label the synthetic blocks in its locale. */
+  kind: TimelineRowGroup["kind"];
   name: string;
   units: UnitOccupancy[];
 }
@@ -68,6 +70,31 @@ function occupancyFor(
 }
 
 /**
+ * The unit keys that share physical seating with each other: a combinable group with each of its
+ * member tables, both ways round. Pushing two tables together does not conjure a third table, so a
+ * sitting booked on either side occupies both.
+ */
+function sharedSeating(rows: TimelineRowGroup[]): Map<string, string[]> {
+  const shared = new Map<string, string[]>();
+  const link = (from: string, to: string) => {
+    const list = shared.get(from);
+    if (list) list.push(to);
+    else shared.set(from, [to]);
+  };
+
+  for (const row of rows) {
+    for (const unit of row.units) {
+      for (const memberKey of unit.memberKeys) {
+        link(unit.key, memberKey);
+        link(memberKey, unit.key);
+      }
+    }
+  }
+
+  return shared;
+}
+
+/**
  * The floor as it stands at one moment: every bookable unit under its section, each carrying who is
  * on it, how much of their sitting is left, and what arrives next.
  *
@@ -76,8 +103,13 @@ function occupancyFor(
  * is bookable. Placements likewise come from `buildTimeline`, which has already resolved a missing
  * end time and unwrapped a service that runs past midnight.
  *
+ * A unit is read against the sittings on its own key *and* those on the units it shares seating
+ * with, so a party seated at a combined group occupies its member tables too. Drawing a member as
+ * free while its group is occupied is the same room read two different ways.
+ *
  * @see [serviceView.test.ts](../tests/utils/serviceView.test.ts) — pins that a group booking lands
- * on its group unit, that a unit with nothing booked reads free, and that sections keep their order.
+ * on its group unit and seats its member tables, that a member's own booking occupies its group,
+ * that a unit with nothing booked reads free, and that sections keep their order.
  */
 export function buildServiceFloor({
   rows,
@@ -96,10 +128,17 @@ export function buildServiceFloor({
     else byUnit.set(placement.unitKey, [placement]);
   }
 
+  const shared = sharedSeating(rows);
+  const sittingsOn = (key: string): TimelinePlacement[] => [
+    ...(byUnit.get(key) ?? []),
+    ...(shared.get(key) ?? []).flatMap((other) => byUnit.get(other) ?? []),
+  ];
+
   return rows.map((row) => ({
     key: row.key,
+    kind: row.kind,
     name: row.name,
-    units: row.units.map((unit) => occupancyFor(unit, byUnit.get(unit.key) ?? [], at)),
+    units: row.units.map((unit) => occupancyFor(unit, sittingsOn(unit.key), at)),
   }));
 }
 
@@ -107,17 +146,28 @@ export function buildServiceFloor({
  * Floor totals at the observed moment. Covers counts guests actually seated, not the day's bookings,
  * which is the number a pass on the room is checked against.
  *
- * @see [serviceView.test.ts](../tests/utils/serviceView.test.ts) — pins that covers count only
- * seated units and that the three statuses partition the floor.
+ * The statuses count tables, because tables are what there is a finite number of: a combinable group
+ * is its member tables rather than seating beside them, and the unassigned row is no seating at all.
+ * Counting either as a unit of its own is what let an eight-table room report ten free. Covers are
+ * counted per sitting instead, so a party seated on a group is one party however many units carry
+ * it — and a party whose table was deleted is still in the room and still on the total.
+ *
+ * @see [serviceView.test.ts](../tests/utils/serviceView.test.ts) — pins that a group and its members
+ * count once between them, that the unassigned unit is no table but its party is still covers, and
+ * that the three statuses partition the room's tables.
  */
 export function summarise(sections: ServiceSection[]): ServiceSummary {
   const summary: ServiceSummary = { seated: 0, turning: 0, free: 0, covers: 0 };
+  const counted = new Set<number>();
 
   for (const section of sections) {
     for (const occupancy of section.units) {
-      summary[occupancy.status] += 1;
-      if (occupancy.status === "seated" && occupancy.current) {
-        summary.covers += occupancy.current.booking.seats;
+      if (occupancy.unit.kind === "table") summary[occupancy.status] += 1;
+
+      const sitting = occupancy.current;
+      if (sitting && !counted.has(sitting.booking.id)) {
+        counted.add(sitting.booking.id);
+        summary.covers += sitting.booking.seats;
       }
     }
   }

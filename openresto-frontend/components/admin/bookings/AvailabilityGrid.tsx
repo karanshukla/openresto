@@ -5,6 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import { getThemeColors } from "@/theme/theme";
 import { SectionWithTables, BookingDetailDto } from "@/api/admin";
 import type { TableGroupDto } from "@/api/restaurants";
+import { rowGroupLabel, unitLabel } from "./unitLabels";
 import { styles } from "./bookings.styles";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgba } from "@/utils/colors";
@@ -225,13 +226,14 @@ export function AvailabilityGrid({
                 }}
               >
                 <ThemedText style={[styles.gridSectionLabel, { color: mutedColor }]}>
-                  {group.name.toUpperCase()}
+                  {rowGroupLabel(group, t).toUpperCase()}
                 </ThemedText>
               </View>
 
               {group.units.map((unit) => {
                 const lanes = timeline.laneCount[unit.key] ?? 1;
                 const height = rowHeight(lanes);
+                const name = unitLabel(unit, t);
                 return (
                   <View
                     key={unit.key}
@@ -253,7 +255,7 @@ export function AvailabilityGrid({
                       }}
                     >
                       <ThemedText style={styles.gridTableName} numberOfLines={1}>
-                        {unit.name}
+                        {name}
                       </ThemedText>
                       {unit.seats != null && (
                         <ThemedText style={[styles.gridTableSeats, { color: mutedColor }]}>
@@ -305,7 +307,7 @@ export function AvailabilityGrid({
                             accessibilityLabel={t(sittingLabelKey, {
                               guest,
                               seats: placement.booking.seats,
-                              unit: unit.name,
+                              unit: name,
                               start: startLabel,
                               end: endLabel,
                               remaining,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -10,9 +10,12 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useBrand } from "@/context/BrandContext";
 import { apiBaseUrl } from "@/utils/apiBaseUrl";
 import { type IconName } from "@/components/common/Icon";
+import { COPY_CONFIRMATION_MS, copyToClipboard } from "./clipboard";
 import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./ApiKeyUsageCard.styles";
+
+type SnippetId = "terminal" | "code";
 
 /** One labelled example: its heading row (with the copy control), the request, and its caption. */
 function Snippet({
@@ -23,6 +26,7 @@ function Snippet({
   copyLabel,
   copiedLabel,
   copied,
+  copyFailed,
   onCopy,
   borderColor,
   mutedColor,
@@ -35,6 +39,7 @@ function Snippet({
   copyLabel: string;
   copiedLabel: string;
   copied: boolean;
+  copyFailed: boolean;
   onCopy: () => void;
   borderColor: string;
   mutedColor: string;
@@ -68,7 +73,9 @@ function Snippet({
         </ThemedText>
       </View>
 
-      <ThemedText style={[styles.hint, { color: mutedColor }]}>{hint}</ThemedText>
+      <ThemedText style={[styles.hint, { color: mutedColor }]}>
+        {copyFailed ? t("admin.settings.apiKeyUsage.copyFailed") : hint}
+      </ThemedText>
     </View>
   );
 }
@@ -87,9 +94,15 @@ function Snippet({
  * goes, not what it is called. A destination the server doesn't resolve is simply not offered.
  * Neither example names a client for the same reason: both are plain HTTP, which every fork has.
  *
+ * A copy is confirmed only once the clipboard write resolved, matching `ApiKeySecretModal` —
+ * the stakes are lower here because the example stays on screen, but a "Copied" over a
+ * clipboard that was never written is the same lie either way. The failure notice takes the
+ * caption's place so it lands where the reader is already looking.
+ *
  * @see [ApiKeyUsageCard.test.tsx](../../../tests/components/admin/settings/ApiKeyUsageCard.test.tsx) —
- * pins that an unresolved destination is dropped rather than rendered as a dead link, and that
- * both examples name this deployment's own API base.
+ * pins that an unresolved destination is dropped rather than rendered as a dead link, that
+ * both examples name this deployment's own API base, and that a missing or rejecting clipboard
+ * does not confirm.
  */
 export function ApiKeyUsageCard({
   borderColor,
@@ -106,7 +119,17 @@ export function ApiKeyUsageCard({
   const surface2 = isDark ? "#252729" : "#f9fafb";
 
   const [expanded, setExpanded] = usePersistedState("settings:apiKeyUsage:expanded", true);
-  const [copied, setCopied] = useState<"terminal" | "code" | null>(null);
+  const [copied, setCopied] = useState<SnippetId | null>(null);
+  const [failed, setFailed] = useState<SnippetId | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    },
+    []
+  );
 
   const base = apiBaseUrl(brand.websiteUrl);
 
@@ -126,12 +149,21 @@ export function ApiKeyUsageCard({
     "});",
   ].join("\n");
 
-  const handleCopy = (id: "terminal" | "code", text: string) => {
-    if (Platform.OS === "web" && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
+  const handleCopy = async (id: SnippetId, text: string) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      setCopied((current) => (current === id ? null : current));
+      setFailed(id);
+      return;
     }
+    setFailed((current) => (current === id ? null : current));
     setCopied(id);
-    setTimeout(() => setCopied((current) => (current === id ? null : current)), 2000);
+    timers.current.push(
+      setTimeout(
+        () => setCopied((current) => (current === id ? null : current)),
+        COPY_CONFIRMATION_MS
+      )
+    );
   };
 
   const links: { url?: string; label: string; icon: IconName; testID: string }[] = [
@@ -184,6 +216,7 @@ export function ApiKeyUsageCard({
               copyLabel={t("admin.settings.apiKeyUsage.copyTerminalLabel")}
               copiedLabel={t("admin.settings.apiKeyUsage.copiedTerminalLabel")}
               copied={copied === "terminal"}
+              copyFailed={failed === "terminal"}
               onCopy={() => handleCopy("terminal", terminalExample)}
               borderColor={borderColor}
               mutedColor={mutedColor}
@@ -197,6 +230,7 @@ export function ApiKeyUsageCard({
               copyLabel={t("admin.settings.apiKeyUsage.copyCodeLabel")}
               copiedLabel={t("admin.settings.apiKeyUsage.copiedCodeLabel")}
               copied={copied === "code"}
+              copyFailed={failed === "code"}
               onCopy={() => handleCopy("code", codeExample)}
               borderColor={borderColor}
               mutedColor={mutedColor}

@@ -7,6 +7,7 @@ import {
   type ServiceSection,
 } from "@/utils/serviceView";
 import type { BookingDetailDto, SectionWithTables } from "@/api/admin";
+import type { TableGroupDto } from "@/api/restaurants";
 
 const DAY = "2026-08-23";
 
@@ -49,8 +50,26 @@ const sections: SectionWithTables[] = [
 
 const OPEN = "17:00";
 
+/** T1 + T2 pushed together: the two member tables of the room's one combinable group. */
+const LONG_TABLE: TableGroupDto = {
+  id: 5,
+  name: "Long table",
+  combinedSeats: 6,
+  members: [
+    { id: 1, name: "T1", seats: 4 },
+    { id: 2, name: "T2", seats: 2 },
+  ],
+};
+
 /** The floor as it stands `hhmm` into the day, built the way the screen builds it. */
-function floorAt(hhmm: string, bookings: BookingDetailDto[], groups = []): ServiceSection[] {
+function floorAt(
+  hhmm: string,
+  bookings: BookingDetailDto[],
+  {
+    groups = [],
+    includeUnassigned = false,
+  }: { groups?: TableGroupDto[]; includeUnassigned?: boolean } = {}
+): ServiceSection[] {
   const timeline = buildTimeline({
     openTime: OPEN,
     closeTime: "23:00",
@@ -62,7 +81,7 @@ function floorAt(hhmm: string, bookings: BookingDetailDto[], groups = []): Servi
   // Offsets are measured from opening, so the observed clock time converts back the same way.
   const at = h * 60 + m - clockMinutesAt(OPEN, 0);
   return buildServiceFloor({
-    rows: buildUnitRows(sections, groups),
+    rows: buildUnitRows(sections, groups, { includeUnassigned }),
     placements: timeline.placements,
     at,
   });
@@ -120,10 +139,40 @@ describe("buildServiceFloor", () => {
   });
 
   it("places a group booking on its group unit, which carries no table id to match on", () => {
-    const groups = [{ id: 5, name: "Long table", combinedSeats: 10, members: [] }];
-    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableGroupId: 5 })], groups as never);
+    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableGroupId: 5 })], {
+      groups: [LONG_TABLE],
+    });
     expect(unit(floor, "group:5").status).toBe("seated");
+  });
+
+  // Pushing T1 and T2 together does not conjure a third table. A party on the group is sitting at
+  // both of them, so drawing either as free is the same room read two different ways.
+  it("seats the member tables of a group a party is sitting at", () => {
+    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableGroupId: 5 })], {
+      groups: [LONG_TABLE],
+    });
+    expect(unit(floor, "table:1").status).toBe("seated");
+    expect(unit(floor, "table:2").current?.booking.id).toBe(1);
+  });
+
+  it("seats the group when a party is sitting at one of its member tables", () => {
+    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableId: 1 })], {
+      groups: [LONG_TABLE],
+    });
+    expect(unit(floor, "group:5").status).toBe("seated");
+  });
+
+  it("leaves a group and its members free when the sitting is on neither", () => {
+    const floor = floorAt("18:00", [], { groups: [LONG_TABLE] });
+    expect(unit(floor, "group:5").status).toBe("free");
     expect(unit(floor, "table:1").status).toBe("free");
+  });
+
+  it("turns a member table over when its group's next sitting is inside the turnaround", () => {
+    const floor = floorAt("18:00", [booking(1, "18:30", 90, { tableGroupId: 5 })], {
+      groups: [LONG_TABLE],
+    });
+    expect(unit(floor, "table:1").status).toBe("turning");
   });
 
   it("keeps sections in the order the rows came in", () => {
@@ -159,6 +208,38 @@ describe("summarise", () => {
       free: 2,
       covers: 0,
     });
+  });
+
+  // The room has two tables however many ways they can be pushed together; a group counted as a
+  // unit of its own is what let a two-table room report three free.
+  it("counts a combinable group as its member tables rather than as seating beside them", () => {
+    const summary = summarise(floorAt("18:00", [], { groups: [LONG_TABLE] }));
+    expect(summary.free).toBe(2);
+    expect(summary.seated + summary.turning + summary.free).toBe(2);
+  });
+
+  it("counts a party seated on a group against its member tables, once", () => {
+    const summary = summarise(
+      floorAt("18:00", [booking(1, "18:00", 90, { tableGroupId: 5 }, 6)], { groups: [LONG_TABLE] })
+    );
+    expect(summary).toEqual({ seated: 2, turning: 0, free: 0, covers: 6 });
+  });
+
+  // The unassigned row stands for a booking whose table was deleted, not for a table.
+  it("counts the unassigned row as no table on any of the three statuses", () => {
+    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableId: null }, 3)], {
+      includeUnassigned: true,
+    });
+    const summary = summarise(floor);
+    expect(summary.seated + summary.turning + summary.free).toBe(2);
+    expect(summary.seated).toBe(0);
+  });
+
+  it("still counts the party on the unassigned row among the covers in the room", () => {
+    const floor = floorAt("18:00", [booking(1, "18:00", 90, { tableId: null }, 3)], {
+      includeUnassigned: true,
+    });
+    expect(summarise(floor).covers).toBe(3);
   });
 });
 

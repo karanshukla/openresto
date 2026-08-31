@@ -669,6 +669,9 @@
         "noTablesFound": "Keine Tische gefunden. Fügen Sie Bereiche und Tische im Standortmanager hinzu.",
         "noBookingsOnDay": "Keine Buchungen am {{date}}",
         "noBookingsGeneric": "Keine Buchungen an diesem Tag",
+        "combinedRow": "Kombinierte Tische",
+        "unassignedRow": "Nicht zugewiesen",
+        "unassignedUnit": "Kein Tisch",
         "guestFallback": "Gast",
         "peopleAbbrev": "{{count}}P",
         "sittingLabel": "{{guest}}, {{seats}} Gedecke an {{unit}}, {{start}} bis {{end}}",
@@ -1634,7 +1637,7 @@
           "locations": "Restaurants, ihre Öffnungszeiten und Einstellungen",
           "tables": "Bereiche, Tische und kombinierbare Gruppen",
           "brand": "Seitenname, Farben, Kontaktdaten, Highlights und Medien",
-          "users": "Administratorkonten und ihre Rollen",
+          "users": "Administratorkonten auflisten; Schreiben aktiviert und deaktiviert sie. Konten anlegen, Rollen ändern und Passwörter zurücksetzen sind mit einem Schlüssel nie erreichbar.",
           "audit": "Das Administrations-Aktivitätsprotokoll",
           "guests": "Kundennamen und E-Mails auf Reservierungen. Ohne dies kommen sie leer zurück.",
           "email": "Ob der E-Mail-Versand eingerichtet ist und was nicht zugestellt werden konnte. Niemals die SMTP-Zugangsdaten."
@@ -1662,7 +1665,8 @@
           "copiedButton": "Kopiert",
           "copyLabel": "API-Schlüssel in die Zwischenablage kopieren",
           "copiedLabel": "API-Schlüssel kopiert",
-          "doneButton": "Fertig, ich habe ihn gespeichert"
+          "doneButton": "Fertig, ich habe ihn gespeichert",
+          "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen. Markieren Sie den Schlüssel oben und kopieren Sie ihn manuell, bevor Sie diesen Dialog schließen."
         }
       },
       "apiKeyUsage": {
@@ -1682,7 +1686,8 @@
         "linksHeading": "Mehr erfahren",
         "cliLink": "Kommandozeilen-Client",
         "docsLink": "HTTP-API-Leitfaden",
-        "repoLink": "Quellcode-Repository"
+        "repoLink": "Quellcode-Repository",
+        "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen. Markieren Sie das Beispiel oben und kopieren Sie es manuell."
       },
       "brandPreview": {
         "title": "Live-Vorschau",

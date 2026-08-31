@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -7,6 +7,7 @@ import { Icon } from "@/components/common/Icon";
 import { ModalCard } from "@/components/common/ModalCard";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
+import { COPY_CONFIRMATION_MS, copyToClipboard } from "./clipboard";
 import { styles } from "./ApiKeySecretModal.styles";
 
 /**
@@ -14,6 +15,14 @@ import { styles } from "./ApiKeySecretModal.styles";
  * secret again, so this is the one screen that can show it. `secret` lives only in the parent's
  * transient state for as long as this is open; dismissing clears it, and there is nothing here
  * to persist it.
+ *
+ * That is also why a copy is only ever confirmed once the write resolved: a "Copied" over a
+ * clipboard that was never written sends the admin away from the only screen that has the
+ * secret. The failure notice stays put until a copy succeeds rather than timing out, because
+ * it is an instruction to act on, not a confirmation to acknowledge.
+ *
+ * @see [ApiKeySecretModal.test.tsx](../../../tests/components/admin/settings/ApiKeySecretModal.test.tsx) —
+ * pins that a resolved write confirms and a missing or rejecting clipboard does not.
  */
 export function ApiKeySecretModal({
   visible,
@@ -26,14 +35,24 @@ export function ApiKeySecretModal({
 }) {
   const { t } = useTranslation();
   const { colors } = useAppTheme();
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopy = () => {
-    if (Platform.OS === "web" && navigator.clipboard && secret) {
-      navigator.clipboard.writeText(secret);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  useEffect(
+    () => () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    },
+    []
+  );
+
+  const copied = copyState === "copied";
+
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(secret);
+    setCopyState(ok ? "copied" : "failed");
+    if (!ok) return;
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setCopyState("idle"), COPY_CONFIRMATION_MS);
   };
 
   return (
@@ -90,6 +109,15 @@ export function ApiKeySecretModal({
           </Button>
         )}
       </View>
+
+      {copyState === "failed" && (
+        <ThemedText
+          style={[styles.copyFailed, { color: theme.colors.error }]}
+          testID="api-key-secret-copy-failed"
+        >
+          {t("admin.settings.apiKeys.secretModal.copyFailed")}
+        </ThemedText>
+      )}
 
       <View style={[styles.actions, { borderTopColor: colors.border }]}>
         <Button size="md" onPress={onDismiss}>

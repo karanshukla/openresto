@@ -527,4 +527,119 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
             .ToList();
         Assert.Equal(winnerTables.Count, winnerTables.Distinct().Count());
     }
+
+    // ── The guest secret: a booking reference plus the email on the booking ──────────────
+    //
+    // There is no account behind a guest booking, so these two endpoints are the whole attack
+    // surface for someone holding a victim's email address (not a secret) and guessing refs.
+    // Two properties keep that honest and both are pinned below: the 404 must not distinguish
+    // "no such ref" from "wrong email" (or the ref alone becomes enumerable), and the ref must
+    // stay an opaque string on the read path (or a format change orphans issued confirmations).
+
+    private void SetRestaurantRefFormat(BookingRefFormat format)
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Restaurant restaurant = db.Restaurants.First();
+        restaurant.BookingRefFormat = format;
+        db.SaveChanges();
+    }
+
+    private void SeedBookingWithStoredRef(string bookingRef, string email, DateTime dateUtc)
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Restaurant restaurant = db.Restaurants.First();
+        Section section = db.Sections.First(s => s.RestaurantId == restaurant.Id);
+        Table table = db.Tables.OrderByDescending(t => t.Id).First(t => t.SectionId == section.Id);
+        db.Bookings.Add(new Booking
+        {
+            RestaurantId = restaurant.Id,
+            SectionId = section.Id,
+            TableId = table.Id,
+            Date = dateUtc,
+            EndTime = dateUtc.AddHours(2),
+            CustomerEmail = email,
+            CustomerName = "Guest",
+            Seats = 2,
+            BookingRef = bookingRef
+        });
+        db.SaveChanges();
+    }
+
+    private static async Task<(HttpStatusCode Status, string Body)> ReadAsync(HttpResponseMessage response)
+        => (response.StatusCode, await response.Content.ReadAsStringAsync());
+
+    [Fact]
+    public async Task GetBookingByRef_UnknownRefAndWrongEmailAreIndistinguishable()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"indistinguishable-lookup-{Guid.NewGuid():N}";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(180));
+
+        (HttpStatusCode wrongEmailStatus, string wrongEmailBody) =
+            await ReadAsync(await client.GetAsync($"/api/bookings/ref/{bookingRef}?email=stranger@test.com"));
+        (HttpStatusCode unknownRefStatus, string unknownRefBody) =
+            await ReadAsync(await client.GetAsync($"/api/bookings/ref/no-such-ref-{Guid.NewGuid():N}?email=owner@test.com"));
+
+        Assert.Equal(HttpStatusCode.NotFound, wrongEmailStatus);
+        Assert.Equal(unknownRefStatus, wrongEmailStatus);
+        Assert.Equal(unknownRefBody, wrongEmailBody);
+    }
+
+    [Fact]
+    public async Task CancelBookingByRef_UnknownRefAndWrongEmailAreIndistinguishable()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"indistinguishable-cancel-{Guid.NewGuid():N}";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(181));
+
+        (HttpStatusCode wrongEmailStatus, string wrongEmailBody) = await ReadAsync(
+            await client.PostAsJsonAsync($"/api/bookings/ref/{bookingRef}/cancel", new { email = "stranger@test.com" }));
+        (HttpStatusCode unknownRefStatus, string unknownRefBody) = await ReadAsync(
+            await client.PostAsJsonAsync($"/api/bookings/ref/no-such-ref-{Guid.NewGuid():N}/cancel", new { email = "owner@test.com" }));
+
+        Assert.Equal(HttpStatusCode.NotFound, wrongEmailStatus);
+        Assert.Equal(unknownRefStatus, wrongEmailStatus);
+        Assert.Equal(unknownRefBody, wrongEmailBody);
+    }
+
+    [Fact]
+    public async Task ByRef_ResolvesALegacyWordRefAtALocationNowMintingNumericRefs()
+    {
+        // BookingRefFormat governs minting only. Every booking in every deployed database carries
+        // the suffix-less three-word shape, and a location that has since switched formats still
+        // has those guests holding confirmations, so the read path treats the ref as opaque.
+        HttpClient client = _factory.CreateClient();
+        string legacyRef = "crispy-basil-truffle";
+        SeedBookingWithStoredRef(legacyRef, "legacy-word@test.com", DateTime.UtcNow.AddDays(182));
+        SetRestaurantRefFormat(BookingRefFormat.Numeric);
+        try
+        {
+            HttpResponseMessage lookup = await client.GetAsync($"/api/bookings/ref/{legacyRef}?email=legacy-word@test.com");
+            HttpResponseMessage cancel = await client.PostAsJsonAsync($"/api/bookings/ref/{legacyRef}/cancel", new { email = "legacy-word@test.com" });
+
+            Assert.Equal(HttpStatusCode.OK, lookup.StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, cancel.StatusCode);
+        }
+        finally
+        {
+            SetRestaurantRefFormat(BookingRefFormat.AlphaNumeric);
+        }
+    }
+
+    [Fact]
+    public async Task ByRef_ResolvesANumericRefAtALocationNowMintingWordRefs()
+    {
+        HttpClient client = _factory.CreateClient();
+        string numericRef = "48271639";
+        SeedBookingWithStoredRef(numericRef, "legacy-numeric@test.com", DateTime.UtcNow.AddDays(183));
+        SetRestaurantRefFormat(BookingRefFormat.AlphaNumeric);
+
+        HttpResponseMessage lookup = await client.GetAsync($"/api/bookings/ref/{numericRef}?email=legacy-numeric@test.com");
+        HttpResponseMessage cancel = await client.PostAsJsonAsync($"/api/bookings/ref/{numericRef}/cancel", new { email = "legacy-numeric@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, lookup.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, cancel.StatusCode);
+    }
 }

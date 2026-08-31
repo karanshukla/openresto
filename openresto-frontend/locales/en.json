@@ -669,6 +669,9 @@
         "noTablesFound": "No tables found. Add sections and tables in Location Manager.",
         "noBookingsOnDay": "No bookings on {{date}}",
         "noBookingsGeneric": "No bookings on this day",
+        "combinedRow": "Combined tables",
+        "unassignedRow": "Unassigned",
+        "unassignedUnit": "No table",
         "guestFallback": "Guest",
         "peopleAbbrev": "{{count}}p",
         "sittingLabel": "{{guest}}, {{seats}} covers on {{unit}}, {{start}} to {{end}}",
@@ -1634,7 +1637,7 @@
           "locations": "Restaurants, their opening hours and settings",
           "tables": "Sections, tables and combinable groups",
           "brand": "Site name, colours, contact details, highlights and media",
-          "users": "Admin accounts and their roles",
+          "users": "List admin accounts; Write activates and deactivates them. Creating accounts, changing roles and resetting passwords are never reachable with a key.",
           "audit": "The admin activity trail",
           "guests": "Customer names and emails on bookings. Without this they come back blank.",
           "email": "Whether outgoing email is set up and what has failed to send. Never the SMTP credentials."
@@ -1662,7 +1665,8 @@
           "copiedButton": "Copied",
           "copyLabel": "Copy API key to clipboard",
           "copiedLabel": "API key copied",
-          "doneButton": "Done, I've saved it"
+          "doneButton": "Done, I've saved it",
+          "copyFailed": "Couldn't copy to the clipboard. Select the key above and copy it manually before closing this dialog."
         }
       },
       "apiKeyUsage": {
@@ -1682,7 +1686,8 @@
         "linksHeading": "Learn more",
         "cliLink": "Command-line client",
         "docsLink": "HTTP API guide",
-        "repoLink": "Source repository"
+        "repoLink": "Source repository",
+        "copyFailed": "Couldn't copy to the clipboard. Select the example above and copy it manually."
       },
       "brandPreview": {
         "title": "Live preview",

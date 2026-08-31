@@ -37,6 +37,7 @@ import {
   type UnitOccupancy,
   type UnitStatus,
 } from "@/utils/serviceView";
+import { rowGroupLabel, unitLabel } from "./unitLabels";
 import { styles } from "./ServiceView.styles";
 
 /** Scrub granularity. Coarser than a minute so a drag across a service lands on readable times. */
@@ -297,7 +298,7 @@ export function ServiceView({
           {floor.map((section) => (
             <View key={section.key} style={styles.section}>
               <ThemedText style={[styles.sectionLabel, { color: mutedColor }]}>
-                {section.name.toUpperCase()}
+                {rowGroupLabel(section, t).toUpperCase()}
               </ThemedText>
               <View style={styles.unitGrid}>
                 {section.units.map((occupancy) => (
@@ -372,6 +373,7 @@ function UnitCard({
 }) {
   const { t } = useTranslation();
   const { unit, status, current, next, minutesRemaining, minutesUntilNext } = occupancy;
+  const name = unitLabel(unit, t);
   const openable: TimelinePlacement | null = current ?? next;
 
   // Same fallback chain as the timetable, so one guest is never two different names across the
@@ -387,12 +389,12 @@ function UnitCard({
       accessibilityLabel={
         current
           ? t("admin.bookings.service.seatedUnitLabel", {
-              unit: unit.name,
+              unit: name,
               guest: guest(current),
               seats: current.booking.seats,
               remaining: duration(minutesRemaining),
             })
-          : t("admin.bookings.service.freeUnitLabel", { unit: unit.name })
+          : t("admin.bookings.service.freeUnitLabel", { unit: name })
       }
       disabled={!openable}
       onPress={() => openable && onPress(openable.booking)}
@@ -405,7 +407,7 @@ function UnitCard({
     >
       <View style={styles.unitHeader}>
         <ThemedText style={[styles.unitName, { color: textColor }]} numberOfLines={1}>
-          {unit.name}
+          {name}
         </ThemedText>
         {unit.seats != null && (
           <ThemedText style={[styles.unitSeats, { color: mutedColor }]}>
