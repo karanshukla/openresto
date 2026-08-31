@@ -16,13 +16,23 @@ export interface TimelineUnit {
   /** Stable row identity. A table and a group can share a numeric id, so the kind is part of it. */
   key: string;
   kind: "table" | "group" | "unassigned";
+  /** Admin-authored name. Empty on the unassigned unit, whose label is UI copy the view resolves. */
   name: string;
   /** Null for the unassigned row, which stands for no physical seating. */
   seats: number | null;
+  /**
+   * Unit keys of the member tables a combinable group is made of; empty for anything else. A group
+   * and its members are the same physical seating, which is what lets a reader of these rows tell
+   * a second bookable unit from a second table.
+   */
+  memberKeys: string[];
 }
 
 export interface TimelineRowGroup {
   key: string;
+  /** What the block is: a real section, the combinable groups, or the catch-all. */
+  kind: "section" | "groups" | "unassigned";
+  /** Admin-authored section name. Empty on the two synthetic blocks, whose labels are UI copy. */
   name: string;
   units: TimelineUnit[];
 }
@@ -73,6 +83,15 @@ function parseClockMinutes(value: string): number {
  * block of their own. A member table stays individually bookable, so a group is an extra row rather
  * than a replacement for its members' rows. Groups are restaurant-scoped and may span sections,
  * which is why they get their own block instead of being filed under one.
+ *
+ * The two synthetic blocks and the unassigned unit carry a `kind` and no name: this is a pure util,
+ * so the words belong to whichever view is drawing them rather than to an English string baked in
+ * here. A group carries its `memberKeys` so a reader can tell a second bookable unit from a second
+ * physical table.
+ *
+ * @see [bookingTimeline.test.ts](../tests/utils/bookingTimeline.test.ts) — pins that the combined
+ * and unassigned blocks are named by kind rather than by a hardcoded label, and that a group row
+ * carries the keys of its member tables.
  */
 export function buildUnitRows(
   sections: SectionWithTables[],
@@ -81,24 +100,28 @@ export function buildUnitRows(
 ): TimelineRowGroup[] {
   const rows: TimelineRowGroup[] = sections.map((section) => ({
     key: `section:${section.id}`,
+    kind: "section" as const,
     name: section.name,
     units: section.tables.map((table) => ({
       key: `table:${table.id}`,
       kind: "table" as const,
       name: table.name ?? `T${table.id}`,
       seats: table.seats,
+      memberKeys: [],
     })),
   }));
 
   if (groups.length > 0) {
     rows.push({
       key: "groups",
-      name: "Combined tables",
+      kind: "groups",
+      name: "",
       units: groups.map((group) => ({
         key: `group:${group.id}`,
         kind: "group" as const,
         name: groupDisplayName(group),
         seats: group.combinedSeats,
+        memberKeys: group.members.map((member) => `table:${member.id}`),
       })),
     });
   }
@@ -106,8 +129,9 @@ export function buildUnitRows(
   if (options.includeUnassigned) {
     rows.push({
       key: "unassigned",
-      name: "Unassigned",
-      units: [{ key: UNASSIGNED_KEY, kind: "unassigned", name: "No table", seats: null }],
+      kind: "unassigned",
+      name: "",
+      units: [{ key: UNASSIGNED_KEY, kind: "unassigned", name: "", seats: null, memberKeys: [] }],
     });
   }
 

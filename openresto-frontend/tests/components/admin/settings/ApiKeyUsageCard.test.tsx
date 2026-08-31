@@ -24,6 +24,10 @@ jest.mock("@/context/BrandContext", () => ({
 
 const palette = { borderColor: "#eee", mutedColor: "#888", cardBg: "#fff" };
 
+function setClipboard(value: unknown) {
+  Object.defineProperty(navigator, "clipboard", { value, configurable: true });
+}
+
 describe("ApiKeyUsageCard", () => {
   const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
 
@@ -111,8 +115,8 @@ describe("ApiKeyUsageCard", () => {
   });
 
   it("copies the terminal example on web and confirms, then reverts", async () => {
-    const writeText = jest.fn();
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
 
     render(<ApiKeyUsageCard {...palette} />);
     fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
@@ -128,8 +132,8 @@ describe("ApiKeyUsageCard", () => {
   });
 
   it("confirms only the example that was copied", async () => {
-    const writeText = jest.fn();
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
 
     render(<ApiKeyUsageCard {...palette} />);
     fireEvent.press(screen.getByLabelText("Copy the code example to clipboard"));
@@ -139,16 +143,17 @@ describe("ApiKeyUsageCard", () => {
     expect(screen.getByLabelText("Copy the terminal example to clipboard")).toBeTruthy();
   });
 
-  it("keeps the second confirmation when the first example's timer expires", () => {
-    const writeText = jest.fn();
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  it("keeps the second confirmation when the first example's timer expires", async () => {
+    setClipboard({ writeText: jest.fn().mockResolvedValue(undefined) });
     jest.useFakeTimers();
 
     try {
       render(<ApiKeyUsageCard {...palette} />);
       fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+      await act(async () => {});
       act(() => jest.advanceTimersByTime(1500));
       fireEvent.press(screen.getByLabelText("Copy the code example to clipboard"));
+      await act(async () => {});
 
       // The terminal copy's own timer lands mid-confirmation for the code example, and must
       // clear only the confirmation it started.
@@ -160,13 +165,71 @@ describe("ApiKeyUsageCard", () => {
     }
   });
 
-  it("still confirms the copy when the browser exposes no clipboard", () => {
-    Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+  it("does not confirm the copy when the browser exposes no clipboard", async () => {
+    setClipboard(undefined);
 
     render(<ApiKeyUsageCard {...palette} />);
     fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
 
-    expect(screen.getByLabelText("Terminal example copied")).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getByText(/Select the example above and copy it manually/)).toBeTruthy()
+    );
+    expect(screen.queryByLabelText("Terminal example copied")).toBeNull();
+  });
+
+  it("does not confirm the copy when the clipboard write is rejected", async () => {
+    setClipboard({ writeText: jest.fn().mockRejectedValue(new Error("NotAllowedError")) });
+
+    render(<ApiKeyUsageCard {...palette} />);
+    fireEvent.press(screen.getByLabelText("Copy the code example to clipboard"));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Select the example above and copy it manually/)).toBeTruthy()
+    );
+    expect(screen.queryByLabelText("Code example copied")).toBeNull();
+  });
+
+  it("reports the failure on the example that failed, leaving the other's caption alone", async () => {
+    setClipboard(undefined);
+
+    render(<ApiKeyUsageCard {...palette} />);
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Select the example above and copy it manually/)).toBeTruthy()
+    );
+    expect(screen.getByText(/Read the secret from an environment variable/)).toBeTruthy();
+  });
+
+  it("clears the failure once a later copy succeeds", async () => {
+    const writeText = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("NotAllowedError"))
+      .mockResolvedValueOnce(undefined);
+    setClipboard({ writeText });
+
+    render(<ApiKeyUsageCard {...palette} />);
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+    await waitFor(() =>
+      expect(screen.getByText(/Select the example above and copy it manually/)).toBeTruthy()
+    );
+
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+
+    await waitFor(() => expect(screen.getByLabelText("Terminal example copied")).toBeTruthy());
+    expect(screen.queryByText(/Select the example above and copy it manually/)).toBeNull();
+  });
+
+  it("drops its pending confirmation timers on unmount", async () => {
+    setClipboard({ writeText: jest.fn().mockResolvedValue(undefined) });
+    const clearTimeoutSpy = jest.spyOn(global, "clearTimeout");
+
+    const view = render(<ApiKeyUsageCard {...palette} />);
+    fireEvent.press(screen.getByLabelText("Copy the terminal example to clipboard"));
+    await waitFor(() => expect(screen.getByLabelText("Terminal example copied")).toBeTruthy());
+    view.unmount();
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
   it("hides the copy buttons off web", () => {

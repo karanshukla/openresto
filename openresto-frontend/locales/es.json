@@ -669,6 +669,9 @@
         "noTablesFound": "No se encontraron mesas. Agrega secciones y mesas en el gestor de establecimientos.",
         "noBookingsOnDay": "No hay reservas el {{date}}",
         "noBookingsGeneric": "No hay reservas este día",
+        "combinedRow": "Mesas combinadas",
+        "unassignedRow": "Sin asignar",
+        "unassignedUnit": "Sin mesa",
         "guestFallback": "Cliente",
         "peopleAbbrev": "{{count}}p",
         "sittingLabel": "{{guest}}, {{seats}} cubiertos en {{unit}}, de {{start}} a {{end}}",
@@ -1634,7 +1637,7 @@
           "locations": "Los restaurantes, sus horarios y sus ajustes",
           "tables": "Las zonas, las mesas y los grupos combinables",
           "brand": "Nombre del sitio, colores, datos de contacto, destacados y medios",
-          "users": "Las cuentas de administrador y sus roles",
+          "users": "Listar cuentas de administración; Escritura las activa y desactiva. Crear cuentas, cambiar roles y restablecer contraseñas nunca son accesibles con una clave.",
           "audit": "El registro de actividad de administración",
           "guests": "Nombres y correos de los clientes en las reservas. Sin esto vuelven vacíos.",
           "email": "Si el envío de correo está configurado y qué no se ha podido enviar. Nunca las credenciales SMTP."
@@ -1662,7 +1665,8 @@
           "copiedButton": "Copiado",
           "copyLabel": "Copiar la clave de API al portapapeles",
           "copiedLabel": "Clave de API copiada",
-          "doneButton": "Listo, la he guardado"
+          "doneButton": "Listo, la he guardado",
+          "copyFailed": "No se pudo copiar al portapapeles. Seleccione la clave de arriba y cópiela manualmente antes de cerrar este diálogo."
         }
       },
       "apiKeyUsage": {
@@ -1682,7 +1686,8 @@
         "linksHeading": "Más información",
         "cliLink": "Cliente de línea de comandos",
         "docsLink": "Guía de la API HTTP",
-        "repoLink": "Repositorio de código"
+        "repoLink": "Repositorio de código",
+        "copyFailed": "No se pudo copiar al portapapeles. Seleccione el ejemplo de arriba y cópielo manualmente."
       },
       "brandPreview": {
         "title": "Vista previa en vivo",

@@ -33,11 +33,27 @@ function localDateValue(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * The picker renders exactly one calendar month — `DatePicker.web.tsx` builds its cells from
+ * `firstOfMonth` and that month's day count — so on the last day of a month, tomorrow is not a
+ * cell at all. A test that opens on today and asserts against tomorrow therefore fails for real
+ * on roughly twelve days a year. Pinning mid-month is what keeps tomorrow a same-month cell.
+ * Built from local parts rather than an ISO string so no timezone can shift it off the middle.
+ */
+function pinClockMidMonth(): void {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date(2026, 3, 15, 12, 0, 0));
+}
+
 describe("DatePicker (web)", () => {
   const onSelect = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("renders without crashing", () => {
@@ -132,6 +148,7 @@ describe("DatePicker (web)", () => {
     it("still lets a bookable day be picked while other days are walk-in only", () => {
       // The regression this guards: folding walk-in days into openDays disabled the whole
       // calendar for a location that is walk-in every day, and greyed the rest besides.
+      pinClockMidMonth();
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -325,6 +342,10 @@ describe("DatePicker (web) keyboard grid", () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   const openOn = (selectedDate: string, props: Record<string, unknown> = {}) => {
     render(<DatePickerWeb selectedDate={selectedDate} onSelect={onSelect} {...props} />);
     fireEvent.press(screen.getByTestId("date-picker-trigger"));
@@ -449,6 +470,7 @@ describe("DatePicker (web) keyboard grid", () => {
   });
 
   it("marks only the chosen day as selected", () => {
+    pinClockMidMonth();
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);

@@ -70,9 +70,46 @@ describe("buildUnitRows", () => {
       { id: 5, name: null, combinedSeats: 7, members: [{ id: 1, name: "T1", seats: 4 }] },
     ]);
 
-    expect(rows.map((r) => r.name)).toEqual(["Main", "Combined tables"]);
+    expect(rows.map((r) => r.kind)).toEqual(["section", "groups"]);
     expect(rows[0].units.map((u) => u.key)).toEqual(["table:1"]);
     expect(rows[1].units[0]).toMatchObject({ key: "group:5", name: "Tables T1", seats: 7 });
+  });
+
+  // A pure util cannot know the reader's language, so the synthetic blocks name a kind and leave
+  // the words to the view. A name here would be English on a French floor.
+  it("names the combined block by kind rather than by a label of its own", () => {
+    const rows = buildUnitRows(sections, [
+      { id: 5, name: null, combinedSeats: 7, members: [{ id: 1, name: "T1", seats: 4 }] },
+    ]);
+
+    expect(rows[1].name).toBe("");
+    expect(rows[0].name).toBe("Main");
+  });
+
+  it("names the unassigned block and its unit by kind, the section by the admin's own name", () => {
+    const rows = buildUnitRows(sections, [], { includeUnassigned: true });
+
+    expect(rows.at(-1)).toMatchObject({ kind: "unassigned", name: "" });
+    expect(rows.at(-1)?.units[0]).toMatchObject({ kind: "unassigned", name: "" });
+  });
+
+  // A group and its members are the same physical seating; a reader of these rows can only tell
+  // that from the membership travelling with the group row.
+  it("carries the member tables' keys on the group's row", () => {
+    const rows = buildUnitRows(sections, [
+      {
+        id: 5,
+        name: null,
+        combinedSeats: 7,
+        members: [
+          { id: 1, name: "T1", seats: 4 },
+          { id: 2, name: "T2", seats: 3 },
+        ],
+      },
+    ]);
+
+    expect(rows[1].units[0].memberKeys).toEqual(["table:1", "table:2"]);
+    expect(rows[0].units[0].memberKeys).toEqual([]);
   });
 
   it("names a group by its own label when the admin gave it one", () => {

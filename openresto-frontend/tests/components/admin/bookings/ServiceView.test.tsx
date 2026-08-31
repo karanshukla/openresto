@@ -1,7 +1,8 @@
 import React from "react";
 import { Modal } from "react-native";
-import { render, screen, fireEvent, within } from "@testing-library/react-native";
+import { act, render, screen, fireEvent, within } from "@testing-library/react-native";
 import { ServiceView } from "@/components/admin/bookings/ServiceView";
+import i18n from "@/i18n";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -59,6 +60,18 @@ const props = {
   // walk these assertions off their times mid-run.
   gridDateIso: DAY,
 };
+
+/** Table 1 and Table 2 flagged as pushable together, so both are members of one bookable group. */
+const longTable = [
+  {
+    id: 5,
+    name: "Long table",
+    combinedSeats: 6,
+    members: [{ id: 101, name: "Table 1", seats: 4 }],
+  },
+] as never;
+
+const onTheLongTable = [booking(10, "18:00", 90, { tableId: null, tableGroupId: 5 })] as never;
 
 /**
  * A 6pm sitting on Table 1 plus one on Table 2 at `hhmm`. The floor opens on the earliest sitting,
@@ -205,16 +218,31 @@ describe("ServiceView", () => {
   });
 
   it("gives a combinable group its own place on the floor beside its member tables", () => {
-    render(
-      <ServiceView
-        {...props}
-        groups={[{ id: 5, name: "Long table", combinedSeats: 10, members: [] }] as never}
-        bookings={[booking(10, "18:00", 90, { tableId: null, tableGroupId: 5 })] as never}
-      />
-    );
+    render(<ServiceView {...props} groups={longTable} bookings={onTheLongTable} />);
 
     expect(within(screen.getByTestId("service-unit-group:5")).getByText(/Seated/)).toBeTruthy();
-    expect(within(screen.getByTestId("service-unit-table:101")).getByText(/Free/)).toBeTruthy();
+    expect(screen.getByTestId("service-unit-table:101")).toBeTruthy();
+  });
+
+  // Table 1 is half of the long table. A party pushed onto the group is sitting at it, and a card
+  // reading "Free" over an occupied table is the floor lying about the one thing it is for.
+  it("draws the member tables of an occupied group as seated, not as free", () => {
+    render(<ServiceView {...props} groups={longTable} bookings={onTheLongTable} />);
+
+    expect(within(screen.getByTestId("service-unit-table:101")).getByText(/Seated/)).toBeTruthy();
+    expect(within(screen.getByTestId("service-unit-table:102")).getByText(/Free/)).toBeTruthy();
+  });
+
+  it("counts the room's two tables once between the group and its members", () => {
+    render(<ServiceView {...props} groups={longTable} bookings={[] as never} />);
+
+    expect(screen.getByText("2 free")).toBeTruthy();
+  });
+
+  it("counts a party on the group once over, however many units carry it", () => {
+    render(<ServiceView {...props} groups={longTable} bookings={onTheLongTable} />);
+
+    expect(within(screen.getByTestId("service-covers")).getByText("2 covers")).toBeTruthy();
   });
 
   it("says so on a day with nothing booked at all", () => {
@@ -375,5 +403,31 @@ describe("ServiceView on the location's today", () => {
     });
 
     expect(screen.getByTestId("service-scrub-clock").props.children).toBe(before);
+  });
+});
+
+// The combined block is the floor's own wording rather than the admin's, so it follows the UI
+// language like every other string on the screen.
+describe("ServiceView in the reader's language", () => {
+  afterEach(async () => {
+    // The mounted tree re-renders on the language change, so the restore is a React update too.
+    await act(() => i18n.changeLanguage("en"));
+  });
+
+  it("heads the combined block in French rather than in English", async () => {
+    await act(() => i18n.changeLanguage("fr"));
+
+    render(<ServiceView {...props} groups={longTable} bookings={onTheLongTable} />);
+
+    expect(screen.getByText("TABLES COMBINÉES")).toBeTruthy();
+    expect(screen.queryByText("COMBINED TABLES")).toBeNull();
+  });
+
+  it("leaves the admin's own section name alone", async () => {
+    await act(() => i18n.changeLanguage("fr"));
+
+    render(<ServiceView {...props} />);
+
+    expect(screen.getByText("MAIN")).toBeTruthy();
   });
 });
