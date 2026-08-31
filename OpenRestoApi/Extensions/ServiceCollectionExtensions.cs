@@ -106,6 +106,10 @@ public static class ServiceCollectionExtensions
 
     /// <summary>Rate-limit policy name for the guest by-reference booking endpoints — see
     /// <see cref="BookingLookupLimit"/>.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Integration.BookingRefEndpointRateLimitTests")]
+    [ExternalAccessAllowed]
     internal const string BookingLookupPolicy = "booking-lookup";
 
     /// <summary>
@@ -126,17 +130,29 @@ public static class ServiceCollectionExtensions
     /// <seealso>ServiceCollectionExtensionsTests.BookingLookupLimit_IsFarTighterThanPublicBrowsing</seealso>
     /// <seealso>ServiceCollectionExtensionsTests.BookingLookupLimit_KeepsTheTestingEscapeHatch</seealso>
     /// </summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal const int BookingLookupLimit = 10;
 
     /// <summary>Ceiling every policy is raised to under <c>ASPNETCORE_ENVIRONMENT=Testing</c>, so
     /// the Playwright suite can drive hundreds of requests from one address.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal const int TestingLimit = 10000;
 
     /// <summary>Per-IP ceiling on login and the other credential surfaces — brute-force
     /// protection.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal const int AuthLimit = 10;
 
     /// <summary>Per-IP ceiling on ordinary browsing: ~2 req/s.</summary>
+    [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
+    [ExternalAccessAllowed]
     internal const int PublicLimit = 120;
 
     public static IServiceCollection AddCustomRateLimiting(this IServiceCollection services, IWebHostEnvironment env)
