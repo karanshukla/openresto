@@ -1,0 +1,158 @@
+name: Date Boundary
+
+# Runs the test suites with the runner's clock pinned to the last day of the current month.
+#
+# Three tests broke on 2026-08-31 because they assumed "tomorrow" was reachable from "today"
+# without saying so: two DatePickerWeb unit tests and one date-picker E2E spec, all looking for a
+# day cell the picker had never rendered (its grid is one month, so on the 31st there is no
+# tomorrow in it). Nothing caught them in advance. A month-end is only 12 days a year, and
+# e2e-extensive runs on main only, so the E2E one could not surface until after a merge.
+#
+# Pinning the runner's clock rather than a fake timer in the test is what makes this cover the E2E
+# suite too. The containers share the host kernel clock and the browser runs on the host, so one
+# `date -s` moves the backend, the frontend and Chromium together. Playwright's own `page.clock`
+# moves only the browser, which would leave it disagreeing with the server that computes
+# availability — the reason the fix in #413 did not use it.
+#
+# The pinned date is computed rather than hardcoded, so this rotates through 28-, 29-, 30- and
+# 31-day months over a year without anyone maintaining a list, and the skew stays under ~31 days.
+on:
+  schedule:
+    # Weekly, Monday 03:00 UTC. The point is to fail on a Monday in a job nobody is waiting on
+    # rather than on the 31st in main, so a week of lag costs nothing.
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  month-end:
+    name: Suites at month end
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker-compose.yml:docker-compose.e2e.yml
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Patch backend env file for CI
+        run: |
+          sed -i 's|CONNECTION_STRING=.*|CONNECTION_STRING=Data Source=/tmp/openresto.db|' \
+            ./OpenRestoApi/.env.docker
+
+      # Everything that talks to a registry or to npm runs before the clock moves. A skewed clock
+      # breaks TLS validation, so builds and installs happen on the real date and only the test
+      # run sees the pinned one.
+      - name: Build all containers
+        run: docker compose build
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: openresto-frontend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: openresto-frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Pin the clock to the last day of this month
+        id: pin
+        run: |
+          # set -e on purpose: if the clock cannot be moved, this job must go red rather than
+          # quietly run the suites on today's date. A silently-unpinned pass is worse than a
+          # failure, because it reads as evidence the month end is covered when nothing ran.
+          set -euo pipefail
+          PINNED="$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%Y-%m-%d)"
+          echo "PINNED_DATE=$PINNED" >> "$GITHUB_ENV"
+          echo "==> Real date:   $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Midday, so a timezone offset in either direction cannot roll the pinned day over.
+          sudo timedatectl set-ntp false
+          sudo date -u -s "$PINNED 12:00:00"
+          echo "==> Pinned date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          for i in $(seq 1 90); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5062/api/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend is ready (HTTP 200)!"
+              exit 0
+            fi
+
+            EXITED=$(docker compose ps --status exited --quiet)
+            if [ -n "$EXITED" ]; then
+              echo "Error: One or more containers have exited!"
+              docker compose ps
+              docker compose logs
+              exit 1
+            fi
+
+            echo "Attempt $i/90: Backend not ready yet (HTTP $STATUS)..."
+            sleep 2
+          done
+          echo "Error: Services failed to become ready after 180 seconds."
+          docker compose ps
+          docker compose logs
+          exit 1
+
+      # Both suites, because the class showed up in both: two of the three failures were Jest and
+      # one was Playwright.
+      - name: Run Jest suite at month end
+        id: jest
+        working-directory: openresto-frontend
+        run: npm test
+
+      # always(), so a Jest failure still lets the Playwright suite report its own — one run should
+      # surface every date-dependent test, not just the first. Gated on the pin having succeeded
+      # rather than on nothing: always() alone would run this on an unpinned clock after a failed
+      # pin, and pass, which is the silent false pass this whole job exists to avoid.
+      - name: Run full Playwright suite at month end
+        if: always() && steps.pin.outcome == 'success'
+        working-directory: openresto-frontend
+        env:
+          ADMIN_EMAIL: admin@openresto.com
+          ADMIN_PASSWORD: change-me-before-use
+        run: npm run test:e2e
+
+      # Restored before anything that talks to GitHub again, and unconditionally: leaving a runner
+      # with a skewed clock would fail artifact upload with an unrelated-looking auth error.
+      - name: Restore the clock
+        if: always()
+        run: |
+          sudo timedatectl set-ntp true
+          for i in $(seq 1 30); do
+            if [ "$(timedatectl show -p NTPSynchronized --value)" = "yes" ]; then break; fi
+            sleep 1
+          done
+          echo "==> Restored to: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-month-end
+          path: openresto-frontend/playwright-report/
+          if-no-files-found: ignore
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+      - name: Explain a failure
+        if: failure()
+        run: |
+          echo "A suite failed with the clock pinned to ${PINNED_DATE:-the month end}."
+          echo "That date is the only difference from a normal CI run, so a failure here is a"
+          echo "test (or a behaviour) that depends on today not being the last day of a month."
+          echo "The usual shape is an assertion computing \"tomorrow\" and expecting it on screen."
