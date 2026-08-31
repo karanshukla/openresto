@@ -1,13 +1,18 @@
 import { Command } from "commander";
 import { clientFor, getGlobalOptions, handle } from "../context.js";
 import { printResult } from "../output.js";
-import { promptHidden, readAllStdin } from "../prompt.js";
 
 const LIST_COLUMNS = ["id", "email", "displayName", "role", "isActive"];
 
 /**
  * Owner-only server-side (an API key needs `users:*` scope, minted only by an Owner account).
  * A non-Owner key gets a 403 here, surfaced by the shared error handler like any other request.
+ *
+ * Deliberately no create, role or reset-password verb. Those three hand out or move interactive
+ * privilege, so the server refuses them to any API-key session outright (`[NoApiKeyAccess]` on
+ * `UsersController`), and an API key is the only credential this CLI has. Offering a command that
+ * can only ever return 403 would be worse than not offering it. Listing and activation remain,
+ * because neither grants a session.
  */
 export function registerUsersCommands(program: Command): void {
   const users = program
@@ -23,84 +28,6 @@ export function registerUsersCommands(program: Command): void {
         const globals = getGlobalOptions(command);
         const result = await client.get("/api/admin/users");
         printResult(result, Boolean(globals.json), LIST_COLUMNS);
-      }),
-    );
-
-  users
-    .command("create")
-    .description("Create a new admin account")
-    .requiredOption("--email <email>", "Account email")
-    .requiredOption("--password <password>", "Initial password")
-    .requiredOption("--role <role>", "Owner or Manager")
-    .option("--display-name <name>", "Display name")
-    .action(
-      handle(
-        async (
-          options: {
-            email: string;
-            password: string;
-            role: string;
-            displayName?: string;
-          },
-          command: Command,
-        ) => {
-          const { client } = clientFor(command);
-          const globals = getGlobalOptions(command);
-          const result = await client.post("/api/admin/users", {
-            body: {
-              email: options.email,
-              password: options.password,
-              role: options.role,
-              displayName: options.displayName,
-            },
-          });
-          printResult(result, Boolean(globals.json));
-        },
-      ),
-    );
-
-  users
-    .command("role <id>")
-    .description("Change an account's role")
-    .requiredOption("--role <role>", "Owner or Manager")
-    .action(
-      handle(
-        async (id: string, options: { role: string }, command: Command) => {
-          const { client } = clientFor(command);
-          const globals = getGlobalOptions(command);
-          const result = await client.patch(
-            `/api/admin/users/${encodeURIComponent(id)}/role`,
-            {
-              body: { role: options.role },
-            },
-          );
-          printResult(result, Boolean(globals.json));
-        },
-      ),
-    );
-
-  users
-    .command("reset-password <id>")
-    .description(
-      "Set another account's password (Owner-only). Prompts with hidden input, or reads the " +
-        "password from stdin when piped — never pass it as an argument.",
-    )
-    .action(
-      handle(async (id: string, _options: unknown, command: Command) => {
-        const newPassword = process.stdin.isTTY
-          ? await promptHidden("New password")
-          : await readAllStdin();
-        if (!newPassword) {
-          throw new Error("A new password is required.");
-        }
-
-        const { client } = clientFor(command);
-        const globals = getGlobalOptions(command);
-        const result = await client.post(
-          `/api/admin/users/${encodeURIComponent(id)}/reset-password`,
-          { body: { newPassword } },
-        );
-        printResult(result, Boolean(globals.json));
       }),
     );
 
