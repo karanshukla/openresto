@@ -232,6 +232,102 @@ public class ApiKeyAuthTests(TestWebAppFactory factory) : IClassFixture<TestWebA
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    private static object UsersWrite(string name) => new
+    {
+        name,
+        scopes = new[]
+        {
+            new { resource = "users", access = "read" },
+            new { resource = "users", access = "write" },
+        },
+    };
+
+    private static async Task AssertRejectedAsKeyAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ErrorCodes.ApiKeyNotAllowed, body.GetProperty("code").GetString());
+    }
+
+    /// <summary>
+    /// The escalation boundary on <c>UsersController</c>: a key may read the account list and
+    /// shut a compromised account off, but never obtain or move interactive privilege. Creating
+    /// an account with a caller-chosen password, resetting one, or changing a role would each
+    /// hand the key's holder a login to the admin UI — and from there everything a key is
+    /// excluded from, including minting unscoped keys and rewriting the SMTP credentials.
+    /// A Manager login is as fatal as an Owner one, since <c>EmailSettingsController</c> is gated
+    /// on RequireAdmin, so the rejection is on the action rather than on the role requested.
+    /// </summary>
+    [Fact]
+    public async Task UsersWriteKey_CannotCreateAnAccount()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        string secret = await CreateKeyAsync(owner, UsersWrite("Escalation attempt"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).PostAsJsonAsync("/api/admin/users", new
+        {
+            email = "escalated@test.com",
+            password = "AttackerChosen123!",
+            role = UserRoles.Manager,
+        });
+
+        await AssertRejectedAsKeyAsync(response);
+    }
+
+    [Fact]
+    public async Task UsersWriteKey_CannotResetAPassword()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        AdminCredential target = await SeedUserAsync("apikey-reset-target@test.com", UserRoles.Manager);
+        string secret = await CreateKeyAsync(owner, UsersWrite("Reset attempt"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).PostAsJsonAsync(
+            $"/api/admin/users/{target.Id}/reset-password", new { newPassword = "AttackerChosen123!" });
+
+        await AssertRejectedAsKeyAsync(response);
+    }
+
+    [Fact]
+    public async Task UsersWriteKey_CannotChangeARole()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        AdminCredential target = await SeedUserAsync("apikey-role-target@test.com", UserRoles.Manager);
+        string secret = await CreateKeyAsync(owner, UsersWrite("Promotion attempt"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).PatchAsJsonAsync(
+            $"/api/admin/users/{target.Id}/role", new { role = UserRoles.Owner });
+
+        await AssertRejectedAsKeyAsync(response);
+    }
+
+    [Fact]
+    public async Task UsersWriteKey_CanStillDeactivateAnAccount()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        AdminCredential target = await SeedUserAsync("apikey-deactivate-target@test.com", UserRoles.Manager);
+        string secret = await CreateKeyAsync(owner, UsersWrite("Incident response"));
+
+        HttpResponseMessage response = await ClientWithKey(secret).PatchAsJsonAsync(
+            $"/api/admin/users/{target.Id}/active", new { isActive = false });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UsersReadKey_CanStillListAccounts()
+    {
+        AdminCredential owner = _factory.GetSeededAdmin();
+        string secret = await CreateKeyAsync(owner, new
+        {
+            name = "Account inventory",
+            scopes = new[] { new { resource = "users", access = "read" } },
+        });
+
+        HttpResponseMessage response = await ClientWithKey(secret).GetAsync("/api/admin/users");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task MutatingRequest_AuthenticatedByApiKey_RecordsAnAuditEntryNamingTheKey()
     {

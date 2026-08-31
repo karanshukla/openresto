@@ -164,10 +164,8 @@ public class AdminController(AdminService adminService) : ControllerBase
         return Ok(sections);
     }
 
-    // Scoped under locations (not tables) — this reorders a restaurant's section list, which the
-    // issue's resource table groups with the other restaurant/location-shape mutations.
     [HttpPatch("restaurants/{id}/sections/reorder")]
-    [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
+    [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> ReorderSections(int id, [FromBody] ReorderSectionsRequest req)
     {
         bool? result = await _adminService.ReorderSectionsAsync(id, req.SectionIds);

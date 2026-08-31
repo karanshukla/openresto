@@ -50,10 +50,17 @@ public class ApiKeysController(ApiKeyService apiKeys) : ControllerBase
     /// Key metadata only (id/name/prefix/scopes) plus the acting user's email/role — never the
     /// hash or secret. A JWT/browser session gets 400 rather than a lookup: it authenticated
     /// without a key, so there is nothing to introspect.
+    /// <para>
+    /// The class-level <c>auth</c> policy (10/min in production) is the brute-force ceiling the
+    /// mint/list/revoke surface wants; this is an authenticated read that returns what the caller
+    /// already holds, and it backs the CLI's <c>auth whoami</c>, so it takes the <c>public</c>
+    /// ceiling instead. A method-level policy overrides the class-level one.
+    /// </para>
     /// </summary>
     [HttpGet("self")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [AllowAnyApiKey]
+    [EnableRateLimiting("public")]
     public async Task<IActionResult> Self()
     {
         ApiKeySelfResult result = await _apiKeys.GetSelfAsync();
