@@ -196,7 +196,7 @@ public partial class BookingServiceTests
             Date = DateTime.UtcNow.AddDays(7)
         });
 
-        Assert.Equal(3, result.BookingRef!.Split('-').Length);
+        Assert.Equal(4, result.BookingRef!.Split('-').Length);
     }
 
     [Fact]

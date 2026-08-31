@@ -69,7 +69,7 @@ public static class ServiceCollectionExtensions
 
     /// <summary>
     /// The global limiter's partition key for one request. The limiter runs before
-    /// authentication, so a key's validity isn't known yet — only whether the header is present.
+    /// authentication, so a key's validity isn't known yet — only its shape.
     /// This used to hash the header value itself, so every distinct (even garbage) header value
     /// minted its own bucket at the elevated <c>apiKeyLimit</c> ceiling: rotating the header
     /// per request bypassed the per-IP global ceiling entirely and left key brute-forcing
@@ -77,29 +77,76 @@ public static class ServiceCollectionExtensions
     /// ceiling available to a genuine caller (a headless CLI is one caller, not one browser tab)
     /// without letting it be multiplied by rotating the header value — every request from that IP
     /// bearing the header shares the same one bucket, so the ceiling can't be rotated away.
+    /// <para>
+    /// Presence alone is still not enough to earn that bucket: <c>X-API-Key: x</c> would lift any
+    /// anonymous client's own ceiling from <c>globalLimit</c> to <c>apiKeyLimit</c> for the cost
+    /// of one header. <see cref="ApiKeyCrypto.TryParseId"/> is the cheapest check that survives
+    /// running pre-auth — it reads the <c>orst_&lt;id&gt;_&lt;secret&gt;</c> shape without touching
+    /// the secret or the database — so a header that isn't shaped like a key this scheme could
+    /// have issued falls back to the plain per-IP bucket. A well-formed but unissued value still
+    /// reaches the elevated bucket; that is the ceiling the per-IP partition already bounds.
+    /// </para>
     /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_RotatingTheHeaderValueStaysInOneBucketPerIp</seealso>
     /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_DifferentIpsWithTheSameHeaderGetDifferentBuckets</seealso>
     /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_NoHeaderUsesThePlainIpBucket</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_AMalformedHeaderUsesThePlainIpBucket</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.GlobalPartitionKey_AWellFormedKeyUsesTheElevatedBucket</seealso>
     /// </summary>
     [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
     [ExternalAccessAllowed]
     internal static string GlobalPartitionKey(HttpContext ctx)
     {
-        bool hasApiKeyHeader = ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
+        bool hasApiKeyShapedHeader = ctx.Request.Headers.TryGetValue(ApiKeyClaimTypes.HeaderName, out var values)
             && values.Count > 0
-            && !string.IsNullOrEmpty(values[0]);
+            && ApiKeyCrypto.TryParseId(values[0], out _);
         string ip = IpKey(ctx);
-        return hasApiKeyHeader ? $"{ApiKeyIpPartitionPrefix}{ip}" : ip;
+        return hasApiKeyShapedHeader ? $"{ApiKeyIpPartitionPrefix}{ip}" : ip;
     }
+
+    /// <summary>Rate-limit policy name for the guest by-reference booking endpoints — see
+    /// <see cref="BookingLookupLimit"/>.</summary>
+    internal const string BookingLookupPolicy = "booking-lookup";
+
+    /// <summary>
+    /// Per-IP ceiling, requests per one-minute window, on the two guest endpoints that take a
+    /// booking reference (<c>GET</c> and <c>POST .../cancel</c> under <c>bookings/ref</c>). Those
+    /// are the only unauthenticated endpoints where a correct guess hands over someone else's
+    /// name, phone, party and cancel button, which is the same reason <c>authLimit</c> exists on
+    /// login — so it is set to the same figure rather than to browsing's far looser
+    /// <c>publicLimit</c>. A guest reads their reference off an email and looks it up once, maybe
+    /// twice after a typo; ten a minute leaves that untouched.
+    /// <para>
+    /// This is defence in depth, never the defence: see
+    /// <see cref="Core.Domain.BookingRefGenerator"/> for why a per-IP limit cannot on its own
+    /// protect a reference an attacker can guess from a pool of addresses, and why the
+    /// reference's width is the part that has to carry it.
+    /// </para>
+    /// <seealso>ServiceCollectionExtensionsTests.BookingLookupLimit_IsAsTightAsTheLoginLimit</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.BookingLookupLimit_IsFarTighterThanPublicBrowsing</seealso>
+    /// <seealso>ServiceCollectionExtensionsTests.BookingLookupLimit_KeepsTheTestingEscapeHatch</seealso>
+    /// </summary>
+    internal const int BookingLookupLimit = 10;
+
+    /// <summary>Ceiling every policy is raised to under <c>ASPNETCORE_ENVIRONMENT=Testing</c>, so
+    /// the Playwright suite can drive hundreds of requests from one address.</summary>
+    internal const int TestingLimit = 10000;
+
+    /// <summary>Per-IP ceiling on login and the other credential surfaces — brute-force
+    /// protection.</summary>
+    internal const int AuthLimit = 10;
+
+    /// <summary>Per-IP ceiling on ordinary browsing: ~2 req/s.</summary>
+    internal const int PublicLimit = 120;
 
     public static IServiceCollection AddCustomRateLimiting(this IServiceCollection services, IWebHostEnvironment env)
     {
         bool isTesting = env.EnvironmentName == "Testing";
-        int authLimit = isTesting ? 10000 : 10;   // per IP: brute-force protection on /login
-        int publicLimit = isTesting ? 10000 : 120;  // per IP: ~2 req/s, covers normal browsing
-        int globalLimit = isTesting ? 10000 : 300;  // per IP: overall ceiling
-        int apiKeyLimit = isTesting ? 10000 : 1000; // per key: a headless CLI is one caller, not one browser tab
+        int authLimit = isTesting ? TestingLimit : AuthLimit;
+        int publicLimit = isTesting ? TestingLimit : PublicLimit;
+        int bookingLookupLimit = isTesting ? TestingLimit : BookingLookupLimit;
+        int globalLimit = isTesting ? TestingLimit : 300;  // per IP: overall ceiling
+        int apiKeyLimit = isTesting ? TestingLimit : 1000; // per key: a headless CLI is one caller, not one browser tab
 
         services.AddRateLimiter(options =>
         {
@@ -119,6 +166,15 @@ public static class ServiceCollectionExtensions
                 {
                     AutoReplenishment = true,
                     PermitLimit = publicLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+
+            options.AddPolicy(BookingLookupPolicy, ctx =>
+                RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = bookingLookupLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                 }));

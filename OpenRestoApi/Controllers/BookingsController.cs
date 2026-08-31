@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Extensions;
 using OpenRestoApi.Infrastructure.Auth;
 using OpenRestoApi.Infrastructure.Cookies;
 
@@ -39,7 +40,22 @@ namespace OpenRestoApi.Controllers
             return Ok(booking);
         }
 
+        // A reference plus the email on the booking is the whole of a guest's identity — there is
+        // no account behind it — so this and CancelBookingByRef are the two endpoints where a
+        // guessed reference is worth guessing, and they take the tight booking-lookup ceiling
+        // rather than the controller's "public" one. The reference's own width is the defence
+        // that survives an attacker with a pool of addresses; see BookingRefGenerator.
+        //
+        // The 404 is deliberately identical for an unknown reference and for a known reference
+        // with the wrong email: telling those apart would let an attacker confirm references
+        // without knowing any email at all, turning a two-part secret into a one-part one.
+        //
+        // Plain comments, not a doc comment: a <summary> on a public action is copied into the
+        // generated OpenAPI contract, and the CLI's committed copy of it must match byte for byte.
+        // <seealso>BookingsControllerTests.GetBookingByRef_UnknownRefAndWrongEmailAreIndistinguishable</seealso>
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
         [HttpGet("ref/{bookingRef}")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
         public async Task<IActionResult> GetBookingByRef(string bookingRef, [FromQuery] string email)
         {
             if (string.IsNullOrWhiteSpace(email))
@@ -118,7 +134,12 @@ namespace OpenRestoApi.Controllers
             return NoContent();
         }
 
+        // Same two-part guest secret, same identical-404, and the same tight ceiling as
+        // GetBookingByRef — see there.
+        // <seealso>BookingsControllerTests.CancelBookingByRef_UnknownRefAndWrongEmailAreIndistinguishable</seealso>
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
         [HttpPost("ref/{bookingRef}/cancel")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
         public async Task<IActionResult> CancelBookingByRef(string bookingRef, [FromBody] CancelBookingByRefRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Email))

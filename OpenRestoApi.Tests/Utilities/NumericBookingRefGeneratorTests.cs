@@ -51,11 +51,11 @@ public class BookingRefFactoryTests
     }
 
     [Fact]
-    public void GenerateFor_AlphaNumeric_ReturnsThreeWordFormat()
+    public void GenerateFor_AlphaNumeric_ReturnsTheWordFormat()
     {
         string result = BookingRefFactory.GenerateFor(BookingRefFormat.AlphaNumeric);
 
-        Assert.Equal(3, result.Split('-').Length);
+        Assert.Equal(4, result.Split('-').Length);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class BookingRefFactoryTests
         // produce an empty reference.
         string result = BookingRefFactory.GenerateFor((BookingRefFormat)99);
 
-        Assert.Equal(3, result.Split('-').Length);
+        Assert.Equal(4, result.Split('-').Length);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class BookingRefFactoryTests
         var words = new Restaurant { Name = "R" };
 
         Assert.All(BookingRefFactory.GenerateFor(numeric), c => Assert.True(char.IsAsciiDigit(c)));
-        Assert.Equal(3, BookingRefFactory.GenerateFor(words).Split('-').Length);
+        Assert.Equal(4, BookingRefFactory.GenerateFor(words).Split('-').Length);
     }
 
     [Fact]

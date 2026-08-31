@@ -50,13 +50,13 @@ public class ApiKeysController(ApiKeyService apiKeys) : ControllerBase
     /// Key metadata only (id/name/prefix/scopes) plus the acting user's email/role — never the
     /// hash or secret. A JWT/browser session gets 400 rather than a lookup: it authenticated
     /// without a key, so there is nothing to introspect.
-    /// <para>
-    /// The class-level <c>auth</c> policy (10/min in production) is the brute-force ceiling the
-    /// mint/list/revoke surface wants; this is an authenticated read that returns what the caller
-    /// already holds, and it backs the CLI's <c>auth whoami</c>, so it takes the <c>public</c>
-    /// ceiling instead. A method-level policy overrides the class-level one.
-    /// </para>
     /// </summary>
+    // The class-level `auth` policy (10/min in production) is the brute-force ceiling the
+    // mint/list/revoke surface wants. This is an authenticated read returning what the caller
+    // already holds, and it backs the CLI's `auth whoami`, so it takes the `public` ceiling
+    // instead; a method-level policy overrides the class-level one. Kept out of the <summary>
+    // deliberately: .NET 10 copies that into the published OpenAPI contract, where a note about
+    // our rate-limit policy is noise to every consumer reading it.
     [HttpGet("self")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [AllowAnyApiKey]

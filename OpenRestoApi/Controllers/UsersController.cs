@@ -33,18 +33,12 @@ public class UsersController(UserService users) : ControllerBase
 {
     private readonly UserService _users = users;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <seealso>ApiKeyAuthTests.UsersReadKey_CanStillListAccounts</seealso>
+    // <seealso>ApiKeyAuthTests.UsersReadKey_CanStillListAccounts</seealso>
     [HttpGet]
     [RequiresScope(ApiKeyScopes.Users, ApiKeyScopes.Read)]
     public async Task<IActionResult> GetAll() => Ok(await _users.GetAllAsync());
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <seealso>ApiKeyAuthTests.UsersWriteKey_CannotCreateAnAccount</seealso>
+    // <seealso>ApiKeyAuthTests.UsersWriteKey_CannotCreateAnAccount</seealso>
     [HttpPost]
     [NoApiKeyAccess]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest req)
@@ -55,28 +49,19 @@ public class UsersController(UserService users) : ControllerBase
         return CreatedAtAction(nameof(GetAll), new { }, created);
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <seealso>ApiKeyAuthTests.UsersWriteKey_CannotChangeARole</seealso>
+    // <seealso>ApiKeyAuthTests.UsersWriteKey_CannotChangeARole</seealso>
     [HttpPatch("{id:int}/role")]
     [NoApiKeyAccess]
     public async Task<IActionResult> UpdateRole(int id, [FromBody] UpdateUserRoleRequest req)
         => Ok(await _users.UpdateRoleAsync(id, req));
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <seealso>ApiKeyAuthTests.UsersWriteKey_CanStillDeactivateAnAccount</seealso>
+    // <seealso>ApiKeyAuthTests.UsersWriteKey_CanStillDeactivateAnAccount</seealso>
     [HttpPatch("{id:int}/active")]
     [RequiresScope(ApiKeyScopes.Users, ApiKeyScopes.Write)]
     public async Task<IActionResult> SetActive(int id, [FromBody] SetUserActiveRequest req)
         => Ok(await _users.SetActiveAsync(id, req));
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <seealso>ApiKeyAuthTests.UsersWriteKey_CannotResetAPassword</seealso>
+    // <seealso>ApiKeyAuthTests.UsersWriteKey_CannotResetAPassword</seealso>
     [HttpPost("{id:int}/reset-password")]
     [NoApiKeyAccess]
     public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetUserPasswordRequest req)
