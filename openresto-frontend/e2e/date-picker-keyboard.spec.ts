@@ -76,9 +76,17 @@ test.describe("Date picker keyboard grid", () => {
 
     await expect(page.getByTestId("date-picker-grid")).toHaveAttribute("role", "grid");
     await expect(page.getByTestId(`date-picker-day-${day}`)).toHaveAttribute("role", "gridcell");
-    await expect(
-      page.getByTestId(`date-picker-day-${await dayFrom(page, day, 1)}`)
-    ).toHaveAttribute("aria-selected", "false");
+
+    // The unselected day is taken off the grid rather than computed as `day + 1`. The grid
+    // renders exactly one month, so on the last day of one there is no tomorrow in it, and
+    // asserting on a computed date failed as a missing element rather than a selected one —
+    // red on main every 31st. The neighbour below still has to be a real gridcell, so this
+    // pins the same property without assuming which day is on screen.
+    await expect(page.locator(`${DAY_CELLS}[aria-selected="true"]`)).toHaveCount(1);
+    await expect(page.locator(`${DAY_CELLS}[aria-selected="false"]`).first()).toHaveAttribute(
+      "role",
+      "gridcell"
+    );
   });
 
   test("moves the highlight, and the keyboard with it, on the arrow keys", async ({ page }) => {
