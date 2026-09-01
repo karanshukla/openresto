@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import { fetchAvailability } from "@/api/availability";
-import { Linking, Platform } from "react-native";
+import { Linking, Platform, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -51,6 +51,18 @@ describe("RestaurantCard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchAvailability as jest.Mock).mockResolvedValue({ slots: [] });
+  });
+
+  // iOS draws a shadow from the view's own box and `overflow: "hidden"` clips it away, so a
+  // card carrying both rendered flat on iOS while Android kept its `elevation`. The clip the
+  // rounded image needs has to sit one level inside the view that casts the shadow.
+  it("casts its shadow from a view that does not clip its own children", async () => {
+    render(<RestaurantCard restaurant={mockRestaurant as never} party={2} />);
+    const card = await screen.findByLabelText("Test Bistro, view details and book");
+    const shadowHost = StyleSheet.flatten(card.props.style);
+
+    expect(shadowHost.shadowRadius).toBeGreaterThan(0);
+    expect(shadowHost.overflow).not.toBe("hidden");
   });
 
   it("renders restaurant name", async () => {

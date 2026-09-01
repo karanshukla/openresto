@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { Platform, ScrollView } from "react-native";
-import HomeScreen, { resetHomeCache } from "@/app/(user)/index";
+import HomeScreen, { columnWidth, resetHomeCache } from "@/app/(user)/index";
 import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -108,6 +108,23 @@ describe("HomeScreen", () => {
   // test that isn't asking for them by name.
   const skeletons = () =>
     screen.queryAllByTestId("restaurant-card-skeleton", { includeHiddenElements: true });
+
+  // A percentage minus a share of the gap is a calc() expression, and React Native has no
+  // calc: the string used to reach native untouched at every width with more than one column.
+  describe("columnWidth", () => {
+    it("measures a two-column grid as a number, not a calc string", () => {
+      expect(columnWidth(1200, 28, 18, 2)).toBe(563);
+    });
+
+    it("caps against the content column rather than the viewport", () => {
+      // 1400 is past CONTENT_MAX_WIDTH, so it measures the same as the cap itself.
+      expect(columnWidth(1400, 28, 18, 3)).toBe(columnWidth(1320, 28, 18, 3));
+    });
+
+    it("gives a single column the whole inset row", () => {
+      expect(columnWidth(375, 16, 18, 1)).toBe(343);
+    });
+  });
 
   it("holds the grid's shape with card skeletons while loading, not a spinner", async () => {
     jest

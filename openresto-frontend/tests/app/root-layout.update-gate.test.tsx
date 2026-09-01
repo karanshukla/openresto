@@ -27,6 +27,10 @@ jest.mock("expo-router", () => {
   Stack.Screen = () => null;
   return {
     Stack,
+    ThemeProvider: ({ value, children }: any) =>
+      React.createElement(View, { testID: "nav-theme", value }, children),
+    DarkTheme: { dark: true, colors: {}, fonts: {} },
+    DefaultTheme: { dark: false, colors: {}, fonts: {} },
     usePathname: () => "/",
     useSegments: () => [],
   };

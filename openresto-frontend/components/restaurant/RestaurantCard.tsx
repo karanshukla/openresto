@@ -157,255 +157,260 @@ export default function RestaurantCard({
         pressed && { borderColor: primaryColor, transform: [{ scale: 0.99 }] },
       ]}
     >
-      <View
-        style={[
-          styles.imageArea,
-          restaurant.imageUrl
-            ? Platform.OS === "web"
-              ? ({
-                  backgroundImage: `url(${restaurant.imageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                } as object)
-              : { backgroundColor: "#111" }
-            : Platform.OS === "web"
-              ? ({
-                  background: `linear-gradient(145deg,
+      <View style={styles.cardClip}>
+        <View
+          style={[
+            styles.imageArea,
+            restaurant.imageUrl
+              ? Platform.OS === "web"
+                ? ({
+                    backgroundImage: `url(${restaurant.imageUrl})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  } as object)
+                : { backgroundColor: "#111" }
+              : Platform.OS === "web"
+                ? ({
+                    background: `linear-gradient(145deg,
                     rgb(${Math.floor(accentR * 0.1)},${Math.floor(accentG * 0.1)},${Math.floor(accentB * 0.13)}) 0%,
                     rgb(${Math.floor(accentR * 0.38)},${Math.floor(accentG * 0.38)},${Math.floor(accentB * 0.42)}) 55%,
                     rgb(${Math.floor(accentR * 0.6)},${Math.floor(accentG * 0.6)},${Math.floor(accentB * 0.65)}) 100%)`,
-                } as object)
-              : {
-                  backgroundColor: `rgb(${Math.floor(accentR * 0.15)},${Math.floor(accentG * 0.15)},${Math.floor(accentB * 0.18)})`,
-                },
-        ]}
-      >
-        {/* Native background image via expo-image (web uses CSS backgroundImage above) */}
-        {
-          // istanbul ignore next
-          restaurant.imageUrl && Platform.OS !== "web" && (
-            <Image
-              source={{ uri: resolveServerUrl(restaurant.imageUrl) }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              accessible={false}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          )
-        }
-        {!restaurant.imageUrl && (
-          <>
-            <View style={styles.phRingTopRight} />
-            <View style={styles.phRingBottomLeft} />
-            <View style={styles.phCenter}>
-              <Icon name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
-              <ThemedText style={styles.phInitial}>
-                {restaurant.name.charAt(0).toUpperCase()}
-              </ThemedText>
-            </View>
-          </>
-        )}
-
-        <View style={styles.imageTopRow}>
-          <View
-            style={[
-              cardStyles.badge,
-              open
-                ? { backgroundColor: openBadgeColor(accentR, accentG, accentB) }
-                : opensLabel
-                  ? { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.72)` }
-                  : cardStyles.badgeMuted,
-            ]}
-          >
-            {open && <View style={cardStyles.badgeDot} />}
-            <ThemedText style={cardStyles.badgeText}>
-              {open
-                ? t("restaurant.card.openTill", { time: todayHours.close })
-                : (opensLabel ?? t("restaurant.card.closedBadge"))}
-            </ThemedText>
-          </View>
-          {walkInBadgeText && (
-            <View style={[cardStyles.badge, cardStyles.badgeMuted]} testID="walk-in-badge">
-              <Icon name="walk-outline" size="xs" color="#fff" />
-              <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.body}>
-        <View style={styles.nameRow}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <ThemedText style={styles.name} numberOfLines={1}>
-              {restaurant.name}
-            </ThemedText>
-            <View style={styles.meta}>
-              <Icon name="location-outline" size={11} color={mutedColor} />
-              <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
-                {restaurant.address || t("restaurant.card.multipleAreas")}
-              </ThemedText>
-            </View>
-          </View>
-          <Pressable
-            style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              if (Platform.OS === "web") {
-                window.open(`/(user)/locations/${restaurant.id}`, "_blank");
-              } else {
-                router.push(`/(user)/locations/${restaurant.id}` as Href);
-              }
-            }}
-            accessibilityRole="link"
-            accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}
-          >
-            <Icon name="open-outline" size="sm" color={mutedColor} />
-          </Pressable>
-        </View>
-
-        <RestaurantTags tags={tags} />
-
-        <View style={styles.mapLinks}>
-          <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>
-            {t("restaurant.card.directions")}
-          </ThemedText>
-          <Pressable
-            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-              styles.mapLink,
-              {
-                backgroundColor: surface2,
-                borderColor: hovered || pressed ? primaryColor : borderColor,
-              },
-            ]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              Linking.openURL(
-                `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
-              );
-            }}
-            accessibilityRole="link"
-            accessibilityLabel={t("restaurant.card.openInGoogleMaps")}
-          >
-            <Icon name="navigate-outline" size={11} color={mutedColor} />
-            <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Google</ThemedText>
-          </Pressable>
-          <Pressable
-            style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-              styles.mapLink,
-              {
-                backgroundColor: surface2,
-                borderColor: hovered || pressed ? primaryColor : borderColor,
-              },
-            ]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              Linking.openURL(
-                `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
-              );
-            }}
-            accessibilityRole="link"
-            accessibilityLabel={t("restaurant.card.openInAppleMaps")}
-          >
-            <Icon name="navigate-outline" size={11} color={mutedColor} />
-            <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Apple</ThemedText>
-          </Pressable>
-        </View>
-
-        {/* Time slots (or a no-reservations-needed empty state when bookings are disabled).
-            Wrapped in a fixed-min-height area so cards line up whether or not they show slots. */}
-        <View style={styles.slotsArea}>
-          {walkInLocation || walkInToday ? (
-            <View style={styles.walkInEmptyState} testID="walk-in-slot-notice">
-              <Icon name="walk-outline" size="lg" color={mutedColor} />
-              <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
-                {t("restaurant.card.noReservationsRequired")}
-              </ThemedText>
-            </View>
-          ) : (
+                  } as object)
+                : {
+                    backgroundColor: `rgb(${Math.floor(accentR * 0.15)},${Math.floor(accentG * 0.15)},${Math.floor(accentB * 0.18)})`,
+                  },
+          ]}
+        >
+          {/* Native background image via expo-image (web uses CSS backgroundImage above) */}
+          {
+            // istanbul ignore next
+            restaurant.imageUrl && Platform.OS !== "web" && (
+              <Image
+                source={{ uri: resolveServerUrl(restaurant.imageUrl) }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                accessible={false}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            )
+          }
+          {!restaurant.imageUrl && (
             <>
-              <View style={styles.slotLabel}>
-                <ThemedText style={[styles.slotLabelText, { color: mutedColor }]}>
-                  {t("restaurant.card.availableSlots")}
-                </ThemedText>
-                <ThemedText style={[styles.slotLabelWhen, { color: colors.text }]}>
-                  {t("restaurant.card.guestsToday", { count: party })}
+              <View style={styles.phRingTopRight} />
+              <View style={styles.phRingBottomLeft} />
+              <View style={styles.phCenter}>
+                <Icon name="restaurant-outline" size={28} color="rgba(255,255,255,0.2)" />
+                <ThemedText style={styles.phInitial}>
+                  {restaurant.name.charAt(0).toUpperCase()}
                 </ThemedText>
               </View>
-              {slotsLoading ? (
-                <ActivityIndicator
-                  size="small"
-                  color={primaryColor}
-                  style={{ alignSelf: "flex-start" }}
-                />
-              ) : slots.length === 0 ? (
-                <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
-                  {t("restaurant.card.noAvailableSlotsToday")}
-                </ThemedText>
-              ) : (
-                <View style={styles.slotRow}>
-                  {slots.map((s) => (
-                    <Pressable
-                      key={s.time}
-                      onPress={(e) => {
-                        e.stopPropagation?.();
-                        Haptics.selectionAsync();
-                        router.push(
-                          `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
-                        );
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={t("restaurant.card.bookAt", {
-                        time: s.time,
-                        name: restaurant.name,
-                      })}
-                      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                        styles.slot,
-                        {
-                          backgroundColor: hovered || pressed ? primaryColor : surface2,
-                          borderColor: hovered || pressed ? primaryColor : borderColor,
-                        },
-                      ]}
-                    >
-                      <ThemedText style={styles.slotText}>{s.time}</ThemedText>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
             </>
           )}
-        </View>
 
-        <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
-          <View style={styles.hoursRow}>
-            <Icon name="time-outline" size="xs" color={mutedColor} style={{ marginRight: 5 }} />
-            {closedToday ? (
-              <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
-                {t("restaurant.card.closedToday")}
+          <View style={styles.imageTopRow}>
+            <View
+              style={[
+                cardStyles.badge,
+                open
+                  ? { backgroundColor: openBadgeColor(accentR, accentG, accentB) }
+                  : opensLabel
+                    ? { backgroundColor: `rgba(${accentR},${accentG},${accentB},0.72)` }
+                    : cardStyles.badgeMuted,
+              ]}
+            >
+              {open && <View style={cardStyles.badgeDot} />}
+              <ThemedText style={cardStyles.badgeText}>
+                {open
+                  ? t("restaurant.card.openTill", { time: todayHours.close })
+                  : (opensLabel ?? t("restaurant.card.closedBadge"))}
               </ThemedText>
-            ) : (
-              <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
-                {hoursVary
-                  ? t("restaurant.card.hoursToday", {
-                      hours: `${todayHours.open} – ${todayHours.close}`,
-                    })
-                  : t("restaurant.card.hoursOpen", {
-                      hours: `${todayHours.open} – ${todayHours.close}`,
-                    })}
-              </ThemedText>
+            </View>
+            {walkInBadgeText && (
+              <View style={[cardStyles.badge, cardStyles.badgeMuted]} testID="walk-in-badge">
+                <Icon name="walk-outline" size="xs" color="#fff" />
+                <ThemedText style={cardStyles.badgeText}>{walkInBadgeText}</ThemedText>
+              </View>
             )}
           </View>
-          <Pressable
-            style={({ pressed }) => [cardStyles.viewBtn, pressed && { backgroundColor: surface2 }]}
-            onPress={() => openLocation()}
-            accessibilityRole="link"
-            accessibilityLabel={t("restaurant.card.seeDetailsFor", { name: restaurant.name })}
-          >
-            <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
-              {t("restaurant.card.seeDetails")}
+        </View>
+
+        <View style={styles.body}>
+          <View style={styles.nameRow}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <ThemedText style={styles.name} numberOfLines={1}>
+                {restaurant.name}
+              </ThemedText>
+              <View style={styles.meta}>
+                <Icon name="location-outline" size={11} color={mutedColor} />
+                <ThemedText style={[styles.metaText, { color: mutedColor }]} numberOfLines={1}>
+                  {restaurant.address || t("restaurant.card.multipleAreas")}
+                </ThemedText>
+              </View>
+            </View>
+            <Pressable
+              style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                if (Platform.OS === "web") {
+                  window.open(`/(user)/locations/${restaurant.id}`, "_blank");
+                } else {
+                  router.push(`/(user)/locations/${restaurant.id}` as Href);
+                }
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}
+            >
+              <Icon name="open-outline" size="sm" color={mutedColor} />
+            </Pressable>
+          </View>
+
+          <RestaurantTags tags={tags} />
+
+          <View style={styles.mapLinks}>
+            <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>
+              {t("restaurant.card.directions")}
             </ThemedText>
-            <Icon name="arrow-forward" size={13} color={primaryColor} />
-          </Pressable>
+            <Pressable
+              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                styles.mapLink,
+                {
+                  backgroundColor: surface2,
+                  borderColor: hovered || pressed ? primaryColor : borderColor,
+                },
+              ]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Linking.openURL(
+                  `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
+                );
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={t("restaurant.card.openInGoogleMaps")}
+            >
+              <Icon name="navigate-outline" size={11} color={mutedColor} />
+              <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Google</ThemedText>
+            </Pressable>
+            <Pressable
+              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                styles.mapLink,
+                {
+                  backgroundColor: surface2,
+                  borderColor: hovered || pressed ? primaryColor : borderColor,
+                },
+              ]}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Linking.openURL(
+                  `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
+                );
+              }}
+              accessibilityRole="link"
+              accessibilityLabel={t("restaurant.card.openInAppleMaps")}
+            >
+              <Icon name="navigate-outline" size={11} color={mutedColor} />
+              <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Apple</ThemedText>
+            </Pressable>
+          </View>
+
+          {/* Time slots (or a no-reservations-needed empty state when bookings are disabled).
+            Wrapped in a fixed-min-height area so cards line up whether or not they show slots. */}
+          <View style={styles.slotsArea}>
+            {walkInLocation || walkInToday ? (
+              <View style={styles.walkInEmptyState} testID="walk-in-slot-notice">
+                <Icon name="walk-outline" size="lg" color={mutedColor} />
+                <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
+                  {t("restaurant.card.noReservationsRequired")}
+                </ThemedText>
+              </View>
+            ) : (
+              <>
+                <View style={styles.slotLabel}>
+                  <ThemedText style={[styles.slotLabelText, { color: mutedColor }]}>
+                    {t("restaurant.card.availableSlots")}
+                  </ThemedText>
+                  <ThemedText style={[styles.slotLabelWhen, { color: colors.text }]}>
+                    {t("restaurant.card.guestsToday", { count: party })}
+                  </ThemedText>
+                </View>
+                {slotsLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={primaryColor}
+                    style={{ alignSelf: "flex-start" }}
+                  />
+                ) : slots.length === 0 ? (
+                  <ThemedText style={[styles.noSlotsText, { color: mutedColor }]}>
+                    {t("restaurant.card.noAvailableSlotsToday")}
+                  </ThemedText>
+                ) : (
+                  <View style={styles.slotRow}>
+                    {slots.map((s) => (
+                      <Pressable
+                        key={s.time}
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          Haptics.selectionAsync();
+                          router.push(
+                            `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
+                          );
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("restaurant.card.bookAt", {
+                          time: s.time,
+                          name: restaurant.name,
+                        })}
+                        style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                          styles.slot,
+                          {
+                            backgroundColor: hovered || pressed ? primaryColor : surface2,
+                            borderColor: hovered || pressed ? primaryColor : borderColor,
+                          },
+                        ]}
+                      >
+                        <ThemedText style={styles.slotText}>{s.time}</ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          <View style={[styles.cardFoot, { borderTopColor: borderColor }]}>
+            <View style={styles.hoursRow}>
+              <Icon name="time-outline" size="xs" color={mutedColor} style={{ marginRight: 5 }} />
+              {closedToday ? (
+                <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
+                  {t("restaurant.card.closedToday")}
+                </ThemedText>
+              ) : (
+                <ThemedText style={[styles.hoursTime, { color: colors.text }]}>
+                  {hoursVary
+                    ? t("restaurant.card.hoursToday", {
+                        hours: `${todayHours.open} – ${todayHours.close}`,
+                      })
+                    : t("restaurant.card.hoursOpen", {
+                        hours: `${todayHours.open} – ${todayHours.close}`,
+                      })}
+                </ThemedText>
+              )}
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                cardStyles.viewBtn,
+                pressed && { backgroundColor: surface2 },
+              ]}
+              onPress={() => openLocation()}
+              accessibilityRole="link"
+              accessibilityLabel={t("restaurant.card.seeDetailsFor", { name: restaurant.name })}
+            >
+              <ThemedText style={[cardStyles.viewBtnText, { color: primaryColor }]}>
+                {t("restaurant.card.seeDetails")}
+              </ThemedText>
+              <Icon name="arrow-forward" size={13} color={primaryColor} />
+            </Pressable>
+          </View>
         </View>
       </View>
     </Pressable>

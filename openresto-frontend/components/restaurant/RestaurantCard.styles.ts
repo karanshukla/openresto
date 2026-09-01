@@ -1,9 +1,20 @@
 import { StyleSheet } from "react-native";
 
+const CARD_RADIUS = 14;
+const CARD_BORDER = 1;
+
 export const styles = StyleSheet.create({
+  // The shadow host is deliberately unclipped. iOS draws a shadow from the view's own box and
+  // `overflow: "hidden"` clips it away, so a card that carried both rendered flat on iOS while
+  // Android still had its `elevation`. The clip the rounded image needs lives one level in.
   card: {
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: CARD_RADIUS,
+    borderWidth: CARD_BORDER,
+    flexDirection: "column",
+    flex: 1,
+  },
+  cardClip: {
+    borderRadius: CARD_RADIUS - CARD_BORDER,
     overflow: "hidden",
     flexDirection: "column",
     flex: 1,
