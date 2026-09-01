@@ -20,6 +20,13 @@ public class BrandService(
         "https://github.com/karanshukla/openresto/blob/main/docs/http-api.md";
     private const string DefaultRepositoryUrl = "https://github.com/karanshukla/openresto";
 
+    /// <summary>
+    /// What <see cref="GetWebsiteUrl"/> falls back to when nothing names a public address. It is
+    /// the dev server, so anything deciding whether this deployment is publicly reachable —
+    /// <see cref="NativeAppStatusService"/> — compares against this rather than guessing.
+    /// </summary>
+    public const string DefaultWebsiteUrl = "http://localhost:8081";
+
     /// <summary>Permitted values for <see cref="BrandSettings.HeaderImageFit"/> (case-insensitive).</summary>
     public static readonly HashSet<string> AllowedHeaderImageFits =
         new(StringComparer.OrdinalIgnoreCase) { "Cover", "Contain" };
@@ -47,7 +54,7 @@ public class BrandService(
                 return first;
         }
 
-        return "http://localhost:8081";
+        return DefaultWebsiteUrl;
     }
 
     public async Task<string> GetWebsiteUrlAsync()
@@ -121,6 +128,17 @@ public class BrandService(
             };
     }
 
+    /// <summary>
+    /// Applies a partial update: null leaves a field as it was, an empty/blank string clears it,
+    /// anything else replaces it. Every rejection throws <c>ValidationException</c> carrying an
+    /// <see cref="ErrorCodes"/> code.
+    /// <seealso>BrandServiceTests.SaveAsync_Throws_WhenPrivacyPolicyUrlIsNotAnAbsoluteWebUrl</seealso>
+    /// <seealso>BrandServiceTests.SaveAsync_PersistsPrivacyPolicyUrl</seealso>
+    /// <seealso>BrandServiceTests.SaveAsync_ClearsPrivacyPolicyUrl_WhenBlank</seealso>
+    /// <seealso>BrandServiceTests.SaveAsync_Throws_WhenMinimumAppVersionIsNotMajorMinorPatch</seealso>
+    /// <seealso>BrandServiceTests.SaveAsync_PersistsMinimumAppVersion</seealso>
+    /// <seealso>BrandServiceTests.SaveAsync_ClearsMinimumAppVersion_WhenBlank</seealso>
+    /// </summary>
     public async Task SaveAsync(
         string? appName,
         string? primaryColor,
@@ -133,7 +151,9 @@ public class BrandService(
         string? subtitle = null,
         string? highlightsHeading = null,
         string? highlightsSubheading = null,
-        string? headerImageFit = null)
+        string? headerImageFit = null,
+        string? privacyPolicyUrl = null,
+        string? minimumAppVersion = null)
     {
         if (appName != null && appName.Length > 32)
         {
@@ -192,6 +212,23 @@ public class BrandService(
             };
         }
 
+        // Blank clears; anything else has to be a link a store reviewer can actually open.
+        if (privacyPolicyUrl != null
+            && !string.IsNullOrWhiteSpace(privacyPolicyUrl)
+            && !UrlValidator.IsValid(privacyPolicyUrl, UrlValidator.WebSchemes))
+        {
+            throw new ValidationException("Privacy policy URL must be an absolute http(s) URL.")
+            { Code = ErrorCodes.BrandPrivacyPolicyUrlInvalid };
+        }
+
+        if (minimumAppVersion != null
+            && !string.IsNullOrWhiteSpace(minimumAppVersion)
+            && !NativeAppVersion.IsValid(minimumAppVersion.Trim()))
+        {
+            throw new ValidationException("Minimum app version must be major.minor.patch, e.g. 1.9.0.")
+            { Code = ErrorCodes.BrandMinimumAppVersionInvalid };
+        }
+
         BrandSettings? brand = await _brandRepository.GetAsync();
         bool isNew = false;
         if (brand == null)
@@ -237,6 +274,14 @@ public class BrandService(
         {
             brand.HighlightsSubheading = string.IsNullOrWhiteSpace(highlightsSubheading) ? null : highlightsSubheading.Trim();
         }
+        if (privacyPolicyUrl != null)
+        {
+            brand.PrivacyPolicyUrl = string.IsNullOrWhiteSpace(privacyPolicyUrl) ? null : privacyPolicyUrl.Trim();
+        }
+        if (minimumAppVersion != null)
+        {
+            brand.MinimumAppVersion = string.IsNullOrWhiteSpace(minimumAppVersion) ? null : minimumAppVersion.Trim();
+        }
         // HeaderImageFit: blank/whitespace clears to null (→ default Cover). Normalize casing
         // of the allowed value (e.g. "contain" → "Contain") so persisted data is canonical.
         if (headerImageFit != null)
@@ -279,12 +324,14 @@ public class BrandService(
         string? Subtitle,
         string? HighlightsHeading,
         string? HighlightsSubheading,
-        string? HeaderImageFit)
+        string? HeaderImageFit,
+        string? PrivacyPolicyUrl,
+        string? MinimumAppVersion)
     {
         public static BrandFields From(BrandSettings b) => new(
             b.AppName, b.PrimaryColor, b.AccentColor, b.FaviconIcon, b.WebsiteUrl, b.PhoneNumber,
             b.EmailAddress, b.CopyrightText, b.Subtitle, b.HighlightsHeading,
-            b.HighlightsSubheading, b.HeaderImageFit);
+            b.HighlightsSubheading, b.HeaderImageFit, b.PrivacyPolicyUrl, b.MinimumAppVersion);
     }
 
     private void RecordBrandChanges(BrandFields before, BrandFields after)
@@ -301,5 +348,7 @@ public class BrandService(
         _audit.RecordChange("highlightsHeading", before.HighlightsHeading, after.HighlightsHeading);
         _audit.RecordChange("highlightsSubheading", before.HighlightsSubheading, after.HighlightsSubheading);
         _audit.RecordChange("headerImageFit", before.HeaderImageFit, after.HeaderImageFit);
+        _audit.RecordChange("privacyPolicyUrl", before.PrivacyPolicyUrl, after.PrivacyPolicyUrl);
+        _audit.RecordChange("minimumAppVersion", before.MinimumAppVersion, after.MinimumAppVersion);
     }
 }

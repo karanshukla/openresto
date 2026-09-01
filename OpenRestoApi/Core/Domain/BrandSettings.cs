@@ -58,6 +58,21 @@ public class BrandSettings
     public string? HighlightsSubheading { get; set; }
 
     /// <summary>
+    /// Where this instance's privacy policy is published, as an absolute http(s) URL. Both app
+    /// stores require one before a listing can go live, and the guest footer links it when set.
+    /// </summary>
+    [StringLength(2048)]
+    public string? PrivacyPolicyUrl { get; set; }
+
+    /// <summary>
+    /// The oldest native app version this server still supports, as strict
+    /// <c>major.minor.patch</c> (see <see cref="NativeAppVersion"/>). Null means every build is
+    /// accepted.
+    /// </summary>
+    [StringLength(NativeAppVersion.MaxLength)]
+    public string? MinimumAppVersion { get; set; }
+
+    /// <summary>
     /// How the home page hero image is fit into its frame. Null/"Cover" (the default)
     /// keeps today's behaviour; "Contain" shows the whole image. See <see cref="HeaderImageFit"/>.
     /// </summary>

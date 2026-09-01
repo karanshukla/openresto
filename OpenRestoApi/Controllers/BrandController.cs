@@ -38,6 +38,8 @@ public class BrandController(BrandService brandService) : ControllerBase
             HighlightsHeading = brand.HighlightsHeading,
             HighlightsSubheading = brand.HighlightsSubheading,
             HeaderImageFit = brand.HeaderImageFit,
+            PrivacyPolicyUrl = brand.PrivacyPolicyUrl,
+            MinimumAppVersion = brand.MinimumAppVersion,
             DefaultLocale = _brand.GetDefaultLocale(brand),
             CliPackageUrl = _brand.GetCliPackageUrl(),
             ApiDocsUrl = _brand.GetApiDocsUrl(),
@@ -153,7 +155,9 @@ public class BrandController(BrandService brandService) : ControllerBase
             req.Subtitle,
             req.HighlightsHeading,
             req.HighlightsSubheading,
-            req.HeaderImageFit);
+            req.HeaderImageFit,
+            req.PrivacyPolicyUrl,
+            req.MinimumAppVersion);
         return Ok(new { message = "Brand settings saved." });
     }
 }
@@ -189,6 +193,14 @@ public class BrandRequest
 
     /// <summary>"Cover" (default) or "Contain". Null means leave the stored value unchanged.</summary>
     public string? HeaderImageFit { get; set; }
+
+    /// <summary>Absolute http(s) URL. Empty string clears it; null leaves the stored value unchanged.</summary>
+    [StringLength(2048, ErrorMessage = "Privacy policy URL cannot exceed 2048 characters.")]
+    public string? PrivacyPolicyUrl { get; set; }
+
+    /// <summary>Strict <c>major.minor.patch</c>. Empty string clears it; null leaves the stored value unchanged.</summary>
+    [StringLength(NativeAppVersion.MaxLength, ErrorMessage = "Minimum app version cannot exceed 32 characters.")]
+    public string? MinimumAppVersion { get; set; }
 }
 
 public class BrandResponse
@@ -206,6 +218,13 @@ public class BrandResponse
     public string? HighlightsHeading { get; set; }
     public string? HighlightsSubheading { get; set; }
     public string? HeaderImageFit { get; set; }
+
+    /// <summary>Where this instance publishes its privacy policy, or null when none is set.</summary>
+    public string? PrivacyPolicyUrl { get; set; }
+
+    /// <summary>The oldest native app version this server supports, or null when every build is accepted.</summary>
+    public string? MinimumAppVersion { get; set; }
+
     public string DefaultLocale { get; set; } = SupportedLocales.Default;
 
     /// <summary>Where the CLI this server's API keys drive is published. See <see cref="BrandService.GetCliPackageUrl"/>.</summary>

@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdminPushSubscription> AdminPushSubscriptions { get; set; } = null!;
     public DbSet<AdminAuditEntry> AdminAuditEntries { get; set; } = null!;
     public DbSet<AdminApiKey> AdminApiKeys { get; set; } = null!;
+    public DbSet<NativeClientStat> NativeClientStats { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -174,6 +175,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             k.Property(x => x.ScopesJson).IsRequired().HasMaxLength(ApiKeyFields.MaxScopesJsonLength);
             k.HasIndex(x => x.KeyHash).IsUnique();
             k.HasIndex(x => x.UserId);
+        });
+
+        modelBuilder.Entity<NativeClientStat>(n =>
+        {
+            n.HasKey(x => x.Id);
+            n.Property(x => x.Platform).IsRequired().HasMaxLength(NativeClientIdentity.MaxPlatformLength);
+            n.Property(x => x.AppVersion).IsRequired().HasMaxLength(NativeAppVersion.MaxLength);
+            // One row per bucket: the flush pass upserts onto it rather than appending, so the
+            // table stays proportional to (platforms x live versions x retained days).
+            n.HasIndex(x => new { x.Platform, x.AppVersion, x.Day }).IsUnique();
         });
 
         modelBuilder.Entity<AdminPushSubscription>(s =>

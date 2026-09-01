@@ -289,6 +289,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>How long the native-app readiness checks wait on one <c>/.well-known/</c> fetch
+    /// before reporting it unreachable — the admin screen blocks on them, so this is short.</summary>
+    private static readonly TimeSpan WellKnownProbeTimeout = TimeSpan.FromSeconds(5);
+
     public static IServiceCollection AddProjectDependencies(this IServiceCollection services)
     {
         services.Configure<ForwardedHeadersOptions>(options =>
@@ -328,6 +332,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
         services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
         services.AddScoped<IAdminApiKeyRepository, AdminApiKeyRepository>();
+        services.AddScoped<INativeClientStatsRepository, NativeClientStatsRepository>();
 
         // One instance per request, reachable both as the write-only contract services enrich
         // through and as the concrete draft the audit middleware reads back.
@@ -355,6 +360,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SocialLinkService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<MediaService>();
+        services.AddScoped<NativeAppStatusService>();
+
+        // Native guest-app telemetry: an in-memory counter on the request path, flushed to the
+        // database by a background worker, so no request ever writes to SQLite for a header.
+        services.AddSingleton<INativeClientStatsCollector,
+            OpenRestoApi.Infrastructure.NativeClients.NativeClientStatsCollector>();
+        services.AddHostedService<OpenRestoApi.Infrastructure.NativeClients.NativeClientStatsWorker>();
+
+        // Only ever fetches this deployment's own configured public address — see WellKnownProbe.
+        services.AddHttpClient(OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe.HttpClientName,
+            client => client.Timeout = WellKnownProbeTimeout);
+        services.AddScoped<IWellKnownProbe, OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe>();
 
         services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();
 

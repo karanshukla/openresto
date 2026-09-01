@@ -1,6 +1,7 @@
 using OpenRestoApi.Extensions;
 using OpenRestoApi.Infrastructure.Auditing;
 using OpenRestoApi.Infrastructure.Exceptions;
+using OpenRestoApi.Infrastructure.NativeClients;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,8 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.UseForwardedHeaders();
+
+app.UseNativeClientTelemetry();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
