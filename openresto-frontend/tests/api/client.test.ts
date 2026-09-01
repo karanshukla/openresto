@@ -1,4 +1,9 @@
-import { buildUrl, api } from "@/api/client";
+import Constants from "expo-constants";
+import { buildUrl, api, configuredApiUrl } from "@/api/client";
+
+// The real module exposes `expoConfig` as a getter, so the tests swap in a plain object they
+// can point at whatever `extra` a build would have baked in.
+jest.mock("expo-constants", () => ({ __esModule: true, default: { expoConfig: null } }));
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -32,6 +37,47 @@ describe("buildUrl", () => {
   it("handles base URL without /api", () => {
     process.env.EXPO_PUBLIC_API_URL = "https://test.com";
     expect(buildUrl("/foo")).toBe("https://test.com/api/foo");
+  });
+});
+
+describe("configuredApiUrl", () => {
+  const originalEnv = process.env.EXPO_PUBLIC_API_URL;
+  const mutable = Constants as unknown as { expoConfig: unknown };
+
+  const withExtra = (extra: Record<string, unknown> | undefined) => {
+    mutable.expoConfig = extra === undefined ? null : { name: "t", slug: "t", extra };
+  };
+
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_API_URL = originalEnv;
+    mutable.expoConfig = null;
+  });
+
+  it("prefers EXPO_PUBLIC_API_URL over extra.apiUrl", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://env.example";
+    withExtra({ apiUrl: "https://extra.example" });
+    expect(configuredApiUrl()).toBe("https://env.example");
+  });
+
+  it("falls back to extra.apiUrl baked in by app.config.ts when the env var is unset", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra({ apiUrl: "https://bookings.example.com" });
+    expect(buildUrl("/brand")).toBe("https://bookings.example.com/api/brand");
+  });
+
+  it("ignores a non-string or empty extra.apiUrl", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra({ apiUrl: 42 });
+    expect(configuredApiUrl()).toBeUndefined();
+    withExtra({ apiUrl: "" });
+    expect(configuredApiUrl()).toBeUndefined();
+  });
+
+  it("is undefined with no env var and no expo config", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra(undefined);
+    expect(configuredApiUrl()).toBeUndefined();
+    expect(buildUrl("/x")).toBe("/api/x");
   });
 });
 

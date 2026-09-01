@@ -52,3 +52,4 @@ e2e/.auth/
 # Coverage
 coverage/
 .coverage-tmp*/
+/native/

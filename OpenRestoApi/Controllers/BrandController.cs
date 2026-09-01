@@ -15,6 +15,8 @@ namespace OpenRestoApi.Controllers;
 [EnableRateLimiting("public")]
 public class BrandController(BrandService brandService) : ControllerBase
 {
+    private const string DefaultPrimaryColor = "#0a7ea4";
+
     private readonly BrandService _brand = brandService;
 
     [HttpGet]
@@ -24,7 +26,7 @@ public class BrandController(BrandService brandService) : ControllerBase
         return Ok(new BrandResponse
         {
             AppName = brand.AppName ?? "Open Resto",
-            PrimaryColor = brand.PrimaryColor ?? "#0a7ea4",
+            PrimaryColor = brand.PrimaryColor ?? DefaultPrimaryColor,
             AccentColor = brand.AccentColor,
             HeaderImageUrl = brand.HeaderImageUrl,
             WebsiteUrl = _brand.GetWebsiteUrl(brand),
@@ -43,27 +45,41 @@ public class BrandController(BrandService brandService) : ControllerBase
         });
     }
 
-    [HttpGet("pwa-icon.svg")]
-    public async Task<IActionResult> GetPwaIcon()
+    /// <summary>The brand colour and Lucide path data an icon endpoint draws, or null when the brand has no drawable icon.</summary>
+    private sealed record BrandIcon(string Color, string Paths);
+
+    private async Task<BrandIcon?> ResolveIconAsync()
     {
         BrandSettings brand = await _brand.GetAsync();
         if (string.IsNullOrEmpty(brand.FaviconIcon))
         {
-            return NotFound();
+            return null;
         }
 
         string? paths = LucideIconPaths.Get(brand.FaviconIcon);
-        if (paths == null)
+        return paths == null ? null : new BrandIcon(brand.PrimaryColor ?? DefaultPrimaryColor, paths);
+    }
+
+    private FileContentResult IconFile(byte[] png)
+    {
+        Response.Headers.CacheControl = "no-cache";
+        return File(png, "image/png");
+    }
+
+    [HttpGet("pwa-icon.svg")]
+    public async Task<IActionResult> GetPwaIcon()
+    {
+        BrandIcon? icon = await ResolveIconAsync();
+        if (icon == null)
         {
             return NotFound();
         }
 
-        string color = brand.PrimaryColor ?? "#0a7ea4";
         string svg = $"""
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-              <rect width="100" height="100" rx="22" ry="22" fill="{color}"/>
+              <rect width="100" height="100" rx="22" ry="22" fill="{icon.Color}"/>
               <g transform="translate(20,20) scale(2.5)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-                {paths}
+                {icon.Paths}
               </g>
             </svg>
             """;
@@ -80,21 +96,42 @@ public class BrandController(BrandService brandService) : ControllerBase
             return NotFound();
         }
 
-        BrandSettings brand = await _brand.GetAsync();
-        if (string.IsNullOrEmpty(brand.FaviconIcon))
+        BrandIcon? icon = await ResolveIconAsync();
+        if (icon == null)
         {
             return NotFound();
         }
 
-        string? paths = LucideIconPaths.Get(brand.FaviconIcon);
-        if (paths == null)
+        return IconFile(PwaIconGenerator.Generate(size, icon.Color, icon.Paths));
+    }
+
+    /// <summary>
+    /// The iOS app icon a self-hoster's native build bakes in. Deliberately not a
+    /// <c>pwa-icon-1024.png</c>: the PWA shape carries the transparency App Store Connect rejects.
+    /// </summary>
+    [HttpGet("app-icon-ios.png")]
+    public async Task<IActionResult> GetAppIconIos()
+    {
+        BrandIcon? icon = await ResolveIconAsync();
+        if (icon == null)
         {
             return NotFound();
         }
 
-        byte[] png = PwaIconGenerator.Generate(size, brand.PrimaryColor ?? "#0a7ea4", paths);
-        Response.Headers.CacheControl = "no-cache";
-        return File(png, "image/png");
+        return IconFile(PwaIconGenerator.GenerateAppStoreIcon(icon.Color, icon.Paths));
+    }
+
+    /// <summary>The foreground layer of the Android adaptive icon; the background layer is the brand colour from <c>GET api/brand</c>.</summary>
+    [HttpGet("app-icon-android-foreground.png")]
+    public async Task<IActionResult> GetAppIconAndroidForeground()
+    {
+        BrandIcon? icon = await ResolveIconAsync();
+        if (icon == null)
+        {
+            return NotFound();
+        }
+
+        return IconFile(PwaIconGenerator.GenerateAdaptiveForeground(icon.Color, icon.Paths));
     }
 
     [HttpPatch]

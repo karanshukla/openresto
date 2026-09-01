@@ -21,6 +21,7 @@
     "test:e2e:ui": "playwright test --ui",
     "routes:check": "node ./scripts/check-routes.mjs",
     "routes:update": "node ./scripts/check-routes.mjs --update",
+    "native:init": "node ./scripts/native-init.mjs",
     "check": "npm run format:check && npm run lint"
   },
   "dependencies": {
@@ -28,13 +29,16 @@
     "expo": "^57.0.8",
     "expo-asset": "~57.0.7",
     "expo-constants": "~57.0.7",
+    "expo-file-system": "~57.0.5",
     "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-image": "~57.0.1",
     "expo-linking": "~57.0.4",
     "expo-localization": "~57.0.1",
     "expo-router": "~57.0.8",
+    "expo-sharing": "~57.0.15",
     "expo-splash-screen": "~57.0.5",
+    "expo-sqlite": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.1",
     "expo-system-ui": "~57.0.1",
@@ -75,6 +79,7 @@
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/jest-mocks/styleMock.js",
       "^@/components/common/AnimatedAccordion$": "<rootDir>/jest-mocks/AnimatedAccordion.js",
+      "^@/services/storage$": "<rootDir>/services/storage.ts",
       "^@/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [
@@ -97,7 +102,17 @@
       "/android/",
       "/ios/",
       "/e2e/"
-    ]
+    ],
+    "transform": {
+      "\\.mjs$": [
+        "babel-jest",
+        {
+          "presets": [
+            "babel-preset-expo"
+          ]
+        }
+      ]
+    }
   },
   "overrides": {
     "react-test-renderer": "19.2.3",

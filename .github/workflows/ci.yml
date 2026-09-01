@@ -91,6 +91,35 @@ jobs:
       - name: Check Route Manifest
         run: npm run routes:check
 
+  native-bundle:
+    name: Native Bundle
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openresto-frontend
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: openresto-frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Self-hosters build the guest app for iOS/Android themselves (docs/native-app.md), so no
+      # release job ever runs a native build. Bundling the JS for both platforms is the cheapest
+      # check that a web-only import or a module without a native entry has not crept into the
+      # guest routes; it needs no SDK, just Metro, and fails the way `eas build` would.
+      - name: Bundle for iOS and Android
+        env:
+          EXPO_PUBLIC_API_URL: https://bookings.example.com
+        run: npx expo export --platform ios --platform android
+
   doc-links:
     name: Doc Links
     runs-on: ubuntu-latest

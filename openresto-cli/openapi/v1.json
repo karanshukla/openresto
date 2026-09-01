@@ -1537,6 +1537,32 @@
         }
       }
     },
+    "/api/brand/app-icon-ios.png": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "The iOS app icon a self-hoster\u0027s native build bakes in. Deliberately not a\n\u0060pwa-icon-1024.png\u0060: the PWA shape carries the transparency App Store Connect rejects.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/brand/app-icon-android-foreground.png": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "The foreground layer of the Android adaptive icon; the background layer is the brand colour from \u0060GET api/brand\u0060.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/email-settings": {
       "get": {
         "tags": [
