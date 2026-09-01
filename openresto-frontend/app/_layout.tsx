@@ -1,8 +1,16 @@
 import "@/global.css";
 import { Platform } from "react-native";
-import { Stack, usePathname, useSegments } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  usePathname,
+  useSegments,
+  type Theme,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import "react-native-reanimated";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -39,7 +47,26 @@ function AppWithTheme() {
   const brand = useBrand();
   const pathname = usePathname();
   const segments = useSegments();
-  const { colors } = useAppTheme();
+  const { colors, isDark, primaryColor } = useAppTheme();
+
+  // React Navigation paints the native header from its own theme, not from the app's, so
+  // without this every header on a device rendered the light DefaultTheme — a white bar
+  // above a near-black page in dark mode. Web never showed it: its headers are the app's
+  // own Navbar and the root Stack runs headerShown: false.
+  const navigationTheme = useMemo<Theme>(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: primaryColor,
+        background: colors.page,
+        card: colors.card,
+        text: colors.text,
+        border: colors.border,
+      },
+    };
+  }, [isDark, primaryColor, colors]);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -86,7 +113,7 @@ function AppWithTheme() {
   }
 
   return (
-    <>
+    <ThemeProvider value={navigationTheme}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -102,8 +129,11 @@ function AppWithTheme() {
         <Stack.Screen name="(user)" />
         <Stack.Screen name="admin" />
       </Stack>
-      <StatusBar style="auto" />
-    </>
+      {/* Not "auto": that reads the device scheme, which is the visitor's pick only while
+          their preference is "system". An explicit light pick on a dark phone got light
+          chrome under dark status-bar icons. */}
+      <StatusBar style={isDark ? "light" : "dark"} />
+    </ThemeProvider>
   );
 }
 

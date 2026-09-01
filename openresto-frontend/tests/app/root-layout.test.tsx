@@ -56,6 +56,10 @@ jest.mock("expo-router", () => {
   Stack.Screen = () => null;
   return {
     Stack,
+    ThemeProvider: ({ value, children }: any) =>
+      React.createElement(View, { testID: "nav-theme", value }, children),
+    DarkTheme: { dark: true, colors: {}, fonts: {} },
+    DefaultTheme: { dark: false, colors: {}, fonts: {} },
     usePathname: jest.fn().mockReturnValue("/"),
     useSegments: jest.fn().mockReturnValue([]),
   };
@@ -107,6 +111,24 @@ describe("RootLayout", () => {
     const stack = await screen.findByTestId("stack");
     expect(stack.props.screenOptions.contentStyle).toEqual({ backgroundColor: expected });
   });
+
+  // The native header is painted by React Navigation from its own theme, not the app's, so
+  // without a theme of ours every header on a device rendered the light default — a white bar
+  // above a near-black page.
+  it.each([
+    ["light", "#f2f3f5", "#ffffff"],
+    ["dark", "#111214", "#1e2022"],
+  ] as const)(
+    "hands the navigator the %s page and card colours for its own chrome",
+    async (scheme, page, card) => {
+      mockScheme.current = scheme;
+      render(<RootLayout />);
+      const theme = (await screen.findByTestId("nav-theme")).props.value;
+      expect(theme.dark).toBe(scheme === "dark");
+      expect(theme.colors.background).toBe(page);
+      expect(theme.colors.card).toBe(card);
+    }
+  );
 
   it("renders correctly on web and sets title", async () => {
     (useSegments as jest.Mock).mockReturnValue(["book"]);

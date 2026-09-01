@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
@@ -52,6 +53,33 @@ const PHONE_RAIL_CARD_MAX = 300;
 /** Wider rail card, as a fraction of the grid column it replaces. The remainder is the peek. */
 const RAIL_CARD_OF_COLUMN = 0.92;
 const PHONE_SECTION_PADDING_H = 20;
+/** `styles.body`'s compact inset, which the locations grid measures its columns against. */
+const PHONE_BODY_PADDING_H = 16;
+/** `styles.grid`'s gap. */
+const GRID_GAP = 18;
+/** Clearance between the status bar and the hero title where the screen has no header. */
+const HERO_TOP_GAP = 24;
+
+/**
+ * The width of one column in a centred, inset, gapped row.
+ *
+ * A percentage minus a gap share is a `calc()` expression, and React Native has no `calc`:
+ * the string reached native untouched above 600dp, which is every tablet and a phone turned
+ * sideways. Measuring against the same column the section is capped to gives one answer both
+ * platforms can lay out.
+ *
+ * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that a two-column
+ * grid gets a number, not a calc string.
+ */
+export function columnWidth(
+  viewport: number,
+  insetH: number,
+  gap: number,
+  columns: number
+): number {
+  const inner = Math.min(viewport, CONTENT_MAX_WIDTH) - insetH * 2;
+  return (inner - gap * (columns - 1)) / columns;
+}
 
 export function resetHomeCache() {
   _cachedRestaurants = null;
@@ -67,6 +95,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
+  const insets = useSafeAreaInsets();
 
   const isMobile = isMobileWidth(width);
 
@@ -106,13 +135,11 @@ export default function HomeScreen() {
   const numColumns = width < 600 ? 1 : width < 1000 ? 2 : 3;
   const numHighlightCols = width < 600 ? 1 : width < 900 ? 2 : 4;
 
+  const bodyInset = isMobile ? PHONE_BODY_PADDING_H : CONTENT_PADDING_H;
   const cardWrapperStyle = [
     styles.cardWrapper,
     numColumns > 1 && {
-      width:
-        numColumns === 2
-          ? ("calc(50% - 9px)" as unknown as number)
-          : ("calc(33.333% - 12px)" as unknown as number),
+      width: columnWidth(width, bodyInset, GRID_GAP, numColumns),
       minWidth: 320,
     },
   ];
@@ -129,9 +156,7 @@ export default function HomeScreen() {
    */
   const useHighlightRail = numHighlightCols === 1 || highlights.length > numHighlightCols;
   const railInset = isMobile ? PHONE_SECTION_PADDING_H : CONTENT_PADDING_H;
-  const highlightColumnWidth =
-    (Math.min(width, CONTENT_MAX_WIDTH) - railInset * 2 - HIGHLIGHT_GAP * (numHighlightCols - 1)) /
-    numHighlightCols;
+  const highlightColumnWidth = columnWidth(width, railInset, HIGHLIGHT_GAP, numHighlightCols);
   // The card is deliberately narrower than the room it has: the sliver of the next one is
   // what says "this scrolls" without a scrollbar to say it.
   const railCardWidth =
@@ -243,7 +268,17 @@ export default function HomeScreen() {
                 />
               </>
             )}
-            <View style={[styles.heroInner, isMobile && { paddingHorizontal: 20 }]}>
+            <View
+              style={[
+                styles.heroInner,
+                isMobile && { paddingHorizontal: 20 },
+                // This screen is the one guest route that draws with no header (see
+                // app/(user)/_layout.tsx), so nothing above it has reserved the status bar
+                // and the hero starts at the top of the display. `paddingTop` alone is a web
+                // constant sized for the navbar, and lands a few points short of a notch.
+                Platform.OS !== "web" && { paddingTop: insets.top + HERO_TOP_GAP },
+              ]}
+            >
               <View
                 {...(HERO_COLLAPSE_BOX as object)}
                 style={[
@@ -305,10 +340,7 @@ export default function HomeScreen() {
                       styles.highlightCard,
                       { backgroundColor: colors.card, borderColor: colors.border },
                       numHighlightCols > 1 && {
-                        width:
-                          numHighlightCols === 2
-                            ? ("calc(50% - 6px)" as unknown as number)
-                            : ("calc(25% - 9px)" as unknown as number),
+                        width: highlightColumnWidth,
                         minWidth: 200,
                       },
                       useHighlightRail && {
