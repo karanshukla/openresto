@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Mirrors the <Exclude> in OpenRestoApi.Tests/OpenRestoApi.Tests.csproj so that CI's
+  Mirrors the <Exclude> in OpenRestoApi.Tests.csproj (beside this file) so that CI's
   "XPlat Code Coverage" collector reports the same figure as a local
   `dotnet test /p:CollectCoverage=true` run. The collector reads its config from
   runsettings/CLI only — it ignores the csproj's coverlet.msbuild <Exclude> — so without this

@@ -210,7 +210,7 @@ jobs:
           dotnet test --no-build --configuration Release --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage"
-          --settings coverlet.runsettings
+          --settings OpenRestoApi.Tests/coverlet.runsettings
           --results-directory TestResults
 
       - name: Install ReportGenerator
@@ -348,7 +348,7 @@ jobs:
         uses: zaproxy/action-api-scan@v0.10.0
         with:
           target: http://localhost:5062/openapi/v1.json
-          rules_file_name: .zap-rules.tsv
+          rules_file_name: .github/.zap-rules.tsv
           cmd_options: >
             -a
             -j

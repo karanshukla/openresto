@@ -42,16 +42,16 @@ https://github.com/user-attachments/assets/95e84bfe-0d5c-46a4-be00-e7d9501558ee
 
 ## Tech Stack
 
-| Layer        | Technology                                                                   |
-| ------------ | ---------------------------------------------------------------------------- |
-| Backend      | ASP.NET Core 10, C#, Entity Framework Core, SQLite                           |
-| Frontend     | React Native (Expo Router) — web + mobile from one codebase                  |
-| Auth         | JWT Bearer Tokens (HS256), encrypted HttpOnly cookies                        |
-| Image gen    | Magick.NET-Q8-AnyCPU (cross-platform, no native deps)                        |
-| Email        | MailKit (SMTP)                                                               |
-| Infra        | Docker Compose, Nginx reverse proxy                                          |
-| Security CI  | OWASP ZAP API scan on every push (OpenAPI-driven, rules in `.zap-rules.tsv`) |
-| Code mappers | Mapperly (source-gen, zero reflection)                                       |
+| Layer        | Technology                                                                           |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Backend      | ASP.NET Core 10, C#, Entity Framework Core, SQLite                                   |
+| Frontend     | React Native (Expo Router) — web + mobile from one codebase                          |
+| Auth         | JWT Bearer Tokens (HS256), encrypted HttpOnly cookies                                |
+| Image gen    | Magick.NET-Q8-AnyCPU (cross-platform, no native deps)                                |
+| Email        | MailKit (SMTP)                                                                       |
+| Infra        | Docker Compose, Nginx reverse proxy                                                  |
+| Security CI  | OWASP ZAP API scan on every push (OpenAPI-driven, rules in `.github/.zap-rules.tsv`) |
+| Code mappers | Mapperly (source-gen, zero reflection)                                               |
 
 ## Quick Start
 
@@ -162,7 +162,7 @@ Note: VSCode may not pick up on the Jest config, unless you use the command pale
 
 ### Security & privacy
 
-- **OWASP ZAP API scan in CI** — every push runs a ZAP API scan against the full Docker stack, using the OpenAPI spec (`/openapi/v1.json`) to discover all endpoints automatically. Ignored rules are tracked in `.zap-rules.tsv`.
+- **OWASP ZAP API scan in CI** — every push runs a ZAP API scan against the full Docker stack, using the OpenAPI spec (`/openapi/v1.json`) to discover all endpoints automatically. Ignored rules are tracked in `.github/.zap-rules.tsv`.
 - **Rate limiting** — ASP.NET Core built-in rate limiting on sensitive endpoints.
 - **Encrypted recent-bookings cookie** — HttpOnly cookie using ASP.NET Core Data Protection so customers can look up their recent reservations without an account.
 - **Hard-delete** — admins can permanently erase booking records for GDPR compliance. A GDPR notice is shown on the booking form.
