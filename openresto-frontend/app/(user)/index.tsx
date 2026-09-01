@@ -2,7 +2,16 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
-import { Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import {
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
@@ -15,6 +24,7 @@ import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants
 import { useTranslation } from "react-i18next";
 import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
+import { resolveServerUrl } from "@/utils/serverUrl";
 import { Icon, type IconName } from "@/components/common/Icon";
 
 /**
@@ -75,7 +85,7 @@ export default function HomeScreen() {
   }, []);
 
   const mutedColor = colors.muted;
-  const hasHero = !!brand.headerImageUrl && Platform.OS === "web";
+  const hasHero = !!brand.headerImageUrl;
   const heroTextShadow = "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)";
 
   const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
@@ -194,28 +204,40 @@ export default function HomeScreen() {
           >
             {hasHero && (
               <>
-                <img
-                  src={brand.headerImageUrl!}
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: heroObjectFit,
-                    objectPosition: heroObjectPosition,
-                    pointerEvents: "none",
-                  }}
-                />
+                {Platform.OS === "web" ? (
+                  <img
+                    src={brand.headerImageUrl!}
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: heroObjectFit,
+                      objectPosition: heroObjectPosition,
+                      pointerEvents: "none",
+                    }}
+                  />
+                ) : (
+                  <Image
+                    source={{ uri: resolveServerUrl(brand.headerImageUrl!) }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit={heroObjectFit}
+                    contentPosition={heroContain ? "top center" : "center"}
+                    accessible={false}
+                  />
+                )}
                 <View
                   style={[
-                    { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-                    {
-                      background: `linear-gradient(160deg, rgba(${accentR},${accentG},${accentB},0.30) 0%, rgba(0,0,0,0.40) 100%)`,
-                    } as object,
+                    StyleSheet.absoluteFill,
+                    Platform.OS === "web"
+                      ? ({
+                          background: `linear-gradient(160deg, rgba(${accentR},${accentG},${accentB},0.30) 0%, rgba(0,0,0,0.40) 100%)`,
+                        } as object)
+                      : { backgroundColor: "rgba(0,0,0,0.35)" },
                   ]}
                   pointerEvents="none"
                 />
@@ -258,7 +280,9 @@ export default function HomeScreen() {
                     style={[
                       styles.highlightsLabel,
                       { color: hasHero ? "rgba(255,255,255,0.92)" : mutedColor },
-                      hasHero && ({ textShadow: heroTextShadow } as object),
+                      hasHero &&
+                        Platform.OS === "web" &&
+                        ({ textShadow: heroTextShadow } as object),
                     ]}
                   >
                     {highlightsHeading}
@@ -267,7 +291,9 @@ export default function HomeScreen() {
                     style={[
                       styles.highlightsBy,
                       { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
-                      hasHero && ({ textShadow: heroTextShadow } as object),
+                      hasHero &&
+                        Platform.OS === "web" &&
+                        ({ textShadow: heroTextShadow } as object),
                     ]}
                   >
                     {highlightsSubheading}
