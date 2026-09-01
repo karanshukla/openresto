@@ -35,6 +35,7 @@
     "expo-image": "~57.0.1",
     "expo-linking": "~57.0.4",
     "expo-localization": "~57.0.1",
+    "expo-network": "~57.0.1",
     "expo-router": "~57.0.8",
     "expo-sharing": "~57.0.15",
     "expo-splash-screen": "~57.0.5",

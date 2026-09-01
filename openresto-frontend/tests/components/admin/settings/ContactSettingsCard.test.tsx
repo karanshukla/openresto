@@ -3,7 +3,9 @@
  */
 import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react-native";
+import { Text } from "react-native";
 import { ContactSettingsCard } from "@/components/admin/settings/ContactSettingsCard";
+import { BrandDraftProvider, useBrandDraft } from "@/components/admin/settings/BrandDraftContext";
 import * as adminApi from "@/api/admin";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -20,6 +22,7 @@ let mockBrandData: {
   websiteUrl?: string;
   phoneNumber?: string;
   emailAddress?: string;
+  privacyPolicyUrl?: string;
 } = {
   primaryColor: "#0a7ea4",
   appName: "Open Resto",
@@ -221,6 +224,94 @@ describe("ContactSettingsCard", () => {
     expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
       expect.objectContaining({ emailAddress: "hi@example.com" })
     );
+  });
+
+  it("renders the Privacy Policy URL field", () => {
+    render(<ContactSettingsCard {...baseProps} />);
+    expect(screen.getByText("Privacy Policy URL")).toBeTruthy();
+    expect(screen.getByPlaceholderText("https://example.com/privacy")).toBeTruthy();
+  });
+
+  it("pre-fills the privacy policy URL from brand context", () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      privacyPolicyUrl: "https://example.com/privacy",
+    };
+    render(<ContactSettingsCard {...baseProps} />);
+    expect(screen.getByDisplayValue("https://example.com/privacy")).toBeTruthy();
+  });
+
+  it("saves a trimmed privacy policy URL", async () => {
+    render(<ContactSettingsCard {...baseProps} />);
+    fireEvent.changeText(
+      screen.getByPlaceholderText("https://example.com/privacy"),
+      " https://example.com/privacy "
+    );
+    await flushAutosave();
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ privacyPolicyUrl: "https://example.com/privacy" })
+    );
+  });
+
+  it("sends an empty privacyPolicyUrl to clear a stored one", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      privacyPolicyUrl: "https://old.example.com/privacy",
+    };
+    render(<ContactSettingsCard {...baseProps} />);
+    fireEvent.changeText(screen.getByPlaceholderText("https://example.com/privacy"), "");
+    await flushAutosave();
+    expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ privacyPolicyUrl: "" })
+    );
+  });
+
+  // The brand preview renders from the draft, not from the saved record, so a field that only
+  // reached saveBrandSettings would not show up until a reload.
+  it("publishes the privacy policy URL to the draft before it is saved", async () => {
+    function Probe() {
+      return <Text testID="draft">{useBrandDraft().privacyPolicyUrl || "-"}</Text>;
+    }
+    render(
+      <BrandDraftProvider>
+        <ContactSettingsCard {...baseProps} />
+        <Probe />
+      </BrandDraftProvider>
+    );
+
+    await act(async () => {
+      fireEvent.changeText(
+        screen.getByPlaceholderText("https://example.com/privacy"),
+        "https://example.com/privacy"
+      );
+    });
+
+    expect(screen.getByTestId("draft").props.children).toBe("https://example.com/privacy");
+  });
+
+  // Undo works on committed state: without a way to move the inputs back, the old values would
+  // go to the server while the form kept showing the new ones.
+  it("puts every field back when the save is undone", async () => {
+    mockBrandData = {
+      primaryColor: "#0a7ea4",
+      appName: "Open Resto",
+      websiteUrl: "https://old.example.com",
+      phoneNumber: "+1 555 0100",
+      emailAddress: "old@example.com",
+      privacyPolicyUrl: "https://old.example.com/privacy",
+    };
+    render(<ContactSettingsCard {...baseProps} />);
+    fireEvent.changeText(screen.getByPlaceholderText("+44 20 7946 0958"), "+1 555 0199");
+    await flushAutosave();
+
+    await act(async () => {
+      fireEvent.press(screen.getByText("Undo"));
+    });
+
+    expect(screen.getByDisplayValue("+1 555 0100")).toBeTruthy();
+    expect(screen.getByDisplayValue("https://old.example.com/privacy")).toBeTruthy();
   });
 
   it("reports an unreachable server", async () => {

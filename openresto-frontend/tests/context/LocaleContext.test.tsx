@@ -12,7 +12,9 @@ import { LOCALE_DIRECTIONS } from "@/constants/locales";
 // StorageService (and therefore localStorage["openresto.locale"]) only reads on web.
 Object.defineProperty(Platform, "OS", { value: "web", configurable: true });
 
-const mockGetLocales = jest.fn(() => [{ textDirection: "ltr" }]);
+const mockGetLocales = jest.fn<{ languageCode?: string; textDirection: string }[], []>(() => [
+  { textDirection: "ltr" },
+]);
 jest.mock("expo-localization", () => ({
   getLocales: () => mockGetLocales(),
 }));
@@ -100,6 +102,20 @@ describe("LocaleContext", () => {
     );
 
     await waitFor(() => expect(screen.getByTestId("locale").props.children).toBe("de"));
+  });
+
+  it("ignores the device language on web, where the restaurant's own default wins", async () => {
+    // The mirror of this case is in LocaleContext.native.test.tsx, where the device wins.
+    mockGetLocales.mockReturnValue([{ languageCode: "fr", textDirection: "ltr" }]);
+    mockBrand = { defaultLocale: "es" };
+
+    render(
+      <LocaleProvider>
+        <TestConsumer />
+      </LocaleProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId("locale").props.children).toBe("es"));
   });
 
   it("falls through an unsupported brand.defaultLocale to DEFAULT_LOCALE", async () => {

@@ -20,6 +20,7 @@
 /admin/settings/brand
 /admin/settings/email
 /admin/settings/index
+/admin/settings/native-app
 /admin/settings/users
 /book
 /book/[restaurantId]

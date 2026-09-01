@@ -98,6 +98,17 @@ describe("AdminSidebar", () => {
     expect(mockPush).toHaveBeenCalledWith("/admin/settings/users");
   });
 
+  it("navigates to the native app page", async () => {
+    render(
+      <AuthProvider>
+        <AdminSidebar />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByText("Native app")).toBeTruthy());
+    fireEvent.press(screen.getByText("Native app"));
+    expect(mockPush).toHaveBeenCalledWith("/admin/settings/native-app");
+  });
+
   it("hides the Users entry from a Manager", async () => {
     const { checkSession } = require("@/api/auth");
     (checkSession as jest.Mock).mockResolvedValueOnce({

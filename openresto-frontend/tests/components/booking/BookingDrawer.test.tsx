@@ -6,7 +6,7 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { KeyboardAvoidingView, StyleSheet } from "react-native";
 import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingDrawer";
 import { createBooking } from "@/api/bookings";
 import { rememberBooking } from "@/utils/bookingCache";
@@ -316,6 +316,23 @@ describe("BookingDrawer", () => {
       expect(grabber.props.onStartShouldSetResponder).toBeDefined();
       expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
       expect(grabber.props.accessibilityElementsHidden).toBe(true);
+    });
+
+    it("lifts the form clear of the on-screen keyboard on a device", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding");
+    });
+
+    it("adds no keyboard shell on web, where the browser scrolls the field into view itself", () => {
+      const rn = require("react-native");
+      const originalOS = rn.Platform.OS;
+      rn.Platform.OS = "web";
+      try {
+        renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+        expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(0);
+      } finally {
+        rn.Platform.OS = originalOS;
+      }
     });
 
     it("closes when the backdrop is tapped, after the sheet has slid away", async () => {

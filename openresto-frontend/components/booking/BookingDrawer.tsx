@@ -23,6 +23,7 @@ import { rememberBooking } from "@/utils/bookingCache";
 import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
+import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import {
@@ -305,46 +306,50 @@ export default function BookingDrawer({
     return (
       <Modal visible transparent animationType="slide" onRequestClose={onClose}>
         <View style={styles.sheetRoot}>
-          <Pressable
-            testID="booking-drawer-backdrop"
-            accessibilityRole="button"
-            accessibilityLabel={t("booking.drawer.closePanelLabel")}
-            style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-            onPress={closeWithHaptic}
-          />
-          <Animated.View
-            testID="booking-drawer"
-            role="dialog"
-            aria-modal
-            accessibilityViewIsModal
-            accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
-            style={[
-              styles.sheet,
-              { backgroundColor: colors.card, borderTopColor: colors.border },
-              { transform: [{ translateY: dragY }] },
-            ]}
-          >
-            {/* The handle and the header drag the sheet; the body below them keeps its own
-                scrolling, which a whole-sheet responder would fight with. */}
-            <View
-              {...panResponder.panHandlers}
-              testID="booking-drawer-grabber"
-              // Drag-to-dismiss duplicates the labeled close button, so the handle stays out
-              // of the a11y tree instead of surfacing as an unnamed node.
-              aria-hidden
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              style={styles.grabberArea}
+          {/* The sheet is bottom-anchored, so on a device the keyboard would cover the very
+              fields the diner is filling in. */}
+          <KeyboardAvoider style={styles.sheetRoot}>
+            <Pressable
+              testID="booking-drawer-backdrop"
+              accessibilityRole="button"
+              accessibilityLabel={t("booking.drawer.closePanelLabel")}
+              style={[styles.backdrop, { backgroundColor: colors.overlay }]}
+              onPress={closeWithHaptic}
+            />
+            <Animated.View
+              testID="booking-drawer"
+              role="dialog"
+              aria-modal
+              accessibilityViewIsModal
+              accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
+              style={[
+                styles.sheet,
+                { backgroundColor: colors.card, borderTopColor: colors.border },
+                { transform: [{ translateY: dragY }] },
+              ]}
             >
+              {/* The handle and the header drag the sheet; the body below them keeps its own
+                scrolling, which a whole-sheet responder would fight with. */}
               <View
-                style={[
-                  styles.grabber,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
-                ]}
-              />
-            </View>
-            {body(panResponder.panHandlers)}
-          </Animated.View>
+                {...panResponder.panHandlers}
+                testID="booking-drawer-grabber"
+                // Drag-to-dismiss duplicates the labeled close button, so the handle stays out
+                // of the a11y tree instead of surfacing as an unnamed node.
+                aria-hidden
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={styles.grabberArea}
+              >
+                <View
+                  style={[
+                    styles.grabber,
+                    { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
+                  ]}
+                />
+              </View>
+              {body(panResponder.panHandlers)}
+            </Animated.View>
+          </KeyboardAvoider>
         </View>
       </Modal>
     );

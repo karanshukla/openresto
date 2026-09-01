@@ -7,6 +7,7 @@ import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
+import { openExternal } from "@/utils/openExternal";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
@@ -55,6 +56,21 @@ export default function Footer() {
                 </Pressable>
               ))}
             </View>
+          )}
+
+          {brand.privacyPolicyUrl && (
+            <Pressable
+              onPress={() => openExternal(brand.privacyPolicyUrl!)}
+              accessibilityRole="link"
+              accessibilityLabel={t("common.footer.privacyPolicy")}
+              hitSlop={10}
+              style={styles.adminBtn}
+            >
+              <Icon name="shield-checkmark-outline" size="sm" color={colors.muted} />
+              <ThemedText style={[styles.adminText, { color: colors.muted }]}>
+                {t("common.footer.privacyPolicy")}
+              </ThemedText>
+            </Pressable>
           )}
 
           <Link href={"/admin/dashboard" as const} asChild>

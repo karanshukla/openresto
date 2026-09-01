@@ -9,6 +9,7 @@ import EmailSettingsScreen from "@/app/admin/settings/email";
 import AccountSettingsScreen from "@/app/admin/settings/account";
 import UserSettingsScreen from "@/app/admin/settings/users";
 import ApiKeysSettingsScreen from "@/app/admin/settings/api-keys";
+import NativeAppSettingsScreen from "@/app/admin/settings/native-app";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 const mockRedirect = jest.fn();
@@ -73,6 +74,24 @@ jest.mock("@/components/admin/settings/UsersCard", () => ({
 }));
 jest.mock("@/components/admin/settings/ApiKeysCard", () => ({
   ApiKeysCard: stub("ApiKeysCard"),
+}));
+jest.mock("@/components/admin/settings/NativeAppReadinessCard", () => ({
+  NativeAppReadinessCard: stub("NativeAppReadinessCard"),
+}));
+jest.mock("@/components/admin/settings/NativeAppClientsCard", () => ({
+  NativeAppClientsCard: stub("NativeAppClientsCard"),
+}));
+jest.mock("@/components/admin/settings/NativeAppVersionCard", () => ({
+  NativeAppVersionCard: stub("NativeAppVersionCard"),
+}));
+jest.mock("@/components/admin/settings/NativeAppSetupCard", () => ({
+  NativeAppSetupCard: stub("NativeAppSetupCard"),
+}));
+// The route owns the one request both native-app cards render from; the cards are stubbed,
+// so it only needs the hook to resolve, not to reach the API.
+const mockNativeAppStatus = jest.fn();
+jest.mock("@/hooks/use-native-app-status", () => ({
+  useNativeAppStatus: () => mockNativeAppStatus(),
 }));
 
 // The Users route gates on the signed-in role, so it needs an auth context.
@@ -146,6 +165,41 @@ describe("admin settings routes", () => {
   it("shows the API keys card to an Owner", async () => {
     renderWithProviders(<ApiKeysSettingsScreen />, { withAuth: true });
     await waitFor(() => expect(screen.getByText("ApiKeysCard")).toBeTruthy());
+  });
+
+  it("renders the native app cards from one status request", async () => {
+    mockNativeAppStatus.mockReturnValue({
+      status: {
+        serverUrl: "https://bookings.example.com",
+        checks: [],
+        minimumAppVersion: null,
+        clients: [],
+      },
+      loading: false,
+      failed: false,
+      reload: jest.fn(),
+    });
+    renderWithProviders(<NativeAppSettingsScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("Native app")).toBeTruthy();
+      expect(screen.getByText("NativeAppReadinessCard")).toBeTruthy();
+      expect(screen.getByText("NativeAppClientsCard")).toBeTruthy();
+      expect(screen.getByText("NativeAppVersionCard")).toBeTruthy();
+      expect(screen.getByText("NativeAppSetupCard")).toBeTruthy();
+    });
+  });
+
+  // The setup card still has to name an address while the status is in flight, so the route
+  // must hand it an explicit null rather than reaching into a status that is not there yet.
+  it("passes a null server address while the status is still loading", async () => {
+    mockNativeAppStatus.mockReturnValue({
+      status: null,
+      loading: true,
+      failed: false,
+      reload: jest.fn(),
+    });
+    renderWithProviders(<NativeAppSettingsScreen />);
+    await waitFor(() => expect(screen.getByText("NativeAppSetupCard")).toBeTruthy());
   });
 
   it("redirects a Manager away from the API keys route", async () => {

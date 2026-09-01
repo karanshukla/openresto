@@ -86,6 +86,7 @@ function AdminLayoutInner() {
       "/admin/settings/brand": "Brand",
       "/admin/settings/email": "Email & Push",
       "/admin/settings/users": "Users",
+      "/admin/settings/native-app": "Native app",
       "/admin/settings/account": "Account",
       "/admin/bookings": "Bookings",
       "/admin/bookings/new": "New Walk-in",
