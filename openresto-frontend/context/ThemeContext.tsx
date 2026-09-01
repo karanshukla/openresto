@@ -54,6 +54,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     applyTheme(colorScheme);
 
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
     if (!document.body.classList.contains("theme-ready")) {
       requestAnimationFrame(() => {
         document.body.classList.add("theme-ready");

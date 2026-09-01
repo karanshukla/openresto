@@ -10,6 +10,7 @@ import PopularTimesPicker from "./PopularTimesPicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
 import { isValidEmail } from "@/utils/validation";
+import { confirm } from "@/utils/confirm";
 import { getHoursForDate } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay, isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
@@ -223,7 +224,7 @@ export default function BookingForm({
 
     const selectedTable = allTables.find((tbl) => tbl.id === tableId);
     if (selectedTable && seats > selectedTable.seats) {
-      const confirmed = window.confirm(
+      const confirmed = await confirm(
         t("booking.form.oversizeConfirm", {
           tableSeats: t("booking.form.seatsCount", { count: selectedTable.seats }),
           guests: t("booking.form.partySize", { count: seats }),

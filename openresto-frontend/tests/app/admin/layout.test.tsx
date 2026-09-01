@@ -1,3 +1,9 @@
+/**
+ * @jest-environment jsdom
+ *
+ * The admin is web-only — AdminLayout redirects off native — so this file runs the web
+ * environment its DOM side-effects (document.title) need.
+ */
 import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
 import AdminLayout from "@/app/admin/_layout";
@@ -10,6 +16,7 @@ jest.mock("@/api/auth", () => ({
 }));
 
 jest.mock("expo-router", () => ({
+  Redirect: () => null,
   useRouter: jest.fn(),
   usePathname: jest.fn(),
   useSegments: jest.fn().mockReturnValue(["admin", "dashboard"]),
@@ -41,6 +48,10 @@ describe("AdminLayout", () => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (usePathname as jest.Mock).mockReturnValue("/admin/dashboard");
+    // The admin only mounts on web — AdminLayout redirects off native before any of this
+    // runs. See tests/app/admin-layout.test.tsx for that boundary.
+    const { Platform } = require("react-native");
+    Platform.OS = "web";
   });
 
   it("shows loading state then authenticated stack when session is valid", async () => {

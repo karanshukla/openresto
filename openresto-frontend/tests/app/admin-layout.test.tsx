@@ -28,6 +28,8 @@ jest.mock("expo-router", () => {
   return {
     Slot,
     Stack,
+    Redirect: ({ href }: { href: string }) =>
+      React.createElement(View, { testID: `redirect-${href}` }),
     useRouter: jest.fn(),
     usePathname: jest.fn().mockReturnValue("/admin/dashboard"),
     useSegments: jest.fn().mockReturnValue(["admin", "dashboard"]),
@@ -81,12 +83,16 @@ describe("AdminLayout", () => {
     expect(screen.getByTestId("slot")).toBeTruthy();
   });
 
-  it("renders stack if authenticated and on native", async () => {
+  it("sends a native visitor to the guest home rather than mounting the admin", async () => {
     const { Platform } = require("react-native");
     Platform.OS = "ios";
     (checkSession as jest.Mock).mockResolvedValue({ user: "admin" });
     render(<AdminLayout />);
-    await waitFor(() => expect(screen.getByTestId("stack")).toBeTruthy());
+    expect(screen.getByTestId("redirect-/")).toBeTruthy();
+    expect(screen.queryByTestId("sidebar")).toBeNull();
+    expect(screen.queryByTestId("slot")).toBeNull();
+    // No session check either — the admin never mounts, so nothing asks who is signed in.
+    expect(checkSession).not.toHaveBeenCalled();
   });
 
   it("renders login screen without gate", async () => {

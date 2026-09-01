@@ -19,6 +19,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import { RestaurantDto } from "@/api/restaurants";
 import { createBooking } from "@/api/bookings";
+import { rememberBooking } from "@/utils/bookingCache";
 import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
@@ -208,6 +209,16 @@ export default function BookingDrawer({
       });
       const email = encodeURIComponent(data.customerEmail);
       if (newBooking?.bookingRef) {
+        // Native has no cookie jar, so the diner's own list of recent bookings is kept
+        // client-side; on web this is a no-op and the API's HttpOnly cookie still owns it.
+        rememberBooking({
+          bookingRef: newBooking.bookingRef,
+          email: data.customerEmail,
+          date: dateTime,
+          seats: data.seats,
+          restaurantName: restaurant.name,
+          createdAt: new Date().toISOString(),
+        });
         router.push(`/booking-confirmation/${newBooking.bookingRef}?email=${email}`);
       } else if (newBooking) {
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);

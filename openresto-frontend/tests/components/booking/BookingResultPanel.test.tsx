@@ -144,7 +144,10 @@ describe("BookingResultPanel", () => {
     await waitFor(() => expect(screen.getByText("Copy")).toBeTruthy(), { timeout: 3000 });
   }, 10000);
 
-  it("does not render the calendar/copy actions on native", () => {
+  it("keeps the calendar and directions actions on native, dropping only Copy", () => {
+    // Calendar reaches native through the share sheet and directions through
+    // Linking.openURL; the clipboard is the one action with no native counterpart here,
+    // because the reference is already on screen to read out.
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
     renderWithProviders(
       <BookingResultPanel
@@ -155,10 +158,9 @@ describe("BookingResultPanel", () => {
         onCancelPress={jest.fn()}
       />
     );
-    expect(screen.queryByText("ADD TO CALENDAR")).toBeNull();
-    expect(screen.queryByText("Copy")).toBeNull();
-    // Directions still render on native — Linking.openURL isn't a web-only API.
+    expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy();
     expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
+    expect(screen.queryByText("Copy")).toBeNull();
     Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
   });
 

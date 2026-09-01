@@ -9,6 +9,7 @@ import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingDrawer";
 import { createBooking } from "@/api/bookings";
+import { rememberBooking } from "@/utils/bookingCache";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -26,6 +27,8 @@ const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
+
+jest.mock("@/utils/bookingCache", () => ({ rememberBooking: jest.fn() }));
 
 jest.mock("@/api/bookings", () => ({
   createBooking: jest.fn(),
@@ -334,6 +337,29 @@ describe("BookingDrawer", () => {
           "/booking-confirmation/REF123?email=test%40example.com"
         )
       );
+    });
+
+    it("remembers the booking so a device with no cookie jar can still look it up", async () => {
+      renderWithProviders(<BookingDrawer {...baseProps} />);
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+      await waitFor(() =>
+        expect(rememberBooking).toHaveBeenCalledWith(
+          expect.objectContaining({
+            bookingRef: "REF123",
+            email: "test@example.com",
+            seats: 2,
+            restaurantName: "Toronto Resto",
+          })
+        )
+      );
+    });
+
+    it("remembers nothing when the response carries no reference to look up", async () => {
+      (createBooking as jest.Mock).mockResolvedValue({ id: 77 });
+      renderWithProviders(<BookingDrawer {...baseProps} />);
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(rememberBooking).not.toHaveBeenCalled();
     });
 
     it("navigates using the booking id when the response has no bookingRef", async () => {

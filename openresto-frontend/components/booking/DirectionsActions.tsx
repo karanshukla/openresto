@@ -17,9 +17,9 @@ function openMaps(base: string, address: string) {
  * about to be handed to, and the sheet these sit in is not the kind of constrained chrome
  * that earns an icon-only control. The heading already says "directions", so the glyph is
  * free to say *whose* — each pill wears its service's logo, Google in its own blue and Apple
- * in the neutral tone its achromatic mark asks for. Unlike the calendar actions above them,
- * these work on every platform — Linking.openURL isn't a web-only API — so they render
- * without a Platform.OS gate.
+ * in the neutral tone its achromatic mark asks for. Like the calendar actions above them,
+ * these render on every platform: Linking.openURL hands the address to whichever map app the
+ * OS has, and to a new tab on web.
  */
 export default function DirectionsActions({ address }: { address: string }) {
   const { colors } = useAppTheme();

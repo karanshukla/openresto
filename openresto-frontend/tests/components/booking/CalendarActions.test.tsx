@@ -4,6 +4,7 @@ import { StyleSheet, type ViewStyle } from "react-native";
 import CalendarActions from "@/components/booking/CalendarActions";
 import { VENDOR_BRANDS } from "@/constants/vendorBrands";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { openExternal } from "@/utils/openExternal";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -12,6 +13,8 @@ jest.mock("@expo/vector-icons", () => ({
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: jest.fn(() => "light"),
 }));
+
+jest.mock("@/utils/openExternal", () => ({ openExternal: jest.fn() }));
 
 jest.mock("@/utils/calendar", () => ({
   buildCalendarUrls: jest.fn(() => ({
@@ -40,7 +43,7 @@ const withDownloadIcs = (downloadIcs: jest.Mock) => {
 
 describe("CalendarActions", () => {
   beforeEach(() => {
-    (window as unknown as { open: jest.Mock }).open = jest.fn();
+    (openExternal as jest.Mock).mockClear();
   });
 
   it("offers all three destinations as named pills under one heading", () => {
@@ -61,16 +64,18 @@ describe("CalendarActions", () => {
     expect(screen.queryByText("Apple Calendar, Thunderbird, etc.")).toBeNull();
   });
 
-  it("opens the Google and Outlook URLs in a new tab", () => {
+  it("hands the Google and Outlook URLs to the platform's own opener", () => {
+    // A new tab on web, the OS handler on native — the pills themselves are the same
+    // control on both, which is why they no longer sit behind a Platform.OS gate.
     render(<CalendarActions {...baseProps} />);
     fireEvent.press(screen.getByText("Google"));
-    expect(window.open).toHaveBeenCalledWith("https://calendar.google.com/test", "_blank");
+    expect(openExternal).toHaveBeenCalledWith("https://calendar.google.com/test");
     fireEvent.press(screen.getByText("Outlook"));
-    expect(window.open).toHaveBeenCalledWith("https://outlook.com/test", "_blank");
+    expect(openExternal).toHaveBeenCalledWith("https://outlook.com/test");
   });
 
   it("calls downloadIcs when the .ics pill is pressed", () => {
-    const downloadIcs = jest.fn();
+    const downloadIcs = jest.fn().mockResolvedValue(undefined);
     withDownloadIcs(downloadIcs);
     render(<CalendarActions {...baseProps} />);
     fireEvent.press(screen.getByText(".ics"));

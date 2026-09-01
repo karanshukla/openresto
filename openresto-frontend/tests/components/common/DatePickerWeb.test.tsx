@@ -214,6 +214,9 @@ describe("DatePicker (web)", () => {
   });
 
   it("navigates to the next and previous month", () => {
+    // The picker only offers dates up to 29 days out, so on the 1st of a month the next month
+    // is out of range and the arrow is disabled — the same month-edge class as the tests above.
+    pinClockMidMonth();
     const today = new Date();
     const currentLabel = today.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
