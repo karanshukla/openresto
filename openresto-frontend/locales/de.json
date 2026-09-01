@@ -169,7 +169,25 @@
     "footer": {
       "adminLinkText": "Admin",
       "copyrightFallback": "© {{year}} {{appName}}. Alle Rechte vorbehalten.",
+      "privacyPolicy": "Datenschutzerklärung",
       "restaurantAdminLabel": "Restaurant-Verwaltung"
+    },
+    "guestSettings": {
+      "title": "Einstellungen",
+      "openLabel": "Einstellungen öffnen",
+      "closeLabel": "Einstellungen schließen",
+      "appearance": "Darstellung",
+      "themeSystem": "System",
+      "themeLight": "Hell",
+      "themeDark": "Dunkel"
+    },
+    "offline": {
+      "label": "Offline",
+      "message": "Sie sind offline. Einige Informationen sind möglicherweise nicht aktuell."
+    },
+    "updateRequired": {
+      "title": "Update erforderlich",
+      "message": "Bitte aktualisieren Sie die App im Store, um weiter reservieren zu können."
     },
     "datePicker": {
       "changeDate": "Datum ändern, derzeit {{date}}",
@@ -382,6 +400,7 @@
       "title": "Reservierung stornieren"
     },
     "connectionError": "Wir konnten das Reservierungssystem nicht erreichen. Ihre Reservierung ist sicher.",
+    "offlineError": "Sie sind offline. Stellen Sie die Verbindung wieder her, um Ihre Reservierung zu finden.",
     "form": {
       "callLabel": "{{phone}} anrufen",
       "emailA11y": "E-Mail-Adresse",
@@ -1284,7 +1303,10 @@
         "phoneHint": "Ausweichkontakt, der angezeigt wird, wenn ein Standort keine eigene Telefonnummer hat.",
         "emailLabel": "Kontakt-E-Mail",
         "emailPlaceholder": "bookings@example.com",
-        "emailHint": "Ausweichkontakt, der angezeigt wird, wenn ein Standort keine eigene E-Mail hat."
+        "emailHint": "Ausweichkontakt, der angezeigt wird, wenn ein Standort keine eigene E-Mail hat.",
+        "privacyPolicyLabel": "URL der Datenschutzerklärung",
+        "privacyPolicyPlaceholder": "https://example.com/privacy",
+        "privacyPolicyHint": "Beide App-Stores verlangen eine, bevor ein Eintrag veröffentlicht werden kann, und die Gast-Fußzeile verlinkt sie."
       },
       "socialLinkEditForm": {
         "iconLabel": "Symbol",
@@ -1778,6 +1800,86 @@
         "title": "API-Schlüssel",
         "subtitle": "Schlüssel, mit denen andere Dienste die OpenResto-API in deinem Namen aufrufen."
       },
+      "nativeApp": {
+        "route": {
+          "title": "Native App",
+          "subtitle": "Ob dieser Server bereit für die Gast-App ist, die Sie in den Stores veröffentlichen, und welche Builds sie nutzen."
+        },
+        "readiness": {
+          "title": "Store-Bereitschaft",
+          "loading": "Prüfungen laufen…",
+          "loadFailed": "Die Prüfungen konnten nicht geladen werden.",
+          "retry": "Erneut versuchen",
+          "recheck": "Erneut prüfen",
+          "allPassing": "Alles, was eine Einreichung braucht, ist vorhanden",
+          "failureCount_one": "{{count}} Prüfung erfordert Aufmerksamkeit",
+          "failureCount_other": "{{count}} Prüfungen erfordern Aufmerksamkeit",
+          "serverUrlLabel": "Öffentliche Adresse",
+          "noServerUrl": "Es ist keine öffentliche Adresse konfiguriert, daher können die Prüfungen, die Ihre Domain abrufen, nicht laufen. Hinterlegen Sie die Website-URL unter Marke.",
+          "open": "Öffnen",
+          "outcome": {
+            "pass": "Bestanden",
+            "fail": "Handlung nötig",
+            "skip": "Nicht geprüft"
+          }
+        },
+        "checks": {
+          "https": {
+            "label": "Öffentliche Adresse nutzt HTTPS",
+            "fix": "Betreiben Sie diese Instanz über https. Deeplinks und die Transportsicherheit von iOS lehnen einfaches http beide ab."
+          },
+          "brandIcon": {
+            "label": "Markensymbol gewählt",
+            "fix": "Wählen Sie unter Einstellungen → Marke ein Symbol; der Generator lädt beide App-Symbole daraus."
+          },
+          "privacyPolicy": {
+            "label": "URL der Datenschutzerklärung hinterlegt",
+            "fix": "Tragen Sie sie in der Karte Kontakt & Website unter Einstellungen → Marke ein. Beide Stores verlangen sie vor der Veröffentlichung."
+          },
+          "appleAppSiteAssociation": {
+            "label": "Apple-App-Site-Association-Datei wird ausgeliefert",
+            "fix": "Führen Sie native:init mit --apple-team-id aus und kopieren Sie native/.well-known/ in den Ordner well-known neben Ihrer Compose-Datei."
+          },
+          "androidAssetLinks": {
+            "label": "Assetlinks-Datei wird ausgeliefert",
+            "fix": "Führen Sie native:init mit --android-fingerprint aus und kopieren Sie native/.well-known/ in den Ordner well-known neben Ihrer Compose-Datei."
+          }
+        },
+        "clients": {
+          "title": "Installierte Clients",
+          "loading": "Verbundene Builds werden geladen…",
+          "loadFailed": "Die Client-Liste konnte nicht geladen werden.",
+          "count_one": "{{count}} Build hat sich verbunden",
+          "count_other": "{{count}} Builds haben sich verbunden",
+          "empty": "Noch hat sich kein nativer Build verbunden. Die App nennt bei jeder Anfrage Plattform und Version, Builds erscheinen hier also, sobald jemand einen öffnet.",
+          "columns": {
+            "platform": "Plattform",
+            "appVersion": "App-Version",
+            "lastSeen": "Zuletzt gesehen",
+            "requests7d": "7 Tage",
+            "requests30d": "30 Tage"
+          }
+        },
+        "version": {
+          "title": "Mindestens unterstützte App-Version",
+          "anyVersion": "Jede Version wird akzeptiert",
+          "label": "Mindestversion",
+          "placeholder": "1.9.0",
+          "hint": "Builds darunter zeigen statt der App einen Update-Hinweis. Die Version einer App ist das OpenResto-Release, aus dem sie gebaut wurde. Leer lassen, um jede Version zu akzeptieren.",
+          "invalidBlocked": "Nicht gespeichert: verwenden Sie drei Zahlen, etwa 1.9.0."
+        },
+        "setup": {
+          "title": "App bauen",
+          "subtitle": "Der Generator-Befehl, ausgefüllt für dieses Deployment",
+          "intro": "Führen Sie ihn in einem OpenResto-Checkout des Releases aus, das dieser Server betreibt. Er liest die Marke dieser Instanz und schreibt Ihre Publisher-Konfiguration nach openresto-frontend/native/.",
+          "commandLabel": "Befehl",
+          "copy": "Kopieren",
+          "copied": "Kopiert",
+          "copyFailed": "Kopieren nicht möglich – markieren Sie den Befehl und kopieren Sie ihn selbst.",
+          "bundleIdHint": "Ersetzen Sie com.example durch eine Domain, die Ihnen gehört: die Bundle-ID ist die dauerhafte Identität der App in beiden Stores.",
+          "guideLink": "Bau-Anleitung"
+        }
+      },
       "brandAutosave": {
         "serverUnreachable": "Server konnte nicht erreicht werden."
       }
@@ -1798,6 +1900,7 @@
           "emailPush": "E-Mail & Push",
           "users": "Benutzer",
           "apiKeys": "API-Schlüssel",
+          "nativeApp": "Native App",
           "account": "Konto"
         },
         "unreadLabel_one": "{{label}}, {{count}} ungelesen",

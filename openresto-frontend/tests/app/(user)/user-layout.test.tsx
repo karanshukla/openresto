@@ -12,6 +12,12 @@ import UserLayout from "@/app/(user)/_layout";
 // jest.mock factory is allowed to close over it.
 const mockRegisteredRoutes: string[] = [];
 
+// The layout's offline strip takes the top safe-area inset, and the hook throws outside a
+// provider — the app mounts one in app/_layout.tsx, these tests render the layout alone.
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
 jest.mock("expo-router", () => {
   const React = require("react");
   const { View } = require("react-native");

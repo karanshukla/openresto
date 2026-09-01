@@ -89,6 +89,9 @@ services:
       - FRONTEND_PORT=8081
     volumes:
       - media_data:/usr/share/nginx/html/media:ro
+      # Universal Links / App Links verification files for a native guest app you publish
+      # yourself (see docs/native-app.md). Leave the directory empty if you have no app.
+      - ./well-known:/usr/share/nginx/html/.well-known:ro
     depends_on:
       backend:
         condition: service_healthy

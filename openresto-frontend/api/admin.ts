@@ -540,6 +540,10 @@ export interface BrandSettingsDto {
   highlightsHeading?: string;
   highlightsSubheading?: string;
   headerImageFit?: string;
+  /** `""` clears; `undefined` leaves the stored value alone (the same contract as every field above). */
+  privacyPolicyUrl?: string;
+  /** `major.minor.patch`, or `""` to lift the floor. */
+  minimumAppVersion?: string;
 }
 
 /**

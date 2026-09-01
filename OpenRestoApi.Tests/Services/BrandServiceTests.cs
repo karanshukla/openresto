@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -560,5 +561,85 @@ public class BrandServiceTests
         var svc = CreateService(TestDbFactory.Create(nameof(GetRepositoryUrl_IgnoresBlankValue)), config.Object);
 
         Assert.Equal("https://github.com/karanshukla/openresto", svc.GetRepositoryUrl());
+    }
+
+    [Theory]
+    [InlineData("openres.to/privacy")]
+    [InlineData("/privacy")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("mailto:privacy@openres.to")]
+    public async Task SaveAsync_Throws_WhenPrivacyPolicyUrlIsNotAnAbsoluteWebUrl(string url)
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(SaveAsync_Throws_WhenPrivacyPolicyUrlIsNotAnAbsoluteWebUrl) + url);
+        var svc = CreateService(db);
+
+        ValidationException error = await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, privacyPolicyUrl: url));
+
+        Assert.Equal(ErrorCodes.BrandPrivacyPolicyUrlInvalid, error.Code);
+    }
+
+    [Fact]
+    public async Task SaveAsync_PersistsPrivacyPolicyUrl()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_PersistsPrivacyPolicyUrl));
+        var svc = CreateService(db);
+
+        await svc.SaveAsync(null, null, null, privacyPolicyUrl: " https://openres.to/privacy ");
+
+        Assert.Equal("https://openres.to/privacy", (await svc.GetAsync()).PrivacyPolicyUrl);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ClearsPrivacyPolicyUrl_WhenBlank()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_ClearsPrivacyPolicyUrl_WhenBlank));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, privacyPolicyUrl: "https://openres.to/privacy");
+
+        await svc.SaveAsync(null, null, null, privacyPolicyUrl: "");
+
+        Assert.Null((await svc.GetAsync()).PrivacyPolicyUrl);
+    }
+
+    [Theory]
+    [InlineData("1.9")]
+    [InlineData("v1.9.0")]
+    [InlineData("1.9.0-beta")]
+    [InlineData("latest")]
+    public async Task SaveAsync_Throws_WhenMinimumAppVersionIsNotMajorMinorPatch(string version)
+    {
+        using AppDbContext db = TestDbFactory.Create(
+            nameof(SaveAsync_Throws_WhenMinimumAppVersionIsNotMajorMinorPatch) + version);
+        var svc = CreateService(db);
+
+        ValidationException error = await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync(null, null, null, minimumAppVersion: version));
+
+        Assert.Equal(ErrorCodes.BrandMinimumAppVersionInvalid, error.Code);
+    }
+
+    [Fact]
+    public async Task SaveAsync_PersistsMinimumAppVersion()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_PersistsMinimumAppVersion));
+        var svc = CreateService(db);
+
+        await svc.SaveAsync(null, null, null, minimumAppVersion: "1.9.0");
+
+        Assert.Equal("1.9.0", (await svc.GetAsync()).MinimumAppVersion);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ClearsMinimumAppVersion_WhenBlank()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_ClearsMinimumAppVersion_WhenBlank));
+        var svc = CreateService(db);
+        await svc.SaveAsync(null, null, null, minimumAppVersion: "1.9.0");
+
+        await svc.SaveAsync(null, null, null, minimumAppVersion: "   ");
+
+        Assert.Null((await svc.GetAsync()).MinimumAppVersion);
     }
 }

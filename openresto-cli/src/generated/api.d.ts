@@ -1732,6 +1732,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/brand/app-icon-ios.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The iOS app icon a self-hoster's native build bakes in. Deliberately not a
+         *     `pwa-icon-1024.png`: the PWA shape carries the transparency App Store Connect rejects.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/brand/app-icon-android-foreground.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The foreground layer of the Android adaptive icon; the background layer is the brand colour from `GET api/brand`. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/email-settings": {
         parameters: {
             query?: never;
@@ -2272,6 +2343,47 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/native-app/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The readiness checklist, the configured minimum app version, and aggregate use per native
+         *     build. Read-only: nothing here mutates the deployment.
+         *     <seealso>NativeAppControllerTests.Status_WithoutAuth_Returns401</seealso>
+         *     <seealso>NativeAppControllerTests.Status_WithAdminJwt_ReturnsTheFiveChecks</seealso>
+         *     <seealso>NativeAppControllerTests.Status_WithABookingsOnlyKey_Returns403</seealso>
+         *     <seealso>NativeAppControllerTests.Status_WithABrandReadKey_Returns200</seealso>
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3624,6 +3736,10 @@ export interface components {
             highlightsSubheading?: null | string;
             /** @description "Cover" (default) or "Contain". Null means leave the stored value unchanged. */
             headerImageFit?: null | string;
+            /** @description Absolute http(s) URL. Empty string clears it; null leaves the stored value unchanged. */
+            privacyPolicyUrl?: null | string;
+            /** @description Strict `major.minor.patch`. Empty string clears it; null leaves the stored value unchanged. */
+            minimumAppVersion?: null | string;
         };
         CancelBookingByRefRequest: {
             email?: string;

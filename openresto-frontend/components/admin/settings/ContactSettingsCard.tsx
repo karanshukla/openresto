@@ -39,11 +39,12 @@ export function ContactSettingsCard({
   const [websiteUrl, setWebsiteUrl] = useState(brand.websiteUrl ?? "");
   const [phoneNumber, setPhoneNumber] = useState(brand.phoneNumber ?? "");
   const [emailAddress, setEmailAddress] = useState(brand.emailAddress ?? "");
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState(brand.privacyPolicyUrl ?? "");
   // Key is versioned because the default flipped to expanded: without it, a stored `false`
   // from the collapsed-by-default build would keep the card shut for anyone who saw that one.
   const [expanded, setExpanded] = usePersistedState("settings:contact:expanded:v2", true);
 
-  useBrandDraftPublish({ websiteUrl });
+  useBrandDraftPublish({ websiteUrl, privacyPolicyUrl });
 
   // A withheld save has to say why: with no button to disable, silence reads as a broken card.
   const blockedReason =
@@ -56,11 +57,13 @@ export function ContactSettingsCard({
       websiteUrl: websiteUrl.trim(),
       phoneNumber: phoneNumber.trim(),
       emailAddress: emailAddress.trim(),
+      privacyPolicyUrl: privacyPolicyUrl.trim(),
     },
     saved: {
       websiteUrl: brand.websiteUrl ?? "",
       phoneNumber: brand.phoneNumber ?? "",
       emailAddress: brand.emailAddress ?? "",
+      privacyPolicyUrl: brand.privacyPolicyUrl ?? "",
     },
     save: saveBrandFields,
     // A half-typed address is a 400 from the server; blank is a deliberate clear, so it saves.
@@ -69,6 +72,7 @@ export function ContactSettingsCard({
       setWebsiteUrl(previous.websiteUrl);
       setPhoneNumber(previous.phoneNumber);
       setEmailAddress(previous.emailAddress);
+      setPrivacyPolicyUrl(previous.privacyPolicyUrl);
     },
   });
 
@@ -77,6 +81,7 @@ export function ContactSettingsCard({
     setWebsiteUrl(brand.websiteUrl ?? "");
     setPhoneNumber(brand.phoneNumber ?? "");
     setEmailAddress(brand.emailAddress ?? "");
+    setPrivacyPolicyUrl(brand.privacyPolicyUrl ?? "");
   }, [brand]);
 
   const summary =
@@ -147,6 +152,22 @@ export function ContactSettingsCard({
                 {t("admin.settings.contact.emailHint")}
               </ThemedText>
             </View>
+          </View>
+
+          <View style={settingsStyles.field}>
+            <ThemedText style={settingsStyles.fieldLabel}>
+              {t("admin.settings.contact.privacyPolicyLabel")}
+            </ThemedText>
+            <Input
+              value={privacyPolicyUrl}
+              onChangeText={setPrivacyPolicyUrl}
+              placeholder={t("admin.settings.contact.privacyPolicyPlaceholder")}
+              autoCapitalize="none"
+              keyboardType="url"
+            />
+            <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+              {t("admin.settings.contact.privacyPolicyHint")}
+            </ThemedText>
           </View>
 
           <SaveStatus

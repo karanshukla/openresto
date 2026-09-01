@@ -25,6 +25,7 @@ import { useLocationSlots } from "./useLocationSlots";
 import { styles } from "./LocationListItem.styles";
 import { Icon } from "@/components/common/Icon";
 import Button from "@/components/common/Button";
+import { resolveServerUrl } from "@/utils/serverUrl";
 
 const SLOTS_SHOWN_WIDE = 5;
 const SLOTS_SHOWN_COMPACT = 3;
@@ -245,7 +246,7 @@ export default function LocationListItem({
       style={styles.metaItem}
       onPress={(event) => {
         event?.stopPropagation?.();
-        Linking.openURL(restaurant.menuUrl!);
+        Linking.openURL(resolveServerUrl(restaurant.menuUrl!));
       }}
       accessibilityRole="link"
       accessibilityLabel={t("restaurant.locationListItem.viewMenu")}

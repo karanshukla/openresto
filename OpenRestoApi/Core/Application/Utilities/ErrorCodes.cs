@@ -123,6 +123,8 @@ public static class ErrorCodes
     public const string BrandHighlightsHeadingTooLong = "brand.highlights_heading_too_long";
     public const string BrandHighlightsSubheadingTooLong = "brand.highlights_subheading_too_long";
     public const string BrandHeaderImageFitInvalid = "brand.header_image_fit_invalid";
+    public const string BrandPrivacyPolicyUrlInvalid = "brand.privacy_policy_url_invalid";
+    public const string BrandMinimumAppVersionInvalid = "brand.minimum_app_version_invalid";
 
     public const string HighlightTitleRequired = "highlight.title_required";
     public const string HighlightTitleTooLong = "highlight.title_too_long";

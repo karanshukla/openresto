@@ -5,14 +5,13 @@ import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useBrand } from "@/context/BrandContext";
-import { useLocale } from "@/context/LocaleContext";
 import { fetchSocialLinks, SocialLinkDto } from "@/api/restaurants";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
 import { ModalCard } from "@/components/common/ModalCard";
+import { LocaleRadioList } from "@/components/common/LocaleRadioList";
 import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
-import { LOCALE_LABELS, SUPPORTED_LOCALES } from "@/constants/locales";
 import { openIndexFor, resolveListboxKey } from "@/utils/listboxKeys";
 import { webProps, type WebKeyEvent } from "@/utils/webProps";
 import { styles } from "./OverflowMenu.styles";
@@ -57,7 +56,6 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const { toggle } = useTheme();
   const { colors, isDark } = useAppTheme();
   const brand = useBrand();
-  const { locale, setLocale } = useLocale();
   const menuId = useId();
   const itemId = (index: number) => `${menuId}-item-${index}`;
 
@@ -272,35 +270,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
         dismissLabel={t("common.overflowMenu.closeLanguage")}
         testID="language-backdrop"
       >
-        <View
-          style={styles.languageList}
-          role="radiogroup"
-          accessibilityLabel={t("common.language.switcherLabel")}
-          testID="language-radiogroup"
-        >
-          {SUPPORTED_LOCALES.map((option) => {
-            const checked = option === locale;
-            return (
-              <Pressable
-                key={option}
-                onPress={() => {
-                  setLocale(option);
-                  setShowLanguage(false);
-                }}
-                accessibilityRole="radio"
-                accessibilityLabel={LOCALE_LABELS[option]}
-                accessibilityState={{ checked }}
-                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                  styles.languageRow,
-                  (hovered || pressed) && { backgroundColor: colors.input },
-                ]}
-              >
-                <ThemedText style={styles.languageRowText}>{LOCALE_LABELS[option]}</ThemedText>
-                {checked && <Icon name="checkmark" size="md" color={colors.muted} />}
-              </Pressable>
-            );
-          })}
-        </View>
+        <LocaleRadioList onSelect={() => setShowLanguage(false)} />
       </ModalCard>
     </>
   );

@@ -172,10 +172,7 @@ export default function BookingResultPanel({
 
       <BookingGuestDetails booking={booking} mutedColor={colors.muted} />
 
-      {/* Calendar links rely on window.open, so — like the rest of this app's calendar
-          actions — they stay web-only; directions below use Linking.openURL, which works
-          on native, so they render on every platform. */}
-      {Platform.OS === "web" && ref && (
+      {ref && (
         <>
           {divider}
           <CalendarActions

@@ -16,6 +16,7 @@ import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 import SlidePanel from "@/components/common/SlidePanel";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
+import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import RecentBookingsList from "@/components/booking/RecentBookingsList";
 import { theme } from "@/theme/theme";
@@ -26,6 +27,7 @@ import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
 import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
+import { useOnline } from "@/hooks/use-online";
 import { styles } from "@/styles/user/lookup.styles";
 
 /**
@@ -74,6 +76,7 @@ export default function LookupScreen({
 
   const { width } = useWindowDimensions();
   const { colors } = useAppTheme();
+  const online = useOnline();
   const brand = useBrand();
   const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
@@ -180,7 +183,10 @@ export default function LookupScreen({
         <View style={styles.msgRow}>
           <Icon name="cloud-offline-outline" size="md" color={theme.colors.error} />
           <ThemedText style={[styles.msgText, { color: colors.muted }]}>
-            {t("lookup.connectionError")}
+            {/* A lookup that failed with no connection is not the booking system being
+                unreachable — the diner's own device is, and the recent bookings held on it
+                are still on screen underneath. */}
+            {online ? t("lookup.connectionError") : t("lookup.offlineError")}
           </ThemedText>
         </View>
         <Button variant="ghost" tone="neutral" size="sm" onPress={handleLookup}>
@@ -205,128 +211,130 @@ export default function LookupScreen({
 
   return (
     <ThemedView style={styles.root}>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        onScroll={fab.trackScroll}
-        scrollEventThrottle={16}
-      >
-        <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
-          <View style={styles.header}>
-            <ThemedText style={styles.title}>{t("lookup.title")}</ThemedText>
-            <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-              {t("lookup.subtitle")}
-            </ThemedText>
-          </View>
+      <KeyboardAvoider style={styles.root}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          onScroll={fab.trackScroll}
+          scrollEventThrottle={16}
+        >
+          <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
+            <View style={styles.header}>
+              <ThemedText style={styles.title}>{t("lookup.title")}</ThemedText>
+              <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
+                {t("lookup.subtitle")}
+              </ThemedText>
+            </View>
 
-          <View style={twoColumn ? styles.wideRow : styles.singleCol}>
-            <View style={twoColumn ? styles.formCol : undefined}>
-              <View
-                style={[
-                  styles.searchCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <ThemedText style={styles.label}>{t("lookup.form.referenceLabel")}</ThemedText>
-                <Input
-                  ref={refInputRef}
-                  placeholder={t("lookup.form.referencePlaceholder")}
-                  accessibilityLabel={t("lookup.form.referenceA11y")}
-                  value={refInput}
-                  onChangeText={handleTypedChange(setRefInput)}
-                  autoCapitalize="none"
-                />
-                <ThemedText style={styles.label}>{t("lookup.form.emailLabel")}</ThemedText>
-                <Input
-                  placeholder={t("lookup.form.emailPlaceholder")}
-                  accessibilityLabel={t("lookup.form.emailA11y")}
-                  value={emailInput}
-                  onChangeText={handleTypedChange(setEmailInput)}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  returnKeyType="go"
-                  onSubmitEditing={handleLookup}
-                />
-                <Button
-                  size="lg"
-                  fullWidth
-                  icon="search"
-                  disabled={!canSearch}
-                  loading={status === "loading"}
-                  onPress={handleLookup}
-                  accessibilityLabel={t("lookup.form.submitA11y")}
+            <View style={twoColumn ? styles.wideRow : styles.singleCol}>
+              <View style={twoColumn ? styles.formCol : undefined}>
+                <View
+                  style={[
+                    styles.searchCard,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
                 >
-                  {t("lookup.form.submitButton")}
-                </Button>
-                <ThemedText style={[styles.helpText, { color: colors.muted }]}>
-                  {t("lookup.form.helpText")}
-                </ThemedText>
-                {/* Telling someone to get in touch without saying how is half an
+                  <ThemedText style={styles.label}>{t("lookup.form.referenceLabel")}</ThemedText>
+                  <Input
+                    ref={refInputRef}
+                    placeholder={t("lookup.form.referencePlaceholder")}
+                    accessibilityLabel={t("lookup.form.referenceA11y")}
+                    value={refInput}
+                    onChangeText={handleTypedChange(setRefInput)}
+                    autoCapitalize="none"
+                  />
+                  <ThemedText style={styles.label}>{t("lookup.form.emailLabel")}</ThemedText>
+                  <Input
+                    placeholder={t("lookup.form.emailPlaceholder")}
+                    accessibilityLabel={t("lookup.form.emailA11y")}
+                    value={emailInput}
+                    onChangeText={handleTypedChange(setEmailInput)}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    returnKeyType="go"
+                    onSubmitEditing={handleLookup}
+                  />
+                  <Button
+                    size="lg"
+                    fullWidth
+                    icon="search"
+                    disabled={!canSearch}
+                    loading={status === "loading"}
+                    onPress={handleLookup}
+                    accessibilityLabel={t("lookup.form.submitA11y")}
+                  >
+                    {t("lookup.form.submitButton")}
+                  </Button>
+                  <ThemedText style={[styles.helpText, { color: colors.muted }]}>
+                    {t("lookup.form.helpText")}
+                  </ThemedText>
+                  {/* Telling someone to get in touch without saying how is half an
                     instruction. Falls back to the brand's details until a lookup names a
                     location, which is the same per-field resolution the rest of the app
                     uses, so a location listing only a phone still shows the global email. */}
-                {hasContact(contact) && (
-                  <ButtonRow align="center" style={styles.contactRow}>
-                    {contact.phone && (
-                      <Button
-                        variant="ghost"
-                        tone="brand"
-                        size="sm"
-                        icon="call-outline"
-                        onPress={() => Linking.openURL(telHref(contact.phone!))}
-                        accessibilityLabel={t("lookup.form.callLabel", { phone: contact.phone })}
-                      >
-                        {contact.phone}
-                      </Button>
-                    )}
-                    {contact.email && (
-                      <Button
-                        variant="ghost"
-                        tone="brand"
-                        size="sm"
-                        icon="mail-outline"
-                        onPress={() => Linking.openURL(mailtoHref(contact.email!))}
-                        accessibilityLabel={t("lookup.form.emailContactLabel", {
-                          email: contact.email,
-                        })}
-                      >
-                        {contact.email}
-                      </Button>
-                    )}
-                  </ButtonRow>
-                )}
-              </View>
+                  {hasContact(contact) && (
+                    <ButtonRow align="center" style={styles.contactRow}>
+                      {contact.phone && (
+                        <Button
+                          variant="ghost"
+                          tone="brand"
+                          size="sm"
+                          icon="call-outline"
+                          onPress={() => Linking.openURL(telHref(contact.phone!))}
+                          accessibilityLabel={t("lookup.form.callLabel", { phone: contact.phone })}
+                        >
+                          {contact.phone}
+                        </Button>
+                      )}
+                      {contact.email && (
+                        <Button
+                          variant="ghost"
+                          tone="brand"
+                          size="sm"
+                          icon="mail-outline"
+                          onPress={() => Linking.openURL(mailtoHref(contact.email!))}
+                          accessibilityLabel={t("lookup.form.emailContactLabel", {
+                            email: contact.email,
+                          })}
+                        >
+                          {contact.email}
+                        </Button>
+                      )}
+                    </ButtonRow>
+                  )}
+                </View>
 
-              {/* Stays put while a result is showing — the panel is a column over, not on
+                {/* Stays put while a result is showing — the panel is a column over, not on
                   top of this list, so the diner can switch between their bookings without
                   dismissing anything. The one on screen is marked rather than removed, so
                   the list doesn't reshuffle under the press that opened it. */}
-              <RecentBookingsList
-                cached={cached}
-                colors={colors}
-                activeRef={status === "found" ? (booking?.bookingRef ?? null) : null}
-                onSelect={handleRecentSelect}
-              />
-            </View>
-
-            {twoColumn && (
-              <View style={styles.resultCol}>
-                <SlidePanel
-                  variant="side"
-                  onDismiss={reset}
-                  accessibilityLabel={t("lookup.resultPanelA11y")}
-                >
-                  {panelContent}
-                </SlidePanel>
+                <RecentBookingsList
+                  cached={cached}
+                  colors={colors}
+                  activeRef={status === "found" ? (booking?.bookingRef ?? null) : null}
+                  onSelect={handleRecentSelect}
+                />
               </View>
-            )}
-          </View>
-        </PageContainer>
 
-        <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
-        <Footer />
-      </ScrollView>
+              {twoColumn && (
+                <View style={styles.resultCol}>
+                  <SlidePanel
+                    variant="side"
+                    onDismiss={reset}
+                    accessibilityLabel={t("lookup.resultPanelA11y")}
+                  >
+                    {panelContent}
+                  </SlidePanel>
+                </View>
+              )}
+            </View>
+          </PageContainer>
+
+          <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
+          <Footer />
+        </ScrollView>
+      </KeyboardAvoider>
 
       {isCompact && showPanel && (
         <SlidePanel

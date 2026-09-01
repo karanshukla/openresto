@@ -1,0 +1,37 @@
+# EAS Build uploads the project directory. When this file exists it replaces .gitignore as
+# the upload filter, so it has to repeat .gitignore's entries; tests/easignore.test.ts fails
+# if the two drift. The one deliberate difference: native/ is gitignored (it holds one
+# self-hoster's bundle id, icons and .well-known files) but has to reach the build.
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env*.local
+*.tsbuildinfo
+app-example
+/ios
+/android
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+e2e/.auth/
+coverage/
+.coverage-tmp*/
+# Not needed to build a binary
+e2e/
+tests/

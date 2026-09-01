@@ -412,12 +412,20 @@ namespace OpenRestoApi.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MinimumAppVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PrimaryColor")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrivacyPolicyUrl")
+                        .HasMaxLength(2048)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Subtitle")
@@ -493,6 +501,39 @@ namespace OpenRestoApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("EmailSettings");
+                });
+
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.NativeClientStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AppVersion")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastSeenUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RequestCount")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Platform", "AppVersion", "Day")
+                        .IsUnique();
+
+                    b.ToTable("NativeClientStats");
                 });
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.Restaurant", b =>

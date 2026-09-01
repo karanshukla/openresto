@@ -11,6 +11,12 @@ import { screen, fireEvent, waitFor } from "@testing-library/react-native";
 import BookingForm from "@/components/booking/BookingForm";
 import { useTableHold } from "@/components/booking/useTableHold";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { confirm } from "@/utils/confirm";
+
+// The oversize prompt goes through the cross-platform helper (window.confirm on web,
+// Alert.alert on native), so the guard is exercised through it rather than through a
+// browser API the form no longer calls directly.
+jest.mock("@/utils/confirm", () => ({ confirm: jest.fn() }));
 
 // Mock useTableHold
 jest.mock("@/components/booking/useTableHold");
@@ -72,9 +78,7 @@ describe("BookingForm", () => {
       resolvedSectionId: null,
       setHoldStatus: mockSetHoldStatus,
     });
-    // Mock window.confirm
-    delete (window as any).confirm;
-    (window as any).confirm = jest.fn(() => true);
+    (confirm as jest.Mock).mockResolvedValue(true);
   });
 
   /**
@@ -135,12 +139,12 @@ describe("BookingForm", () => {
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
     fireEvent.press(screen.getByText("Confirm Booking"));
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(onSubmit).toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalled();
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
   });
 
   it("does not submit when the seats-exceed-capacity confirmation is declined", async () => {
-    (window as any).confirm = jest.fn(() => false);
+    (confirm as jest.Mock).mockResolvedValue(false);
     const onSubmit = jest.fn();
     const restaurant = {
       ...mockRestaurant,
@@ -161,7 +165,7 @@ describe("BookingForm", () => {
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
     fireEvent.press(screen.getByText("Confirm Booking"));
 
-    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => expect(confirm).toHaveBeenCalled());
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

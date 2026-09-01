@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { ThemedText } from "@/components/themed-text";
 import type { RgbColor } from "@/utils/colors";
 import { styles } from "./LocationListItem.styles";
+import { resolveServerUrl } from "@/utils/serverUrl";
 
 export interface LocationThumbnailProps {
   name: string;
@@ -53,7 +54,7 @@ export function LocationThumbnail({
     <View style={[styles.thumb, { width: size, height: size }, fill]}>
       {imageUrl && Platform.OS !== "web" && !imageError && (
         <Image
-          source={{ uri: imageUrl }}
+          source={{ uri: resolveServerUrl(imageUrl) }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           onError={() => setImageError(true)}

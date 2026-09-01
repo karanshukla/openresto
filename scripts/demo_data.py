@@ -81,6 +81,11 @@ BRAND = {
     "Subtitle": "Philadelphia's home of milk steak and jelly beans.",
     "HighlightsHeading": "What we're known for",
     "HighlightsSubheading": "Curated by Frank Reynolds",
+    # Native-app settings (#388). A privacy policy is what the store listings need, so the
+    # demo has one; MinimumAppVersion stays NULL so the readiness screen shows the
+    # "every build accepted" state rather than a version nobody can install.
+    "PrivacyPolicyUrl": "https://openres.to/privacy",
+    "MinimumAppVersion": None,
 }
 
 # ─── Locations ───────────────────────────────────────────────────────────────

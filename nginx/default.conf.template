@@ -48,6 +48,19 @@ server {
         log_not_found off;
     }
 
+    # Universal Links / App Links verification for a self-hoster's native guest app
+    # (docs/native-app.md). Served from a directory mounted into this container so the
+    # prebuilt frontend image never has to change. Apple's file has no extension and must
+    # come back as application/json, hence the default_type; ^~ keeps the dotfile deny
+    # regex above from being consulted for this prefix.
+    location ^~ /.well-known/ {
+        root /usr/share/nginx/html;
+        default_type application/json;
+        add_header Cache-Control "public, max-age=3600" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
     # Media — static file serving from shared volume
     location /media/ {
         alias /usr/share/nginx/html/media/;

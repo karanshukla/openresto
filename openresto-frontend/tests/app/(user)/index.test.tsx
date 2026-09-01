@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { Image } from "expo-image";
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { Platform, ScrollView } from "react-native";
@@ -228,6 +229,46 @@ describe("HomeScreen", () => {
 
     (Platform as unknown as { OS: string }).OS = originalOS;
   });
+
+  it.each([
+    ["Contain", "contain", "top center"],
+    ["Cover", "cover", "center"],
+  ])(
+    "renders the hero image through expo-image off web, resolved against the server (%s)",
+    async (fit, contentFit, contentPosition) => {
+      const originalOS = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "ios";
+      const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
+      process.env.EXPO_PUBLIC_API_URL = "https://bookings.example.com/api";
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            appName: "Hero Brand",
+            primaryColor: "#c0392b",
+            headerImageUrl: "/media/hero.jpg?v=1",
+            headerImageFit: fit,
+          }),
+      });
+
+      try {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
+        const hero = screen
+          .UNSAFE_getAllByType(Image)
+          .find(
+            (node) => node.props.source?.uri === "https://bookings.example.com/media/hero.jpg?v=1"
+          );
+        expect(hero).toBeTruthy();
+        expect(hero?.props.contentFit).toBe(contentFit);
+        expect(hero?.props.contentPosition).toBe(contentPosition);
+      } finally {
+        (Platform as unknown as { OS: string }).OS = originalOS;
+        process.env.EXPO_PUBLIC_API_URL = originalApiUrl;
+      }
+    }
+  );
 
   it("renders highlights section when highlights are provided", async () => {
     renderWithProviders(<HomeScreen />);

@@ -6,6 +6,7 @@ import ButtonRow from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { VENDOR_BRANDS } from "@/constants/vendorBrands";
 import { buildCalendarUrls } from "@/utils/calendar";
+import { openExternal } from "@/utils/openExternal";
 import { styles } from "./CalendarActions.styles";
 
 interface CalendarActionsProps {
@@ -31,6 +32,10 @@ interface CalendarActionsProps {
  * neutral because a file format has no brand to wear. That is also why its label is just the
  * extension — spelled out as "Download .ics" it pushed the row onto a second line on a phone,
  * for a word the download glyph beside it already says.
+ *
+ * All three work on every platform: the two service links go through `openExternal` (a new
+ * tab on web, the OS handler on native) and the .ics through `deliverIcs` (a download on web,
+ * the share sheet on native).
  */
 export default function CalendarActions(props: CalendarActionsProps) {
   const { colors } = useAppTheme();
@@ -49,7 +54,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
           size="sm"
           icon="logo-google"
           accentColor={VENDOR_BRANDS.google}
-          onPress={/* istanbul ignore next */ () => window.open(googleUrl, "_blank")}
+          onPress={() => openExternal(googleUrl)}
         >
           Google
         </Button>
@@ -59,7 +64,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
           size="sm"
           icon="logo-microsoft"
           accentColor={VENDOR_BRANDS.microsoft}
-          onPress={/* istanbul ignore next */ () => window.open(outlookUrl, "_blank")}
+          onPress={() => openExternal(outlookUrl)}
         >
           Outlook
         </Button>
@@ -69,7 +74,7 @@ export default function CalendarActions(props: CalendarActionsProps) {
           tone="neutral"
           size="sm"
           icon="download-outline"
-          onPress={downloadIcs}
+          onPress={() => void downloadIcs()}
           accessibilityLabel={t("booking.calendar.icsA11y")}
         >
           .ics

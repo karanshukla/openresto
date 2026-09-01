@@ -7,6 +7,8 @@ import "react-native-reanimated";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppThemeProvider } from "@/context/ThemeContext";
+import UpdateRequired from "@/components/common/UpdateRequired";
+import { currentAppVersion, isBelowMinimum } from "@/utils/appVersion";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
 import { LocaleProvider } from "@/context/LocaleContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -76,6 +78,12 @@ function AppWithTheme() {
     if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
+
+  // Web is never gated: a browser always has the current build, and the one screen the gate
+  // renders would replace the whole site with a store instruction nobody could act on.
+  if (Platform.OS !== "web" && isBelowMinimum(currentAppVersion(), brand.minimumAppVersion)) {
+    return <UpdateRequired />;
+  }
 
   return (
     <>

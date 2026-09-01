@@ -9,6 +9,7 @@ import type { RestaurantDto } from "@/api/restaurants";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { LocationSeatingMap } from "./LocationSeatingMap";
 import { styles } from "./LocationListItem.styles";
+import { resolveServerUrl } from "@/utils/serverUrl";
 
 export interface LocationDetailsPanelProps {
   restaurant: RestaurantDto;
@@ -91,7 +92,7 @@ export function LocationDetailsPanel({
               borderColor: hovered || pressed ? accentBorder : borderColor,
             },
           ]}
-          onPress={() => Linking.openURL(restaurant.menuUrl!)}
+          onPress={() => Linking.openURL(resolveServerUrl(restaurant.menuUrl!))}
           accessibilityRole="link"
           accessibilityLabel={t("restaurant.details.openMenu")}
         >

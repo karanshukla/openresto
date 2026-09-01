@@ -12,6 +12,7 @@ export interface BrandDraft {
   faviconIcon?: string;
   subtitle: string;
   websiteUrl: string;
+  privacyPolicyUrl: string;
   headerImageUrl: string | null;
   headerImageFit: string;
   highlightsHeading: string;
@@ -28,6 +29,7 @@ function draftFromBrand(brand: ReturnType<typeof useBrand>): BrandDraft {
     faviconIcon: brand.faviconIcon,
     subtitle: brand.subtitle ?? "",
     websiteUrl: brand.websiteUrl ?? "",
+    privacyPolicyUrl: brand.privacyPolicyUrl ?? "",
     headerImageUrl: brand.headerImageUrl ?? null,
     headerImageFit: brand.headerImageFit ?? "Cover",
     highlightsHeading: brand.highlightsHeading ?? "",

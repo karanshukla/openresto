@@ -38,6 +38,8 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             cliPackageUrl: data.cliPackageUrl || undefined,
             apiDocsUrl: data.apiDocsUrl || undefined,
             repositoryUrl: data.repositoryUrl || undefined,
+            privacyPolicyUrl: data.privacyPolicyUrl || undefined,
+            minimumAppVersion: data.minimumAppVersion || undefined,
           });
         }
       })

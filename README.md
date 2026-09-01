@@ -67,7 +67,8 @@ Pre-built `linux/amd64` and `linux/arm64` images are pulled from GHCR — no bui
 
 For backup and restore procedures, see [`docs/backup-restore.md`](docs/backup-restore.md).
 To drive the admin API from your own scripts with an API key, see
-[`docs/http-api.md`](docs/http-api.md).
+[`docs/http-api.md`](docs/http-api.md). To publish the guest booking app to the Play Store or
+App Store under your own developer account, see [`docs/native-app.md`](docs/native-app.md).
 
 ### Docker (build from source)
 
@@ -166,6 +167,7 @@ Note: VSCode may not pick up on the Jest config, unless you use the command pale
 - **Encrypted recent-bookings cookie** — HttpOnly cookie using ASP.NET Core Data Protection so customers can look up their recent reservations without an account.
 - **Hard-delete** — admins can permanently erase booking records for GDPR compliance. A GDPR notice is shown on the booking form.
 - **No accounts needed** — customers identify via a short `BookingRef` code; no email verification loop.
+- **Publish your own guest app** — the same guest screens build as a native iOS/Android app under your own store accounts, pointed at your own instance: `npm run native:init` reads your brand, `eas build` does the rest ([`docs/native-app.md`](docs/native-app.md)).
 
 ### Developer experience
 

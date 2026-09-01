@@ -34,6 +34,12 @@ jest.mock("@/api/restaurants", () => ({
   fetchSocialLinks: jest.fn(),
 }));
 
+jest.mock("@/utils/openExternal", () => ({
+  openExternal: jest.fn(),
+}));
+
+import { openExternal } from "@/utils/openExternal";
+
 describe("Footer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -64,6 +70,27 @@ describe("Footer", () => {
   it("renders the Admin link", () => {
     render(<Footer />);
     expect(screen.getByText("Admin")).toBeTruthy();
+  });
+
+  it("renders no privacy policy link when the brand configures none", () => {
+    render(<Footer />);
+    expect(screen.queryByLabelText("Privacy policy")).toBeNull();
+  });
+
+  it("renders a privacy policy link when the brand configures one, and opens it externally", () => {
+    (useAppTheme as jest.Mock).mockReturnValue({
+      brand: {
+        appName: "Test App",
+        primaryColor: "#0a7ea4",
+        privacyPolicyUrl: "https://example.com/privacy",
+      },
+      colors: { border: "#ccc", muted: "#666" },
+    });
+    render(<Footer />);
+
+    fireEvent.press(screen.getByLabelText("Privacy policy"));
+
+    expect(openExternal).toHaveBeenCalledWith("https://example.com/privacy");
   });
 
   it("renders no social icons when none are configured", async () => {

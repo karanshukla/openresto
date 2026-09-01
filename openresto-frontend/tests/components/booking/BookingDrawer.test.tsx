@@ -6,9 +6,10 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { KeyboardAvoidingView, StyleSheet } from "react-native";
 import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingDrawer";
 import { createBooking } from "@/api/bookings";
+import { rememberBooking } from "@/utils/bookingCache";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -26,6 +27,8 @@ const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
+
+jest.mock("@/utils/bookingCache", () => ({ rememberBooking: jest.fn() }));
 
 jest.mock("@/api/bookings", () => ({
   createBooking: jest.fn(),
@@ -315,6 +318,23 @@ describe("BookingDrawer", () => {
       expect(grabber.props.accessibilityElementsHidden).toBe(true);
     });
 
+    it("lifts the form clear of the on-screen keyboard on a device", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding");
+    });
+
+    it("adds no keyboard shell on web, where the browser scrolls the field into view itself", () => {
+      const rn = require("react-native");
+      const originalOS = rn.Platform.OS;
+      rn.Platform.OS = "web";
+      try {
+        renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+        expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(0);
+      } finally {
+        rn.Platform.OS = originalOS;
+      }
+    });
+
     it("closes when the backdrop is tapped, after the sheet has slid away", async () => {
       const onClose = jest.fn();
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
@@ -334,6 +354,29 @@ describe("BookingDrawer", () => {
           "/booking-confirmation/REF123?email=test%40example.com"
         )
       );
+    });
+
+    it("remembers the booking so a device with no cookie jar can still look it up", async () => {
+      renderWithProviders(<BookingDrawer {...baseProps} />);
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+      await waitFor(() =>
+        expect(rememberBooking).toHaveBeenCalledWith(
+          expect.objectContaining({
+            bookingRef: "REF123",
+            email: "test@example.com",
+            seats: 2,
+            restaurantName: "Toronto Resto",
+          })
+        )
+      );
+    });
+
+    it("remembers nothing when the response carries no reference to look up", async () => {
+      (createBooking as jest.Mock).mockResolvedValue({ id: 77 });
+      renderWithProviders(<BookingDrawer {...baseProps} />);
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(rememberBooking).not.toHaveBeenCalled();
     });
 
     it("navigates using the booking id when the response has no bookingRef", async () => {

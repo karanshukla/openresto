@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
-import { Slot, Stack, useRouter, usePathname, useSegments } from "expo-router";
+import { Redirect, Slot, Stack, useRouter, usePathname, useSegments } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
@@ -28,9 +28,22 @@ function DesktopOnlyWall() {
   );
 }
 
+/**
+ * The admin is a web surface. The self-hoster's native build ships the guest routes only, so
+ * on ios/android this layout hands the visitor back to the home screen rather than mounting a
+ * dashboard whose every screen assumes a pointer, a keyboard and a browser session.
+ *
+ * @see [admin-layout.test.tsx](../../tests/app/admin-layout.test.tsx) — pins the redirect on
+ * native and that web still mounts the admin.
+ */
 export default function AdminLayout() {
+  if (Platform.OS !== "web") return <Redirect href="/" />;
+  return <AdminLayoutWeb />;
+}
+
+function AdminLayoutWeb() {
   const { width } = useWindowDimensions();
-  const showWall = Platform.OS === "web" && width < MIN_WIDTH;
+  const showWall = width < MIN_WIDTH;
 
   // AdminLayoutInner stays mounted even when the wall is shown so that auth
   // state is preserved — unmounting it would reset the status to "loading" and
@@ -73,6 +86,7 @@ function AdminLayoutInner() {
       "/admin/settings/brand": "Brand",
       "/admin/settings/email": "Email & Push",
       "/admin/settings/users": "Users",
+      "/admin/settings/native-app": "Native app",
       "/admin/settings/account": "Account",
       "/admin/bookings": "Bookings",
       "/admin/bookings/new": "New Walk-in",
@@ -149,6 +163,9 @@ function AdminLayoutInner() {
         </ThemedView>
       );
     }
+    /* istanbul ignore next -- unreachable: AdminLayout redirects off native before
+       this ever mounts. Kept so the admin still has a native shell if it is ever
+       shipped there. */
     return nativeStack;
   }
 
@@ -172,5 +189,8 @@ function AdminLayoutInner() {
     );
   }
 
+  /* istanbul ignore next -- unreachable: AdminLayout redirects off native before
+     this ever mounts. Kept so the admin still has a native shell if it is ever
+     shipped there. */
   return nativeStack;
 }

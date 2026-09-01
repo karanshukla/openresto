@@ -365,4 +365,53 @@ public class BrandControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Theory]
+    [InlineData("app-icon-ios.png")]
+    [InlineData("app-icon-android-foreground.png")]
+    public async Task GetNativeAppIcon_ReturnsPng_WhenFaviconIconConfigured(string path)
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        HttpResponseMessage saveResponse = await client.PatchAsJsonAsync("/api/brand", new
+        {
+            faviconIcon = "chef-hat",
+            primaryColor = "#0a7ea4",
+        });
+        Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
+
+        HttpResponseMessage response = await client.GetAsync($"/api/brand/{path}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.NotEmpty(bytes);
+        Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
+    }
+
+    [Theory]
+    [InlineData("app-icon-ios.png")]
+    [InlineData("app-icon-android-foreground.png")]
+    public async Task GetNativeAppIcon_ReturnsNotFound_WhenNoFaviconIconConfigured(string path)
+    {
+        using var factory = new TestWebAppFactory();
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync($"/api/brand/{path}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("app-icon-ios.png")]
+    [InlineData("app-icon-android-foreground.png")]
+    public async Task GetNativeAppIcon_ReturnsNotFound_WhenFaviconIconIsUnrecognized(string path)
+    {
+        using var factory = new TestWebAppFactory();
+        await SeedUnrecognizedFaviconIconAsync(factory);
+        HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync($"/api/brand/{path}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

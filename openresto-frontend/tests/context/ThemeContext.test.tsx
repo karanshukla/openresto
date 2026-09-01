@@ -142,6 +142,10 @@ describe("ThemeContext", () => {
     expect(getByTestId("pref").props.children).toBe("system");
     fireEvent.press(getByTestId("btn-light"));
     expect(localStorage.getItem("openresto-theme")).toBeNull();
+    // Nothing reaches the DOM either: `document.body` does not exist on a device, so the
+    // theme-ready class the web build waits on is never asked for.
+    expect(document.body.classList.contains("theme-ready")).toBe(false);
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
     Object.defineProperty(Platform, "OS", {
       get: jest.fn(() => "web"),
       configurable: true,

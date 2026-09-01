@@ -1,6 +1,39 @@
+import { Platform } from "react-native";
+import Constants from "expo-constants";
+
+/**
+ * The API base is a build-time constant either way: `EXPO_PUBLIC_API_URL` is inlined by Metro
+ * (the Docker web build passes `/api`), and `extra.apiUrl` is baked into the binary by
+ * `app.config.ts` from the self-hoster's generated `native/app.native.json`. The env var wins
+ * so a developer can still point a native dev client at a local server without regenerating.
+ *
+ * @see [client.test.ts](../tests/api/client.test.ts) — pins that the env var takes precedence
+ * over `extra.apiUrl` and that a non-string `extra.apiUrl` is ignored.
+ */
+export function configuredApiUrl(): string | undefined {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (fromEnv) return fromEnv;
+  const extra = Constants.expoConfig?.extra as { apiUrl?: unknown } | undefined;
+  return typeof extra?.apiUrl === "string" && extra.apiUrl ? extra.apiUrl : undefined;
+}
+
+/**
+ * Identifies a native build to the server as `<platform>/<app version>`, e.g. `android/1.9.0`,
+ * so the admin's Native app page can show which versions are in use. Web sends nothing: the
+ * browser is the client there, and a custom header would add a CORS preflight to every call.
+ *
+ * @see [client.test.ts](../tests/api/client.test.ts) — pins the header off web and its absence
+ * on web.
+ */
+export const CLIENT_HEADER = "X-OpenResto-Client";
+
+export function clientIdentity(): string | undefined {
+  if (Platform.OS === "web") return undefined;
+  return `${Platform.OS}/${Constants.expoConfig?.version ?? "0.0.0"}`;
+}
+
 export function buildUrl(path: string): string {
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
-  const base = API_URL?.replace(/\/$/, "") ?? "";
+  const base = configuredApiUrl()?.replace(/\/$/, "") ?? "";
   if (!base) return `/api${path}`;
 
   // Check if the URL path already contains /api as a segment
@@ -31,6 +64,8 @@ export async function api(
   opts: RequestOptions = {}
 ): Promise<Response> {
   const headers: Record<string, string> = { ...opts.headers };
+  const identity = clientIdentity();
+  if (identity) headers[CLIENT_HEADER] = identity;
 
   let rawBody: string | undefined;
   if (opts.body !== undefined) {

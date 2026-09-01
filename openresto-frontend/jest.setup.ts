@@ -36,6 +36,16 @@ jest.mock("expo-localization", () => ({
   getLocales: () => [{ textDirection: "ltr" }],
 }));
 
+// expo-network resolves to a native module under Jest's default "ios" haste platform, the same
+// way expo-localization does, so `useOnline` — mounted by the guest layout's offline banner —
+// needs it stubbed. Reports a reachable network; tests of the offline paths override this.
+jest.mock("expo-network", () => ({
+  getNetworkStateAsync: jest.fn(() =>
+    Promise.resolve({ isConnected: true, isInternetReachable: true })
+  ),
+  addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
+
 // Brand fetch stub — BrandProvider fetches /api/brand on mount. Most screen
 // tests render BrandProvider and need this resolved to avoid unhandled
 // rejections. Individual tests that need a different brand response can still

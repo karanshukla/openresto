@@ -1,4 +1,10 @@
-import { buildUrl, api } from "@/api/client";
+import { Platform } from "react-native";
+import Constants from "expo-constants";
+import { buildUrl, api, configuredApiUrl, clientIdentity, CLIENT_HEADER } from "@/api/client";
+
+// The real module exposes `expoConfig` as a getter, so the tests swap in a plain object they
+// can point at whatever `extra` a build would have baked in.
+jest.mock("expo-constants", () => ({ __esModule: true, default: { expoConfig: null } }));
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -32,6 +38,47 @@ describe("buildUrl", () => {
   it("handles base URL without /api", () => {
     process.env.EXPO_PUBLIC_API_URL = "https://test.com";
     expect(buildUrl("/foo")).toBe("https://test.com/api/foo");
+  });
+});
+
+describe("configuredApiUrl", () => {
+  const originalEnv = process.env.EXPO_PUBLIC_API_URL;
+  const mutable = Constants as unknown as { expoConfig: unknown };
+
+  const withExtra = (extra: Record<string, unknown> | undefined) => {
+    mutable.expoConfig = extra === undefined ? null : { name: "t", slug: "t", extra };
+  };
+
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_API_URL = originalEnv;
+    mutable.expoConfig = null;
+  });
+
+  it("prefers EXPO_PUBLIC_API_URL over extra.apiUrl", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://env.example";
+    withExtra({ apiUrl: "https://extra.example" });
+    expect(configuredApiUrl()).toBe("https://env.example");
+  });
+
+  it("falls back to extra.apiUrl baked in by app.config.ts when the env var is unset", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra({ apiUrl: "https://bookings.example.com" });
+    expect(buildUrl("/brand")).toBe("https://bookings.example.com/api/brand");
+  });
+
+  it("ignores a non-string or empty extra.apiUrl", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra({ apiUrl: 42 });
+    expect(configuredApiUrl()).toBeUndefined();
+    withExtra({ apiUrl: "" });
+    expect(configuredApiUrl()).toBeUndefined();
+  });
+
+  it("is undefined with no env var and no expo config", () => {
+    delete process.env.EXPO_PUBLIC_API_URL;
+    withExtra(undefined);
+    expect(configuredApiUrl()).toBeUndefined();
+    expect(buildUrl("/x")).toBe("/api/x");
   });
 });
 
@@ -73,5 +120,39 @@ describe("api", () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
     await api("GET", "/pub", { credentials: "omit" });
     expect(mockFetch.mock.calls[0][1].credentials).toBe("omit");
+  });
+});
+
+describe("client identity header", () => {
+  const mutable = Constants as unknown as { expoConfig: unknown };
+  const setPlatform = (os: string) =>
+    Object.defineProperty(Platform, "OS", { value: os, configurable: true });
+
+  afterEach(() => {
+    setPlatform("web");
+    mutable.expoConfig = null;
+  });
+
+  it("sends nothing on web, where a custom header would cost a CORS preflight", async () => {
+    setPlatform("web");
+    expect(clientIdentity()).toBeUndefined();
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    await api("GET", "/foo");
+    expect(mockFetch.mock.calls[0][1].headers[CLIENT_HEADER]).toBeUndefined();
+  });
+
+  it("identifies a native build as platform/version", async () => {
+    setPlatform("android");
+    mutable.expoConfig = { name: "t", slug: "t", version: "1.9.0" };
+    expect(clientIdentity()).toBe("android/1.9.0");
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    await api("GET", "/foo");
+    expect(mockFetch.mock.calls[0][1].headers[CLIENT_HEADER]).toBe("android/1.9.0");
+  });
+
+  it("falls back to 0.0.0 when the config carries no version", () => {
+    setPlatform("ios");
+    mutable.expoConfig = null;
+    expect(clientIdentity()).toBe("ios/0.0.0");
   });
 });

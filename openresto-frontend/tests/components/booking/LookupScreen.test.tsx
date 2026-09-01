@@ -3,11 +3,12 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
-import { Linking } from "react-native";
+import { KeyboardAvoidingView, Linking } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
 import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
 import { fetchCachedBookings } from "@/utils/bookingCache";
+import { useOnline } from "@/hooks/use-online";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@/components/layout/Footer", () => {
@@ -45,6 +46,8 @@ jest.mock("@/api/restaurants", () => ({
 jest.mock("@/utils/bookingCache", () => ({
   fetchCachedBookings: jest.fn(),
 }));
+
+jest.mock("@/hooks/use-online", () => ({ useOnline: jest.fn() }));
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(() => ({ push: jest.fn() })),
@@ -89,6 +92,7 @@ describe("LookupScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (fetchCachedBookings as jest.Mock).mockResolvedValue([]);
+    (useOnline as jest.Mock).mockReturnValue(true);
     setWidth(1024);
   });
 
@@ -210,6 +214,33 @@ describe("LookupScreen", () => {
     fireEvent.press(screen.getByText("Try again"));
     await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
     expect(getBookingByRef).toHaveBeenCalledTimes(2);
+  });
+
+  it("lifts the search form clear of the on-screen keyboard on a device", async () => {
+    renderWithProviders(<LookupScreen />);
+    await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+
+    expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding");
+  });
+
+  it("blames the connection, not the booking system, when the lookup fails offline", async () => {
+    (useOnline as jest.Mock).mockReturnValue(false);
+    (getBookingByRef as jest.Mock).mockRejectedValue(new Error("offline"));
+    renderWithProviders(<LookupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
+    fireEvent.changeText(
+      screen.getByPlaceholderText("The email used when booking"),
+      "test@test.com"
+    );
+    fireEvent.press(screen.getByText("Look Up"));
+
+    await waitFor(() =>
+      expect(screen.getByText("You're offline. Reconnect to look up your booking.")).toBeTruthy()
+    );
+    expect(
+      screen.queryByText("We couldn't reach the booking system. Your booking is safe.")
+    ).toBeNull();
   });
 
   describe("deep links", () => {

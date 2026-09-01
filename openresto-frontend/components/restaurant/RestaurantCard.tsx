@@ -17,6 +17,7 @@ import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
 import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
+import { resolveServerUrl } from "@/utils/serverUrl";
 
 function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -184,7 +185,7 @@ export default function RestaurantCard({
           // istanbul ignore next
           restaurant.imageUrl && Platform.OS !== "web" && (
             <Image
-              source={{ uri: restaurant.imageUrl }}
+              source={{ uri: resolveServerUrl(restaurant.imageUrl) }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
               accessible={false}

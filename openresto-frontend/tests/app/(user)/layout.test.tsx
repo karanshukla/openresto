@@ -1,6 +1,12 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
 
+// The layout's offline strip takes the top safe-area inset, and the hook throws outside a
+// provider — the app mounts one in app/_layout.tsx, these tests render the layout alone.
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));

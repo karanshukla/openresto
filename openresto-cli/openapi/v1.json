@@ -1537,6 +1537,32 @@
         }
       }
     },
+    "/api/brand/app-icon-ios.png": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "The iOS app icon a self-hoster\u0027s native build bakes in. Deliberately not a\n\u0060pwa-icon-1024.png\u0060: the PWA shape carries the transparency App Store Connect rejects.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/brand/app-icon-android-foreground.png": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "The foreground layer of the Android adaptive icon; the background layer is the brand colour from \u0060GET api/brand\u0060.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/email-settings": {
       "get": {
         "tags": [
@@ -1933,6 +1959,19 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/native-app/status": {
+      "get": {
+        "tags": [
+          "NativeApp"
+        ],
+        "summary": "The readiness checklist, the configured minimum app version, and aggregate use per native\nbuild. Read-only: nothing here mutates the deployment.\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithoutAuth_Returns401\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithAdminJwt_ReturnsTheFiveChecks\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABookingsOnlyKey_Returns403\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABrandReadKey_Returns200\u003C/seealso\u003E",
         "responses": {
           "200": {
             "description": "OK"
@@ -3688,6 +3727,24 @@
               "string"
             ],
             "description": "\u0022Cover\u0022 (default) or \u0022Contain\u0022. Null means leave the stored value unchanged."
+          },
+          "privacyPolicyUrl": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Absolute http(s) URL. Empty string clears it; null leaves the stored value unchanged."
+          },
+          "minimumAppVersion": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Strict \u0060major.minor.patch\u0060. Empty string clears it; null leaves the stored value unchanged."
           }
         }
       },
@@ -4697,6 +4754,9 @@
     },
     {
       "name": "Media"
+    },
+    {
+      "name": "NativeApp"
     },
     {
       "name": "Notifications"

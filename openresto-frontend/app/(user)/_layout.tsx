@@ -3,11 +3,15 @@ import { Platform, View } from "react-native";
 import { Slot, Stack, useRouter, useSegments } from "expo-router";
 import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
+import OfflineBanner from "@/components/layout/OfflineBanner";
+import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
 import RouteTransition from "@/components/layout/RouteTransition";
+import { IconButton } from "@/components/common/IconButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
 import { useBrand } from "@/context/BrandContext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function UserLayout() {
   const { t } = useTranslation();
@@ -21,6 +25,8 @@ export default function UserLayout() {
   // navigation — see the matching comment in app/admin/_layout.tsx.
   const isUserRouteActive = segments[0] === "(user)";
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const { colors } = useAppTheme();
 
   useKeyboardShortcuts(
     isUserRouteActive
@@ -38,6 +44,7 @@ export default function UserLayout() {
   if (Platform.OS === "web") {
     return (
       <View style={{ flex: 1 }}>
+        <OfflineBanner />
         <Navbar onOpenShortcuts={() => setShowShortcutsHelp(true)} />
         <RouteTransition>
           <Slot />
@@ -51,27 +58,46 @@ export default function UserLayout() {
     );
   }
 
+  // Language and theme live in the navbar's overflow menu, which is web-only, so the native
+  // header carries the one control that opens both.
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
-      <Stack.Screen
-        name="locations/index"
-        options={{ title: t("restaurant.locationsScreen.routeTitle") }}
-      />
-      <Stack.Screen
-        name="locations/[id]"
-        options={{ title: t("restaurant.locationsScreen.routeTitle") }}
-      />
-      <Stack.Screen
-        name="restaurant/[id]"
-        options={{ title: t("restaurant.details.routeTitle") }}
-      />
-      <Stack.Screen name="book" options={{ title: t("booking.form.routeTitle") }} />
-      <Stack.Screen
-        name="booking-confirmation/[bookingRef]"
-        options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
-      />
-      <Stack.Screen name="lookup" options={{ title: t("lookup.routeTitle") }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
+      <Stack
+        screenOptions={{
+          headerRight: () => (
+            <IconButton
+              name="settings-outline"
+              accessibilityLabel={t("common.guestSettings.openLabel")}
+              color={colors.muted}
+              size="lg"
+              onPress={() => setShowSettings(true)}
+              testID="guest-settings-open"
+            />
+          ),
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
+        <Stack.Screen
+          name="locations/index"
+          options={{ title: t("restaurant.locationsScreen.routeTitle") }}
+        />
+        <Stack.Screen
+          name="locations/[id]"
+          options={{ title: t("restaurant.locationsScreen.routeTitle") }}
+        />
+        <Stack.Screen
+          name="restaurant/[id]"
+          options={{ title: t("restaurant.details.routeTitle") }}
+        />
+        <Stack.Screen name="book" options={{ title: t("booking.form.routeTitle") }} />
+        <Stack.Screen
+          name="booking-confirmation/[bookingRef]"
+          options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
+        />
+        <Stack.Screen name="lookup" options={{ title: t("lookup.routeTitle") }} />
+      </Stack>
+      <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
+    </View>
   );
 }

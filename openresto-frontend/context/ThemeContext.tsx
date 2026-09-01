@@ -1,5 +1,5 @@
-import { createContext, useContext, useLayoutEffect, useState, ReactNode } from "react";
-import { Platform } from "react-native";
+import { createContext, useContext, useEffect, useLayoutEffect, useState, ReactNode } from "react";
+import { Appearance, Platform } from "react-native";
 import { StorageService } from "@/services/storage";
 
 export type ColorScheme = "light" | "dark";
@@ -30,8 +30,24 @@ function writeStorage(pref: ThemePreference) {
   else StorageService.setItem(STORAGE_KEY, pref);
 }
 
+/** Anything the OS does not declare as light — including its "unspecified" — keeps the dark default. */
+function fromDevice(scheme: ReturnType<typeof Appearance.getColorScheme>): ColorScheme {
+  return scheme === "light" ? "light" : "dark";
+}
+
+/**
+ * The scheme the device itself is set to. Off web that is `Appearance`, the OS setting an
+ * installed app is expected to follow; on web it stays the `prefers-color-scheme` media query
+ * the PWA has always read.
+ *
+ * @see [ThemeContext.native.test.tsx](../tests/context/ThemeContext.native.test.tsx) — pins
+ * that a device set to light renders light, and that an undeclared device scheme keeps the
+ * dark default.
+ */
 function getSystemScheme(): ColorScheme {
-  if (Platform.OS !== "web" || typeof window === "undefined") return "dark";
+  if (Platform.OS !== "web") return fromDevice(Appearance.getColorScheme());
+  /* istanbul ignore next -- the static web export prerenders on Node, which has no window; every test runs under jsdom */
+  if (typeof window === "undefined") return "dark";
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -47,13 +63,26 @@ function applyTheme(scheme: ColorScheme) {
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(() => readStorage());
-  const [systemScheme] = useState<ColorScheme>(getSystemScheme);
+  const [systemScheme, setSystemScheme] = useState<ColorScheme>(getSystemScheme);
   const colorScheme: ColorScheme = preference === "system" ? systemScheme : preference;
+
+  // Only while the device is the one choosing: a phone that switches to dark at sunset moves
+  // the app with it, and an explicit light/dark pick keeps overriding it. Re-reading on
+  // subscribe catches a switch that happened while the app was following an explicit pick.
+  useEffect(() => {
+    if (Platform.OS === "web" || preference !== "system") return;
+    setSystemScheme(getSystemScheme());
+    const subscription = Appearance.addChangeListener(({ colorScheme: next }) =>
+      setSystemScheme(fromDevice(next))
+    );
+    return () => subscription.remove();
+  }, [preference]);
 
   // useLayoutEffect fires BEFORE paint — no flash
   useLayoutEffect(() => {
     applyTheme(colorScheme);
 
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
     if (!document.body.classList.contains("theme-ready")) {
       requestAnimationFrame(() => {
         document.body.classList.add("theme-ready");

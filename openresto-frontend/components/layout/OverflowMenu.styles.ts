@@ -58,20 +58,4 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  languageList: {
-    marginTop: theme.spacing.sm,
-    gap: 2,
-  },
-  languageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: theme.borderRadius.md,
-  },
-  languageRowText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
 });

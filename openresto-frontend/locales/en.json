@@ -169,7 +169,25 @@
     "footer": {
       "adminLinkText": "Admin",
       "copyrightFallback": "© {{year}} {{appName}}. All rights reserved.",
+      "privacyPolicy": "Privacy policy",
       "restaurantAdminLabel": "Restaurant admin"
+    },
+    "guestSettings": {
+      "title": "Settings",
+      "openLabel": "Open settings",
+      "closeLabel": "Close settings",
+      "appearance": "Appearance",
+      "themeSystem": "System",
+      "themeLight": "Light",
+      "themeDark": "Dark"
+    },
+    "offline": {
+      "label": "Offline",
+      "message": "You're offline. Some information may be out of date."
+    },
+    "updateRequired": {
+      "title": "Update required",
+      "message": "Please update the app from the store to keep booking."
     },
     "datePicker": {
       "changeDate": "Change date, currently {{date}}",
@@ -382,6 +400,7 @@
       "title": "Cancel Reservation"
     },
     "connectionError": "We couldn't reach the booking system. Your booking is safe.",
+    "offlineError": "You're offline. Reconnect to look up your booking.",
     "form": {
       "callLabel": "Call {{phone}}",
       "emailA11y": "Email address",
@@ -1284,7 +1303,10 @@
         "phoneHint": "Fallback contact shown when a location has no phone number of its own.",
         "emailLabel": "Contact Email",
         "emailPlaceholder": "bookings@example.com",
-        "emailHint": "Fallback contact shown when a location has no email of its own."
+        "emailHint": "Fallback contact shown when a location has no email of its own.",
+        "privacyPolicyLabel": "Privacy Policy URL",
+        "privacyPolicyPlaceholder": "https://example.com/privacy",
+        "privacyPolicyHint": "Both app stores require one before a listing can be published, and the guest footer links it."
       },
       "socialLinkEditForm": {
         "iconLabel": "Icon",
@@ -1778,6 +1800,86 @@
         "title": "API Keys",
         "subtitle": "Keys other services use to call the OpenResto API on your behalf."
       },
+      "nativeApp": {
+        "route": {
+          "title": "Native app",
+          "subtitle": "Whether this server is ready for the guest app you publish to the stores, and which builds are using it."
+        },
+        "readiness": {
+          "title": "Store readiness",
+          "loading": "Running the checks…",
+          "loadFailed": "Couldn't load the readiness checks.",
+          "retry": "Retry",
+          "recheck": "Re-check",
+          "allPassing": "Everything a submission needs is in place",
+          "failureCount_one": "{{count}} check needs attention",
+          "failureCount_other": "{{count}} checks need attention",
+          "serverUrlLabel": "Public address",
+          "noServerUrl": "No public address is configured, so the checks that fetch from your domain cannot run. Set the website URL under Brand.",
+          "open": "Open",
+          "outcome": {
+            "pass": "Passed",
+            "fail": "Action needed",
+            "skip": "Not checked"
+          }
+        },
+        "checks": {
+          "https": {
+            "label": "Public address uses HTTPS",
+            "fix": "Serve this instance over https. Deep links and iOS transport security both refuse plain http."
+          },
+          "brandIcon": {
+            "label": "Brand icon chosen",
+            "fix": "Pick an icon under Settings → Brand; the generator downloads both app icons from it."
+          },
+          "privacyPolicy": {
+            "label": "Privacy policy URL set",
+            "fix": "Add one in the Contact & Website card under Settings → Brand. Both stores require it before a listing can be published."
+          },
+          "appleAppSiteAssociation": {
+            "label": "Apple app site association file served",
+            "fix": "Run native:init with --apple-team-id, then copy native/.well-known/ into the well-known folder beside your compose file."
+          },
+          "androidAssetLinks": {
+            "label": "Android asset links file served",
+            "fix": "Run native:init with --android-fingerprint, then copy native/.well-known/ into the well-known folder beside your compose file."
+          }
+        },
+        "clients": {
+          "title": "Installed clients",
+          "loading": "Loading connected builds…",
+          "loadFailed": "Couldn't load the client list.",
+          "count_one": "{{count}} build has connected",
+          "count_other": "{{count}} builds have connected",
+          "empty": "No native build has connected yet. An app reports its platform and version on every request, so builds appear here once someone opens one.",
+          "columns": {
+            "platform": "Platform",
+            "appVersion": "App version",
+            "lastSeen": "Last seen",
+            "requests7d": "7 days",
+            "requests30d": "30 days"
+          }
+        },
+        "version": {
+          "title": "Minimum supported app version",
+          "anyVersion": "Any version accepted",
+          "label": "Minimum version",
+          "placeholder": "1.9.0",
+          "hint": "Builds below this show an update-required screen instead of the app. An app's version is the OpenResto release it was built from. Leave empty to accept any version.",
+          "invalidBlocked": "Not saved: use three numbers, like 1.9.0."
+        },
+        "setup": {
+          "title": "Build your app",
+          "subtitle": "The generator command, filled in for this deployment",
+          "intro": "Run this in a checkout of OpenResto at the release this server runs. It reads this instance's brand and writes your publisher configuration into openresto-frontend/native/.",
+          "commandLabel": "Command",
+          "copy": "Copy",
+          "copied": "Copied",
+          "copyFailed": "Couldn't copy — select the command and copy it yourself.",
+          "bundleIdHint": "Replace com.example with a domain you own: the bundle id is the app's permanent identity on both stores.",
+          "guideLink": "Build guide"
+        }
+      },
       "brandAutosave": {
         "serverUnreachable": "Couldn't reach the server."
       }
@@ -1798,6 +1900,7 @@
           "emailPush": "Email & Push",
           "users": "Users",
           "apiKeys": "API Keys",
+          "nativeApp": "Native app",
           "account": "Account"
         },
         "unreadLabel_one": "{{label}}, {{count}} unread",
