@@ -37,6 +37,16 @@ export interface Brand {
   /** @see {@link cliPackageUrl} */
   repositoryUrl?: string;
   /**
+   * Where the privacy policy lives. A store listing needs one before it can be published, and
+   * the guest footer links it when set. Optional in the API response; unset means none.
+   */
+  privacyPolicyUrl?: string;
+  /**
+   * The oldest native app version the server still supports (`major.minor.patch`). A native
+   * build below it shows an update-required screen instead of the app; web ignores it.
+   */
+  minimumAppVersion?: string;
+  /**
    * The self-hoster's configured UI language (`Locale:Default` / `OPENRESTO_DEFAULT_LOCALE`),
    * one of `constants/locales.ts`'s `SUPPORTED_LOCALES`. Always populated by the API —
    * `BrandService.GetDefaultLocale` falls back to `"en"` server-side — but optional here to

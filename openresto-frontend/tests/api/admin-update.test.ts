@@ -45,9 +45,8 @@ describe("adminUpdateBookingFull", () => {
     expect(fetch).toHaveBeenCalledWith("/api/admin/bookings/123", {
       method: "PUT",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      // Jest's platform is ios, so the native client-identity header rides along too.
+      headers: expect.objectContaining({ "Content-Type": "application/json" }),
       body: JSON.stringify(updateReq),
     });
     expect(result?.restaurantId).toBe(2);

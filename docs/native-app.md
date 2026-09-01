@@ -193,13 +193,37 @@ built from a shared codebase is what 4.2.6 and 4.3 describe. What tends to carry
 Nothing here is specific to OpenResto — it is what every single-venue app faces — but it is
 the part of this process most likely to cost you time, so it is worth knowing before you start.
 
+## The admin's Native app page
+
+**Admin → Settings → Native app** is the server-side view of all of this, for the person who
+runs the instance rather than the person building the binary (often the same person, but not
+the same tools).
+
+- **Readiness** runs the checks a store submission or a deep link would fail on: the public
+  address is https, a brand icon is chosen, a privacy policy URL is set, and the two
+  `.well-known` files come back from your domain with the right content type and shape. Each
+  failing row says what to do. Re-check after you copy the files to the server.
+- **Installed clients** lists which builds are talking to this server: platform, app version,
+  last seen, requests in the last 7 and 30 days. The app identifies itself with an
+  `X-OpenResto-Client: android/1.9.0` header on every request; the server keeps only daily
+  counts per platform and version, no device identifiers or addresses, for 90 days.
+- **Minimum supported app version** sets a floor. A build below it shows an update-required
+  screen on launch instead of the app, which is how you retire a build that predates a change
+  to the guest API. Leave it empty to accept any version.
+- **Build your app** shows the `native:init` command pre-filled for this deployment.
+
+The **privacy policy URL** itself lives on **Settings → Brand**, in the contact card. Both
+stores require one before a listing can be published, and the guest footer links it on web
+and in the app.
+
 ## Keeping the app and server in step
 
 A store update is slower than `docker compose pull`. The app is built from a checkout at one
 release and talks to whatever release your server is running; the two do not have to match
 exactly, since the guest API changes rarely and additively, but rebuild and resubmit when you
-upgrade across a minor version to pick up guest-facing fixes. There is no forced-upgrade floor
-in the app today.
+upgrade across a minor version to pick up guest-facing fixes. When an upgrade does change the
+guest API, set the minimum supported app version on the Native app page and the stale builds
+will ask their users to update.
 
 ## Rate limits
 
@@ -222,3 +246,6 @@ configuration.
 
 Server-side, `GET /api/brand/app-icon-ios.png` and `GET /api/brand/app-icon-android-foreground.png`
 are the public endpoints the generator downloads; they return 404 until a brand icon is chosen.
+`GET /api/brand` also carries `privacyPolicyUrl` and `minimumAppVersion`, and
+`GET /api/admin/native-app/status` (admin, `brand:read` for an API key) is what the Native app
+page renders.

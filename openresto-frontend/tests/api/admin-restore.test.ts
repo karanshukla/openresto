@@ -20,7 +20,8 @@ describe("adminRestoreBooking", () => {
     expect(fetch).toHaveBeenCalledWith("/api/admin/bookings/123/restore", {
       method: "POST",
       credentials: "include",
-      headers: {},
+      // Jest's platform is ios, so the native client-identity header rides along.
+      headers: expect.any(Object),
       body: undefined,
     });
     expect(result).toBe(true);

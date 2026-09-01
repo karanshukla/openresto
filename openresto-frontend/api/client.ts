@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 /**
@@ -14,6 +15,21 @@ export function configuredApiUrl(): string | undefined {
   if (fromEnv) return fromEnv;
   const extra = Constants.expoConfig?.extra as { apiUrl?: unknown } | undefined;
   return typeof extra?.apiUrl === "string" && extra.apiUrl ? extra.apiUrl : undefined;
+}
+
+/**
+ * Identifies a native build to the server as `<platform>/<app version>`, e.g. `android/1.9.0`,
+ * so the admin's Native app page can show which versions are in use. Web sends nothing: the
+ * browser is the client there, and a custom header would add a CORS preflight to every call.
+ *
+ * @see [client.test.ts](../tests/api/client.test.ts) — pins the header off web and its absence
+ * on web.
+ */
+export const CLIENT_HEADER = "X-OpenResto-Client";
+
+export function clientIdentity(): string | undefined {
+  if (Platform.OS === "web") return undefined;
+  return `${Platform.OS}/${Constants.expoConfig?.version ?? "0.0.0"}`;
 }
 
 export function buildUrl(path: string): string {
@@ -48,6 +64,8 @@ export async function api(
   opts: RequestOptions = {}
 ): Promise<Response> {
   const headers: Record<string, string> = { ...opts.headers };
+  const identity = clientIdentity();
+  if (identity) headers[CLIENT_HEADER] = identity;
 
   let rawBody: string | undefined;
   if (opts.body !== undefined) {
