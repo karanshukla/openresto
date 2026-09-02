@@ -543,12 +543,14 @@ describe("HomeScreen", () => {
         renderWithProviders(<HomeScreen />);
         await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
-        expect(screen.queryByTestId("guest-settings")).toBeNull();
+        expect(screen.queryByTestId("guest-settings-menu")).toBeNull();
         fireEvent.press(screen.getByTestId("home-guest-settings-open"));
-        expect(screen.getByTestId("guest-settings")).toBeTruthy();
+        expect(screen.getByTestId("guest-settings-menu")).toBeTruthy();
 
+        // The menu opens a pane; the pane is what closes.
+        fireEvent.press(screen.getByTestId("guest-settings-appearance"));
         fireEvent.press(screen.getByTestId("guest-settings-close"));
-        expect(screen.queryByTestId("guest-settings")).toBeNull();
+        expect(screen.queryByTestId("guest-settings-dialog")).toBeNull();
       });
     });
 

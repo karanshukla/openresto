@@ -186,13 +186,52 @@ describe("useAnchorTracking", () => {
     expect(remove).toHaveBeenCalledWith("resize", expect.any(Function));
   });
 
-  /** Native gets the centred sheet, which has no anchor to track. */
-  it("never measures on native", () => {
-    setOS("ios");
-    const { result } = renderHook(() => useAnchorTracking(triggerAt(100)));
+  /**
+   * Native has no `getBoundingClientRect`; it asks the view and is called back. The panel has
+   * to land in the same place either way, so both platforms go through `anchorPanel` and only
+   * the reading of the box differs.
+   */
+  describe("on native", () => {
+    /** A trigger that reports a box the way a real host view does. */
+    const nativeTriggerAt = (top: number) => {
+      const node = {
+        measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) =>
+          cb(100, top, 240, 40),
+      };
+      return { current: node as unknown as View };
+    };
 
-    act(() => result.current.measure());
+    it("anchors to the trigger instead of falling back to the centred sheet", () => {
+      setOS("ios");
+      const { result } = renderHook(() => useAnchorTracking(nativeTriggerAt(100)));
 
-    expect(result.current.panel).toBeNull();
+      act(() => result.current.measure());
+
+      expect(result.current.panel).not.toBeNull();
+      expect(result.current.panel?.top).toBe(100 + 40 + PANEL_GAP);
+    });
+
+    it("keeps the centred sheet for a trigger that reports no box", () => {
+      setOS("android");
+      const node = {
+        measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) =>
+          cb(0, 0, 0, 0),
+      };
+
+      const { result } = renderHook(() => useAnchorTracking({ current: node as unknown as View }));
+      act(() => result.current.measure());
+
+      expect(result.current.panel).toBeNull();
+    });
+
+    it("subscribes to nothing: there is no window scroll to follow", () => {
+      setOS("ios");
+      const add = jest.spyOn(window, "addEventListener");
+      const { result } = renderHook(() => useAnchorTracking(nativeTriggerAt(100)));
+
+      act(() => result.current.measure());
+
+      expect(add).not.toHaveBeenCalledWith("scroll", expect.any(Function), true);
+    });
   });
 });

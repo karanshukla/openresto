@@ -10,10 +10,9 @@ import {
 import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
 import OfflineBanner from "@/components/layout/OfflineBanner";
-import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
+import GuestSettingsMenu from "@/components/layout/GuestSettingsMenu";
 import GuestTabBar from "@/components/layout/GuestTabBar";
 import RouteTransition from "@/components/layout/RouteTransition";
-import { IconButton } from "@/components/common/IconButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
@@ -71,7 +70,6 @@ export default function UserLayout() {
   // navigation — see the matching comment in app/admin/_layout.tsx.
   const isUserRouteActive = segments[0] === "(user)";
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const { colors } = useAppTheme();
 
   useKeyboardShortcuts(
@@ -112,16 +110,7 @@ export default function UserLayout() {
       <Stack
         screenOptions={{
           ...guestHeader(),
-          headerRight: () => (
-            <IconButton
-              name="settings-outline"
-              accessibilityLabel={t("common.guestSettings.openLabel")}
-              color={colors.muted}
-              size="lg"
-              onPress={() => setShowSettings(true)}
-              testID="guest-settings-open"
-            />
-          ),
+          headerRight: () => <GuestSettingsMenu color={colors.muted} />,
         }}
       >
         <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
@@ -151,7 +140,6 @@ export default function UserLayout() {
         />
       </Stack>
       <GuestTabBar />
-      <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
   );
 }

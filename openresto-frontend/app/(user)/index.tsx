@@ -32,8 +32,7 @@ import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
 import { resolveServerUrl } from "@/utils/serverUrl";
 import { Icon, type IconName } from "@/components/common/Icon";
-import { IconButton } from "@/components/common/IconButton";
-import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
+import GuestSettingsMenu from "@/components/layout/GuestSettingsMenu";
 
 /**
  * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
@@ -266,7 +265,6 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>(_cachedRestaurants ?? []);
   const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
   const [loading, setLoading] = useState(_cachedRestaurants === null);
-  const [showSettings, setShowSettings] = useState(false);
   const [motionAllowed, setMotionAllowed] = useState(false);
   const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
@@ -616,14 +614,10 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                <IconButton
-                  name="settings-outline"
-                  accessibilityLabel={t("common.guestSettings.openLabel")}
+                <GuestSettingsMenu
                   color={hasHero ? "rgba(255,255,255,0.92)" : mutedColor}
                   backgroundColor={hasHero ? "rgba(0,0,0,0.35)" : accentSoft}
                   variant="tinted"
-                  size="lg"
-                  onPress={() => setShowSettings(true)}
                   testID="home-guest-settings-open"
                 />
               </View>
@@ -667,10 +661,6 @@ export default function HomeScreen() {
         <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         <Footer />
       </ScrollView>
-
-      {Platform.OS !== "web" && (
-        <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
-      )}
     </ThemedView>
   );
 }
