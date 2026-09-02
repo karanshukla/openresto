@@ -102,3 +102,20 @@ describe("GuestSettingsSheet", () => {
     expect(screen.queryByTestId("theme-radiogroup")).toBeNull();
   });
 });
+
+/**
+ * The web overflow menu carries Help; the native sheet is the only place a diner on a phone
+ * can reach it. Keyboard shortcuts, that menu's fourth row, has no counterpart on purpose —
+ * `useKeyboardShortcuts` no-ops off web, so the row would open help for nothing.
+ */
+describe("help", () => {
+  it("carries the same help copy the web overflow menu shows", () => {
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+    expect(screen.getByTestId("guest-settings-help")).toBeTruthy();
+  });
+
+  it("offers no keyboard shortcuts row, since shortcuts do not fire off web", () => {
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+    expect(screen.queryByText(/keyboard/i)).toBeNull();
+  });
+});

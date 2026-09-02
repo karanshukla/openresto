@@ -25,7 +25,6 @@
 /book
 /book/[restaurantId]
 /booking-confirmation/[bookingRef]
-/error
 /index
 /locations/[id]
 /locations/index

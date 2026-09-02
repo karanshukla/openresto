@@ -32,6 +32,7 @@ jest.mock("expo-router", () => {
     Slot: () => React.createElement(View, { testID: "slot" }),
     useRouter: () => ({ push: jest.fn() }),
     useSegments: () => ["(user)"],
+    usePathname: () => "/",
   };
 });
 

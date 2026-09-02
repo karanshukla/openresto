@@ -8,6 +8,16 @@ import {
   platformLabel,
 } from "@/components/admin/settings/NativeAppClientsCard";
 import type { NativeAppClient, NativeAppStatus } from "@/api/nativeApp";
+import { setActiveLocale } from "@/utils/locale";
+
+/**
+ * The row renders through `relativeTime` and `fmtNumber`, which hand `getActiveLocale()` to
+ * Intl — and an unset locale makes Intl follow the *machine*, not the app. Without this the
+ * recency assertion below reads "2h ago" on an en-US CI runner and "2 hrs ago" on an en-CA
+ * laptop, so the suite passes in CI and fails for whoever is not in en-US.
+ */
+beforeEach(() => setActiveLocale("en"));
+afterEach(() => setActiveLocale(undefined));
 
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),

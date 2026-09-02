@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
 import OfflineBanner from "@/components/layout/OfflineBanner";
 import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
+import GuestTabBar from "@/components/layout/GuestTabBar";
 import RouteTransition from "@/components/layout/RouteTransition";
 import { IconButton } from "@/components/common/IconButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -149,6 +150,7 @@ export default function UserLayout() {
           options={{ ...largeTitleHeader(), title: t("lookup.routeTitle") }}
         />
       </Stack>
+      <GuestTabBar />
       <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
     </View>
   );

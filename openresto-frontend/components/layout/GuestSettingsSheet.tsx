@@ -78,6 +78,17 @@ export default function GuestSettingsSheet({
         })}
       </View>
 
+      <ThemedText style={[styles.sectionLabel, { color: colors.muted }]}>
+        {t("common.overflowMenu.help")}
+      </ThemedText>
+      {/* Shares the web overflow menu's copy rather than restating it, so the two surfaces
+          cannot describe the same app differently. Keyboard shortcuts, the menu's fourth row,
+          deliberately has no counterpart here: `useKeyboardShortcuts` returns early off web,
+          so the row would open help for shortcuts that never fire. */}
+      <ThemedText testID="guest-settings-help" style={[styles.helpBody, { color: colors.muted }]}>
+        {t("common.overflowMenu.helpBody")}
+      </ThemedText>
+
       <ButtonRow>
         <Button
           testID="guest-settings-close"

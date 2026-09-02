@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, ActivityIndicator, Animated, Easing, Text } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getThemeColors } from "@/theme/theme";
 import { DEFAULT_COPY } from "@/constants/defaultCopy";
 import { Brand } from "@/types";
 import { styles } from "./LoadingScreen.styles";
@@ -15,7 +16,16 @@ export default function LoadingScreen({
   brand,
   message = DEFAULT_COPY.loadingMessage,
 }: LoadingScreenProps) {
-  const { colors } = useAppTheme();
+  /**
+   * The palette is read straight from the color scheme rather than through `useAppTheme`,
+   * which reaches into `BrandContext` for `primaryColor`. This screen is what BrandContext
+   * renders *while* it is fetching the brand, so going through the hook closed a require
+   * cycle — use-app-theme → BrandContext → LoadingScreen → use-app-theme — that Metro warns
+   * about on every start. Nothing here is brand-coloured, so there is nothing to lose: a
+   * screen shown before the brand exists must not depend on it.
+   */
+  const isDark = useColorScheme() === "dark";
+  const colors = useMemo(() => getThemeColors(isDark), [isDark]);
 
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [scaleAnim] = useState(() => new Animated.Value(0.9));

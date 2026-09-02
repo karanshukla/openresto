@@ -249,6 +249,9 @@
     "timePicker": {
       "accessibilityLabel": "Hora",
       "placeholder": "Selecciona una hora"
+    },
+    "tabs": {
+      "home": "Inicio"
     }
   },
   "errors": {

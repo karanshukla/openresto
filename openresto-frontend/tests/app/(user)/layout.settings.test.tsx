@@ -29,6 +29,7 @@ jest.mock("expo-router", () => {
     Slot: () => null,
     useRouter: () => ({ push: jest.fn() }),
     useSegments: () => ["(user)"],
+    usePathname: () => "/",
   };
 });
 

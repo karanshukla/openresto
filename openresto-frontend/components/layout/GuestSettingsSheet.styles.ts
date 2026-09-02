@@ -2,6 +2,10 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
+  helpBody: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
   sectionLabel: {
     marginTop: theme.spacing.lg,
     fontSize: 13,
