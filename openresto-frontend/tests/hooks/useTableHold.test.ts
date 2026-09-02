@@ -3,15 +3,25 @@ import { useTableHold, UseTableHoldParams } from "@/components/booking/useTableH
 
 const mockCreateHold = jest.fn();
 const mockReleaseHold = jest.fn();
+const mockScheduleNotice = jest.fn();
+const mockCancelNotice = jest.fn();
 
 jest.mock("@/api/holds", () => ({
   createHold: (...args: unknown[]) => mockCreateHold(...args),
   releaseHold: (...args: unknown[]) => mockReleaseHold(...args),
 }));
 
+// Inert on web, so the hook's own wiring is what these tests observe.
+jest.mock("@/services/holdExpiryNotice", () => ({
+  scheduleHoldExpiryNotice: (...args: unknown[]) => mockScheduleNotice(...args),
+  cancelHoldExpiryNotice: (...args: unknown[]) => mockCancelNotice(...args),
+}));
+
 beforeEach(() => {
   mockCreateHold.mockReset();
   mockReleaseHold.mockReset();
+  mockScheduleNotice.mockReset().mockResolvedValue("notice-1");
+  mockCancelNotice.mockReset().mockResolvedValue(undefined);
   jest.useFakeTimers();
   jest.spyOn(console, "error").mockImplementation();
 });
@@ -517,5 +527,126 @@ describe("useTableHold", () => {
 
     expect(mockReleaseHold).toHaveBeenCalledWith("hold-9");
     expect(result.current.holdStatus).toBe("idle");
+  });
+});
+
+/**
+ * Issue #429. The warning is scheduled against the hold that raised it, so every path that
+ * ends a hold has to withdraw it — otherwise a guest who moved on gets told a table is about
+ * to lapse that was released minutes ago.
+ */
+describe("useTableHold expiry warning", () => {
+  const heldHold = (holdId: string) => ({
+    ok: true,
+    hold: { holdId, expiresAt: new Date(Date.now() + 300_000).toISOString() },
+  });
+
+  const holdSomething = async (props?: Partial<UseTableHoldParams>) => {
+    mockCreateHold.mockResolvedValueOnce(heldHold("hold-n1"));
+    const view = renderHook((p: UseTableHoldParams) => useTableHold(p), {
+      initialProps: { ...defaultParams, tableId: 100, ...props } as UseTableHoldParams,
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    return view;
+  };
+
+  it("schedules a warning against the hold the server placed", async () => {
+    const { result } = await holdSomething();
+
+    expect(result.current.holdStatus).toBe("held");
+    expect(mockScheduleNotice).toHaveBeenCalledWith(result.current.hold!.expiresAt);
+  });
+
+  it("withdraws the previous warning when the replacement hold is refused", async () => {
+    const { rerender } = await holdSomething();
+    mockCancelNotice.mockClear();
+    mockCreateHold.mockResolvedValueOnce({ ok: false, message: "Table not available." });
+
+    await act(async () => {
+      rerender({ ...defaultParams, tableId: 101 } as UseTableHoldParams);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(mockCancelNotice).toHaveBeenCalledWith("notice-1");
+    expect(mockScheduleNotice).toHaveBeenCalledTimes(1);
+  });
+
+  it("schedules nothing for a hold that was never placed", async () => {
+    mockCreateHold.mockResolvedValueOnce({ ok: false, message: "Table not available." });
+    renderHook(() => useTableHold({ ...defaultParams, tableId: 100 }));
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockScheduleNotice).not.toHaveBeenCalled();
+    expect(mockCancelNotice).not.toHaveBeenCalled();
+  });
+
+  it("withdraws the warning when the selection stops being holdable", async () => {
+    const { rerender } = await holdSomething();
+    mockCancelNotice.mockClear();
+
+    await act(async () => {
+      rerender({ ...defaultParams, tableId: 100, enabled: false } as UseTableHoldParams);
+    });
+
+    expect(mockCancelNotice).toHaveBeenCalledWith("notice-1");
+  });
+
+  it("withdraws the warning when the form goes away with a live hold", async () => {
+    const { unmount } = await holdSomething();
+    mockCancelNotice.mockClear();
+
+    unmount();
+
+    expect(mockCancelNotice).toHaveBeenCalledWith("notice-1");
+  });
+
+  it("withdraws the warning when the countdown reaches expiry", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: { holdId: "hold-n2", expiresAt: new Date(Date.now() + 3_000).toISOString() },
+    });
+    const { result } = renderHook(() => useTableHold({ ...defaultParams, tableId: 100 }));
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    mockCancelNotice.mockClear();
+
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+    });
+
+    expect(result.current.holdStatus).toBe("expired");
+    expect(mockCancelNotice).toHaveBeenCalledWith("notice-1");
+  });
+
+  // The permission prompt can outlive the hold that raised it: the guest reads the dialog,
+  // the selection changes underneath, and the id arrives for a hold that is already gone.
+  it("withdraws a warning that only arrives after its hold has ended", async () => {
+    let grantPrompt: (id: string) => void = () => {};
+    mockScheduleNotice.mockImplementationOnce(
+      () => new Promise<string>((resolve) => (grantPrompt = resolve))
+    );
+
+    mockCreateHold.mockResolvedValueOnce(heldHold("hold-n3"));
+    const { unmount } = renderHook(() => useTableHold({ ...defaultParams, tableId: 100 }));
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    unmount();
+    mockCancelNotice.mockClear();
+
+    await act(async () => {
+      grantPrompt("late-notice");
+    });
+
+    expect(mockCancelNotice).toHaveBeenCalledWith("late-notice");
   });
 });

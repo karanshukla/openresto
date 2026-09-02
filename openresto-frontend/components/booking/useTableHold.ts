@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createHold, releaseHold, HoldResponse } from "@/api/holds";
 import { isHoldExpired, secondsUntilExpiry } from "@/components/booking/holdCountdown";
+import {
+  cancelHoldExpiryNotice,
+  scheduleHoldExpiryNotice,
+  type HoldExpiryNoticeId,
+} from "@/services/holdExpiryNotice";
 import { isValidEmail } from "@/utils/validation";
 
 export type HoldStatus = "idle" | "pending" | "held" | "unavailable" | "expired";
@@ -79,6 +84,8 @@ export function useTableHold({
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentHoldId = useRef<string | null>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const noticeId = useRef<HoldExpiryNoticeId | null>(null);
+  const noticeGeneration = useRef(0);
 
   const lastAppliedParams = useRef<string>("");
 
@@ -102,6 +109,33 @@ export function useTableHold({
     };
   }
 
+  /**
+   * Withdraws the pending "about to expire" warning and invalidates any schedule call still in
+   * flight. The generation bump is what makes this safe against the permission prompt: that
+   * prompt can outlive the hold that raised it, and without the bump its late-arriving id would
+   * be adopted as the current one and warn about a table already released.
+   *
+   * @see [useTableHold.test.ts](../../tests/hooks/useTableHold.test.ts) — pins that a hold
+   * replaced mid-prompt cancels the warning it was waiting on rather than keeping it.
+   */
+  function cancelExpiryNotice() {
+    noticeGeneration.current += 1;
+    const id = noticeId.current;
+    noticeId.current = null;
+    if (id) void cancelHoldExpiryNotice(id);
+  }
+
+  async function scheduleExpiryNotice(expiresAt: string) {
+    cancelExpiryNotice();
+    const generation = noticeGeneration.current;
+    const id = await scheduleHoldExpiryNotice(expiresAt);
+    if (generation !== noticeGeneration.current) {
+      void cancelHoldExpiryNotice(id);
+      return;
+    }
+    noticeId.current = id;
+  }
+
   function clearCountdown() {
     if (countdownTimer.current) {
       clearInterval(countdownTimer.current);
@@ -116,6 +150,7 @@ export function useTableHold({
       setSecondsLeft(secs);
       if (isHoldExpired(secs)) {
         clearCountdown();
+        cancelExpiryNotice();
         setHoldStatus("expired");
         setHold(null);
         currentHoldId.current = null;
@@ -139,6 +174,7 @@ export function useTableHold({
     setResolvedSectionId(null);
     setResolvedGroupId(null);
     clearCountdown();
+    cancelExpiryNotice();
   }
 
   useEffect(() => {
@@ -190,6 +226,7 @@ export function useTableHold({
         setResolvedGroupId(result.hold.tableGroupId ?? null);
         setHoldStatus("held");
         startCountdown(result.hold.expiresAt);
+        void scheduleExpiryNotice(result.hold.expiresAt);
       } else {
         if (previousHoldId) releaseHold(previousHoldId);
         currentHoldId.current = null;
@@ -199,6 +236,7 @@ export function useTableHold({
         setResolvedSectionId(null);
         setResolvedGroupId(null);
         clearCountdown();
+        cancelExpiryNotice();
         setHoldMessage(result.message);
         setHoldStatus("unavailable");
       }
@@ -218,6 +256,9 @@ export function useTableHold({
         clearTimeout(debounceTimer.current);
       }
       clearCountdown();
+      // Covers every way the form goes away with a live hold: the drawer closing, the guest
+      // navigating off, and the booking landing on the confirmation screen.
+      cancelExpiryNotice();
       if (currentHoldId.current) {
         releaseHold(currentHoldId.current);
       }
