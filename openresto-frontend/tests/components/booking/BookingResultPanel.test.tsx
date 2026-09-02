@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import { Platform, Share } from "react-native";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 import { BookingDto } from "@/api/bookings";
@@ -144,24 +144,77 @@ describe("BookingResultPanel", () => {
     await waitFor(() => expect(screen.getByText("Copy")).toBeTruthy(), { timeout: 3000 });
   }, 10000);
 
-  it("keeps the calendar and directions actions on native, dropping only Copy", () => {
+  it("keeps the calendar and directions actions on native, swapping Copy for Share", () => {
     // Calendar reaches native through the share sheet and directions through
-    // Linking.openURL; the clipboard is the one action with no native counterpart here,
-    // because the reference is already on screen to read out.
+    // Linking.openURL; the clipboard is covered by the share sheet, which also reaches the
+    // messaging apps a diner actually sends a booking to.
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-    renderWithProviders(
-      <BookingResultPanel
-        booking={mockBooking}
-        restaurant={mockRestaurant}
-        compact={false}
-        cancelling={false}
-        onCancelPress={jest.fn()}
-      />
-    );
-    expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy();
-    expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
-    expect(screen.queryByText("Copy")).toBeNull();
-    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    try {
+      renderWithProviders(
+        <BookingResultPanel
+          booking={mockBooking}
+          restaurant={mockRestaurant}
+          compact={false}
+          cancelling={false}
+          onCancelPress={jest.fn()}
+        />
+      );
+      expect(screen.getByText("ADD TO CALENDAR")).toBeTruthy();
+      expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
+      expect(screen.queryByText("Copy")).toBeNull();
+      expect(screen.getByText("Share")).toBeTruthy();
+    } finally {
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
+  });
+
+  it("puts the reference, the restaurant, the time and the party on the share sheet", () => {
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+    const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+    try {
+      renderWithProviders(
+        <BookingResultPanel
+          booking={mockBooking}
+          restaurant={mockRestaurant}
+          compact={false}
+          cancelling={false}
+          onCancelPress={jest.fn()}
+        />
+      );
+      fireEvent.press(screen.getByTestId("share-booking-btn"));
+      expect(shareSpy).toHaveBeenCalledTimes(1);
+      const { message } = shareSpy.mock.calls[0][0] as { message: string };
+      expect(message).toContain("REF123");
+      expect(message).toContain(mockRestaurant.name);
+      expect(message).toContain(`${mockBooking.seats} guests`);
+    } finally {
+      shareSpy.mockRestore();
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
+  });
+
+  it("falls back to a generic restaurant name on the sheet, and survives a declined share", async () => {
+    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+    const shareSpy = jest.spyOn(Share, "share").mockRejectedValue(new Error("dismissed"));
+    try {
+      renderWithProviders(
+        <BookingResultPanel
+          booking={{ ...mockBooking, seats: 1 }}
+          restaurant={null}
+          compact={false}
+          cancelling={false}
+          onCancelPress={jest.fn()}
+        />
+      );
+      fireEvent.press(screen.getByTestId("share-booking-btn"));
+      const { message } = shareSpy.mock.calls[0][0] as { message: string };
+      expect(message).toContain("at Restaurant");
+      expect(message).toContain("1 guest");
+      await waitFor(() => expect(screen.getByText("Share")).toBeTruthy());
+    } finally {
+      shareSpy.mockRestore();
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    }
   });
 
   it("geocodes the restaurant address and embeds a map when nominatim returns coordinates", async () => {

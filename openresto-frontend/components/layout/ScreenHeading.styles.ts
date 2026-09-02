@@ -12,4 +12,14 @@ export const styles = StyleSheet.create({
   subtitle: {
     ...theme.typography.body,
   },
+  /** The settings control shares the title's line on a header-less root. */
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  titleGrow: {
+    flex: 1,
+    minWidth: 0,
+  },
 });

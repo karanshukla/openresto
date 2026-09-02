@@ -11,6 +11,7 @@ import BookingDrawer, { shouldDismissSheet } from "@/components/booking/BookingD
 import { createBooking } from "@/api/bookings";
 import { rememberBooking } from "@/utils/bookingCache";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -304,6 +305,36 @@ describe("BookingDrawer", () => {
       expect(sheet.borderTopLeftRadius).toBeGreaterThan(0);
       expect(sheet.borderRadius).toBeUndefined();
       expect(sheet.marginBottom).toBeUndefined();
+    });
+
+    it("keeps the backdrop transparent rather than dimming the list behind it", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      const backdrop = StyleSheet.flatten(
+        screen.getByTestId("booking-drawer-backdrop", { includeHiddenElements: true }).props.style
+      );
+      expect(backdrop.backgroundColor).toBe("transparent");
+    });
+
+    it("clears the bottom safe area off web, and adds no inset on it", () => {
+      const rn = require("react-native");
+      const originalOS = rn.Platform.OS;
+      const sheetPadding = () =>
+        StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style).paddingBottom;
+      try {
+        rn.Platform.OS = "ios";
+        const ios = renderWithInsets(
+          { bottom: 34 },
+          <BookingDrawer {...baseProps} variant="sheet" />
+        );
+        expect(sheetPadding()).toBe(34);
+        ios.unmount();
+
+        rn.Platform.OS = "web";
+        renderWithInsets({ bottom: 34 }, <BookingDrawer {...baseProps} variant="sheet" />);
+        expect(sheetPadding()).toBeUndefined();
+      } finally {
+        rn.Platform.OS = originalOS;
+      }
     });
 
     it("offers a drag handle wired to the pan responder, hidden from assistive tech", () => {

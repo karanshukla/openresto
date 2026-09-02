@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, waitFor, fireEvent, within } from "@testing-library/react-native";
+import { act, screen, waitFor, fireEvent, within } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet } from "react-native";
 import LocationsScreen, {
   availabilitySummary,
@@ -246,47 +246,190 @@ describe("LocationsScreen", () => {
   });
 
   it("leaves the resting filter bar part of the list rather than a toolbar", async () => {
-    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-    renderWithProviders(<LocationsScreen />);
-    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+    await onWeb(async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
-    const style = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
-    expect(style.zIndex).toBe(5);
-    // The band paints nothing until the bar pins: at rest the bar is one row of the list.
-    expect(style.backgroundColor).toBeUndefined();
-    expect(style.backgroundImage).toBeUndefined();
-    // Its top and bottom gaps cost the resting list no height.
-    expect(style.paddingTop + style.marginTop).toBe(0);
-    expect(style.paddingBottom + style.marginBottom).toBe(0);
+      const style = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
+      expect(style.zIndex).toBe(5);
+      // The band paints nothing until the bar pins: at rest the bar is one row of the list.
+      expect(style.backgroundColor).toBeUndefined();
+      expect(style.backgroundImage).toBeUndefined();
+      // Its top and bottom gaps cost the resting list no height.
+      expect(style.paddingTop + style.marginTop).toBe(0);
+      expect(style.paddingBottom + style.marginBottom).toBe(0);
 
-    // The bar sits in the page rather than over it, so it takes no shadow.
-    const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
-    expect(bar.borderRadius).toBeGreaterThan(0);
-    expect(bar.shadowOpacity).toBeUndefined();
+      // The bar sits in the page rather than over it, so it takes no shadow.
+      const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+      expect(bar.borderRadius).toBeGreaterThan(0);
+      expect(bar.shadowOpacity).toBeUndefined();
+    });
   });
 
   it("floats the pinned bar over the list instead of boxing it into a header", async () => {
-    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-    renderWithProviders(<LocationsScreen />);
-    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+    await onWeb(async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
-    fireEvent(screen.getByTestId("locations-filter-sticky"), "layout", {
-      nativeEvent: { layout: { y: 120 } },
+      fireEvent(screen.getByTestId("locations-filter-sticky"), "layout", {
+        nativeEvent: { layout: { y: 120 } },
+      });
+      fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
+
+      // A mask, not a surface: it hides the list in the gap above the pill and fades out
+      // rather than ending on an edge, which is what made the old band read as a header.
+      const band = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
+      expect(band.backgroundImage).toContain("linear-gradient");
+      expect(band.backgroundColor).toBeUndefined();
+      expect(band.borderBottomWidth).toBeUndefined();
+
+      // The bar keeps its pill shape throughout and lifts off the page to earn the overlap.
+      const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+      expect(bar.borderRadius).toBeGreaterThan(0);
+      expect(bar.backgroundColor).not.toBe("transparent");
+      expect(bar.shadowOpacity).toBeGreaterThan(0);
     });
-    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
+  });
 
-    // A mask, not a surface: it hides the list in the gap above the pill and fades out
-    // rather than ending on an edge, which is what made the old band read as a header.
-    const band = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
-    expect(band.backgroundImage).toContain("linear-gradient");
-    expect(band.backgroundColor).toBeUndefined();
-    expect(band.borderBottomWidth).toBeUndefined();
+  /**
+   * React Native has no `position: sticky`; the bar pins through `stickyHeaderIndices`, which
+   * only takes a direct child of the ScrollView. Jest runs these on the default "ios".
+   */
+  describe("off web", () => {
+    it("pins the filter band as the ScrollView's own second child", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
-    // The bar keeps its pill shape throughout and lifts off the page to earn the overlap.
-    const bar = StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
-    expect(bar.borderRadius).toBeGreaterThan(0);
-    expect(bar.backgroundColor).not.toBe("transparent");
-    expect(bar.shadowOpacity).toBeGreaterThan(0);
+      const scrollView = screen.UNSAFE_getByType(ScrollView);
+      expect(scrollView.props.stickyHeaderIndices).toEqual([1]);
+      const children = React.Children.toArray(scrollView.props.children) as React.ReactElement<{
+        testID?: string;
+      }>[];
+      expect(children[1].props.testID).toBe("locations-filter-sticky");
+      // An opaque band, or the list would show through it while pinned.
+      const band = StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style);
+      expect(band.backgroundColor).toBeDefined();
+      expect(band.backgroundImage).toBeUndefined();
+    });
+
+    it("pins nothing while there is no list to pin over", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue([]);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByText(/No locations yet/)).toBeTruthy());
+      expect(screen.UNSAFE_getByType(ScrollView).props.stickyHeaderIndices).toBeUndefined();
+      expect(screen.queryByTestId("locations-filter-sticky")).toBeNull();
+    });
+
+    it("puts the availability summary under the compact bar, which has no room for it", async () => {
+      dimensionsSpy.mockReturnValue({ width: 390, height: 844, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("avail-1")).toBeTruthy());
+      expect(screen.queryByTestId("locations-native-summary")).toBeNull();
+
+      fireEvent.press(screen.getByTestId("avail-1"));
+      fireEvent.press(screen.getByTestId("avail-2"));
+      await waitFor(() => expect(screen.getByTestId("locations-native-summary")).toBeTruthy());
+      expect(screen.getByTestId("locations-native-summary").props.children).toBe(
+        "1 of 2 locations have tables"
+      );
+    });
+
+    it("leaves the summary to the wide bar, which carries it itself", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("avail-1")).toBeTruthy());
+      fireEvent.press(screen.getByTestId("avail-1"));
+      fireEvent.press(screen.getByTestId("avail-2"));
+      await waitFor(() => expect(screen.getByText("1 of 2 locations have tables")).toBeTruthy());
+      expect(screen.queryByTestId("locations-native-summary")).toBeNull();
+    });
+
+    it("lifts the pinned bar the way the web band does, from the same scroll rule", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+      fireEvent(screen.getByTestId("locations-filter-sticky"), "layout", {
+        nativeEvent: { layout: { y: 120 } },
+      });
+      const barStyle = () =>
+        StyleSheet.flatten(screen.getByTestId("locations-filter-bar").props.style);
+      fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(60));
+      expect(barStyle().shadowOpacity).toBeUndefined();
+      fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
+      expect(barStyle().shadowOpacity).toBeGreaterThan(0);
+    });
+
+    describe("pull to refresh", () => {
+      const refreshControlOf = () =>
+        screen.UNSAFE_getByType(ScrollView).props.refreshControl as React.ReactElement<{
+          refreshing: boolean;
+          onRefresh: () => void;
+        }>;
+
+      it("offers a refresh control off web and none on it", async () => {
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        const native = renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+        expect(refreshControlOf()).toBeTruthy();
+        expect(refreshControlOf().props.refreshing).toBe(false);
+        native.unmount();
+
+        await onWeb(async () => {
+          renderWithProviders(<LocationsScreen />);
+          await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+          expect(screen.UNSAFE_getByType(ScrollView).props.refreshControl).toBeUndefined();
+        });
+      });
+
+      it("reloads the list and remounts the cards, keeping the list on screen meanwhile", async () => {
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+
+        // Mark a card, so a remount is visible as the mark being gone.
+        fireEvent.press(screen.getByTestId("avail-1"));
+        await waitFor(() => expect(screen.getByTestId("avail-1")).toBeTruthy());
+
+        let resolveFetch: (value: unknown) => void = () => {};
+        (fetchRestaurants as jest.Mock).mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveFetch = resolve;
+          })
+        );
+        await act(async () => {
+          refreshControlOf().props.onRefresh();
+        });
+        expect(refreshControlOf().props.refreshing).toBe(true);
+        // No spinner page: the list is still there while the fetch is in flight.
+        expect(screen.getByText("Downtown Bistro")).toBeTruthy();
+        expect(screen.queryByTestId("loading-screen")).toBeNull();
+
+        await act(async () => {
+          resolveFetch([mockRestaurants[0]]);
+        });
+        await waitFor(() => expect(refreshControlOf().props.refreshing).toBe(false));
+        expect(screen.queryByText("Uptown Grill")).toBeNull();
+        expect(fetchRestaurants).toHaveBeenCalledTimes(2);
+      });
+
+      it("keeps the list it had when the refresh fails", async () => {
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+
+        (fetchRestaurants as jest.Mock).mockRejectedValueOnce(new Error("offline"));
+        await act(async () => {
+          refreshControlOf().props.onRefresh();
+        });
+        await waitFor(() => expect(refreshControlOf().props.refreshing).toBe(false));
+        expect(screen.getByText("Downtown Bistro")).toBeTruthy();
+        expect(screen.queryByText(/Couldn/)).toBeNull();
+      });
+    });
   });
 
   it("drives every card from the same party size, date and meal window", async () => {

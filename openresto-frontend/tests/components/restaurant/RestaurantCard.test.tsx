@@ -35,6 +35,22 @@ jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
 
 jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
 
+/**
+ * jest-expo defaults Platform.OS to "ios". The card grew a platform split (one directions
+ * pill and no new-tab control off web), so the web rules below have to say which side they
+ * are about; `onPlatform` runs a body on the other.
+ */
+Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+
+const onPlatform = async (os: string, body: () => Promise<void>) => {
+  Object.defineProperty(Platform, "OS", { get: () => os, configurable: true });
+  try {
+    await body();
+  } finally {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+  }
+};
+
 const mockRestaurant = {
   id: 1,
   name: "Test Bistro",
@@ -57,12 +73,14 @@ describe("RestaurantCard", () => {
   // card carrying both rendered flat on iOS while Android kept its `elevation`. The clip the
   // rounded image needs has to sit one level inside the view that casts the shadow.
   it("casts its shadow from a view that does not clip its own children", async () => {
-    render(<RestaurantCard restaurant={mockRestaurant as never} party={2} />);
-    const card = await screen.findByLabelText("Test Bistro, view details and book");
-    const shadowHost = StyleSheet.flatten(card.props.style);
+    await onPlatform("ios", async () => {
+      render(<RestaurantCard restaurant={mockRestaurant as never} party={2} />);
+      const card = await screen.findByLabelText("Test Bistro, view details and book");
+      const shadowHost = StyleSheet.flatten(card.props.style);
 
-    expect(shadowHost.shadowRadius).toBeGreaterThan(0);
-    expect(shadowHost.overflow).not.toBe("hidden");
+      expect(shadowHost.shadowRadius).toBeGreaterThan(0);
+      expect(shadowHost.overflow).not.toBe("hidden");
+    });
   });
 
   it("renders restaurant name", async () => {
@@ -312,24 +330,70 @@ describe("RestaurantCard", () => {
     expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining("maps.apple.com"));
   });
 
-  it("presses open-in-new-tab button on native platform (router.push)", async () => {
-    const originalOS = Platform.OS;
-    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+  it("opens the booking page in a new tab from the web card's corner control", async () => {
+    const open = jest.fn();
+    (globalThis as unknown as { window: { open: jest.Mock } }).window = { open };
     try {
       render(<RestaurantCard restaurant={mockRestaurant} />);
       await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
-      // Find the button by its label using RNTL v13 API (getByLabelText)
-      const newTabBtn = screen.queryByLabelText("Open booking page in new tab");
-      if (newTabBtn) {
-        fireEvent.press(newTabBtn, { stopPropagation: () => {} });
-        expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1");
-      } else {
-        // Button found via role or alternate selector
-        expect(true).toBe(true);
-      }
+      fireEvent.press(screen.getByLabelText("Open booking page in new tab"), {
+        stopPropagation: () => {},
+      });
+      expect(open).toHaveBeenCalledWith("/(user)/locations/1", "_blank");
     } finally {
-      Object.defineProperty(Platform, "OS", { get: () => originalOS, configurable: true });
+      delete (globalThis as unknown as { window?: unknown }).window;
     }
+  });
+
+  /**
+   * A new tab is a browser idea, and a choice between two maps services is a browser's
+   * question: a phone has one maps app, and the card hands the address to that one.
+   */
+  describe("off web", () => {
+    it("drops the new-tab control, which would only repeat the card's own tap", async () => {
+      await onPlatform("ios", async () => {
+        render(<RestaurantCard restaurant={mockRestaurant} />);
+        await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
+        expect(screen.queryByLabelText("Open booking page in new tab")).toBeNull();
+      });
+    });
+
+    it("offers one Directions pill in place of the Google and Apple pair", async () => {
+      await onPlatform("ios", async () => {
+        render(<RestaurantCard restaurant={mockRestaurant} />);
+        await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
+        expect(screen.queryByText("Google")).toBeNull();
+        expect(screen.queryByText("Apple")).toBeNull();
+        expect(screen.getByText("Directions")).toBeTruthy();
+      });
+    });
+
+    it("hands an iPhone to Apple Maps", async () => {
+      await onPlatform("ios", async () => {
+        render(<RestaurantCard restaurant={mockRestaurant} />);
+        await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
+        fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
+        expect(Linking.openURL).toHaveBeenCalledWith("maps://?q=123%20Main%20St");
+      });
+    });
+
+    it("hands an Android phone to its maps app", async () => {
+      await onPlatform("android", async () => {
+        render(<RestaurantCard restaurant={mockRestaurant} />);
+        await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
+        fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
+        expect(Linking.openURL).toHaveBeenCalledWith("geo:0,0?q=123%20Main%20St");
+      });
+    });
+
+    it("sends an address-less card to the maps app with an empty query", async () => {
+      await onPlatform("android", async () => {
+        render(<RestaurantCard restaurant={{ ...mockRestaurant, address: undefined }} />);
+        await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
+        fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
+        expect(Linking.openURL).toHaveBeenCalledWith("geo:0,0?q=");
+      });
+    });
   });
 
   it("presses a time slot to navigate with time and party", async () => {

@@ -102,42 +102,41 @@ describe("UserLayout", () => {
     expect(optionsFor("search")).toMatchObject({ headerShown: false });
   });
 
-  it("draws no rule under the header in either state", () => {
-    const { screenOptions, optionsFor } = renderOn("ios");
+  it("draws no rule under the header", () => {
+    const { screenOptions } = renderOn("ios");
 
     expect(screenOptions).toMatchObject({ headerShadowVisible: false });
-    expect(optionsFor("lookup")).toMatchObject({ headerLargeTitleShadowVisible: false });
   });
 });
 
-describe("UserLayout large titles", () => {
-  // The pair is the rule: a large title is for a screen a guest lands on, and looks like a
-  // second navigation bar on one pushed on top of it.
-  it.each(["locations/index", "lookup"])("gives the %s list screen a large title", (name) => {
-    const { optionsFor } = renderOn("ios");
-
-    expect(optionsFor(name)).toMatchObject({
-      headerLargeTitleEnabled: true,
-      // A translucent header would drop the first row under the bar: the guest scroll
-      // views don't set contentInsetAdjustmentBehavior="automatic".
-      headerTransparent: false,
-    });
-  });
-
-  it.each(["restaurant/[id]", "locations/[id]", "book", "booking-confirmation/[bookingRef]"])(
-    "leaves the pushed %s detail screen without one",
+describe("UserLayout tab roots", () => {
+  // The pair is the rule: the tab bar is the way between the roots, so a root draws no header
+  // and no back arrow, while a screen pushed over one keeps the header whose arrow drives the
+  // swipe-back gesture.
+  it.each(["index", "locations/index", "lookup"])(
+    "draws the %s tab root with no header and no swipe back",
     (name) => {
       const { optionsFor } = renderOn("ios");
 
-      expect(optionsFor(name)).not.toHaveProperty("headerLargeTitleEnabled");
+      expect(optionsFor(name)).toMatchObject({ headerShown: false, gestureEnabled: false });
     }
   );
 
-  it("leaves the iOS-only large title off Android", () => {
+  it.each(["locations/[id]", "booking-confirmation/[bookingRef]"])(
+    "keeps the header on the pushed %s detail screen",
+    (name) => {
+      const { optionsFor } = renderOn("ios");
+
+      expect(optionsFor(name)).not.toHaveProperty("headerShown");
+      expect(optionsFor(name)).not.toHaveProperty("gestureEnabled");
+    }
+  );
+
+  it("holds on Android too, where the system back covers the roots", () => {
     const { optionsFor } = renderOn("android");
 
-    expect(optionsFor("lookup")).not.toHaveProperty("headerLargeTitleEnabled");
-    expect(optionsFor("locations/index")).not.toHaveProperty("headerLargeTitleEnabled");
+    expect(optionsFor("lookup")).toMatchObject({ headerShown: false });
+    expect(optionsFor("locations/index")).toMatchObject({ headerShown: false });
   });
 });
 

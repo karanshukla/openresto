@@ -9,7 +9,8 @@
       "loadingLabel": "Cargando tu reserva"
     },
     "directions": {
-      "heading": "CÓMO LLEGAR"
+      "heading": "CÓMO LLEGAR",
+      "openMapsButton": "Abrir en Mapas"
     },
     "drawer": {
       "bookLocationLabel": "Reservar {{name}}",
@@ -126,6 +127,10 @@
       "referenceCopiedLabel": "Referencia de reserva copiada",
       "referenceLabel": "Referencia",
       "routeTitleConfirmed": "Reserva confirmada",
+      "shareButton": "Compartir",
+      "shareLabel": "Compartir los detalles de la reserva",
+      "shareMessage_one": "Reserva {{ref}} en {{name}} · {{when}} · {{count}} persona",
+      "shareMessage_other": "Reserva {{ref}} en {{name}} · {{when}} · {{count}} personas",
       "statusCancelled": "Reserva cancelada",
       "statusConfirmed": "Reserva confirmada",
       "statusFound": "Reserva encontrada",

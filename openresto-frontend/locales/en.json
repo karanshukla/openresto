@@ -9,7 +9,8 @@
       "loadingLabel": "Loading your booking"
     },
     "directions": {
-      "heading": "GET DIRECTIONS"
+      "heading": "GET DIRECTIONS",
+      "openMapsButton": "Open in Maps"
     },
     "drawer": {
       "bookLocationLabel": "Book {{name}}",
@@ -126,6 +127,10 @@
       "referenceCopiedLabel": "Booking reference copied",
       "referenceLabel": "Reference",
       "routeTitleConfirmed": "Booking Confirmed",
+      "shareButton": "Share",
+      "shareLabel": "Share booking details",
+      "shareMessage_one": "Booking {{ref}} at {{name}} · {{when}} · {{count}} guest",
+      "shareMessage_other": "Booking {{ref}} at {{name}} · {{when}} · {{count}} guests",
       "statusCancelled": "Booking Cancelled",
       "statusConfirmed": "Booking Confirmed",
       "statusFound": "Booking Found",

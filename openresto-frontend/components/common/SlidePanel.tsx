@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Animated, Modal, PanResponder, Pressable, ScrollView, View } from "react-native";
+import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -30,6 +31,9 @@ interface SlidePanelProps {
  * BookingDrawer, the side variant here isn't a modal-ish overlay with its own close button:
  * it's a persistent second column that always shows the latest lookup outcome, so only the
  * sheet — which covers the form it's dismissing back to — needs dismiss handling at all.
+ *
+ * @see [SlidePanel.test.tsx](../../tests/components/common/SlidePanel.test.tsx) — pins that the
+ * sheet clears the bottom safe area off web and adds nothing on it.
  */
 export default function SlidePanel({
   variant,
@@ -40,6 +44,7 @@ export default function SlidePanel({
 }: SlidePanelProps) {
   const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const onDismissRef = useRef(onDismiss);
   useEffect(() => {
@@ -47,6 +52,7 @@ export default function SlidePanel({
   }, [onDismiss]);
 
   const dragY = useRef(new Animated.Value(0)).current;
+  const nativeDriver = Platform.OS !== "web";
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -60,14 +66,18 @@ export default function SlidePanel({
             Animated.timing(dragY, {
               toValue: SHEET_EXIT_DISTANCE,
               duration: prefersReducedMotion() ? 0 : 180,
-              useNativeDriver: false,
+              useNativeDriver: nativeDriver,
             }).start(({ finished }) => finished && onDismissRef.current());
           } else {
-            Animated.spring(dragY, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+            Animated.spring(dragY, {
+              toValue: 0,
+              bounciness: 0,
+              useNativeDriver: nativeDriver,
+            }).start();
           }
         },
       }),
-    [dragY]
+    [dragY, nativeDriver]
   );
 
   useEffect(() => () => dragY.stopAnimation(), [dragY]);
@@ -92,9 +102,9 @@ export default function SlidePanel({
     Animated.timing(dragY, {
       toValue: SHEET_EXIT_DISTANCE,
       duration: prefersReducedMotion() ? 0 : 180,
-      useNativeDriver: false,
+      useNativeDriver: nativeDriver,
     }).start(({ finished }) => finished && onDismissRef.current());
-  }, [dragY]);
+  }, [dragY, nativeDriver]);
 
   if (variant === "sheet") {
     return (
@@ -116,6 +126,8 @@ export default function SlidePanel({
             style={[
               styles.sheet,
               { backgroundColor: colors.card, borderTopColor: colors.border },
+              // Bottom-anchored, so the home indicator would sit on the last row otherwise.
+              Platform.OS !== "web" && { paddingBottom: insets.bottom },
               { transform: [{ translateY: dragY }] },
             ]}
           >
