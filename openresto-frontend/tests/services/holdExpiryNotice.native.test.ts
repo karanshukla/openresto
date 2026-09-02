@@ -32,11 +32,23 @@ const mocked = Notifications as unknown as {
 const HELD_SECONDS = 300;
 const heldUntil = () => new Date(Date.now() + HELD_SECONDS * 1000).toISOString();
 
+/**
+ * The clock is frozen because these assertions straddle two reads of it: the expiry the test
+ * builds, and the one `secondsUntilExpiry` takes inside the call. A millisecond between them
+ * floors the delay a whole second short, so on a loaded runner the exact-seconds assertion
+ * fails for a reason that has nothing to do with the code under test.
+ */
 beforeEach(() => {
+  jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate"] });
+  jest.setSystemTime(new Date("2026-06-15T19:00:00.000Z"));
   jest.clearAllMocks();
   mocked.scheduleNotificationAsync.mockResolvedValue("notice-1");
   mocked.getPermissionsAsync.mockResolvedValue({ status: "granted" });
   setPlatform("ios");
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("scheduleHoldExpiryNotice (native)", () => {
