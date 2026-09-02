@@ -17,30 +17,22 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import {
+  DEFAULT_API_PORT,
+  HOST_ENV,
+  pickLanAddress,
+  probeRouteAddress,
+} from "../openresto-frontend/scripts/lib/expo-go.mjs";
 
 /**
- * Bridges and tunnels that hold a routable-looking address the phone can still never reach.
- * Docker and podman are the ones that actually bite: bring the compose stack up and their
- * `172.x` bridge appears alongside the real wifi address, so an unfiltered "first non-internal
- * IPv4" picks a network only this host is on, and the app fails exactly as it does with
- * localhost.
+ * Address resolution is the frontend's `scripts/lib/expo-go.mjs`, not a second copy here.
+ * `npm run native:go` answers the same question — which address of this machine can a phone
+ * on the same network route to — and answering it twice is how the two answers drift: this
+ * script matched interface names against a list of virtual adapters, which is a guess, while
+ * that one asks the routing table directly. One implementation, one behaviour, and the rules
+ * stay pinned by tests/scripts/expo-go.test.ts. The lib imports only node builtins, so the
+ * root-scripts CI job needs no frontend install to run this.
  */
-const UNREACHABLE_INTERFACE =
-  /^(lo|docker|podman|cni|br-|veth|virbr|vmnet|vboxnet|tun|tap|utun|wg|tailscale|zt)/i;
-
-/** The address a device on the same network can route to, or null if only virtual ones are up. */
-export function lanAddress(interfaces = networkInterfaces()) {
-  for (const [name, addresses] of Object.entries(interfaces)) {
-    if (UNREACHABLE_INTERFACE.test(name)) continue;
-    for (const address of addresses ?? []) {
-      const isIpv4 = address.family === "IPv4" || address.family === 4;
-      if (isIpv4 && !address.internal) return address.address;
-    }
-  }
-  return null;
-}
-
-const DEFAULT_API_PORT = "8080";
 
 /**
  * The `concurrently` CLI entry point, resolved through the package rather than through
@@ -63,12 +55,14 @@ export function concurrentlyEntry(
   );
 }
 
-function main() {
-  const host = process.env.OPENRESTO_LAN_HOST || lanAddress();
+async function main() {
+  const host =
+    process.env[HOST_ENV] ||
+    pickLanAddress(networkInterfaces(), await probeRouteAddress());
   if (!host) {
     console.error(
       "dev:native: no LAN address found — every interface up is loopback or a virtual bridge.\n" +
-        "Connect to the same network as the phone, or set OPENRESTO_LAN_HOST to this machine's address.",
+        `Connect to the same network as the phone, or set ${HOST_ENV} to this machine's address.`,
     );
     process.exit(1);
   }
@@ -116,10 +110,10 @@ function main() {
   child.on("exit", (code, signal) => process.exit(signal ? 1 : (code ?? 0)));
 }
 
-// Importing this module must not launch the stack — `lanAddress` is worth reading on its own.
+// Importing this module must not launch the stack — `concurrentlyEntry` is tested on its own.
 if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  main();
+  await main();
 }

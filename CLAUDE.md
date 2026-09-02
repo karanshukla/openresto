@@ -24,8 +24,15 @@ at all. `scripts/dev-native.mjs` resolves this machine's LAN address and passes 
 already in the system environment, so that wins over the `.env` file rather than racing it.
 Docker and podman bridges are filtered out deliberately — bring the compose stack up and their
 `172.x`/`10.88.x` addresses appear alongside the real one, and picking those fails exactly the way
-`localhost` does. Override with `OPENRESTO_LAN_HOST` / `OPENRESTO_API_PORT` when the guess is
+`localhost` does. Override with `OPENRESTO_DEV_HOST` / `OPENRESTO_API_PORT` when the guess is
 wrong; the script exits rather than falling back to an address the phone cannot route to.
+
+Which address that is comes from `openresto-frontend/scripts/lib/expo-go.mjs`, shared with
+`npm run native:go` rather than reimplemented — the two answer the same question, and answering
+it twice is how the answers drift. It asks the routing table (a connected UDP socket fixes the
+local end of a route without sending anything) and only falls back to filtering interface names.
+`OPENRESTO_DEV_HOST` is that lib's `HOST_ENV`, so both commands take the same override; the
+lib imports node builtins only, so the root `npm test` needs no frontend install.
 
 Both halves are launched by handing `concurrently`'s own JS entry to `process.execPath`,
 never the `node_modules/.bin` shim: npm writes the bare name there as a POSIX sh file that

@@ -4,11 +4,7 @@ import { join, sep } from "node:path";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { concurrentlyEntry, lanAddress } from "./dev-native.mjs";
-
-const wifi = { family: "IPv4", internal: false, address: "192.168.50.239" };
-const loopback = { family: "IPv4", internal: true, address: "127.0.0.1" };
-const hyperV = { family: "IPv4", internal: false, address: "172.29.64.1" };
+import { concurrentlyEntry } from "./dev-native.mjs";
 
 const manifestIn = (bin) => {
   const path = join(mkdtempSync(join(tmpdir(), "dev-native-")), "package.json");
@@ -16,24 +12,11 @@ const manifestIn = (bin) => {
   return path;
 };
 
-describe("lanAddress", () => {
-  it("takes the address a phone on the same network can route to", () => {
-    assert.equal(lanAddress({ "Wi-Fi": [wifi] }), "192.168.50.239");
-  });
-
-  it("skips a Hyper-V bridge holding a routable-looking address", () => {
-    const interfaces = { "vEthernet (WSL)": [hyperV], "Wi-Fi": [wifi] };
-    assert.equal(lanAddress(interfaces), "192.168.50.239");
-  });
-
-  it("reports nothing rather than an address only this host is on", () => {
-    const interfaces = {
-      "Loopback Pseudo-Interface 1": [loopback],
-      "vEthernet (Default Switch)": [hyperV],
-    };
-    assert.equal(lanAddress(interfaces), null);
-  });
-});
+/**
+ * LAN address resolution is not tested here on purpose: it is the frontend's
+ * scripts/lib/expo-go.mjs, pinned by tests/scripts/expo-go.test.ts. A second set of
+ * assertions against a second implementation is what this script used to have.
+ */
 
 /**
  * The stack is spawned with `process.execPath`, so the entry has to be a file node can run
