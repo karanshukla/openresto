@@ -59,11 +59,55 @@ describe("GuestTabBar", () => {
     expect(Haptics.selectionAsync).toHaveBeenCalled();
   });
 
-  it("sits on the card surface rather than the page colour the list scrolls on", () => {
-    at("/");
-    const bar = StyleSheet.flatten(screen.getByTestId("guest-tab-bar").props.style);
-    expect(bar.backgroundColor).toBe("#fafafa");
-    expect(bar.borderTopColor).toBe("#ccc");
+  const setPlatform = (os: string) =>
+    Object.defineProperty(require("react-native").Platform, "OS", {
+      value: os,
+      configurable: true,
+    });
+
+  /**
+   * #426: an iOS tab bar is translucent and the list scrolls under it; Android's Material 3
+   * bar is an opaque surface. Painting one like the other is a large part of what made this
+   * read as a hand-drawn bar rather than the platform's own.
+   */
+  describe("bar surface", () => {
+    const originalOS = require("react-native").Platform.OS;
+    afterEach(() => setPlatform(originalOS));
+
+    it("lets the list show through a blur on iOS", () => {
+      setPlatform("ios");
+      at("/");
+
+      const bar = StyleSheet.flatten(screen.getByTestId("guest-tab-bar").props.style);
+      expect(bar.backgroundColor).toBe("transparent");
+      expect(screen.getByTestId("guest-tab-bar-blur")).toBeTruthy();
+      expect(bar.borderTopColor).toBe("#ccc");
+    });
+
+    it("sits on an opaque card surface on Android, with no blur", () => {
+      setPlatform("android");
+      at("/");
+
+      const bar = StyleSheet.flatten(screen.getByTestId("guest-tab-bar").props.style);
+      expect(bar.backgroundColor).toBe("#fafafa");
+      expect(screen.queryByTestId("guest-tab-bar-blur")).toBeNull();
+    });
+
+    // Material 3 marks the selected destination with a pill; iOS marks it with tint alone,
+    // so a pill drawn there would be a second selection cue the platform does not use.
+    it("draws the selected pill on Android and not on iOS", () => {
+      setPlatform("android");
+      at("/");
+      expect(
+        StyleSheet.flatten(screen.getByTestId("guest-tab-indicator").props.style).backgroundColor
+      ).toBeDefined();
+
+      setPlatform("ios");
+      at("/");
+      expect(
+        StyleSheet.flatten(screen.getByTestId("guest-tab-indicator").props.style).backgroundColor
+      ).toBeUndefined();
+    });
   });
 
   /**

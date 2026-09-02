@@ -28,9 +28,11 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-community/datetimepicker": "^9.1.0",
     "expo": "~57.0.19",
     "expo-asset": "~57.0.7",
+    "expo-blur": "~57.0.2",
     "expo-constants": "~57.0.7",
     "expo-device": "~57.0.1",
     "expo-file-system": "~57.0.5",
@@ -90,6 +92,7 @@
       "^@/services/pushRegistration$": "<rootDir>/services/pushRegistration.ts",
       "^@/services/holdExpiryNotice$": "<rootDir>/services/holdExpiryNotice.ts",
       "^@/services/quickActions$": "<rootDir>/services/quickActions.ts",
+      "^@/components/booking/BookingSheetHost$": "<rootDir>/components/booking/BookingSheetHost.tsx",
       "^@/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [

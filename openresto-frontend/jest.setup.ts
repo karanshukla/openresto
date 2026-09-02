@@ -78,3 +78,33 @@ jest.mock("expo-quick-actions", () => ({
   setItems: jest.fn(() => Promise.resolve()),
   addListener: jest.fn(() => ({ remove: jest.fn() })),
 }));
+
+// The booking sheet (#425) is a native gesture/animation stack with no host under Jest. The
+// mock keeps the pieces the drawer actually depends on observable: the modal presents itself
+// through a ref and reports dismissal upward, and the scroller is a plain view.
+jest.mock("@gorhom/bottom-sheet", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  const BottomSheetModal = React.forwardRef(
+    (
+      { children, onDismiss, ...props }: Record<string, unknown> & { children?: React.ReactNode },
+      ref: React.Ref<unknown>
+    ) => {
+      React.useImperativeHandle(ref, () => ({
+        present: jest.fn(),
+        dismiss: () => (onDismiss as (() => void) | undefined)?.(),
+      }));
+      return React.createElement(View, { testID: "booking-drawer", ...props }, children);
+    }
+  );
+  BottomSheetModal.displayName = "BottomSheetModal";
+  return {
+    __esModule: true,
+    default: View,
+    BottomSheetModal,
+    BottomSheetModalProvider: ({ children }: { children?: React.ReactNode }) => children,
+    BottomSheetScrollView: View,
+    BottomSheetBackdrop: View,
+    BottomSheetView: View,
+  };
+});

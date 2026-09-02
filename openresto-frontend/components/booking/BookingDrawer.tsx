@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import {
   Animated,
   GestureResponderHandlers,
@@ -8,9 +17,10 @@ import {
   Pressable,
   ScrollView,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import * as Haptics from "expo-haptics";
@@ -24,7 +34,6 @@ import { rememberBooking } from "@/utils/bookingCache";
 import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
-import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import {
@@ -36,10 +45,23 @@ import {
 } from "@/utils/panelMotion";
 import { styles } from "./BookingDrawer.styles";
 import { Icon } from "@/components/common/Icon";
+import { NativeBookingSheet, SheetScrollView } from "@/components/booking/NativeBookingSheet";
 
 // Re-exported so existing imports of these from BookingDrawer (this module used to define
 // them) keep working; utils/panelMotion is the source of truth, shared with SlidePanel.
 export { shouldDismissSheet };
+
+/**
+ * The subset of ScrollView both the plain one and the sheet's own implement. Typing the slot
+ * structurally rather than as `typeof ScrollView` is what lets the two be swapped: the sheet's
+ * scroller is a different component with a compatible surface, not a subclass.
+ */
+type ScrollShell = ComponentType<{
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
+  children?: ReactNode;
+}>;
 
 function summaryLine(
   t: TFunction,
@@ -90,7 +112,6 @@ export default function BookingDrawer({
   const router = useRouter();
   const { t } = useTranslation();
   const { colors, isDark } = useAppTheme();
-  const insets = useSafeAreaInsets();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Drag-to-dismiss for the sheet. The responder is built once, so it reads onClose
@@ -253,7 +274,20 @@ export default function BookingDrawer({
     </ThemedText>
   );
 
-  const body = (headerHandlers: Partial<GestureResponderHandlers> = {}) => (
+  /**
+   * `Scroll` is the sheet's own scroller off web, so dragging the list and dragging the sheet
+   * do not fight; `onCloseRequest` lets the native sheet animate itself away rather than being
+   * unmounted from under its own exit.
+   */
+  const body = ({
+    headerHandlers = {},
+    Scroll = ScrollView,
+    onCloseRequest,
+  }: {
+    headerHandlers?: Partial<GestureResponderHandlers>;
+    Scroll?: ScrollShell;
+    onCloseRequest?: () => void;
+  } = {}) => (
     <>
       <View {...headerHandlers} style={[styles.header, { borderBottomColor: colors.border }]}>
         {/* The close button sits on the heading's own row rather than beside the whole
@@ -263,7 +297,7 @@ export default function BookingDrawer({
           <View style={styles.headerHeading}>{heading}</View>
           <Pressable
             testID="booking-drawer-close"
-            onPress={closeWithHaptic}
+            onPress={onCloseRequest ?? closeWithHaptic}
             accessibilityRole="button"
             accessibilityLabel={t("booking.drawer.closePanelLabel")}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -277,7 +311,7 @@ export default function BookingDrawer({
         </ThemedText>
       </View>
 
-      <ScrollView
+      <Scroll
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -303,61 +337,68 @@ export default function BookingDrawer({
           initialTime={time}
           onSubmit={handleSubmit}
         />
-      </ScrollView>
+      </Scroll>
     </>
   );
 
+  if (variant === "sheet" && Platform.OS !== "web") {
+    return (
+      <NativeBookingSheet
+        accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
+        onClose={onClose}
+      >
+        {({ dismiss }) => body({ Scroll: SheetScrollView, onCloseRequest: dismiss })}
+      </NativeBookingSheet>
+    );
+  }
+
+  // Web's own sheet. Narrow browsers still get this one: there is no platform sheet to defer
+  // to, and the keyboard and the home indicator are the browser's problem there, which is why
+  // neither a KeyboardAvoider nor a bottom inset survives here.
   if (variant === "sheet") {
     return (
       <Modal visible transparent animationType="slide" onRequestClose={onClose}>
         <View style={styles.sheetRoot}>
-          {/* The sheet is bottom-anchored, so on a device the keyboard would cover the very
-              fields the diner is filling in. */}
-          <KeyboardAvoider style={styles.sheetRoot}>
-            <Pressable
-              testID="booking-drawer-backdrop"
-              accessibilityRole="button"
-              accessibilityLabel={t("booking.drawer.closePanelLabel")}
-              style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-              onPress={closeWithHaptic}
-            />
-            <Animated.View
-              testID="booking-drawer"
-              role="dialog"
-              aria-modal
-              accessibilityViewIsModal
-              accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
-              style={[
-                styles.sheet,
-                { backgroundColor: colors.card, borderTopColor: colors.border },
-                // The sheet is the bottom of the screen, so the home indicator and Android's
-                // navigation bar land on its last row unless it steps up over them itself.
-                Platform.OS !== "web" && { paddingBottom: insets.bottom },
-                { transform: [{ translateY: dragY }] },
-              ]}
-            >
-              {/* The handle and the header drag the sheet; the body below them keeps its own
+          <Pressable
+            testID="booking-drawer-backdrop"
+            accessibilityRole="button"
+            accessibilityLabel={t("booking.drawer.closePanelLabel")}
+            style={[styles.backdrop, { backgroundColor: colors.overlay }]}
+            onPress={closeWithHaptic}
+          />
+          <Animated.View
+            testID="booking-drawer"
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.card, borderTopColor: colors.border },
+              { transform: [{ translateY: dragY }] },
+            ]}
+          >
+            {/* The handle and the header drag the sheet; the body below them keeps its own
                 scrolling, which a whole-sheet responder would fight with. */}
+            <View
+              {...panResponder.panHandlers}
+              testID="booking-drawer-grabber"
+              // Drag-to-dismiss duplicates the labeled close button, so the handle stays out
+              // of the a11y tree instead of surfacing as an unnamed node.
+              aria-hidden
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={styles.grabberArea}
+            >
               <View
-                {...panResponder.panHandlers}
-                testID="booking-drawer-grabber"
-                // Drag-to-dismiss duplicates the labeled close button, so the handle stays out
-                // of the a11y tree instead of surfacing as an unnamed node.
-                aria-hidden
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                style={styles.grabberArea}
-              >
-                <View
-                  style={[
-                    styles.grabber,
-                    { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
-                  ]}
-                />
-              </View>
-              {body(panResponder.panHandlers)}
-            </Animated.View>
-          </KeyboardAvoider>
+                style={[
+                  styles.grabber,
+                  { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
+                ]}
+              />
+            </View>
+            {body({ headerHandlers: panResponder.panHandlers })}
+          </Animated.View>
         </View>
       </Modal>
     );

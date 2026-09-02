@@ -1,4 +1,6 @@
-import { Pressable } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { BlurView } from "expo-blur";
+import type { SFSymbol } from "expo-symbols";
 import * as Haptics from "expo-haptics";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,7 +8,8 @@ import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { Icon, type IconName } from "@/components/common/Icon";
+import { type IconName } from "@/components/common/Icon";
+import { TabBarIcon } from "@/components/layout/TabBarIcon";
 import { styles } from "./GuestTabBar.styles";
 
 interface Tab {
@@ -15,6 +18,9 @@ interface Tab {
   match: (pathname: string) => boolean;
   icon: IconName;
   activeIcon: IconName;
+  /** The iOS glyph. Outlined and filled are one symbol there, varied by weight and fill. */
+  symbol: SFSymbol;
+  activeSymbol: SFSymbol;
   label: string;
 }
 
@@ -32,7 +38,13 @@ export default function GuestTabBar() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { colors, primaryColor } = useAppTheme();
+  const { colors, primaryColor, isDark } = useAppTheme();
+  /**
+   * iOS tab bars are translucent and let the list scroll under them; Android's Material 3 bar
+   * is an opaque surface with a pill behind the selected icon. Doing either on the other
+   * platform is what makes a hand-drawn bar read as hand-drawn (#426).
+   */
+  const translucent = Platform.OS === "ios";
 
   const tabs: Tab[] = [
     {
@@ -40,6 +52,8 @@ export default function GuestTabBar() {
       match: (p) => p === "/",
       icon: "home-outline",
       activeIcon: "home",
+      symbol: "house",
+      activeSymbol: "house.fill",
       label: t("common.tabs.home"),
     },
     {
@@ -47,6 +61,8 @@ export default function GuestTabBar() {
       match: (p) => p.startsWith("/locations"),
       icon: "location-outline",
       activeIcon: "location",
+      symbol: "mappin.and.ellipse",
+      activeSymbol: "mappin.circle.fill",
       label: t("common.navbar.locationsLink"),
     },
     {
@@ -57,6 +73,8 @@ export default function GuestTabBar() {
       match: (p) => p.startsWith("/lookup") || p.startsWith("/booking-confirmation"),
       icon: "ticket-outline",
       activeIcon: "ticket",
+      symbol: "ticket",
+      activeSymbol: "ticket.fill",
       label: t("common.navbar.myBookingsLink"),
     },
   ];
@@ -68,14 +86,23 @@ export default function GuestTabBar() {
       style={[
         styles.bar,
         // The card surface, not the page: a bar the same colour as the list it sits under
-        // has only its hairline to say where the list ends.
+        // has only its hairline to say where the list ends. Transparent where the blur
+        // beneath is what paints it.
         {
-          backgroundColor: colors.card,
+          backgroundColor: translucent ? "transparent" : colors.card,
           borderTopColor: colors.border,
           paddingBottom: insets.bottom,
         },
       ]}
     >
+      {translucent && (
+        <BlurView
+          testID="guest-tab-bar-blur"
+          intensity={80}
+          tint={isDark ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       {tabs.map((tab) => {
         const active = tab.match(pathname);
         const color = active ? primaryColor : colors.muted;
@@ -92,7 +119,22 @@ export default function GuestTabBar() {
               router.navigate(tab.href);
             }}
           >
-            <Icon name={active ? tab.activeIcon : tab.icon} size="md" color={color} />
+            {/* Material 3 marks the selected destination with a pill behind its icon; iOS
+                marks it with the tint alone, so the pill is drawn only where it belongs. */}
+            <View
+              testID={active ? "guest-tab-indicator" : undefined}
+              style={[
+                styles.indicator,
+                active && !translucent && { backgroundColor: `${primaryColor}1f` },
+              ]}
+            >
+              <TabBarIcon
+                name={active ? tab.activeIcon : tab.icon}
+                symbol={active ? tab.activeSymbol : tab.symbol}
+                color={color}
+                selected={active}
+              />
+            </View>
             <ThemedText style={[styles.label, { color }]}>{tab.label}</ThemedText>
           </Pressable>
         );

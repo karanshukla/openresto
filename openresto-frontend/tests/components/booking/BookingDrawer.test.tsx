@@ -290,7 +290,21 @@ describe("BookingDrawer", () => {
     });
   });
 
-  describe("as a bottom sheet", () => {
+  /**
+   * Narrow web keeps the hand-rolled sheet: a browser has no platform sheet to defer to. Off
+   * web it is `NativeBookingSheet` instead (#425), which is why this whole block pins the web
+   * platform rather than relying on Jest's default.
+   */
+  describe("as a bottom sheet on web", () => {
+    const rn = require("react-native");
+    const originalOS = rn.Platform.OS;
+    beforeEach(() => {
+      rn.Platform.OS = "web";
+    });
+    afterEach(() => {
+      rn.Platform.OS = originalOS;
+    });
+
     it("renders inside the sheet shell", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
       expect(screen.getByTestId("booking-drawer")).toBeTruthy();
@@ -301,7 +315,7 @@ describe("BookingDrawer", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
       const sheet = StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style);
       // The side panel's float treatment must not leak here: a sheet that floats above
-      // the bottom edge of a phone leaves a strip of page under it.
+      // the bottom edge leaves a strip of page under it.
       expect(sheet.borderTopLeftRadius).toBeGreaterThan(0);
       expect(sheet.borderRadius).toBeUndefined();
       expect(sheet.marginBottom).toBeUndefined();
@@ -315,26 +329,15 @@ describe("BookingDrawer", () => {
       expect(backdrop.backgroundColor).toBe("transparent");
     });
 
-    it("clears the bottom safe area off web, and adds no inset on it", () => {
-      const rn = require("react-native");
-      const originalOS = rn.Platform.OS;
-      const sheetPadding = () =>
-        StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style).paddingBottom;
-      try {
-        rn.Platform.OS = "ios";
-        const ios = renderWithInsets(
-          { bottom: 34 },
-          <BookingDrawer {...baseProps} variant="sheet" />
-        );
-        expect(sheetPadding()).toBe(34);
-        ios.unmount();
+    // The keyboard and the home indicator are the browser's problem, so neither the
+    // KeyboardAvoider nor a bottom safe-area inset belongs on this branch any more.
+    it("adds no keyboard shell and no bottom inset", () => {
+      renderWithInsets({ bottom: 34 }, <BookingDrawer {...baseProps} variant="sheet" />);
 
-        rn.Platform.OS = "web";
-        renderWithInsets({ bottom: 34 }, <BookingDrawer {...baseProps} variant="sheet" />);
-        expect(sheetPadding()).toBeUndefined();
-      } finally {
-        rn.Platform.OS = originalOS;
-      }
+      expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(0);
+      expect(
+        StyleSheet.flatten(screen.getByTestId("booking-drawer").props.style).paddingBottom
+      ).toBeUndefined();
     });
 
     it("offers a drag handle wired to the pan responder, hidden from assistive tech", () => {
@@ -349,26 +352,6 @@ describe("BookingDrawer", () => {
       expect(grabber.props.accessibilityElementsHidden).toBe(true);
     });
 
-    it("lifts the form clear of the on-screen keyboard on a device", () => {
-      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
-      // Which behaviour that shell takes per OS is KeyboardAvoider's own business, pinned on
-      // both branches in its test. Asserting the iOS value here duplicated that knowledge and
-      // made this suite fail under the Android run for a reason the drawer has no say in.
-      expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(1);
-    });
-
-    it("adds no keyboard shell on web, where the browser scrolls the field into view itself", () => {
-      const rn = require("react-native");
-      const originalOS = rn.Platform.OS;
-      rn.Platform.OS = "web";
-      try {
-        renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
-        expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(0);
-      } finally {
-        rn.Platform.OS = originalOS;
-      }
-    });
-
     it("closes when the backdrop is tapped, after the sheet has slid away", async () => {
       const onClose = jest.fn();
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
@@ -376,6 +359,38 @@ describe("BookingDrawer", () => {
         screen.getByTestId("booking-drawer-backdrop", { includeHiddenElements: true })
       );
       await waitFor(() => expect(onClose).toHaveBeenCalled());
+    });
+  });
+
+  /**
+   * Off web the sheet is the platform's own (#425). The drawer keeps its props and its body;
+   * what changes is the shell around them, so these pin the handover rather than the sheet's
+   * internals, which are `NativeBookingSheet`'s own tests.
+   */
+  describe("as a bottom sheet off web", () => {
+    it("hands the body to the native sheet, with none of the web chrome", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+
+      expect(screen.getByText("Toronto Resto")).toBeTruthy();
+      // The hand-rolled backdrop and drag handle belong to the web sheet; the platform sheet
+      // brings its own, and two of each would stack.
+      expect(
+        screen.queryByTestId("booking-drawer-backdrop", { includeHiddenElements: true })
+      ).toBeNull();
+      expect(
+        screen.queryByTestId("booking-drawer-grabber", { includeHiddenElements: true })
+      ).toBeNull();
+    });
+
+    // The sheet animates itself away and reports back through onDismiss, so the close button
+    // asks it to dismiss rather than yanking the drawer out from under its own exit.
+    it("lets the sheet animate away before the page drops it", async () => {
+      const onClose = jest.fn();
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
+
+      fireEvent.press(screen.getByTestId("booking-drawer-close"));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     });
   });
 
