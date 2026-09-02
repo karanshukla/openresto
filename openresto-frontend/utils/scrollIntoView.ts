@@ -1,6 +1,14 @@
 import type { RefObject } from "react";
-import { findNodeHandle, Platform } from "react-native";
+import { Platform } from "react-native";
 import type { ScrollView, View } from "react-native";
+
+/**
+ * `ScrollView`'s content view, which its own type declarations omit — the `getInnerViewNode`
+ * they do declare returns the node handle the New Architecture no longer accepts.
+ */
+type ScrollViewContent = {
+  getInnerViewRef?: () => Parameters<View["measureLayout"]>[0] | null;
+};
 
 export interface ScrollIntoViewOptions {
   block?: "start" | "center" | "nearest";
@@ -36,10 +44,15 @@ export function scrollIntoView(
       block,
     });
   } else {
-    const node = findNodeHandle(scrollRef.current);
-    if (!node) return;
+    /**
+     * Measured against the *content* view, so `y` is an offset into the scrollable content.
+     * The scroll view itself would give a viewport position, which moves as the list scrolls
+     * and lands somewhere different depending on where the user already was.
+     */
+    const content = (scrollRef.current as unknown as ScrollViewContent | null)?.getInnerViewRef?.();
+    if (!content) return;
     targetRef.current.measureLayout(
-      node,
+      content,
       (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(0, y - 16), animated }),
       () => {}
     );

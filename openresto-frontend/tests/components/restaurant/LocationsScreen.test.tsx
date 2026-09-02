@@ -4,7 +4,11 @@
 import React from "react";
 import { screen, waitFor, fireEvent, within } from "@testing-library/react-native";
 import { Platform, ScrollView, StyleSheet } from "react-native";
-import LocationsScreen, { availabilitySummary } from "@/components/restaurant/LocationsScreen";
+import LocationsScreen, {
+  availabilitySummary,
+  splitFits,
+} from "@/components/restaurant/LocationsScreen";
+import { isMobileWidth } from "@/constants/breakpoints";
 import { fetchRestaurants } from "@/api/restaurants";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
@@ -656,5 +660,25 @@ describe("LocationsScreen", () => {
       // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
       // covers the scrollToTop callback.
     });
+  });
+});
+
+/**
+ * The drawer is a fixed 460dp that will not shrink, so the split is decided by arithmetic
+ * rather than by device class. Gating it on the phone breakpoint (768) put both panes on an
+ * ~800dp tablet in portrait and left the list under 300dp.
+ */
+describe("splitFits", () => {
+  it("puts the drawer beside the list once both fit", () => {
+    expect(splitFits(876)).toBe(true);
+  });
+
+  it("falls back to the sheet one dp under the width the two panes need", () => {
+    expect(splitFits(875)).toBe(false);
+  });
+
+  it("keeps a tablet in portrait on the sheet even though it clears the phone breakpoint", () => {
+    expect(isMobileWidth(800)).toBe(false);
+    expect(splitFits(800)).toBe(false);
   });
 });

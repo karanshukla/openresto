@@ -20,6 +20,7 @@ import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
+import { DRAWER_WIDTH } from "@/components/booking/BookingDrawer.styles";
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
@@ -55,6 +56,22 @@ export function availabilitySummary(
  * arriving from a time press on the home page should still show the location the diner
  * picked, not just a booking panel detached from it.
  */
+/** Narrowest list worth reading beside the drawer; below it the two panes stop being two. */
+const MIN_LIST_WIDTH = 360;
+
+/**
+ * Whether the drawer fits *beside* the list rather than over it. The drawer is a fixed
+ * `DRAWER_WIDTH` that never shrinks, so the question is one of arithmetic, not of device
+ * class: gating on the phone breakpoint gave an ~800dp tablet in portrait both panes and left
+ * the list under 300dp, where the cards overflow their column instead of reflowing.
+ *
+ * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+ * — pins the boundary either side: the split at the width that fits, the sheet one dp under.
+ */
+export function splitFits(width: number): boolean {
+  return width >= DRAWER_WIDTH + MIN_LIST_WIDTH + CONTENT_PADDING_H * 2;
+}
+
 export default function LocationsScreen({
   highlightId,
   initialTime,
@@ -89,7 +106,7 @@ export default function LocationsScreen({
    * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
    * — pins that the footer leaves the column for the side drawer and stays for the sheet.
    */
-  const sideDrawer = Boolean(drawer) && !isCompact;
+  const sideDrawer = Boolean(drawer) && splitFits(width);
   const [availability, setAvailability] = useState<Record<number, number | null>>({});
   // Where the filter bar's band sits in the unscrolled list, so the page can tell a pinned
   // bar from one still sitting under the heading and only draw its edge once it is pinned.
@@ -304,7 +321,7 @@ export default function LocationsScreen({
             date={date}
             time={drawer.time}
             today={today}
-            variant={isCompact ? "sheet" : "side"}
+            variant={splitFits(width) ? "side" : "sheet"}
             onSeatsChange={setSeats}
             onDateChange={setDateOverride}
             onClose={closeDrawer}
