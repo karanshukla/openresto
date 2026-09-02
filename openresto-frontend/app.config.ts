@@ -117,7 +117,11 @@ export function buildExpoConfig(
               monochromeImage: "./assets/images/android-icon-monochrome.png",
             }),
       },
-      predictiveBackGestureEnabled: false,
+      // Android 15+ previews the screen underneath as the gesture is dragged. Every overlay
+      // in the app dismisses through `Modal.onRequestClose`, which React Native bridges to the
+      // new OnBackInvokedCallback API; nothing hand-rolls `BackHandler`, which is what would
+      // swallow the gesture instead (#430).
+      predictiveBackGestureEnabled: true,
       ...(native
         ? {
             package: native.androidPackage,
