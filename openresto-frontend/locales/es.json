@@ -179,7 +179,9 @@
       "appearance": "Apariencia",
       "themeSystem": "Sistema",
       "themeLight": "Claro",
-      "themeDark": "Oscuro"
+      "themeDark": "Oscuro",
+      "about": "Acerca de",
+      "version": "Versión {{version}}"
     },
     "offline": {
       "label": "Sin conexión",

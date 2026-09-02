@@ -179,7 +179,9 @@
       "appearance": "Appearance",
       "themeSystem": "System",
       "themeLight": "Light",
-      "themeDark": "Dark"
+      "themeDark": "Dark",
+      "about": "About",
+      "version": "Version {{version}}"
     },
     "offline": {
       "label": "Offline",

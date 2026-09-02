@@ -46,6 +46,7 @@ jest.mock("@/hooks/use-app-theme", () => ({
   }),
 }));
 
+jest.mock("@/api/restaurants", () => ({ fetchSocialLinks: jest.fn().mockResolvedValue([]) }));
 jest.mock("@/hooks/useKeyboardShortcuts", () => ({ useKeyboardShortcuts: jest.fn() }));
 jest.mock("@/components/layout/Navbar", () => () => null);
 jest.mock("@/components/common/KeyboardShortcutsHelp", () => () => null);

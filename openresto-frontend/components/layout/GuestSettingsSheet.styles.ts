@@ -2,6 +2,10 @@ import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 export const styles = StyleSheet.create({
+  finePrint: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
   helpBody: {
     fontSize: 13,
     lineHeight: 19,

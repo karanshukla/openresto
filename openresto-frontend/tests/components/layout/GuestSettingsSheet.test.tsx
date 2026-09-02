@@ -3,13 +3,23 @@ import { render, screen, fireEvent } from "@testing-library/react-native";
 import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
 import { useLocale } from "@/context/LocaleContext";
 import { useTheme } from "@/context/ThemeContext";
+import { fetchSocialLinks } from "@/api/restaurants";
+import { openExternal } from "@/utils/openExternal";
+
+jest.mock("@/api/restaurants", () => ({ fetchSocialLinks: jest.fn() }));
+jest.mock("@/utils/openExternal", () => ({ openExternal: jest.fn() }));
 
 jest.mock("@/context/LocaleContext", () => ({ useLocale: jest.fn() }));
 jest.mock("@/context/ThemeContext", () => ({ useTheme: jest.fn() }));
 
 jest.mock("@/hooks/use-app-theme", () => ({
   useAppTheme: () => ({
-    brand: { appName: "Test App", primaryColor: "#0a7ea4" },
+    brand: {
+      appName: "Test App",
+      primaryColor: "#0a7ea4",
+      privacyPolicyUrl: "https://example.com/privacy",
+      copyrightText: "",
+    },
     colors: { muted: "#666", input: "#f5f5f5", card: "#fff", border: "#ccc" },
     primaryColor: "#0a7ea4",
     isDark: false,
@@ -22,6 +32,7 @@ const onClose = jest.fn();
 
 beforeEach(() => {
   jest.clearAllMocks();
+  (fetchSocialLinks as jest.Mock).mockResolvedValue([]);
   (useLocale as jest.Mock).mockReturnValue({ locale: "en", setLocale: mockSetLocale });
   (useTheme as jest.Mock).mockReturnValue({
     colorScheme: "light",
@@ -117,5 +128,45 @@ describe("help", () => {
   it("offers no keyboard shortcuts row, since shortcuts do not fire off web", () => {
     render(<GuestSettingsSheet visible onClose={onClose} />);
     expect(screen.queryByText(/keyboard/i)).toBeNull();
+  });
+});
+
+/**
+ * What a website puts in its footer lives here instead: the native app has screens rather than
+ * one long document, so the band that ended every web page became an About section a guest
+ * opens deliberately. The admin link is the one part that does not come across —
+ * `app/admin/_layout.tsx` redirects off web, so it would point at a screen that bounces back.
+ */
+describe("about", () => {
+  it("lists the configured social links and opens one externally", async () => {
+    (fetchSocialLinks as jest.Mock).mockResolvedValue([
+      { id: 1, label: "Instagram", iconKey: "logo-instagram", url: "https://instagram.com/r" },
+    ]);
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+
+    const link = await screen.findByLabelText("Instagram");
+    fireEvent.press(link);
+    expect(openExternal).toHaveBeenCalledWith("https://instagram.com/r");
+  });
+
+  it("carries the privacy policy the app stores require a listing to reach", () => {
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+    fireEvent.press(screen.getByTestId("guest-settings-privacy"));
+    expect(openExternal).toHaveBeenCalledWith("https://example.com/privacy");
+  });
+
+  it("shows the copyright the web footer used to carry", () => {
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+    expect(screen.getByTestId("guest-settings-copyright")).toBeTruthy();
+  });
+
+  it("offers no admin link, which off web only bounces back to the home screen", () => {
+    render(<GuestSettingsSheet visible onClose={onClose} />);
+    expect(screen.queryByText("Admin")).toBeNull();
+  });
+
+  it("asks the server for the links only once the sheet is open", () => {
+    render(<GuestSettingsSheet visible={false} onClose={onClose} />);
+    expect(fetchSocialLinks).not.toHaveBeenCalled();
   });
 });

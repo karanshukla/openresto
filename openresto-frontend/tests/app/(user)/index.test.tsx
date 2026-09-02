@@ -24,6 +24,7 @@ jest.mock("@/components/layout/Footer", () => {
 jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn(),
   fetchHighlights: jest.fn(),
+  fetchSocialLinks: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock("@/api/availability", () => ({

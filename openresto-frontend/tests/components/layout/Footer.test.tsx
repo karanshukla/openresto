@@ -149,82 +149,24 @@ describe("Footer", () => {
     ).toBeUndefined();
   });
 
+  /**
+   * A footer is a document paradigm — the bottom of one long page. The native app has screens
+   * instead, so the same band under every screen read as a website in a wrapper and stacked
+   * above the tab bar. Its contents moved into GuestSettingsSheet's About section, which
+   * GuestSettingsSheet.test.tsx pins; here we only pin that nothing is left behind.
+   */
   describe("off web", () => {
     beforeEach(() => setPlatform("ios"));
     afterEach(() => setPlatform("web"));
 
-    // `app/admin/_layout.tsx` redirects off web, so in the app this row is a site map pointing
-    // at a screen that hands you straight back to the home page.
-    it("drops the admin link, which off web only bounces back to the home screen", () => {
+    it("renders nothing at all", () => {
       render(<Footer />);
-      expect(screen.queryByText("Admin")).toBeNull();
-      expect(screen.queryByLabelText("Restaurant admin")).toBeNull();
+      expect(screen.queryByTestId("site-footer")).toBeNull();
     });
 
-    // Both stores refuse a listing whose app cannot reach a privacy policy, so the compact
-    // layout may drop chrome but never this.
-    it("keeps the privacy policy link the stores require", () => {
-      (useAppTheme as jest.Mock).mockReturnValue({
-        brand: {
-          appName: "Test App",
-          primaryColor: "#0a7ea4",
-          privacyPolicyUrl: "https://example.com/privacy",
-        },
-        colors: { border: "#ccc", muted: "#666" },
-      });
+    it("asks the server for nothing it will not draw", () => {
       render(<Footer />);
-
-      fireEvent.press(screen.getByLabelText("Privacy policy"));
-
-      expect(openExternal).toHaveBeenCalledWith("https://example.com/privacy");
-    });
-
-    it("keeps the social links reachable", async () => {
-      (fetchSocialLinks as jest.Mock).mockResolvedValue([
-        {
-          id: 1,
-          label: "Instagram",
-          url: "https://instagram.com/resto",
-          iconKey: "logo-instagram",
-          sortOrder: 0,
-        },
-      ]);
-      render(<Footer />);
-
-      fireEvent.press(await screen.findByLabelText("Instagram"));
-
-      expect(Linking.openURL).toHaveBeenCalledWith("https://instagram.com/resto");
-    });
-
-    // A desktop footer puts the fine print at one end of a wide row and the links at the other.
-    // On a phone the two stack, links first, the way an app's last screen row reads.
-    it("stacks the links over the fine print instead of spanning a desktop row", () => {
-      render(<Footer />);
-      const inner = StyleSheet.flatten(screen.getByTestId("footer-inner").props.style);
-      expect(inner.flexDirection).toBe("column-reverse");
-      expect(inner.alignItems).toBe("center");
-    });
-
-    // The link row has no wrap on web, where there is always a viewport wide enough for it.
-    // A phone with two social links plus the privacy policy runs it off the screen edge.
-    it("wraps its links rather than running them off the side of a phone", () => {
-      render(<Footer />);
-      expect(StyleSheet.flatten(screen.getByTestId("footer-links").props.style).flexWrap).toBe(
-        "wrap"
-      );
-    });
-
-    it("tightens the padding the desktop row is sized on", () => {
-      const { unmount } = render(<Footer />);
-      const native = StyleSheet.flatten(screen.getByTestId("footer-inner").props.style);
-      unmount();
-
-      setPlatform("web");
-      render(<Footer />);
-      const web = StyleSheet.flatten(screen.getByTestId("footer-inner").props.style);
-
-      expect(native.paddingVertical).toBeLessThan(web.paddingVertical as number);
-      expect(native.paddingHorizontal).toBeLessThan(web.paddingHorizontal as number);
+      expect(fetchSocialLinks).not.toHaveBeenCalled();
     });
   });
 });
