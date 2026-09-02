@@ -8,7 +8,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run dev          # starts backend (dotnet watch) + frontend (expo) concurrently
+npm run dev:native   # the same stack, addressed so a phone running Expo Go can reach it
 ```
+
+Both pass `--kill-others --kill-timeout` to `concurrently`, so one half dying takes the other
+down instead of leaving the backend squatting on `:8080` where the next `dotnet watch` cannot
+bind. `concurrently` kills through `tree-kill`, which is what reaches the
+`dotnet watch` → `dotnet run` → `OpenRestoApi` grandchild that actually holds the port.
+
+`dev:native` exists because `openresto-frontend/.env` points the app at `http://localhost:8080`,
+and in Expo Go `localhost` is the **phone**, so the app resolves it to itself and reaches no API
+at all. `scripts/dev-native.mjs` resolves this machine's LAN address and passes it as
+`EXPO_PUBLIC_API_URL`, which Metro bakes into the bundle at build time; `@expo/env` skips any key
+already in the system environment, so that wins over the `.env` file rather than racing it.
+Docker and podman bridges are filtered out deliberately — bring the compose stack up and their
+`172.x`/`10.88.x` addresses appear alongside the real one, and picking those fails exactly the way
+`localhost` does. Override with `OPENRESTO_LAN_HOST` / `OPENRESTO_API_PORT` when the guess is
+wrong; the script exits rather than falling back to an address the phone cannot route to.
 
 ### Backend only
 
