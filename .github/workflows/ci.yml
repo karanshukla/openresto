@@ -48,6 +48,13 @@ jobs:
       - name: Run Tests
         run: npm test -- --ci --coverage --forceExit
 
+      # The run above is the iOS half: jest-expo's default preset sets
+      # haste.defaultPlatform to ios, so on its own it never executes the Android branch of a
+      # Platform.OS check or resolves an .android.* module. Same suite, other platform; no
+      # coverage, since the run above already reports it.
+      - name: Run Tests (Android platform)
+        run: npm run test:android -- --ci --forceExit
+
       - name: Upload Frontend Coverage to Coveralls
         uses: coverallsapp/github-action@v2
         continue-on-error: true

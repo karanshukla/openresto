@@ -351,7 +351,10 @@ describe("BookingDrawer", () => {
 
     it("lifts the form clear of the on-screen keyboard on a device", () => {
       renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
-      expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding");
+      // Which behaviour that shell takes per OS is KeyboardAvoider's own business, pinned on
+      // both branches in its test. Asserting the iOS value here duplicated that knowledge and
+      // made this suite fail under the Android run for a reason the drawer has no say in.
+      expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(1);
     });
 
     it("adds no keyboard shell on web, where the browser scrolls the field into view itself", () => {
