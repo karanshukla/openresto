@@ -3,7 +3,7 @@
  */
 import { Image } from "expo-image";
 import React from "react";
-import { screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { act, screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { AccessibilityInfo, Platform, ScrollView, StyleSheet } from "react-native";
 import type { TextStyle } from "react-native";
 import type { ReactTestInstance } from "react-test-renderer";
@@ -35,10 +35,23 @@ jest.mock("@/api/availability", () => ({
   }),
 }));
 
+/**
+ * `useFocusEffect` runs its callback as if the screen had just come into focus and returns the
+ * cleanup on unmount, so `mockBlur` can take the screen out of focus mid-test.
+ */
+let mockBlur: (() => void) | undefined;
 jest.mock("expo-router", () => {
+  const { useEffect } = require("react");
   return {
     Stack: {
       Screen: jest.fn(() => null),
+    },
+    useFocusEffect: (effect: () => (() => void) | undefined) => {
+      useEffect(() => {
+        const cleanup = effect();
+        mockBlur = cleanup;
+        return cleanup;
+      }, [effect]);
     },
     useRouter: jest.fn(() => ({
       push: jest.fn(),
@@ -47,6 +60,15 @@ jest.mock("expo-router", () => {
     })),
     usePathname: jest.fn(() => "/"),
     Link: jest.fn(({ children }) => children),
+  };
+});
+
+jest.mock("expo-status-bar", () => {
+  const { View } = require("react-native");
+  return {
+    StatusBar: ({ style }: { style: string }) => (
+      <View testID="hero-status-bar" accessibilityLabel={style} />
+    ),
   };
 });
 
@@ -132,8 +154,12 @@ describe("HomeScreen", () => {
   it("renders loading state initially", async () => {
     renderWithProviders(<HomeScreen />);
     expect(screen.getByTestId("loading-screen")).toBeTruthy();
-    // Wait for effect to finish to avoid unmounted component error
-    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    // Wait for effect to finish to avoid unmounted component error. The first render in a
+    // process pays for every lazily-required module the screen's effects touch, which holds
+    // the fetch's resolution back past waitFor's default second, so this one gets more.
+    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull(), {
+      timeout: 5000,
+    });
   });
 
   // The skeletons hide themselves from assistive tech, which also hides them from the
@@ -533,6 +559,104 @@ describe("HomeScreen", () => {
         const style = flatStyle(screen.getByText("Restaurant highlights"));
         expect(style.textShadow).toContain("rgba(0,0,0,0.55)");
         expect(style.textShadowColor).toBeUndefined();
+      });
+    });
+  });
+
+  describe("the status bar over the hero", () => {
+    const statusBarStyle = () =>
+      screen.queryByTestId("hero-status-bar")?.props.accessibilityLabel as string | undefined;
+
+    it("goes light over a header photo, whatever the theme", async () => {
+      await onPlatform("ios", async () => {
+        brandResponse({ headerImageUrl: "/media/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(statusBarStyle()).toBe("light"));
+      });
+    });
+
+    it("leaves the bar to the theme without a photo to sit on", async () => {
+      await onPlatform("ios", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        expect(screen.queryByTestId("hero-status-bar")).toBeNull();
+      });
+    });
+
+    it("hands the bar back while another screen is in front", async () => {
+      await onPlatform("ios", async () => {
+        brandResponse({ headerImageUrl: "/media/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(statusBarStyle()).toBe("light"));
+        await act(async () => {
+          mockBlur?.();
+        });
+        expect(screen.queryByTestId("hero-status-bar")).toBeNull();
+      });
+    });
+
+    it("never touches the web page, whose chrome is the browser's", async () => {
+      await onPlatform("web", async () => {
+        brandResponse({ headerImageUrl: "https://example.com/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getAllByText("Resto 1").length).toBeGreaterThan(0));
+        expect(screen.queryByTestId("hero-status-bar")).toBeNull();
+      });
+    });
+  });
+
+  describe("pull to refresh", () => {
+    type RefreshControlElement = React.ReactElement<{ refreshing: boolean; onRefresh: () => void }>;
+    const refreshControlOf = () =>
+      screen.UNSAFE_getByType(ScrollView).props.refreshControl as RefreshControlElement | undefined;
+
+    it("offers a refresh control off web and none on it", async () => {
+      let native: { unmount: () => void } | undefined;
+      await onPlatform("ios", async () => {
+        native = renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        expect(refreshControlOf()?.props.refreshing).toBe(false);
+      });
+      native?.unmount();
+      resetHomeCache();
+      await onPlatform("web", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        expect(refreshControlOf()).toBeUndefined();
+      });
+    });
+
+    it("reloads the list and the highlights, and asks each card for its times again", async () => {
+      await onPlatform("ios", async () => {
+        const { fetchAvailability } = require("@/api/availability");
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        const callsBefore = (fetchAvailability as jest.Mock).mock.calls.length;
+
+        (fetchRestaurants as jest.Mock).mockResolvedValueOnce([
+          { ...mockRestaurants[0], name: "Renamed Bistro" },
+        ]);
+        await act(async () => {
+          refreshControlOf()?.props.onRefresh();
+        });
+        await waitFor(() => expect(screen.getByText("Renamed Bistro")).toBeTruthy());
+        await waitFor(() => expect(refreshControlOf()?.props.refreshing).toBe(false));
+        expect(fetchHighlights).toHaveBeenCalledTimes(2);
+        // A remounted card fetches afresh; a card merely re-rendered would not.
+        expect((fetchAvailability as jest.Mock).mock.calls.length).toBeGreaterThan(callsBefore);
+      });
+    });
+
+    it("settles the control when the reload fails, keeping what it had", async () => {
+      await onPlatform("ios", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        (fetchRestaurants as jest.Mock).mockRejectedValueOnce(new Error("offline"));
+        await act(async () => {
+          refreshControlOf()?.props.onRefresh();
+        });
+        await waitFor(() => expect(refreshControlOf()?.props.refreshing).toBe(false));
+        expect(screen.getByText("Resto 1")).toBeTruthy();
       });
     });
   });

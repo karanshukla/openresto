@@ -68,6 +68,37 @@ export const styles = StyleSheet.create({
   list: {
     gap: theme.spacing.md,
   },
+  /**
+   * Off web the page is three ScrollView children rather than one PageContainer, so the bar's
+   * band can be pinned by index; these carry PageContainer's insets across the split, with
+   * the vertical run between the sections adding up to the gap the web page keeps.
+   */
+  nativeSection: {
+    width: "100%",
+    alignItems: "center",
+  },
+  nativeColumn: {
+    width: "100%",
+    maxWidth: 820,
+  },
+  nativeHead: {
+    paddingTop: theme.spacing.xxl,
+    paddingBottom: theme.spacing.xs,
+  },
+  nativeBody: {
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.xxl,
+  },
+  nativeFilterBand: {
+    zIndex: 5,
+    alignItems: "center",
+    paddingVertical: theme.spacing.md,
+  },
+  nativeSummary: {
+    fontSize: 12.5,
+    marginTop: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+  },
   empty: {
     padding: 40,
     alignItems: "center",

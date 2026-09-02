@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform, Share, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
@@ -8,6 +8,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
 import { isPast } from "@/utils/bookingStatus";
+import { fmtDateTime } from "@/utils/formatters";
 import BookingSummaryHeader from "@/components/booking/BookingSummaryHeader";
 import BookingFactsBand from "@/components/booking/BookingFactsBand";
 import BookingGuestDetails from "@/components/booking/BookingGuestDetails";
@@ -104,6 +105,25 @@ export default function BookingResultPanel({
     };
   }, [restaurant?.address]);
 
+  /**
+   * The share sheet is where a phone puts "send this to someone", and it covers the clipboard
+   * too, so the one control does what the web strip's Copy does and more. Web keeps Copy: a
+   * browser has no sheet worth the name.
+   *
+   * @see [BookingResultPanel.test.tsx](../../tests/components/booking/BookingResultPanel.test.tsx)
+   * — pins that Share replaces Copy off web and what it puts on the sheet.
+   */
+  const handleShare = () => {
+    Share.share({
+      message: t("booking.result.shareMessage", {
+        ref,
+        name: restaurant?.name ?? t("booking.result.unnamedRestaurant"),
+        when: fmtDateTime(new Date(booking.date)),
+        count: booking.seats,
+      }),
+    }).catch(() => {});
+  };
+
   const handleCopy = () => {
     if (Platform.OS === "web" && navigator.clipboard && ref) {
       navigator.clipboard.writeText(ref);
@@ -148,7 +168,7 @@ export default function BookingResultPanel({
               </ThemedText>
               <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
             </View>
-            {Platform.OS === "web" && (
+            {Platform.OS === "web" ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -162,6 +182,18 @@ export default function BookingResultPanel({
                 }
               >
                 {copied ? t("booking.result.copiedButton") : t("booking.result.copyButton")}
+              </Button>
+            ) : (
+              <Button
+                testID="share-booking-btn"
+                variant="ghost"
+                size="sm"
+                tone="neutral"
+                icon="share-outline"
+                onPress={handleShare}
+                accessibilityLabel={t("booking.result.shareLabel")}
+              >
+                {t("booking.result.shareButton")}
               </Button>
             )}
           </View>

@@ -9,7 +9,8 @@
       "loadingLabel": "Chargement de votre réservation"
     },
     "directions": {
-      "heading": "OBTENIR L'ITINÉRAIRE"
+      "heading": "OBTENIR L'ITINÉRAIRE",
+      "openMapsButton": "Ouvrir dans Plans"
     },
     "drawer": {
       "bookLocationLabel": "Réserver {{name}}",
@@ -126,6 +127,10 @@
       "referenceCopiedLabel": "Référence de réservation copiée",
       "referenceLabel": "Référence",
       "routeTitleConfirmed": "Réservation confirmée",
+      "shareButton": "Partager",
+      "shareLabel": "Partager les détails de la réservation",
+      "shareMessage_one": "Réservation {{ref}} chez {{name}} · {{when}} · {{count}} personne",
+      "shareMessage_other": "Réservation {{ref}} chez {{name}} · {{when}} · {{count}} personnes",
       "statusCancelled": "Réservation annulée",
       "statusConfirmed": "Réservation confirmée",
       "statusFound": "Réservation trouvée",

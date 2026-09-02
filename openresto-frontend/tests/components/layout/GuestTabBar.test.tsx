@@ -2,6 +2,10 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
 import GuestTabBar from "@/components/layout/GuestTabBar";
 import { usePathname, useRouter } from "expo-router";
+import { StyleSheet } from "react-native";
+import * as Haptics from "expo-haptics";
+
+jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
 
 const mockNavigate = jest.fn();
 
@@ -17,7 +21,7 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("@/hooks/use-app-theme", () => ({
   useAppTheme: () => ({
     brand: { appName: "Test App", primaryColor: "#0a7ea4" },
-    colors: { muted: "#666", border: "#ccc", page: "#fff", text: "#111" },
+    colors: { muted: "#666", border: "#ccc", page: "#fff", card: "#fafafa", text: "#111" },
     primaryColor: "#0a7ea4",
     isDark: false,
   }),
@@ -47,6 +51,19 @@ describe("GuestTabBar", () => {
     at("/");
     fireEvent.press(screen.getByLabelText("Locations"));
     expect(mockNavigate).toHaveBeenCalledWith("/locations");
+  });
+
+  it("answers the press with a tick before moving", () => {
+    at("/");
+    fireEvent.press(screen.getByLabelText("Locations"));
+    expect(Haptics.selectionAsync).toHaveBeenCalled();
+  });
+
+  it("sits on the card surface rather than the page colour the list scrolls on", () => {
+    at("/");
+    const bar = StyleSheet.flatten(screen.getByTestId("guest-tab-bar").props.style);
+    expect(bar.backgroundColor).toBe("#fafafa");
+    expect(bar.borderTopColor).toBe("#ccc");
   });
 
   /**

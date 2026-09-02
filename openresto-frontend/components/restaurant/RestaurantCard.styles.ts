@@ -121,6 +121,12 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
+  /** The one native pill stands alone on its row, so it takes the room a caption freed up. */
+  mapLinkNative: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    gap: 6,
+  },
   mapLinkText: {
     fontSize: 12,
   },

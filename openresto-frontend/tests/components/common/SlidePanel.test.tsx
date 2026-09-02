@@ -3,9 +3,10 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { Text } from "react-native";
+import { Platform, StyleSheet, Text } from "react-native";
 import SlidePanel from "@/components/common/SlidePanel";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 
@@ -93,6 +94,44 @@ describe("SlidePanel", () => {
       expect(grabber.props.onStartShouldSetResponder).toBeDefined();
       expect(grabber.props.onMoveShouldSetResponder).toBeDefined();
       expect(grabber.props.accessibilityElementsHidden).toBe(true);
+    });
+
+    /**
+     * The sheet is the bottom of the screen: without stepping up over the home indicator its
+     * last row sits under it. Web has no inset to clear and stays exactly as it was.
+     */
+    it("clears the bottom safe area off web", () => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "ios";
+      try {
+        renderWithInsets(
+          { bottom: 34 },
+          <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+            <Text>Panel content</Text>
+          </SlidePanel>
+        );
+        const sheet = StyleSheet.flatten(screen.getByTestId("result-panel").props.style);
+        expect(sheet.paddingBottom).toBe(34);
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
+    });
+
+    it("adds no inset on web", () => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "web";
+      try {
+        renderWithInsets(
+          { bottom: 34 },
+          <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+            <Text>Panel content</Text>
+          </SlidePanel>
+        );
+        const sheet = StyleSheet.flatten(screen.getByTestId("result-panel").props.style);
+        expect(sheet.paddingBottom).toBeUndefined();
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
     });
 
     it("uses a custom testID prefix when given one", () => {

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
+  RefreshControl,
   ScrollView,
   View,
   useWindowDimensions,
@@ -27,6 +29,7 @@ import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/Loc
 import BookingDrawer from "@/components/booking/BookingDrawer";
 import Button from "@/components/common/Button";
 import { hexToRgb } from "@/utils/colors";
+import { theme } from "@/theme/theme";
 import { styles, pinnedMask } from "./LocationsScreen.styles";
 
 /** What the user is currently booking: a location plus the time they tapped. */
@@ -86,11 +89,21 @@ export default function LocationsScreen({
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  /**
+   * Bumped by a pull-to-refresh and folded into every card's key, so the cards remount and ask
+   * for availability again. The list alone reloading would leave each card on the slots it
+   * fetched at mount, which is the half of the page a diner pulls down to update.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins that a refresh remounts the cards and keeps the list on screen meanwhile.
+   */
+  const [generation, setGeneration] = useState(0);
   // Raw scroll offsets live in refs; state holds only the booleans the UI reacts to, so
   // scrolling re-renders the list on transitions instead of every scroll event.
   const [filterPinned, setFilterPinned] = useState(false);
   const fab = useScrollToTopFab();
-  const { colors } = useAppTheme();
+  const { colors, primaryColor } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = isMobileWidth(width);
   const pageRgb = useMemo(() => hexToRgb(colors.page), [colors.page]);
@@ -144,6 +157,19 @@ export default function LocationsScreen({
   }, []);
 
   useEffect(loadRestaurants, [loadRestaurants]);
+
+  // A pull keeps the list on screen while it reloads: swapping in the spinner would drop the
+  // diner back to a blank page for a gesture that means "same page, newer numbers".
+  const refresh = useCallback(() => {
+    setRefreshing(true);
+    fetchRestaurants()
+      .then((data) => {
+        setRestaurants(data);
+        setGeneration((g) => g + 1);
+      })
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+  }, []);
 
   // Every location under one brand shares a clock for the purposes of this page;
   // the first location's timezone is what "today" means in the filter bar.
@@ -232,6 +258,135 @@ export default function LocationsScreen({
   // either side. Matching it is what puts the drawer's edge under the overflow menu.
   const contentWidth = Math.min(width, CONTENT_MAX_WIDTH) - CONTENT_PADDING_H * 2;
 
+  const filterBar = (
+    <LocationsFilterBar
+      seats={seats}
+      onSeatsChange={setSeats}
+      date={date}
+      onDateChange={setDateOverride}
+      today={today}
+      meal={meal}
+      onMealChange={setMeal}
+      summary={summary}
+      compact={isCompact}
+      raised={filterPinned}
+    />
+  );
+
+  const list = (
+    <View style={styles.list}>
+      {restaurants.map((r) => (
+        <LocationListItem
+          key={`${r.id}:${generation}`}
+          restaurant={r}
+          seats={seats}
+          date={date}
+          meal={meal}
+          today={today}
+          compact={isCompact}
+          defaultExpanded={highlightId === r.id}
+          registerRef={registerRef}
+          onExpand={handleExpand}
+          onBook={handleBook}
+          onAvailabilityChange={handleAvailability}
+        />
+      ))}
+    </View>
+  );
+
+  const emptyState = (
+    <ThemedView style={styles.empty}>
+      <ThemedText style={[styles.emptyText, { color: colors.muted }]}>
+        {t("restaurant.locationsScreen.noLocationsYet")}
+      </ThemedText>
+    </ThemedView>
+  );
+
+  const heading = (
+    <ScreenHeading
+      title={t("restaurant.locationsScreen.title")}
+      subtitle={t("restaurant.locationsScreen.subtitle")}
+    />
+  );
+
+  const measureFilterBand = (e: { nativeEvent: { layout: { y: number } } }) => {
+    filterTop.current = e.nativeEvent.layout.y;
+  };
+
+  // The same inset PageContainer gives its column, so the band the bar pins in lines up with
+  // the heading above it and the cards below.
+  const pageInset = isCompact ? theme.spacing.lg : theme.spacing.xxl;
+
+  /**
+   * Off web the bar pins by `stickyHeaderIndices`, which counts the ScrollView's direct
+   * children — a fragment would count as one and pin whatever came after it — so the page is
+   * three siblings there: heading, band, list. Web keeps its `position: sticky` band inside
+   * the one container it always had.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins that the native band is the ScrollView's own second child and is the one pinned.
+   */
+  const nativeHead = (
+    <View style={[styles.nativeSection, styles.nativeHead, { paddingHorizontal: pageInset }]}>
+      <View style={styles.nativeColumn}>
+        {heading}
+        {restaurants.length === 0 && emptyState}
+      </View>
+    </View>
+  );
+
+  const nativeBand = restaurants.length > 0 && (
+    <View
+      testID="locations-filter-sticky"
+      onLayout={measureFilterBand}
+      style={[styles.nativeFilterBand, { backgroundColor: colors.page }]}
+    >
+      <View style={[styles.nativeColumn, { paddingHorizontal: pageInset }]}>
+        {filterBar}
+        {/* The compact bar has no room for the summary, so it goes under the bar here. */}
+        {isCompact && summary ? (
+          <ThemedText
+            testID="locations-native-summary"
+            style={[styles.nativeSummary, { color: colors.muted }]}
+            role="status"
+            accessibilityLiveRegion="polite"
+          >
+            {summary}
+          </ThemedText>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  const nativeBody = restaurants.length > 0 && (
+    <View style={[styles.nativeSection, styles.nativeBody, { paddingHorizontal: pageInset }]}>
+      <View style={styles.nativeColumn}>{list}</View>
+    </View>
+  );
+
+  const webContent = (
+    <PageContainer style={styles.page}>
+      {heading}
+
+      {restaurants.length === 0 ? (
+        emptyState
+      ) : (
+        <>
+          <View
+            testID="locations-filter-sticky"
+            onLayout={measureFilterBand}
+            style={[styles.filterSticky, filterPinned && pinnedMask(pageRgb)]}
+          >
+            {filterBar}
+          </View>
+          {list}
+        </>
+      )}
+    </PageContainer>
+  );
+
+  const onWeb = Platform.OS === "web";
+
   return (
     <ThemedView style={styles.root}>
       <View
@@ -246,63 +401,21 @@ export default function LocationsScreen({
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            stickyHeaderIndices={!onWeb && restaurants.length > 0 ? [1] : undefined}
+            refreshControl={
+              onWeb ? undefined : (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={refresh}
+                  tintColor={primaryColor}
+                  colors={[primaryColor]}
+                />
+              )
+            }
           >
-            <PageContainer style={styles.page}>
-              <ScreenHeading
-                title={t("restaurant.locationsScreen.title")}
-                subtitle={t("restaurant.locationsScreen.subtitle")}
-              />
-
-              {restaurants.length === 0 ? (
-                <ThemedView style={styles.empty}>
-                  <ThemedText style={[styles.emptyText, { color: colors.muted }]}>
-                    {t("restaurant.locationsScreen.noLocationsYet")}
-                  </ThemedText>
-                </ThemedView>
-              ) : (
-                <>
-                  <View
-                    testID="locations-filter-sticky"
-                    onLayout={(e) => {
-                      filterTop.current = e.nativeEvent.layout.y;
-                    }}
-                    style={[styles.filterSticky, filterPinned && pinnedMask(pageRgb)]}
-                  >
-                    <LocationsFilterBar
-                      seats={seats}
-                      onSeatsChange={setSeats}
-                      date={date}
-                      onDateChange={setDateOverride}
-                      today={today}
-                      meal={meal}
-                      onMealChange={setMeal}
-                      summary={summary}
-                      compact={isCompact}
-                      raised={filterPinned}
-                    />
-                  </View>
-
-                  <View style={styles.list}>
-                    {restaurants.map((r) => (
-                      <LocationListItem
-                        key={r.id}
-                        restaurant={r}
-                        seats={seats}
-                        date={date}
-                        meal={meal}
-                        today={today}
-                        compact={isCompact}
-                        defaultExpanded={highlightId === r.id}
-                        registerRef={registerRef}
-                        onExpand={handleExpand}
-                        onBook={handleBook}
-                        onAvailabilityChange={handleAvailability}
-                      />
-                    ))}
-                  </View>
-                </>
-              )}
-            </PageContainer>
+            {onWeb ? webContent : nativeHead}
+            {!onWeb && nativeBand}
+            {!onWeb && nativeBody}
 
             <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
             {!sideDrawer && <Footer />}

@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -17,8 +18,9 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
@@ -265,7 +267,18 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>(_cachedRestaurants ?? []);
   const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
   const [loading, setLoading] = useState(_cachedRestaurants === null);
+  const [refreshing, setRefreshing] = useState(false);
+  /**
+   * Bumped by a pull-to-refresh and folded into each card's key: a card asks for today's
+   * times once, at mount, so a refreshed list with the same cards still on it would show the
+   * availability it had before the pull.
+   *
+   * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that a pull
+   * reloads both the list and the cards' availability.
+   */
+  const [generation, setGeneration] = useState(0);
   const [motionAllowed, setMotionAllowed] = useState(false);
+  const [focused, setFocused] = useState(false);
   const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
   const { t } = useTranslation();
@@ -279,15 +292,40 @@ export default function HomeScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
+  const load = useCallback(
+    () =>
+      Promise.all([fetchRestaurants(), fetchHighlights()]).then(
+        ([restaurantData, highlightData]) => {
+          _cachedRestaurants = restaurantData;
+          _cachedHighlights = highlightData;
+          setRestaurants(restaurantData);
+          setHighlights(highlightData);
+          setLoading(false);
+        }
+      ),
+    []
+  );
+
   useEffect(() => {
-    Promise.all([fetchRestaurants(), fetchHighlights()]).then(([restaurantData, highlightData]) => {
-      _cachedRestaurants = restaurantData;
-      _cachedHighlights = highlightData;
-      setRestaurants(restaurantData);
-      setHighlights(highlightData);
-      setLoading(false);
-    });
-  }, []);
+    load();
+  }, [load]);
+
+  const refresh = useCallback(() => {
+    setRefreshing(true);
+    load()
+      .then(() => setGeneration((g) => g + 1))
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+  }, [load]);
+
+  // The screen stays mounted under whatever is pushed over it, so the status-bar style below
+  // has to know whether it is the one on screen rather than merely the one in the tree.
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
 
   useEffect(() => {
     if (Platform.OS === "web") return;
@@ -391,6 +429,15 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.root}>
       {Platform.OS !== "web" && <Stack.Screen options={{ title: brand.appName }} />}
+      {/*
+        The header photo runs under the status bar with a dark wash over it, so the bar's
+        icons read only in light — whatever the theme. The root layout's theme-driven bar takes
+        back over the moment another screen is on top or the photo is gone.
+
+        @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the light
+        bar is tied to the photo and to this screen being the one in front.
+      */}
+      {Platform.OS !== "web" && hasHero && focused && <StatusBar style="light" />}
 
       <ScrollView
         ref={scrollRef}
@@ -399,6 +446,16 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={fab.trackScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          Platform.OS === "web" ? undefined : (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+              tintColor={hasHero ? "#fff" : primaryColor}
+              colors={[primaryColor]}
+            />
+          )
+        }
         {...(HOME_SCROLL_TIMELINE as object)}
       >
         <View style={{ flex: 1 }}>
@@ -645,11 +702,19 @@ export default function HomeScreen() {
                   ))
                 : restaurants.map((r, i) =>
                     revealCards ? (
-                      <LocationCardReveal key={r.id} index={i} style={cardWrapperStyle}>
+                      <LocationCardReveal
+                        key={`${r.id}:${generation}`}
+                        index={i}
+                        style={cardWrapperStyle}
+                      >
                         <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
                       </LocationCardReveal>
                     ) : (
-                      <View key={r.id} style={cardWrapperStyle} {...(CARD_REVEAL as object)}>
+                      <View
+                        key={`${r.id}:${generation}`}
+                        style={cardWrapperStyle}
+                        {...(CARD_REVEAL as object)}
+                      >
                         <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
                       </View>
                     )

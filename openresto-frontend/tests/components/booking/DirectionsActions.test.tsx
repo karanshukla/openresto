@@ -10,6 +10,18 @@ import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 
+/** jest-expo defaults Platform.OS to "ios"; the two-pill rules below are web rules. */
+Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+
+const onPlatform = (os: string, body: () => void) => {
+  Object.defineProperty(Platform, "OS", { get: () => os, configurable: true });
+  try {
+    body();
+  } finally {
+    Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+  }
+};
+
 describe("DirectionsActions", () => {
   it("renders named Google/Apple buttons under GET DIRECTIONS", () => {
     renderWithProviders(<DirectionsActions address="123 Main St" />);
@@ -59,16 +71,39 @@ describe("DirectionsActions", () => {
     openURLSpy.mockRestore();
   });
 
-  it("works on native (Linking.openURL isn't a web-only API)", () => {
-    const originalOS = Platform.OS;
-    Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+  /**
+   * A phone already has a maps app, so off web there is one pill that opens it rather than a
+   * choice between two services one of which the device may not have.
+   */
+  describe("off web", () => {
+    it("offers one pill under the same heading, and neither service by name", () => {
+      onPlatform("ios", () => {
+        renderWithProviders(<DirectionsActions address="123 Main St" />);
+        expect(screen.getByText("GET DIRECTIONS")).toBeTruthy();
+        expect(screen.getByText("Open in Maps")).toBeTruthy();
+        expect(screen.queryByText("Google")).toBeNull();
+        expect(screen.queryByText("Apple")).toBeNull();
+      });
+    });
 
-    renderWithProviders(<DirectionsActions address="123 Main St" />);
-    fireEvent.press(screen.getByTestId("maps-google-btn"));
-    expect(openURLSpy).toHaveBeenCalled();
+    it("hands iOS to Apple Maps", () => {
+      onPlatform("ios", () => {
+        const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+        renderWithProviders(<DirectionsActions address="123 Main St" />);
+        fireEvent.press(screen.getByTestId("maps-open-btn"));
+        expect(openURLSpy).toHaveBeenCalledWith("https://maps.apple.com/?q=123%20Main%20St");
+        openURLSpy.mockRestore();
+      });
+    });
 
-    openURLSpy.mockRestore();
-    Object.defineProperty(Platform, "OS", { get: () => originalOS, configurable: true });
+    it("hands Android to Google Maps", () => {
+      onPlatform("android", () => {
+        const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+        renderWithProviders(<DirectionsActions address="123 Main St" />);
+        fireEvent.press(screen.getByTestId("maps-open-btn"));
+        expect(openURLSpy).toHaveBeenCalledWith("https://maps.google.com/?q=123%20Main%20St");
+        openURLSpy.mockRestore();
+      });
+    });
   });
 });

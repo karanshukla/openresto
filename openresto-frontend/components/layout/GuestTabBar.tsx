@@ -1,4 +1,5 @@
 import { Pressable } from "react-native";
+import * as Haptics from "expo-haptics";
 import { usePathname, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -61,7 +62,16 @@ export default function GuestTabBar() {
     <ThemedView
       testID="guest-tab-bar"
       accessibilityRole="tablist"
-      style={[styles.bar, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
+      style={[
+        styles.bar,
+        // The card surface, not the page: a bar the same colour as the list it sits under
+        // has only its hairline to say where the list ends.
+        {
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       {tabs.map((tab) => {
         const active = tab.match(pathname);
@@ -74,7 +84,10 @@ export default function GuestTabBar() {
             accessibilityState={{ selected: active }}
             accessibilityLabel={tab.label}
             style={styles.tab}
-            onPress={() => router.navigate(tab.href)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.navigate(tab.href);
+            }}
           >
             <Icon name={active ? tab.activeIcon : tab.icon} size="md" color={color} />
             <ThemedText style={[styles.label, { color }]}>{tab.label}</ThemedText>

@@ -9,7 +9,8 @@
       "loadingLabel": "Ihre Reservierung wird geladen"
     },
     "directions": {
-      "heading": "WEGBESCHREIBUNG"
+      "heading": "WEGBESCHREIBUNG",
+      "openMapsButton": "In Karten öffnen"
     },
     "drawer": {
       "bookLocationLabel": "{{name}} reservieren",
@@ -126,6 +127,10 @@
       "referenceCopiedLabel": "Reservierungsnummer kopiert",
       "referenceLabel": "Referenz",
       "routeTitleConfirmed": "Reservierung bestätigt",
+      "shareButton": "Teilen",
+      "shareLabel": "Buchungsdetails teilen",
+      "shareMessage_one": "Buchung {{ref}} bei {{name}} · {{when}} · {{count}} Gast",
+      "shareMessage_other": "Buchung {{ref}} bei {{name}} · {{when}} · {{count}} Gäste",
       "statusCancelled": "Reservierung storniert",
       "statusConfirmed": "Reservierung bestätigt",
       "statusFound": "Reservierung gefunden",

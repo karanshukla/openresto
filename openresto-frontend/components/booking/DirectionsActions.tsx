@@ -1,10 +1,11 @@
-import { Linking, View } from "react-native";
+import { Linking, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
 import ButtonRow from "@/components/common/ButtonRow";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { VENDOR_BRANDS } from "@/constants/vendorBrands";
+import { APPLE_MAPS_SEARCH, GOOGLE_MAPS_SEARCH, openDirections } from "@/utils/directions";
 import { styles } from "./DirectionsActions.styles";
 
 function openMaps(base: string, address: string) {
@@ -17,19 +18,46 @@ function openMaps(base: string, address: string) {
  * about to be handed to, and the sheet these sit in is not the kind of constrained chrome
  * that earns an icon-only control. The heading already says "directions", so the glyph is
  * free to say *whose* — each pill wears its service's logo, Google in its own blue and Apple
- * in the neutral tone its achromatic mark asks for. Like the calendar actions above them,
- * these render on every platform: Linking.openURL hands the address to whichever map app the
- * OS has, and to a new tab on web.
+ * in the neutral tone its achromatic mark asks for.
+ *
+ * Off web there is one pill, not two. A phone has a maps app already, and offering an Android
+ * user Apple Maps hands them a web page; `openDirections` picks the one the OS opens natively.
+ *
+ * @see [DirectionsActions.test.tsx](../../tests/components/booking/DirectionsActions.test.tsx)
+ * — pins both services on web and the single platform pill off it.
  */
 export default function DirectionsActions({ address }: { address: string }) {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
 
+  const heading = (
+    <ThemedText style={[styles.title, { color: colors.muted }]}>
+      {t("booking.directions.heading")}
+    </ThemedText>
+  );
+
+  if (Platform.OS !== "web") {
+    return (
+      <View style={styles.wrap}>
+        {heading}
+        <ButtonRow align="start">
+          <Button
+            testID="maps-open-btn"
+            variant="secondary"
+            size="sm"
+            icon="navigate-outline"
+            onPress={() => openDirections(address)}
+          >
+            {t("booking.directions.openMapsButton")}
+          </Button>
+        </ButtonRow>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap}>
-      <ThemedText style={[styles.title, { color: colors.muted }]}>
-        {t("booking.directions.heading")}
-      </ThemedText>
+      {heading}
       <ButtonRow align="start">
         <Button
           testID="maps-google-btn"
@@ -37,7 +65,7 @@ export default function DirectionsActions({ address }: { address: string }) {
           size="sm"
           icon="logo-google"
           accentColor={VENDOR_BRANDS.google}
-          onPress={() => openMaps("https://maps.google.com/?q=", address)}
+          onPress={() => openMaps(GOOGLE_MAPS_SEARCH, address)}
         >
           Google
         </Button>
@@ -47,7 +75,7 @@ export default function DirectionsActions({ address }: { address: string }) {
           tone="neutral"
           size="sm"
           icon="logo-apple"
-          onPress={() => openMaps("https://maps.apple.com/?q=", address)}
+          onPress={() => openMaps(APPLE_MAPS_SEARCH, address)}
         >
           Apple
         </Button>

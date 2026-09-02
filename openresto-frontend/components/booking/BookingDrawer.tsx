@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import * as Haptics from "expo-haptics";
@@ -89,6 +90,7 @@ export default function BookingDrawer({
   const router = useRouter();
   const { t } = useTranslation();
   const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Drag-to-dismiss for the sheet. The responder is built once, so it reads onClose
@@ -325,6 +327,9 @@ export default function BookingDrawer({
               style={[
                 styles.sheet,
                 { backgroundColor: colors.card, borderTopColor: colors.border },
+                // The sheet is the bottom of the screen, so the home indicator and Android's
+                // navigation bar land on its last row unless it steps up over them itself.
+                Platform.OS !== "web" && { paddingBottom: insets.bottom },
                 { transform: [{ translateY: dragY }] },
               ]}
             >

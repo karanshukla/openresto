@@ -18,6 +18,7 @@ import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
 import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
 import { resolveServerUrl } from "@/utils/serverUrl";
+import { APPLE_MAPS_SEARCH, GOOGLE_MAPS_SEARCH, openDirections } from "@/utils/directions";
 
 function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -122,6 +123,7 @@ export default function RestaurantCard({
   const hoursVary = hasCustomHours(restaurant);
   const closedToday = !getOpenDaysList(restaurant).includes(todayIsoDay);
   const tags = restaurant.tags ?? [];
+  const address = restaurant.address || "";
 
   const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
 
@@ -248,69 +250,99 @@ export default function RestaurantCard({
                 </ThemedText>
               </View>
             </View>
-            <Pressable
-              style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
-              onPress={(e) => {
-                e.stopPropagation?.();
-                if (Platform.OS === "web") {
+            {/* A new tab is a browser idea. Off web the whole card already opens the
+                location, so a second control doing the same thing is only clutter. */}
+            {Platform.OS === "web" && (
+              <Pressable
+                style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
+                onPress={(e) => {
+                  e.stopPropagation?.();
                   window.open(`/(user)/locations/${restaurant.id}`, "_blank");
-                } else {
-                  router.push(`/(user)/locations/${restaurant.id}` as Href);
-                }
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}
-            >
-              <Icon name="open-outline" size="sm" color={mutedColor} />
-            </Pressable>
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}
+              >
+                <Icon name="open-outline" size="sm" color={mutedColor} />
+              </Pressable>
+            )}
           </View>
 
           <RestaurantTags tags={tags} />
 
           <View style={styles.mapLinks}>
-            <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>
-              {t("restaurant.card.directions")}
-            </ThemedText>
-            <Pressable
-              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                styles.mapLink,
-                {
-                  backgroundColor: surface2,
-                  borderColor: hovered || pressed ? primaryColor : borderColor,
-                },
-              ]}
-              onPress={(e) => {
-                e.stopPropagation?.();
-                Linking.openURL(
-                  `https://maps.google.com/?q=${encodeURIComponent(restaurant.address || "")}`
-                );
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={t("restaurant.card.openInGoogleMaps")}
-            >
-              <Icon name="navigate-outline" size={11} color={mutedColor} />
-              <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Google</ThemedText>
-            </Pressable>
-            <Pressable
-              style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
-                styles.mapLink,
-                {
-                  backgroundColor: surface2,
-                  borderColor: hovered || pressed ? primaryColor : borderColor,
-                },
-              ]}
-              onPress={(e) => {
-                e.stopPropagation?.();
-                Linking.openURL(
-                  `https://maps.apple.com/?q=${encodeURIComponent(restaurant.address || "")}`
-                );
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={t("restaurant.card.openInAppleMaps")}
-            >
-              <Icon name="navigate-outline" size={11} color={mutedColor} />
-              <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>Apple</ThemedText>
-            </Pressable>
+            {Platform.OS === "web" ? (
+              <>
+                <ThemedText style={[styles.mapLinksLabel, { color: mutedColor }]}>
+                  {t("restaurant.card.directions")}
+                </ThemedText>
+                <Pressable
+                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                    styles.mapLink,
+                    {
+                      backgroundColor: surface2,
+                      borderColor: hovered || pressed ? primaryColor : borderColor,
+                    },
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    Linking.openURL(`${GOOGLE_MAPS_SEARCH}${encodeURIComponent(address)}`);
+                  }}
+                  accessibilityRole="link"
+                  accessibilityLabel={t("restaurant.card.openInGoogleMaps")}
+                >
+                  <Icon name="navigate-outline" size={11} color={mutedColor} />
+                  <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>
+                    Google
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                    styles.mapLink,
+                    {
+                      backgroundColor: surface2,
+                      borderColor: hovered || pressed ? primaryColor : borderColor,
+                    },
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    Linking.openURL(`${APPLE_MAPS_SEARCH}${encodeURIComponent(address)}`);
+                  }}
+                  accessibilityRole="link"
+                  accessibilityLabel={t("restaurant.card.openInAppleMaps")}
+                >
+                  <Icon name="navigate-outline" size={11} color={mutedColor} />
+                  <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>
+                    Apple
+                  </ThemedText>
+                </Pressable>
+              </>
+            ) : (
+              // One pill, opening the maps app the phone has: a choice between Google and
+              // Apple is a browser's question, and on Android one of the two answers is a
+              // web page. The pill takes the label the web row uses as its caption.
+              <Pressable
+                testID="card-directions"
+                style={({ pressed }: { pressed: boolean }) => [
+                  styles.mapLink,
+                  styles.mapLinkNative,
+                  {
+                    backgroundColor: surface2,
+                    borderColor: pressed ? primaryColor : borderColor,
+                  },
+                ]}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  openDirections(address);
+                }}
+                accessibilityRole="link"
+                accessibilityLabel={t("restaurant.card.directions")}
+              >
+                <Icon name="navigate-outline" size="sm" color={primaryColor} />
+                <ThemedText style={[styles.mapLinkText, { color: colors.text }]}>
+                  {t("restaurant.card.directions")}
+                </ThemedText>
+              </Pressable>
+            )}
           </View>
 
           {/* Time slots (or a no-reservations-needed empty state when bookings are disabled).
