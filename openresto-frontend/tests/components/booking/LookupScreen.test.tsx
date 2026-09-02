@@ -258,7 +258,9 @@ describe("LookupScreen", () => {
     renderWithProviders(<LookupScreen />);
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
 
-    expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe("padding");
+    // Per-OS behaviour belongs to KeyboardAvoider's own test, which pins both branches; the
+    // screen's job is only to put the form inside the shell off web.
+    expect(screen.UNSAFE_queryAllByType(KeyboardAvoidingView)).toHaveLength(1);
   });
 
   it("blames the connection, not the booking system, when the lookup fails offline", async () => {
