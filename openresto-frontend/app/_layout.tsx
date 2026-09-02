@@ -21,6 +21,13 @@ import { BrandProvider, useBrand } from "@/context/BrandContext";
 import { LocaleProvider } from "@/context/LocaleContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
+/**
+ * Expo Router binds an `ErrorBoundary` export to the segment that declares it, so the root
+ * boundary has to be exported from the root layout. Declaring it as its own module under
+ * `app/` instead turns it into a route, which is a different thing entirely.
+ */
+export { ErrorBoundary } from "@/components/common/RootErrorBoundary";
+
 // Synchronous theme init — runs at module load, before React mounts.
 // This is the earliest possible moment to set the correct background.
 // In production, the blocking <script> in +html.tsx runs even earlier.

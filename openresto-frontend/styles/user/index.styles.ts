@@ -10,6 +10,32 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  /** One step of the hero's card → page settle off web; the stack of them fills the hero. */
+  heroFadeStep: {
+    flex: 1,
+  },
+  /** A zero-size anchor at a bloom's centre, which its rings hang off symmetrically. */
+  heroBloom: {
+    position: "absolute",
+    width: 0,
+    height: 0,
+  },
+  heroBloomRing: {
+    position: "absolute",
+  },
+  heroSettings: {
+    position: "absolute",
+    justifyContent: "center",
+  },
+  /**
+   * Legibility for the strings that sit directly on the header photo off web, where the web
+   * branch's two-layer CSS `textShadow` has no equivalent — React Native takes one shadow.
+   */
+  heroOverlayTextShadow: {
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
   heroInner: {
     maxWidth: 1320,
     width: "100%",

@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
-import { Linking, StyleSheet, useWindowDimensions } from "react-native";
+import { Linking, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import Footer from "@/components/layout/Footer";
 import { fetchSocialLinks } from "@/api/restaurants";
 
@@ -39,6 +39,14 @@ jest.mock("@/utils/openExternal", () => ({
 }));
 
 import { openExternal } from "@/utils/openExternal";
+
+function setPlatform(os: string) {
+  Object.defineProperty(Platform, "OS", { value: os, configurable: true });
+}
+
+// jest-expo runs as "ios" by default; the block below describes the web footer, which is the
+// one with an admin link and a single space-between row.
+setPlatform("web");
 
 describe("Footer", () => {
   beforeEach(() => {
@@ -129,5 +137,36 @@ describe("Footer", () => {
     (useWindowDimensions as jest.Mock).mockReturnValue({ width: 1024, height: 768 });
     render(<Footer />);
     expect(StyleSheet.flatten(screen.getByTestId("site-footer").props.style).paddingBottom).toBe(0);
+  });
+
+  it("lays its links out in one unwrapped row beside the copyright", () => {
+    render(<Footer />);
+    expect(StyleSheet.flatten(screen.getByTestId("footer-inner").props.style).flexDirection).toBe(
+      "row"
+    );
+    expect(
+      StyleSheet.flatten(screen.getByTestId("footer-links").props.style).flexWrap
+    ).toBeUndefined();
+  });
+
+  /**
+   * A footer is a document paradigm — the bottom of one long page. The native app has screens
+   * instead, so the same band under every screen read as a website in a wrapper and stacked
+   * above the tab bar. Its contents moved into GuestSettingsSheet's About section, which
+   * GuestSettingsSheet.test.tsx pins; here we only pin that nothing is left behind.
+   */
+  describe("off web", () => {
+    beforeEach(() => setPlatform("ios"));
+    afterEach(() => setPlatform("web"));
+
+    it("renders nothing at all", () => {
+      render(<Footer />);
+      expect(screen.queryByTestId("site-footer")).toBeNull();
+    });
+
+    it("asks the server for nothing it will not draw", () => {
+      render(<Footer />);
+      expect(fetchSocialLinks).not.toHaveBeenCalled();
+    });
   });
 });

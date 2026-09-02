@@ -1,17 +1,62 @@
 import { useState } from "react";
 import { Platform, View } from "react-native";
-import { Slot, Stack, useRouter, useSegments } from "expo-router";
+import {
+  Slot,
+  Stack,
+  useRouter,
+  useSegments,
+  type NativeStackNavigationOptions,
+} from "expo-router";
 import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
 import OfflineBanner from "@/components/layout/OfflineBanner";
-import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
+import GuestSettingsMenu from "@/components/layout/GuestSettingsMenu";
+import GuestTabBar from "@/components/layout/GuestTabBar";
 import RouteTransition from "@/components/layout/RouteTransition";
-import { IconButton } from "@/components/common/IconButton";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
 import { useBrand } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
+
+/**
+ * The header's hairline (iOS) / elevation (Android) lands straight on the top border of the
+ * first card every guest screen renders, reading as a double rule. `largeTitleHeader` turns
+ * off the same line in the expanded large-title state.
+ *
+ * `headerBackButtonDisplayMode` is iOS-only (`ScreenStackHeaderConfigProps`) — Android's back
+ * affordance is already a bare arrow with no previous-screen title to crowd it.
+ *
+ * @see [layout.test.tsx](<../../tests/app/(user)/layout.test.tsx>) — pins that the minimal
+ * back button reaches the header on iOS and is left off Android.
+ */
+function guestHeader(): NativeStackNavigationOptions {
+  return {
+    headerShadowVisible: false,
+    ...(Platform.OS === "ios" ? { headerBackButtonDisplayMode: "minimal" as const } : {}),
+  };
+}
+
+/**
+ * A large title belongs to a screen a guest lands on, never to one pushed on top of it, where
+ * it stacks a second bar under the back button it shares a row with.
+ *
+ * `headerTransparent: false` is load-bearing rather than a default restated: enabling a large
+ * title makes the iOS header translucent, and the guest scroll views don't set
+ * `contentInsetAdjustmentBehavior="automatic"`, so their first row would sit under the bar.
+ *
+ * @see [layout.test.tsx](<../../tests/app/(user)/layout.test.tsx>) — pins the boundary: the
+ * top-level list screens carry a large title, the detail screens pushed on top do not.
+ */
+function largeTitleHeader(): NativeStackNavigationOptions {
+  return Platform.OS === "ios"
+    ? {
+        headerLargeTitleEnabled: true,
+        headerLargeTitleShadowVisible: false,
+        headerTransparent: false,
+      }
+    : {};
+}
 
 export default function UserLayout() {
   const { t } = useTranslation();
@@ -25,7 +70,6 @@ export default function UserLayout() {
   // navigation — see the matching comment in app/admin/_layout.tsx.
   const isUserRouteActive = segments[0] === "(user)";
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const { colors } = useAppTheme();
 
   useKeyboardShortcuts(
@@ -65,22 +109,17 @@ export default function UserLayout() {
       <OfflineBanner />
       <Stack
         screenOptions={{
-          headerRight: () => (
-            <IconButton
-              name="settings-outline"
-              accessibilityLabel={t("common.guestSettings.openLabel")}
-              color={colors.muted}
-              size="lg"
-              onPress={() => setShowSettings(true)}
-              testID="guest-settings-open"
-            />
-          ),
+          ...guestHeader(),
+          headerRight: () => <GuestSettingsMenu color={colors.muted} />,
         }}
       >
         <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
+        {/* /search is a legacy web URL that only renders a <Redirect>, so a native header
+            would flash a bar titled after the filename on the way through. */}
+        <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen
           name="locations/index"
-          options={{ title: t("restaurant.locationsScreen.routeTitle") }}
+          options={{ ...largeTitleHeader(), title: t("restaurant.locationsScreen.routeTitle") }}
         />
         <Stack.Screen
           name="locations/[id]"
@@ -95,9 +134,12 @@ export default function UserLayout() {
           name="booking-confirmation/[bookingRef]"
           options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
         />
-        <Stack.Screen name="lookup" options={{ title: t("lookup.routeTitle") }} />
+        <Stack.Screen
+          name="lookup"
+          options={{ ...largeTitleHeader(), title: t("lookup.routeTitle") }}
+        />
       </Stack>
-      <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
+      <GuestTabBar />
     </View>
   );
 }

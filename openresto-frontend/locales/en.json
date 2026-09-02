@@ -179,7 +179,9 @@
       "appearance": "Appearance",
       "themeSystem": "System",
       "themeLight": "Light",
-      "themeDark": "Dark"
+      "themeDark": "Dark",
+      "about": "About",
+      "version": "Version {{version}}"
     },
     "offline": {
       "label": "Offline",
@@ -249,6 +251,9 @@
     "timePicker": {
       "accessibilityLabel": "Time",
       "placeholder": "Select a time"
+    },
+    "tabs": {
+      "home": "Home"
     }
   },
   "errors": {

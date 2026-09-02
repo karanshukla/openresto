@@ -51,16 +51,6 @@ export const styles = StyleSheet.create({
     maxWidth: 820,
     gap: theme.spacing.lg,
   },
-  header: {
-    gap: theme.spacing.xxs,
-  },
-  title: {
-    ...theme.typography.pageTitle,
-    lineHeight: 38,
-  },
-  subtitle: {
-    ...theme.typography.body,
-  },
   // The explicit zIndex is required: react-native-web stamps `zIndex: 0` on every View
   // and a later sibling would otherwise paint straight over the pinned bar.
   filterSticky: {

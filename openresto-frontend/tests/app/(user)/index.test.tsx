@@ -4,8 +4,15 @@
 import { Image } from "expo-image";
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { Platform, ScrollView } from "react-native";
-import HomeScreen, { columnWidth, resetHomeCache } from "@/app/(user)/index";
+import { AccessibilityInfo, Platform, ScrollView, StyleSheet } from "react-native";
+import type { TextStyle } from "react-native";
+import type { ReactTestInstance } from "react-test-renderer";
+import HomeScreen, {
+  bloomRingAlpha,
+  columnWidth,
+  heroBlooms,
+  resetHomeCache,
+} from "@/app/(user)/index";
 import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -17,6 +24,7 @@ jest.mock("@/components/layout/Footer", () => {
 jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn(),
   fetchHighlights: jest.fn(),
+  fetchSocialLinks: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock("@/api/availability", () => ({
@@ -48,6 +56,31 @@ jest.setTimeout(15000);
 // app/(user)/_layout.tsx, which renders the shared Navbar once for every
 // (user) route (see issue #140 review, Concern 9: this page previously lived
 // outside the (user) group and duplicated Navbar rendering itself).
+/**
+ * Runs a body with `Platform.OS` pinned, and restores it however the body ends. Half of this
+ * screen is a native/web split, so a test that leaves the platform swapped fails the next one.
+ */
+const onPlatform = async (os: string, body: () => Promise<void>) => {
+  const original = Platform.OS;
+  (Platform as unknown as { OS: string }).OS = os;
+  try {
+    await body();
+  } finally {
+    (Platform as unknown as { OS: string }).OS = original;
+  }
+};
+
+/** Queues the next `/api/brand` response, over jest.setup's default brand. */
+const brandResponse = (overrides: Record<string, unknown>) =>
+  (global.fetch as jest.Mock).mockResolvedValueOnce({
+    ok: true,
+    json: () => Promise.resolve({ appName: "Hero Brand", primaryColor: "#c0392b", ...overrides }),
+  });
+
+/** Text styles arrive as nested arrays of conditionals; flatten before asserting on one. */
+const flatStyle = (node: ReactTestInstance): TextStyle & { textShadow?: string } =>
+  StyleSheet.flatten(node.props.style);
+
 /**
  * A scroll event carrying the full geometry RN reports. The scroll-to-top FAB reads the
  * content/viewport pair to work out how close the footer is, so a partial event is not a
@@ -412,18 +445,181 @@ describe("HomeScreen", () => {
     // Line covered — no assertion needed beyond no crash
   });
 
+  // The FAB is a web affordance — it rides the viewport on `position: sticky`, which React
+  // Native has no equivalent for — so the press that reaches `scrollToTop` only exists there.
   it("scrollToTop callback calls scrollTo on the ScrollView ref via the ScrollToTopFab", async () => {
-    jest
-      .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
-      .mockReturnValue({ width: 375, height: 812 });
-    renderWithProviders(<HomeScreen />);
-    await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+    await onPlatform("web", async () => {
+      jest
+        .spyOn(require("react-native/Libraries/Utilities/useWindowDimensions"), "default")
+        .mockReturnValue({ width: 375, height: 812 });
+      renderWithProviders(<HomeScreen />);
+      await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
-    const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, scrollEvent(400));
+      const scrollView = screen.UNSAFE_getByType(ScrollView);
+      fireEvent.scroll(scrollView, scrollEvent(400));
 
-    fireEvent.press(screen.getByLabelText("Scroll to top"));
-    // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
-    // covers the scrollToTop callback.
+      fireEvent.press(screen.getByLabelText("Scroll to top"));
+      // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
+      // covers the scrollToTop callback.
+    });
+  });
+
+  describe("the native hero", () => {
+    it("washes the flat hero in the accent colour where web paints a gradient", async () => {
+      await onPlatform("ios", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(screen.getByTestId("hero-wash")).toBeTruthy();
+      });
+    });
+
+    it("leaves the web hero to its CSS gradient", async () => {
+      await onPlatform("web", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(screen.queryByTestId("hero-wash")).toBeNull();
+      });
+    });
+
+    it("drops the wash once a header image is the background", async () => {
+      await onPlatform("ios", async () => {
+        brandResponse({ headerImageUrl: "/media/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
+        expect(screen.queryByTestId("hero-wash")).toBeNull();
+      });
+    });
+
+    // Stacked translucent layers compose multiplicatively, so an even split of the peak is
+    // the inverse nth root — three rings at peak / 3 would land short of the web gradient.
+    describe("bloomRingAlpha", () => {
+      it("stacks back to the peak the web gradient reaches", () => {
+        const alpha = bloomRingAlpha(0.18, 3);
+        expect(1 - Math.pow(1 - alpha, 3)).toBeCloseTo(0.18, 10);
+      });
+
+      it("is not an even division of the peak", () => {
+        expect(bloomRingAlpha(0.18, 3)).toBeGreaterThan(0.18 / 3);
+      });
+    });
+
+    describe("heroBlooms", () => {
+      it("lights the hero floor in the dark theme", () => {
+        expect(heroBlooms(true).map((bloom) => bloom.key)).toEqual(["corner", "floor"]);
+      });
+
+      it("leaves the light theme the corner bloom alone", () => {
+        expect(heroBlooms(false).map((bloom) => bloom.key)).toEqual(["corner"]);
+      });
+    });
+
+    it("shadows the hero-overlay text off web, where the web textShadow has no effect", async () => {
+      await onPlatform("ios", async () => {
+        brandResponse({ headerImageUrl: "/media/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
+        expect(flatStyle(screen.getByText("Restaurant highlights"))).toMatchObject({
+          textShadowColor: expect.any(String),
+          textShadowRadius: expect.any(Number),
+        });
+      });
+    });
+
+    it("keeps the web hero-overlay text on its CSS textShadow", async () => {
+      await onPlatform("web", async () => {
+        brandResponse({ headerImageUrl: "/media/hero.jpg" });
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getAllByText("Hero Brand").length).toBeGreaterThan(0));
+        const style = flatStyle(screen.getByText("Restaurant highlights"));
+        expect(style.textShadow).toContain("rgba(0,0,0,0.55)");
+        expect(style.textShadowColor).toBeUndefined();
+      });
+    });
+  });
+
+  describe("the native settings control", () => {
+    it("offers language and theme from the one screen the guest header never covers", async () => {
+      await onPlatform("ios", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+
+        expect(screen.queryByTestId("guest-settings-menu")).toBeNull();
+        fireEvent.press(screen.getByTestId("home-guest-settings-open"));
+        expect(screen.getByTestId("guest-settings-menu")).toBeTruthy();
+
+        // The menu opens a pane; the pane is what closes.
+        fireEvent.press(screen.getByTestId("guest-settings-appearance"));
+        fireEvent.press(screen.getByTestId("guest-settings-close"));
+        expect(screen.queryByTestId("guest-settings-dialog")).toBeNull();
+      });
+    });
+
+    it("names itself for a screen reader with the shared open-settings label", async () => {
+      await onPlatform("ios", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(screen.getByTestId("home-guest-settings-open").props.accessibilityLabel).toBe(
+          "Open settings"
+        );
+      });
+    });
+
+    it("stays off the web home page, which reaches both through the navbar", async () => {
+      await onPlatform("web", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(screen.queryByTestId("home-guest-settings-open")).toBeNull();
+      });
+    });
+  });
+
+  describe("the location cards' entrance", () => {
+    const reduceMotion = (enabled: boolean) =>
+      jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(enabled);
+
+    it("lands the cards with a staggered rise off web", async () => {
+      await onPlatform("ios", async () => {
+        reduceMotion(false);
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() =>
+          expect(screen.getAllByTestId("location-card-reveal")).toHaveLength(mockRestaurants.length)
+        );
+      });
+    });
+
+    it("renders the cards at rest when the device asks for reduced motion", async () => {
+      await onPlatform("ios", async () => {
+        reduceMotion(true);
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.getByText("Resto 1")).toBeTruthy());
+        expect(screen.queryAllByTestId("location-card-reveal")).toHaveLength(0);
+      });
+    });
+
+    // The device answers asynchronously, so a visitor who navigates away first must not have
+    // the answer written back into a screen that is gone.
+    it("drops the reduced-motion answer that lands after the screen has left", async () => {
+      await onPlatform("ios", async () => {
+        let answer: (reduced: boolean) => void = () => {};
+        jest
+          .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+          .mockReturnValue(new Promise<boolean>((resolve) => (answer = resolve)));
+
+        const view = renderWithProviders(<HomeScreen />);
+        view.unmount();
+        answer(false);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(AccessibilityInfo.isReduceMotionEnabled).toHaveBeenCalled();
+      });
+    });
+
+    it("leaves the web cards to the scroll-driven reveal in global.css", async () => {
+      await onPlatform("web", async () => {
+        renderWithProviders(<HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(screen.queryAllByTestId("location-card-reveal")).toHaveLength(0);
+      });
+    });
   });
 });

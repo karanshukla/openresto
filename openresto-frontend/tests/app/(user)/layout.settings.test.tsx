@@ -29,6 +29,7 @@ jest.mock("expo-router", () => {
     Slot: () => null,
     useRouter: () => ({ push: jest.fn() }),
     useSegments: () => ["(user)"],
+    usePathname: () => "/",
   };
 });
 
@@ -45,6 +46,7 @@ jest.mock("@/hooks/use-app-theme", () => ({
   }),
 }));
 
+jest.mock("@/api/restaurants", () => ({ fetchSocialLinks: jest.fn().mockResolvedValue([]) }));
 jest.mock("@/hooks/useKeyboardShortcuts", () => ({ useKeyboardShortcuts: jest.fn() }));
 jest.mock("@/components/layout/Navbar", () => () => null);
 jest.mock("@/components/common/KeyboardShortcutsHelp", () => () => null);
@@ -67,12 +69,15 @@ describe("(user)/_layout on a device", () => {
     expect(screen.queryByTestId("theme-radiogroup")).toBeNull();
   });
 
-  it("opens language and appearance from that control, and closes again", () => {
+  // The control opens a menu, and a row opens the pane — the settings do not all arrive at
+  // once, which is what keeps any one of them off a scrollbar.
+  it("reaches language and appearance from that control, and closes again", () => {
     render(<UserLayout />);
 
     fireEvent.press(screen.getByLabelText("Open settings"));
+    expect(screen.getByTestId("guest-settings-language")).toBeTruthy();
 
-    expect(screen.getByTestId("language-radiogroup")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("guest-settings-appearance"));
     expect(screen.getByTestId("theme-radiogroup")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("guest-settings-close"));

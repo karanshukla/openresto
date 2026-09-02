@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Pressable, Linking, useWindowDimensions } from "react-native";
+import { View, Platform, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -11,18 +11,31 @@ import { openExternal } from "@/utils/openExternal";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
+/**
+ * The end of every guest page on the web: copyright, social links, the privacy policy both
+ * app stores require a listing to reach, and the way in to the admin.
+ *
+ * Web only. A footer is a document paradigm — the bottom of one long page — and the native
+ * app has screens instead, so the same band under every screen read as a website in a wrapper
+ * and stacked above the tab bar. `GuestSettingsSheet` carries its contents there instead, in
+ * an About section a guest opens deliberately.
+ */
 export default function Footer() {
   const { brand, colors } = useAppTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isMobile = width < 600;
+  const isWeb = Platform.OS === "web";
 
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
 
   useEffect(() => {
+    if (!isWeb) return;
     fetchSocialLinks().then(setSocialLinks);
-  }, []);
+  }, [isWeb]);
+
+  if (!isWeb) return null;
 
   const year = new Date().getFullYear();
   const copyright =
@@ -34,10 +47,10 @@ export default function Footer() {
       testID="site-footer"
       style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
     >
-      <View style={[styles.inner, isMobile && styles.innerMobile]}>
+      <View testID="footer-inner" style={[styles.inner, isMobile && styles.innerMobile]}>
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>
 
-        <View style={styles.right}>
+        <View testID="footer-links" style={styles.right}>
           {socialLinks.length > 0 && (
             <View style={styles.social}>
               {socialLinks.map((link) => (

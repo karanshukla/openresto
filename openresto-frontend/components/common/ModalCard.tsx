@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -59,7 +59,9 @@ export function ModalCard({
           <ThemedText type="h3" accessibilityRole="header">
             {title}
           </ThemedText>
-          {children}
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+            {children}
+          </ScrollView>
         </View>
       </View>
     </Modal>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, type View } from "react-native";
+import { Dimensions, Platform, type View } from "react-native";
 import {
+  anchorPanel,
   measureAnchor,
   samePanel,
   type AnchorOptions,
@@ -8,7 +9,7 @@ import {
 } from "@/utils/anchoredPanel";
 
 export interface AnchorTracking {
-  /** Where the panel sits, or null for the centred sheet — native, or an unmeasurable trigger. */
+  /** Where the panel sits, or null for the centred sheet — an unmeasurable trigger. */
   panel: AnchoredPanel | null;
   /** Measure the trigger. Call it in the press handler, before the panel is shown. */
   measure: () => void;
@@ -36,7 +37,8 @@ export interface AnchorTracking {
  * @see [use-anchor-tracking.test.ts](../tests/hooks/use-anchor-tracking.test.ts) — pins that
  * a scroll and a resize both re-measure, that an unchanged box does not re-render, that a
  * trigger which stops reporting a box keeps its last position rather than falling back to the
- * centred sheet mid-interaction, and that native never subscribes.
+ * centred sheet mid-interaction, and that native anchors off `measureInWindow` while still not
+ * subscribing — there is no window scroll to follow, and a rotation closes the panel anyway.
  */
 export function useAnchorTracking(
   triggerRef: React.RefObject<View | null>,
@@ -55,10 +57,30 @@ export function useAnchorTracking(
     [triggerRef, align, width]
   );
 
+  /**
+   * Web reads the box synchronously; native has to ask the view and be called back, so the
+   * panel lands a frame into the fade rather than on the first one. `measureInWindow` is the
+   * native counterpart of `getBoundingClientRect` — same question, same coordinate space —
+   * and `anchorPanel` does the positioning for both, so a flip or a clamp cannot differ
+   * between platforms.
+   */
   const measure = useCallback(() => {
-    if (Platform.OS !== "web") return;
-    setPanel(read());
-  }, [read]);
+    if (Platform.OS === "web") {
+      setPanel(read());
+      return;
+    }
+    triggerRef.current?.measureInWindow?.((x, y, boxWidth, height) => {
+      if (!boxWidth) return;
+      const viewport = Dimensions.get("window");
+      setPanel(
+        anchorPanel(
+          { left: x, top: y, bottom: y + height, width: boxWidth },
+          { width: viewport.width, height: viewport.height },
+          { align, width }
+        )
+      );
+    });
+  }, [read, triggerRef, align, width]);
 
   const release = useCallback(() => setPanel(null), []);
 

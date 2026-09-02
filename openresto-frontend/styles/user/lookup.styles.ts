@@ -22,9 +22,7 @@ export const styles = StyleSheet.create({
   page: { width: "100%", alignSelf: "center", gap: theme.spacing.lg },
   pageIdle: { maxWidth: FORM_COL_WIDTH },
   pageWide: { maxWidth: FORM_COL_WIDTH + COLUMN_GAP + RESULT_COL_MAX_WIDTH },
-  header: { gap: theme.spacing.xxs, marginTop: theme.spacing.sm },
-  title: { ...theme.typography.pageTitle, lineHeight: 38 },
-  subtitle: { ...theme.typography.body },
+  header: { marginTop: theme.spacing.sm },
   // Idle: a single column the width of the search card — no result column is reserved
   // before there's a result to put in it.
   singleCol: { width: "100%", gap: theme.spacing.md },

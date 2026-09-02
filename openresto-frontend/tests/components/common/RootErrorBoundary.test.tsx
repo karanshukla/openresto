@@ -8,7 +8,7 @@
  */
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import { ErrorBoundary } from "@/app/error";
+import { ErrorBoundary } from "@/components/common/RootErrorBoundary";
 import { logError } from "@/services/errorReporting";
 
 jest.mock("@/services/errorReporting", () => ({ logError: jest.fn() }));

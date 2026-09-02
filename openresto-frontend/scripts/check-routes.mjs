@@ -53,9 +53,13 @@ function exportedRoutes() {
 
 if (!skipBuild) {
   console.log("Exporting web build to derive the route tree…");
+  // npm installs `npx` on Windows as `npx.cmd`, which CreateProcess will not run under the
+  // bare name — without a shell this fails with ENOENT that reads like a missing install.
+  // These arguments carry no spaces, so letting the shell re-parse them is safe here.
   execFileSync("npx", ["expo", "export", "-p", "web", "--clear"], {
     cwd: root,
     stdio: "inherit",
+    shell: process.platform === "win32",
   });
 }
 

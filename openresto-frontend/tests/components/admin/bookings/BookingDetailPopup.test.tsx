@@ -1,9 +1,12 @@
 import React from "react";
-import { Platform } from "react-native";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
 import { BookingDetailPopup } from "@/components/admin/bookings/BookingDetailPopup";
 import * as adminApi from "@/api/admin";
 import * as restaurantsApi from "@/api/restaurants";
+
+import { scrollIntoView } from "@/utils/scrollIntoView";
+
+jest.mock("@/utils/scrollIntoView", () => ({ scrollIntoView: jest.fn() }));
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -1129,95 +1132,53 @@ describe("BookingDetailPopup", () => {
     });
   });
 
+  /**
+   * The popup's concern is whether it asks for a scroll, not how one is carried out — the
+   * cross-platform mechanics are pinned in tests/utils/scrollIntoView.test.ts. Observing the
+   * request itself is also what keeps the negative cases honest: they used to watch
+   * `findNodeHandle`, which the native path stopped calling when it moved to the content-view
+   * element, leaving three tests that passed no matter what the popup did.
+   */
   describe("initialFocus='extend' (bound to the bookings-list 'e' shortcut)", () => {
-    afterEach(() => {
-      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
-    });
+    const requestedScroll = scrollIntoView as jest.Mock;
 
-    it("fires the auto-scroll effect on web without crashing", async () => {
-      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    beforeEach(() => requestedScroll.mockClear());
+
+    it("scrolls the extend section into view once it has rendered", async () => {
       render(<BookingDetailPopup {...baseProps} initialFocus="extend" />);
       await waitFor(() => expect(screen.getByTestId("extend-section")).toBeTruthy());
-      // View refs in the RN test renderer are component instances, not DOM
-      // elements, so scrollIntoView?.() is a no-op via optional chaining —
-      // this proves the timeout callback runs without throwing.
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(screen.getByTestId("extend-section")).toBeTruthy();
-    });
-
-    it("calls findNodeHandle on native", async () => {
-      Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-      const findNodeHandleSpy = jest
-        .spyOn(require("react-native"), "findNodeHandle")
-        .mockReturnValue(1);
-
-      try {
-        render(<BookingDetailPopup {...baseProps} initialFocus="extend" />);
-        await waitFor(() => expect(screen.getByTestId("extend-section")).toBeTruthy());
-        await waitFor(() => expect(findNodeHandleSpy).toHaveBeenCalled(), { timeout: 1000 });
-      } finally {
-        findNodeHandleSpy.mockRestore();
-      }
-    });
-
-    it("fires measureLayout success callback scrolling the extend section into view natively", async () => {
-      Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-      const { View } = require("react-native");
-      const findNodeHandleSpy = jest
-        .spyOn(require("react-native"), "findNodeHandle")
-        .mockReturnValue(1);
-      const measureLayoutSpy = jest
-        .spyOn(View.prototype, "measureLayout")
-        .mockImplementation((...args: unknown[]) => {
-          const success = args[1] as (x: number, y: number) => void;
-          success(0, 100);
-        });
-
-      try {
-        render(<BookingDetailPopup {...baseProps} initialFocus="extend" />);
-        await waitFor(() => expect(screen.getByTestId("extend-section")).toBeTruthy());
-        await waitFor(() => expect(measureLayoutSpy).toHaveBeenCalled(), { timeout: 1000 });
-      } finally {
-        findNodeHandleSpy.mockRestore();
-        measureLayoutSpy.mockRestore();
-      }
+      await waitFor(() => expect(requestedScroll).toHaveBeenCalled(), { timeout: 1000 });
+      expect(requestedScroll).toHaveBeenCalledWith(expect.any(Object), expect.any(Object), {
+        block: "center",
+      });
     });
 
     it("does not scroll when the extend section is not rendered (editing mode)", async () => {
-      const findNodeHandleSpy = jest.spyOn(require("react-native"), "findNodeHandle");
       render(<BookingDetailPopup {...baseProps} initialFocus="extend" />);
       await waitFor(() => expect(screen.getByText("Edit")).toBeTruthy());
       fireEvent.press(screen.getByText("Edit"));
       await waitFor(() => expect(screen.getByTestId("edit-booking-form")).toBeTruthy());
       await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(findNodeHandleSpy).not.toHaveBeenCalled();
-      findNodeHandleSpy.mockRestore();
+      expect(requestedScroll).not.toHaveBeenCalled();
     });
 
     it("does not scroll for a cancelled booking", async () => {
       (adminApi.getAdminBooking as jest.Mock).mockResolvedValue(cancelledBooking);
-      const findNodeHandleSpy = jest.spyOn(require("react-native"), "findNodeHandle");
       render(<BookingDetailPopup {...baseProps} initialFocus="extend" />);
       await waitFor(() => expect(screen.getByTestId("booking-details-card")).toBeTruthy());
       await new Promise((resolve) => setTimeout(resolve, 250));
       expect(screen.queryByTestId("extend-section")).toBeNull();
-      expect(findNodeHandleSpy).not.toHaveBeenCalled();
-      findNodeHandleSpy.mockRestore();
+      expect(requestedScroll).not.toHaveBeenCalled();
     });
 
     it("does not scroll when initialFocus is unset", async () => {
-      const findNodeHandleSpy = jest.spyOn(require("react-native"), "findNodeHandle");
       render(<BookingDetailPopup {...baseProps} />);
       await waitFor(() => expect(screen.getByTestId("extend-section")).toBeTruthy());
       await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(findNodeHandleSpy).not.toHaveBeenCalled();
-      findNodeHandleSpy.mockRestore();
+      expect(requestedScroll).not.toHaveBeenCalled();
     });
   });
 
-  // Moving a booking and telling the guest were two unrelated steps: the admin edited it, then
-  // hand-typed an email, with nothing carrying the old time across. The composing is what the
-  // save now does; sending stays the admin's.
   describe("notifying the guest when a sitting moves", () => {
     const moved = {
       ...mockBooking,

@@ -179,7 +179,9 @@
       "appearance": "Darstellung",
       "themeSystem": "System",
       "themeLight": "Hell",
-      "themeDark": "Dunkel"
+      "themeDark": "Dunkel",
+      "about": "Über",
+      "version": "Version {{version}}"
     },
     "offline": {
       "label": "Offline",
@@ -249,6 +251,9 @@
     "timePicker": {
       "accessibilityLabel": "Uhrzeit",
       "placeholder": "Uhrzeit auswählen"
+    },
+    "tabs": {
+      "home": "Startseite"
     }
   },
   "errors": {

@@ -28,6 +28,7 @@ import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact
 import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
 import { useOnline } from "@/hooks/use-online";
+import ScreenHeading from "@/components/layout/ScreenHeading";
 import { styles } from "@/styles/user/lookup.styles";
 
 /**
@@ -220,12 +221,11 @@ export default function LookupScreen({
           scrollEventThrottle={16}
         >
           <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
-            <View style={styles.header}>
-              <ThemedText style={styles.title}>{t("lookup.title")}</ThemedText>
-              <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-                {t("lookup.subtitle")}
-              </ThemedText>
-            </View>
+            <ScreenHeading
+              title={t("lookup.title")}
+              subtitle={t("lookup.subtitle")}
+              style={styles.header}
+            />
 
             <View style={twoColumn ? styles.wideRow : styles.singleCol}>
               <View style={twoColumn ? styles.formCol : undefined}>
