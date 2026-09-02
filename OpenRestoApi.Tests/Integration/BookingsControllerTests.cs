@@ -642,4 +642,96 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.OK, lookup.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, cancel.StatusCode);
     }
+
+    [Fact]
+    public async Task SubscribeReminders_UnknownRefAndWrongEmailAreIndistinguishable()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"indistinguishable-reminders-{Guid.NewGuid():N}";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(183));
+
+        (HttpStatusCode wrongEmailStatus, string wrongEmailBody) = await ReadAsync(
+            await client.PostAsJsonAsync($"/api/bookings/ref/{bookingRef}/reminders",
+                new { email = "stranger@test.com", channel = "expo", endpoint = "ExponentPushToken[abc]" }));
+        (HttpStatusCode unknownRefStatus, string unknownRefBody) = await ReadAsync(
+            await client.PostAsJsonAsync($"/api/bookings/ref/no-such-ref-{Guid.NewGuid():N}/reminders",
+                new { email = "owner@test.com", channel = "expo", endpoint = "ExponentPushToken[abc]" }));
+
+        Assert.Equal(HttpStatusCode.NotFound, wrongEmailStatus);
+        Assert.Equal(unknownRefStatus, wrongEmailStatus);
+        Assert.Equal(unknownRefBody, wrongEmailBody);
+        Assert.Empty(StoredReminderDevices(bookingRef));
+    }
+
+    [Fact]
+    public async Task SubscribeReminders_StoresTheDevice_AndUnsubscribeRemovesIt()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"reminders-roundtrip-{Guid.NewGuid():N}";
+        string endpoint = $"ExponentPushToken[{Guid.NewGuid():N}]";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(184));
+
+        HttpResponseMessage subscribed = await client.PostAsJsonAsync($"/api/bookings/ref/{bookingRef}/reminders",
+            new { email = "owner@test.com", channel = "expo", endpoint, locale = "fr" });
+
+        Assert.Equal(HttpStatusCode.NoContent, subscribed.StatusCode);
+        GuestPushSubscription stored = Assert.Single(StoredReminderDevices(bookingRef));
+        Assert.Equal("expo", stored.Channel);
+        Assert.Equal(endpoint, stored.Endpoint);
+        Assert.Equal("fr", stored.Locale);
+
+        using var unsubscribe = new HttpRequestMessage(HttpMethod.Delete, $"/api/bookings/ref/{bookingRef}/reminders")
+        {
+            Content = JsonContent.Create(new { email = "owner@test.com", endpoint }),
+        };
+        HttpResponseMessage unsubscribed = await client.SendAsync(unsubscribe);
+
+        Assert.Equal(HttpStatusCode.NoContent, unsubscribed.StatusCode);
+        Assert.Empty(StoredReminderDevices(bookingRef));
+    }
+
+    private List<GuestPushSubscription> StoredReminderDevices(string bookingRef)
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return db.GuestPushSubscriptions.Where(s => s.Booking.BookingRef == bookingRef).ToList();
+    }
+
+    // The test factory configures no wallet, so the not-configured 404 fires before the lookup;
+    // the two requests must still be told apart by nothing, and the code must name the cause.
+    [Fact]
+    public async Task AppleWalletPass_UnknownRefAndWrongEmailAreIndistinguishable()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"indistinguishable-apple-{Guid.NewGuid():N}";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(185));
+
+        (HttpStatusCode wrongEmailStatus, string wrongEmailBody) = await ReadAsync(
+            await client.GetAsync($"/api/bookings/ref/{bookingRef}/wallet/apple.pkpass?email=stranger@test.com"));
+        (HttpStatusCode unknownRefStatus, string unknownRefBody) = await ReadAsync(
+            await client.GetAsync($"/api/bookings/ref/no-such-ref-{Guid.NewGuid():N}/wallet/apple.pkpass?email=owner@test.com"));
+
+        Assert.Equal(HttpStatusCode.NotFound, wrongEmailStatus);
+        Assert.Equal(unknownRefStatus, wrongEmailStatus);
+        Assert.Equal(unknownRefBody, wrongEmailBody);
+        Assert.Equal("booking.wallet_not_configured", JsonDocument.Parse(wrongEmailBody).RootElement.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task GoogleWalletLink_UnknownRefAndWrongEmailAreIndistinguishable()
+    {
+        HttpClient client = _factory.CreateClient();
+        string bookingRef = $"indistinguishable-google-{Guid.NewGuid():N}";
+        SeedBookingWithStoredRef(bookingRef, "owner@test.com", DateTime.UtcNow.AddDays(186));
+
+        (HttpStatusCode wrongEmailStatus, string wrongEmailBody) = await ReadAsync(
+            await client.GetAsync($"/api/bookings/ref/{bookingRef}/wallet/google?email=stranger@test.com"));
+        (HttpStatusCode unknownRefStatus, string unknownRefBody) = await ReadAsync(
+            await client.GetAsync($"/api/bookings/ref/no-such-ref-{Guid.NewGuid():N}/wallet/google?email=owner@test.com"));
+
+        Assert.Equal(HttpStatusCode.NotFound, wrongEmailStatus);
+        Assert.Equal(unknownRefStatus, wrongEmailStatus);
+        Assert.Equal(unknownRefBody, wrongEmailBody);
+        Assert.Equal("booking.wallet_not_configured", JsonDocument.Parse(wrongEmailBody).RootElement.GetProperty("code").GetString());
+    }
 }

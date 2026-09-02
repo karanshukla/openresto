@@ -22,6 +22,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
     [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerEmailTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerLookupTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Integration.RepositoryTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Services.GuestReminderServiceTests")]
     [ExternalAccessAllowed]
     internal class BookingRepository(AppDbContext db) : IBookingRepository
     {
