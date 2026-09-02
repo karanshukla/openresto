@@ -89,14 +89,16 @@ public class WalletPassServiceTests
             Db.SaveChanges();
         }
 
-        public WalletPassService Service(IWalletCredentials? credentials = null, string? websiteUrl = PublicUrl) => new(
-            new BookingRepository(Db),
-            credentials ?? Both,
-            new BrandService(new BrandSettingsRepository(Db), Configuration(websiteUrl)),
-            new FixedClock());
-
         public void Dispose() => Db.Dispose();
     }
+
+    // Built here rather than on Fixture: the repositories' [OnlyAccessibleBy] whitelist names
+    // this class, and a nested type is a different name to the analyzer.
+    private static WalletPassService Service(Fixture fixture, IWalletCredentials? credentials = null, string? websiteUrl = PublicUrl) => new(
+        new BookingRepository(fixture.Db),
+        credentials ?? Both,
+        new BrandService(new BrandSettingsRepository(fixture.Db), Configuration(websiteUrl)),
+        new FixedClock());
 
     private static JsonElement PassJson(byte[] pkpass, out Dictionary<string, byte[]> files)
     {
@@ -126,7 +128,7 @@ public class WalletPassServiceTests
     public async Task BuildApplePassAsync_ReturnsNullForAnUnknownRefOrWrongEmail()
     {
         using var fixture = new Fixture();
-        WalletPassService service = fixture.Service();
+        WalletPassService service = Service(fixture);
 
         Assert.Null(await service.BuildApplePassAsync("nope42", Email));
         Assert.Null(await service.BuildApplePassAsync(Ref, "mallory@example.com"));
@@ -137,7 +139,7 @@ public class WalletPassServiceTests
     public async Task BuildApplePassAsync_ThrowsWhenAppleIsNotConfigured()
     {
         using var fixture = new Fixture();
-        WalletPassService service = fixture.Service(new FakeWalletCredentials(Apple: null, Google));
+        WalletPassService service = Service(fixture, new FakeWalletCredentials(Apple: null, Google));
 
         var ex = await Assert.ThrowsAsync<NotFoundException>(() => service.BuildApplePassAsync(Ref, Email));
         Assert.Equal(ErrorCodes.BookingWalletNotConfigured, ex.Code);
@@ -149,7 +151,7 @@ public class WalletPassServiceTests
     public async Task BuildApplePassAsync_RefusesACancelledBooking()
     {
         using var fixture = new Fixture(cancelled: true);
-        WalletPassService service = fixture.Service();
+        WalletPassService service = Service(fixture);
 
         var ex = await Assert.ThrowsAsync<ConflictException>(() => service.BuildApplePassAsync(Ref, Email));
         Assert.Equal(ErrorCodes.BookingWalletCancelled, ex.Code);
@@ -163,7 +165,7 @@ public class WalletPassServiceTests
     {
         using var fixture = new Fixture();
 
-        byte[]? pkpass = await fixture.Service().BuildApplePassAsync(Ref, Email);
+        byte[]? pkpass = await Service(fixture).BuildApplePassAsync(Ref, Email);
 
         Assert.NotNull(pkpass);
         JsonElement pass = PassJson(pkpass, out Dictionary<string, byte[]> files);
@@ -192,7 +194,7 @@ public class WalletPassServiceTests
     public async Task BuildGoogleSaveUrlAsync_ReturnsNullForAnUnknownRefOrWrongEmail()
     {
         using var fixture = new Fixture();
-        WalletPassService service = fixture.Service();
+        WalletPassService service = Service(fixture);
 
         Assert.Null(await service.BuildGoogleSaveUrlAsync("nope42", Email));
         Assert.Null(await service.BuildGoogleSaveUrlAsync(Ref, "mallory@example.com"));
@@ -203,7 +205,7 @@ public class WalletPassServiceTests
     public async Task BuildGoogleSaveUrlAsync_ThrowsWhenGoogleIsNotConfigured()
     {
         using var fixture = new Fixture();
-        WalletPassService service = fixture.Service(new FakeWalletCredentials(Apple, Google: null));
+        WalletPassService service = Service(fixture, new FakeWalletCredentials(Apple, Google: null));
 
         var ex = await Assert.ThrowsAsync<NotFoundException>(() => service.BuildGoogleSaveUrlAsync(Ref, Email));
         Assert.Equal(ErrorCodes.BookingWalletNotConfigured, ex.Code);
@@ -215,7 +217,7 @@ public class WalletPassServiceTests
     public async Task BuildGoogleSaveUrlAsync_ProducesASaveLinkWithTheBrandLogoWhenPublic()
     {
         using var https = new Fixture();
-        string? saveUrl = await https.Service().BuildGoogleSaveUrlAsync(Ref, Email);
+        string? saveUrl = await Service(https).BuildGoogleSaveUrlAsync(Ref, Email);
         Assert.NotNull(saveUrl);
         JsonElement generic = GenericObject(saveUrl);
         Assert.Equal($"{WalletTestCredentials.GoogleIssuerId}.1-abc123", generic.GetProperty("id").GetString());
@@ -230,14 +232,14 @@ public class WalletPassServiceTests
 
         // Google fetches the logo itself, so a plain-http address is as good as none.
         using var http = new Fixture();
-        string? overHttp = await http.Service(websiteUrl: "http://bistro.example").BuildGoogleSaveUrlAsync(Ref, Email);
+        string? overHttp = await Service(http, websiteUrl: "http://bistro.example").BuildGoogleSaveUrlAsync(Ref, Email);
         Assert.NotNull(overHttp);
         Assert.False(GenericObject(overHttp).TryGetProperty("logo", out _));
 
         BrandSettings noIcon = Brand();
         noIcon.FaviconIcon = null;
         using var iconless = new Fixture(noIcon);
-        string? withoutIcon = await iconless.Service().BuildGoogleSaveUrlAsync(Ref, Email);
+        string? withoutIcon = await Service(iconless).BuildGoogleSaveUrlAsync(Ref, Email);
         Assert.NotNull(withoutIcon);
         Assert.False(GenericObject(withoutIcon).TryGetProperty("logo", out _));
     }
