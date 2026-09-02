@@ -54,9 +54,10 @@ describe("useBookingReminder", () => {
 
   it("re-reads the device's memory when the booking changes", async () => {
     endpointFor.mockImplementation((ref: string) => (ref === "ref-2" ? "tok" : null));
-    const { result, rerender } = renderHook(({ ref }) => useBookingReminder(ref, "x@y.z"), {
-      initialProps: { ref: "ref-1" },
-    });
+    const { result, rerender } = renderHook(
+      (props: { ref: string }) => useBookingReminder(props.ref, "x@y.z"),
+      { initialProps: { ref: "ref-1" } }
+    );
     expect(result.current.status).toBe("off");
     rerender({ ref: "ref-2" });
     await waitFor(() => expect(result.current.status).toBe("on"));
