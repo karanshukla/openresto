@@ -38,9 +38,10 @@ function guestHeader(): NativeStackNavigationOptions {
 }
 
 /**
- * The three tab roots draw with no native header, the way the home screen always has: the tab
- * bar is the way between them, so a back arrow on one is a second navigation model laid over
- * the first and reads as a website in a wrapper. Each root carries its own title through
+ * The three tab roots — and the booking confirmation, which is the lookup root with a ref
+ * prefilled — draw with no native header, the way the home screen always has: the tab bar is
+ * the way between them, so a back arrow on one is a second navigation model laid over the
+ * first and reads as a website in a wrapper. Each root carries its own title through
  * `ScreenHeading` and the settings control through `GuestSettingsAnchor`, and the roots are
  * not swipeable back to one another. The screens pushed over a root keep the header, since its
  * back arrow is what drives the swipe-back gesture and what the Android system back mirrors.
@@ -125,9 +126,12 @@ export default function UserLayout() {
           options={{ title: t("restaurant.details.routeTitle") }}
         />
         <Stack.Screen name="book" options={{ title: t("booking.form.routeTitle") }} />
+        {/* Not a screen of its own: it is LookupScreen with the ref prefilled, so it draws
+            the way /lookup does rather than as a detail pushed over the booking form. There
+            is nowhere to go back to — the form would re-offer a table already booked. */}
         <Stack.Screen
           name="booking-confirmation/[bookingRef]"
-          options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
+          options={{ ...tabRoot(), title: t("booking.result.routeTitleConfirmed") }}
         />
         <Stack.Screen name="lookup" options={{ ...tabRoot(), title: t("lookup.routeTitle") }} />
       </Stack>

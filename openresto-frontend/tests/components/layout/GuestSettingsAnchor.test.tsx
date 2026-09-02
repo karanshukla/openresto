@@ -43,8 +43,9 @@ const at = (pathname: string) => {
 
 /**
  * The control is pinned over the stack rather than drawn inside a screen, so the question it
- * has to answer is "is this route one that has no header of its own" — exactly, since a screen
- * pushed over a root has a header carrying the control already and would otherwise show two.
+ * has to answer is "is this route one that has no header of its own" — and it must answer it
+ * exactly, since a screen pushed under a header carries the control there already and would
+ * otherwise show two.
  */
 describe("GuestSettingsAnchor", () => {
   it.each(["/", "/locations", "/lookup"])("carries the control on the %s root", (path) => {
@@ -53,7 +54,15 @@ describe("GuestSettingsAnchor", () => {
     expect(screen.getByTestId("guest-settings-anchor-open")).toBeTruthy();
   });
 
-  it.each(["/locations/3", "/restaurant/3", "/book/3", "/booking-confirmation/ABC123"])(
+  // The confirmation is the lookup root with a ref prefilled and draws no header either, so
+  // its ref — a path segment, not a fixed route — is the one thing matched by prefix.
+  it("carries the control on a booking confirmation, which draws no header either", () => {
+    setPlatform("ios");
+    at("/booking-confirmation/ABC123");
+    expect(screen.getByTestId("guest-settings-anchor-open")).toBeTruthy();
+  });
+
+  it.each(["/locations/3", "/restaurant/3", "/book/3"])(
     "leaves %s to the header it is pushed under",
     (path) => {
       setPlatform("ios");
