@@ -4,7 +4,7 @@
   "description": "A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently --names \"api,fe\" --prefix-colors \"cyan,magenta\" \"dotnet watch --project OpenRestoApi\" \"npm run dev --prefix openresto-frontend\"",
+    "dev": "concurrently --kill-others --kill-timeout 5000 --names \"api,fe\" --prefix-colors \"cyan,magenta\" \"dotnet watch --project OpenRestoApi\" \"npm run dev --prefix openresto-frontend\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "check:doc-links": "node scripts/check-doc-links.mjs",
     "prepare": "husky"
