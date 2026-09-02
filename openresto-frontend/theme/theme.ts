@@ -69,9 +69,14 @@ export const theme = {
       dark: "#383d47",
     },
 
+    // The backdrop behind every modal surface: sheets, dialogs, anchored panels, the admin
+    // popups. Deliberately transparent on both themes and both platforms. A dimming scrim
+    // slid up with the booking sheet on a device (the Modal animates its whole content,
+    // scrim included) and cost a full-screen translucent layer on every frame of it; the
+    // surfaces carry their own border and shadow, so nothing needs the page darkened.
     overlay: {
-      light: "rgba(0,0,0,0.5)",
-      dark: "rgba(0,0,0,0.7)",
+      light: "transparent",
+      dark: "transparent",
     },
 
     disabled: {

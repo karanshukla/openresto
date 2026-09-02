@@ -91,7 +91,7 @@ describe("DirectionsActions", () => {
         const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
         renderWithProviders(<DirectionsActions address="123 Main St" />);
         fireEvent.press(screen.getByTestId("maps-open-btn"));
-        expect(openURLSpy).toHaveBeenCalledWith("https://maps.apple.com/?q=123%20Main%20St");
+        expect(openURLSpy).toHaveBeenCalledWith("maps://?q=123%20Main%20St");
         openURLSpy.mockRestore();
       });
     });
@@ -101,7 +101,7 @@ describe("DirectionsActions", () => {
         const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
         renderWithProviders(<DirectionsActions address="123 Main St" />);
         fireEvent.press(screen.getByTestId("maps-open-btn"));
-        expect(openURLSpy).toHaveBeenCalledWith("https://maps.google.com/?q=123%20Main%20St");
+        expect(openURLSpy).toHaveBeenCalledWith("geo:0,0?q=123%20Main%20St");
         openURLSpy.mockRestore();
       });
     });

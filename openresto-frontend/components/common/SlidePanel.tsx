@@ -52,6 +52,7 @@ export default function SlidePanel({
   }, [onDismiss]);
 
   const dragY = useRef(new Animated.Value(0)).current;
+  const nativeDriver = Platform.OS !== "web";
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -65,14 +66,18 @@ export default function SlidePanel({
             Animated.timing(dragY, {
               toValue: SHEET_EXIT_DISTANCE,
               duration: prefersReducedMotion() ? 0 : 180,
-              useNativeDriver: false,
+              useNativeDriver: nativeDriver,
             }).start(({ finished }) => finished && onDismissRef.current());
           } else {
-            Animated.spring(dragY, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
+            Animated.spring(dragY, {
+              toValue: 0,
+              bounciness: 0,
+              useNativeDriver: nativeDriver,
+            }).start();
           }
         },
       }),
-    [dragY]
+    [dragY, nativeDriver]
   );
 
   useEffect(() => () => dragY.stopAnimation(), [dragY]);
@@ -97,9 +102,9 @@ export default function SlidePanel({
     Animated.timing(dragY, {
       toValue: SHEET_EXIT_DISTANCE,
       duration: prefersReducedMotion() ? 0 : 180,
-      useNativeDriver: false,
+      useNativeDriver: nativeDriver,
     }).start(({ finished }) => finished && onDismissRef.current());
-  }, [dragY]);
+  }, [dragY, nativeDriver]);
 
   if (variant === "sheet") {
     return (

@@ -117,6 +117,23 @@ describe("SlidePanel", () => {
       }
     });
 
+    /**
+     * No scrim: the page behind a sheet is not dimmed. On a device the Modal animates its
+     * whole content, so a tinted backdrop slid up alongside the sheet as a separate black
+     * layer and cost a full-screen translucent pass on every frame of it.
+     */
+    it("keeps the backdrop transparent, a press target and nothing more", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      const backdrop = StyleSheet.flatten(
+        screen.getByTestId("result-panel-backdrop", { includeHiddenElements: true }).props.style
+      );
+      expect(backdrop.backgroundColor).toBe("transparent");
+    });
+
     it("adds no inset on web", () => {
       const original = Platform.OS;
       (Platform as unknown as { OS: string }).OS = "web";

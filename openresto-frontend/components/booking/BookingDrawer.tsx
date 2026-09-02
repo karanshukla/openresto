@@ -101,6 +101,9 @@ export default function BookingDrawer({
   }, [onClose]);
 
   const dragY = useRef(new Animated.Value(0)).current;
+  // The drag and the exit only move a transform, which the native driver can run off the JS
+  // thread; react-native-web has no such driver and warns when asked for one.
+  const nativeDriver = Platform.OS !== "web";
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -117,18 +120,18 @@ export default function BookingDrawer({
             Animated.timing(dragY, {
               toValue: SHEET_EXIT_DISTANCE,
               duration: prefersReducedMotion() ? 0 : 180,
-              useNativeDriver: false,
+              useNativeDriver: nativeDriver,
             }).start(({ finished }) => finished && onCloseRef.current());
           } else {
             Animated.spring(dragY, {
               toValue: 0,
               bounciness: 0,
-              useNativeDriver: false,
+              useNativeDriver: nativeDriver,
             }).start();
           }
         },
       }),
-    [dragY]
+    [dragY, nativeDriver]
   );
 
   // A sheet unmounted mid-exit (e.g. the viewport crossing the compact breakpoint) must not
@@ -158,7 +161,7 @@ export default function BookingDrawer({
       Animated.timing(dragY, {
         toValue: SHEET_EXIT_DISTANCE,
         duration: prefersReducedMotion() ? 0 : 180,
-        useNativeDriver: false,
+        useNativeDriver: nativeDriver,
       }).start(({ finished }) => finished && done());
       return;
     }
@@ -173,7 +176,7 @@ export default function BookingDrawer({
     // No animation to wait on where there is no DOM node, or under reduced motion.
     if (!exit) return done();
     exit.onfinish = done;
-  }, [variant, dragY]);
+  }, [variant, dragY, nativeDriver]);
 
   // The side panel is a non-modal dialog spliced into the page, so it takes focus itself
   // and offers Escape; the list beside it deliberately stays interactive.

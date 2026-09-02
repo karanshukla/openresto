@@ -307,6 +307,14 @@ describe("BookingDrawer", () => {
       expect(sheet.marginBottom).toBeUndefined();
     });
 
+    it("keeps the backdrop transparent rather than dimming the list behind it", () => {
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" />);
+      const backdrop = StyleSheet.flatten(
+        screen.getByTestId("booking-drawer-backdrop", { includeHiddenElements: true }).props.style
+      );
+      expect(backdrop.backgroundColor).toBe("transparent");
+    });
+
     it("clears the bottom safe area off web, and adds no inset on it", () => {
       const rn = require("react-native");
       const originalOS = rn.Platform.OS;

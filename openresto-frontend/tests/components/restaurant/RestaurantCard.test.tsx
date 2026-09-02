@@ -373,16 +373,16 @@ describe("RestaurantCard", () => {
         render(<RestaurantCard restaurant={mockRestaurant} />);
         await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
         fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
-        expect(Linking.openURL).toHaveBeenCalledWith("https://maps.apple.com/?q=123%20Main%20St");
+        expect(Linking.openURL).toHaveBeenCalledWith("maps://?q=123%20Main%20St");
       });
     });
 
-    it("hands an Android phone to Google Maps", async () => {
+    it("hands an Android phone to its maps app", async () => {
       await onPlatform("android", async () => {
         render(<RestaurantCard restaurant={mockRestaurant} />);
         await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
         fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
-        expect(Linking.openURL).toHaveBeenCalledWith("https://maps.google.com/?q=123%20Main%20St");
+        expect(Linking.openURL).toHaveBeenCalledWith("geo:0,0?q=123%20Main%20St");
       });
     });
 
@@ -391,7 +391,7 @@ describe("RestaurantCard", () => {
         render(<RestaurantCard restaurant={{ ...mockRestaurant, address: undefined }} />);
         await waitFor(() => expect(screen.getByTestId("card-directions")).toBeTruthy());
         fireEvent.press(screen.getByTestId("card-directions"), { stopPropagation: () => {} });
-        expect(Linking.openURL).toHaveBeenCalledWith("https://maps.google.com/?q=");
+        expect(Linking.openURL).toHaveBeenCalledWith("geo:0,0?q=");
       });
     });
   });
