@@ -67,6 +67,9 @@ services:
     volumes:
       - db_data:/data
       - media_data:/app/wwwroot/media
+      # Wallet signing material (Apple .p12 + WWDR .cer, Google service-account JSON) —
+      # optional; see docs/native-app.md
+      - ./wallet:/wallet:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 10s

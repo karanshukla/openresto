@@ -47,6 +47,16 @@ export interface Brand {
    */
   minimumAppVersion?: string;
   /**
+   * Which wallet passes the server can issue. A platform is offered on the booking card only
+   * when its issuer is configured server-side; absent means neither.
+   */
+  wallet?: { apple: boolean; google: boolean };
+  /**
+   * The VAPID public key a browser subscribes to booking reminders with; unset when the server
+   * has no push keys, in which case the web reminder toggle stays hidden.
+   */
+  webPushPublicKey?: string;
+  /**
    * The self-hoster's configured UI language (`Locale:Default` / `OPENRESTO_DEFAULT_LOCALE`),
    * one of `constants/locales.ts`'s `SUPPORTED_LOCALES`. Always populated by the API —
    * `BrandService.GetDefaultLocale` falls back to `"en"` server-side — but optional here to

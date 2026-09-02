@@ -1456,6 +1456,146 @@
         }
       }
     },
+    "/api/Bookings/ref/{bookingRef}/reminders": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderSubscribeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderSubscribeRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderSubscribeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bookings"
+        ],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderUnsubscribeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderUnsubscribeRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestReminderUnsubscribeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/ref/{bookingRef}/wallet/apple.pkpass": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Bookings/ref/{bookingRef}/wallet/google": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "parameters": [
+          {
+            "name": "bookingRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/brand": {
       "get": {
         "tags": [
@@ -4038,6 +4178,73 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "GuestReminderSubscribeRequest": {
+        "required": [
+          "email",
+          "channel",
+          "endpoint"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "channel": {
+            "maxLength": 16,
+            "minLength": 0,
+            "type": "string",
+            "description": "\u0022expo\u0022 from the native app, \u0022webpush\u0022 from a browser."
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string",
+            "description": "The Expo push token, or the Web Push subscription endpoint."
+          },
+          "p256dh": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "auth": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locale": {
+            "maxLength": 8,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A guest asking to be reminded about a booking. \u0060Email\u0060 is the second half of the\nguest\u0027s identity alongside the reference in the route, exactly as on lookup and cancel."
+      },
+      "GuestReminderUnsubscribeRequest": {
+        "required": [
+          "email",
+          "endpoint"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },

@@ -1608,6 +1608,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Bookings/ref/{bookingRef}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingRef: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GuestReminderSubscribeRequest"];
+                    "text/json": components["schemas"]["GuestReminderSubscribeRequest"];
+                    "application/*+json": components["schemas"]["GuestReminderSubscribeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingRef: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GuestReminderUnsubscribeRequest"];
+                    "text/json": components["schemas"]["GuestReminderUnsubscribeRequest"];
+                    "application/*+json": components["schemas"]["GuestReminderUnsubscribeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Bookings/ref/{bookingRef}/wallet/apple.pkpass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    email?: string;
+                };
+                header?: never;
+                path: {
+                    bookingRef: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Bookings/ref/{bookingRef}/wallet/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    email?: string;
+                };
+                header?: never;
+                path: {
+                    bookingRef: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/brand": {
         parameters: {
             query?: never;
@@ -3842,6 +3982,24 @@ export interface components {
         ExtendRestaurantRequest: {
             /** Format: int32 */
             minutes?: number | string;
+        };
+        /**
+         * @description A guest asking to be reminded about a booking. `Email` is the second half of the
+         *     guest's identity alongside the reference in the route, exactly as on lookup and cancel.
+         */
+        GuestReminderSubscribeRequest: {
+            email: string;
+            /** @description "expo" from the native app, "webpush" from a browser. */
+            channel: string;
+            /** @description The Expo push token, or the Web Push subscription endpoint. */
+            endpoint: string;
+            p256dh?: null | string;
+            auth?: null | string;
+            locale?: null | string;
+        };
+        GuestReminderUnsubscribeRequest: {
+            email: string;
+            endpoint: string;
         };
         /** Format: binary */
         IFormFile: string;

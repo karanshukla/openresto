@@ -14,6 +14,8 @@ import BookingFactsBand from "@/components/booking/BookingFactsBand";
 import BookingGuestDetails from "@/components/booking/BookingGuestDetails";
 import CalendarActions from "@/components/booking/CalendarActions";
 import DirectionsActions from "@/components/booking/DirectionsActions";
+import ReminderToggle from "@/components/booking/ReminderToggle";
+import WalletActions from "@/components/booking/WalletActions";
 import { mapFrameStyle, styles } from "./BookingResultPanel.styles";
 
 interface BookingResultPanelProps {
@@ -218,6 +220,16 @@ export default function BookingResultPanel({
             sectionName={booking.sectionName}
             tableName={booking.tableName}
           />
+        </>
+      )}
+
+      {/* Both are only worth offering for a sitting still ahead: a pass for a cancelled
+          booking claims a table that is not held, and a reminder for one has nothing to
+          remind. Each renders nothing where its platform or server cannot serve it. */}
+      {ref && actionable && (
+        <>
+          <WalletActions bookingRef={ref} email={booking.customerEmail} separator={divider} />
+          <ReminderToggle bookingRef={ref} email={booking.customerEmail} separator={divider} />
         </>
       )}
 

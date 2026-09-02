@@ -153,6 +153,25 @@
       "daysBanner": "Nur ohne Reservierung am {{days}} – an diesen Tagen ist keine Online-Reservierung möglich.",
       "locationBody": "Dieser Standort nimmt keine Online-Reservierungen an. Tische werden nach dem Prinzip „wer zuerst kommt, mahlt zuerst” vergeben. Kommen Sie einfach während der Öffnungszeiten vorbei.",
       "locationTitle": "Nur ohne Reservierung"
+    },
+    "reminders": {
+      "heading": "ERINNERUNGEN",
+      "offButton": "Erinnere mich",
+      "onButton": "Erinnerungen aktiv",
+      "turnOnLabel": "Buchungserinnerungen auf diesem Gerät einschalten",
+      "turnOffLabel": "Buchungserinnerungen auf diesem Gerät ausschalten",
+      "offHint": "Erhalten Sie am Vortag und kurz vor Ihrem Tisch eine Benachrichtigung auf diesem Gerät.",
+      "onHint": "Dieses Gerät wird am Vortag und kurz vor Ihrem Tisch benachrichtigt.",
+      "denied": "Benachrichtigungen sind für diese App deaktiviert. Erlauben Sie sie in den Geräteeinstellungen, um Erinnerungen zu erhalten.",
+      "failed": "Erinnerungen konnten nicht aktiviert werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+    },
+    "wallet": {
+      "heading": "ZUR WALLET HINZUFÜGEN",
+      "appleButton": "Apple Wallet",
+      "googleButton": "Google Wallet",
+      "appleA11y": "Diese Buchung zu Apple Wallet hinzufügen",
+      "googleA11y": "Diese Buchung in Google Wallet speichern",
+      "failed": "Der Pass konnte nicht erstellt werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
     }
   },
   "common": {
@@ -1853,6 +1872,14 @@
           "androidAssetLinks": {
             "label": "Assetlinks-Datei wird ausgeliefert",
             "fix": "Führen Sie native:init mit --android-fingerprint aus und kopieren Sie native/.well-known/ in den Ordner well-known neben Ihrer Compose-Datei."
+          },
+          "appleWallet": {
+            "label": "Apple-Wallet-Pässe",
+            "fix": "Optional. Setzen Sie die Variablen Wallet__Apple__* (Pass Type ID, Team ID, .p12-Zertifikat, WWDR-Zertifikat), um bei jeder Buchung einen Apple-Wallet-Pass anzubieten."
+          },
+          "googleWallet": {
+            "label": "Google-Wallet-Pässe",
+            "fix": "Optional. Setzen Sie Wallet__Google__IssuerId und Wallet__Google__ServiceAccountKeyPath, um bei jeder Buchung einen Google-Wallet-Pass anzubieten."
           }
         },
         "clients": {
