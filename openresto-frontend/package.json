@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
+    "@react-native-community/datetimepicker": "^9.1.0",
     "expo": "~57.0.19",
     "expo-asset": "~57.0.7",
     "expo-constants": "~57.0.7",
@@ -85,6 +86,7 @@
       "^@/components/common/AnimatedAccordion$": "<rootDir>/jest-mocks/AnimatedAccordion.js",
       "^@/services/storage$": "<rootDir>/services/storage.ts",
       "^@/services/pushRegistration$": "<rootDir>/services/pushRegistration.ts",
+      "^@/services/holdExpiryNotice$": "<rootDir>/services/holdExpiryNotice.ts",
       "^@/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [

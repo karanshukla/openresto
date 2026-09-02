@@ -5,7 +5,6 @@ import React from "react";
 import { screen, fireEvent } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import LocationsFilterBar, { formatBarDate } from "@/components/restaurant/LocationsFilterBar";
-import { generateDateOptions } from "@/components/common/DatePicker";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -79,11 +78,16 @@ describe("LocationsFilterBar", () => {
     const onDateChange = jest.fn();
     renderWithProviders(<LocationsFilterBar {...baseProps} onDateChange={onDateChange} />);
     fireEvent.press(screen.getByText(formatBarDate(TODAY, TODAY, false)));
-    // The picker lists dates from the real today onward; taking the first proves the
-    // selection is reported upward rather than kept internally. Match on the option label
-    // the picker itself builds — a hand-written pattern only holds in one locale's order.
-    fireEvent.press(screen.getAllByText(generateDateOptions()[0].label)[0]);
-    expect(onDateChange).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+    // Off web the picker is the system calendar (#423), which reports a pick through its own
+    // onChange rather than as a pressable row. Driving it that way proves the selection is
+    // reported upward rather than kept internally.
+    fireEvent(
+      screen.getByTestId("date-picker-control"),
+      "change",
+      { type: "set" },
+      new Date(2026, 3, 17)
+    );
+    expect(onDateChange).toHaveBeenCalledWith("2026-04-17");
   });
 
   it("renders the availability summary when given one", () => {

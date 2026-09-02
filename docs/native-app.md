@@ -219,6 +219,13 @@ The same toggle appears on the website when the server has `Vapid__*` keys (the 
 notifications use), delivered as a browser push through the service worker. A build running
 in Expo Go or on a simulator has no push token to offer and hides the toggle.
 
+The app also warns a guest one minute before a table hold lapses, so backgrounding it to check
+a calendar does not silently cost them the table. That one is a **local** notification the
+phone schedules and fires on its own — nothing reaches your server, and no push credentials are
+involved. It asks for notification permission the first time a hold is placed, and a guest who
+refuses simply books without the warning. The website has no equivalent: a backgrounded tab
+cannot run the timer, and a foregrounded one is already showing the countdown.
+
 ## Wallet passes
 
 A confirmed booking offers **Apple Wallet** on iOS and **Google Wallet** on Android (both on

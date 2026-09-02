@@ -28,6 +28,7 @@ export default function LocationsDetailScreen() {
         highlightId={Number.isFinite(highlightId) ? highlightId : undefined}
         initialTime={time || undefined}
         initialSeats={initialSeats}
+        hasNativeHeader
       />
     </>
   );

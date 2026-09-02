@@ -18,6 +18,7 @@ let mockScreenProps: {
   highlightId?: number;
   initialTime?: string;
   initialSeats?: number;
+  hasNativeHeader?: boolean;
 } = {};
 
 jest.mock("expo-router", () => ({
@@ -68,6 +69,16 @@ describe("LocationsDetailScreen", () => {
     mockParams = { id: "7" };
     render(<LocationsDetailScreen />);
     expect(mockScreenOptions).toEqual({ title: "Open Resto" });
+  });
+
+  // #428: the detail route is pushed over a tab root and so has a native header above it,
+  // which is what decides whether the screen or the scroll view claims the top inset. The
+  // index route is a tab root with no header, and the assertion above that its props are
+  // empty is the other half of this pair.
+  it("tells the screen a native header sits above it", () => {
+    mockParams = { id: "7" };
+    render(<LocationsDetailScreen />);
+    expect(mockScreenProps.hasNativeHeader).toBe(true);
   });
 
   it("passes the numeric id through as highlightId", () => {

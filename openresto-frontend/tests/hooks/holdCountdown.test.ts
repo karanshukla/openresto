@@ -1,4 +1,9 @@
-import { secondsUntilExpiry, isHoldExpired } from "@/components/booking/holdCountdown";
+import {
+  secondsUntilExpiry,
+  isHoldExpired,
+  secondsUntilExpiryNotice,
+  HOLD_EXPIRY_NOTICE_LEAD_SECONDS,
+} from "@/components/booking/holdCountdown";
 
 describe("secondsUntilExpiry", () => {
   it("returns the whole seconds remaining for a future expiry", () => {
@@ -46,5 +51,28 @@ describe("isHoldExpired", () => {
 
   it("is true for negative values (defensive)", () => {
     expect(isHoldExpired(-1)).toBe(true);
+  });
+});
+
+describe("secondsUntilExpiryNotice", () => {
+  const now = Date.parse("2026-06-15T19:00:00.000Z");
+  const at = (secondsFromNow: number) => new Date(now + secondsFromNow * 1000).toISOString();
+
+  it("waits the whole hold minus the lead", () => {
+    expect(secondsUntilExpiryNotice(at(300), now)).toBe(300 - HOLD_EXPIRY_NOTICE_LEAD_SECONDS);
+  });
+
+  // Either side of the boundary: a hold one second longer than the lead still leaves a
+  // moment to warn in, one exactly the length of the lead does not.
+  it("warns about a hold one second longer than the lead", () => {
+    expect(secondsUntilExpiryNotice(at(HOLD_EXPIRY_NOTICE_LEAD_SECONDS + 1), now)).toBe(1);
+  });
+
+  it("declines to warn about a hold exactly as long as the lead", () => {
+    expect(secondsUntilExpiryNotice(at(HOLD_EXPIRY_NOTICE_LEAD_SECONDS), now)).toBeNull();
+  });
+
+  it("declines to warn about a hold that has already expired", () => {
+    expect(secondsUntilExpiryNotice(at(-30), now)).toBeNull();
   });
 });
