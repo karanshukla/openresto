@@ -1,7 +1,8 @@
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Input from "../common/Input";
 import Select, { type SelectOption } from "../common/Select";
+import Stepper from "../common/Stepper";
 import DatePicker from "../common/DatePicker";
 import TimePicker from "../common/TimePicker";
 import { ThemedText } from "../themed-text";
@@ -22,6 +23,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/**
+ * Party size: a dropdown on web, a stepper off it. A list of numbers in a sheet is how a form
+ * control from a website reads on a phone, and a stepper driven by a mouse is worse than a
+ * dropdown — so the control follows the pointer rather than one of them following the other.
+ *
+ * @see [BookingFormFields.test.tsx](../../tests/components/booking/BookingFormFields.test.tsx)
+ * — pins the dropdown on web and the stepper off it, and the autofill hints below.
+ */
 export function GuestsField({
   label,
   seats,
@@ -36,13 +45,24 @@ export function GuestsField({
   const { t } = useTranslation();
   return (
     <Field label={label}>
-      <Select
-        icon="people-outline"
-        accessibilityLabel={t("booking.form.guestsSelectLabel")}
-        selectedValue={seats}
-        onSelect={(v) => onChange(v as number)}
-        options={options}
-      />
+      {Platform.OS === "web" ? (
+        <Select
+          icon="people-outline"
+          accessibilityLabel={t("booking.form.guestsSelectLabel")}
+          selectedValue={seats}
+          onSelect={(v) => onChange(v as number)}
+          options={options}
+        />
+      ) : (
+        <Stepper
+          options={options}
+          value={seats}
+          onChange={(v) => onChange(v as number)}
+          accessibilityLabel={t("booking.form.guestsSelectLabel")}
+          decrementLabel={t("booking.form.fewerGuestsLabel")}
+          incrementLabel={t("booking.form.moreGuestsLabel")}
+        />
+      )}
     </Field>
   );
 }
@@ -179,6 +199,8 @@ export function NameField({
         value={value}
         onChangeText={onChange}
         autoCapitalize="words"
+        textContentType="name"
+        autoComplete="name"
         returnKeyType="next"
         blurOnSubmit={false}
       />
@@ -203,6 +225,8 @@ export function EmailField({
         onChangeText={onChange}
         keyboardType="email-address"
         autoCapitalize="none"
+        textContentType="emailAddress"
+        autoComplete="email"
         returnKeyType="next"
         blurOnSubmit={false}
       />

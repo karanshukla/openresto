@@ -261,6 +261,8 @@ export default function LookupScreen({
                     onChangeText={handleTypedChange(setEmailInput)}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoComplete="email"
                     returnKeyType="go"
                     onSubmitEditing={handleLookup}
                   />

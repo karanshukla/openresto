@@ -49,6 +49,17 @@ jest.mock("@/api/restaurants", () => ({
 }));
 
 describe("BookingForm", () => {
+  /**
+   * Party size is a stepper off web (issue #424) and this file runs at Jest's default native
+   * platform, so seats are reached by ticking up from the form's default of two rather than by
+   * opening a list. The guards below key off `seats`, never off the control that produced it.
+   */
+  const setSeats = (target: number) => {
+    for (let seats = 2; seats < target; seats++) {
+      fireEvent.press(screen.getByLabelText("One more guest"));
+    }
+  };
+
   const mockRestaurant = {
     id: 1,
     name: "Test Resto",
@@ -132,8 +143,7 @@ describe("BookingForm", () => {
     fireEvent.press(screen.getByText("Patio"));
 
     // 3 guests > Patio's 2-seat table, but <= the location's 4-seat max.
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("3 seats"));
+    setSeats(3);
 
     fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
@@ -158,8 +168,7 @@ describe("BookingForm", () => {
     fireEvent.press(screen.getByText("Any section"));
     fireEvent.press(screen.getByText("Patio"));
 
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("3 seats"));
+    setSeats(3);
 
     fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Test User");
     fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "test@test.com");
@@ -176,8 +185,7 @@ describe("BookingForm", () => {
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={onSubmit} />);
 
     // mockRestaurant's largest table seats 4. Bump to 5 to trip the global guard.
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("5 seats"));
+    setSeats(5);
 
     // The inline bubble renders with the cap copy…
     expect(screen.getAllByText(/Our largest table seats 4/).length).toBeGreaterThan(0);
@@ -195,8 +203,7 @@ describe("BookingForm", () => {
   it("reopens the large-party modal when tapping the inline bubble", async () => {
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
 
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("5 seats"));
+    setSeats(5);
 
     await waitFor(() => expect(screen.getByText(/needs to be arranged directly/)).toBeTruthy());
     // Dismiss, then re-open via the bubble's Contact us affordance.
@@ -228,8 +235,7 @@ describe("BookingForm", () => {
 
     renderWithProviders(<BookingForm restaurant={mockRestaurant} onSubmit={jest.fn()} />);
 
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("5 seats"));
+    setSeats(5);
 
     // Both configured links render (sorted by sortOrder), regardless of icon
     // key — the restaurant controls what shows up. ("Email" alone collides
@@ -291,8 +297,7 @@ describe("BookingForm", () => {
     // Switch out of "Any section" so the explicit table dropdown is visible.
     selectMainSection();
 
-    fireEvent.press(screen.getByText("2 seats"));
-    fireEvent.press(screen.getByText("10 seats")); // mockRestaurant max is 4
+    setSeats(10); // mockRestaurant max is 4
 
     expect(screen.getByText("No tables available for 10 guests.")).toBeTruthy();
   });
