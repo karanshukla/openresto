@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, LayoutChangeEvent, Pressable, View } from "react-native";
+import { Animated, LayoutChangeEvent, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -33,7 +33,7 @@ interface Props {
 }
 
 /**
- * The return-to-top shortcut. Mount it as the last thing in the scroll content, above the
+ * The web return-to-top shortcut. Mount it as the last thing in the scroll content, above the
  * footer; `useScrollToTopFab` decides when it is offered.
  *
  * Nothing here tracks the scroll position. An earlier version rode above the footer, which meant
@@ -42,10 +42,21 @@ interface Props {
  * gets both: it holds the viewport while the page has further to go, and settles above the footer
  * once the end of the page is the nearer of the two, with no handler in between.
  *
+ * That is a web affordance built on a web primitive: React Native has no `position: sticky`, so
+ * off web the rail would keep its place in the flow and the circle would arrive with the end of
+ * the page instead of riding the viewport. iOS also hands the gesture back through the status
+ * bar, so the control is redundant there as well as broken. Nothing renders off web.
+ *
  * @see [ScrollToTopFab.test.tsx](../../tests/components/ScrollToTopFab.test.tsx) — pins that the
- * rail reserves the FAB's band above the footer, and takes no presses once faded.
+ * rail reserves the FAB's band above the footer, takes no presses once faded, and renders
+ * nothing off web.
  */
-export default function ScrollToTopFab({ visible, onPress }: Props) {
+export default function ScrollToTopFab(props: Props) {
+  if (Platform.OS !== "web") return null;
+  return <StickyFabRail {...props} />;
+}
+
+function StickyFabRail({ visible, onPress }: Props) {
   const { primaryColor } = useAppTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

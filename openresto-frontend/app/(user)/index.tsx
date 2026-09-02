@@ -3,6 +3,9 @@ import { ThemedView } from "@/components/themed-view";
 import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
   Linking,
   Platform,
   Pressable,
@@ -10,6 +13,8 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,6 +32,8 @@ import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
 import { resolveServerUrl } from "@/utils/serverUrl";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { IconButton } from "@/components/common/IconButton";
+import GuestSettingsSheet from "@/components/layout/GuestSettingsSheet";
 
 /**
  * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
@@ -59,6 +66,175 @@ const PHONE_BODY_PADDING_H = 16;
 const GRID_GAP = 18;
 /** Clearance between the status bar and the hero title where the screen has no header. */
 const HERO_TOP_GAP = 24;
+/**
+ * The band the settings control occupies over the hero off web. The hero title clears the
+ * whole band rather than sharing its line: at 40px the title can run a phone's full width.
+ */
+const HERO_SETTINGS_ROW = 40;
+/** The settings control's distance from the hero's trailing edge, outside any display cutout. */
+const HERO_SETTINGS_EDGE = 12;
+
+/** Bloom diameter as a fraction of the hero's width, matching the web gradient's extent. */
+const HERO_BLOOM_SPAN = 0.9;
+/** Concentric discs standing in for one radial stop's falloff, as fractions of that span. */
+const HERO_BLOOM_RINGS = [1, 0.68, 0.42];
+/** Where the web gradient centres each bloom, and the alpha it reaches there. */
+const HERO_BLOOMS = [
+  { key: "corner", left: "90%", top: "10%", peak: 0.18, darkOnly: false },
+  { key: "floor", left: "10%", top: "100%", peak: 0.12, darkOnly: true },
+] as const;
+/**
+ * Steps in the hero's card → page settle. Ten keeps each step below one shade of the two
+ * surfaces it runs between, which is what stops a stack of flat bands reading as banding.
+ */
+const HERO_FADE_STEPS = 10;
+
+/** How far a location card rises into place as the list lands. */
+const CARD_REVEAL_RISE = 14;
+const CARD_REVEAL_MS = 260;
+const CARD_REVEAL_STAGGER_MS = 55;
+/** Cards past this share the last delay, so a long list doesn't land in slow motion. */
+const CARD_REVEAL_MAX_STAGGER = 5;
+
+/**
+ * The per-ring alpha whose stack reaches `peak` at a bloom's centre. Translucent layers
+ * compose as 1 − Π(1 − aᵢ), so an even split is the inverse nth root, not `peak / rings`.
+ *
+ * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the rings
+ * compose back to the peak rather than to an even division of it.
+ */
+export function bloomRingAlpha(peak: number, rings: number): number {
+  return 1 - Math.pow(1 - peak, 1 / rings);
+}
+
+/**
+ * The blooms the hero paints. The web gradient carries a second one up from the floor only in
+ * the dark theme, where a light hero would otherwise have nothing to sit against.
+ *
+ * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the floor bloom
+ * is dark-theme only.
+ */
+export function heroBlooms(isDark: boolean) {
+  return HERO_BLOOMS.filter((bloom) => isDark || !bloom.darkOnly);
+}
+
+/**
+ * The header-less hero's background off web. The web branch paints two radial gradients over
+ * a linear one; React Native has no gradient primitive and `expo-linear-gradient` is not a
+ * dependency of this app, so the same depth is layered out of plain views — a stepped settle
+ * from the card colour to the page, under concentric translucent accent discs per bloom.
+ *
+ * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the native hero
+ * carries this wash while the web hero keeps its CSS gradient instead.
+ */
+function HeroWash({
+  accent,
+  pageColor,
+  isDark,
+  width,
+}: {
+  accent: { r: number; g: number; b: number };
+  pageColor: string;
+  isDark: boolean;
+  width: number;
+}) {
+  const span = width * HERO_BLOOM_SPAN;
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none" testID="hero-wash">
+      <View style={StyleSheet.absoluteFill}>
+        {Array.from({ length: HERO_FADE_STEPS }, (_, step) => (
+          <View
+            key={step}
+            style={[
+              styles.heroFadeStep,
+              { backgroundColor: pageColor, opacity: (step + 0.5) / HERO_FADE_STEPS },
+            ]}
+          />
+        ))}
+      </View>
+      {heroBlooms(isDark).map((bloom) => {
+        const alpha = bloomRingAlpha(bloom.peak, HERO_BLOOM_RINGS.length);
+        return (
+          <View key={bloom.key} style={[styles.heroBloom, { left: bloom.left, top: bloom.top }]}>
+            {HERO_BLOOM_RINGS.map((ring) => {
+              const size = Math.round(span * ring);
+              return (
+                <View
+                  key={ring}
+                  style={[
+                    styles.heroBloomRing,
+                    {
+                      width: size,
+                      height: size,
+                      borderRadius: size / 2,
+                      marginLeft: -size / 2,
+                      marginTop: -size / 2,
+                      backgroundColor: `rgba(${accent.r},${accent.g},${accent.b},${alpha})`,
+                    },
+                  ]}
+                />
+              );
+            })}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * A location card's entrance off web, played once as the list lands rather than on every
+ * scroll — web keeps the scroll-driven `CARD_REVEAL` rule in global.css. The whole animation
+ * is one native-driven value, so nothing runs per frame in JS.
+ *
+ * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the cards
+ * animate off web and that reduce-motion renders them plain.
+ */
+function LocationCardReveal({
+  index,
+  style,
+  children,
+}: {
+  index: number;
+  style: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  const [progress] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    const entrance = Animated.timing(progress, {
+      toValue: 1,
+      duration: CARD_REVEAL_MS,
+      delay: Math.min(index, CARD_REVEAL_MAX_STAGGER) * CARD_REVEAL_STAGGER_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    entrance.start();
+    return () => entrance.stop();
+  }, [index, progress]);
+
+  return (
+    <Animated.View
+      testID="location-card-reveal"
+      style={[
+        style,
+        {
+          opacity: progress,
+          transform: [
+            {
+              translateY: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [CARD_REVEAL_RISE, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
 
 /**
  * The width of one column in a centred, inset, gapped row.
@@ -90,6 +266,8 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>(_cachedRestaurants ?? []);
   const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
   const [loading, setLoading] = useState(_cachedRestaurants === null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [motionAllowed, setMotionAllowed] = useState(false);
   const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
   const { t } = useTranslation();
@@ -113,9 +291,23 @@ export default function HomeScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    let listening = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
+      if (listening) setMotionAllowed(!reduced);
+    });
+    return () => {
+      listening = false;
+    };
+  }, []);
+
   const mutedColor = colors.muted;
   const hasHero = !!brand.headerImageUrl;
-  const heroTextShadow = "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)";
+  const heroOverlayTextShadow =
+    Platform.OS === "web"
+      ? ({ textShadow: "0 1px 3px rgba(0,0,0,0.55), 0 2px 14px rgba(0,0,0,0.35)" } as object)
+      : styles.heroOverlayTextShadow;
 
   const { r: accentR, g: accentG, b: accentB } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${accentR},${accentG},${accentB},0.18)`;
@@ -146,6 +338,7 @@ export default function HomeScreen() {
   // One row's worth, except on a phone: a single card reads as the whole list having
   // loaded and found one location.
   const skeletonCount = numColumns === 1 ? 2 : numColumns;
+  const revealCards = Platform.OS !== "web" && motionAllowed;
 
   /**
    * Highlights stay one row. Past the column count they scroll sideways instead of
@@ -227,6 +420,14 @@ export default function HomeScreen() {
               },
             ]}
           >
+            {!hasHero && Platform.OS !== "web" && (
+              <HeroWash
+                accent={{ r: accentR, g: accentG, b: accentB }}
+                pageColor={colors.page}
+                isDark={isDark}
+                width={width}
+              />
+            )}
             {hasHero && (
               <>
                 {Platform.OS === "web" ? (
@@ -276,7 +477,9 @@ export default function HomeScreen() {
                 // app/(user)/_layout.tsx), so nothing above it has reserved the status bar
                 // and the hero starts at the top of the display. `paddingTop` alone is a web
                 // constant sized for the navbar, and lands a few points short of a notch.
-                Platform.OS !== "web" && { paddingTop: insets.top + HERO_TOP_GAP },
+                Platform.OS !== "web" && {
+                  paddingTop: insets.top + HERO_SETTINGS_ROW + HERO_TOP_GAP,
+                },
               ]}
             >
               <View
@@ -315,9 +518,7 @@ export default function HomeScreen() {
                     style={[
                       styles.highlightsLabel,
                       { color: hasHero ? "rgba(255,255,255,0.92)" : mutedColor },
-                      hasHero &&
-                        Platform.OS === "web" &&
-                        ({ textShadow: heroTextShadow } as object),
+                      hasHero && heroOverlayTextShadow,
                     ]}
                   >
                     {highlightsHeading}
@@ -326,9 +527,7 @@ export default function HomeScreen() {
                     style={[
                       styles.highlightsBy,
                       { color: hasHero ? "rgba(255,255,255,0.82)" : mutedColor },
-                      hasHero &&
-                        Platform.OS === "web" &&
-                        ({ textShadow: heroTextShadow } as object),
+                      hasHero && heroOverlayTextShadow,
                     ]}
                   >
                     {highlightsSubheading}
@@ -400,6 +599,35 @@ export default function HomeScreen() {
                 )}
               </View>
             )}
+
+            {/*
+              The guest stack's `headerRight` settings control never reaches this screen: it
+              is the one route that draws with `headerShown: false`, so off web the first
+              screen a visitor lands on would otherwise offer no way to language or theme.
+            */}
+            {Platform.OS !== "web" && (
+              <View
+                style={[
+                  styles.heroSettings,
+                  {
+                    top: insets.top,
+                    right: insets.right + HERO_SETTINGS_EDGE,
+                    height: HERO_SETTINGS_ROW,
+                  },
+                ]}
+              >
+                <IconButton
+                  name="settings-outline"
+                  accessibilityLabel={t("common.guestSettings.openLabel")}
+                  color={hasHero ? "rgba(255,255,255,0.92)" : mutedColor}
+                  backgroundColor={hasHero ? "rgba(0,0,0,0.35)" : accentSoft}
+                  variant="tinted"
+                  size="lg"
+                  onPress={() => setShowSettings(true)}
+                  testID="home-guest-settings-open"
+                />
+              </View>
+            )}
           </View>
 
           <View style={[styles.body, isMobile && { paddingHorizontal: 16 }]}>
@@ -421,11 +649,17 @@ export default function HomeScreen() {
                       <RestaurantCardSkeleton />
                     </View>
                   ))
-                : restaurants.map((r) => (
-                    <View key={r.id} style={cardWrapperStyle} {...(CARD_REVEAL as object)}>
-                      <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
-                    </View>
-                  ))}
+                : restaurants.map((r, i) =>
+                    revealCards ? (
+                      <LocationCardReveal key={r.id} index={i} style={cardWrapperStyle}>
+                        <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
+                      </LocationCardReveal>
+                    ) : (
+                      <View key={r.id} style={cardWrapperStyle} {...(CARD_REVEAL as object)}>
+                        <RestaurantCard restaurant={r} party={DEFAULT_PARTY_SIZE} />
+                      </View>
+                    )
+                  )}
             </View>
           </View>
         </View>
@@ -433,6 +667,10 @@ export default function HomeScreen() {
         <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
         <Footer />
       </ScrollView>
+
+      {Platform.OS !== "web" && (
+        <GuestSettingsSheet visible={showSettings} onClose={() => setShowSettings(false)} />
+      )}
     </ThemedView>
   );
 }

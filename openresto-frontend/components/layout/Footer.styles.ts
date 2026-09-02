@@ -25,6 +25,17 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
   },
+  // `column-reverse`, not `column`: it draws the fine print under the links the way an app's
+  // last screen row reads, while leaving the children in the order a screen reader walks them
+  // in — the same order the web row is read left to right.
+  innerStacked: {
+    flexDirection: "column-reverse",
+    alignItems: "center",
+    justifyContent: "center",
+    rowGap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+  },
   copyright: {
     fontSize: 13,
     lineHeight: 18,
@@ -33,6 +44,12 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.lg,
+  },
+  rightWrapped: {
+    flexWrap: "wrap",
+    justifyContent: "center",
+    columnGap: theme.spacing.lg,
+    rowGap: theme.spacing.sm,
   },
   social: {
     flexDirection: "row",

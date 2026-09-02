@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Pressable, Linking, useWindowDimensions } from "react-native";
+import { View, Platform, Pressable, Linking, useWindowDimensions } from "react-native";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -11,12 +11,25 @@ import { openExternal } from "@/utils/openExternal";
 import { styles } from "./Footer.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
 
+/**
+ * The end of every guest screen: copyright, social links, the privacy policy both app stores
+ * require a listing to reach, and — on web — the way in to the admin.
+ *
+ * Off web it collapses to a centred stack with its links wrapped above the fine print, and the
+ * admin link goes: `app/admin/_layout.tsx` redirects off web, so in the app that row is a
+ * website's site map pointing at a screen that hands you straight back to the home page.
+ *
+ * @see [Footer.test.tsx](../../tests/components/layout/Footer.test.tsx) — pins that the privacy
+ * policy and the social links survive the native layout while the admin link does not, and that
+ * web keeps its single space-between row.
+ */
 export default function Footer() {
   const { brand, colors } = useAppTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isMobile = width < 600;
+  const isWeb = Platform.OS === "web";
 
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
 
@@ -34,10 +47,13 @@ export default function Footer() {
       testID="site-footer"
       style={[styles.footer, { borderTopColor: colors.border, paddingBottom: insets.bottom }]}
     >
-      <View style={[styles.inner, isMobile && styles.innerMobile]}>
+      <View
+        testID="footer-inner"
+        style={[styles.inner, isMobile && styles.innerMobile, !isWeb && styles.innerStacked]}
+      >
         <ThemedText style={[styles.copyright, { color: colors.muted }]}>{copyright}</ThemedText>
 
-        <View style={styles.right}>
+        <View testID="footer-links" style={[styles.right, !isWeb && styles.rightWrapped]}>
           {socialLinks.length > 0 && (
             <View style={styles.social}>
               {socialLinks.map((link) => (
@@ -73,19 +89,21 @@ export default function Footer() {
             </Pressable>
           )}
 
-          <Link href={"/admin/dashboard" as const} asChild>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={t("common.footer.restaurantAdminLabel")}
-              hitSlop={10}
-              style={styles.adminBtn}
-            >
-              <Icon name="settings-outline" size="sm" color={colors.muted} />
-              <ThemedText style={[styles.adminText, { color: colors.muted }]}>
-                {t("common.footer.adminLinkText")}
-              </ThemedText>
-            </Pressable>
-          </Link>
+          {isWeb && (
+            <Link href={"/admin/dashboard" as const} asChild>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={t("common.footer.restaurantAdminLabel")}
+                hitSlop={10}
+                style={styles.adminBtn}
+              >
+                <Icon name="settings-outline" size="sm" color={colors.muted} />
+                <ThemedText style={[styles.adminText, { color: colors.muted }]}>
+                  {t("common.footer.adminLinkText")}
+                </ThemedText>
+              </Pressable>
+            </Link>
+          )}
         </View>
       </View>
     </ThemedView>

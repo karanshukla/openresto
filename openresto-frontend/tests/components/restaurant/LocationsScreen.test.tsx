@@ -3,11 +3,26 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, within } from "@testing-library/react-native";
-import { ScrollView, StyleSheet } from "react-native";
+import { Platform, ScrollView, StyleSheet } from "react-native";
 import LocationsScreen, { availabilitySummary } from "@/components/restaurant/LocationsScreen";
 import { fetchRestaurants } from "@/api/restaurants";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+
+/**
+ * ScrollToTopFab renders nothing off web (React Native has no `position: sticky`, so the rail
+ * it needs cannot exist). The FAB rules below are web rules, and jest defaults Platform.OS to
+ * "ios", so they have to say which platform they are about.
+ */
+const onWeb = async (body: () => Promise<void>) => {
+  const original = Platform.OS;
+  (Platform as unknown as { OS: string }).OS = "web";
+  try {
+    await body();
+  } finally {
+    (Platform as unknown as { OS: string }).OS = original;
+  }
+};
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -467,44 +482,48 @@ describe("LocationsScreen", () => {
     // the shortcut away at the end of the page, which is where it is most wanted (#399). It sits
     // in the gutter beside the content column, which the footer's own row does not reach.
     it("keeps the FAB to the very end of the list", async () => {
-      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-      renderWithProviders(<LocationsScreen />);
-      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+      await onWeb(async () => {
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
 
-      const scrollView = screen.UNSAFE_getByType(ScrollView);
+        const scrollView = screen.UNSAFE_getByType(ScrollView);
 
-      fireEvent.scroll(scrollView, scrollEvent(400));
-      expect(fabShowing()).toBe(true);
+        fireEvent.scroll(scrollView, scrollEvent(400));
+        expect(fabShowing()).toBe(true);
 
-      fireEvent.scroll(scrollView, {
-        nativeEvent: {
-          contentOffset: { y: 3100 },
-          contentSize: { height: 4000 },
-          layoutMeasurement: { height: 900 },
-        },
+        fireEvent.scroll(scrollView, {
+          nativeEvent: {
+            contentOffset: { y: 3100 },
+            contentSize: { height: 4000 },
+            layoutMeasurement: { height: 900 },
+          },
+        });
+        expect(fabShowing()).toBe(true);
       });
-      expect(fabShowing()).toBe(true);
     });
 
     it("keeps the FAB with the drawer open, which takes the footer out of the column", async () => {
-      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-      renderWithProviders(<LocationsScreen />);
-      await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
+      await onWeb(async () => {
+        (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+        renderWithProviders(<LocationsScreen />);
+        await waitFor(() => expect(screen.getByTestId("book-1")).toBeTruthy());
 
-      const scrollView = screen.UNSAFE_getByType(ScrollView);
-      const atEnd = {
-        nativeEvent: {
-          contentOffset: { y: 3100 },
-          contentSize: { height: 4000 },
-          layoutMeasurement: { height: 900 },
-        },
-      };
+        const scrollView = screen.UNSAFE_getByType(ScrollView);
+        const atEnd = {
+          nativeEvent: {
+            contentOffset: { y: 3100 },
+            contentSize: { height: 4000 },
+            layoutMeasurement: { height: 900 },
+          },
+        };
 
-      fireEvent.press(screen.getByTestId("book-1"));
-      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
-      fireEvent.scroll(scrollView, atEnd);
+        fireEvent.press(screen.getByTestId("book-1"));
+        await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+        fireEvent.scroll(scrollView, atEnd);
 
-      expect(fabShowing()).toBe(true);
+        expect(fabShowing()).toBe(true);
+      });
     });
 
     it("leaves the footer in the column for the phone sheet, which takes no width off it", async () => {
@@ -624,16 +643,18 @@ describe("LocationsScreen", () => {
   });
 
   it("scrollToTop calls scrollTo on the ScrollView ref via the ScrollToTopFab", async () => {
-    dimensionsSpy.mockReturnValue({ width: 375, height: 812, scale: 1, fontScale: 1 });
-    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-    renderWithProviders(<LocationsScreen />);
-    await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
+    await onWeb(async () => {
+      dimensionsSpy.mockReturnValue({ width: 375, height: 812, scale: 1, fontScale: 1 });
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
 
-    const scrollView = screen.UNSAFE_getByType(ScrollView);
-    fireEvent.scroll(scrollView, scrollEvent(400));
+      const scrollView = screen.UNSAFE_getByType(ScrollView);
+      fireEvent.scroll(scrollView, scrollEvent(400));
 
-    fireEvent.press(screen.getByLabelText("Scroll to top"));
-    // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
-    // covers the scrollToTop callback.
+      fireEvent.press(screen.getByLabelText("Scroll to top"));
+      // scrollRef.current?.scrollTo is a no-op in tests — asserts no crash and
+      // covers the scrollToTop callback.
+    });
   });
 });

@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { render, screen, fireEvent } from "@testing-library/react-native";
+import { Platform, StyleSheet } from "react-native";
 import ScrollToTopFab, { fabGutter, SHOW_AFTER_SCROLL_Y } from "@/components/common/ScrollToTopFab";
 import { FAB_MIN_GUTTER, FAB_SIZE } from "@/components/common/ScrollToTopFab.styles";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H } from "@/constants/breakpoints";
@@ -13,6 +13,14 @@ const mockWindowDimensions = { width: 375, height: 812 };
 jest.mock("react-native/Libraries/Utilities/useWindowDimensions", () => ({
   default: () => mockWindowDimensions,
 }));
+
+function setPlatform(os: string) {
+  Object.defineProperty(Platform, "OS", { value: os, configurable: true });
+}
+
+// jest-expo runs as "ios" by default; everything below the "off web" block describes the one
+// platform the FAB renders on at all.
+setPlatform("web");
 
 describe("ScrollToTopFab", () => {
   it("exposes the scroll threshold callers gate visibility on", () => {
@@ -152,5 +160,29 @@ describe("ScrollToTopFab", () => {
     renderWithProviders(<ScrollToTopFab visible onPress={onPress} />);
     fireEvent.press(screen.getByRole("button"));
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  // The whole affordance is `position: sticky`, which React Native has no equivalent for, so off
+  // web the circle would scroll away with the content instead of riding the viewport. iOS hands
+  // the same gesture back through the status bar anyway.
+  describe("off web", () => {
+    afterEach(() => setPlatform("web"));
+
+    it.each(["ios", "android"])("renders nothing on %s", (os) => {
+      setPlatform(os);
+      // No providers: a component that renders nothing reaches for no theme and no insets.
+      const { toJSON } = render(<ScrollToTopFab visible onPress={jest.fn()} />);
+
+      expect(toJSON()).toBeNull();
+    });
+
+    it("offers no press target for a caller that still mounts it", () => {
+      setPlatform("ios");
+      const onPress = jest.fn();
+      render(<ScrollToTopFab visible onPress={onPress} />);
+
+      expect(screen.queryByTestId("scroll-to-top-fab", { includeHiddenElements: true })).toBeNull();
+      expect(onPress).not.toHaveBeenCalled();
+    });
   });
 });

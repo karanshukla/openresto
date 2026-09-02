@@ -1,5 +1,11 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
+import { Platform } from "react-native";
+
+// Populated by the Stack mocks below. Named with the `mock` prefix so the jest.mock
+// factory is allowed to close over them.
+const mockScreenOptions: Record<string, unknown>[] = [];
+const mockScreens: { name: string; options: Record<string, unknown> }[] = [];
 
 // The layout's offline strip takes the top safe-area inset, and the hook throws outside a
 // provider — the app mounts one in app/_layout.tsx, these tests render the layout alone.
@@ -28,24 +34,123 @@ jest.mock("@/api/auth", () => ({
   verifyToken: jest.fn(),
 }));
 
-jest.mock("expo-router", () => ({
-  Slot: () => null,
-  Stack: Object.assign(() => null, {
-    Screen: () => null,
-  }),
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
-  usePathname: () => "/",
-  useSegments: () => ["(user)"],
-}));
+jest.mock("expo-router", () => {
+  const React = require("react");
+  const Stack = ({
+    screenOptions,
+    children,
+  }: {
+    screenOptions?: Record<string, unknown>;
+    children?: React.ReactNode;
+  }) => {
+    mockScreenOptions.push(screenOptions ?? {});
+    return React.createElement(React.Fragment, null, children);
+  };
+  Stack.Screen = ({ name, options }: { name: string; options?: Record<string, unknown> }) => {
+    mockScreens.push({ name, options: options ?? {} });
+    return null;
+  };
+  return {
+    Slot: () => null,
+    Stack,
+    useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+    usePathname: () => "/",
+    useSegments: () => ["(user)"],
+  };
+});
 
 jest.mock("@/components/layout/Navbar", () => ({
   __esModule: true,
   default: () => null,
 }));
 
+const originalOS = Platform.OS;
+
+/** The `<Stack>` is the native branch; on web the layout returns a `<Slot>` instead. */
+function renderOn(os: "ios" | "android") {
+  Object.defineProperty(Platform, "OS", { value: os, configurable: true });
+  mockScreenOptions.length = 0;
+  mockScreens.length = 0;
+
+  const { default: UserLayout } = require("@/app/(user)/_layout");
+  render(<UserLayout />);
+
+  return {
+    screenOptions: mockScreenOptions[0],
+    optionsFor: (name: string) => mockScreens.find((screen) => screen.name === name)?.options,
+  };
+}
+
+afterEach(() => {
+  Object.defineProperty(Platform, "OS", { value: originalOS, configurable: true });
+});
+
 describe("UserLayout", () => {
   it("renders without crashing on native", () => {
-    const { default: UserLayout } = require("@/app/(user)/_layout");
-    expect(() => render(<UserLayout />)).not.toThrow();
+    expect(() => renderOn("ios")).not.toThrow();
+  });
+
+  it("keeps the full-bleed home screen out of the native header", () => {
+    const { optionsFor } = renderOn("ios");
+
+    expect(optionsFor("index")).toMatchObject({ headerShown: false });
+  });
+
+  it("keeps the legacy /search redirect out of the native header", () => {
+    const { optionsFor } = renderOn("ios");
+
+    expect(optionsFor("search")).toMatchObject({ headerShown: false });
+  });
+
+  it("draws no rule under the header in either state", () => {
+    const { screenOptions, optionsFor } = renderOn("ios");
+
+    expect(screenOptions).toMatchObject({ headerShadowVisible: false });
+    expect(optionsFor("lookup")).toMatchObject({ headerLargeTitleShadowVisible: false });
+  });
+});
+
+describe("UserLayout large titles", () => {
+  // The pair is the rule: a large title is for a screen a guest lands on, and looks like a
+  // second navigation bar on one pushed on top of it.
+  it.each(["locations/index", "lookup"])("gives the %s list screen a large title", (name) => {
+    const { optionsFor } = renderOn("ios");
+
+    expect(optionsFor(name)).toMatchObject({
+      headerLargeTitleEnabled: true,
+      // A translucent header would drop the first row under the bar: the guest scroll
+      // views don't set contentInsetAdjustmentBehavior="automatic".
+      headerTransparent: false,
+    });
+  });
+
+  it.each(["restaurant/[id]", "locations/[id]", "book", "booking-confirmation/[bookingRef]"])(
+    "leaves the pushed %s detail screen without one",
+    (name) => {
+      const { optionsFor } = renderOn("ios");
+
+      expect(optionsFor(name)).not.toHaveProperty("headerLargeTitleEnabled");
+    }
+  );
+
+  it("leaves the iOS-only large title off Android", () => {
+    const { optionsFor } = renderOn("android");
+
+    expect(optionsFor("lookup")).not.toHaveProperty("headerLargeTitleEnabled");
+    expect(optionsFor("locations/index")).not.toHaveProperty("headerLargeTitleEnabled");
+  });
+});
+
+describe("UserLayout back button", () => {
+  it("shrinks the iOS back button to its chevron so a long title cannot crowd it", () => {
+    const { screenOptions } = renderOn("ios");
+
+    expect(screenOptions).toMatchObject({ headerBackButtonDisplayMode: "minimal" });
+  });
+
+  it("leaves the iOS-only display mode off Android", () => {
+    const { screenOptions } = renderOn("android");
+
+    expect(screenOptions).not.toHaveProperty("headerBackButtonDisplayMode");
   });
 });
