@@ -13,6 +13,8 @@ public static class NativeAppChecks
     public const string PrivacyPolicy = "privacyPolicy";
     public const string AppleAppSiteAssociation = "appleAppSiteAssociation";
     public const string AndroidAssetLinks = "androidAssetLinks";
+    public const string AppleWallet = "appleWallet";
+    public const string GoogleWallet = "googleWallet";
 
     public const string Pass = "pass";
     public const string Fail = "fail";

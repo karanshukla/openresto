@@ -397,6 +397,25 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<OpenRestoApi.Infrastructure.Notifications.NotificationQueue>());
         services.AddHostedService<OpenRestoApi.Infrastructure.Notifications.NotificationWorker>();
 
+        // Guest booking reminders: browsers ride the VAPID client above, the native app goes
+        // through Expo's push service, and one worker decides what is due each minute.
+        services.AddOptions<OpenRestoApi.Core.Application.Settings.GuestPushSettings>()
+                .BindConfiguration("GuestPush");
+        services.AddScoped<IGuestPushSubscriptionRepository,
+            OpenRestoApi.Infrastructure.Persistence.Repositories.GuestPushSubscriptionRepository>();
+        services.AddHttpClient(OpenRestoApi.Infrastructure.Notifications.ExpoPushClient.HttpClientName,
+            client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddScoped<IExpoPushClient, OpenRestoApi.Infrastructure.Notifications.ExpoPushClient>();
+        services.AddScoped<IGuestPushSender, OpenRestoApi.Core.Application.Services.GuestPushSender>();
+        services.AddScoped<OpenRestoApi.Core.Application.Services.GuestReminderService>();
+        services.AddHostedService<OpenRestoApi.Infrastructure.Notifications.GuestReminderWorker>();
+
+        // Wallet passes: the signing material is read from disk once per process.
+        services.AddOptions<OpenRestoApi.Core.Application.Settings.WalletSettings>()
+                .BindConfiguration("Wallet");
+        services.AddSingleton<IWalletCredentials, OpenRestoApi.Infrastructure.Wallet.WalletCredentialStore>();
+        services.AddScoped<OpenRestoApi.Core.Application.Services.WalletPassService>();
+
         services.AddSession(options =>
         {
             options.IdleTimeout = TimeSpan.FromSeconds(10);

@@ -17,12 +17,14 @@ public class NativeAppStatusService(
     BrandService brandService,
     INativeClientStatsRepository clientStats,
     IWellKnownProbe probe,
-    ISystemClock clock)
+    ISystemClock clock,
+    IWalletCredentials? wallet = null)
 {
     private readonly BrandService _brand = brandService;
     private readonly INativeClientStatsRepository _clientStats = clientStats;
     private readonly IWellKnownProbe _probe = probe;
     private readonly ISystemClock _clock = clock;
+    private readonly IWalletCredentials _wallet = wallet ?? NoWalletCredentials.Instance;
 
     /// <summary>
     /// <seealso>NativeAppStatusServiceTests.WithNoPublicAddressConfigured_FailsHttpsAndSkipsTheWellKnownChecks</seealso>
@@ -45,6 +47,8 @@ public class NativeAppStatusService(
             PrivacyPolicy(brand),
             await AppleAppSiteAssociationAsync(websiteUrl, hasPublicAddress, cancellationToken),
             await AndroidAssetLinksAsync(websiteUrl, hasPublicAddress, cancellationToken),
+            AppleWallet(),
+            GoogleWallet(),
         };
 
         return new NativeAppStatusResponse
@@ -94,6 +98,26 @@ public class NativeAppStatusService(
                 "Both stores require a privacy policy URL before a listing can be published.")
             : Check(NativeAppChecks.PrivacyPolicy, NativeAppChecks.Pass,
                 "A privacy policy URL is set.", brand.PrivacyPolicyUrl);
+
+    /// <summary>
+    /// Wallet passes are optional, so an unconfigured issuer is a skip rather than a failure: nothing
+    /// is broken, the guest screens simply do not offer that pass.
+    /// <seealso>NativeAppStatusServiceTests.WalletChecks_SkipWhenNoIssuerIsConfigured</seealso>
+    /// <seealso>NativeAppStatusServiceTests.WalletChecks_PassForAConfiguredIssuer</seealso>
+    /// </summary>
+    private NativeAppCheckDto AppleWallet()
+        => _wallet.Apple is { } apple
+            ? Check(NativeAppChecks.AppleWallet, NativeAppChecks.Pass,
+                $"Passes are signed as {apple.PassTypeIdentifier} (team {apple.TeamIdentifier}).")
+            : Check(NativeAppChecks.AppleWallet, NativeAppChecks.Skip,
+                "No Pass Type ID certificate is configured, so bookings offer no Apple Wallet pass.");
+
+    private NativeAppCheckDto GoogleWallet()
+        => _wallet.Google is { } google
+            ? Check(NativeAppChecks.GoogleWallet, NativeAppChecks.Pass,
+                $"Passes are issued under issuer {google.IssuerId} by {google.ServiceAccountEmail}.")
+            : Check(NativeAppChecks.GoogleWallet, NativeAppChecks.Skip,
+                "No Google Wallet issuer is configured, so bookings offer no Google Wallet pass.");
 
     /// <summary>
     /// <seealso>NativeAppStatusServiceTests.AppleAssociation_PassesOnJsonCarryingApplinks</seealso>

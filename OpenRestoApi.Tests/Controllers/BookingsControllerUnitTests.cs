@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Infrastructure.Cookies;
 
 namespace OpenRestoApi.Tests.Controllers;
@@ -29,7 +31,9 @@ public class BookingsControllerUnitTests
         var mockEnv = new Mock<IWebHostEnvironment>();
 
         _mockRecentCookie = new Mock<RecentBookingsCookie>(mockProvider.Object, mockEnv.Object);
-        _controller = new BookingsController(_mockBookingService.Object, _mockRecentCookie.Object);
+        var reminders = new Mock<GuestReminderService>(null!, null!, null!, null!, Options.Create(new GuestPushSettings()), null!, null!);
+        var wallet = new Mock<WalletPassService>(null!, null!, null!, null!);
+        _controller = new BookingsController(_mockBookingService.Object, _mockRecentCookie.Object, reminders.Object, wallet.Object);
     }
 
     [Fact]

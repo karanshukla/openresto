@@ -13,10 +13,18 @@ namespace OpenRestoApi.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [EnableRateLimiting("public")]
-    public class BookingsController(BookingService bookingService, RecentBookingsCookie recentCookie) : ControllerBase
+    public class BookingsController(
+        BookingService bookingService,
+        RecentBookingsCookie recentCookie,
+        GuestReminderService reminders,
+        WalletPassService wallet) : ControllerBase
     {
+        private const string PkpassContentType = "application/vnd.apple.pkpass";
+
         private readonly BookingService _bookingService = bookingService;
         private readonly RecentBookingsCookie _recentCookie = recentCookie;
+        private readonly GuestReminderService _reminders = reminders;
+        private readonly WalletPassService _wallet = wallet;
 
         [HttpGet("/api/restaurants/{restaurantId}/bookings")]
         [Authorize(Policy = AuthPolicies.RequireAdmin)]
@@ -156,5 +164,84 @@ namespace OpenRestoApi.Controllers
             }
             return NoContent();
         }
+
+        // The reference-plus-email pair, the identical 404 and the tight ceiling, as on
+        // GetBookingByRef. What is stored is a push address keyed to the booking and nothing
+        // else, so it leaves with the booking.
+        // <seealso>BookingsControllerTests.SubscribeReminders_UnknownRefAndWrongEmailAreIndistinguishable</seealso>
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
+        [HttpPost("ref/{bookingRef}/reminders")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
+        public async Task<IActionResult> SubscribeReminders(string bookingRef, [FromBody] GuestReminderSubscribeRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+            {
+                return BadRequest(new MessageResponse { Message = "Email is required to manage reminders.", Code = ErrorCodes.BookingLookupEmailRequired });
+            }
+
+            bool ok = await _reminders.SubscribeAsync(bookingRef, req.Email, req);
+            return ok ? NoContent() : LookupNotFound();
+        }
+
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
+        [HttpDelete("ref/{bookingRef}/reminders")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
+        public async Task<IActionResult> UnsubscribeReminders(string bookingRef, [FromBody] GuestReminderUnsubscribeRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+            {
+                return BadRequest(new MessageResponse { Message = "Email is required to manage reminders.", Code = ErrorCodes.BookingLookupEmailRequired });
+            }
+
+            bool ok = await _reminders.UnsubscribeAsync(bookingRef, req.Email, req.Endpoint);
+            return ok ? NoContent() : LookupNotFound();
+        }
+
+        // A signed .pkpass for the booking. 404 with its own code when Apple Wallet is not
+        // configured on this server; the identical lookup 404 otherwise.
+        // <seealso>BookingsControllerTests.AppleWalletPass_UnknownRefAndWrongEmailAreIndistinguishable</seealso>
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
+        [HttpGet("ref/{bookingRef}/wallet/apple.pkpass")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
+        public async Task<IActionResult> GetAppleWalletPass(string bookingRef, [FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new MessageResponse { Message = "Email is required to look up a booking.", Code = ErrorCodes.BookingLookupEmailRequired });
+            }
+
+            byte[]? pass = await _wallet.BuildApplePassAsync(bookingRef, email);
+            if (pass == null)
+            {
+                return LookupNotFound();
+            }
+
+            Response.Headers.CacheControl = "no-store";
+            return File(pass, PkpassContentType, $"reservation-{bookingRef}.pkpass");
+        }
+
+        // <seealso>BookingsControllerTests.GoogleWalletLink_UnknownRefAndWrongEmailAreIndistinguishable</seealso>
+        // <seealso>BookingRefEndpointRateLimitTests.ByRefGuestActions_CarryTheTightLookupPolicy</seealso>
+        [HttpGet("ref/{bookingRef}/wallet/google")]
+        [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
+        public async Task<IActionResult> GetGoogleWalletLink(string bookingRef, [FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new MessageResponse { Message = "Email is required to look up a booking.", Code = ErrorCodes.BookingLookupEmailRequired });
+            }
+
+            string? saveUrl = await _wallet.BuildGoogleSaveUrlAsync(bookingRef, email);
+            if (saveUrl == null)
+            {
+                return LookupNotFound();
+            }
+
+            Response.Headers.CacheControl = "no-store";
+            return Ok(new GoogleWalletLinkResponse { SaveUrl = saveUrl });
+        }
+
+        private NotFoundObjectResult LookupNotFound() =>
+            NotFound(new MessageResponse { Message = "No booking found matching that reference and email.", Code = ErrorCodes.BookingLookupNotFound });
     }
 }

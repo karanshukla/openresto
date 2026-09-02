@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application;
+using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Auth;
@@ -13,7 +16,10 @@ namespace OpenRestoApi.Controllers;
 [ApiController]
 [Route("api/brand")]
 [EnableRateLimiting("public")]
-public class BrandController(BrandService brandService) : ControllerBase
+public class BrandController(
+    BrandService brandService,
+    WalletPassService wallet,
+    IOptions<VapidSettings> vapidOptions) : ControllerBase
 {
     private const string DefaultPrimaryColor = "#0a7ea4";
 
@@ -44,6 +50,8 @@ public class BrandController(BrandService brandService) : ControllerBase
             CliPackageUrl = _brand.GetCliPackageUrl(),
             ApiDocsUrl = _brand.GetApiDocsUrl(),
             RepositoryUrl = _brand.GetRepositoryUrl(),
+            Wallet = wallet.Availability(),
+            WebPushPublicKey = vapidOptions.Value.IsConfigured ? vapidOptions.Value.PublicKey : null,
         });
     }
 
@@ -235,4 +243,13 @@ public class BrandResponse
 
     /// <summary>The source repository this deployment is built from.</summary>
     public string? RepositoryUrl { get; set; }
+
+    /// <summary>Which wallet passes this server can issue; a client offers only those.</summary>
+    public WalletAvailabilityResponse Wallet { get; set; } = new();
+
+    /// <summary>
+    /// The VAPID public key a browser subscribes to booking reminders with, or null when push is
+    /// not configured. Public by nature: it is the same key every admin browser already receives.
+    /// </summary>
+    public string? WebPushPublicKey { get; set; }
 }

@@ -22,7 +22,7 @@ public sealed class EmailTemplateService : IEmailTemplateService
         string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
         string appName = brand.AppName ?? "Open Resto";
         string cleanWebsiteUrl = websiteUrl.TrimEnd('/');
-        string lookupUrl = $"{cleanWebsiteUrl}/booking-confirmation/{Uri.EscapeDataString(booking.BookingRef ?? "")}?email={Uri.EscapeDataString(booking.CustomerEmail ?? "")}";
+        string lookupUrl = BookingLinks.Confirmation(cleanWebsiteUrl, booking);
 
         // Choose header: full-width banner for restaurant photos, small icon for brand SVG, plain text otherwise
         string headerHtml;
