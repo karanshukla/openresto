@@ -20,6 +20,7 @@ import { currentAppVersion, isBelowMinimum } from "@/utils/appVersion";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
 import { LocaleProvider } from "@/context/LocaleContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { BookingSheetHost } from "@/components/booking/BookingSheetHost";
 
 /**
  * Expo Router binds an `ErrorBoundary` export to the segment that declares it, so the root
@@ -147,13 +148,17 @@ function AppWithTheme() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <BrandProvider>
-        <LocaleProvider>
-          <AppThemeProvider>
-            <AppWithTheme />
-          </AppThemeProvider>
-        </LocaleProvider>
-      </BrandProvider>
+      {/* Outermost of the app's own providers off web: the gesture root inside has to wrap
+          everything that can host a gesture handler, and a pass-through on web. */}
+      <BookingSheetHost>
+        <BrandProvider>
+          <LocaleProvider>
+            <AppThemeProvider>
+              <AppWithTheme />
+            </AppThemeProvider>
+          </LocaleProvider>
+        </BrandProvider>
+      </BookingSheetHost>
     </SafeAreaProvider>
   );
 }
