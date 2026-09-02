@@ -24,8 +24,8 @@ interface Tab {
  * routes nothing in the app can reach.
  *
  * @see [GuestTabBar.test.tsx](../../tests/components/layout/GuestTabBar.test.tsx) — pins that
- * only the exact home path marks Home active, and that a nested location route keeps
- * Locations selected.
+ * only the exact home path marks Home active, that a nested location route keeps Locations
+ * selected, and that a booking confirmation keeps My booking selected.
  */
 export default function GuestTabBar() {
   const { t } = useTranslation();
@@ -51,7 +51,10 @@ export default function GuestTabBar() {
     },
     {
       href: "/lookup",
-      match: (p) => p.startsWith("/lookup"),
+      // A just-made booking is one of the diner's bookings, and /booking-confirmation is
+      // literally LookupScreen with the ref prefilled. Leaving the tab unlit there was the
+      // one guest route that answered "where am I" with nothing.
+      match: (p) => p.startsWith("/lookup") || p.startsWith("/booking-confirmation"),
       icon: "ticket-outline",
       activeIcon: "ticket",
       label: t("common.navbar.myBookingsLink"),
