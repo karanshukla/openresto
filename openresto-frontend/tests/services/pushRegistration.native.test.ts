@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import { isRunningInExpoGo } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
@@ -17,6 +18,8 @@ jest.mock("expo-notifications", () => ({
 }));
 
 jest.mock("expo-device", () => ({ isDevice: true }));
+
+jest.mock("expo", () => ({ isRunningInExpoGo: jest.fn(() => false) }));
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -37,6 +40,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   (Device as unknown as { isDevice: boolean }).isDevice = true;
   Constants.expoConfig!.extra = { eas: { projectId: "proj-1" } };
+  (isRunningInExpoGo as jest.Mock).mockReturnValue(false);
   setPlatform("ios");
 });
 
@@ -49,11 +53,22 @@ describe("canRegisterForReminders (native)", () => {
     Constants.expoConfig!.extra = {};
     expect(canRegisterForReminders({})).toBe(false);
   });
+
+  it("is false under Expo Go, which cannot receive remote push", () => {
+    (isRunningInExpoGo as jest.Mock).mockReturnValue(true);
+    expect(canRegisterForReminders({})).toBe(false);
+  });
 });
 
 describe("registerForReminders (native)", () => {
   it("reads as unsupported where no token can be minted", async () => {
     Constants.expoConfig!.extra = { eas: { projectId: 42 } };
+    await expect(registerForReminders({})).resolves.toEqual({ status: "unsupported" });
+    expect(mocked.getPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it("never reaches expo-notifications under Expo Go, where importing it throws", async () => {
+    (isRunningInExpoGo as jest.Mock).mockReturnValue(true);
     await expect(registerForReminders({})).resolves.toEqual({ status: "unsupported" });
     expect(mocked.getPermissionsAsync).not.toHaveBeenCalled();
   });
