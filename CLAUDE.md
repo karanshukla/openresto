@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev          # starts backend (dotnet watch) + frontend (expo) concurrently
 npm run dev:native   # the same stack, addressed so a phone running Expo Go can reach it
+npm test             # the root dev scripts' own tests (node --test, no jest at this level)
 ```
 
 Both pass `--kill-others --kill-timeout` to `concurrently`, so one half dying takes the other
@@ -25,6 +26,13 @@ Docker and podman bridges are filtered out deliberately — bring the compose st
 `172.x`/`10.88.x` addresses appear alongside the real one, and picking those fails exactly the way
 `localhost` does. Override with `OPENRESTO_LAN_HOST` / `OPENRESTO_API_PORT` when the guess is
 wrong; the script exits rather than falling back to an address the phone cannot route to.
+
+Both halves are launched by handing `concurrently`'s own JS entry to `process.execPath`,
+never the `node_modules/.bin` shim: npm writes the bare name there as a POSIX sh file that
+Windows cannot execute, and the `.cmd` beside it needs `shell: true`, which would then have
+to quote the space-bearing commands. Anything else in `scripts/` that spawns tooling has the
+same choice to make — `scripts/dev-native.test.mjs` pins it, and the `root-scripts` CI job
+runs those tests on Windows as well as Linux.
 
 ### Backend only
 

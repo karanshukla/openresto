@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently --kill-others --kill-timeout 5000 --names \"api,fe\" --prefix-colors \"cyan,magenta\" \"dotnet watch --project OpenRestoApi\" \"npm run dev --prefix openresto-frontend\"",
     "dev:native": "node scripts/dev-native.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test \"scripts/**/*.test.mjs\"",
     "check:doc-links": "node scripts/check-doc-links.mjs",
     "prepare": "husky"
   },

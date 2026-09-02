@@ -13,8 +13,10 @@
  */
 import { networkInterfaces } from "node:os";
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 /**
  * Bridges and tunnels that hold a routable-looking address the phone can still never reach.
@@ -40,10 +42,26 @@ export function lanAddress(interfaces = networkInterfaces()) {
 
 const DEFAULT_API_PORT = "8080";
 
-/** Resolved rather than taken from PATH, so the script runs the same under `node` as under npm. */
-const CONCURRENTLY = fileURLToPath(
-  new URL("../node_modules/.bin/concurrently", import.meta.url),
-);
+/**
+ * The `concurrently` CLI entry point, resolved through the package rather than through
+ * `node_modules/.bin`. npm writes three shims per tool there and only the extensionless
+ * POSIX one carries the bare name, so spawning it fails with ENOENT on Windows; the `.cmd`
+ * beside it cannot be spawned without `shell: true`, which would then have to quote the
+ * space-bearing command arguments below. Handing the entry to `process.execPath` avoids
+ * both. `exports` blocks the `dist/bin` subpath but allows `package.json`, so the location
+ * comes from the manifest's own `bin` field rather than a hardcoded path into the package.
+ */
+export function concurrentlyEntry(
+  manifest = createRequire(import.meta.url).resolve(
+    "concurrently/package.json",
+  ),
+) {
+  const { bin } = JSON.parse(readFileSync(manifest, "utf8"));
+  return resolve(
+    dirname(manifest),
+    typeof bin === "string" ? bin : bin.concurrently,
+  );
+}
 
 function main() {
   const host = process.env.OPENRESTO_LAN_HOST || lanAddress();
@@ -58,14 +76,24 @@ function main() {
   const port = process.env.OPENRESTO_API_PORT || DEFAULT_API_PORT;
   const apiUrl = `http://${host}:${port}`;
 
+  let entry;
+  try {
+    entry = concurrentlyEntry();
+  } catch {
+    console.error("dev:native: concurrently is not installed.");
+    console.error("dev:native: run npm install at the repository root first.");
+    process.exit(1);
+  }
+
   console.log(`dev:native: serving the app against ${apiUrl}`);
   console.log(
     "dev:native: the phone must be on this network; add --clear if Metro looks stale.\n",
   );
 
   const child = spawn(
-    CONCURRENTLY,
+    process.execPath,
     [
+      entry,
       "--kill-others",
       "--kill-timeout",
       "5000",
@@ -83,7 +111,6 @@ function main() {
     console.error(
       `dev:native: could not start concurrently (${error.message}).`,
     );
-    console.error("dev:native: run npm install at the repository root first.");
     process.exit(1);
   });
   child.on("exit", (code, signal) => process.exit(signal ? 1 : (code ?? 0)));

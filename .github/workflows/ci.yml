@@ -138,6 +138,32 @@ jobs:
       - name: Check Doc Links
         run: npm run check:doc-links
 
+  root-scripts:
+    name: Root Scripts
+    # The dev scripts spawn tooling, and how a path is spawned is exactly what differs
+    # between platforms — `dev:native` launched concurrently through a POSIX shim that
+    # Windows cannot execute, so it worked here and failed there. Running both is what
+    # makes that class of break visible in CI rather than on a contributor's machine.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm test
+
   openapi-drift:
     name: OpenAPI Drift
     runs-on: ubuntu-latest
