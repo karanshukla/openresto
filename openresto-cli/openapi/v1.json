@@ -2111,7 +2111,7 @@
         "tags": [
           "NativeApp"
         ],
-        "summary": "The readiness checklist, the configured minimum app version, and aggregate use per native\nbuild. Read-only: nothing here mutates the deployment.\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithoutAuth_Returns401\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithAdminJwt_ReturnsTheFiveChecks\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABookingsOnlyKey_Returns403\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABrandReadKey_Returns200\u003C/seealso\u003E",
+        "summary": "The readiness checklist, the configured minimum app version, and aggregate use per native\nbuild. Read-only: nothing here mutates the deployment.\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithoutAuth_Returns401\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithAdminJwt_ReturnsTheSevenChecks\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABookingsOnlyKey_Returns403\u003C/seealso\u003E\n\u003Cseealso\u003ENativeAppControllerTests.Status_WithABrandReadKey_Returns200\u003C/seealso\u003E",
         "responses": {
           "200": {
             "description": "OK"
