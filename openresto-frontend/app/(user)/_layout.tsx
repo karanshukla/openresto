@@ -21,8 +21,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 
 /**
  * The header's hairline (iOS) / elevation (Android) lands straight on the top border of the
- * first card every guest screen renders, reading as a double rule. `largeTitleHeader` turns
- * off the same line in the expanded large-title state.
+ * first card every guest screen renders, reading as a double rule.
  *
  * `headerBackButtonDisplayMode` is iOS-only (`ScreenStackHeaderConfigProps`) — Android's back
  * affordance is already a bare arrow with no previous-screen title to crowd it.
@@ -38,24 +37,18 @@ function guestHeader(): NativeStackNavigationOptions {
 }
 
 /**
- * A large title belongs to a screen a guest lands on, never to one pushed on top of it, where
- * it stacks a second bar under the back button it shares a row with.
- *
- * `headerTransparent: false` is load-bearing rather than a default restated: enabling a large
- * title makes the iOS header translucent, and the guest scroll views don't set
- * `contentInsetAdjustmentBehavior="automatic"`, so their first row would sit under the bar.
+ * The three tab roots draw with no native header, the way the home screen always has: the tab
+ * bar is the way between them, so a back arrow on one is a second navigation model laid over
+ * the first and reads as a website in a wrapper. Each root carries its own title and the
+ * settings control through `ScreenHeading`, and the roots are not swipeable back to one
+ * another. The screens pushed over a root keep the header, since its back arrow is what
+ * drives the swipe-back gesture and what the Android system back mirrors.
  *
  * @see [layout.test.tsx](<../../tests/app/(user)/layout.test.tsx>) — pins the boundary: the
- * top-level list screens carry a large title, the detail screens pushed on top do not.
+ * tab roots have no header, the detail screens pushed on top keep theirs.
  */
-function largeTitleHeader(): NativeStackNavigationOptions {
-  return Platform.OS === "ios"
-    ? {
-        headerLargeTitleEnabled: true,
-        headerLargeTitleShadowVisible: false,
-        headerTransparent: false,
-      }
-    : {};
+function tabRoot(): NativeStackNavigationOptions {
+  return { headerShown: false, gestureEnabled: false };
 }
 
 export default function UserLayout() {
@@ -102,8 +95,9 @@ export default function UserLayout() {
     );
   }
 
-  // Language and theme live in the navbar's overflow menu, which is web-only, so the native
-  // header carries the one control that opens both.
+  // Language and theme live in the navbar's overflow menu, which is web-only, so off web the
+  // header of every pushed screen carries the one control that opens both; the header-less
+  // tab roots carry it in their ScreenHeading instead.
   return (
     <View style={{ flex: 1 }}>
       <OfflineBanner />
@@ -113,13 +107,13 @@ export default function UserLayout() {
           headerRight: () => <GuestSettingsMenu color={colors.muted} />,
         }}
       >
-        <Stack.Screen name="index" options={{ title: brand.appName, headerShown: false }} />
+        <Stack.Screen name="index" options={{ ...tabRoot(), title: brand.appName }} />
         {/* /search is a legacy web URL that only renders a <Redirect>, so a native header
             would flash a bar titled after the filename on the way through. */}
         <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen
           name="locations/index"
-          options={{ ...largeTitleHeader(), title: t("restaurant.locationsScreen.routeTitle") }}
+          options={{ ...tabRoot(), title: t("restaurant.locationsScreen.routeTitle") }}
         />
         <Stack.Screen
           name="locations/[id]"
@@ -134,10 +128,7 @@ export default function UserLayout() {
           name="booking-confirmation/[bookingRef]"
           options={{ title: t("booking.result.routeTitleConfirmed"), headerBackVisible: false }}
         />
-        <Stack.Screen
-          name="lookup"
-          options={{ ...largeTitleHeader(), title: t("lookup.routeTitle") }}
-        />
+        <Stack.Screen name="lookup" options={{ ...tabRoot(), title: t("lookup.routeTitle") }} />
       </Stack>
       <GuestTabBar />
     </View>

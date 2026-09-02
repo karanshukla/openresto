@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { Linking, Platform, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/themed-text";
@@ -77,7 +78,12 @@ export default function LookupScreen({
 
   const { width } = useWindowDimensions();
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const online = useOnline();
+  // /lookup is a tab root and draws with no native header off web; /booking-confirmation is
+  // pushed on top of one and keeps the bar, so only the root takes the status-bar inset and
+  // carries its own title.
+  const standalone = !justBooked;
   const brand = useBrand();
   const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
@@ -211,7 +217,9 @@ export default function LookupScreen({
   }
 
   return (
-    <ThemedView style={styles.root}>
+    <ThemedView
+      style={[styles.root, Platform.OS !== "web" && standalone && { paddingTop: insets.top }]}
+    >
       <KeyboardAvoider style={styles.root}>
         <ScrollView
           ref={scrollRef}
@@ -222,6 +230,7 @@ export default function LookupScreen({
         >
           <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
             <ScreenHeading
+              standalone={standalone}
               title={t("lookup.title")}
               subtitle={t("lookup.subtitle")}
               style={styles.header}

@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { ThemedText } from "@/components/themed-text";
@@ -105,6 +106,7 @@ export default function LocationsScreen({
   const fab = useScrollToTopFab();
   const { colors, primaryColor } = useAppTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isCompact = isMobileWidth(width);
   const pageRgb = useMemo(() => hexToRgb(colors.page), [colors.page]);
 
@@ -302,8 +304,10 @@ export default function LocationsScreen({
     </ThemedView>
   );
 
+  // A tab root: off web it draws with no native header, so the heading is the screen's top.
   const heading = (
     <ScreenHeading
+      standalone
       title={t("restaurant.locationsScreen.title")}
       subtitle={t("restaurant.locationsScreen.subtitle")}
     />
@@ -393,7 +397,10 @@ export default function LocationsScreen({
         testID="locations-row"
         style={[styles.row, sideDrawer && [styles.rowWithDrawer, { maxWidth: contentWidth }]]}
       >
-        <View style={styles.listColumn}>
+        {/* Header-less off web, the column starts under the status bar rather than at the top
+            of the display; the inset sits outside the ScrollView so the pinned filter band
+            pins below the bar instead of under it. */}
+        <View style={[styles.listColumn, !onWeb && { paddingTop: insets.top }]}>
           <ScrollView
             ref={scrollRef}
             style={styles.scroll}
