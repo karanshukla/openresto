@@ -133,6 +133,14 @@ describe("LookupScreen", () => {
     });
   });
 
+  it("offers the saved address for the email field", async () => {
+    renderWithProviders(<LookupScreen />);
+    const input = screen.getByLabelText("Email address");
+    expect(input.props.textContentType).toBe("emailAddress");
+    expect(input.props.autoComplete).toBe("email");
+    await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+  });
+
   it("looks up a booking from the form and shows the result panel beside it", async () => {
     (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
     (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
