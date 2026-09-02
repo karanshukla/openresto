@@ -661,39 +661,17 @@ describe("HomeScreen", () => {
     });
   });
 
-  describe("the native settings control", () => {
-    it("offers language and theme from the one screen the guest header never covers", async () => {
-      await onPlatform("ios", async () => {
-        renderWithProviders(<HomeScreen />);
-        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
-
-        expect(screen.queryByTestId("guest-settings-menu")).toBeNull();
-        fireEvent.press(screen.getByTestId("home-guest-settings-open"));
-        expect(screen.getByTestId("guest-settings-menu")).toBeTruthy();
-
-        // The menu opens a pane; the pane is what closes.
-        fireEvent.press(screen.getByTestId("guest-settings-appearance"));
-        fireEvent.press(screen.getByTestId("guest-settings-close"));
-        expect(screen.queryByTestId("guest-settings-dialog")).toBeNull();
-      });
-    });
-
-    it("names itself for a screen reader with the shared open-settings label", async () => {
-      await onPlatform("ios", async () => {
-        renderWithProviders(<HomeScreen />);
-        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
-        expect(screen.getByTestId("home-guest-settings-open").props.accessibilityLabel).toBe(
-          "Open settings"
-        );
-      });
-    });
-
-    it("stays off the web home page, which reaches both through the navbar", async () => {
-      await onPlatform("web", async () => {
-        renderWithProviders(<HomeScreen />);
-        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
-        expect(screen.queryByTestId("home-guest-settings-open")).toBeNull();
-      });
+  /**
+   * The hero used to carry its own copy of the settings control, which scrolled away with it.
+   * `GuestSettingsAnchor` pins the one control outside every root's scroll view instead, so
+   * this screen must draw none of its own and only keep the band clear for it.
+   */
+  it("leaves the settings control to the layout's pinned anchor", async () => {
+    await onPlatform("ios", async () => {
+      renderWithProviders(<HomeScreen />);
+      await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+      expect(screen.queryByTestId("home-guest-settings-open")).toBeNull();
+      expect(screen.queryByTestId("guest-settings-open")).toBeNull();
     });
   });
 

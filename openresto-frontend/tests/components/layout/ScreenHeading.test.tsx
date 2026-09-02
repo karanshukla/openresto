@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen } from "@testing-library/react-native";
 import { Platform } from "react-native";
 import ScreenHeading from "@/components/layout/ScreenHeading";
+import { SETTINGS_ANCHOR_SLOT } from "@/components/layout/GuestSettingsAnchor.styles";
 
 jest.mock("@/hooks/use-app-theme", () => ({
   useAppTheme: () => ({
@@ -11,15 +12,6 @@ jest.mock("@/hooks/use-app-theme", () => ({
     isDark: false,
   }),
 }));
-
-// The settings control needs the locale and theme providers; here only its presence matters.
-jest.mock("@/components/layout/GuestSettingsMenu", () => {
-  const { View } = require("react-native");
-  return {
-    __esModule: true,
-    default: ({ testID }: { testID: string }) => <View testID={testID} />,
-  };
-});
 
 const setPlatform = (os: string) =>
   Object.defineProperty(Platform, "OS", { get: () => os, configurable: true });
@@ -32,8 +24,9 @@ const heading = (standalone = false) =>
 
 /**
  * Under a native Stack header the title is already in the bar, so drawing it again put the
- * same words on the page twice. A header-less tab root has no bar, so the heading is its top
- * and takes on the settings control the bar used to carry. The subtitle has no twin anywhere.
+ * same words on the page twice. A header-less tab root has no bar, so the heading is its top —
+ * and has GuestSettingsAnchor's control pinned over its corner, which the title must clear.
+ * The subtitle has no twin anywhere.
  */
 describe("ScreenHeading", () => {
   it("carries the title and the subtitle on web, where nothing else names the page", () => {
@@ -47,7 +40,6 @@ describe("ScreenHeading", () => {
     setPlatform("ios");
     heading();
     expect(screen.queryByText("Our locations")).toBeNull();
-    expect(screen.queryByTestId("screen-heading-settings-open")).toBeNull();
   });
 
   it("keeps the subtitle off web, since no header has room for it", () => {
@@ -56,18 +48,26 @@ describe("ScreenHeading", () => {
     expect(screen.getByText("Pick a time.")).toBeTruthy();
   });
 
-  it("is the whole top of a header-less root: title, settings control and subtitle", () => {
+  it("is the whole top of a header-less root: title and subtitle", () => {
     setPlatform("ios");
     heading(true);
     expect(screen.getByText("Our locations")).toBeTruthy();
-    expect(screen.getByTestId("screen-heading-settings-open")).toBeTruthy();
     expect(screen.getByText("Pick a time.")).toBeTruthy();
   });
 
-  it("ignores standalone on web, whose navbar already carries the settings", () => {
+  it("keeps a root's title clear of the control pinned over its corner", () => {
+    setPlatform("ios");
+    heading(true);
+    expect(screen.getByText("Our locations")).toHaveStyle({
+      paddingRight: SETTINGS_ANCHOR_SLOT,
+    });
+  });
+
+  it("reserves nothing on web, where the navbar carries the settings in its own bar", () => {
     setPlatform("web");
     heading(true);
-    expect(screen.getByText("Our locations")).toBeTruthy();
-    expect(screen.queryByTestId("screen-heading-settings-open")).toBeNull();
+    expect(screen.getByText("Our locations")).not.toHaveStyle({
+      paddingRight: SETTINGS_ANCHOR_SLOT,
+    });
   });
 });

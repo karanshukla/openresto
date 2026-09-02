@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import Navbar from "@/components/layout/Navbar";
 import OfflineBanner from "@/components/layout/OfflineBanner";
 import GuestSettingsMenu from "@/components/layout/GuestSettingsMenu";
+import GuestSettingsAnchor from "@/components/layout/GuestSettingsAnchor";
 import GuestTabBar from "@/components/layout/GuestTabBar";
 import RouteTransition from "@/components/layout/RouteTransition";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -39,10 +40,10 @@ function guestHeader(): NativeStackNavigationOptions {
 /**
  * The three tab roots draw with no native header, the way the home screen always has: the tab
  * bar is the way between them, so a back arrow on one is a second navigation model laid over
- * the first and reads as a website in a wrapper. Each root carries its own title and the
- * settings control through `ScreenHeading`, and the roots are not swipeable back to one
- * another. The screens pushed over a root keep the header, since its back arrow is what
- * drives the swipe-back gesture and what the Android system back mirrors.
+ * the first and reads as a website in a wrapper. Each root carries its own title through
+ * `ScreenHeading` and the settings control through `GuestSettingsAnchor`, and the roots are
+ * not swipeable back to one another. The screens pushed over a root keep the header, since its
+ * back arrow is what drives the swipe-back gesture and what the Android system back mirrors.
  *
  * @see [layout.test.tsx](<../../tests/app/(user)/layout.test.tsx>) — pins the boundary: the
  * tab roots have no header, the detail screens pushed on top keep theirs.
@@ -96,8 +97,8 @@ export default function UserLayout() {
   }
 
   // Language and theme live in the navbar's overflow menu, which is web-only, so off web the
-  // header of every pushed screen carries the one control that opens both; the header-less
-  // tab roots carry it in their ScreenHeading instead.
+  // header of every pushed screen carries the one control that opens both; on the header-less
+  // tab roots `GuestSettingsAnchor` pins the same control over the stack instead.
   return (
     <View style={{ flex: 1 }}>
       <OfflineBanner />
@@ -130,6 +131,7 @@ export default function UserLayout() {
         />
         <Stack.Screen name="lookup" options={{ ...tabRoot(), title: t("lookup.routeTitle") }} />
       </Stack>
+      <GuestSettingsAnchor />
       <GuestTabBar />
     </View>
   );

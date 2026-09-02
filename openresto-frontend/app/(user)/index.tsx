@@ -34,7 +34,6 @@ import { styles } from "@/styles/user/index.styles";
 import { hexToRgb } from "@/utils/colors";
 import { resolveServerUrl } from "@/utils/serverUrl";
 import { Icon, type IconName } from "@/components/common/Icon";
-import GuestSettingsMenu from "@/components/layout/GuestSettingsMenu";
 
 /**
  * Hooks for the scroll-driven large-title collapse in global.css. `dataSet` is
@@ -68,13 +67,11 @@ const GRID_GAP = 18;
 /** Clearance between the status bar and the hero title where the screen has no header. */
 const HERO_TOP_GAP = 24;
 /**
- * The band the settings control occupies over the hero off web. The hero title clears the
- * whole band rather than sharing its line: at 40px the title can run a phone's full width.
+ * The band `GuestSettingsAnchor` pins the settings control in over the hero off web. The hero
+ * title clears the whole band rather than sharing its line: at 40px the title can run a
+ * phone's full width.
  */
 const HERO_SETTINGS_ROW = 40;
-/** The settings control's distance from the hero's trailing edge, outside any display cutout. */
-const HERO_SETTINGS_EDGE = 12;
-
 /** Bloom diameter as a fraction of the hero's width, matching the web gradient's extent. */
 const HERO_BLOOM_SPAN = 0.9;
 /** Concentric discs standing in for one radial stop's falloff, as fractions of that span. */
@@ -652,31 +649,6 @@ export default function HomeScreen() {
                     );
                   })
                 )}
-              </View>
-            )}
-
-            {/*
-              The guest stack's `headerRight` settings control never reaches this screen: it
-              is the one route that draws with `headerShown: false`, so off web the first
-              screen a visitor lands on would otherwise offer no way to language or theme.
-            */}
-            {Platform.OS !== "web" && (
-              <View
-                style={[
-                  styles.heroSettings,
-                  {
-                    top: insets.top,
-                    right: insets.right + HERO_SETTINGS_EDGE,
-                    height: HERO_SETTINGS_ROW,
-                  },
-                ]}
-              >
-                <GuestSettingsMenu
-                  color={hasHero ? "rgba(255,255,255,0.92)" : mutedColor}
-                  backgroundColor={hasHero ? "rgba(0,0,0,0.35)" : accentSoft}
-                  variant="tinted"
-                  testID="home-guest-settings-open"
-                />
               </View>
             )}
           </View>

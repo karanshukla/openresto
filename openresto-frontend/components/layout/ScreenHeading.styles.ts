@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
+import { SETTINGS_ANCHOR_SLOT } from "./GuestSettingsAnchor.styles";
 
 export const styles = StyleSheet.create({
   header: {
@@ -12,14 +13,8 @@ export const styles = StyleSheet.create({
   subtitle: {
     ...theme.typography.body,
   },
-  /** The settings control shares the title's line on a header-less root. */
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-  },
-  titleGrow: {
-    flex: 1,
-    minWidth: 0,
+  /** Keeps a root's title out from under the settings control pinned over its top-right. */
+  titleClearsSettings: {
+    paddingRight: SETTINGS_ANCHOR_SLOT,
   },
 });
