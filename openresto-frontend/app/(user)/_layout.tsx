@@ -24,16 +24,26 @@ import { useAppTheme } from "@/hooks/use-app-theme";
  * The header's hairline (iOS) / elevation (Android) lands straight on the top border of the
  * first card every guest screen renders, reading as a double rule.
  *
- * `headerBackButtonDisplayMode` is iOS-only (`ScreenStackHeaderConfigProps`) — Android's back
- * affordance is already a bare arrow with no previous-screen title to crowd it.
+ * `headerBackButtonDisplayMode` and `headerLargeTitle` are both iOS-only
+ * (`ScreenStackHeaderConfigProps`): Android's back affordance is already a bare arrow with no
+ * previous-screen title to crowd it, and Material has no collapsing large title to ask for.
+ * The large title only pays off where the screen's own ScrollView reports its offset to the
+ * header — `contentInsetAdjustmentBehavior="automatic"` — which is why the screens that take
+ * this header say so (`hasNativeHeader` on `LocationsScreen`) rather than assuming it.
  *
  * @see [layout.test.tsx](<../../tests/app/(user)/layout.test.tsx>) — pins that the minimal
- * back button reaches the header on iOS and is left off Android.
+ * back button and the large title reach the header on iOS and are left off Android.
  */
 function guestHeader(): NativeStackNavigationOptions {
   return {
     headerShadowVisible: false,
-    ...(Platform.OS === "ios" ? { headerBackButtonDisplayMode: "minimal" as const } : {}),
+    ...(Platform.OS === "ios"
+      ? {
+          headerBackButtonDisplayMode: "minimal" as const,
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
+        }
+      : {}),
   };
 }
 

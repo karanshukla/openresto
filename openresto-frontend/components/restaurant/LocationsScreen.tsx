@@ -81,10 +81,17 @@ export default function LocationsScreen({
   highlightId,
   initialTime,
   initialSeats,
+  hasNativeHeader = false,
 }: {
   highlightId?: number;
   initialTime?: string;
   initialSeats?: number;
+  /**
+   * True on the route pushed over a tab root, where a native stack header sits above this
+   * screen; false on the header-less `locations` root. The two need opposite treatment of the
+   * top inset, and only the header case can collapse an iOS large title (#428).
+   */
+  hasNativeHeader?: boolean;
 }) {
   const { t } = useTranslation();
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>([]);
@@ -390,6 +397,16 @@ export default function LocationsScreen({
   );
 
   const onWeb = Platform.OS === "web";
+  /**
+   * Who owns the space above the list. A native header already insets its own content, so the
+   * header case hands the job to the scroll view (`contentInsetAdjustmentBehavior`), which is
+   * also what lets iOS collapse the large title as the list moves; the header-less root has
+   * nothing above it and pads the status bar itself. Doing both at once double-pads.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins each route taking exactly one of the two.
+   */
+  const headerOwnsInset = !onWeb && hasNativeHeader;
 
   return (
     <ThemedView style={styles.root}>
@@ -400,7 +417,10 @@ export default function LocationsScreen({
         {/* Header-less off web, the column starts under the status bar rather than at the top
             of the display; the inset sits outside the ScrollView so the pinned filter band
             pins below the bar instead of under it. */}
-        <View style={[styles.listColumn, !onWeb && { paddingTop: insets.top }]}>
+        <View
+          testID="locations-list-column"
+          style={[styles.listColumn, !onWeb && !headerOwnsInset && { paddingTop: insets.top }]}
+        >
           <ScrollView
             ref={scrollRef}
             style={styles.scroll}
@@ -408,6 +428,7 @@ export default function LocationsScreen({
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            contentInsetAdjustmentBehavior={headerOwnsInset ? "automatic" : undefined}
             stickyHeaderIndices={!onWeb && restaurants.length > 0 ? [1] : undefined}
             refreshControl={
               onWeb ? undefined : (

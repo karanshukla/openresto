@@ -32,6 +32,15 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
+// jsdom reports no safe area, so the top inset has to be forced to a real value for the tests
+// that ask which of the header and the screen is padding it. Zero by default leaves every
+// other test in this file measuring exactly what it measured before.
+const mockInsets = { top: 0, bottom: 0, left: 0, right: 0 };
+jest.mock("react-native-safe-area-context", () => ({
+  ...jest.requireActual("react-native-safe-area-context"),
+  useSafeAreaInsets: () => mockInsets,
+}));
+
 jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn(),
 }));
@@ -823,5 +832,59 @@ describe("splitFits", () => {
   it("keeps a tablet in portrait on the sheet even though it clears the phone breakpoint", () => {
     expect(isMobileWidth(800)).toBe(false);
     expect(splitFits(800)).toBe(false);
+  });
+});
+
+/**
+ * Issue #428. The screen renders under a native header on `/locations/[id]` and under nothing
+ * at all on the `/locations` tab root, and the space above the list has to be claimed once:
+ * by the scroll view when a header is there to collapse its large title against, by the
+ * column itself when there is not. Both at once double-pads the top of the list.
+ */
+describe("LocationsScreen top inset", () => {
+  const STATUS_BAR = 47;
+
+  beforeEach(() => {
+    mockInsets.top = STATUS_BAR;
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+  });
+
+  afterEach(() => {
+    mockInsets.top = 0;
+  });
+
+  const columnPadding = () =>
+    StyleSheet.flatten(screen.getByTestId("locations-list-column").props.style).paddingTop;
+
+  it("pads the status bar itself on the header-less tab root", async () => {
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    expect(columnPadding()).toBe(STATUS_BAR);
+    expect(
+      screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior
+    ).toBeUndefined();
+  });
+
+  it("hands the inset to the scroll view under a native header", async () => {
+    renderWithProviders(<LocationsScreen hasNativeHeader />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    expect(columnPadding()).toBeUndefined();
+    expect(screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior).toBe(
+      "automatic"
+    );
+  });
+
+  it("leaves both to the browser on web, header or not", async () => {
+    await onWeb(async () => {
+      renderWithProviders(<LocationsScreen hasNativeHeader />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+      expect(columnPadding()).toBeUndefined();
+      expect(
+        screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior
+      ).toBeUndefined();
+    });
   });
 });

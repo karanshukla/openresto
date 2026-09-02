@@ -162,3 +162,35 @@ describe("UserLayout back button", () => {
     expect(screenOptions).not.toHaveProperty("headerBackButtonDisplayMode");
   });
 });
+
+/**
+ * Issue #428. The large title is the cheapest cue that a pushed screen is native, and it is
+ * iOS-only — Material has no collapsing title, so asking Android for one is a no-op that
+ * would still read as an intent the platform ignores.
+ */
+describe("UserLayout large titles", () => {
+  it("gives pushed iOS screens a collapsing large title with no rule under it", () => {
+    const { screenOptions } = renderOn("ios");
+
+    expect(screenOptions).toMatchObject({
+      headerLargeTitle: true,
+      headerLargeTitleShadowVisible: false,
+    });
+  });
+
+  it("leaves the iOS-only large title off Android", () => {
+    const { screenOptions } = renderOn("android");
+
+    expect(screenOptions).not.toHaveProperty("headerLargeTitle");
+  });
+
+  // The tab roots draw their own ScreenHeading under no header at all, so the large title
+  // must not reach them — headerShown: false is what keeps the two models from stacking.
+  it("does not reach the header-less tab roots", () => {
+    const { optionsFor } = renderOn("ios");
+
+    expect(optionsFor("index")).toMatchObject({ headerShown: false });
+    expect(optionsFor("lookup")).toMatchObject({ headerShown: false });
+    expect(optionsFor("locations/index")).toMatchObject({ headerShown: false });
+  });
+});
