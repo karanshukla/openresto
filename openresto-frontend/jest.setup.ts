@@ -69,3 +69,12 @@ jest.mock("@react-native-community/datetimepicker", () => {
     default: (props: Record<string, unknown>) => React.createElement(View, props),
   };
 });
+
+// Home-screen quick actions (#431) are a native module with no JS host under Jest, and its own
+// web stub is not what the default (iOS) platform resolves. Inert here; the service's own tests
+// replace this with a mock that can fire a launch.
+jest.mock("expo-quick-actions", () => ({
+  initial: undefined,
+  setItems: jest.fn(() => Promise.resolve()),
+  addListener: jest.fn(() => ({ remove: jest.fn() })),
+}));

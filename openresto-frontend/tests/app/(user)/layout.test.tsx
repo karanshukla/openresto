@@ -6,6 +6,7 @@ import { Platform } from "react-native";
 // factory is allowed to close over them.
 const mockScreenOptions: Record<string, unknown>[] = [];
 const mockScreens: { name: string; options: Record<string, unknown> }[] = [];
+const mockPush = jest.fn();
 
 // The layout's offline strip takes the top safe-area inset, and the hook throws outside a
 // provider — the app mounts one in app/_layout.tsx, these tests render the layout alone.
@@ -25,6 +26,10 @@ jest.mock("@/context/BrandContext", () => {
   const brand = { primaryColor: "#0a7ea4", appName: "Open Resto" };
   return { useBrand: () => brand };
 });
+
+jest.mock("@/services/quickActions", () => ({
+  registerQuickActions: jest.fn(() => () => {}),
+}));
 
 jest.mock("@/api/admin", () => ({
   getAdminOverview: jest.fn(),
@@ -53,7 +58,7 @@ jest.mock("expo-router", () => {
   return {
     Slot: () => null,
     Stack,
-    useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+    useRouter: () => ({ push: mockPush, replace: jest.fn() }),
     usePathname: () => "/",
     useSegments: () => ["(user)"],
   };
@@ -80,6 +85,11 @@ function renderOn(os: "ios" | "android") {
     optionsFor: (name: string) => mockScreens.find((screen) => screen.name === name)?.options,
   };
 }
+
+beforeEach(() => {
+  mockPush.mockClear();
+  jest.mocked(require("@/services/quickActions").registerQuickActions).mockClear();
+});
 
 afterEach(() => {
   Object.defineProperty(Platform, "OS", { value: originalOS, configurable: true });
@@ -160,6 +170,33 @@ describe("UserLayout back button", () => {
     const { screenOptions } = renderOn("android");
 
     expect(screenOptions).not.toHaveProperty("headerBackButtonDisplayMode");
+  });
+});
+
+/**
+ * Issue #431. Long-pressing the app icon is the returning guest's shortcut back to their
+ * booking. Registered at runtime, not declared in the config plugin, so the label follows the
+ * language the guest picked instead of the one the publisher built in.
+ */
+describe("UserLayout quick actions", () => {
+  const { registerQuickActions } = require("@/services/quickActions");
+
+  // The same i18n key GuestTabBar gives the tab, so the shortcut and the tab cannot end up
+  // naming the same destination differently.
+  it("offers the booking lookup under the label the tab bar uses", () => {
+    renderOn("ios");
+
+    expect(registerQuickActions).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "My Bookings" })
+    );
+  });
+
+  it("sends a launch from the action to the lookup screen", () => {
+    renderOn("ios");
+
+    registerQuickActions.mock.calls.at(-1)[0].onSelect();
+
+    expect(mockPush).toHaveBeenCalledWith("/lookup");
   });
 });
 
