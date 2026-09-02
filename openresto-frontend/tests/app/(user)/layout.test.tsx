@@ -122,15 +122,24 @@ describe("UserLayout tab roots", () => {
     }
   );
 
-  it.each(["locations/[id]", "booking-confirmation/[bookingRef]"])(
-    "keeps the header on the pushed %s detail screen",
-    (name) => {
-      const { optionsFor } = renderOn("ios");
+  // The confirmation is LookupScreen with a ref prefilled, not a detail over the booking
+  // form: it draws the way /lookup does, and there is nothing behind it worth swiping to —
+  // the form would re-offer a table the diner has already booked.
+  it("draws the booking confirmation the way its own lookup root draws", () => {
+    const { optionsFor } = renderOn("ios");
 
-      expect(optionsFor(name)).not.toHaveProperty("headerShown");
-      expect(optionsFor(name)).not.toHaveProperty("gestureEnabled");
-    }
-  );
+    expect(optionsFor("booking-confirmation/[bookingRef]")).toMatchObject({
+      headerShown: false,
+      gestureEnabled: false,
+    });
+  });
+
+  it("keeps the header on the pushed locations/[id] detail screen", () => {
+    const { optionsFor } = renderOn("ios");
+
+    expect(optionsFor("locations/[id]")).not.toHaveProperty("headerShown");
+    expect(optionsFor("locations/[id]")).not.toHaveProperty("gestureEnabled");
+  });
 
   it("holds on Android too, where the system back covers the roots", () => {
     const { optionsFor } = renderOn("android");

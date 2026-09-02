@@ -154,6 +154,13 @@ export function buildExpoConfig(
       "expo-web-browser",
       "expo-localization",
       [
+        "expo-notifications",
+        {
+          color: primaryColor,
+          ...(androidForeground ? { icon: androidForeground } : {}),
+        },
+      ],
+      [
         "expo-splash-screen",
         {
           image: androidForeground ?? "./assets/images/splash-icon.png",

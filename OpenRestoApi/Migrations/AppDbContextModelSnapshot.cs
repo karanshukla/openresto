@@ -503,6 +503,55 @@ namespace OpenRestoApi.Migrations
                     b.ToTable("EmailSettings");
                 });
 
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.GuestPushSubscription", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Auth")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("LastReminderLeadHours")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastReminderSentAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("P256dh")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId", "Endpoint")
+                        .IsUnique();
+
+                    b.ToTable("GuestPushSubscriptions");
+                });
+
             modelBuilder.Entity("OpenRestoApi.Core.Domain.NativeClientStat", b =>
                 {
                     b.Property<int>("Id")
@@ -834,6 +883,17 @@ namespace OpenRestoApi.Migrations
                     b.Navigation("Table");
 
                     b.Navigation("TableGroup");
+                });
+
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.GuestPushSubscription", b =>
+                {
+                    b.HasOne("OpenRestoApi.Core.Domain.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
                 });
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.Section", b =>

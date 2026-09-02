@@ -40,6 +40,10 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             repositoryUrl: data.repositoryUrl || undefined,
             privacyPolicyUrl: data.privacyPolicyUrl || undefined,
             minimumAppVersion: data.minimumAppVersion || undefined,
+            wallet: data.wallet
+              ? { apple: Boolean(data.wallet.apple), google: Boolean(data.wallet.google) }
+              : undefined,
+            webPushPublicKey: data.webPushPublicKey || undefined,
           });
         }
       })

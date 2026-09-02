@@ -73,7 +73,8 @@ public class NativeAppStatusServiceTests
         BrandSettings? brand = null,
         string? websiteUrl = PublicUrl,
         IWellKnownProbe? probe = null,
-        IReadOnlyList<NativeClientSummary>? clients = null)
+        IReadOnlyList<NativeClientSummary>? clients = null,
+        IWalletCredentials? wallet = null)
     {
         // A fresh store per call: a test that asks for status twice is comparing two different
         // brand records, not appending a second one to the same.
@@ -91,7 +92,8 @@ public class NativeAppStatusServiceTests
             new BrandService(new BrandSettingsRepository(db), Configuration(websiteUrl)),
             stats.Object,
             probe ?? new FakeProbe(),
-            new FixedClock());
+            new FixedClock(),
+            wallet);
 
         return await service.GetStatusAsync();
     }
@@ -108,7 +110,7 @@ public class NativeAppStatusServiceTests
     };
 
     [Fact]
-    public async Task ReturnsTheFiveChecksInAFixedOrder()
+    public async Task ReturnsTheSevenChecksInAFixedOrder()
     {
         NativeAppStatusResponse status = await StatusAsync(Ready());
 
@@ -119,9 +121,45 @@ public class NativeAppStatusServiceTests
                 NativeAppChecks.PrivacyPolicy,
                 NativeAppChecks.AppleAppSiteAssociation,
                 NativeAppChecks.AndroidAssetLinks,
+                NativeAppChecks.AppleWallet,
+                NativeAppChecks.GoogleWallet,
             ],
             status.Checks.Select(c => c.Id));
         Assert.All(status.Checks, c => Assert.False(string.IsNullOrWhiteSpace(c.Detail)));
+    }
+
+    [Fact]
+    public async Task WalletChecks_SkipWhenNoIssuerIsConfigured()
+    {
+        NativeAppStatusResponse status = await StatusAsync(Ready());
+
+        Assert.Equal(NativeAppChecks.Skip, Check(status, NativeAppChecks.AppleWallet).Status);
+        Assert.Equal(NativeAppChecks.Skip, Check(status, NativeAppChecks.GoogleWallet).Status);
+
+        // Configuring one platform leaves the other skipped: they are independent issuers.
+        NativeAppStatusResponse appleOnly = await StatusAsync(
+            Ready(), wallet: new WalletTestCredentials.FakeWalletCredentials(WalletTestCredentials.AppleSigner(), null));
+        Assert.Equal(NativeAppChecks.Pass, Check(appleOnly, NativeAppChecks.AppleWallet).Status);
+        Assert.Equal(NativeAppChecks.Skip, Check(appleOnly, NativeAppChecks.GoogleWallet).Status);
+    }
+
+    [Fact]
+    public async Task WalletChecks_PassForAConfiguredIssuer()
+    {
+        NativeAppStatusResponse status = await StatusAsync(
+            Ready(),
+            wallet: new WalletTestCredentials.FakeWalletCredentials(
+                WalletTestCredentials.AppleSigner(), WalletTestCredentials.GoogleIssuer()));
+
+        NativeAppCheckDto apple = Check(status, NativeAppChecks.AppleWallet);
+        Assert.Equal(NativeAppChecks.Pass, apple.Status);
+        Assert.Contains(WalletTestCredentials.PassTypeIdentifier, apple.Detail, StringComparison.Ordinal);
+        Assert.Contains(WalletTestCredentials.TeamIdentifier, apple.Detail, StringComparison.Ordinal);
+
+        NativeAppCheckDto google = Check(status, NativeAppChecks.GoogleWallet);
+        Assert.Equal(NativeAppChecks.Pass, google.Status);
+        Assert.Contains(WalletTestCredentials.GoogleIssuerId, google.Detail, StringComparison.Ordinal);
+        Assert.Contains(WalletTestCredentials.GoogleServiceAccountEmail, google.Detail, StringComparison.Ordinal);
     }
 
     [Fact]

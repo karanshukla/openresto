@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<EmailFailure> EmailFailures { get; set; } = null!;
     public DbSet<AdminNotification> AdminNotifications { get; set; } = null!;
     public DbSet<AdminPushSubscription> AdminPushSubscriptions { get; set; } = null!;
+    public DbSet<GuestPushSubscription> GuestPushSubscriptions { get; set; } = null!;
     public DbSet<AdminAuditEntry> AdminAuditEntries { get; set; } = null!;
     public DbSet<AdminApiKey> AdminApiKeys { get; set; } = null!;
     public DbSet<NativeClientStat> NativeClientStats { get; set; } = null!;
@@ -193,6 +194,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             s.HasOne(x => x.Restaurant).WithMany().HasForeignKey(x => x.RestaurantId).OnDelete(DeleteBehavior.Cascade);
             s.HasIndex(x => new { x.Endpoint, x.RestaurantId }).IsUnique();
             s.HasIndex(x => x.RestaurantId);
+        });
+
+        modelBuilder.Entity<GuestPushSubscription>(g =>
+        {
+            g.HasKey(x => x.Id);
+            g.HasOne(x => x.Booking).WithMany().HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.Cascade);
+            g.Property(x => x.Channel).IsRequired().HasMaxLength(GuestPushFields.MaxChannelLength);
+            g.Property(x => x.Endpoint).IsRequired().HasMaxLength(GuestPushFields.MaxEndpointLength);
+            g.Property(x => x.P256dh).HasMaxLength(GuestPushFields.MaxKeyLength);
+            g.Property(x => x.Auth).HasMaxLength(GuestPushFields.MaxKeyLength);
+            g.Property(x => x.Locale).IsRequired().HasMaxLength(GuestPushFields.MaxLocaleLength);
+            g.HasIndex(x => new { x.BookingId, x.Endpoint }).IsUnique();
         });
     }
 }

@@ -37,7 +37,9 @@ import { styles } from "@/styles/user/lookup.styles";
  * that slides in beside it (a bottom sheet on compact widths), the way BookingDrawer opens
  * beside the locations list. Booking confirmation is a state of this screen rather than a
  * screen of its own: /booking-confirmation/[bookingRef] mounts it with `justBooked` and the
- * ref/email prefilled instead of rendering an independent page.
+ * ref/email prefilled instead of rendering an independent page. `justBooked` reaches only the
+ * result panel's own wording and the arrival haptic — the page around it is the same page on
+ * both routes, on web and off it, which is the point of there being one screen.
  */
 export default function LookupScreen({
   initialRef,
@@ -80,10 +82,6 @@ export default function LookupScreen({
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const online = useOnline();
-  // /lookup is a tab root and draws with no native header off web; /booking-confirmation is
-  // pushed on top of one and keeps the bar, so only the root takes the status-bar inset and
-  // carries its own title.
-  const standalone = !justBooked;
   const brand = useBrand();
   const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
@@ -218,7 +216,9 @@ export default function LookupScreen({
 
   return (
     <ThemedView
-      style={[styles.root, Platform.OS !== "web" && standalone && { paddingTop: insets.top }]}
+      // Neither of this screen's two routes draws a native header off web, so both take the
+      // status-bar inset themselves and both carry their own title.
+      style={[styles.root, Platform.OS !== "web" && { paddingTop: insets.top }]}
     >
       <KeyboardAvoider style={styles.root}>
         <ScrollView
@@ -230,7 +230,7 @@ export default function LookupScreen({
         >
           <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
             <ScreenHeading
-              standalone={standalone}
+              standalone
               title={t("lookup.title")}
               subtitle={t("lookup.subtitle")}
               style={styles.header}

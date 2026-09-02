@@ -279,4 +279,42 @@ describe("BookingResultPanel", () => {
     const button = screen.getByLabelText("Cancel this booking");
     expect(button.props.accessibilityState.busy).toBe(true);
   });
+
+  it("offers wallet passes only for an upcoming booking on a server that issues them", async () => {
+    const brandFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        appName: "Open Resto",
+        primaryColor: "#0a7ea4",
+        wallet: { apple: true, google: true },
+      }),
+    });
+    (global.fetch as jest.Mock) = brandFetch;
+
+    renderWithProviders(
+      <BookingResultPanel
+        booking={mockBooking}
+        restaurant={mockRestaurant}
+        compact={false}
+        cancelling={false}
+        onCancelPress={jest.fn()}
+      />
+    );
+    expect(await screen.findByTestId("wallet-actions")).toBeTruthy();
+    expect(screen.queryByTestId("reminder-toggle")).toBeNull();
+
+    screen.unmount();
+    renderWithProviders(
+      <BookingResultPanel
+        booking={{ ...mockBooking, isCancelled: true }}
+        restaurant={mockRestaurant}
+        compact={false}
+        cancelling={false}
+        onCancelPress={jest.fn()}
+      />
+    );
+    expect(await screen.findByText("Booking Cancelled")).toBeTruthy();
+    await waitFor(() => expect(brandFetch.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(screen.queryByTestId("wallet-actions")).toBeNull();
+  });
 });

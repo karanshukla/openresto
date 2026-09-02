@@ -172,4 +172,25 @@ describe("default export", () => {
         .name
     ).toBe("Open Resto");
   });
+
+  it("configures expo-notifications with the brand colour and the adaptive foreground as its icon", () => {
+    const iconDir = mkdtempSync(join(tmpdir(), "openresto-notif-"));
+    try {
+      const bare = buildExpoConfig({}, null, iconDir);
+      const barePlugin = (bare.plugins ?? []).find(
+        (p) => Array.isArray(p) && p[0] === "expo-notifications"
+      ) as [string, { color: string; icon?: string }];
+      expect(barePlugin[1].icon).toBeUndefined();
+
+      writeFileSync(join(iconDir, ANDROID_FOREGROUND_FILE), "png");
+      const withIcon = buildExpoConfig({}, nativeConfig, iconDir);
+      const plugin = (withIcon.plugins ?? []).find(
+        (p) => Array.isArray(p) && p[0] === "expo-notifications"
+      ) as [string, { color: string; icon?: string }];
+      expect(plugin[1].color).toBe("#aa3311");
+      expect(plugin[1].icon).toBe(join(iconDir, ANDROID_FOREGROUND_FILE));
+    } finally {
+      rmSync(iconDir, { recursive: true, force: true });
+    }
+  });
 });

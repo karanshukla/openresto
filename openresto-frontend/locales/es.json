@@ -153,6 +153,25 @@
       "daysBanner": "Solo sin reserva los {{days}} - la reserva online no está disponible esos días.",
       "locationBody": "Este local no acepta reservas online. Las mesas se asignan por orden de llegada. Solo tienes que pasarte durante el horario de apertura.",
       "locationTitle": "Solo sin reserva"
+    },
+    "reminders": {
+      "heading": "RECORDATORIOS",
+      "offButton": "Recordármelo",
+      "onButton": "Recordatorios activados",
+      "turnOnLabel": "Activar los recordatorios de reserva en este dispositivo",
+      "turnOffLabel": "Desactivar los recordatorios de reserva en este dispositivo",
+      "offHint": "Recibe una notificación en este dispositivo el día anterior y poco antes de tu mesa.",
+      "onHint": "Este dispositivo recibirá un aviso el día anterior y poco antes de tu mesa.",
+      "denied": "Las notificaciones están desactivadas para esta aplicación. Permítelas en los ajustes del dispositivo para recibir recordatorios.",
+      "failed": "No se pudieron activar los recordatorios. Comprueba tu conexión e inténtalo de nuevo."
+    },
+    "wallet": {
+      "heading": "AÑADIR A LA CARTERA",
+      "appleButton": "Apple Wallet",
+      "googleButton": "Google Wallet",
+      "appleA11y": "Añadir esta reserva a Apple Wallet",
+      "googleA11y": "Guardar esta reserva en Google Wallet",
+      "failed": "No se pudo preparar el pase. Comprueba tu conexión e inténtalo de nuevo."
     }
   },
   "common": {
@@ -1853,6 +1872,14 @@
           "androidAssetLinks": {
             "label": "Archivo assetlinks.json servido",
             "fix": "Ejecuta native:init con --android-fingerprint y copia native/.well-known/ en la carpeta well-known junto a tu archivo compose."
+          },
+          "appleWallet": {
+            "label": "Pases de Apple Wallet",
+            "fix": "Opcional. Define las variables Wallet__Apple__* (Pass Type ID, Team ID, certificado .p12, certificado WWDR) para ofrecer un pase de Apple Wallet en cada reserva."
+          },
+          "googleWallet": {
+            "label": "Pases de Google Wallet",
+            "fix": "Opcional. Define Wallet__Google__IssuerId y Wallet__Google__ServiceAccountKeyPath para ofrecer un pase de Google Wallet en cada reserva."
           }
         },
         "clients": {

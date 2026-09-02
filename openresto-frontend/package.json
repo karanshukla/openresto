@@ -30,6 +30,7 @@
     "expo": "~57.0.19",
     "expo-asset": "~57.0.7",
     "expo-constants": "~57.0.7",
+    "expo-device": "~57.0.1",
     "expo-file-system": "~57.0.5",
     "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.2",
@@ -37,6 +38,7 @@
     "expo-linking": "~57.0.9",
     "expo-localization": "~57.0.1",
     "expo-network": "~57.0.1",
+    "expo-notifications": "~57.0.16",
     "expo-router": "~57.0.18",
     "expo-sharing": "~57.0.15",
     "expo-splash-screen": "~57.0.5",
@@ -82,6 +84,7 @@
       "\\.css$": "<rootDir>/jest-mocks/styleMock.js",
       "^@/components/common/AnimatedAccordion$": "<rootDir>/jest-mocks/AnimatedAccordion.js",
       "^@/services/storage$": "<rootDir>/services/storage.ts",
+      "^@/services/pushRegistration$": "<rootDir>/services/pushRegistration.ts",
       "^@/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [

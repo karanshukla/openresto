@@ -23,10 +23,6 @@ export const styles = StyleSheet.create({
   heroBloomRing: {
     position: "absolute",
   },
-  heroSettings: {
-    position: "absolute",
-    justifyContent: "center",
-  },
   /**
    * Legibility for the strings that sit directly on the header photo off web, where the web
    * branch's two-layer CSS `textShadow` has no equivalent — React Native takes one shadow.

@@ -153,6 +153,25 @@
       "daysBanner": "Walk-ins only on {{days}} - online booking isn't available on those days.",
       "locationBody": "This location doesn't take online bookings. Tables are first come, first served. Just drop by during opening hours.",
       "locationTitle": "Walk-ins only"
+    },
+    "reminders": {
+      "heading": "REMINDERS",
+      "offButton": "Remind me",
+      "onButton": "Reminders on",
+      "turnOnLabel": "Turn on booking reminders on this device",
+      "turnOffLabel": "Turn off booking reminders on this device",
+      "offHint": "Get a notification on this device the day before and shortly before your table.",
+      "onHint": "This device will be notified the day before and shortly before your table.",
+      "denied": "Notifications are turned off for this app. Allow them in your device settings to get reminders.",
+      "failed": "Couldn't turn on reminders. Check your connection and try again."
+    },
+    "wallet": {
+      "heading": "ADD TO WALLET",
+      "appleButton": "Apple Wallet",
+      "googleButton": "Google Wallet",
+      "appleA11y": "Add this booking to Apple Wallet",
+      "googleA11y": "Save this booking to Google Wallet",
+      "failed": "Couldn't prepare the pass. Check your connection and try again."
     }
   },
   "common": {
@@ -1853,6 +1872,14 @@
           "androidAssetLinks": {
             "label": "Android asset links file served",
             "fix": "Run native:init with --android-fingerprint, then copy native/.well-known/ into the well-known folder beside your compose file."
+          },
+          "appleWallet": {
+            "label": "Apple Wallet passes",
+            "fix": "Optional. Set the Wallet__Apple__* variables (Pass Type ID, Team ID, .p12 certificate, WWDR certificate) to offer an Add to Apple Wallet pass on every booking."
+          },
+          "googleWallet": {
+            "label": "Google Wallet passes",
+            "fix": "Optional. Set Wallet__Google__IssuerId and Wallet__Google__ServiceAccountKeyPath to offer a Save to Google Wallet pass on every booking."
           }
         },
         "clients": {

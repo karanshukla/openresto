@@ -19,7 +19,11 @@ public class BookingRefEndpointRateLimitTests(TestWebAppFactory factory) : IClas
     private static readonly string[] _byRefGuestActions =
     [
         nameof(BookingsController.GetBookingByRef),
-        nameof(BookingsController.CancelBookingByRef)
+        nameof(BookingsController.CancelBookingByRef),
+        nameof(BookingsController.SubscribeReminders),
+        nameof(BookingsController.UnsubscribeReminders),
+        nameof(BookingsController.GetAppleWalletPass),
+        nameof(BookingsController.GetGoogleWalletLink)
     ];
 
     private static IEnumerable<MethodInfo> ControllerActions() =>

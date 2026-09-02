@@ -27,7 +27,7 @@ public class NativeAppController(NativeAppStatusService statusService) : Control
     /// The readiness checklist, the configured minimum app version, and aggregate use per native
     /// build. Read-only: nothing here mutates the deployment.
     /// <seealso>NativeAppControllerTests.Status_WithoutAuth_Returns401</seealso>
-    /// <seealso>NativeAppControllerTests.Status_WithAdminJwt_ReturnsTheFiveChecks</seealso>
+    /// <seealso>NativeAppControllerTests.Status_WithAdminJwt_ReturnsTheSevenChecks</seealso>
     /// <seealso>NativeAppControllerTests.Status_WithABookingsOnlyKey_Returns403</seealso>
     /// <seealso>NativeAppControllerTests.Status_WithABrandReadKey_Returns200</seealso>
     /// </summary>

@@ -64,7 +64,7 @@ public class NativeAppControllerTests(TestWebAppFactory factory) : IClassFixture
     }
 
     [Fact]
-    public async Task Status_WithAdminJwt_ReturnsTheFiveChecks()
+    public async Task Status_WithAdminJwt_ReturnsTheSevenChecks()
     {
         HttpResponseMessage response = await AuthenticatedClient().GetAsync(StatusPath);
 
@@ -78,6 +78,8 @@ public class NativeAppControllerTests(TestWebAppFactory factory) : IClassFixture
                 NativeAppChecks.PrivacyPolicy,
                 NativeAppChecks.AppleAppSiteAssociation,
                 NativeAppChecks.AndroidAssetLinks,
+                NativeAppChecks.AppleWallet,
+                NativeAppChecks.GoogleWallet,
             ],
             body.GetProperty("checks").EnumerateArray().Select(c => c.GetProperty("id").GetString()));
         Assert.All(

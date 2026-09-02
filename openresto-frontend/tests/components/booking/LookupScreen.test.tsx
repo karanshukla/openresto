@@ -88,12 +88,9 @@ const scrollEvent = (y: number) => ({
   },
 });
 
-/**
- * The screen's own heading is the subtitle off web: the native Stack header already carries
- * "Find my booking", so ScreenHeading drops the title rather than saying it twice. Jest runs
- * as ios, so asserting the title here would assert the web branch on a native render.
- */
+/** The subtitle, which the screen carries on both its routes and in both branches. */
 const IDLE_SCREEN = "Enter your booking reference and email to look up your reservation.";
+const PAGE_TITLE = "Find my booking";
 
 describe("LookupScreen", () => {
   beforeEach(() => {
@@ -108,6 +105,32 @@ describe("LookupScreen", () => {
     expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+  });
+
+  /**
+   * Booking confirmation is a state of this screen, not a page of its own, and off web
+   * neither of its two routes draws a native header — so the page names itself the same way
+   * on both, which is what it has always looked like on web under one navbar. A title that
+   * appeared on only one of them is how the confirmation started reading as its own screen.
+   */
+  describe("the page's own title", () => {
+    it("names the page on the lookup route", async () => {
+      renderWithProviders(<LookupScreen />);
+      expect(screen.getByText(PAGE_TITLE)).toBeTruthy();
+      await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+    });
+
+    it("names it identically on a booking confirmation", async () => {
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+
+      renderWithProviders(
+        <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
+      );
+
+      await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+      expect(screen.getByText(PAGE_TITLE)).toBeTruthy();
+    });
   });
 
   it("looks up a booking from the form and shows the result panel beside it", async () => {

@@ -12,6 +12,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.HoldPolicyServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.NotificationServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.BookingNotificationServiceTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Services.WalletPassServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.RestaurantManagementServiceTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.WalkInTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Services.TableAutoAssignerTests")]
@@ -21,6 +22,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
     [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerEmailTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerLookupTests")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Integration.RepositoryTests")]
+    [OnlyAccessibleBy("OpenRestoApi.Tests.Services.GuestReminderServiceTests")]
     [ExternalAccessAllowed]
     internal class BookingRepository(AppDbContext db) : IBookingRepository
     {

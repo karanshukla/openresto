@@ -153,6 +153,25 @@
       "daysBanner": "Sans réservation uniquement le {{days}} - la réservation en ligne n'est pas disponible ces jours-là.",
       "locationBody": "Cet établissement n'accepte pas les réservations en ligne. Les tables sont attribuées dans l'ordre d'arrivée. Passez simplement pendant les heures d'ouverture.",
       "locationTitle": "Sans réservation uniquement"
+    },
+    "reminders": {
+      "heading": "RAPPELS",
+      "offButton": "Me rappeler",
+      "onButton": "Rappels activés",
+      "turnOnLabel": "Activer les rappels de réservation sur cet appareil",
+      "turnOffLabel": "Désactiver les rappels de réservation sur cet appareil",
+      "offHint": "Recevez une notification sur cet appareil la veille et peu avant votre table.",
+      "onHint": "Cet appareil sera notifié la veille et peu avant votre table.",
+      "denied": "Les notifications sont désactivées pour cette application. Autorisez-les dans les réglages de l'appareil pour recevoir des rappels.",
+      "failed": "Impossible d'activer les rappels. Vérifiez votre connexion et réessayez."
+    },
+    "wallet": {
+      "heading": "AJOUTER AU PORTEFEUILLE",
+      "appleButton": "Apple Wallet",
+      "googleButton": "Google Wallet",
+      "appleA11y": "Ajouter cette réservation à Apple Wallet",
+      "googleA11y": "Enregistrer cette réservation dans Google Wallet",
+      "failed": "Impossible de préparer la carte. Vérifiez votre connexion et réessayez."
     }
   },
   "common": {
@@ -1853,6 +1872,14 @@
           "androidAssetLinks": {
             "label": "Fichier assetlinks.json servi",
             "fix": "Lancez native:init avec --android-fingerprint, puis copiez native/.well-known/ dans le dossier well-known situé à côté de votre fichier compose."
+          },
+          "appleWallet": {
+            "label": "Cartes Apple Wallet",
+            "fix": "Facultatif. Définissez les variables Wallet__Apple__* (Pass Type ID, Team ID, certificat .p12, certificat WWDR) pour proposer une carte Apple Wallet sur chaque réservation."
+          },
+          "googleWallet": {
+            "label": "Cartes Google Wallet",
+            "fix": "Facultatif. Définissez Wallet__Google__IssuerId et Wallet__Google__ServiceAccountKeyPath pour proposer une carte Google Wallet sur chaque réservation."
           }
         },
         "clients": {

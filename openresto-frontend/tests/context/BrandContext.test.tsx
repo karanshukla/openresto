@@ -5,6 +5,7 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
+import type { Brand } from "@/types";
 
 jest.mock("@/utils/injectBrandFavicon", () => ({
   injectBrandFavicon: jest.fn(),
@@ -247,5 +248,50 @@ describe("BrandContext", () => {
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
     expect(mockFetch.mock.calls[0][0]).toBe("http://localhost:5062/api/brand");
     process.env.EXPO_PUBLIC_API_URL = orig;
+  });
+
+  it("maps the wallet availability and web push key from the API response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          appName: "Test",
+          primaryColor: "#000",
+          wallet: { apple: true, google: 0 },
+          webPushPublicKey: "BKEY",
+        }),
+    });
+    let brand: Brand | undefined;
+    function Probe() {
+      brand = useBrand();
+      return null;
+    }
+    render(
+      <BrandProvider>
+        <Probe />
+      </BrandProvider>
+    );
+    await waitFor(() => expect(brand?.wallet).toEqual({ apple: true, google: false }));
+    expect(brand?.webPushPublicKey).toBe("BKEY");
+  });
+
+  it("leaves wallet and the push key unset when the API omits them", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ appName: "Test", primaryColor: "#000", webPushPublicKey: "" }),
+    });
+    let brand: Brand | undefined;
+    function Probe() {
+      brand = useBrand();
+      return null;
+    }
+    render(
+      <BrandProvider>
+        <Probe />
+      </BrandProvider>
+    );
+    await waitFor(() => expect(brand?.appName).toBe("Test"));
+    expect(brand?.wallet).toBeUndefined();
+    expect(brand?.webPushPublicKey).toBeUndefined();
   });
 });

@@ -91,4 +91,10 @@ describe("GuestTabBar", () => {
     expect(selected("My Bookings")).toBe(true);
     expect(selected("Locations")).toBe(false);
   });
+
+  it("keeps My Bookings selected on a booking confirmation, which is a lookup result", () => {
+    at("/booking-confirmation/ABC123");
+    expect(selected("My Bookings")).toBe(true);
+    expect(selected("Home")).toBe(false);
+  });
 });

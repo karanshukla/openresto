@@ -65,8 +65,16 @@ describe("(user)/_layout on a device", () => {
   it("puts a settings control in the header, closed to begin with", () => {
     render(<UserLayout />);
 
-    expect(screen.getByLabelText("Open settings")).toBeTruthy();
+    expect(screen.getByTestId("guest-settings-open")).toBeTruthy();
     expect(screen.queryByTestId("theme-radiogroup")).toBeNull();
+  });
+
+  // The header is what carries it on a pushed screen; a tab root has no header, so the same
+  // control is pinned over the navigator instead of scrolling away inside the page.
+  it("pins the same control over the navigator on a header-less tab root", () => {
+    render(<UserLayout />);
+
+    expect(screen.getByTestId("guest-settings-anchor-open")).toBeTruthy();
   });
 
   // The control opens a menu, and a row opens the pane — the settings do not all arrive at
@@ -74,7 +82,7 @@ describe("(user)/_layout on a device", () => {
   it("reaches language and appearance from that control, and closes again", () => {
     render(<UserLayout />);
 
-    fireEvent.press(screen.getByLabelText("Open settings"));
+    fireEvent.press(screen.getByTestId("guest-settings-open"));
     expect(screen.getByTestId("guest-settings-language")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId("guest-settings-appearance"));

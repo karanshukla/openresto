@@ -2,7 +2,13 @@ import { get } from "./client";
 
 /** One row of the admin's native-app readiness checklist. Ids are fixed; the UI translates them. */
 export type NativeAppCheckId =
-  "https" | "brandIcon" | "privacyPolicy" | "appleAppSiteAssociation" | "androidAssetLinks";
+  | "https"
+  | "brandIcon"
+  | "privacyPolicy"
+  | "appleAppSiteAssociation"
+  | "androidAssetLinks"
+  | "appleWallet"
+  | "googleWallet";
 
 export type NativeAppCheckStatus = "pass" | "fail" | "skip";
 

@@ -35,6 +35,12 @@ public static class ErrorCodes
     public const string BookingSectionMismatch = "booking.section_mismatch";
     public const string BookingTableIdRequiredForSectionChange = "booking.table_id_required_for_section_change";
     public const string BookingEmailFieldsRequired = "booking.email_fields_required";
+    public const string BookingReminderChannelInvalid = "booking.reminder_channel_invalid";
+    public const string BookingReminderKeysRequired = "booking.reminder_keys_required";
+    public const string BookingReminderTooLate = "booking.reminder_too_late";
+    public const string BookingReminderCancelled = "booking.reminder_cancelled";
+    public const string BookingWalletNotConfigured = "booking.wallet_not_configured";
+    public const string BookingWalletCancelled = "booking.wallet_cancelled";
     public const string BookingNoCustomerEmail = "booking.no_customer_email";
     public const string BookingEmailSendFailed = "booking.email_send_failed";
     public const string BookingLookupEmailRequired = "booking.lookup_email_required";

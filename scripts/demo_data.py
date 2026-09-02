@@ -848,8 +848,11 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         "-- ── Bookings + admin notifications ──",
         "DELETE FROM AdminNotifications;",
         "DELETE FROM EmailFailures;",
+        # Explicit for the same reason the accounts wipe is: foreign_keys=OFF means the
+        # Bookings cascade never reaches a visitor's push address.
+        "DELETE FROM GuestPushSubscriptions;",
         "DELETE FROM Bookings;",
-        "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','AdminNotifications','EmailFailures');",
+        "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','AdminNotifications','EmailFailures','GuestPushSubscriptions');",
         "",
     ]
 

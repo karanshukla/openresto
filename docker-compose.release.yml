@@ -34,6 +34,17 @@ services:
       - Vapid__PublicKey=${VAPID_PUBLIC_KEY:-}
       - Vapid__PrivateKey=${VAPID_PRIVATE_KEY:-}
       - Vapid__Subject=${VAPID_SUBJECT:-}
+      # Optional guest booking reminders — see docs/native-app.md
+      - GuestPush__ReminderLeadHours=${GUEST_PUSH_REMINDER_LEAD_HOURS:-24,2}
+      - GuestPush__ExpoAccessToken=${EXPO_ACCESS_TOKEN:-}
+      # Optional wallet passes — mount the certificate files under ./wallet and name them here
+      - Wallet__Apple__PassTypeIdentifier=${APPLE_PASS_TYPE_ID:-}
+      - Wallet__Apple__TeamIdentifier=${APPLE_TEAM_ID:-}
+      - Wallet__Apple__CertificatePath=${APPLE_PASS_CERTIFICATE_PATH:-}
+      - Wallet__Apple__CertificatePassword=${APPLE_PASS_CERTIFICATE_PASSWORD:-}
+      - Wallet__Apple__WwdrCertificatePath=${APPLE_WWDR_CERTIFICATE_PATH:-}
+      - Wallet__Google__IssuerId=${GOOGLE_WALLET_ISSUER_ID:-}
+      - Wallet__Google__ServiceAccountKeyPath=${GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_PATH:-}
       # Optional — override the URL used in email links/images if it differs from CORS_ORIGINS
       # - WEBSITE_URL=${WEBSITE_URL:-}
       # Optional — default UI locale served on GET /api/brand. Valid values: en, fr, es, de.
@@ -56,6 +67,9 @@ services:
     volumes:
       - db_data:/data
       - media_data:/app/wwwroot/media
+      # Wallet signing material (Apple .p12 + WWDR .cer, Google service-account JSON) —
+      # optional; see docs/native-app.md
+      - ./wallet:/wallet:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 10s
