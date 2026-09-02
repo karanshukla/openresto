@@ -107,6 +107,13 @@ Set via environment variables or `appsettings.json`:
 | `Admin:Email`       | Default admin email             | Set in appsettings           |
 | `Admin:Password`    | Default admin password          | Set in appsettings           |
 
+Optional integrations are configured the same way and stay switched off until they are: Apple
+and Google Wallet passes (`Wallet__Apple__*`, `Wallet__Google__*`) and guest booking reminders
+(`Vapid__*` on the web, an EAS project on native) each hide their own button while unset.
+Running from a clone, put them in `OpenRestoApi/appsettings.Local.json`, which the backend
+loads when present and `.gitignore` keeps out of commits — see
+[docs/native-app.md](docs/native-app.md) for the issuer setup either needs.
+
 The API Keys settings screen links out to the CLI package, the HTTP API guide and the source
 repository. Those three URLs default to this project's and are overridable per deployment with
 `OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL` and `OPENRESTO_REPOSITORY_URL` (or the

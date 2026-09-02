@@ -243,23 +243,72 @@ its button never appears.
    Wallet__Apple__WwdrCertificatePath=/wallet/wwdr.cer
    ```
 
-**Google** needs a Wallet issuer and a service account:
+**Google** needs a Wallet issuer and a service account. The two live in different consoles,
+which is the step people lose an afternoon to:
 
 1. In the [Google Pay & Wallet Console](https://pay.google.com/business/console), create an
-   issuer account and note the issuer ID.
-2. In Google Cloud, create a service account, give it the **Wallet Object Issuer** role on that
-   issuer, and download its JSON key.
-3. Mount the key and set:
+   issuer account and note the issuer ID (a ~19-digit number).
+2. In the Google Cloud console, under **IAM & Admin → Service Accounts**, create a service
+   account. It needs no project roles — click through to **Done**, then open it, go to
+   **Keys → Add key → Create new key → JSON**, and keep the file that downloads.
+3. Back in the Google Pay & Wallet Console, go to **Users → Invite a user**, paste the service
+   account's email address, and set the access level to **Developer**. Without this the key is
+   valid but unknown to your issuer, and every save link is rejected.
+4. Mount the key and set:
 
    ```bash
    Wallet__Google__IssuerId=3388000000012345678
    Wallet__Google__ServiceAccountKeyPath=/wallet/google-wallet.json
    ```
 
+You do not have to create a pass class. The save link carries the class inline in its signed
+JWT, so OpenResto never calls the Google Wallet API at all — the only thing that ever reaches
+Google is the link the guest taps.
+
+A new issuer starts in **demo mode**: the pass saves only for Google accounts listed as admins,
+developers or test accounts on the issuer, and everyone else sees an error. That is Google's
+state, not a misconfiguration — request production access from the console when you are ready
+to publish. Signing up is for the Wallet passes API, not Google Pay; it involves no merchant
+account, payment credentials or bank details.
+
 The release `docker-compose.yml` mounts `./wallet` beside it into the backend at `/wallet`
 read-only, so the files sit next to your `.env` and no image is rebuilt. A file that fails to
 load is logged once at startup and that platform's button stays hidden; the Native app page's
 readiness list says which issuer the server is signing under.
+
+### Trying it from a clone, without committing anything
+
+Running from source there is no `.env` to put `Wallet__*` into. Create
+`OpenRestoApi/appsettings.Local.json` — the backend loads it if present, and `.gitignore` keeps
+it out of every commit:
+
+```json
+{
+  "Wallet": {
+    "Google": {
+      "IssuerId": "3388000000012345678",
+      "ServiceAccountKeyPath": "C:/Users/you/secrets/openresto-wallet.json"
+    }
+  }
+}
+```
+
+Keep the key file itself outside the checkout; only its path belongs here. On Windows write the
+path with forward slashes or doubled backslashes — a lone `\` is a JSON escape and the file
+will not parse. Restart the backend afterwards: the file is read once at startup and the
+credentials are cached for the process, so `dotnet watch` will not pick it up on its own.
+
+To confirm the server loaded them, ask it what it can issue:
+
+```bash
+curl -s localhost:8080/api/brand      # → "wallet": { "apple": false, "google": true }
+```
+
+Both false means nothing is configured and no button will appear anywhere — which is also the
+normal state of a fresh clone, not a bug. Two local-only rough edges are expected: the pass
+carries no logo, because one is only attached when the site is reachable over https, and the
+QR code encodes a `localhost` manage link that another device cannot open. Set the brand's
+website URL to your machine's LAN address if you want both to work from a phone.
 
 ## The admin's Native app page
 
