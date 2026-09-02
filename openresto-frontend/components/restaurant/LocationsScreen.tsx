@@ -21,6 +21,7 @@ import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 import { DRAWER_WIDTH } from "@/components/booking/BookingDrawer.styles";
+import ScreenHeading from "@/components/layout/ScreenHeading";
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
@@ -247,14 +248,10 @@ export default function LocationsScreen({
             scrollEventThrottle={16}
           >
             <PageContainer style={styles.page}>
-              <View style={styles.header}>
-                <ThemedText style={styles.title}>
-                  {t("restaurant.locationsScreen.title")}
-                </ThemedText>
-                <ThemedText style={[styles.subtitle, { color: colors.muted }]}>
-                  {t("restaurant.locationsScreen.subtitle")}
-                </ThemedText>
-              </View>
+              <ScreenHeading
+                title={t("restaurant.locationsScreen.title")}
+                subtitle={t("restaurant.locationsScreen.subtitle")}
+              />
 
               {restaurants.length === 0 ? (
                 <ThemedView style={styles.empty}>

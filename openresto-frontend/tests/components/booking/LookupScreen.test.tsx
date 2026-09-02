@@ -88,6 +88,13 @@ const scrollEvent = (y: number) => ({
   },
 });
 
+/**
+ * The screen's own heading is the subtitle off web: the native Stack header already carries
+ * "Find my booking", so ScreenHeading drops the title rather than saying it twice. Jest runs
+ * as ios, so asserting the title here would assert the web branch on a native render.
+ */
+const IDLE_SCREEN = "Enter your booking reference and email to look up your reservation.";
+
 describe("LookupScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -98,7 +105,7 @@ describe("LookupScreen", () => {
 
   it("renders the idle search form with no result panel", async () => {
     renderWithProviders(<LookupScreen />);
-    expect(screen.getByText("Find my booking")).toBeTruthy();
+    expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
   });
@@ -405,7 +412,7 @@ describe("LookupScreen", () => {
 
       renderWithProviders(<LookupScreen />);
 
-      await waitFor(() => expect(screen.getByText("Find my booking")).toBeTruthy());
+      await waitFor(() => expect(screen.getByText(IDLE_SCREEN)).toBeTruthy());
       expect(getBookingByRef).not.toHaveBeenCalled();
       expect(screen.queryByText("YOUR RECENT BOOKINGS")).toBeNull();
     });
@@ -548,7 +555,7 @@ describe("LookupScreen", () => {
         await new Promise((resolve) => setTimeout(resolve, 400));
       });
       expect(screen.queryByTestId("result-panel")).toBeNull();
-      expect(screen.getByText("Find my booking")).toBeTruthy();
+      expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     });
   });
 
@@ -578,6 +585,6 @@ describe("LookupScreen", () => {
     const { ScrollView } = require("react-native");
     const scrollViews = screen.UNSAFE_getAllByType(ScrollView);
     fireEvent.scroll(scrollViews[0], scrollEvent(400));
-    expect(screen.getByText("Find my booking")).toBeTruthy();
+    expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
   });
 });
