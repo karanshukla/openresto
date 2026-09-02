@@ -18,6 +18,14 @@ export const styles = StyleSheet.create({
     paddingTop: theme.spacing.xs,
     paddingBottom: theme.spacing.xs,
   },
+  /** Material 3's selected-destination pill: 64x32 with a fully rounded edge. */
+  indicator: {
+    width: 64,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   label: {
     fontSize: 11,
     fontWeight: "600",
