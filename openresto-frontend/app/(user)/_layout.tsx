@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import {
   Slot,
@@ -18,6 +18,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { focusTarget } from "@/utils/focusRegistry";
 import KeyboardShortcutsHelp from "@/components/common/KeyboardShortcutsHelp";
 import { useBrand } from "@/context/BrandContext";
+import { registerQuickActions } from "@/services/quickActions";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 /**
@@ -64,7 +65,7 @@ function tabRoot(): NativeStackNavigationOptions {
 }
 
 export default function UserLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const brand = useBrand();
   const segments = useSegments();
@@ -76,6 +77,21 @@ export default function UserLayout() {
   const isUserRouteActive = segments[0] === "(user)";
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const { colors } = useAppTheme();
+
+  /**
+   * Long-pressing the app icon offers the one destination a returning guest wants (#431).
+   * Inert on web, where there is no icon to press. Keyed on the language rather than on `t`
+   * so the label is rewritten when the guest switches locale and not on every render.
+   */
+  useEffect(
+    () =>
+      registerQuickActions({
+        title: t("common.navbar.myBookingsLink"),
+        onSelect: () => router.push("/lookup"),
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [i18n.language]
+  );
 
   useKeyboardShortcuts(
     isUserRouteActive

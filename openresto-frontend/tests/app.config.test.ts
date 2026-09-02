@@ -78,6 +78,15 @@ describe("buildExpoConfig without a native config", () => {
     expect(config.owner).toBeUndefined();
   });
 
+  // #430. The gesture previews the screen underneath instead of jumping, which is one of the
+  // first things that reads as "not a native app" when it is off. Every overlay dismisses
+  // through Modal.onRequestClose, pinned structurally in backDismissal.test.ts.
+  it("lets Android preview the screen behind the back gesture", () => {
+    const config = buildExpoConfig({}, null, "./native");
+
+    expect(config.android?.predictiveBackGestureEnabled).toBe(true);
+  });
+
   it("still honours EXPO_PUBLIC_APP_NAME for the name", () => {
     process.env.EXPO_PUBLIC_APP_NAME = "Named By Env";
     try {
