@@ -56,3 +56,16 @@ global.fetch = jest.fn(() =>
     json: () => Promise.resolve({ appName: "Open Resto", primaryColor: "#0a7ea4" }),
   })
 ) as jest.Mock;
+
+// The system date picker (#423) is a native view with no JS host under Jest, the same way
+// expo-localization and expo-network are. Rendered as a plain view carrying its props so the
+// suites that merely mount a booking form don't have to know it is there; the DatePicker's own
+// tests replace this with a mock that can also fire `onChange`.
+jest.mock("@react-native-community/datetimepicker", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => React.createElement(View, props),
+  };
+});
