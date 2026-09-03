@@ -8,7 +8,7 @@
          AssemblyInformationalVersionAttribute) so the CLI can warn a self-hoster running an old
          server against a new CLI. Bump alongside package.json on every release —
          scripts/check-release-version.sh enforces the two agree. -->
-    <Version>1.9.0</Version>
+    <Version>2.0.0</Version>
     <!-- Exclude the local SQLite DB + its WAL/SHM sidecars from dotnet watch.
          SQLite writes to -wal/-shm on every transaction; if watch sees those as
          source changes it restarts the process mid-write and corrupts the main
