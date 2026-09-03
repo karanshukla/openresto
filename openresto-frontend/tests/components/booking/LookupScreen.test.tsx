@@ -3,13 +3,14 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
-import { KeyboardAvoidingView, Linking } from "react-native";
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
 import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
 import { fetchCachedBookings } from "@/utils/bookingCache";
 import { useOnline } from "@/hooks/use-online";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
@@ -105,6 +106,44 @@ describe("LookupScreen", () => {
     expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+  });
+
+  /**
+   * Issue #426. Neither of this screen's routes draws a native header, so both are tab roots
+   * whose scroll content pads the tab bar itself: inside a tab the bottom inset is the bar's
+   * height on iOS, where the page runs under it. Web has no bar and pads nothing.
+   */
+  describe("the tab bar", () => {
+    const TAB_BAR = 83;
+    const scrollPadding = () =>
+      StyleSheet.flatten(screen.UNSAFE_getAllByType(ScrollView)[0].props.contentContainerStyle)
+        .paddingBottom;
+
+    const onPlatform = async (os: string, body: () => Promise<void>) => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = os;
+      try {
+        await body();
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
+    };
+
+    it("is cleared by the scroll content off web", async () => {
+      await onPlatform("ios", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <LookupScreen />);
+        await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+        expect(scrollPadding()).toBe(TAB_BAR);
+      });
+    });
+
+    it("is not a thing on web", async () => {
+      await onPlatform("web", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <LookupScreen />);
+        await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+        expect(scrollPadding()).toBe(0);
+      });
+    });
   });
 
   /**

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -25,6 +25,20 @@ interface SlidePanelProps {
 }
 
 /**
+ * The sheet is bottom-anchored, so without this its last row sits under the home indicator. A
+ * spacer rather than padding on the sheet because the inset has to be read inside the Modal's
+ * own safe-area provider, which is the one that knows the window's edge rather than the tab's.
+ *
+ * @see [SlidePanel.test.tsx](../../tests/components/common/SlidePanel.test.tsx) — pins that the
+ * sheet clears the bottom safe area off web and adds nothing on it.
+ */
+function SheetBottomInset({ testID }: { testID: string }) {
+  const insets = useSafeAreaInsets();
+  if (Platform.OS === "web") return null;
+  return <View testID={testID} style={{ height: insets.bottom }} />;
+}
+
+/**
  * Side panel on wide layouts, bottom sheet on compact — the same chrome BookingDrawer built
  * for the booking form, generalized so the lookup result panel can inherit the entrance
  * animation and the drag-to-dismiss sheet instead of reimplementing them. Unlike
@@ -44,7 +58,6 @@ export default function SlidePanel({
 }: SlidePanelProps) {
   const { colors, isDark } = useAppTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
 
   const onDismissRef = useRef(onDismiss);
   useEffect(() => {
@@ -109,57 +122,61 @@ export default function SlidePanel({
   if (variant === "sheet") {
     return (
       <Modal visible transparent animationType="slide" onRequestClose={dismissWithHaptic}>
-        <View style={styles.sheetRoot}>
-          <Pressable
-            testID={`${testID}-backdrop`}
-            accessibilityRole="button"
-            accessibilityLabel={t("common.slidePanel.closeLabel", { label: accessibilityLabel })}
-            style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-            onPress={dismissWithHaptic}
-          />
-          <Animated.View
-            testID={testID}
-            role="dialog"
-            aria-modal
-            accessibilityViewIsModal
-            accessibilityLabel={accessibilityLabel}
-            style={[
-              styles.sheet,
-              { backgroundColor: colors.card, borderTopColor: colors.border },
-              // Bottom-anchored, so the home indicator would sit on the last row otherwise.
-              Platform.OS !== "web" && { paddingBottom: insets.bottom },
-              { transform: [{ translateY: dragY }] },
-            ]}
-          >
-            <View
-              {...panResponder.panHandlers}
-              testID={`${testID}-grabber`}
-              aria-hidden
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              style={styles.grabberArea}
+        {/* Its own provider: a Modal covers the whole window, tab bar included, so the inset
+            it steps over is the window's home indicator and not the tab's bar. The page
+            underneath sits inside a tab, whose insets include that bar (GuestTabStack). */}
+        <SafeAreaProvider>
+          <View style={styles.sheetRoot}>
+            <Pressable
+              testID={`${testID}-backdrop`}
+              accessibilityRole="button"
+              accessibilityLabel={t("common.slidePanel.closeLabel", { label: accessibilityLabel })}
+              style={[styles.backdrop, { backgroundColor: colors.overlay }]}
+              onPress={dismissWithHaptic}
+            />
+            <Animated.View
+              testID={testID}
+              role="dialog"
+              aria-modal
+              accessibilityViewIsModal
+              accessibilityLabel={accessibilityLabel}
+              style={[
+                styles.sheet,
+                { backgroundColor: colors.card, borderTopColor: colors.border },
+                { transform: [{ translateY: dragY }] },
+              ]}
             >
               <View
-                style={[
-                  styles.grabber,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
-                ]}
-              />
-            </View>
-            {/* Scrollable, not a plain View: the sheet is capped at a fraction of the
+                {...panResponder.panHandlers}
+                testID={`${testID}-grabber`}
+                aria-hidden
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={styles.grabberArea}
+              >
+                <View
+                  style={[
+                    styles.grabber,
+                    { backgroundColor: isDark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)" },
+                  ]}
+                />
+              </View>
+              {/* Scrollable, not a plain View: the sheet is capped at a fraction of the
                 viewport and clips its overflow, so a booking taller than that cap loses
                 everything past the fold with no way to reach it. */}
-            <ScrollView
-              testID={`${testID}-body`}
-              style={styles.sheetScroll}
-              contentContainerStyle={styles.sheetBody}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {children}
-            </ScrollView>
-          </Animated.View>
-        </View>
+              <ScrollView
+                testID={`${testID}-body`}
+                style={styles.sheetScroll}
+                contentContainerStyle={styles.sheetBody}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {children}
+              </ScrollView>
+              <SheetBottomInset testID={`${testID}-bottom-inset`} />
+            </Animated.View>
+          </View>
+        </SafeAreaProvider>
       </Modal>
     );
   }

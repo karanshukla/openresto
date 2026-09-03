@@ -108,3 +108,31 @@ jest.mock("@gorhom/bottom-sheet", () => {
     BottomSheetView: View,
   };
 });
+
+// The native tab bar (#426) is a react-native-screens host with no JS implementation under Jest,
+// and its module pulls in an ESM-only dependency the transform list does not cover. Rendered as
+// plain views that keep their props, so a test can read what each trigger asked for; the label
+// renders its text and the icon keeps its glyph sets as props rather than drawing anything.
+jest.mock("expo-router/unstable-native-tabs", () => {
+  const React = require("react");
+  const { View, Text } = require("react-native");
+  const Trigger = ({
+    children,
+    ...props
+  }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    React.createElement(View, { testID: `native-tab-trigger-${props.name}`, ...props }, children);
+  Trigger.Label = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(Text, { testID: "native-tab-label" }, children);
+  Trigger.Icon = (props: Record<string, unknown>) =>
+    React.createElement(View, { testID: "native-tab-icon", ...props });
+  Trigger.VectorIcon = (props: Record<string, unknown>) =>
+    React.createElement(View, { testID: "native-tab-vector-icon", ...props });
+  Trigger.Badge = () => null;
+  const NativeTabs = ({
+    children,
+    ...props
+  }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    React.createElement(View, { testID: "native-tabs", ...props }, children);
+  NativeTabs.Trigger = Trigger;
+  return { NativeTabs };
+});

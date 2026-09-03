@@ -98,7 +98,10 @@ describe("SlidePanel", () => {
 
     /**
      * The sheet is the bottom of the screen: without stepping up over the home indicator its
-     * last row sits under it. Web has no inset to clear and stays exactly as it was.
+     * last row sits under it. The inset is read inside the Modal's own safe-area provider —
+     * the page underneath sits in a tab whose insets include the tab bar (#426), and the sheet
+     * covers that bar — so it is a spacer after the body rather than padding on the sheet.
+     * Web has no inset to clear and stays exactly as it was.
      */
     it("clears the bottom safe area off web", () => {
       const original = Platform.OS;
@@ -110,8 +113,29 @@ describe("SlidePanel", () => {
             <Text>Panel content</Text>
           </SlidePanel>
         );
+        const spacer = StyleSheet.flatten(
+          screen.getByTestId("result-panel-bottom-inset").props.style
+        );
+        expect(spacer.height).toBe(34);
         const sheet = StyleSheet.flatten(screen.getByTestId("result-panel").props.style);
-        expect(sheet.paddingBottom).toBe(34);
+        expect(sheet.paddingBottom).toBeUndefined();
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
+    });
+
+    it("adds nothing under the body on web", () => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "web";
+      try {
+        renderWithInsets(
+          { bottom: 34 },
+          <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+            <Text>Panel content</Text>
+          </SlidePanel>
+        );
+
+        expect(screen.queryByTestId("result-panel-bottom-inset")).toBeNull();
       } finally {
         (Platform as unknown as { OS: string }).OS = original;
       }

@@ -20,6 +20,7 @@ import PageLoader from "@/components/common/PageLoader";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
@@ -114,6 +115,7 @@ export default function LocationsScreen({
   const { colors, primaryColor } = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const tabBarClearance = useTabBarClearance();
   const isCompact = isMobileWidth(width);
   const pageRgb = useMemo(() => hexToRgb(colors.page), [colors.page]);
 
@@ -398,13 +400,14 @@ export default function LocationsScreen({
 
   const onWeb = Platform.OS === "web";
   /**
-   * Who owns the space above the list. A native header already insets its own content, so the
-   * header case hands the job to the scroll view (`contentInsetAdjustmentBehavior`), which is
-   * also what lets iOS collapse the large title as the list moves; the header-less root has
-   * nothing above it and pads the status bar itself. Doing both at once double-pads.
+   * Who owns the space above and below the list. A native header already insets its own
+   * content, so the header case hands both edges to the scroll view
+   * (`contentInsetAdjustmentBehavior`), which is also what lets iOS collapse the large title as
+   * the list moves; the header-less root has nothing above it and pads the status bar and the
+   * tab bar itself. Doing both at once double-pads either edge.
    *
    * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
-   * — pins each route taking exactly one of the two.
+   * — pins each route taking exactly one of the two, at the top and at the bottom.
    */
   const headerOwnsInset = !onWeb && hasNativeHeader;
 
@@ -424,7 +427,10 @@ export default function LocationsScreen({
           <ScrollView
             ref={scrollRef}
             style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              !headerOwnsInset && { paddingBottom: tabBarClearance },
+            ]}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}

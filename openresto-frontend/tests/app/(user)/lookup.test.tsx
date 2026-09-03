@@ -23,7 +23,7 @@ jest.mock("@/components/booking/LookupScreen", () => ({
   },
 }));
 
-import LookupRouteScreen from "@/app/(user)/lookup";
+import LookupRouteScreen from "@/app/(user)/(bookings)/lookup";
 
 beforeEach(() => {
   mockParams = {};

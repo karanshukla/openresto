@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import SearchRedirect from "@/app/(user)/search";
+import SearchRedirect from "@/app/(user)/(home)/search";
 
 jest.mock("expo-router", () => ({
   Redirect: jest.fn(() => null),

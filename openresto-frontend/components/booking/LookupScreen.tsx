@@ -12,6 +12,7 @@ import { Icon } from "@/components/common/Icon";
 import PageContainer from "@/components/layout/PageContainer";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
@@ -81,6 +82,7 @@ export default function LookupScreen({
   const { width } = useWindowDimensions();
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const tabBarClearance = useTabBarClearance();
   const online = useOnline();
   const brand = useBrand();
   const contact = resolveContact(restaurant, brand);
@@ -217,13 +219,13 @@ export default function LookupScreen({
   return (
     <ThemedView
       // Neither of this screen's two routes draws a native header off web, so both take the
-      // status-bar inset themselves and both carry their own title.
+      // status-bar inset themselves, pad the tab bar themselves, and carry their own title.
       style={[styles.root, Platform.OS !== "web" && { paddingTop: insets.top }]}
     >
       <KeyboardAvoider style={styles.root}>
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
           keyboardShouldPersistTaps="handled"
           onScroll={fab.trackScroll}
           scrollEventThrottle={16}

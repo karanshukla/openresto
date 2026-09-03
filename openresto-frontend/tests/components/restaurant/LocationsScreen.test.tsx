@@ -888,3 +888,49 @@ describe("LocationsScreen top inset", () => {
     });
   });
 });
+
+/**
+ * Issue #426. Inside a tab the bottom inset is the tab bar's height on iOS, where the list runs
+ * under it. The header-less root pads it in its scroll content; the route pushed under a native
+ * header hands both edges to the scroll view (`contentInsetAdjustmentBehavior`), and padding
+ * the bottom as well would double it.
+ */
+describe("LocationsScreen tab bar clearance", () => {
+  const TAB_BAR = 83;
+
+  beforeEach(() => {
+    mockInsets.bottom = TAB_BAR;
+    (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+  });
+
+  afterEach(() => {
+    mockInsets.bottom = 0;
+  });
+
+  const scrollPadding = () =>
+    StyleSheet.flatten(screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle)
+      .paddingBottom;
+
+  it("pads the bar itself on the header-less tab root", async () => {
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    expect(scrollPadding()).toBe(TAB_BAR);
+  });
+
+  it("leaves the bar to the scroll view under a native header", async () => {
+    renderWithProviders(<LocationsScreen hasNativeHeader />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    expect(scrollPadding()).toBeUndefined();
+  });
+
+  it("pads nothing on web, which has no bar", async () => {
+    await onWeb(async () => {
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+      expect(scrollPadding()).toBe(0);
+    });
+  });
+});

@@ -9,7 +9,7 @@
  */
 import React from "react";
 import { render } from "@testing-library/react-native";
-import BookScreen from "@/app/(user)/book/[restaurantId]";
+import BookScreen from "@/app/(user)/(locations)/book/[restaurantId]";
 
 let capturedHref: unknown;
 

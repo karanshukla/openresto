@@ -7,7 +7,7 @@ export type { QuickActionOptions } from "./quickActions";
 
 /**
  * SF Symbols are iOS-only by Apple's licence, so Android gets no icon and falls back to the
- * app icon. `ticket` matches the glyph `GuestTabBar` gives the same destination. Resolved per
+ * app icon. `ticket` matches the glyph `GuestTabs` gives the same destination. Resolved per
  * call rather than captured at module load, which would freeze whichever platform imported it
  * first.
  */

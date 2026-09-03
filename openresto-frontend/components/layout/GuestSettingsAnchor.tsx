@@ -11,12 +11,13 @@ const TAB_ROOTS = ["/", "/locations", "/lookup"];
 
 /**
  * Which routes have no header of their own to carry the control — the question `tabRoot()` in
- * `app/(user)/_layout.tsx` answers, asked from the other side. The booking confirmation is one
- * of them (it is the lookup root with a ref prefilled) and matches by prefix only because its
- * ref is a path segment; everything else is exact.
+ * `GuestTabStack` answers, asked from the other side. The booking confirmation is one of them
+ * (it is the lookup root with a ref prefilled) and matches by prefix only because its ref is a
+ * path segment; everything else is exact.
  *
- * `GuestTabBar` matches on its own, looser question — which tab a route belongs to — and the
- * two must not be collapsed into one.
+ * Which tab a route belongs to is a different question, answered by the route group its file
+ * sits in (`app/(user)/_layout.tsx`), and the two must not be collapsed into one: `/locations/3`
+ * is the Locations tab's and has a header already.
  */
 export function isHeaderlessGuestRoute(pathname: string): boolean {
   return TAB_ROOTS.includes(pathname) || pathname.startsWith("/booking-confirmation");
@@ -30,7 +31,7 @@ export function isHeaderlessGuestRoute(pathname: string): boolean {
  * two inside `ScreenHeading` — which scrolled away with the content, leaving a diner partway
  * down a list with no way to language, theme or About. Its counterpart on a pushed screen is
  * the stack's `headerRight`, which is already pinned, so this is the same control in the same
- * place for every guest route.
+ * place for every guest route. `GuestTabStack` renders one per tab, outside that tab's stack.
  *
  * An opaque chip rather than the hero's white-on-scrim treatment: the same control now sits
  * over a header photo and over plain page content as the root scrolls, and only a filled
