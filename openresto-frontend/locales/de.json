@@ -64,7 +64,6 @@
       "popularTimesLabel": "Beliebte Zeiten",
       "requestsAccessibilityLabel": "Besondere Wünsche oder Allergien",
       "requestsPlaceholder": "z. B. Nussallergie, Hochstuhl benötigt… (optional)",
-      "routeTitle": "Tisch reservieren",
       "seatsCount_one": "{{count}} Platz",
       "seatsCount_other": "{{count}} Plätze",
       "sectionLabel": "Bereich",
@@ -494,7 +493,6 @@
       "openInProviderMaps": "In {{provider}} Maps öffnen",
       "openMenu": "Speisekarte öffnen",
       "openingHoursHeading": "Öffnungszeiten",
-      "routeTitle": "Restaurant",
       "viewMenu": "Speisekarte ansehen"
     },
     "filterBar": {

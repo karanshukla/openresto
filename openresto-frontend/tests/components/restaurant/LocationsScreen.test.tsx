@@ -855,15 +855,50 @@ describe("LocationsScreen top inset", () => {
 
   const columnPadding = () =>
     StyleSheet.flatten(screen.getByTestId("locations-list-column").props.style).paddingTop;
+  const contentPadding = () =>
+    StyleSheet.flatten(screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle).paddingTop;
+  const bandPadding = () =>
+    StyleSheet.flatten(screen.getByTestId("locations-filter-sticky").props.style).paddingTop;
 
-  it("pads the status bar itself on the header-less tab root", async () => {
+  /**
+   * The inset is padding on the scroll *content*, never on the screen around it: the list has to
+   * run under the status bar the way the home hero does, and a padded column clips it at a dead
+   * strip instead.
+   */
+  it("runs the list under the status bar, padding the scroll content instead of the column", async () => {
     renderWithProviders(<LocationsScreen />);
     await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
-    expect(columnPadding()).toBe(STATUS_BAR);
+    expect(columnPadding()).toBeUndefined();
+    expect(contentPadding()).toBe(STATUS_BAR);
     expect(
       screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior
     ).toBeUndefined();
+  });
+
+  /**
+   * What keeps the status bar legible with the list running under it: the pinned band is the top
+   * of the display, so it takes the inset. The pair is the rule — unpinned it must take none, or
+   * it hangs a status-bar-sized gap under the heading.
+   */
+  it("gives the band the inset once it pins there", async () => {
+    renderWithProviders(<LocationsScreen />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    expect(bandPadding()).toBeUndefined();
+
+    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
+
+    expect(bandPadding()).toBe(STATUS_BAR);
+  });
+
+  it("leaves the band's inset to the header on a pushed route", async () => {
+    renderWithProviders(<LocationsScreen hasNativeHeader />);
+    await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
+
+    fireEvent.scroll(screen.UNSAFE_getByType(ScrollView), scrollEvent(400));
+
+    expect(bandPadding()).toBeUndefined();
   });
 
   it("hands the inset to the scroll view under a native header", async () => {
@@ -871,6 +906,7 @@ describe("LocationsScreen top inset", () => {
     await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
     expect(columnPadding()).toBeUndefined();
+    expect(contentPadding()).toBeUndefined();
     expect(screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior).toBe(
       "automatic"
     );
@@ -882,6 +918,7 @@ describe("LocationsScreen top inset", () => {
       await waitFor(() => expect(screen.getByTestId("locations-filter-sticky")).toBeTruthy());
 
       expect(columnPadding()).toBeUndefined();
+      expect(contentPadding()).toBeUndefined();
       expect(
         screen.UNSAFE_getByType(ScrollView).props.contentInsetAdjustmentBehavior
       ).toBeUndefined();

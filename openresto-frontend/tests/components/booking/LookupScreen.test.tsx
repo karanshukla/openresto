@@ -147,6 +147,28 @@ describe("LookupScreen", () => {
   });
 
   /**
+   * The status bar inset pads the scroll content, not the screen around it, so the form runs
+   * under the bar as it scrolls rather than stopping at a dead strip — the shape the home hero
+   * already had. Nothing pins on this screen, so nothing has to reclaim the bar.
+   */
+  describe("the status bar", () => {
+    const STATUS_BAR = 47;
+    const rootPadding = () =>
+      StyleSheet.flatten(screen.getByTestId("lookup-root").props.style).paddingTop;
+    const scrollTopPadding = () =>
+      StyleSheet.flatten(screen.UNSAFE_getAllByType(ScrollView)[0].props.contentContainerStyle)
+        .paddingTop;
+
+    it("pads the scroll content, leaving the screen itself flush to the display", async () => {
+      renderWithInsets({ top: STATUS_BAR }, <LookupScreen />);
+      await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+
+      expect(rootPadding()).toBeUndefined();
+      expect(scrollTopPadding()).toBe(STATUS_BAR);
+    });
+  });
+
+  /**
    * Booking confirmation is a state of this screen, not a page of its own, and off web
    * neither of its two routes draws a native header — so the page names itself the same way
    * on both, which is what it has always looked like on web under one navbar. A title that

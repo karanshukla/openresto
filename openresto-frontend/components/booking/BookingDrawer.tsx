@@ -46,6 +46,7 @@ import {
 import { styles } from "./BookingDrawer.styles";
 import { Icon } from "@/components/common/Icon";
 import { NativeBookingSheet, SheetScrollView } from "@/components/booking/NativeBookingSheet";
+import KeyboardAwareScroll from "@/components/common/KeyboardAwareScroll";
 
 // Re-exported so existing imports of these from BookingDrawer (this module used to define
 // them) keep working; utils/panelMotion is the source of truth, shared with SlidePanel.
@@ -211,7 +212,16 @@ export default function BookingDrawer({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [variant, closeWithHaptic]);
 
-  const handleSubmit = async (data: BookingFormData) => {
+  /**
+   * `dismissSheet` is the platform sheet's own dismissal, passed in by the native branch below.
+   * It has to run before the confirmation route is pushed: the sheet provider is mounted above
+   * the navigator (`app/_layout.tsx`), so its portal draws over whatever screen is on top, and
+   * the tab bar keeps this screen mounted behind it. Navigating without dismissing therefore
+   * left the booking sheet stacked over the confirmation's own result sheet rather than
+   * replacing it. Web passes nothing: navigation there swaps the page out from under
+   * the drawer, which is why this only ever showed up on a phone.
+   */
+  const handleSubmit = async (data: BookingFormData, dismissSheet?: () => void) => {
     setSubmitError(null);
     const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
     // For "Any section" (null tableId/sectionId), the server auto-assigns the best table.
@@ -235,6 +245,9 @@ export default function BookingDrawer({
         specialRequests: data.specialRequests || null,
       });
       const email = encodeURIComponent(data.customerEmail);
+      // Only once the booking is real: an error has to stay readable in the sheet it was
+      // made in.
+      if (newBooking) dismissSheet?.();
       if (newBooking?.bookingRef) {
         // Native has no cookie jar, so the diner's own list of recent bookings is kept
         // client-side; on web this is a no-op and the API's HttpOnly cookie still owns it.
@@ -311,7 +324,8 @@ export default function BookingDrawer({
         </ThemedText>
       </View>
 
-      <Scroll
+      <KeyboardAwareScroll
+        as={Scroll}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -335,9 +349,9 @@ export default function BookingDrawer({
           date={date}
           onDateChange={onDateChange}
           initialTime={time}
-          onSubmit={handleSubmit}
+          onSubmit={(data) => handleSubmit(data, onCloseRequest)}
         />
-      </Scroll>
+      </KeyboardAwareScroll>
     </>
   );
 

@@ -31,12 +31,14 @@ export default function LocationsTabLayout() {
         name="locations/[id]"
         options={{ title: t("restaurant.locationsScreen.routeTitle") }}
       />
-      <Stack.Screen
-        name="restaurant/[id]"
-        options={{ title: t("restaurant.details.routeTitle") }}
-      />
-      <Stack.Screen name="book" options={{ title: t("booking.form.routeTitle") }} />
-      <Stack.Screen name="book/[restaurantId]" options={{ title: t("booking.form.routeTitle") }} />
+      {/* The three shims only render a <Redirect>, so they must draw no header on the way
+          through — a bar titled after the route, with a back arrow, flashes for the frame
+          they are mounted otherwise. `book` is also what a cold tab press can land on
+          for that frame, since it sorts ahead of the initial route above. Same rule, and the
+          same reason, as /search in the Home group. */}
+      <Stack.Screen name="restaurant/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="book" options={{ headerShown: false }} />
+      <Stack.Screen name="book/[restaurantId]" options={{ headerShown: false }} />
     </GuestTabStack>
   );
 }

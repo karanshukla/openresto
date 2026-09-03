@@ -64,7 +64,6 @@
       "popularTimesLabel": "Horaires populaires",
       "requestsAccessibilityLabel": "Demandes particulières ou allergies",
       "requestsPlaceholder": "ex. allergie aux noix, chaise haute nécessaire… (facultatif)",
-      "routeTitle": "Réserver une table",
       "seatsCount_one": "{{count}} place",
       "seatsCount_other": "{{count}} places",
       "sectionLabel": "Section",
@@ -494,7 +493,6 @@
       "openInProviderMaps": "Ouvrir dans {{provider}} Maps",
       "openMenu": "Ouvrir le menu",
       "openingHoursHeading": "Horaires d'ouverture",
-      "routeTitle": "Restaurant",
       "viewMenu": "Voir le menu"
     },
     "filterBar": {

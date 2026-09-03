@@ -68,22 +68,27 @@ describe("scheduleHoldExpiryNotice (native)", () => {
     expect(body).toContain("One more minute");
   });
 
-  it("asks for permission only when it does not already have it", async () => {
-    await scheduleHoldExpiryNotice(heldUntil());
+  // Taking a hold must never raise an OS dialog: the guest asked for a table, not for
+  // notifications, and the prompt belongs to the confirmation screen's reminder toggle.
+  it("warns when permission is already granted, without ever prompting", async () => {
+    await expect(scheduleHoldExpiryNotice(heldUntil())).resolves.toBe("notice-1");
     expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
-
-    mocked.getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
-    mocked.requestPermissionsAsync.mockResolvedValue({ status: "granted" });
-    await scheduleHoldExpiryNotice(heldUntil());
-    expect(mocked.requestPermissionsAsync).toHaveBeenCalledTimes(1);
   });
 
-  // A refusal costs the guest a warning, never the booking.
-  it("schedules nothing when the prompt is refused", async () => {
+  it("schedules nothing, and still does not prompt, when permission is undetermined", async () => {
     mocked.getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
-    mocked.requestPermissionsAsync.mockResolvedValue({ status: "denied" });
 
     await expect(scheduleHoldExpiryNotice(heldUntil())).resolves.toBeNull();
+    expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(mocked.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  // A guest who said no once is not asked again by the booking flow.
+  it("schedules nothing when permission was refused earlier", async () => {
+    mocked.getPermissionsAsync.mockResolvedValue({ status: "denied" });
+
+    await expect(scheduleHoldExpiryNotice(heldUntil())).resolves.toBeNull();
+    expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
     expect(mocked.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
