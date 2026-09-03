@@ -330,19 +330,6 @@ export default function LocationsScreen({
   // the heading above it and the cards below.
   const pageInset = isCompact ? theme.spacing.lg : theme.spacing.xxl;
 
-  const onWeb = Platform.OS === "web";
-  /**
-   * Who owns the space above and below the list. A native header already insets its own
-   * content, so the header case hands both edges to the scroll view
-   * (`contentInsetAdjustmentBehavior`), which is also what lets iOS collapse the large title as
-   * the list moves; the header-less root has nothing above it and pads the status bar and the
-   * tab bar itself. Doing both at once double-pads either edge.
-   *
-   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
-   * — pins each route taking exactly one of the two, at the top and at the bottom.
-   */
-  const headerOwnsInset = !onWeb && hasNativeHeader;
-
   /**
    * Off web the bar pins by `stickyHeaderIndices`, which counts the ScrollView's direct
    * children — a fragment would count as one and pin whatever came after it — so the page is
@@ -361,22 +348,11 @@ export default function LocationsScreen({
     </View>
   );
 
-  /**
-   * Pinned, the band *is* the top of the display, so it takes the status bar inset onto its own
-   * padding — its background fills the bar and its controls sit clear of the clock. Unpinned it
-   * takes none, or it would hang a status-bar-sized gap under the heading. The band is opaque,
-   * so this is also what lets the cards scroll all the way to the top of the display behind it
-   * rather than clipping at a dead strip outside the scroller.
-   */
   const nativeBand = restaurants.length > 0 && (
     <View
       testID="locations-filter-sticky"
       onLayout={measureFilterBand}
-      style={[
-        styles.nativeFilterBand,
-        { backgroundColor: colors.page },
-        filterPinned && !headerOwnsInset && { paddingTop: insets.top },
-      ]}
+      style={[styles.nativeFilterBand, { backgroundColor: colors.page }]}
     >
       <View style={[styles.nativeColumn, { paddingHorizontal: pageInset }]}>
         {filterBar}
@@ -422,24 +398,38 @@ export default function LocationsScreen({
     </PageContainer>
   );
 
+  const onWeb = Platform.OS === "web";
+  /**
+   * Who owns the space above and below the list. A native header already insets its own
+   * content, so the header case hands both edges to the scroll view
+   * (`contentInsetAdjustmentBehavior`), which is also what lets iOS collapse the large title as
+   * the list moves; the header-less root has nothing above it and pads the status bar and the
+   * tab bar itself. Doing both at once double-pads either edge.
+   *
+   * @see [LocationsScreen.test.tsx](../../tests/components/restaurant/LocationsScreen.test.tsx)
+   * — pins each route taking exactly one of the two, at the top and at the bottom.
+   */
+  const headerOwnsInset = !onWeb && hasNativeHeader;
+
   return (
     <ThemedView style={styles.root}>
       <View
         testID="locations-row"
         style={[styles.row, sideDrawer && [styles.rowWithDrawer, { maxWidth: contentWidth }]]}
       >
-        {/* Header-less off web the column runs to the top of the display, and the status bar
-            inset is padding on the scroll *content* — so the list passes under the bar the way
-            the home hero does. What keeps the bar legible is the pinned band above, which takes
-            the inset onto itself the moment it gets there. */}
-        <View testID="locations-list-column" style={styles.listColumn}>
+        {/* Header-less off web, the column starts under the status bar rather than at the top
+            of the display; the inset sits outside the ScrollView so the pinned filter band
+            pins below the bar instead of under it. */}
+        <View
+          testID="locations-list-column"
+          style={[styles.listColumn, !onWeb && !headerOwnsInset && { paddingTop: insets.top }]}
+        >
           <ScrollView
             ref={scrollRef}
             style={styles.scroll}
             contentContainerStyle={[
               styles.scrollContent,
               !headerOwnsInset && { paddingBottom: tabBarClearance },
-              !onWeb && !headerOwnsInset && { paddingTop: insets.top },
             ]}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
