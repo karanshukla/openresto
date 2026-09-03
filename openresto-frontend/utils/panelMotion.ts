@@ -25,3 +25,25 @@ export const SIDE_EXIT_MS = 120;
 export function shouldDismissSheet(dy: number, vy: number): boolean {
   return dy > 120 || (dy > 40 && vy > 0.7);
 }
+
+/**
+ * How far a drag has to travel before the sheet takes it away from the body's own scroller.
+ * Larger than `shouldDismissSheet`'s threshold on purpose: this one runs on the capture phase,
+ * ahead of the list, so it has to be sure the gesture is a drag and not the start of a scroll.
+ */
+export const SHEET_CLAIM_DISTANCE = 8;
+
+/**
+ * Whether the sheet, rather than the list inside it, owns a drag in progress.
+ *
+ * A sheet draggable only by its handle reads as a sheet that cannot be dragged, because the
+ * card is the part under the thumb. Claiming every drag instead would stop the list scrolling,
+ * so the gate is the scroll position: at the top of the content there is nothing left to
+ * scroll down to, and a downward drag can only mean the sheet.
+ *
+ * @see [panelMotion.test.ts](../tests/utils/panelMotion.test.ts) — pins both sides of each
+ * boundary: at the top versus scrolled, downward versus up, vertical versus sideways.
+ */
+export function shouldClaimSheetDrag(dy: number, dx: number, bodyAtTop: boolean): boolean {
+  return bodyAtTop && dy > SHEET_CLAIM_DISTANCE && Math.abs(dy) > Math.abs(dx);
+}

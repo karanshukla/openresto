@@ -84,6 +84,36 @@ describe("SlidePanel", () => {
       await waitFor(() => expect(onDismiss).toHaveBeenCalled());
     });
 
+    /**
+     * The card is the part under the thumb, so the whole sheet answers a drag and not just the
+     * handle. Which drags it claims is `shouldClaimSheetDrag`, pinned in panelMotion's own test;
+     * what this pins is the wiring, since a gate nothing consults changes nothing.
+     */
+    it("lets the sheet itself claim a drag, ahead of the body's scroller", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+
+      expect(
+        screen.getByTestId("result-panel").props.onMoveShouldSetResponderCapture
+      ).toBeDefined();
+    });
+
+    // The gate reads the scroll position, so the body has to report it.
+    it("tracks how far the body has scrolled", () => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      const body = screen.getByTestId("result-panel-body");
+
+      expect(typeof body.props.onScroll).toBe("function");
+      expect(body.props.scrollEventThrottle).toBe(16);
+    });
+
     it("wires the grabber to a pan responder, hidden from assistive tech", () => {
       renderWithProviders(
         <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">

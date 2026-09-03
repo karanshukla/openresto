@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { animateNode, EASE_ENTER, prefersReducedMotion } from "@/utils/webAnimation";
 import {
+  shouldClaimSheetDrag,
   shouldDismissSheet,
   SHEET_EXIT_DISTANCE,
   SIDE_ENTER_DISTANCE,
@@ -66,9 +67,23 @@ export default function SlidePanel({
 
   const dragY = useRef(new Animated.Value(0)).current;
   const nativeDriver = Platform.OS !== "web";
+  /**
+   * Whether the body is scrolled to its top, which is what decides who owns a downward drag.
+   * A sheet that can only be dragged by its handle reads as a sheet that cannot be dragged:
+   * the card is the part under the thumb.
+   */
+  const bodyAtTop = useRef(true);
   const panResponder = useMemo(
     () =>
       PanResponder.create({
+        /**
+         * Claimed ahead of the body's own scroller, but only where the scroller has nothing
+         * left to give: at the top of the content, dragging down. Anywhere else this stays out
+         * of the way and the list scrolls, which is why the gate is the scroll position and not
+         * the gesture alone.
+         */
+        onMoveShouldSetPanResponderCapture: (_e, g) =>
+          shouldClaimSheetDrag(g.dy, g.dx, bodyAtTop.current),
         onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderMove: (_e, g) => {
           if (g.dy > 0) dragY.setValue(g.dy);
@@ -135,6 +150,7 @@ export default function SlidePanel({
               onPress={dismissWithHaptic}
             />
             <Animated.View
+              {...panResponder.panHandlers}
               testID={testID}
               role="dialog"
               aria-modal
@@ -170,6 +186,10 @@ export default function SlidePanel({
                 contentContainerStyle={styles.sheetBody}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
+                onScroll={(e) => {
+                  bodyAtTop.current = e.nativeEvent.contentOffset.y <= 0;
+                }}
+                scrollEventThrottle={16}
               >
                 {children}
               </ScrollView>
