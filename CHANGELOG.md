@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-03
+
+Hi all! Two point oh, and the headline is that OpenResto is now an app. The guest booking screens build as a native iOS and Android app that you publish under your own developer accounts, pointed at your own instance, with push reminders and Apple or Google Wallet passes to go with them. Upstream never ships a binary and the stores never see an "OpenResto" app. Alongside that, the admin API grew scoped API keys and a real command-line client on npm, and front of house got a service floor showing who is sitting where right now. Five security fixes landed here too, and the first two are worth reading even if you skip everything else: booking references are now unguessable, and an API key can no longer mint itself a login.
+
+### Breaking Changes
+
+- **The CLI's user-management verbs are gone**: `openresto users create`, `users role` and `users reset-password`. An API key could use them to create an admin account with a role and password of its choosing and then sign in as it, reaching the whole surface keys are deliberately excluded from. The server now refuses those three verbs to any key session, so the commands could only ever have failed. `users list`, `users activate` and `users deactivate` are unchanged. **If you script account creation, move it to the admin UI**; there is no key-based replacement, by design.
+- **The two guest by-reference endpoints are now limited to 10 requests per minute per IP**, down from the 120 they shared with general browsing. `GET /api/bookings/ref/{ref}` and `POST /api/bookings/ref/{ref}/cancel` are the only unauthenticated endpoints where a correct guess hands over someone else's booking, so they now sit at the same ceiling as login. A guest reads a reference off an email and looks it up once, so this is invisible in normal use. **It is not invisible behind a shared address**: an office, a hotel or carrier-grade NAT puts many guests in one bucket. Raise it in front of the app if that describes your deployment.
+- **New booking references carry a four-digit tail**, so the word format reads `crispy-basil-thyme-0482` rather than `crispy-basil-thyme`. The old format drew 177,000 combinations from a non-cryptographic PRNG, which is walkable in about a day from one known email address. References now come from a CSPRNG and the space is 1.77 billion. **Every reference ever issued still resolves and still cancels**, and the numeric format is unchanged, but an integration that pattern-matches the old three-word shape needs updating.
+
 ### Added
 
 - **Guests can ask to be reminded about a booking, as a push notification** (#419). A confirmed booking in the native app (and on the website, when the server has VAPID keys) carries a **Remind me** toggle; the phone asks for notification permission only then, and the server pushes the day before and two hours before the sitting (`GuestPush__ReminderLeadHours`), in the language the app was in. A device is registered against one booking, holds nothing but its push address, and is forgotten once the sitting starts, the booking is cancelled or an admin purges it. Native delivery goes through Expo's push service, so the APNs and FCM credentials stay with the self-hoster's EAS project and never reach the server; browser delivery reuses the admin notifications' Web Push path. A reminder window that had already opened when the guest opted in is skipped, so booking tomorrow's table does not produce a "24 hours to go" push seconds after the confirmation.
@@ -428,4 +438,5 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.7.0]: https://github.com/karanshukla/openresto/releases/tag/v1.7.0
 [1.8.0]: https://github.com/karanshukla/openresto/releases/tag/v1.8.0
 [1.9.0]: https://github.com/karanshukla/openresto/releases/tag/v1.9.0
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v1.9.0...HEAD
+[2.0.0]: https://github.com/karanshukla/openresto/releases/tag/v2.0.0
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.0.0...HEAD
