@@ -13,7 +13,7 @@ import { TimeSlotDto } from "@/api/availability";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { IconButton } from "@/components/common/IconButton";
 import { getNowInTimezone } from "@/utils/date";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { styles } from "./PopularTimesPicker.styles";
 
 interface PopularTimesPickerProps {
@@ -176,7 +176,7 @@ export default function PopularTimesPicker({
         key={cat}
         onPress={() => {
           if (!disabled) {
-            Haptics.selectionAsync();
+            haptics.selection();
             setActiveCategory(cat);
           }
         }}
@@ -217,7 +217,7 @@ export default function PopularTimesPicker({
           <Pressable
             key={slot.time}
             onPress={() => {
-              Haptics.selectionAsync();
+              haptics.selection();
               onSelectTime(slot.time);
             }}
             accessibilityRole="radio"

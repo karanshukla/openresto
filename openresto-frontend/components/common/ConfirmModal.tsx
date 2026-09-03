@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
@@ -35,11 +35,7 @@ export default function ConfirmModal({
   const resolvedCancelLabel = cancelLabel ?? t("common.actions.cancel");
 
   const handleConfirm = () => {
-    Haptics.notificationAsync(
-      destructive
-        ? Haptics.NotificationFeedbackType.Warning
-        : Haptics.NotificationFeedbackType.Success
-    );
+    haptics.outcome(destructive ? "warning" : "success");
     onConfirm();
   };
 

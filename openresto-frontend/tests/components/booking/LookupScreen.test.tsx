@@ -26,12 +26,8 @@ jest.mock("react-native", () => {
   return rn;
 });
 
-jest.mock("expo-haptics", () => ({
-  notificationAsync: jest.fn(),
-  selectionAsync: jest.fn(),
-  impactAsync: jest.fn(),
-  NotificationFeedbackType: { Success: "success", Error: "error" },
-  ImpactFeedbackStyle: { Light: "light" },
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 
 jest.mock("@/api/bookings", () => ({
@@ -373,33 +369,33 @@ describe("LookupScreen", () => {
     });
 
     it("fires success haptics once a justBooked deep link resolves to an active booking", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       renderWithProviders(
         <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
       );
 
       await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
-      await waitFor(() => expect(Haptics.notificationAsync).toHaveBeenCalledWith("success"));
+      await waitFor(() => expect(haptics.outcome).toHaveBeenCalledWith("success"));
     });
 
     it("fires error-tone haptics when the justBooked booking is already cancelled", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, isCancelled: true });
       renderWithProviders(
         <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
       );
 
       await waitFor(() => expect(screen.getByText("Booking Cancelled")).toBeTruthy());
-      await waitFor(() => expect(Haptics.notificationAsync).toHaveBeenCalledWith("error"));
+      await waitFor(() => expect(haptics.outcome).toHaveBeenCalledWith("error"));
     });
 
     it("does not fire haptics for a plain (non-justBooked) deep link", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
-      expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+      expect(haptics.outcome).not.toHaveBeenCalled();
     });
   });
 

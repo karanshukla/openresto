@@ -11,11 +11,8 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: jest.fn(() => ({ appName: "Open Resto", primaryColor: "#0a7ea4" })),
 }));
 
-jest.mock("expo-haptics", () => ({
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
-  ImpactFeedbackStyle: { Light: "light" },
-  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 
 describe("ConfirmModal", () => {

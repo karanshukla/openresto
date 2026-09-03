@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { animateNode, EASE_ENTER, prefersReducedMotion } from "@/utils/webAnimation";
@@ -90,7 +90,7 @@ export default function SlidePanel({
         },
         onPanResponderRelease: (_e, g) => {
           if (shouldDismissSheet(g.dy, g.vy)) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            haptics.press();
             Animated.timing(dragY, {
               toValue: SHEET_EXIT_DISTANCE,
               duration: prefersReducedMotion() ? 0 : 180,
@@ -126,7 +126,7 @@ export default function SlidePanel({
   }, [variant]);
 
   const dismissWithHaptic = useCallback(() => {
-    Haptics.selectionAsync();
+    haptics.selection();
     Animated.timing(dragY, {
       toValue: SHEET_EXIT_DISTANCE,
       duration: prefersReducedMotion() ? 0 : 180,

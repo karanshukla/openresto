@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react-nativ
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import { fetchAvailability } from "@/api/availability";
 import { Linking, Platform, StyleSheet } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -31,7 +31,9 @@ jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
 
-jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
+}));
 
 jest.spyOn(Linking, "openURL").mockResolvedValue(undefined as never);
 
@@ -300,7 +302,7 @@ describe("RestaurantCard", () => {
     await waitFor(() => expect(screen.getByText("Test Bistro")).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText("Test Bistro, view details and book"));
-    expect(Haptics.selectionAsync).toHaveBeenCalled();
+    expect(haptics.selection).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1");
   });
 
@@ -316,7 +318,7 @@ describe("RestaurantCard", () => {
       await waitFor(() => expect(screen.getByText("19:00")).toBeTruthy());
 
       fireEvent.press(screen.getByText("19:00"), { stopPropagation: () => {} });
-      expect(Haptics.selectionAsync).toHaveBeenCalled();
+      expect(haptics.selection).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1?time=19%3A00&party=2");
     } finally {
       jest.useRealTimers();

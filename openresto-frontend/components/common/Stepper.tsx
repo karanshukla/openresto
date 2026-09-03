@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { IconButton } from "@/components/common/IconButton";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -47,7 +47,7 @@ export default function Stepper({
   const step = (delta: number) => {
     const next = options[index + delta];
     if (!next) return;
-    Haptics.selectionAsync();
+    haptics.selection();
     onChange(next.value);
   };
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
@@ -134,11 +134,7 @@ export default function LookupScreen({
       legacyBookingId !== undefined ? { legacyId: legacyBookingId } : undefined
     ).then((outcome) => {
       if (justBooked && outcome.status === "found") {
-        Haptics.notificationAsync(
-          outcome.booking.isCancelled
-            ? Haptics.NotificationFeedbackType.Error
-            : Haptics.NotificationFeedbackType.Success
-        );
+        haptics.outcome(outcome.booking.isCancelled ? "error" : "success");
       }
     });
   }, [initialRef, initialEmail, legacyBookingId, justBooked, lookup]);

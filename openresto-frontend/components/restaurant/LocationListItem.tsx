@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GestureResponderEvent, Linking, Pressable, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -121,7 +121,7 @@ export default function LocationListItem({
     // The card body is the toggle, so the controls sitting on top of it (the menu link, the
     // Details and Book now buttons) have to keep their press from reaching it.
     event?.stopPropagation?.();
-    Haptics.selectionAsync();
+    haptics.selection();
     setExpanded((prev) => {
       const next = !prev;
       if (next && onExpand) onExpand(restaurant.id);

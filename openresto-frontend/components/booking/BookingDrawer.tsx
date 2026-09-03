@@ -23,7 +23,7 @@ import {
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -140,7 +140,7 @@ export default function BookingDrawer({
         },
         onPanResponderRelease: (_e, g) => {
           if (shouldDismissSheet(g.dy, g.vy)) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            haptics.press();
             Animated.timing(dragY, {
               toValue: SHEET_EXIT_DISTANCE,
               duration: prefersReducedMotion() ? 0 : 180,
@@ -179,7 +179,7 @@ export default function BookingDrawer({
   }, [variant]);
 
   const closeWithHaptic = useCallback(() => {
-    Haptics.selectionAsync();
+    haptics.selection();
     const done = () => onCloseRef.current();
     if (variant === "sheet") {
       Animated.timing(dragY, {

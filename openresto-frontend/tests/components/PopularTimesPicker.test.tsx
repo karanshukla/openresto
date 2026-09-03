@@ -20,8 +20,8 @@ jest.mock("@/context/BrandContext", () => {
   return { useBrand: () => brand };
 });
 
-jest.mock("expo-haptics", () => ({
-  selectionAsync: jest.fn(),
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 
 describe("PopularTimesPicker", () => {
