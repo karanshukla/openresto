@@ -44,7 +44,14 @@ for file in "${VERSIONED_FILES[@]}"; do
 done
 
 CSPROJ_FILE="OpenRestoApi/OpenRestoApi.csproj"
-csproj_actual="$(xmllint --xpath 'string(//Version)' "$REPO_ROOT/$CSPROJ_FILE" 2>/dev/null || true)"
+# Read <Version> with sed rather than an XML tool: this ran on xmllint, which the
+# GitHub runner image stopped shipping, and the `2>/dev/null` around it reported the
+# missing binary as a missing version — so v2.0.0's release failed telling the
+# maintainer to bump a field that already read 2.0.0. Only the property is an element
+# named Version; every PackageReference carries it as an attribute, so the first match
+# is the right one.
+csproj_actual="$(sed -n 's:.*<Version>[[:space:]]*\([^<[:space:]]*\)[[:space:]]*</Version>.*:\1:p' \
+  "$REPO_ROOT/$CSPROJ_FILE" | head -n 1)"
 if [ -z "$csproj_actual" ]; then
   csproj_actual="<missing>"
 fi
