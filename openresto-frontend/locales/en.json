@@ -513,7 +513,8 @@
       "highlightsSubheading": "Curated by the owner",
       "loadingLocations": "Loading locations",
       "locationsHeading": "Our locations",
-      "opensInNewTab": "Opens in a new tab"
+      "opensInNewTab": "Opens in a new tab",
+      "opensExternally": "Opens outside the app"
     },
     "locationListItem": {
       "bookNow": "Book now",
@@ -1327,6 +1328,7 @@
         "title": "Contact & Website",
         "noFallback": "No fallback contact set",
         "invalidEmailBlocked": "Not saved: that isn't a valid email address yet.",
+        "invalidUrlBlocked": "Not saved: that isn't a full web address yet, like https://example.com.",
         "websiteUrlLabel": "Website URL",
         "websiteUrlPlaceholder": "https://bookings.example.com",
         "websiteUrlHint": "Used in confirmation email links and images. Must be the public URL of this app.",

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Application.Utilities;
@@ -43,8 +44,16 @@ public class NotificationService(
 
     // ── Push subscriptions ────────────────────────────────────────────────────
 
+    /// <summary>
+    /// <seealso>NotificationServiceTests.SubscribeAsync_RejectsAnEndpointThatIsNotAPublicHttpsUrl</seealso>
+    /// </summary>
     public async Task SubscribeAsync(int restaurantId, PushSubscribeRequest request)
     {
+        if (!PushEndpointValidator.IsValidWebPushEndpoint(request.Endpoint))
+        {
+            throw new ValidationException("The push endpoint must be a public https URL.") { Code = ErrorCodes.NotificationPushEndpointInvalid };
+        }
+
         // Deduplicate per (endpoint, restaurantId) so the same browser can receive
         // notifications for multiple restaurants independently.
         AdminPushSubscription? existing = await _pushSubscriptionRepository.GetByEndpointAndRestaurantAsync(request.Endpoint, restaurantId);

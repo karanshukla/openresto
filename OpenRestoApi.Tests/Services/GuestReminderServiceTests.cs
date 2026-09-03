@@ -183,6 +183,31 @@ public class GuestReminderServiceTests : IDisposable
         Assert.Empty(await StoredAsync());
     }
 
+    [Theory]
+    [InlineData(GuestPushChannels.Expo, "https://fcm.googleapis.com/fcm/send/abc")]
+    [InlineData(GuestPushChannels.Expo, "not-a-token")]
+    [InlineData(GuestPushChannels.WebPush, "http://push.example/sub1")]
+    [InlineData(GuestPushChannels.WebPush, "https://10.0.0.7/sub1")]
+    [InlineData(GuestPushChannels.WebPush, "https://localhost/sub1")]
+    [InlineData(GuestPushChannels.WebPush, "ExponentPushToken[device-1]")]
+    public async Task SubscribeAsync_RejectsAnAddressTheServerWouldNotSendTo(string channel, string endpoint)
+    {
+        SeedBooking(Now.AddDays(3));
+        var request = new GuestReminderSubscribeRequest
+        {
+            Email = Email,
+            Channel = channel,
+            Endpoint = endpoint,
+            P256dh = "p256dh-key",
+            Auth = "auth-secret",
+        };
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => CreateService().SubscribeAsync(Ref, Email, request));
+
+        Assert.Equal(ErrorCodes.BookingReminderEndpointInvalid, ex.Code);
+        Assert.Empty(await StoredAsync());
+    }
+
     [Fact]
     public async Task SubscribeAsync_StoresBothWebPushKeysWhenPresent()
     {

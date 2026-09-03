@@ -20,6 +20,7 @@ namespace OpenRestoApi.Infrastructure.NativeClients;
 /// <seealso>NativeClientStatsCollectorTests.Record_KeepsTheLatestSighting</seealso>
 /// <seealso>NativeClientStatsCollectorTests.Drain_EmptiesTheCollector</seealso>
 /// <seealso>NativeClientStatsCollectorTests.Record_CountsEveryRequestUnderConcurrency</seealso>
+/// <seealso>NativeClientStatsCollectorTests.Record_StopsOpeningBucketsAtTheCap</seealso>
 [OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NativeClientStatsCollectorTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Infrastructure.NativeClientStatsWorkerTests")]
@@ -30,11 +31,21 @@ internal sealed class NativeClientStatsCollector : INativeClientStatsCollector
 
     private sealed record Tally(int RequestCount, DateTime LastSeenUtc);
 
+    /// <summary>
+    /// How many distinct buckets a flush window may open. The header is unauthenticated and
+    /// every well-formed version string is a new key, so without a ceiling one client could
+    /// grow this dictionary — and, a minute later, the table — without bound. Real deployments
+    /// see a handful of versions; past the cap a new one is dropped and known ones still count.
+    /// </summary>
+    public const int MaxBuckets = 256;
+
     private ConcurrentDictionary<Bucket, Tally> _tallies = new();
 
     public void Record(string platform, string appVersion, DateTime nowUtc)
     {
         var bucket = new Bucket(platform, appVersion, DateOnly.FromDateTime(nowUtc));
+        if (_tallies.Count >= MaxBuckets && !_tallies.ContainsKey(bucket)) return;
+
         _tallies.AddOrUpdate(
             bucket,
             _ => new Tally(1, nowUtc),

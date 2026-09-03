@@ -437,19 +437,40 @@ describe("HomeScreen", () => {
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
 
-    // The linked card is a named link; the hint says it leaves the page, not the raw url.
+    // The linked card is a named link; the hint says it leaves the app, not the raw url — and
+    // off web it must not promise a "tab", which a phone has no such thing as.
     const link = screen.getByLabelText("Full menu. See what's cooking.");
-    expect(link.props.accessibilityHint).toBe("Opens in a new tab");
+    expect(link.props.accessibilityHint).toBe("Opens outside the app");
     fireEvent.press(link);
     expect(openURLSpy).toHaveBeenCalledWith("https://example.com/menu");
     openURLSpy.mockRestore();
   });
 
+  it("tells a browser visitor that a linked highlight opens in a new tab", async () => {
+    (fetchHighlights as jest.Mock).mockResolvedValue([
+      {
+        id: 10,
+        title: "Full menu",
+        body: "See what's cooking.",
+        iconKey: "restaurant-outline",
+        sortOrder: 0,
+        link: "https://example.com/menu",
+      },
+    ]);
+    await onPlatform("web", async () => {
+      renderWithProviders(<HomeScreen />);
+      await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+      expect(screen.getByLabelText("Full menu. See what's cooking.").props.accessibilityHint).toBe(
+        "Opens in a new tab"
+      );
+    });
+  });
+
   it("renders a non-linked highlight as a plain card (no link role)", async () => {
     renderWithProviders(<HomeScreen />);
     await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
-    // The default mock highlight has no link → no card carries the new-tab hint.
-    expect(screen.queryByA11yHint("Opens in a new tab")).toBeNull();
+    // The default mock highlight has no link → no card carries the leaves-the-app hint.
+    expect(screen.queryByA11yHint("Opens outside the app")).toBeNull();
     expect(screen.getByText("Wood-fired kitchen")).toBeTruthy();
   });
 

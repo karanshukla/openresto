@@ -1,23 +1,53 @@
 # Publishing the guest app to the stores yourself
 
-OpenResto's guest surface (browse locations, book a table, find a booking) can be built as a
-native iOS and Android app that **you** publish under **your own** Apple and Google developer
+OpenResto's guest surface (browse locations, book a table, find a booking) also builds as a
+native iOS and Android app. **You** publish it under **your own** Apple and Google developer
 accounts, pointed at **your own** instance. There is no OpenResto app on the stores and there
 never will be: a store listing carries a review cycle and a support burden that only the
 person running the server can own. What the project ships is the configuration surface, a
 generator that fills it in from your instance, and this guide.
 
-The admin dashboard stays on the web. Staff run it on tablets, and everything a native admin
-build would need (login issuance, uploads, push credentials) lives on that side. On a phone,
-`/admin/*` simply sends the app back to the home screen.
+The admin dashboard stays on the web. On a phone, `/admin/*` sends the app back to the home
+screen.
 
-> **Android first.** A Play Console account is a one-off US$25 and review takes hours. Apple
-> is US$99 a year, needs a Mac or EAS Build credits, and a single-restaurant booking app is
-> exactly the shape App Review's "minimum functionality" guideline (4.2) is written for. Ship
-> Android, then decide whether iOS is worth it for your guests. See
+> **Android first.** A Play Console account is a one-off US$25 and review takes hours. Apple is
+> US$99 a year, needs a Mac or EAS Build credits, and a single-restaurant booking app is exactly
+> the shape App Review's "minimum functionality" guideline (4.2) is written for. Ship Android,
+> then decide whether iOS is worth it for your guests. See
 > [Before you submit to Apple](#before-you-submit-to-apple).
 
-## What you get
+## Quick start
+
+The whole Android path, end to end. Each step is explained in the sections that follow.
+
+```bash
+# In a clone of this repository at the same release as your server
+cd openresto-frontend
+npm ci
+
+# 1. Generate your configuration from your instance
+npm run native:init -- --server https://bookings.example.com --bundle-id com.example.bistro
+
+# 2. Create the EAS project and remember its id
+npx eas-cli login
+npx eas-cli init                                  # prints a project id
+npm run native:init -- --project-id <that id>
+
+# 3. Build an .apk to try on a phone, then an .aab for Play Console
+npx eas-cli build --platform android --profile preview
+npx eas-cli build --platform android --profile production
+npx eas-cli submit --platform android
+
+# 4. Make confirmation emails open the app (optional, after the first build)
+npx eas-cli credentials --platform android      # shows the signing key's SHA-256 fingerprint
+npm run native:init -- --android-fingerprint <fingerprint>
+scp -r native/.well-known/ you@server:/path/to/openresto/well-known/
+```
+
+Then open **Admin → Settings → Native app** on your instance: it runs the checks a store
+submission or a deep link would fail on and tells you what is left.
+
+## What the app adds
 
 | Feature                 | Web / PWA                       | Native app                                                   |
 | ----------------------- | ------------------------------- | ------------------------------------------------------------ |
@@ -30,24 +60,25 @@ build would need (login issuance, uploads, push credentials) lives on that side.
 | Confirmation email link | opens the browser               | opens the app (Universal Links / App Links, once configured) |
 | Branding                | live from the server            | icon, name, colour and splash baked in at build time         |
 | Booking reminders       | browser push (needs VAPID keys) | a push the day before and shortly before the table           |
+| Table hold warning      | on-screen countdown only        | a local notification a minute before the hold lapses         |
 | Wallet pass             | download / save link            | Add to Apple Wallet on iOS, Save to Google Wallet on Android |
 
-The API base URL is a **build-time constant** in the native app, exactly as it is for the web
+The server address is a **build-time constant** in the app, exactly as it is for the web
 image. You build for one server. Change servers, rebuild.
 
-## Prerequisites
+## Before you start
 
-- A running OpenResto instance reachable over **https** (Universal Links and iOS's transport
-  security both require it; the generator refuses plain http except `localhost`).
-- A brand icon chosen under **Admin → Settings → Brand**. The generator downloads the app icon
-  and the Android adaptive-icon layer from your instance. Skip it and the build uses OpenResto's
-  bundled artwork, or pass your own PNGs (see below).
-- Node 24 and a clone of this repository at the **same release as your server**. The app version
-  is read from `openresto-frontend/package.json`, so a v1.9.0 checkout produces a 1.9.0 app.
-- An [Expo account](https://expo.dev) for EAS Build. Cloud builds are the easy path and work
-  from any machine; `eas build --local` works on Linux for Android and on a Mac for iOS.
-- **Android:** a Google Play Console account.
-- **iOS:** an Apple Developer Program membership.
+- A running OpenResto instance reachable over **https**. Universal Links and iOS transport
+  security both require it, and the generator refuses plain http except `localhost`.
+- A brand icon chosen under **Admin → Settings → Brand**. The generator downloads both app
+  icons from your instance. Without one the build uses OpenResto's bundled artwork; you can
+  also pass your own PNGs (see step 1).
+- Node 24 and a clone of this repository at the **same release as your server**. The app
+  version is read from `openresto-frontend/package.json`, so a v1.9.0 checkout produces a
+  1.9.0 app.
+- An [Expo account](https://expo.dev) for EAS Build. Cloud builds work from any machine;
+  `eas build --local` works on Linux for Android and on a Mac for iOS.
+- **Android:** a Google Play Console account. **iOS:** an Apple Developer Program membership.
 
 ## 1. Generate your configuration
 
@@ -57,7 +88,8 @@ npm ci
 npm run native:init -- --server https://bookings.example.com --bundle-id com.example.bistro
 ```
 
-This reads `/api/brand` from your instance and writes everything into `openresto-frontend/native/`:
+The bundle id is the app's permanent identity on both stores, so use a domain you own. The
+command reads `/api/brand` from your instance and writes `openresto-frontend/native/`:
 
 | File                                     | What it is                                                             |
 | ---------------------------------------- | ---------------------------------------------------------------------- |
@@ -67,10 +99,9 @@ This reads `/api/brand` from your instance and writes everything into `openresto
 | `.well-known/apple-app-site-association` | Universal Links, written once you pass `--apple-team-id`               |
 | `.well-known/assetlinks.json`            | App Links, written once you pass `--android-fingerprint`               |
 
-The directory is **gitignored on purpose**: it holds one publisher's identifiers and artwork,
-and committing it would dirty every upstream merge. It is not ignored by EAS: `.easignore`
-mirrors `.gitignore` except for this directory, so cloud builds receive it. Back it up with
-your `.env`.
+The directory is **gitignored on purpose**: it holds one publisher's identifiers and artwork.
+EAS still uploads it, because `.easignore` mirrors `.gitignore` except for this directory.
+Back it up with your `.env`.
 
 Re-running only needs the flags that change; everything else is remembered:
 
@@ -91,7 +122,7 @@ Useful options (`npm run native:init -- --help` lists them all):
   transparency**. The Android foreground must be 432×432 with the artwork inside the centred
   264×264 safe zone, on a transparent background.
 
-## 2. Create the EAS project and build for Android
+## 2. Build and test on Android
 
 ```bash
 npx eas-cli login
@@ -102,29 +133,27 @@ npx eas-cli build --platform android --profile preview
 
 `preview` produces an `.apk` you can install on a phone straight from the build page. Test the
 whole flow against your instance: browse, book, open the confirmation, add it to your calendar,
-find the booking again under **Find my booking**.
+find the booking again under **My booking**.
 
-When it works:
+## 3. Ship to Google Play
 
 ```bash
 npx eas-cli build --platform android --profile production
+npx eas-cli submit --platform android            # or upload the .aab in Play Console yourself
 ```
 
-That is an `.aab` for the Play Console. `eas.json` sets `appVersionSource: "remote"` with
-`autoIncrement`, so EAS manages `versionCode` for you and it never appears in this repository;
-the visible version tracks the OpenResto release you built from. Upload the `.aab` in Play
-Console, fill in the listing, and submit. Or let EAS do the upload:
+`eas.json` sets `appVersionSource: "remote"` with `autoIncrement`, so EAS manages
+`versionCode` for you and it never appears in this repository; the visible version is the
+OpenResto release you built from. Fill in the listing and submit. Both stores require a
+**privacy policy URL** before a listing can be published: set it under **Admin → Settings →
+Brand**, in the Contact & Website card. The guest footer and the app's About screen link it.
 
-```bash
-npx eas-cli submit --platform android
-```
-
-## 3. Make confirmation emails open the app
+## 4. Make confirmation emails open the app
 
 Booking confirmation emails link to `https://bookings.example.com/lookup?ref=…&email=…`. For
 that link to open the app rather than the browser, your server has to prove to each platform
-that you own both. That takes two files served from `/.well-known/` on your domain, and each
-contains identifiers only you have.
+that you own both. That takes two files served from `/.well-known/` on your domain, each
+carrying identifiers only you have.
 
 **Android** needs the SHA-256 fingerprint of the certificate your app is signed with:
 
@@ -136,7 +165,7 @@ npm run native:init -- --android-fingerprint <fingerprint>
 If Play App Signing re-signs your app (it does by default), use the fingerprint from **Play
 Console → Setup → App signing** instead, or pass both — the flag repeats.
 
-**iOS** needs your Apple Team ID (shown in the Apple Developer account's membership page):
+**iOS** needs your Apple Team ID (on the Apple Developer account's membership page):
 
 ```bash
 npm run native:init -- --apple-team-id ABCDE12345
@@ -149,23 +178,26 @@ a directory mounted next to your `docker-compose.yml`, so **no image is rebuilt*
 scp -r openresto-frontend/native/.well-known/ you@server:/path/to/openresto/well-known/
 ```
 
-The release `docker-compose.yml` already mounts `./well-known` into the proxy. Check the two
-files come back as JSON, the Apple one included even though it has no extension:
+The release `docker-compose.yml` already mounts `./well-known` into the proxy. Check both
+files come back as JSON, the Apple one included even though it has no extension, and without a
+redirect — neither verifier follows one:
 
 ```bash
 curl -sI https://bookings.example.com/.well-known/apple-app-site-association | grep -i content-type
 curl -s  https://bookings.example.com/.well-known/assetlinks.json
 ```
 
+The Native app page in the admin runs the same two fetches and reports what it found.
+
 Android verifies on install; iOS fetches through Apple's CDN, which can take a day to notice a
 new file. The generated files open `/lookup`, `/booking-confirmation`, `/locations`,
 `/restaurant`, `/book` and `/search` in the app and deliberately exclude `/`, `/admin` and
 `/api`, so the home page and the dashboard keep opening in a browser.
 
-Rebuild the app after adding a team id or fingerprint: the Android intent filters and the
+**Rebuild the app** after adding a team id or fingerprint: the Android intent filters and the
 iOS associated-domains entitlement are part of the binary.
 
-## 4. iOS
+## 5. iOS
 
 ```bash
 npx eas-cli build --platform ios --profile production
@@ -183,20 +215,19 @@ generation service) and **4.3** (spam and duplicates) before you spend the US$99
 for one restaurant that does what its website does is a common rejection, and a white-label app
 built from a shared codebase is what 4.2.6 and 4.3 describe. What tends to carry an approval:
 
-- The app should do things the website cannot. Today that is the device-held booking list,
-  the share-sheet calendar export, the maps handoff, booking reminders as push notifications
-  and the Wallet pass. Configure the last two before you submit (see
-  [Booking reminders](#booking-reminders) and [Wallet passes](#wallet-passes)): a reviewer
-  who sees only what the website does is a reviewer reading guideline 4.2. If you are the
-  first self-hoster to submit, you are the probe for whether this set is enough; please
-  report back.
-- Fill in the review notes: say it is the booking app for your restaurant, that it talks only
-  to your own server, and give the reviewer a real reservation to look up.
-- Use your own artwork and name. The generated glyph icon is adequate for Android and a
+- **Do things the website cannot.** Today that is the device-held booking list, the
+  share-sheet calendar export, the maps handoff, booking reminders as push notifications and
+  the Wallet pass. Configure the last two before you submit (see
+  [Booking reminders](#booking-reminders) and [Wallet passes](#wallet-passes)): a reviewer who
+  sees only what the website does is a reviewer reading guideline 4.2. If you are the first
+  self-hoster to submit, you are the probe for whether this set is enough; please report back.
+- **Fill in the review notes.** Say it is the booking app for your restaurant, that it talks
+  only to your own server, and give the reviewer a real reservation to look up.
+- **Use your own artwork and name.** The generated glyph icon is adequate for Android and a
   liability in an Apple review.
 
 Nothing here is specific to OpenResto — it is what every single-venue app faces — but it is
-the part of this process most likely to cost you time, so it is worth knowing before you start.
+the part of this process most likely to cost you time.
 
 ## Booking reminders
 
@@ -220,11 +251,10 @@ notifications use), delivered as a browser push through the service worker. A bu
 in Expo Go or on a simulator has no push token to offer and hides the toggle.
 
 The app also warns a guest one minute before a table hold lapses, so backgrounding it to check
-a calendar does not silently cost them the table. That one is a **local** notification the
-phone schedules and fires on its own — nothing reaches your server, and no push credentials are
-involved. It asks for notification permission the first time a hold is placed, and a guest who
-refuses simply books without the warning. The website has no equivalent: a backgrounded tab
-cannot run the timer, and a foregrounded one is already showing the countdown.
+a calendar does not silently cost them the table. That is a **local** notification the phone
+schedules itself — nothing reaches your server and no push credentials are involved. It only
+fires where notification permission has already been granted (the reminder toggle is the one
+place that asks), and a guest who never granted it simply books without the warning.
 
 ## Wallet passes
 
@@ -235,12 +265,19 @@ and appears on the lock screen around the sitting. A cancelled booking gets no p
 Wallet would go on showing it. Each platform is optional and independent; leave one unset and
 its button never appears.
 
-**Apple** needs a Pass Type ID under your developer account and its certificate:
+The release `docker-compose.yml` mounts `./wallet` beside it into the backend at `/wallet`
+read-only, so the files sit next to your `.env` and no image is rebuilt. A file that fails to
+load is logged once at startup and that platform's button stays hidden; the Native app page's
+readiness list says which issuer the server is signing under.
+
+### Apple
+
+Apple needs a Pass Type ID under your developer account and its certificate:
 
 1. In the Apple Developer portal, register a Pass Type ID (e.g. `pass.com.example.bistro`) and
    create a certificate for it. Export it from Keychain Access as a `.p12` with a password.
 2. Download Apple's WWDR intermediate certificate (G4 or later, `.cer`).
-3. Put both files where the backend container can read them and set:
+3. Put both files under `./wallet` and set:
 
    ```bash
    Wallet__Apple__PassTypeIdentifier=pass.com.example.bistro
@@ -250,8 +287,10 @@ its button never appears.
    Wallet__Apple__WwdrCertificatePath=/wallet/wwdr.cer
    ```
 
-**Google** needs a Wallet issuer and a service account. The two live in different consoles,
-which is the step people lose an afternoon to:
+### Google
+
+Google needs a Wallet issuer and a service account. The two live in different consoles, which
+is the step people lose an afternoon to:
 
 1. In the [Google Pay & Wallet Console](https://pay.google.com/business/console), create an
    issuer account and note the issuer ID (a ~19-digit number).
@@ -261,7 +300,7 @@ which is the step people lose an afternoon to:
 3. Back in the Google Pay & Wallet Console, go to **Users → Invite a user**, paste the service
    account's email address, and set the access level to **Developer**. Without this the key is
    valid but unknown to your issuer, and every save link is rejected.
-4. Mount the key and set:
+4. Put the key under `./wallet` and set:
 
    ```bash
    Wallet__Google__IssuerId=3388000000012345678
@@ -277,11 +316,6 @@ developers or test accounts on the issuer, and everyone else sees an error. That
 state, not a misconfiguration — request production access from the console when you are ready
 to publish. Signing up is for the Wallet passes API, not Google Pay; it involves no merchant
 account, payment credentials or bank details.
-
-The release `docker-compose.yml` mounts `./wallet` beside it into the backend at `/wallet`
-read-only, so the files sit next to your `.env` and no image is rebuilt. A file that fails to
-load is logged once at startup and that platform's button stays hidden; the Native app page's
-readiness list says which issuer the server is signing under.
 
 ### Trying it from a clone, without committing anything
 
@@ -323,12 +357,15 @@ website URL to your machine's LAN address if you want both to work from a phone.
 runs the instance rather than the person building the binary (often the same person, but not
 the same tools).
 
-- **Readiness** runs the checks a store submission or a deep link would fail on: the public
-  address is https, a brand icon is chosen, a privacy policy URL is set, and the two
+- **Store readiness** runs the checks a store submission or a deep link would fail on: the
+  public address is https, a brand icon is chosen, a privacy policy URL is set, and the two
   `.well-known` files come back from your domain with the right content type and shape. Each
-  failing row says what to do. Re-check after you copy the files to the server. Two further
-  rows report whether Apple and Google Wallet passes are being issued; those are optional and
-  read as "not checked" rather than failures when unset.
+  failing row says what to do; re-check after you copy the files to the server. The two fetches
+  go to the public address the server is configured with (the brand's website URL, else
+  `WEBSITE_URL`, else the first `CORS_ORIGINS` entry) and are skipped, with the reason shown,
+  when that address is `localhost` or a private-network address a store's verifier could not
+  reach either. Two further rows report whether Apple and Google Wallet passes are being
+  issued; those are optional and read as "not checked" rather than failures when unset.
 - **Installed clients** lists which builds are talking to this server: platform, app version,
   last seen, requests in the last 7 and 30 days. The app identifies itself with an
   `X-OpenResto-Client: android/1.9.0` header on every request; the server keeps only daily
@@ -337,10 +374,6 @@ the same tools).
   screen on launch instead of the app, which is how you retire a build that predates a change
   to the guest API. Leave it empty to accept any version.
 - **Build your app** shows the `native:init` command pre-filled for this deployment.
-
-The **privacy policy URL** itself lives on **Settings → Brand**, in the contact card. Both
-stores require one before a listing can be published, and the guest footer links it on web
-and in the app.
 
 ## Keeping the app and server in step
 
@@ -353,13 +386,30 @@ will ask their users to update.
 
 ## Rate limits
 
-Every guest request is rate limited per client IP (see `CORS_ORIGINS` and the limiter settings
-in the backend). Phones on one carrier share a small pool of egress addresses, so a full dining
-room of guests on the same network can look like one very busy client. If you see `429`s from
-the app on busy nights, that is what is happening; raise the public limit in your backend
-configuration.
+Every guest request is rate limited per client IP. Phones on one carrier share a small pool of
+egress addresses, so a full dining room of guests on the same network can look like one very
+busy client. If you see `429`s from the app on busy nights, that is what is happening; raise
+the public limit in your backend configuration.
 
-## What is generated where
+## Reference
+
+### Environment variables
+
+All optional. The release `docker-compose.yml` maps each one from a plainer name in `.env`.
+
+| Variable                                | `.env` name                              | Purpose                                                   |
+| --------------------------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| `GuestPush__ReminderLeadHours`          | `GUEST_PUSH_REMINDER_LEAD_HOURS`         | Reminder leads in hours, comma-separated (default `24,2`) |
+| `GuestPush__ExpoAccessToken`            | `EXPO_ACCESS_TOKEN`                      | Only if the EAS project uses enhanced push security       |
+| `Wallet__Apple__PassTypeIdentifier`     | `APPLE_PASS_TYPE_ID`                     | Pass Type ID, e.g. `pass.com.example.bistro`              |
+| `Wallet__Apple__TeamIdentifier`         | `APPLE_TEAM_ID`                          | Apple Team ID                                             |
+| `Wallet__Apple__CertificatePath`        | `APPLE_PASS_CERTIFICATE_PATH`            | Path to the `.p12`, under `/wallet`                       |
+| `Wallet__Apple__CertificatePassword`    | `APPLE_PASS_CERTIFICATE_PASSWORD`        | The `.p12` password                                       |
+| `Wallet__Apple__WwdrCertificatePath`    | `APPLE_WWDR_CERTIFICATE_PATH`            | Path to Apple's WWDR `.cer`, under `/wallet`              |
+| `Wallet__Google__IssuerId`              | `GOOGLE_WALLET_ISSUER_ID`                | Wallet issuer ID                                          |
+| `Wallet__Google__ServiceAccountKeyPath` | `GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_PATH` | Path to the service-account JSON, under `/wallet`         |
+
+### Files
 
 | Path                                            | Committed | Purpose                                                           |
 | ----------------------------------------------- | --------- | ----------------------------------------------------------------- |
@@ -369,12 +419,18 @@ configuration.
 | `openresto-frontend/scripts/native-init.mjs`    | yes       | the generator                                                     |
 | `openresto-frontend/native/`                    | **no**    | your identifiers, icons and `.well-known` files                   |
 | `well-known/` next to your `docker-compose.yml` | **no**    | served by the nginx image at `/.well-known/`                      |
+| `wallet/` next to your `docker-compose.yml`     | **no**    | mounted read-only into the backend at `/wallet`                   |
 
-Server-side, `GET /api/brand/app-icon-ios.png` and `GET /api/brand/app-icon-android-foreground.png`
-are the public endpoints the generator downloads; they return 404 until a brand icon is chosen.
-`GET /api/brand` also carries `privacyPolicyUrl`, `minimumAppVersion`, `wallet` (which passes
-are offered) and `webPushPublicKey`, and `GET /api/admin/native-app/status` (admin,
-`brand:read` for an API key) is what the Native app page renders. A booking's guest endpoints
-take the reference and the email, as lookup does: `POST`/`DELETE
-/api/bookings/ref/{ref}/reminders` register and remove one device, and
-`GET /api/bookings/ref/{ref}/wallet/apple.pkpass` and `/wallet/google` produce the passes.
+### Endpoints
+
+- `GET /api/brand/app-icon-ios.png` and `GET /api/brand/app-icon-android-foreground.png` are
+  what the generator downloads; both return 404 until a brand icon is chosen.
+- `GET /api/brand` also carries `privacyPolicyUrl`, `minimumAppVersion`, `wallet` (which
+  passes are offered) and `webPushPublicKey`.
+- `GET /api/admin/native-app/status` (admin, `brand:read` for an API key) is what the Native
+  app page renders.
+- A booking's guest endpoints take the reference and the email, as lookup does:
+  `POST`/`DELETE /api/bookings/ref/{ref}/reminders` register and remove one device, and
+  `GET /api/bookings/ref/{ref}/wallet/apple.pkpass` and `/wallet/google` produce the passes.
+  A push address is stored only if it is the shape the server will send to: an Expo push
+  token, or an https Web Push endpoint on a public host.

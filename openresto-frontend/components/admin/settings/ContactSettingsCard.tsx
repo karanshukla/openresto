@@ -7,7 +7,7 @@ import Input from "@/components/common/Input";
 import { useBrand } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAutosave } from "@/hooks/use-autosave";
-import { isValidEmail } from "@/utils/validation";
+import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
 import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
@@ -47,10 +47,15 @@ export function ContactSettingsCard({
   useBrandDraftPublish({ websiteUrl, privacyPolicyUrl });
 
   // A withheld save has to say why: with no button to disable, silence reads as a broken card.
+  // Each rule mirrors one the server enforces, so a half-typed value waits here rather than
+  // flashing a 400 on its way to being valid.
+  const halfTypedUrl = (value: string) => value.trim() !== "" && !isValidUrl(value, WEB_SCHEMES);
   const blockedReason =
     emailAddress.trim() && !isValidEmail(emailAddress)
       ? t("admin.settings.contact.invalidEmailBlocked")
-      : null;
+      : halfTypedUrl(websiteUrl) || halfTypedUrl(privacyPolicyUrl)
+        ? t("admin.settings.contact.invalidUrlBlocked")
+        : null;
 
   const { status, error, retry, undo } = useAutosave({
     values: {
@@ -66,7 +71,7 @@ export function ContactSettingsCard({
       privacyPolicyUrl: brand.privacyPolicyUrl ?? "",
     },
     save: saveBrandFields,
-    // A half-typed address is a 400 from the server; blank is a deliberate clear, so it saves.
+    // Blank is a deliberate clear, so it saves; anything half-typed waits, with the reason on screen.
     canSave: !blockedReason,
     onRestore: (previous) => {
       setWebsiteUrl(previous.websiteUrl);

@@ -513,7 +513,8 @@
       "highlightsSubheading": "Seleccionado por el propietario",
       "loadingLocations": "Cargando locales",
       "locationsHeading": "Nuestros locales",
-      "opensInNewTab": "Se abre en una pestaña nueva"
+      "opensInNewTab": "Se abre en una pestaña nueva",
+      "opensExternally": "Se abre fuera de la aplicación"
     },
     "locationListItem": {
       "bookNow": "Reservar ahora",
@@ -1327,6 +1328,7 @@
         "title": "Contacto y sitio web",
         "noFallback": "No hay contacto de reserva establecido",
         "invalidEmailBlocked": "No guardado: eso todavía no es una dirección de correo válida.",
+        "invalidUrlBlocked": "No guardado: eso todavía no es una dirección web completa, como https://example.com.",
         "websiteUrlLabel": "URL del sitio web",
         "websiteUrlPlaceholder": "https://bookings.example.com",
         "websiteUrlHint": "Se usa en los enlaces e imágenes de los correos de confirmación. Debe ser la URL pública de esta aplicación.",

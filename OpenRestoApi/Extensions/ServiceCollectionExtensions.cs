@@ -369,8 +369,15 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<OpenRestoApi.Infrastructure.NativeClients.NativeClientStatsWorker>();
 
         // Only ever fetches this deployment's own configured public address — see WellKnownProbe.
+        // No redirects: neither store's verifier follows one, and a redirect is also how a public
+        // host would hand the probe an internal address after the host check has passed.
         services.AddHttpClient(OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe.HttpClientName,
-            client => client.Timeout = WellKnownProbeTimeout);
+            client =>
+            {
+                client.Timeout = WellKnownProbeTimeout;
+                client.MaxResponseContentBufferSize = OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe.MaxBodyBytes;
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
         services.AddScoped<IWellKnownProbe, OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe>();
 
         services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();

@@ -358,4 +358,64 @@ public class NativeAppStatusServiceTests
             ],
             probe.Requested);
     }
+
+    [Fact]
+    public async Task WellKnownChecks_FetchFromTheSiteRootAndDropTheQuery()
+    {
+        var probe = new FakeProbe();
+
+        await StatusAsync(Ready(), websiteUrl: "https://bookings.example.com/app/?next=/admin", probe: probe);
+
+        Assert.Equal(
+            [
+                new Uri(PublicUrl + NativeAppChecks.AppleAssociationPath),
+                new Uri(PublicUrl + NativeAppChecks.AndroidAssetLinksPath),
+            ],
+            probe.Requested);
+    }
+
+    [Theory]
+    [InlineData("ftp://bookings.example.com")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("https://user:pw@bookings.example.com")]
+    public async Task WellKnownChecks_SkipANonHttpAddress(string websiteUrl)
+    {
+        var probe = new FakeProbe();
+
+        NativeAppStatusResponse status = await StatusAsync(Ready(), websiteUrl: websiteUrl, probe: probe);
+
+        Assert.Equal(NativeAppChecks.Skip, Check(status, NativeAppChecks.AppleAppSiteAssociation).Status);
+        Assert.Equal(NativeAppChecks.Skip, Check(status, NativeAppChecks.AndroidAssetLinks).Status);
+        Assert.Empty(probe.Requested);
+    }
+
+    [Theory]
+    [InlineData("http://localhost:5062")]
+    [InlineData("https://192.168.1.10")]
+    [InlineData("https://backend.internal:8080")]
+    public async Task WellKnownChecks_SkipAPrivateNetworkAddressWithoutFetching(string websiteUrl)
+    {
+        var probe = new FakeProbe();
+
+        NativeAppStatusResponse status = await StatusAsync(Ready(), websiteUrl: websiteUrl, probe: probe);
+
+        NativeAppCheckDto check = Check(status, NativeAppChecks.AndroidAssetLinks);
+        Assert.Equal(NativeAppChecks.Skip, check.Status);
+        Assert.Contains("private-network", check.Detail);
+        Assert.Empty(probe.Requested);
+    }
+
+    [Fact]
+    public async Task WellKnownChecks_FailOnARedirect()
+    {
+        var probe = new FakeProbe().Set(
+            NativeAppChecks.AndroidAssetLinksPath, new WellKnownProbeResult(301, null, null, null));
+
+        NativeAppCheckDto check = Check(
+            await StatusAsync(Ready(), probe: probe), NativeAppChecks.AndroidAssetLinks);
+
+        Assert.Equal(NativeAppChecks.Fail, check.Status);
+        Assert.StartsWith("301 Moved Permanently", check.Detail);
+        Assert.Contains("redirects", check.Detail);
+    }
 }
