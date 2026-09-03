@@ -513,7 +513,8 @@
       "highlightsSubheading": "Vom Inhaber ausgewählt",
       "loadingLocations": "Standorte werden geladen",
       "locationsHeading": "Unsere Standorte",
-      "opensInNewTab": "Öffnet in einem neuen Tab"
+      "opensInNewTab": "Öffnet in einem neuen Tab",
+      "opensExternally": "Wird außerhalb der App geöffnet"
     },
     "locationListItem": {
       "bookNow": "Jetzt reservieren",
@@ -1327,6 +1328,7 @@
         "title": "Kontakt & Website",
         "noFallback": "Kein Ausweichkontakt festgelegt",
         "invalidEmailBlocked": "Nicht gespeichert: das ist noch keine gültige E-Mail-Adresse.",
+        "invalidUrlBlocked": "Nicht gespeichert: das ist noch keine vollständige Webadresse, wie https://example.com.",
         "websiteUrlLabel": "Website-URL",
         "websiteUrlPlaceholder": "https://bookings.example.com",
         "websiteUrlHint": "Wird in Links und Bildern der Bestätigungs-E-Mail verwendet. Muss die öffentliche URL dieser App sein.",

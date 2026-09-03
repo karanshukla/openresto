@@ -48,8 +48,6 @@ app.UseStatusCodePages();
 
 app.UseForwardedHeaders();
 
-app.UseNativeClientTelemetry();
-
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.MapOpenApi();
@@ -58,6 +56,10 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 app.UseCors("AllowFrontend");
 
 app.UseRateLimiter();
+
+// After the limiter: a request the limiter refused is not a native build in use, and counting it
+// would let one client mint counter rows as fast as it can send headers.
+app.UseNativeClientTelemetry();
 
 app.UseAuthentication();
 app.UseAuthorization();

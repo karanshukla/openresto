@@ -183,6 +183,19 @@ public class BrandServiceTests
         Assert.Equal("https://example.com", result.WebsiteUrl);
     }
 
+    [Theory]
+    [InlineData("bookings.example.com")]
+    [InlineData("ftp://bookings.example.com")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/relative")]
+    public async Task SaveAsync_Throws_WhenWebsiteUrlIsNotAnAbsoluteWebUrl(string websiteUrl)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_Throws_WhenWebsiteUrlIsNotAnAbsoluteWebUrl) + websiteUrl.GetHashCode());
+        var svc = CreateService(db);
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => svc.SaveAsync(null, null, null, websiteUrl: websiteUrl));
+        Assert.Equal(ErrorCodes.BrandWebsiteUrlInvalid, ex.Code);
+    }
+
     [Fact]
     public async Task SaveAsync_Clears_WebsiteUrl_WhenBlankPassed()
     {

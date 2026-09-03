@@ -63,6 +63,24 @@ public class NativeClientStatsCollectorTests
         Assert.Equal(1000, Assert.Single(collector.Drain()).RequestCount);
     }
 
+    [Fact]
+    public void Record_StopsOpeningBucketsAtTheCap()
+    {
+        var collector = new NativeClientStatsCollector();
+        collector.Record("ios", "1.9.0", Monday);
+
+        for (int i = 0; i < NativeClientStatsCollector.MaxBuckets + 50; i++)
+        {
+            collector.Record("android", $"0.0.{i}", Monday);
+        }
+        collector.Record("ios", "1.9.0", Monday.AddHours(1));
+
+        IReadOnlyList<NativeClientObservation> drained = collector.Drain();
+
+        Assert.Equal(NativeClientStatsCollector.MaxBuckets, drained.Count);
+        Assert.Equal(2, Find(drained, "ios", "1.9.0", DateOnly.FromDateTime(Monday)).RequestCount);
+    }
+
     private static NativeClientObservation Find(
         IReadOnlyList<NativeClientObservation> drained, string platform, string version, DateOnly day)
         => Assert.Single(drained, o => o.Platform == platform && o.AppVersion == version && o.Day == day);

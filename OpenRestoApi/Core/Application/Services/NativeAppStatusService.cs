@@ -144,6 +144,8 @@ public class NativeAppStatusService(
     /// <summary>
     /// <seealso>NativeAppStatusServiceTests.AndroidAssetLinks_PassesOnAStatementArray</seealso>
     /// <seealso>NativeAppStatusServiceTests.AndroidAssetLinks_FailsWhenTheJsonIsNotAStatementArray</seealso>
+    /// <seealso>NativeAppStatusServiceTests.WellKnownChecks_SkipAPrivateNetworkAddressWithoutFetching</seealso>
+    /// <seealso>NativeAppStatusServiceTests.WellKnownChecks_FailOnARedirect</seealso>
     /// </summary>
     private async Task<NativeAppCheckDto> AndroidAssetLinksAsync(
         string websiteUrl, bool hasPublicAddress, CancellationToken cancellationToken)
@@ -175,11 +177,17 @@ public class NativeAppStatusService(
                 "Skipped: there is no public address to fetch this from yet.");
         }
 
-        string url = Absolute(websiteUrl, path);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? absolute))
+        if (!NativeAppChecks.TryBuildWellKnownUrl(websiteUrl, path, out Uri absolute))
         {
             return Check(id, NativeAppChecks.Skip,
-                "Skipped: the configured public address is not a URL this can be fetched from.", url);
+                "Skipped: the configured public address is not an http(s) URL this can be fetched from.");
+        }
+
+        string url = absolute.ToString();
+        if (!PublicAddress.IsPublicHost(absolute))
+        {
+            return Check(id, NativeAppChecks.Skip,
+                "Skipped: the public address is a local or private-network address, which a store's verifier could not reach either.", url);
         }
 
         WellKnownProbeResult result = await _probe.FetchAsync(absolute, cancellationToken);
@@ -190,6 +198,12 @@ public class NativeAppStatusService(
         }
 
         int status = result.StatusCode ?? 0;
+        if (status is >= 300 and < 400)
+        {
+            return Check(id, NativeAppChecks.Fail,
+                $"{StatusLine(status)}: the file redirects, and neither verifier follows redirects.", url);
+        }
+
         if (status != StatusCodes.Status200OK)
         {
             return Check(id, NativeAppChecks.Fail, StatusLine(status), url);

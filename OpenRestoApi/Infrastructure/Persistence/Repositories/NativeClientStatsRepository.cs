@@ -15,15 +15,40 @@ internal class NativeClientStatsRepository(AppDbContext db) : INativeClientStats
     private readonly AppDbContext _db = db;
 
     /// <summary>
+    /// How many distinct app versions per platform the table will track. The collector caps a
+    /// minute's worth; this caps what accumulates across minutes, since a version the table
+    /// has never seen is a row per day until it ages out. A version already tracked keeps
+    /// counting past the cap, so the builds actually in use are never the ones dropped.
+    /// </summary>
+    public const int MaxVersionsPerPlatform = 64;
+
+    /// <summary>
     /// Adds onto the existing bucket rather than replacing it: a flush carries the counts since
     /// the previous flush, and there are many flushes to a day.
     /// <seealso>NativeClientStatsRepositoryTests.UpsertAsync_AddsOntoAnExistingDay</seealso>
     /// <seealso>NativeClientStatsRepositoryTests.UpsertAsync_KeepsDaysApart</seealso>
+    /// <seealso>NativeClientStatsRepositoryTests.UpsertAsync_StopsTrackingNewVersionsAtTheCap</seealso>
     /// </summary>
     public async Task UpsertAsync(IEnumerable<NativeClientObservation> observations)
     {
+        var tracked = (await _db.NativeClientStats
+                .Select(s => new { s.Platform, s.AppVersion })
+                .Distinct()
+                .ToListAsync())
+            .GroupBy(v => v.Platform)
+            .ToDictionary(g => g.Key, g => g.Select(v => v.AppVersion).ToHashSet(StringComparer.Ordinal));
+
         foreach (NativeClientObservation observation in observations)
         {
+            HashSet<string> versions = tracked.TryGetValue(observation.Platform, out HashSet<string>? known)
+                ? known
+                : tracked[observation.Platform] = new HashSet<string>(StringComparer.Ordinal);
+            if (!versions.Contains(observation.AppVersion))
+            {
+                if (versions.Count >= MaxVersionsPerPlatform) continue;
+                versions.Add(observation.AppVersion);
+            }
+
             NativeClientStat? existing = await _db.NativeClientStats.FirstOrDefaultAsync(s =>
                 s.Platform == observation.Platform
                 && s.AppVersion == observation.AppVersion

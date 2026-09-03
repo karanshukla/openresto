@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -277,6 +279,22 @@ public class NotificationServiceTests : IDisposable
         AdminPushSubscription sub = await _db.AdminPushSubscriptions.FirstAsync();
         Assert.Equal("https://ep", sub.Endpoint);
         Assert.Equal(1, sub.RestaurantId);
+    }
+
+    [Theory]
+    [InlineData("http://ep")]
+    [InlineData("https://127.0.0.1/ep")]
+    [InlineData("https://backend.internal:8080/ep")]
+    [InlineData("not a url")]
+    public async Task SubscribeAsync_RejectsAnEndpointThatIsNotAPublicHttpsUrl(string endpoint)
+    {
+        await SeedRestaurantAsync();
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => CreateService().SubscribeAsync(1, new PushSubscribeRequest(endpoint, "p256", "auth")));
+
+        Assert.Equal(ErrorCodes.NotificationPushEndpointInvalid, ex.Code);
+        Assert.Equal(0, await _db.AdminPushSubscriptions.CountAsync());
     }
 
     [Fact]

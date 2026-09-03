@@ -513,7 +513,8 @@
       "highlightsSubheading": "Sélectionné par le propriétaire",
       "loadingLocations": "Chargement des établissements",
       "locationsHeading": "Nos établissements",
-      "opensInNewTab": "S'ouvre dans un nouvel onglet"
+      "opensInNewTab": "S'ouvre dans un nouvel onglet",
+      "opensExternally": "S'ouvre en dehors de l'application"
     },
     "locationListItem": {
       "bookNow": "Réserver maintenant",
@@ -1327,6 +1328,7 @@
         "title": "Contact et site web",
         "noFallback": "Aucun contact de repli défini",
         "invalidEmailBlocked": "Non enregistré : ce n'est pas encore une adresse e-mail valide.",
+        "invalidUrlBlocked": "Non enregistré : ce n'est pas encore une adresse web complète, comme https://example.com.",
         "websiteUrlLabel": "URL du site web",
         "websiteUrlPlaceholder": "https://bookings.example.com",
         "websiteUrlHint": "Utilisée dans les liens et images des e-mails de confirmation. Doit être l'URL publique de cette application.",

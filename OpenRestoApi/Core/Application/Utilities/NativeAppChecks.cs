@@ -30,4 +30,27 @@ public static class NativeAppChecks
 
     /// <summary>What both well-known documents must be served as.</summary>
     public const string RequiredContentType = "application/json";
+
+    /// <summary>
+    /// The address a store's verifier fetches a well-known document from: the site's origin plus
+    /// the fixed path, and nothing the configured address carried after its host. Apple and
+    /// Google both read from the domain root, so a public address under a sub-path is rooted;
+    /// and because the path is composed rather than appended, a query string on the address
+    /// cannot swallow it and turn the probe into a fetch of an arbitrary URL.
+    /// </summary>
+    /// <seealso>NativeAppStatusServiceTests.WellKnownChecks_FetchFromTheSiteRootAndDropTheQuery</seealso>
+    /// <seealso>NativeAppStatusServiceTests.WellKnownChecks_SkipANonHttpAddress</seealso>
+    public static bool TryBuildWellKnownUrl(string websiteUrl, string path, out Uri url)
+    {
+        url = null!;
+        if (!Uri.TryCreate(websiteUrl, UriKind.Absolute, out Uri? site)
+            || (site.Scheme != Uri.UriSchemeHttp && site.Scheme != Uri.UriSchemeHttps)
+            || !string.IsNullOrEmpty(site.UserInfo))
+        {
+            return false;
+        }
+
+        url = new UriBuilder(site.Scheme, site.Host, site.Port, path).Uri;
+        return true;
+    }
 }

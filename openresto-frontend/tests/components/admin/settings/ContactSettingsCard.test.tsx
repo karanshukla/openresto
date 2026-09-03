@@ -7,6 +7,12 @@ import { Text } from "react-native";
 import { ContactSettingsCard } from "@/components/admin/settings/ContactSettingsCard";
 import { BrandDraftProvider, useBrandDraft } from "@/components/admin/settings/BrandDraftContext";
 import * as adminApi from "@/api/admin";
+import { TextEncoder, TextDecoder } from "util";
+
+// Under jsdom, Expo's `URL` polyfill wants TextEncoder, which jsdom lacks; without it the
+// card's URL pre-flight would read every address as malformed and withhold every save.
+global.TextEncoder = TextEncoder as unknown as typeof global.TextEncoder;
+global.TextDecoder = TextDecoder as unknown as typeof global.TextDecoder;
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -207,6 +213,26 @@ describe("ContactSettingsCard", () => {
     expect(adminApi.saveBrandSettings).toHaveBeenCalledWith(
       expect.objectContaining({ phoneNumber: "" })
     );
+  });
+
+  // The server holds both URL fields to an absolute http(s) address, so the card withholds a
+  // half-typed one the same way it withholds a half-typed email — one rule, both sides.
+  it.each([
+    ["https://bookings.example.com", "bookings.example"],
+    ["https://example.com/privacy", "example.com/priv"],
+  ])("holds the save until the URL in %s is well-formed", async (placeholder, partial) => {
+    render(<ContactSettingsCard {...baseProps} />);
+
+    fireEvent.changeText(screen.getByPlaceholderText(placeholder), partial);
+    await flushAutosave();
+    expect(adminApi.saveBrandSettings).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Not saved: that isn't a full web address yet, like https://example.com.")
+    ).toBeTruthy();
+
+    fireEvent.changeText(screen.getByPlaceholderText(placeholder), `https://${partial}`);
+    await flushAutosave();
+    expect(adminApi.saveBrandSettings).toHaveBeenCalled();
   });
 
   // The server rejects a malformed address, so a half-typed one must not be sent at all —

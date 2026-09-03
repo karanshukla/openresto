@@ -37,6 +37,7 @@ public static class ErrorCodes
     public const string BookingEmailFieldsRequired = "booking.email_fields_required";
     public const string BookingReminderChannelInvalid = "booking.reminder_channel_invalid";
     public const string BookingReminderKeysRequired = "booking.reminder_keys_required";
+    public const string BookingReminderEndpointInvalid = "booking.reminder_endpoint_invalid";
     public const string BookingReminderTooLate = "booking.reminder_too_late";
     public const string BookingReminderCancelled = "booking.reminder_cancelled";
     public const string BookingWalletNotConfigured = "booking.wallet_not_configured";
@@ -129,6 +130,7 @@ public static class ErrorCodes
     public const string BrandHighlightsHeadingTooLong = "brand.highlights_heading_too_long";
     public const string BrandHighlightsSubheadingTooLong = "brand.highlights_subheading_too_long";
     public const string BrandHeaderImageFitInvalid = "brand.header_image_fit_invalid";
+    public const string BrandWebsiteUrlInvalid = "brand.website_url_invalid";
     public const string BrandPrivacyPolicyUrlInvalid = "brand.privacy_policy_url_invalid";
     public const string BrandMinimumAppVersionInvalid = "brand.minimum_app_version_invalid";
 
@@ -160,4 +162,5 @@ public static class ErrorCodes
     public const string EmailNotConfigured = "email.not_configured";
     public const string EmailConnectionFailed = "email.connection_failed";
     public const string AdminPasswordNotConfigured = "admin.password_not_configured";
+    public const string NotificationPushEndpointInvalid = "notification.push_endpoint_invalid";
 }

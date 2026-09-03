@@ -132,6 +132,7 @@ public class BrandService(
     /// Applies a partial update: null leaves a field as it was, an empty/blank string clears it,
     /// anything else replaces it. Every rejection throws <c>ValidationException</c> carrying an
     /// <see cref="ErrorCodes"/> code.
+    /// <seealso>BrandServiceTests.SaveAsync_Throws_WhenWebsiteUrlIsNotAnAbsoluteWebUrl</seealso>
     /// <seealso>BrandServiceTests.SaveAsync_Throws_WhenPrivacyPolicyUrlIsNotAnAbsoluteWebUrl</seealso>
     /// <seealso>BrandServiceTests.SaveAsync_PersistsPrivacyPolicyUrl</seealso>
     /// <seealso>BrandServiceTests.SaveAsync_ClearsPrivacyPolicyUrl_WhenBlank</seealso>
@@ -210,6 +211,16 @@ public class BrandService(
                 Code = ErrorCodes.BrandHeaderImageFitInvalid,
                 Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", AllowedHeaderImageFits.Order()) }
             };
+        }
+
+        // The public address is what confirmation emails link to and what the native-app
+        // readiness checks fetch from, so it has to be an address in the first place.
+        if (websiteUrl != null
+            && !string.IsNullOrWhiteSpace(websiteUrl)
+            && !UrlValidator.IsValid(websiteUrl, UrlValidator.WebSchemes))
+        {
+            throw new ValidationException("Website URL must be an absolute http(s) URL.")
+            { Code = ErrorCodes.BrandWebsiteUrlInvalid };
         }
 
         // Blank clears; anything else has to be a link a store reviewer can actually open.

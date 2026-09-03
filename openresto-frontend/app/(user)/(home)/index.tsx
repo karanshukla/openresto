@@ -638,7 +638,13 @@ export default function HomeScreen() {
                         key={h.id}
                         accessibilityRole="link"
                         accessibilityLabel={`${h.title}. ${h.body}`}
-                        accessibilityHint={t("restaurant.home.opensInNewTab")}
+                        // A tab is a browser idea; on a phone the link hands off to the
+                        // browser or whichever app claims it.
+                        accessibilityHint={t(
+                          Platform.OS === "web"
+                            ? "restaurant.home.opensInNewTab"
+                            : "restaurant.home.opensExternally"
+                        )}
                         onPress={() => Linking.openURL(h.link!)}
                         style={cardStyle}
                       >

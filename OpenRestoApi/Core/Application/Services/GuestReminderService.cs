@@ -55,6 +55,11 @@ public class GuestReminderService(
             throw new ValidationException("A Web Push subscription needs its p256dh and auth keys.") { Code = ErrorCodes.BookingReminderKeysRequired };
         }
 
+        if (!PushEndpointValidator.IsValidFor(request.Channel, request.Endpoint.Trim()))
+        {
+            throw new ValidationException("The push address is not one this server will send to.") { Code = ErrorCodes.BookingReminderEndpointInvalid };
+        }
+
         if (booking.IsCancelled)
         {
             throw new ConflictException("This booking has been cancelled.") { Code = ErrorCodes.BookingReminderCancelled };

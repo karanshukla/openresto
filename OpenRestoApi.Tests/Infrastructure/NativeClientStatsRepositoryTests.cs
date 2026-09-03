@@ -74,6 +74,26 @@ public class NativeClientStatsRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task UpsertAsync_StopsTrackingNewVersionsAtTheCap()
+    {
+        using AppDbContext db = CreateContext();
+        var repository = new NativeClientStatsRepository(db);
+        await repository.UpsertAsync(Enumerable.Range(0, NativeClientStatsRepository.MaxVersionsPerPlatform)
+            .Select(i => Observation("android", $"0.0.{i}", Now)));
+
+        await repository.UpsertAsync(
+        [
+            Observation("android", "9.9.9", Now),
+            Observation("android", "0.0.1", Now.AddDays(1), count: 4),
+            Observation("ios", "1.9.0", Now),
+        ]);
+
+        Assert.Equal(0, await db.NativeClientStats.CountAsync(s => s.AppVersion == "9.9.9"));
+        Assert.Equal(2, await db.NativeClientStats.CountAsync(s => s.Platform == "android" && s.AppVersion == "0.0.1"));
+        Assert.Equal(1, await db.NativeClientStats.CountAsync(s => s.Platform == "ios"));
+    }
+
+    [Fact]
     public async Task PruneOlderThanAsync_DropsOnlyBucketsBeforeTheCutoff()
     {
         using AppDbContext db = CreateContext();
