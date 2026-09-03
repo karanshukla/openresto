@@ -3,8 +3,9 @@
  */
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import BookingForm from "@/components/booking/BookingForm";
+import { BookingDockProvider, useBookingDock } from "@/components/booking/BookingDockContext";
 import { getNowInTimezone } from "@/utils/date";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -937,6 +938,12 @@ describe("BookingForm responsive layout", () => {
 
 // The drawer variant of the form: party size and date have already been settled by the
 // page-level filter bar, so those pickers are gone and seating moves behind a disclosure.
+/** Reports whether the form published a submit, which is the dock's only observable side. */
+function DockReadout() {
+  const dock = useBookingDock();
+  return <Text testID="dock-readout">{dock ? "published" : "empty"}</Text>;
+}
+
 describe("BookingForm drawer layout", () => {
   beforeEach(() => {
     mockViewportWidth = 1024;
@@ -1069,6 +1076,75 @@ describe("BookingForm drawer layout", () => {
     expect(screen.getAllByTestId("hold-banner")).toHaveLength(1);
     expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
     expect(screen.getByText("Confirm Booking")).toBeTruthy();
+  });
+
+  /**
+   * Inside the platform sheet the confirm is docked to the bottom edge, so the form gives its
+   * own up rather than leaving a second one in the scroll behind it. The pair is the rule: no
+   * dock hosted, or nothing typed yet, and the form keeps it.
+   */
+  describe("with a dock hosted", () => {
+    const renderDocked = (overrides: Record<string, unknown> = {}) =>
+      render(
+        <BookingDockProvider>
+          <BookingForm
+            layout="drawer"
+            restaurant={mockRestaurantAllDays}
+            seats={4}
+            date="2026-06-24"
+            onSubmit={jest.fn()}
+            {...overrides}
+          />
+          <DockReadout />
+        </BookingDockProvider>
+      );
+
+    const fill = () => {
+      fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Frank Reynolds");
+      fireEvent.changeText(
+        screen.getByPlaceholderText("your@email.com"),
+        "frank@paddyspub.example"
+      );
+    };
+
+    it("keeps its own confirm until a name and email are entered", async () => {
+      renderDocked();
+      await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+      expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
+      expect(screen.getByTestId("dock-readout").props.children).toBe("empty");
+    });
+
+    it("hands the confirm to the dock once both are in", async () => {
+      renderDocked();
+      await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+      fill();
+
+      expect(screen.queryByTestId("submit-btn")).toBeNull();
+      expect(screen.getByTestId("dock-readout").props.children).toBe("published");
+    });
+
+    // The countdown goes with it, or the sheet would show a hold banner and no way to act on it.
+    it("takes the hold banner with it", async () => {
+      renderDocked();
+      await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+      fill();
+
+      expect(screen.queryByTestId("hold-banner")).toBeNull();
+    });
+
+    it("takes it back if the email is cleared again", async () => {
+      renderDocked();
+      await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+      fill();
+
+      fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "");
+
+      expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
+      expect(screen.getByTestId("dock-readout").props.children).toBe("empty");
+    });
   });
 
   it("tracks a party size changed on the page bar without remounting", async () => {

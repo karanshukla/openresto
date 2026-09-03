@@ -47,6 +47,8 @@ import { styles } from "./BookingDrawer.styles";
 import { Icon } from "@/components/common/Icon";
 import { NativeBookingSheet, SheetScrollView } from "@/components/booking/NativeBookingSheet";
 import KeyboardAwareScroll from "@/components/common/KeyboardAwareScroll";
+import { BookingDockProvider } from "@/components/booking/BookingDockContext";
+import DockedBookingSubmit from "@/components/booking/DockedBookingSubmit";
 
 // Re-exported so existing imports of these from BookingDrawer (this module used to define
 // them) keep working; utils/panelMotion is the source of truth, shared with SlidePanel.
@@ -355,13 +357,29 @@ export default function BookingDrawer({
     </>
   );
 
+  /**
+   * Only the platform sheet docks the confirm. The sheet opens at a detent that puts the end of
+   * the form below the fold, so the one action the guest came for was never on screen; the side
+   * panel and the website's own sheet both show it in place and need no footer.
+   */
   if (variant === "sheet" && Platform.OS !== "web") {
     return (
       <NativeBookingSheet
         accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
         onClose={onClose}
       >
-        {({ dismiss }) => body({ Scroll: SheetScrollView, onCloseRequest: dismiss })}
+        {({ dismiss }) => (
+          /* Inside the sheet's own children, not around it. The sheet renders its content
+             through `@gorhom/portal`, which re-renders the node at the portal host's position
+             in the tree — so a provider mounted around the sheet would be invisible to the form
+             inside it. Both the publisher and the dock have to sit on this side of that
+             boundary. The dock is a sibling of the scroller rather than the sheet's own
+             `footerComponent` for the same reason. */
+          <BookingDockProvider>
+            {body({ Scroll: SheetScrollView, onCloseRequest: dismiss })}
+            <DockedBookingSubmit />
+          </BookingDockProvider>
+        )}
       </NativeBookingSheet>
     );
   }

@@ -1,11 +1,12 @@
 import { RestaurantDto } from "@/api/restaurants";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../common/Button";
 import { ThemedText } from "../themed-text";
 import { Platform, View, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
+import { useHasBookingDock, usePublishBookingDock } from "./BookingDockContext";
 import PopularTimesPicker from "./PopularTimesPicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
@@ -250,6 +251,42 @@ export default function BookingForm({
     }
   };
 
+  /**
+   * The docked confirm lives outside this form, in the sheet that hosts it, so what it presses
+   * has to survive the form re-rendering under it — hence the ref rather than `handleSubmit`
+   * itself, whose identity changes on every keystroke.
+   */
+  const submitRef = useRef(handleSubmit);
+  useEffect(() => {
+    submitRef.current = handleSubmit;
+  });
+  const dockedSubmit = useCallback(() => {
+    void submitRef.current();
+  }, []);
+
+  /**
+   * A name and an email are what the guest has to type either way, and entering them is also
+   * what takes the hold — so the confirm arrives docked at the same moment the table is held,
+   * and the sheet keeps its full height while they are still choosing a time.
+   */
+  const hasDock = useHasBookingDock();
+  const docked = hasDock && customerName.trim().length > 0 && isValidEmail(customerEmail);
+
+  usePublishBookingDock(
+    docked
+      ? {
+          holdStatus,
+          secondsLeft,
+          hasSelection: (isAutoAssign || !!tableId) && !!date && !!time,
+          holdMessage,
+          disabled: !isValid || submitting,
+          submitting,
+          onSubmit: dockedSubmit,
+          onRefresh,
+        }
+      : null
+  );
+
   /** Editing the seating choice invalidates a resolved hold, so it drops back to idle. */
   const clearSettledHold = () => {
     if (holdStatus === "held" || holdStatus === "expired") setHoldStatus("idle");
@@ -426,9 +463,11 @@ export default function BookingForm({
     timezoneHint,
     largePartyBanner,
     largePartyModal,
-    holdBanner,
-    holdRequiredHint,
-    confirmButton,
+    // Docked, these three are rendered by the sheet's footer instead. Leaving them here as
+    // well would put a second Confirm in the scroll behind the first.
+    holdBanner: docked ? null : holdBanner,
+    holdRequiredHint: docked ? null : holdRequiredHint,
+    confirmButton: docked ? null : confirmButton,
     gdprText,
   };
 
