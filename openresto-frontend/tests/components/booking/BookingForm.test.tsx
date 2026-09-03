@@ -31,6 +31,21 @@ jest.mock("react-native", () => {
   return rn;
 });
 
+/**
+ * The form publishes its submit from an effect, so the footer showing it is always one commit
+ * behind the render that decided to dock. Withholding the publish is how a test reaches that
+ * in-between state, which on a device is a frame.
+ */
+let mockPublishReachesTheDock = true;
+jest.mock("@/components/booking/BookingDockContext", () => {
+  const actual = jest.requireActual("@/components/booking/BookingDockContext");
+  return {
+    ...actual,
+    usePublishBookingDock: (dock: unknown) =>
+      actual.usePublishBookingDock(mockPublishReachesTheDock ? dock : null),
+  };
+});
+
 jest.mock("@/hooks/use-color-scheme", () => ({
   useColorScheme: () => "light",
 }));
@@ -1084,6 +1099,10 @@ describe("BookingForm drawer layout", () => {
    * dock hosted, or nothing typed yet, and the form keeps it.
    */
   describe("with a dock hosted", () => {
+    beforeEach(() => {
+      mockPublishReachesTheDock = true;
+    });
+
     const renderDocked = (overrides: Record<string, unknown> = {}) =>
       render(
         <BookingDockProvider>
@@ -1133,6 +1152,22 @@ describe("BookingForm drawer layout", () => {
       fill();
 
       expect(screen.queryByTestId("hold-banner")).toBeNull();
+    });
+
+    /**
+     * The dock arrives a commit after the render that decided to dock it, so a form that gave
+     * its confirm up on that earlier render leaves a frame with neither — which on a phone is
+     * the scroll jumping as the guest finishes typing their email, and jumping back.
+     */
+    it("keeps its own confirm for as long as the dock is showing none", async () => {
+      mockPublishReachesTheDock = false;
+      renderDocked();
+      await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+      fill();
+
+      expect(screen.getAllByTestId("submit-btn")).toHaveLength(1);
+      expect(screen.getByTestId("dock-readout").props.children).toBe("empty");
     });
 
     it("takes it back if the email is cleared again", async () => {

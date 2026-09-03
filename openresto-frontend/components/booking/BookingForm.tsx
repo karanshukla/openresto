@@ -6,7 +6,7 @@ import { ThemedText } from "../themed-text";
 import { Platform, View, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useTableHold } from "./useTableHold";
 import HoldStatusBanner from "./HoldStatusBanner";
-import { useHasBookingDock, usePublishBookingDock } from "./BookingDockContext";
+import { useBookingDock, useHasBookingDock, usePublishBookingDock } from "./BookingDockContext";
 import PopularTimesPicker from "./PopularTimesPicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
@@ -270,10 +270,10 @@ export default function BookingForm({
    * and the sheet keeps its full height while they are still choosing a time.
    */
   const hasDock = useHasBookingDock();
-  const docked = hasDock && customerName.trim().length > 0 && isValidEmail(customerEmail);
+  const shouldDock = hasDock && customerName.trim().length > 0 && isValidEmail(customerEmail);
 
   usePublishBookingDock(
-    docked
+    shouldDock
       ? {
           holdStatus,
           secondsLeft,
@@ -286,6 +286,14 @@ export default function BookingForm({
         }
       : null
   );
+
+  /**
+   * What the footer is actually showing, not what this render thinks it should show. The
+   * publish lands in an effect, so the footer arrives one commit later — dropping the inline
+   * confirm on the earlier commit leaves a frame with neither, and the scroll shifts under the
+   * guest's thumb as they finish typing their email and then shifts back.
+   */
+  const docked = useBookingDock() !== null;
 
   /** Editing the seating choice invalidates a resolved hold, so it drops back to idle. */
   const clearSettledHold = () => {
