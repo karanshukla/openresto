@@ -5,6 +5,7 @@ import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
 import { Platform, StyleSheet, Text } from "react-native";
 import SlidePanel from "@/components/common/SlidePanel";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
@@ -22,6 +23,14 @@ jest.mock("@/utils/webAnimation", () => ({
   animateNode: jest.fn(() => null),
 }));
 const mockAnimateNode = jest.requireMock("@/utils/webAnimation").animateNode as jest.Mock;
+
+/** The platform sheet's props, which is where the native branch's behaviour is observable. */
+const sheetProps = () =>
+  screen.UNSAFE_getByType(BottomSheetModal as unknown as React.ComponentType).props as Record<
+    string,
+    // eslint-disable-next-line typescript/no-explicit-any
+    any
+  >;
 
 describe("SlidePanel", () => {
   beforeEach(() => {
@@ -50,7 +59,20 @@ describe("SlidePanel", () => {
     });
   });
 
-  describe("sheet variant", () => {
+  /**
+   * The website's own sheet. Off web this whole shell is replaced by the platform's, so every
+   * assertion about a grabber, a backdrop or a pan responder belongs here.
+   */
+  describe("sheet variant on web", () => {
+    let originalOS: string;
+    beforeEach(() => {
+      originalOS = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "web";
+    });
+    afterEach(() => {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    });
+
     it("renders inside the sheet shell with a grabber and backdrop", () => {
       renderWithProviders(
         <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
@@ -126,34 +148,6 @@ describe("SlidePanel", () => {
       expect(grabber.props.accessibilityElementsHidden).toBe(true);
     });
 
-    /**
-     * The sheet is the bottom of the screen: without stepping up over the home indicator its
-     * last row sits under it. The inset is read inside the Modal's own safe-area provider —
-     * the page underneath sits in a tab whose insets include the tab bar (#426), and the sheet
-     * covers that bar — so it is a spacer after the body rather than padding on the sheet.
-     * Web has no inset to clear and stays exactly as it was.
-     */
-    it("clears the bottom safe area off web", () => {
-      const original = Platform.OS;
-      (Platform as unknown as { OS: string }).OS = "ios";
-      try {
-        renderWithInsets(
-          { bottom: 34 },
-          <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
-            <Text>Panel content</Text>
-          </SlidePanel>
-        );
-        const spacer = StyleSheet.flatten(
-          screen.getByTestId("result-panel-bottom-inset").props.style
-        );
-        expect(spacer.height).toBe(34);
-        const sheet = StyleSheet.flatten(screen.getByTestId("result-panel").props.style);
-        expect(sheet.paddingBottom).toBeUndefined();
-      } finally {
-        (Platform as unknown as { OS: string }).OS = original;
-      }
-    });
-
     it("adds nothing under the body on web", () => {
       const original = Platform.OS;
       (Platform as unknown as { OS: string }).OS = "web";
@@ -220,6 +214,65 @@ describe("SlidePanel", () => {
       expect(
         screen.getByTestId("custom-panel-backdrop", { includeHiddenElements: true })
       ).toBeTruthy();
+    });
+  });
+
+  /**
+   * Off web the panel is the platform's own sheet. The hand-rolled Modal never dragged on a
+   * device — not by its body, not by its handle — so the guest could only leave through the
+   * backdrop. These pin the handover rather than the sheet's internals, which are
+   * `NativeSheet`'s own tests.
+   */
+  describe("sheet variant off web", () => {
+    let originalOS: string;
+    beforeEach(() => {
+      originalOS = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = "ios";
+    });
+    afterEach(() => {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    });
+
+    const renderSheet = (onDismiss = jest.fn()) => {
+      renderWithProviders(
+        <SlidePanel variant="sheet" onDismiss={onDismiss} accessibilityLabel="Booking result">
+          <Text>Panel content</Text>
+        </SlidePanel>
+      );
+      return onDismiss;
+    };
+
+    it("hands the body to the platform sheet", () => {
+      renderSheet();
+
+      expect(screen.getByText("Panel content")).toBeTruthy();
+    });
+
+    // Two backdrops and two handles would stack; the platform sheet brings its own of each.
+    it("drops the hand-rolled chrome", () => {
+      renderSheet();
+
+      expect(
+        screen.queryByTestId("result-panel-backdrop", { includeHiddenElements: true })
+      ).toBeNull();
+      expect(
+        screen.queryByTestId("result-panel-grabber", { includeHiddenElements: true })
+      ).toBeNull();
+    });
+
+    it("reports a dismissal upward exactly once", () => {
+      const onDismiss = renderSheet();
+
+      sheetProps().onDismiss();
+
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    // The panel carries no close button, so a drag that does not dismiss traps the guest in it.
+    it("can be dragged down to dismiss", () => {
+      renderSheet();
+
+      expect(sheetProps().enablePanDownToClose).toBe(true);
     });
   });
 });

@@ -12,6 +12,7 @@ import {
   SIDE_ENTER_DISTANCE,
   SIDE_ENTER_MS,
 } from "@/utils/panelMotion";
+import NativeSheet from "@/components/common/NativeSheet";
 import { styles } from "./SlidePanel.styles";
 
 interface SlidePanelProps {
@@ -133,6 +134,25 @@ export default function SlidePanel({
       useNativeDriver: nativeDriver,
     }).start(({ finished }) => finished && onDismissRef.current());
   }, [dragY, nativeDriver]);
+
+  /**
+   * Off web the sheet is the platform's own. The hand-rolled `Modal` + `PanResponder` below
+   * does not drag on a device at all — not by its body and not by its handle — so the panel
+   * shipped with the backdrop as the only way out. That machinery stays for the website, which
+   * has no platform sheet to defer to; everything the sheet needs on a phone (the drag, the
+   * rubber band, the handle, the backdrop) is the system's.
+   */
+  if (variant === "sheet" && Platform.OS !== "web") {
+    return (
+      <NativeSheet
+        accessibilityLabel={accessibilityLabel}
+        onDismiss={onDismiss}
+        testID={`${testID}-body`}
+      >
+        {children}
+      </NativeSheet>
+    );
+  }
 
   if (variant === "sheet") {
     return (
