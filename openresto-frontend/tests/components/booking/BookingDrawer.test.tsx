@@ -405,6 +405,37 @@ describe("BookingDrawer", () => {
       );
     });
 
+    /**
+     * The sheet provider sits above the navigator and the tab keeps this screen mounted, so a
+     * sheet left presented draws over the confirmation route and its result sheet both.
+     * Dismissing has to happen before the push, not merely eventually.
+     */
+    it("dismisses the sheet before navigating, off web", async () => {
+      const onClose = jest.fn();
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
+
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(onClose).toHaveBeenCalled();
+      expect(onClose.mock.invocationCallOrder[0]).toBeLessThan(
+        mockPush.mock.invocationCallOrder[0]
+      );
+    });
+
+    // A failed booking has to stay readable in the sheet the guest made it in.
+    it("keeps the sheet up when the booking fails", async () => {
+      (createBooking as jest.Mock).mockRejectedValue(new Error("Fully booked"));
+      const onClose = jest.fn();
+      renderWithProviders(<BookingDrawer {...baseProps} variant="sheet" onClose={onClose} />);
+
+      fireEvent.press(screen.getByTestId("submit-trigger"));
+
+      await waitFor(() => expect(screen.getByText("Fully booked")).toBeTruthy());
+      expect(onClose).not.toHaveBeenCalled();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
     it("remembers the booking so a device with no cookie jar can still look it up", async () => {
       renderWithProviders(<BookingDrawer {...baseProps} />);
       fireEvent.press(screen.getByTestId("submit-trigger"));

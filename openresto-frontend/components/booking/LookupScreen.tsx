@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Linking, Platform, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Input from "@/components/common/Input";
@@ -12,10 +12,12 @@ import { Icon } from "@/components/common/Icon";
 import PageContainer from "@/components/layout/PageContainer";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
 import SlidePanel from "@/components/common/SlidePanel";
+import KeyboardAwareScroll from "@/components/common/KeyboardAwareScroll";
 import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmationSkeleton";
 import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
@@ -81,6 +83,7 @@ export default function LookupScreen({
   const { width } = useWindowDimensions();
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const tabBarClearance = useTabBarClearance();
   const online = useOnline();
   const brand = useBrand();
   const contact = resolveContact(restaurant, brand);
@@ -131,11 +134,7 @@ export default function LookupScreen({
       legacyBookingId !== undefined ? { legacyId: legacyBookingId } : undefined
     ).then((outcome) => {
       if (justBooked && outcome.status === "found") {
-        Haptics.notificationAsync(
-          outcome.booking.isCancelled
-            ? Haptics.NotificationFeedbackType.Error
-            : Haptics.NotificationFeedbackType.Success
-        );
+        haptics.outcome(outcome.booking.isCancelled ? "error" : "success");
       }
     });
   }, [initialRef, initialEmail, legacyBookingId, justBooked, lookup]);
@@ -216,17 +215,25 @@ export default function LookupScreen({
 
   return (
     <ThemedView
-      // Neither of this screen's two routes draws a native header off web, so both take the
-      // status-bar inset themselves and both carry their own title.
-      style={[styles.root, Platform.OS !== "web" && { paddingTop: insets.top }]}
+      testID="lookup-root"
+      // Neither of this screen's two routes draws a native header off web, so both pad the tab
+      // bar themselves and carry their own title. The status-bar inset is deliberately not here
+      // but on the scroll content below — see there.
+      style={styles.root}
     >
       <KeyboardAvoider style={styles.root}>
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.scrollContent}
+        <KeyboardAwareScroll
+          scrollRef={scrollRef}
+          /* Padding the content rather than the screen is what lets the form run under the
+             status bar as it scrolls, instead of stopping at a dead strip — the shape the home
+             hero already had. Nothing pins on this screen, so nothing has to reclaim the
+             bar the way the Locations band does. */
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top, paddingBottom: tabBarClearance },
+          ]}
           keyboardShouldPersistTaps="handled"
           onScroll={fab.trackScroll}
-          scrollEventThrottle={16}
         >
           <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
             <ScreenHeading
@@ -344,7 +351,7 @@ export default function LookupScreen({
 
           <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
           <Footer />
-        </ScrollView>
+        </KeyboardAwareScroll>
       </KeyboardAvoider>
 
       {isCompact && showPanel && (

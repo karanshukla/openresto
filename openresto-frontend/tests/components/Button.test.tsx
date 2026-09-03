@@ -12,9 +12,8 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: jest.fn(() => ({ appName: "Test App", primaryColor: "#0a7ea4" })),
 }));
 
-jest.mock("expo-haptics", () => ({
-  impactAsync: jest.fn(),
-  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 
 describe("Button", () => {

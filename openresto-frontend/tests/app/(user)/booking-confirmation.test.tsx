@@ -36,7 +36,7 @@ jest.mock("@/components/booking/LookupScreen", () => ({
   },
 }));
 
-import BookingConfirmationRouteScreen from "@/app/(user)/booking-confirmation/[bookingRef]";
+import BookingConfirmationRouteScreen from "@/app/(user)/(bookings)/booking-confirmation/[bookingRef]";
 
 beforeEach(() => {
   mockParams = {};

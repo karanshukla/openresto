@@ -43,8 +43,8 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ appName: "Open Resto" }),
 }));
 
-import LocationsIndexScreen from "@/app/(user)/locations/index";
-import LocationsDetailScreen from "@/app/(user)/locations/[id]";
+import LocationsIndexScreen from "@/app/(user)/(locations)/locations/index";
+import LocationsDetailScreen from "@/app/(user)/(locations)/locations/[id]";
 
 beforeEach(() => {
   mockScreenOptions = undefined;

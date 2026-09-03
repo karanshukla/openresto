@@ -148,17 +148,23 @@ function AppWithTheme() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      {/* Outermost of the app's own providers off web: the gesture root inside has to wrap
-          everything that can host a gesture handler, and a pass-through on web. */}
-      <BookingSheetHost>
-        <BrandProvider>
-          <LocaleProvider>
-            <AppThemeProvider>
+      <BrandProvider>
+        <LocaleProvider>
+          <AppThemeProvider>
+            {/* Innermost of the app's own providers, and it has to stay there. The native
+                sheet renders its content through `@gorhom/portal`, which re-renders the node
+                at the portal host's own position in the tree — so the content reads context
+                from *here*, not from the screen that opened the sheet. Mounted above these
+                providers, as it was, every sheet fell back to `DEFAULT_BRAND`'s stock teal
+                and `ThemeContext`'s dark default, ignoring both the brand colour and the
+                visitor's light/dark pick. The gesture root inside still wraps everything
+                that renders UI; a context provider hosts no gestures. */}
+            <BookingSheetHost>
               <AppWithTheme />
-            </AppThemeProvider>
-          </LocaleProvider>
-        </BrandProvider>
-      </BookingSheetHost>
+            </BookingSheetHost>
+          </AppThemeProvider>
+        </LocaleProvider>
+      </BrandProvider>
     </SafeAreaProvider>
   );
 }

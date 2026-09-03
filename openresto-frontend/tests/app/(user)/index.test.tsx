@@ -12,9 +12,10 @@ import HomeScreen, {
   columnWidth,
   heroBlooms,
   resetHomeCache,
-} from "@/app/(user)/index";
+} from "@/app/(user)/(home)/index";
 import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
@@ -721,6 +722,34 @@ describe("HomeScreen", () => {
         renderWithProviders(<HomeScreen />);
         await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
         expect(screen.queryAllByTestId("location-card-reveal")).toHaveLength(0);
+      });
+    });
+  });
+
+  /**
+   * Issue #426. The list runs under the native tab bar on iOS, and inside a tab the bottom
+   * inset is that bar's height, so the scroll content pads it or its last card is hidden. Web
+   * has no bar and pads nothing.
+   */
+  describe("the tab bar", () => {
+    const TAB_BAR = 83;
+    const scrollPadding = () =>
+      StyleSheet.flatten(screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle)
+        .paddingBottom;
+
+    it("is cleared by the scroll content off web", async () => {
+      await onPlatform("ios", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(scrollPadding()).toBe(TAB_BAR);
+      });
+    });
+
+    it("is not a thing on web", async () => {
+      await onPlatform("web", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <HomeScreen />);
+        await waitFor(() => expect(screen.queryByTestId("loading-screen")).toBeNull());
+        expect(scrollPadding()).toBe(0);
       });
     });
   });

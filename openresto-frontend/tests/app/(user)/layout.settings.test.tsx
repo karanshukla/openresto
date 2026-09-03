@@ -1,9 +1,10 @@
 /**
  * @jest-environment jsdom
  *
- * The native guest chrome: the header control that opens language + appearance (the web build
- * reaches both through the navbar's overflow menu, which does not render off web) and the
- * offline strip above the navigator.
+ * The native guest chrome, rendered per tab by GuestTabStack: the header control that opens
+ * language + appearance (the web build reaches both through the navbar's overflow menu, which
+ * does not render off web), the same control pinned over a header-less root, and the offline
+ * strip above the tab's stack. The Home tab stands in for all three.
  */
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
@@ -12,11 +13,14 @@ import { useOnline } from "@/hooks/use-online";
 
 Object.defineProperty(Platform, "OS", { value: "ios", configurable: true });
 
-// The layout's offline strip takes the top safe-area inset, and the hook throws outside a
-// provider — the app mounts one in app/_layout.tsx, these tests render the layout alone.
-jest.mock("react-native-safe-area-context", () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}));
+jest.mock("react-native-safe-area-context", () => {
+  const React = require("react");
+  return {
+    SafeAreaProvider: ({ children }: { children?: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  };
+});
 
 jest.mock("expo-router", () => {
   const React = require("react");
@@ -24,13 +28,7 @@ jest.mock("expo-router", () => {
   const Stack = ({ children, screenOptions }: any) =>
     React.createElement(View, { testID: "stack" }, screenOptions?.headerRight?.(), children);
   Stack.Screen = () => null;
-  return {
-    Stack,
-    Slot: () => null,
-    useRouter: () => ({ push: jest.fn() }),
-    useSegments: () => ["(user)"],
-    usePathname: () => "/",
-  };
+  return { Stack, Slot: () => null, usePathname: () => "/" };
 });
 
 jest.mock("@/context/BrandContext", () => ({
@@ -47,12 +45,9 @@ jest.mock("@/hooks/use-app-theme", () => ({
 }));
 
 jest.mock("@/api/restaurants", () => ({ fetchSocialLinks: jest.fn().mockResolvedValue([]) }));
-jest.mock("@/hooks/useKeyboardShortcuts", () => ({ useKeyboardShortcuts: jest.fn() }));
-jest.mock("@/components/layout/Navbar", () => () => null);
-jest.mock("@/components/common/KeyboardShortcutsHelp", () => () => null);
 jest.mock("@/hooks/use-online", () => ({ useOnline: jest.fn(() => true) }));
 
-import UserLayout from "@/app/(user)/_layout";
+import HomeTabLayout from "@/app/(user)/(home)/_layout";
 
 const mockUseOnline = useOnline as jest.MockedFunction<typeof useOnline>;
 
@@ -61,18 +56,18 @@ beforeEach(() => {
   mockUseOnline.mockReturnValue(true);
 });
 
-describe("(user)/_layout on a device", () => {
+describe("a guest tab on a device", () => {
   it("puts a settings control in the header, closed to begin with", () => {
-    render(<UserLayout />);
+    render(<HomeTabLayout />);
 
     expect(screen.getByTestId("guest-settings-open")).toBeTruthy();
     expect(screen.queryByTestId("theme-radiogroup")).toBeNull();
   });
 
   // The header is what carries it on a pushed screen; a tab root has no header, so the same
-  // control is pinned over the navigator instead of scrolling away inside the page.
-  it("pins the same control over the navigator on a header-less tab root", () => {
-    render(<UserLayout />);
+  // control is pinned over the stack instead of scrolling away inside the page.
+  it("pins the same control over the stack on a header-less tab root", () => {
+    render(<HomeTabLayout />);
 
     expect(screen.getByTestId("guest-settings-anchor-open")).toBeTruthy();
   });
@@ -80,7 +75,7 @@ describe("(user)/_layout on a device", () => {
   // The control opens a menu, and a row opens the pane — the settings do not all arrive at
   // once, which is what keeps any one of them off a scrollbar.
   it("reaches language and appearance from that control, and closes again", () => {
-    render(<UserLayout />);
+    render(<HomeTabLayout />);
 
     fireEvent.press(screen.getByTestId("guest-settings-open"));
     expect(screen.getByTestId("guest-settings-language")).toBeTruthy();
@@ -94,15 +89,15 @@ describe("(user)/_layout on a device", () => {
   });
 
   it("shows no offline strip while the device is connected", () => {
-    render(<UserLayout />);
+    render(<HomeTabLayout />);
 
     expect(screen.queryByTestId("offline-banner")).toBeNull();
   });
 
-  it("shows the offline strip above the navigator when it is not", () => {
+  it("shows the offline strip above the stack when it is not", () => {
     mockUseOnline.mockReturnValue(false);
 
-    render(<UserLayout />);
+    render(<HomeTabLayout />);
 
     expect(screen.getByTestId("offline-banner")).toBeTruthy();
   });

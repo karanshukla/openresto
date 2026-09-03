@@ -14,7 +14,9 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
 }));
 
-jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
+}));
 
 const SEAT_OPTIONS = [
   { label: "1 guest", value: 1 },

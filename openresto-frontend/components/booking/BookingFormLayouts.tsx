@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { ThemedText } from "../themed-text";
 import { Icon } from "@/components/common/Icon";
 import WalkInDaysBanner from "./WalkInDaysBanner";
@@ -127,7 +127,7 @@ export function BookingFormDrawerLayout({
         <Pressable
           testID="seating-disclosure-toggle"
           onPress={() => {
-            Haptics.selectionAsync();
+            haptics.selection();
             onToggleSeating();
           }}
           accessibilityRole="button"

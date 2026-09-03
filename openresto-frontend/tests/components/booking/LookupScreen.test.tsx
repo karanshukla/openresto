@@ -3,13 +3,15 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
-import { KeyboardAvoidingView, Linking } from "react-native";
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/bookings";
 import { fetchRestaurantById } from "@/api/restaurants";
 import { fetchCachedBookings } from "@/utils/bookingCache";
 import { useOnline } from "@/hooks/use-online";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
+import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
 jest.mock("@/components/layout/Footer", () => {
   const { View } = require("react-native");
@@ -25,12 +27,8 @@ jest.mock("react-native", () => {
   return rn;
 });
 
-jest.mock("expo-haptics", () => ({
-  notificationAsync: jest.fn(),
-  selectionAsync: jest.fn(),
-  impactAsync: jest.fn(),
-  NotificationFeedbackType: { Success: "success", Error: "error" },
-  ImpactFeedbackStyle: { Light: "light" },
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 
 jest.mock("@/api/bookings", () => ({
@@ -56,6 +54,14 @@ jest.mock("expo-router", () => ({
 jest.mock("@/components/common/ConfirmModal", () => require("../../../jest-mocks/ConfirmModal"));
 
 jest.setTimeout(15000);
+
+/** The platform sheet's props, which is where the compact layout's behaviour is observable. */
+const sheetProps = () =>
+  screen.UNSAFE_getByType(BottomSheetModal as unknown as React.ComponentType).props as Record<
+    string,
+    // eslint-disable-next-line typescript/no-explicit-any
+    any
+  >;
 
 const mockBooking = {
   id: 1,
@@ -105,6 +111,66 @@ describe("LookupScreen", () => {
     expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     expect(screen.queryByTestId("result-panel")).toBeNull();
     await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+  });
+
+  /**
+   * Issue #426. Neither of this screen's routes draws a native header, so both are tab roots
+   * whose scroll content pads the tab bar itself: inside a tab the bottom inset is the bar's
+   * height on iOS, where the page runs under it. Web has no bar and pads nothing.
+   */
+  describe("the tab bar", () => {
+    const TAB_BAR = 83;
+    const scrollPadding = () =>
+      StyleSheet.flatten(screen.UNSAFE_getAllByType(ScrollView)[0].props.contentContainerStyle)
+        .paddingBottom;
+
+    const onPlatform = async (os: string, body: () => Promise<void>) => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = os;
+      try {
+        await body();
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
+    };
+
+    it("is cleared by the scroll content off web", async () => {
+      await onPlatform("ios", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <LookupScreen />);
+        await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+        expect(scrollPadding()).toBe(TAB_BAR);
+      });
+    });
+
+    it("is not a thing on web", async () => {
+      await onPlatform("web", async () => {
+        renderWithInsets({ bottom: TAB_BAR }, <LookupScreen />);
+        await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+        expect(scrollPadding()).toBe(0);
+      });
+    });
+  });
+
+  /**
+   * The status bar inset pads the scroll content, not the screen around it, so the form runs
+   * under the bar as it scrolls rather than stopping at a dead strip — the shape the home hero
+   * already had. Nothing pins on this screen, so nothing has to reclaim the bar.
+   */
+  describe("the status bar", () => {
+    const STATUS_BAR = 47;
+    const rootPadding = () =>
+      StyleSheet.flatten(screen.getByTestId("lookup-root").props.style).paddingTop;
+    const scrollTopPadding = () =>
+      StyleSheet.flatten(screen.UNSAFE_getAllByType(ScrollView)[0].props.contentContainerStyle)
+        .paddingTop;
+
+    it("pads the scroll content, leaving the screen itself flush to the display", async () => {
+      renderWithInsets({ top: STATUS_BAR }, <LookupScreen />);
+      await waitFor(() => expect(fetchCachedBookings).toHaveBeenCalled());
+
+      expect(rootPadding()).toBeUndefined();
+      expect(scrollTopPadding()).toBe(STATUS_BAR);
+    });
   });
 
   /**
@@ -312,33 +378,33 @@ describe("LookupScreen", () => {
     });
 
     it("fires success haptics once a justBooked deep link resolves to an active booking", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       renderWithProviders(
         <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
       );
 
       await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
-      await waitFor(() => expect(Haptics.notificationAsync).toHaveBeenCalledWith("success"));
+      await waitFor(() => expect(haptics.outcome).toHaveBeenCalledWith("success"));
     });
 
     it("fires error-tone haptics when the justBooked booking is already cancelled", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue({ ...mockBooking, isCancelled: true });
       renderWithProviders(
         <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
       );
 
       await waitFor(() => expect(screen.getByText("Booking Cancelled")).toBeTruthy());
-      await waitFor(() => expect(Haptics.notificationAsync).toHaveBeenCalledWith("error"));
+      await waitFor(() => expect(haptics.outcome).toHaveBeenCalledWith("error"));
     });
 
     it("does not fire haptics for a plain (non-justBooked) deep link", async () => {
-      const Haptics = require("expo-haptics");
+      const { haptics } = require("@/utils/haptics");
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
-      expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+      expect(haptics.outcome).not.toHaveBeenCalled();
     });
   });
 
@@ -549,7 +615,7 @@ describe("LookupScreen", () => {
   describe("compact layout", () => {
     beforeEach(() => setWidth(400));
 
-    it("shows the result as a bottom sheet instead of a side panel", async () => {
+    const lookUpOnACompactScreen = async () => {
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
       renderWithProviders(<LookupScreen />);
@@ -560,34 +626,22 @@ describe("LookupScreen", () => {
         "test@test.com"
       );
       fireEvent.press(screen.getByText("Look Up"));
-
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
-      expect(
-        screen.getByTestId("result-panel-grabber", { includeHiddenElements: true })
-      ).toBeTruthy();
+    };
+
+    it("shows the result as the platform's sheet instead of a side panel", async () => {
+      await lookUpOnACompactScreen();
+
+      expect(sheetProps().enablePanDownToClose).toBe(true);
+      expect(screen.queryByTestId("result-panel")).toBeNull();
     });
 
     it("dismissing the sheet lands back on the idle form", async () => {
-      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
-      (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
-      renderWithProviders(<LookupScreen />);
+      await lookUpOnACompactScreen();
 
-      fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
-      fireEvent.changeText(
-        screen.getByPlaceholderText("The email used when booking"),
-        "test@test.com"
-      );
-      fireEvent.press(screen.getByText("Look Up"));
-      await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
+      await act(async () => sheetProps().onDismiss());
 
-      fireEvent.press(screen.getByTestId("result-panel-backdrop", { includeHiddenElements: true }));
-
-      // The dismiss animation runs on a real 180ms timer; act() flushes the state update
-      // its completion callback fires once that real time has actually passed.
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-      });
-      expect(screen.queryByTestId("result-panel")).toBeNull();
+      expect(screen.queryByTestId("result-panel-body")).toBeNull();
       expect(screen.getByText(IDLE_SCREEN)).toBeTruthy();
     });
   });

@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { theme } from "@/theme/theme";
@@ -112,7 +112,7 @@ export default function Button({
       : {};
 
   const handlePress: PressableProps["onPress"] = (e) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.press();
     onPress?.(e);
   };
 

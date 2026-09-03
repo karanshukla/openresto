@@ -3,14 +3,16 @@
  */
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import Stepper from "@/components/common/Stepper";
 
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
 }));
 
-jest.mock("expo-haptics", () => ({ selectionAsync: jest.fn() }));
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
+}));
 
 const OPTIONS = [
   { label: "1 guest", value: 1 },
@@ -52,7 +54,7 @@ describe("Stepper", () => {
   it("ticks a haptic on each step", () => {
     renderStepper(2);
     fireEvent.press(screen.getByLabelText("One more guest"));
-    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    expect(haptics.selection).toHaveBeenCalledTimes(1);
   });
 
   it("disables the minus button on the first option", () => {
@@ -78,7 +80,7 @@ describe("Stepper", () => {
       nativeEvent: { actionName: "increment" },
     });
     expect(onChange).not.toHaveBeenCalled();
-    expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+    expect(haptics.selection).not.toHaveBeenCalled();
 
     screen.rerender(<Stepper options={OPTIONS} value={1} onChange={onChange} {...labels} />);
     fireEvent(screen.getByLabelText("Number of guests"), "accessibilityAction", {

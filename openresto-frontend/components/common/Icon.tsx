@@ -3,6 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/theme/theme";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
+/**
+ * The glyph set every `Icon` draws from, for the one host that rasterises its own icons rather
+ * than rendering an `<Icon>`: the native tab bar hands the family to react-native-screens,
+ * which draws the glyph into the platform's bar itself.
+ */
+export const IconFamily = Ionicons;
 export type IconSize = keyof typeof theme.iconSizes;
 
 export interface IconProps {

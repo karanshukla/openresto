@@ -3,7 +3,7 @@ import { RestaurantDto } from "@/api/restaurants";
 import { useRouter, type Href } from "expo-router";
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -64,9 +64,9 @@ export default function RestaurantCard({
   const { t } = useTranslation();
 
   // Every route this card can take answers a tap, so each one confirms the tap first.
-  // Haptics.selectionAsync is a no-op on web and on devices without a taptic engine.
+  // The haptic is a no-op on web and on devices without an actuator.
   const openLocation = () => {
-    Haptics.selectionAsync();
+    haptics.selection();
     router.push(`/(user)/locations/${restaurant.id}` as Href);
   };
 
@@ -382,7 +382,7 @@ export default function RestaurantCard({
                         key={s.time}
                         onPress={(e) => {
                           e.stopPropagation?.();
-                          Haptics.selectionAsync();
+                          haptics.selection();
                           router.push(
                             `/(user)/locations/${restaurant.id}?time=${encodeURIComponent(s.time)}&party=${party}` as Href
                           );

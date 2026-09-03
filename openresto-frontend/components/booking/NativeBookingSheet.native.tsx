@@ -5,7 +5,7 @@ import {
   BottomSheetScrollView,
   type BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { NativeBookingSheetProps } from "./NativeBookingSheet";
 
@@ -48,7 +48,7 @@ export function NativeBookingSheet({
   }, []);
 
   const dismiss = useCallback(() => {
-    void Haptics.selectionAsync();
+    haptics.selection();
     sheet.current?.dismiss();
   }, []);
 

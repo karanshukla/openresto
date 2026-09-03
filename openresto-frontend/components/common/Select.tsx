@@ -6,7 +6,7 @@ import { Icon, type IconName } from "@/components/common/Icon";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
 import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { hexToRgba } from "@/utils/colors";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { openIndexFor, resolveListboxKey, TYPEAHEAD_RESET_MS } from "@/utils/listboxKeys";
@@ -108,7 +108,7 @@ export default function Select({
   const commit = (index: number) => {
     const option = options[index];
     if (!option) return;
-    Haptics.selectionAsync();
+    haptics.selection();
     onSelect(option.value);
     close();
   };

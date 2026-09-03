@@ -28,6 +28,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 import { useTranslation } from "react-i18next";
 import { styles } from "@/styles/user/index.styles";
@@ -98,7 +99,7 @@ const CARD_REVEAL_MAX_STAGGER = 5;
  * The per-ring alpha whose stack reaches `peak` at a bloom's centre. Translucent layers
  * compose as 1 − Π(1 − aᵢ), so an even split is the inverse nth root, not `peak / rings`.
  *
- * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the rings
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that the rings
  * compose back to the peak rather than to an even division of it.
  */
 export function bloomRingAlpha(peak: number, rings: number): number {
@@ -109,7 +110,7 @@ export function bloomRingAlpha(peak: number, rings: number): number {
  * The blooms the hero paints. The web gradient carries a second one up from the floor only in
  * the dark theme, where a light hero would otherwise have nothing to sit against.
  *
- * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the floor bloom
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that the floor bloom
  * is dark-theme only.
  */
 export function heroBlooms(isDark: boolean) {
@@ -122,7 +123,7 @@ export function heroBlooms(isDark: boolean) {
  * dependency of this app, so the same depth is layered out of plain views — a stepped settle
  * from the card colour to the page, under concentric translucent accent discs per bloom.
  *
- * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the native hero
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that the native hero
  * carries this wash while the web hero keeps its CSS gradient instead.
  */
 function HeroWash({
@@ -185,7 +186,7 @@ function HeroWash({
  * scroll — web keeps the scroll-driven `CARD_REVEAL` rule in global.css. The whole animation
  * is one native-driven value, so nothing runs per frame in JS.
  *
- * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the cards
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that the cards
  * animate off web and that reduce-motion renders them plain.
  */
 function LocationCardReveal({
@@ -242,7 +243,7 @@ function LocationCardReveal({
  * sideways. Measuring against the same column the section is capped to gives one answer both
  * platforms can lay out.
  *
- * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that a two-column
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that a two-column
  * grid gets a number, not a calc string.
  */
 export function columnWidth(
@@ -270,7 +271,7 @@ export default function HomeScreen() {
    * times once, at mount, so a refreshed list with the same cards still on it would show the
    * availability it had before the pull.
    *
-   * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that a pull
+   * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that a pull
    * reloads both the list and the cards' availability.
    */
   const [generation, setGeneration] = useState(0);
@@ -282,6 +283,7 @@ export default function HomeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
   const insets = useSafeAreaInsets();
+  const tabBarClearance = useTabBarClearance();
 
   const isMobile = isMobileWidth(width);
 
@@ -377,7 +379,7 @@ export default function HomeScreen() {
    * Highlights stay one row. Past the column count they scroll sideways instead of
    * wrapping, so a fifth highlight doesn't open a second row with three empty slots in it.
    *
-   * @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins the boundary: four
+   * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins the boundary: four
    * highlights across four columns stay a grid, a fifth becomes a rail.
    */
   const useHighlightRail = numHighlightCols === 1 || highlights.length > numHighlightCols;
@@ -431,7 +433,7 @@ export default function HomeScreen() {
         icons read only in light — whatever the theme. The root layout's theme-driven bar takes
         back over the moment another screen is on top or the photo is gone.
 
-        @see [index.test.tsx](<../../tests/app/(user)/index.test.tsx>) — pins that the light
+        @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that the light
         bar is tied to the photo and to this screen being the one in front.
       */}
       {Platform.OS !== "web" && hasHero && focused && <StatusBar style="light" />}
@@ -439,7 +441,7 @@ export default function HomeScreen() {
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarClearance }]}
         showsVerticalScrollIndicator={false}
         onScroll={fab.trackScroll}
         scrollEventThrottle={16}
@@ -525,8 +527,8 @@ export default function HomeScreen() {
               style={[
                 styles.heroInner,
                 isMobile && { paddingHorizontal: 20 },
-                // This screen is the one guest route that draws with no header (see
-                // app/(user)/_layout.tsx), so nothing above it has reserved the status bar
+                // This screen draws with no header (`tabRoot()` in GuestTabStack), so
+                // nothing above it has reserved the status bar
                 // and the hero starts at the top of the display. `paddingTop` alone is a web
                 // constant sized for the navbar, and lands a few points short of a notch.
                 Platform.OS !== "web" && {

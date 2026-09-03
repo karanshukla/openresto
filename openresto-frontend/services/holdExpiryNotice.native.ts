@@ -22,13 +22,18 @@ function loadNotifications(): typeof import("expo-notifications") {
 }
 
 /**
- * The native implementation. Every failure path — a refused prompt, a hold too short to warn
- * about, a notifications module that will not load — returns null, because a guest who cannot
- * be warned must still be able to book.
+ * The native implementation. Every failure path — permission this app was never granted, a hold
+ * too short to warn about, a notifications module that will not load — returns null, because a
+ * guest who cannot be warned must still be able to book.
+ *
+ * It **never prompts**. Taking a hold is the guest asking for a table, not for notifications, and
+ * an OS dialog thrown over a five-minute countdown reads as the app interrupting a purchase it
+ * has not made yet. Permission is asked for once, by press, on the confirmation screen's
+ * reminder toggle; a guest who granted it there gets this warning on every later booking.
  *
  * @see [holdExpiryNotice.native.test.ts](../tests/services/holdExpiryNotice.native.test.ts)
- * — pins the refused prompt, the too-short hold, the Android channel, and that a throwing
- * module is swallowed.
+ * — pins that an ungranted permission schedules nothing and prompts nothing, the too-short hold,
+ * the Android channel, and that a throwing module is swallowed.
  */
 export async function scheduleHoldExpiryNotice(
   expiresAt: string
@@ -39,10 +44,7 @@ export async function scheduleHoldExpiryNotice(
   try {
     const Notifications = loadNotifications();
 
-    let { status } = await Notifications.getPermissionsAsync();
-    if (status !== "granted") {
-      ({ status } = await Notifications.requestPermissionsAsync());
-    }
+    const { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted") return null;
 
     if (Platform.OS === "android") {

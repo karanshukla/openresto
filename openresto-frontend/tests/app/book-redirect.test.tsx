@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { render } from "@testing-library/react-native";
-import BookRedirect from "@/app/(user)/book";
+import BookRedirect from "@/app/(user)/(locations)/book";
 
 let capturedHref: string | undefined;
 

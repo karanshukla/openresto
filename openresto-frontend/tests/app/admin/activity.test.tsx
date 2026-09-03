@@ -25,10 +25,8 @@ jest.mock("expo-router", () => {
   return { Stack: { Screen }, Redirect };
 });
 
-jest.mock("expo-haptics", () => ({
-  selectionAsync: jest.fn(),
-  impactAsync: jest.fn(),
-  ImpactFeedbackStyle: { Light: "light" },
+jest.mock("@/utils/haptics", () => ({
+  haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 jest.mock("@/api/audit", () => ({ getAuditEntries: jest.fn() }));
 jest.mock("@/api/restaurants", () => ({ fetchRestaurants: jest.fn() }));

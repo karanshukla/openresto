@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import type { TimeSlotDto } from "@/api/availability";
@@ -62,7 +62,7 @@ export function LocationSlotRow({
   }
 
   const book = (time: string) => {
-    Haptics.selectionAsync();
+    haptics.selection();
     onBook(time);
   };
 
