@@ -1,6 +1,6 @@
 {
   "name": "openresto-cli",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Command-line client for the OpenResto admin API, driven by admin API keys.",
   "keywords": [
     "openresto",

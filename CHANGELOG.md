@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-09-05
+
+A small release on top of 2.0.0: a booking-confirmation preview for the admin, and the admin push fix that turned out to need most of this release's attention.
+
 ### Added
 
 - **The admin email settings page now previews the booking confirmation** (`/admin/settings/email`). The panel beside the SMTP form renders the real confirmation for a stand-in booking, with the location's own name, photo, hours, address and reference format, and the brand colour, icon and footer from your brand settings. The From line follows the sender name and address as you type them, before you save, and the panel says plainly when confirmations are off or SMTP is not configured yet, which are the two ways a guest ends up receiving nothing. Instances with more than one location get a picker, since each one renders differently. Nothing is sent and nothing is stored.
@@ -459,4 +463,5 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.8.0]: https://github.com/karanshukla/openresto/releases/tag/v1.8.0
 [1.9.0]: https://github.com/karanshukla/openresto/releases/tag/v1.9.0
 [2.0.0]: https://github.com/karanshukla/openresto/releases/tag/v2.0.0
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.0.0...HEAD
+[2.0.1]: https://github.com/karanshukla/openresto/releases/tag/v2.0.1
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.0.1...HEAD

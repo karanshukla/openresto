@@ -1,6 +1,6 @@
 {
   "name": "openresto",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A self-hosted restaurant booking management system. Customers browse restaurants, hold tables in real-time, and book instantly. Admins manage reservations, tables, sections, and branding from a dedicated dashboard.",
   "main": "index.js",
   "scripts": {
