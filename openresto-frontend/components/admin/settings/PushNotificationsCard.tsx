@@ -6,7 +6,6 @@ import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getVapidPublicKey, subscribePush, unsubscribePush } from "@/api/notifications";
-import { fetchRestaurants } from "@/api/restaurants";
 import Button from "@/components/common/Button";
 import { ButtonRow } from "@/components/common/ButtonRow";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
@@ -100,14 +99,13 @@ export function PushNotificationsCard() {
       const authBuffer = sub.getKey("auth");
       if (!p256dhBuffer || !authBuffer) throw new Error("Missing push keys");
 
-      const payload = {
+      // One call covers every location. This used to fan out over fetchRestaurants(), which
+      // wrote a row per restaurant and still missed any location created afterwards.
+      await subscribePush({
         endpoint: sub.endpoint,
         p256dh: arrayBufferToBase64(p256dhBuffer),
         auth: arrayBufferToBase64(authBuffer),
-      };
-
-      const restaurants = await fetchRestaurants();
-      await Promise.all(restaurants.map((r) => subscribePush(r.id, payload)));
+      });
 
       setPushState("active");
     } catch (err) {

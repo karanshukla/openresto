@@ -92,19 +92,19 @@ public class NotificationsController(INotificationService notificationService) :
     }
 
     /// <summary>
-    /// Register a browser push subscription.
-    /// POST /api/admin/push/subscribe?restaurantId=1
+    /// Register a browser push subscription. One call covers every location — an admin
+    /// account is not scoped to one, so neither is the subscription.
+    /// POST /api/admin/push/subscribe
     /// Body: { endpoint, p256dh, auth, userAgent? }
     /// </summary>
+    /// <remarks>
+    /// A <c>restaurantId</c> query parameter is accepted and ignored so a browser still
+    /// running the previous frontend build keeps working against a deployed backend.
+    /// </remarks>
     [HttpPost("push/subscribe")]
-    public async Task<IActionResult> Subscribe(
-        [FromQuery] int restaurantId,
-        [FromBody] PushSubscribeRequest request)
+    public async Task<IActionResult> Subscribe([FromBody] PushSubscribeRequest request)
     {
-        if (restaurantId <= 0)
-            return BadRequest(new { error = "restaurantId is required." });
-
-        await _notifications.SubscribeAsync(restaurantId, request);
+        await _notifications.SubscribeAsync(request);
         return Ok();
     }
 

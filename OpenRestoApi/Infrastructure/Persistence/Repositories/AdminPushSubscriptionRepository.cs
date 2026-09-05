@@ -13,24 +13,15 @@ internal class AdminPushSubscriptionRepository(AppDbContext db) : IAdminPushSubs
 {
     private readonly AppDbContext _db = db;
 
-    public async Task<AdminPushSubscription?> GetByEndpointAndRestaurantAsync(string endpoint, int restaurantId)
+    public async Task<AdminPushSubscription?> GetByEndpointAsync(string endpoint)
     {
         return await _db.AdminPushSubscriptions
-            .FirstOrDefaultAsync(s => s.Endpoint == endpoint && s.RestaurantId == restaurantId);
+            .FirstOrDefaultAsync(s => s.Endpoint == endpoint);
     }
 
-    public async Task<List<AdminPushSubscription>> GetByRestaurantAsync(int restaurantId)
+    public async Task<List<AdminPushSubscription>> GetAllAsync()
     {
-        return await _db.AdminPushSubscriptions
-            .Where(s => s.RestaurantId == restaurantId)
-            .ToListAsync();
-    }
-
-    public async Task<List<AdminPushSubscription>> GetByEndpointAsync(string endpoint)
-    {
-        return await _db.AdminPushSubscriptions
-            .Where(s => s.Endpoint == endpoint)
-            .ToListAsync();
+        return await _db.AdminPushSubscriptions.ToListAsync();
     }
 
     public async Task<AdminPushSubscription> AddAsync(AdminPushSubscription subscription)

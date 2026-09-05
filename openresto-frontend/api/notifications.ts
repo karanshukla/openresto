@@ -94,12 +94,13 @@ export async function getVapidPublicKey(): Promise<string | null> {
   }
 }
 
-export async function subscribePush(
-  restaurantId: number,
-  sub: PushSubscribeRequest
-): Promise<void> {
+/**
+ * Registers this browser for admin push. One call covers every location — an admin account
+ * is not scoped to a restaurant, so neither is the subscription.
+ */
+export async function subscribePush(sub: PushSubscribeRequest): Promise<void> {
   try {
-    await post(`/admin/push/subscribe?restaurantId=${restaurantId}`, sub);
+    await post("/admin/push/subscribe", sub);
   } catch (err) {
     console.error("subscribePush error:", err);
   }

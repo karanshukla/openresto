@@ -16,7 +16,7 @@ public interface INotificationService
     Task MarkReadAsync(int notificationId);
     Task MarkAllReadAsync(int restaurantId);
 
-    Task SubscribeAsync(int restaurantId, PushSubscribeRequest request);
+    Task SubscribeAsync(PushSubscribeRequest request);
     Task UnsubscribeAsync(string endpoint);
     Task DeleteByIdAsync(int notificationId);
     Task DeleteByIdsAsync(List<int> notificationIds);

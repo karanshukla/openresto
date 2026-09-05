@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The confirmation email's subject is now built by `EmailTemplateService` alongside its body. The send path and the new preview call the same builder, so the two cannot drift.
+- `POST /api/admin/push/subscribe` no longer takes a `restaurantId`. One call registers the browser for every location. The parameter is still accepted and ignored, so a tab still running the previous frontend keeps working against an upgraded server.
+
+### Fixed
+
+- **Admin push notifications arrived for one location and no others, which in practice meant never.** A subscription was stored against a single restaurant, and the notifications page registered it against whichever location the admin happened to be filtering by — so an instance with more than one location had its bookings land on restaurants nobody's browser had subscribed to, and the send path reported "0 subscription(s)" every time. A subscription now belongs to the browser rather than to a location, which is what the Settings page had been promising all along ("active for all locations"); it covers locations added after you subscribed, too. **Existing subscriptions are migrated, not dropped** — the browsers registered against several locations collapse to one row each and keep working — but a browser that only ever subscribed from the notifications banner was already receiving nothing, and will start receiving everything.
+- **One browser with unusable push keys silenced every other subscriber.** The send loop caught the two failures Web Push reports as HTTP status codes and let everything else escape, aborting the fan-out partway: the subscribers after the bad one were skipped, and the notification's delivery outcome was never recorded, so nothing in the admin UI showed that a send had been attempted at all. Each subscription's failure is now contained to that subscription and recorded against the notification. A dead endpoint (410/404) is still removed; a bad key is not, since the browser can refresh it.
 
 ## [2.0.0] - 2026-09-03
 

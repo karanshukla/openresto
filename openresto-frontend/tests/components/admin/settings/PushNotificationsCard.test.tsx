@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react-
 import { Platform } from "react-native";
 import { PushNotificationsCard } from "@/components/admin/settings/PushNotificationsCard";
 import * as notificationsApi from "@/api/notifications";
-import * as restaurantsApi from "@/api/restaurants";
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
@@ -30,15 +29,10 @@ jest.mock("@/api/notifications", () => ({
   unsubscribePush: jest.fn(),
 }));
 
-jest.mock("@/api/restaurants", () => ({
-  fetchRestaurants: jest.fn(),
-}));
-
 // Typed shortcuts
 const mockGetVapidPublicKey = notificationsApi.getVapidPublicKey as jest.Mock;
 const mockSubscribePush = notificationsApi.subscribePush as jest.Mock;
 const mockUnsubscribePush = notificationsApi.unsubscribePush as jest.Mock;
-const mockFetchRestaurants = restaurantsApi.fetchRestaurants as jest.Mock;
 
 // Use global as Record to avoid bare `navigator`/`window` which may not exist in the node test env
 const g = global as Record<string, unknown>;
@@ -98,7 +92,6 @@ beforeEach(() => {
   // Default: web with push support available, inactive subscription
   setupWebEnvironment();
   mockGetVapidPublicKey.mockResolvedValue("test-vapid-key");
-  mockFetchRestaurants.mockResolvedValue([{ id: 1, name: "Location A" }]);
   mockSubscribePush.mockResolvedValue(undefined);
   mockUnsubscribePush.mockResolvedValue(undefined);
 
@@ -271,6 +264,14 @@ describe("PushNotificationsCard", () => {
       await waitFor(() => {
         expect(mockSubscribePush).toHaveBeenCalled();
         expect(screen.getByText("Push notifications active for all locations")).toBeTruthy();
+      });
+      // One call, unscoped — the card promises "all locations" and the server now honours
+      // that from a single row, rather than the card writing one per restaurant.
+      expect(mockSubscribePush).toHaveBeenCalledTimes(1);
+      expect(mockSubscribePush).toHaveBeenCalledWith({
+        endpoint: "https://push.example.com/sub",
+        p256dh: expect.any(String),
+        auth: expect.any(String),
       });
     });
 

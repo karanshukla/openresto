@@ -417,11 +417,7 @@ export default function NotificationsScreen() {
           </ThemedText>
         </View>
 
-        <PushBanner
-          restaurantId={selectedRestaurantId ?? restaurants[0]?.id ?? null}
-          primaryColor={primaryColor}
-          isDark={isDark}
-        />
+        <PushBanner primaryColor={primaryColor} isDark={isDark} />
 
         <View style={styles.filtersSection}>
           <HorizontalScroller

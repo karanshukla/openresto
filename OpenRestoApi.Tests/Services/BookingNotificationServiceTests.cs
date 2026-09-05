@@ -10,6 +10,7 @@ using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 using WebPush;
+using WebPush.Model;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -57,12 +58,11 @@ public class BookingNotificationServiceTests : IDisposable
             NullLogger<BookingNotificationService>.Instance);
     }
 
-    private async Task<AdminPushSubscription> SeedPushSubscriptionAsync(int restaurantId = 1)
+    private async Task<AdminPushSubscription> SeedPushSubscriptionAsync(string endpoint = "https://push.example/sub1")
     {
         var sub = new AdminPushSubscription
         {
-            RestaurantId = restaurantId,
-            Endpoint = "https://push.example/sub1",
+            Endpoint = endpoint,
             P256dh = "p256dh-key",
             Auth = "auth-secret",
         };
@@ -351,5 +351,72 @@ public class BookingNotificationServiceTests : IDisposable
         Assert.Null(notification.PushSentAt);
         Assert.NotNull(notification.PushError);
         Assert.Contains("500", notification.PushError);
+    }
+
+    [Fact]
+    public async Task SendPushAsync_DeliversToEverySubscription_NotJustTheBookedRestaurants()
+    {
+        // The reported bug: a browser that subscribed while viewing restaurant 1 got nothing
+        // for a booking at restaurant 2, because the fan-out only read that restaurant's rows.
+        await SeedRestaurantAsync(1);
+        await SeedRestaurantAsync(2);
+        await SeedPushSubscriptionAsync();
+        Booking booking = MakeBooking(restaurantId: 2);
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto 2");
+
+        _webPushClientMock.Verify(
+            c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        AdminNotification notification = await _db.AdminNotifications.SingleAsync();
+        Assert.NotNull(notification.PushSentAt);
+    }
+
+    [Fact]
+    public async Task SendPushAsync_KeepsGoing_WhenOneSubscriptionThrowsOutsideWebPushException()
+    {
+        // WebPush raises InvalidEncryptionDetailsException — not a WebPushException — for key
+        // material it cannot encrypt with. Unguarded it escaped the loop, so every later
+        // subscriber was skipped and the notification's push outcome was never written.
+        await SeedRestaurantAsync();
+        await SeedPushSubscriptionAsync("https://push.example/broken");
+        await SeedPushSubscriptionAsync("https://push.example/healthy");
+        Booking booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(
+                It.Is<PushSubscription>(ps => ps.Endpoint == "https://push.example/broken"),
+                It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidEncryptionDetailsException(
+                "Unable to encrypt the payload with the encryption key of this subscription.",
+                new PushSubscription("https://push.example/broken", "p256dh-key", "auth-secret")));
+        _webPushClientMock
+            .Setup(c => c.SendNotificationAsync(
+                It.Is<PushSubscription>(ps => ps.Endpoint == "https://push.example/healthy"),
+                It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        await CreateService(ConfiguredVapid()).NotifyBookingCreatedAsync(booking, "Resto");
+
+        // The healthy subscriber was still reached, and the outcome reached the database.
+        _webPushClientMock.Verify(
+            c => c.SendNotificationAsync(
+                It.Is<PushSubscription>(ps => ps.Endpoint == "https://push.example/healthy"),
+                It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        AdminNotification notification = await _db.AdminNotifications.SingleAsync();
+        Assert.NotNull(notification.PushSentAt);
+        Assert.NotNull(notification.PushError);
+        Assert.Contains(nameof(InvalidEncryptionDetailsException), notification.PushError);
+        // A bad key is not a dead endpoint, so the row stays for the browser to refresh.
+        Assert.Equal(2, await _db.AdminPushSubscriptions.CountAsync());
     }
 }
