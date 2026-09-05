@@ -58,6 +58,9 @@ jest.mock("@/components/admin/settings/EmailSettingsCard", () => ({
 jest.mock("@/components/admin/settings/EmailDeliveryPanel", () => ({
   EmailDeliveryPanel: stub("EmailDeliveryPanel"),
 }));
+jest.mock("@/components/admin/settings/EmailPreviewPanel", () => ({
+  EmailPreviewPanel: stub("EmailPreviewPanel"),
+}));
 // The email route owns the SMTP state both its halves share; the cards are stubbed, so the
 // route only needs the hook to exist, not to reach the API.
 jest.mock("@/hooks/use-email-settings", () => ({
@@ -138,6 +141,7 @@ describe("admin settings routes", () => {
       expect(screen.getByText("Email & Push")).toBeTruthy();
       expect(screen.getByText("EmailSettingsCard")).toBeTruthy();
       expect(screen.getByText("EmailDeliveryPanel")).toBeTruthy();
+      expect(screen.getByText("EmailPreviewPanel")).toBeTruthy();
       expect(screen.getByText("PushNotificationsCard")).toBeTruthy();
     });
   });

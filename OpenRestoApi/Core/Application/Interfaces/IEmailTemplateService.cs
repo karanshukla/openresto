@@ -14,4 +14,10 @@ public interface IEmailTemplateService
     /// <c>DateFormatter</c>; URLs are RFC-3986 escaped.
     /// </summary>
     string BuildConfirmationEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl);
+
+    /// <summary>
+    /// Subject line of the confirmation email. Lives beside the body so the send path and the
+    /// admin's preview render the same header, rather than each spelling the wording out.
+    /// </summary>
+    string BuildConfirmationSubject(Restaurant restaurant);
 }

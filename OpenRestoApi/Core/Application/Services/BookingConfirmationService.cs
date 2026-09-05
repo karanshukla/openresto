@@ -36,8 +36,7 @@ public sealed class BookingConfirmationService(
 
             var brand = await _brandService.GetAsync();
             string websiteUrl = _brandService.GetWebsiteUrl(brand);
-            // Subject uses an en-dash (U+2013), not a hyphen — preserved verbatim from the original.
-            string subject = $"Booking confirmed – {restaurant.Name}";
+            string subject = _templateService.BuildConfirmationSubject(restaurant);
             string body = _templateService.BuildConfirmationEmail(booking, restaurant, brand, websiteUrl);
             await _emailService.SendEmailAsync(booking.CustomerEmail, subject, body);
         }

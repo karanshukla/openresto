@@ -1302,6 +1302,21 @@
         "recentFailures_one": "{{count}} recent failure",
         "recentFailures_other": "{{count}} recent failures"
       },
+      "emailPreview": {
+        "title": "Confirmation preview",
+        "subtitle": "What a guest receives after booking",
+        "locationLabel": "Preview location",
+        "from": "From",
+        "to": "To",
+        "subject": "Subject",
+        "senderNotSet": "{{name}} (no sender address set yet)",
+        "frameTitle": "Booking confirmation email preview",
+        "notConfigured": "Nothing is sent yet: add your SMTP details and test the connection.",
+        "confirmationsOff": "Booking confirmations are off, so guests receive nothing.",
+        "hint": "A sample booking, rendered with your real branding. Nothing is sent.",
+        "loading": "Rendering the preview…",
+        "unavailable": "The preview could not be rendered."
+      },
       "bookingConfirmation": {
         "sectionLabel": "Booking confirmations",
         "toggleLabel": "Send booking confirmation emails",
