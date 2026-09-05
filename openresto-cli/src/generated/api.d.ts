@@ -2804,15 +2804,16 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Register a browser push subscription.
-         *     POST /api/admin/push/subscribe?restaurantId=1
+         * Register a browser push subscription. One call covers every location — an admin
+         *     account is not scoped to one, so neither is the subscription.
+         *     POST /api/admin/push/subscribe
          *     Body: { endpoint, p256dh, auth, userAgent? }
+         * @description A `restaurantId` query parameter is accepted and ignored so a browser still
+         *     running the previous frontend build keeps working against a deployed backend.
          */
         post: {
             parameters: {
-                query?: {
-                    restaurantId?: number | string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;

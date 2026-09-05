@@ -68,7 +68,6 @@ function setupWebEnvironment(hasServiceWorker = true, hasPushManager = true) {
 }
 
 const defaultProps = {
-  restaurantId: 1,
   primaryColor: "#0a7ea4",
   isDark: false,
 };
@@ -261,7 +260,6 @@ describe("PushBanner", () => {
 
       await waitFor(() => {
         expect(mockSubscribePush).toHaveBeenCalledWith(
-          defaultProps.restaurantId,
           expect.objectContaining({ endpoint: sub.endpoint })
         );
       });
@@ -271,24 +269,21 @@ describe("PushBanner", () => {
       });
     });
 
-    it("falls back to restaurantId 0 when restaurantId is null", async () => {
-      const sw = makeSW(null);
-      setNavigatorSW(sw);
-      render(<PushBanner {...defaultProps} restaurantId={null} />);
-      await waitFor(() => {
-        expect(screen.getByText("Enable")).toBeTruthy();
-      });
-
-      const sub = makeSub();
-      (sw.pushManager.subscribe as jest.Mock).mockResolvedValue(sub);
+    it("registers the subscription for every location, not the one being filtered by", async () => {
+      // The banner sits under the notifications page's location filter. It used to hand that
+      // filter's restaurant to subscribePush, so an admin looking at one location received
+      // nothing for bookings at any other.
+      const sw = await renderInactive();
+      (sw.pushManager.subscribe as jest.Mock).mockResolvedValue(makeSub());
 
       await act(async () => {
         fireEvent.press(screen.getByText("Enable"));
       });
 
       await waitFor(() => {
-        expect(mockSubscribePush).toHaveBeenCalledWith(0, expect.any(Object));
+        expect(mockSubscribePush).toHaveBeenCalledTimes(1);
       });
+      expect(mockSubscribePush.mock.calls[0]).toHaveLength(1);
     });
 
     it("transitions to denied and shows an error when requestPermission returns denied", async () => {

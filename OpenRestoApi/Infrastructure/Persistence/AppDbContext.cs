@@ -191,9 +191,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AdminPushSubscription>(s =>
         {
             s.HasKey(x => x.Id);
-            s.HasOne(x => x.Restaurant).WithMany().HasForeignKey(x => x.RestaurantId).OnDelete(DeleteBehavior.Cascade);
-            s.HasIndex(x => new { x.Endpoint, x.RestaurantId }).IsUnique();
-            s.HasIndex(x => x.RestaurantId);
+            // One row per browser, not per (browser, restaurant): the fan-out sends every
+            // location's notifications to every subscription, so a second row per location
+            // would only push the same payload to the same browser twice.
+            s.HasIndex(x => x.Endpoint).IsUnique();
         });
 
         modelBuilder.Entity<GuestPushSubscription>(g =>

@@ -47,56 +47,54 @@ public class NotificationService(
     /// <summary>
     /// <seealso>NotificationServiceTests.SubscribeAsync_RejectsAnEndpointThatIsNotAPublicHttpsUrl</seealso>
     /// </summary>
-    public async Task SubscribeAsync(int restaurantId, PushSubscribeRequest request)
+    public async Task SubscribeAsync(PushSubscribeRequest request)
     {
         if (!PushEndpointValidator.IsValidWebPushEndpoint(request.Endpoint))
         {
             throw new ValidationException("The push endpoint must be a public https URL.") { Code = ErrorCodes.NotificationPushEndpointInvalid };
         }
 
-        // Deduplicate per (endpoint, restaurantId) so the same browser can receive
-        // notifications for multiple restaurants independently.
-        AdminPushSubscription? existing = await _pushSubscriptionRepository.GetByEndpointAndRestaurantAsync(request.Endpoint, restaurantId);
+        // Deduplicate per endpoint: one row covers every location, so re-subscribing from
+        // the same browser refreshes the keys rather than adding a row per restaurant.
+        AdminPushSubscription? existing = await _pushSubscriptionRepository.GetByEndpointAsync(request.Endpoint);
 
         if (existing is not null)
         {
             existing.P256dh = request.P256dh;
             existing.Auth = request.Auth;
             existing.UserAgent = request.UserAgent;
-            _log.LogInformation("[Push] Updated subscription id={Id} for restaurant {RestaurantId}", existing.Id, restaurantId);
+            _log.LogInformation("[Push] Updated subscription id={Id}", existing.Id);
             await _pushSubscriptionRepository.SaveChangesAsync();
         }
         else
         {
             await _pushSubscriptionRepository.AddAsync(new AdminPushSubscription
             {
-                RestaurantId = restaurantId,
                 Endpoint = request.Endpoint,
                 P256dh = request.P256dh,
                 Auth = request.Auth,
                 UserAgent = request.UserAgent,
                 CreatedAt = DateTime.UtcNow,
             });
-            _log.LogInformation("[Push] New subscription for restaurant {RestaurantId}", restaurantId);
+            _log.LogInformation("[Push] New subscription registered");
         }
 
         // No endpoint or key material: a push subscription's keys are credentials.
-        _audit.Describe(AuditActions.PushSubscribe, restaurantId: restaurantId,
+        // No restaurantId either — the subscription covers every location.
+        _audit.Describe(AuditActions.PushSubscribe,
             summary: "Enabled push notifications for a device");
     }
 
     public async Task UnsubscribeAsync(string endpoint)
     {
-        // Remove all restaurant rows for this endpoint so a single unsubscribe
-        // clears push across all locations.
-        List<AdminPushSubscription> subs = await _pushSubscriptionRepository.GetByEndpointAsync(endpoint);
-        if (subs.Count > 0)
+        AdminPushSubscription? sub = await _pushSubscriptionRepository.GetByEndpointAsync(endpoint);
+        if (sub is not null)
         {
-            _pushSubscriptionRepository.RemoveRange(subs);
+            _pushSubscriptionRepository.RemoveRange([sub]);
             await _pushSubscriptionRepository.SaveChangesAsync();
-            _log.LogInformation("[Push] Unsubscribed {Count} subscription(s)", subs.Count);
+            _log.LogInformation("[Push] Unsubscribed subscription id={Id}", sub.Id);
             _audit.Describe(AuditActions.PushUnsubscribe,
-                summary: $"Disabled push notifications for a device at {subs.Count} location(s)");
+                summary: "Disabled push notifications for a device");
         }
         else
         {

@@ -2364,21 +2364,8 @@
         "tags": [
           "Notifications"
         ],
-        "summary": "Register a browser push subscription.\nPOST /api/admin/push/subscribe?restaurantId=1\nBody: { endpoint, p256dh, auth, userAgent? }",
-        "parameters": [
-          {
-            "name": "restaurantId",
-            "in": "query",
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          }
-        ],
+        "summary": "Register a browser push subscription. One call covers every location \u2014 an admin\naccount is not scoped to one, so neither is the subscription.\nPOST /api/admin/push/subscribe\nBody: { endpoint, p256dh, auth, userAgent? }",
+        "description": "A \u0060restaurantId\u0060 query parameter is accepted and ignored so a browser still\nrunning the previous frontend build keeps working against a deployed backend.",
         "requestBody": {
           "content": {
             "application/json": {

@@ -40,7 +40,6 @@ function usePushStatus(vapidKey: string | null | undefined) {
 }
 
 export interface PushBannerProps {
-  restaurantId: number | null;
   primaryColor: string;
   isDark: boolean;
 }
@@ -52,8 +51,12 @@ export interface PushBannerProps {
  * state, and — if push is available but not yet active — shows a banner with an
  * Enable button that subscribes the service worker. Renders nothing on native
  * or when push is unsupported/already active.
+ *
+ * Deliberately unaware of the page's selected location: the subscription it registers
+ * covers every one of them. Scoping it to whatever the admin happened to be filtering by
+ * is what left bookings at the other locations with no subscriber to send to.
  */
-export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerProps) {
+export function PushBanner({ primaryColor, isDark }: PushBannerProps) {
   const { t } = useTranslation();
   const [vapidKey, setVapidKey] = useState<string | null | undefined>(undefined);
   const [pushStatus, setPushStatus] = usePushStatus(vapidKey);
@@ -94,7 +97,7 @@ export function PushBanner({ restaurantId, primaryColor, isDark }: PushBannerPro
       const p256dhBuffer = sub.getKey("p256dh");
       const authBuffer = sub.getKey("auth");
       if (!p256dhBuffer || !authBuffer) throw new Error("Missing push keys");
-      await subscribePush(restaurantId ?? 0, {
+      await subscribePush({
         endpoint: sub.endpoint,
         p256dh: arrayBufferToBase64(p256dhBuffer),
         auth: arrayBufferToBase64(authBuffer),

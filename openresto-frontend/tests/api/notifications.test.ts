@@ -184,19 +184,23 @@ describe("subscribePush", () => {
   it("posts to the correct endpoint with body", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
     const sub = { endpoint: "https://push.example.com/sub", p256dh: "key1", auth: "auth1" };
-    await subscribePush(5, sub);
+    await subscribePush(sub);
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/admin/push/subscribe");
-    expect(url).toContain("restaurantId=5");
     expect(opts.method).toBe("POST");
     expect(JSON.parse(opts.body)).toEqual(sub);
   });
 
+  it("does not scope the subscription to a restaurant", async () => {
+    // Registering against one location is exactly the bug this call used to carry.
+    mockFetch.mockResolvedValueOnce({ ok: true });
+    await subscribePush({ endpoint: "https://push.example.com/sub", p256dh: "k", auth: "a" });
+    expect(mockFetch.mock.calls[0][0]).not.toContain("restaurantId");
+  });
+
   it("does not throw on error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("fail"));
-    await expect(
-      subscribePush(5, { endpoint: "x", p256dh: "y", auth: "z" })
-    ).resolves.toBeUndefined();
+    await expect(subscribePush({ endpoint: "x", p256dh: "y", auth: "z" })).resolves.toBeUndefined();
   });
 });
 

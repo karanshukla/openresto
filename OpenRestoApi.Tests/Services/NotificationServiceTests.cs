@@ -273,12 +273,11 @@ public class NotificationServiceTests : IDisposable
     public async Task SubscribeAsync_CreatesNewSubscription()
     {
         await SeedRestaurantAsync();
-        await CreateService().SubscribeAsync(1, new PushSubscribeRequest("https://ep", "p256", "auth"));
+        await CreateService().SubscribeAsync(new PushSubscribeRequest("https://ep", "p256", "auth"));
 
         Assert.Equal(1, await _db.AdminPushSubscriptions.CountAsync());
         AdminPushSubscription sub = await _db.AdminPushSubscriptions.FirstAsync();
         Assert.Equal("https://ep", sub.Endpoint);
-        Assert.Equal(1, sub.RestaurantId);
     }
 
     [Theory]
@@ -291,7 +290,7 @@ public class NotificationServiceTests : IDisposable
         await SeedRestaurantAsync();
 
         var ex = await Assert.ThrowsAsync<ValidationException>(
-            () => CreateService().SubscribeAsync(1, new PushSubscribeRequest(endpoint, "p256", "auth")));
+            () => CreateService().SubscribeAsync(new PushSubscribeRequest(endpoint, "p256", "auth")));
 
         Assert.Equal(ErrorCodes.NotificationPushEndpointInvalid, ex.Code);
         Assert.Equal(0, await _db.AdminPushSubscriptions.CountAsync());
@@ -303,7 +302,6 @@ public class NotificationServiceTests : IDisposable
         await SeedRestaurantAsync();
         _db.AdminPushSubscriptions.Add(new AdminPushSubscription
         {
-            RestaurantId = 1,
             Endpoint = "https://ep",
             P256dh = "old-p256",
             Auth = "old-auth",
@@ -311,7 +309,7 @@ public class NotificationServiceTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        await CreateService().SubscribeAsync(1, new PushSubscribeRequest("https://ep", "new-p256", "new-auth"));
+        await CreateService().SubscribeAsync(new PushSubscribeRequest("https://ep", "new-p256", "new-auth"));
 
         Assert.Equal(1, await _db.AdminPushSubscriptions.CountAsync());
         AdminPushSubscription sub = await _db.AdminPushSubscriptions.FirstAsync();
@@ -322,19 +320,32 @@ public class NotificationServiceTests : IDisposable
     // ── UnsubscribeAsync ──────────────────────────────────────────────────────
 
     [Fact]
-    public async Task UnsubscribeAsync_RemovesAllMatchingEndpoints()
+    public async Task UnsubscribeAsync_RemovesTheEndpoint_AndLeavesOtherBrowsersAlone()
     {
-        await SeedRestaurantAsync(1);
-        await SeedRestaurantAsync(2);
         _db.AdminPushSubscriptions.AddRange(
-            new AdminPushSubscription { RestaurantId = 1, Endpoint = "https://ep", P256dh = "p", Auth = "a", CreatedAt = DateTime.UtcNow },
-            new AdminPushSubscription { RestaurantId = 2, Endpoint = "https://ep", P256dh = "p", Auth = "a", CreatedAt = DateTime.UtcNow }
+            new AdminPushSubscription { Endpoint = "https://ep", P256dh = "p", Auth = "a", CreatedAt = DateTime.UtcNow },
+            new AdminPushSubscription { Endpoint = "https://other-ep", P256dh = "p", Auth = "a", CreatedAt = DateTime.UtcNow }
         );
         await _db.SaveChangesAsync();
 
         await CreateService().UnsubscribeAsync("https://ep");
 
-        Assert.Equal(0, await _db.AdminPushSubscriptions.CountAsync());
+        AdminPushSubscription remaining = await _db.AdminPushSubscriptions.SingleAsync();
+        Assert.Equal("https://other-ep", remaining.Endpoint);
+    }
+
+    [Fact]
+    public async Task SubscribeAsync_RegistersOnce_WhenTheSameBrowserSubscribesRepeatedly()
+    {
+        // The browser holds one PushSubscription regardless of which location the admin is
+        // looking at, so re-subscribing must refresh the row rather than accumulate one per
+        // visit — which is what the old per-restaurant key did.
+        NotificationService svc = CreateService();
+        await svc.SubscribeAsync(new PushSubscribeRequest("https://ep", "p256", "auth"));
+        await svc.SubscribeAsync(new PushSubscribeRequest("https://ep", "p256", "auth"));
+        await svc.SubscribeAsync(new PushSubscribeRequest("https://ep", "p256", "auth"));
+
+        Assert.Equal(1, await _db.AdminPushSubscriptions.CountAsync());
     }
 
     [Fact]

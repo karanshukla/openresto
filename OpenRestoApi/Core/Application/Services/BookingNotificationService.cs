@@ -180,10 +180,12 @@ public sealed class BookingNotificationService(
             return;
         }
 
-        List<AdminPushSubscription> subscriptions = await _pushSubscriptionRepository.GetByRestaurantAsync(restaurantId);
+        // Every subscription, not just this restaurant's: an admin sees all locations, so a
+        // browser that subscribed while viewing one of them is owed the others' bookings too.
+        List<AdminPushSubscription> subscriptions = await _pushSubscriptionRepository.GetAllAsync();
 
-        _log.LogInformation("[Push] Sending notificationId={NotifId} to {Count} subscription(s) for restaurant {RestaurantId}",
-            notificationId, subscriptions.Count, restaurantId);
+        _log.LogInformation("[Push] Sending notificationId={NotifId} (restaurant {RestaurantId}) to {Count} subscription(s)",
+            notificationId, restaurantId, subscriptions.Count);
 
         if (subscriptions.Count == 0) return;
 
@@ -214,6 +216,15 @@ public sealed class BookingNotificationService(
             {
                 lastError = $"HTTP {(int)ex.StatusCode}: {ex.Message}";
                 _log.LogError("[Push] Failed sub={SubId}: {Error}", sub.Id, lastError);
+            }
+            catch (Exception ex)
+            {
+                // One unusable subscription must not cost every later subscriber their push.
+                // WebPush throws outside WebPushException — InvalidEncryptionDetailsException
+                // for key material the browser's endpoint will not accept, for one — and an
+                // escape here aborts the loop and leaves PushSentAt/PushError unwritten.
+                lastError = $"{ex.GetType().Name}: {ex.Message}";
+                _log.LogError(ex, "[Push] Failed sub={SubId}: {Error}", sub.Id, lastError);
             }
         }
 

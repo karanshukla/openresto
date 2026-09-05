@@ -152,28 +152,14 @@ public class NotificationsControllerUnitTests
     // ── Subscribe ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Subscribe_ReturnsBadRequest_WhenRestaurantIdZero()
-    {
-        IActionResult result = await _controller.Subscribe(0, new PushSubscribeRequest("ep", "p256", "auth"));
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task Subscribe_ReturnsBadRequest_WhenRestaurantIdNegative()
-    {
-        IActionResult result = await _controller.Subscribe(-5, new PushSubscribeRequest("ep", "p256", "auth"));
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
     public async Task Subscribe_ReturnsOk_WhenValid()
     {
-        _mockService.Setup(s => s.SubscribeAsync(1, It.IsAny<PushSubscribeRequest>())).Returns(Task.CompletedTask);
+        _mockService.Setup(s => s.SubscribeAsync(It.IsAny<PushSubscribeRequest>())).Returns(Task.CompletedTask);
 
-        IActionResult result = await _controller.Subscribe(1, new PushSubscribeRequest("ep", "p256", "auth"));
+        IActionResult result = await _controller.Subscribe(new PushSubscribeRequest("ep", "p256", "auth"));
 
         Assert.IsType<OkResult>(result);
-        _mockService.Verify(s => s.SubscribeAsync(1, It.IsAny<PushSubscribeRequest>()), Times.Once);
+        _mockService.Verify(s => s.SubscribeAsync(It.IsAny<PushSubscribeRequest>()), Times.Once);
     }
 
     // ── Unsubscribe ───────────────────────────────────────────────────────────
