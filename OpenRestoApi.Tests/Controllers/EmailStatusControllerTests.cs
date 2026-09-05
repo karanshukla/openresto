@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -16,9 +17,28 @@ namespace OpenRestoApi.Tests.Controllers;
 public class EmailStatusControllerTests
 {
     private readonly Mock<EmailSettingsService> _service = new(null!, null!, null!, null!);
+    private readonly Mock<IRestaurantRepository> _restaurants = new();
+    private readonly Mock<IBrandSettingsRepository> _brand = new();
 
     private EmailStatusController ControllerFor(ICurrentUserService currentUser)
-        => new(_service.Object, currentUser);
+        => new(_service.Object, currentUser, PreviewService());
+
+    public EmailStatusControllerTests()
+    {
+        // Defaults, so a test that is not about the preview needs no arrangement for it. A test
+        // that is re-stubs the location list; setting these up per-controller would overwrite it.
+        _restaurants.Setup(r => r.GetAllActiveWithSectionsAsync()).ReturnsAsync([]);
+        _brand.Setup(b => b.GetAsync()).ReturnsAsync(new BrandSettings());
+    }
+
+    private EmailPreviewService PreviewService()
+    {
+        return new EmailPreviewService(
+            _restaurants.Object,
+            new BrandService(_brand.Object, new ConfigurationBuilder().Build()),
+            new EmailTemplateService(),
+            new SystemClock());
+    }
 
     private static EmailSettings Configured(bool sendBookingConfirmations) => new()
     {
@@ -131,5 +151,27 @@ public class EmailStatusControllerTests
         List<EmailFailureResponse> failures = FailuresOf(await ControllerFor(key).GetFailures());
 
         Assert.Equal("guest@test.com", Assert.Single(failures).RecipientEmail);
+    }
+
+    /// <summary>
+    /// Rendering the confirmation for a location the admin picked is the whole of the preview:
+    /// the same template the send path uses, against that location's own name and branding.
+    /// </summary>
+    [Fact]
+    public async Task Preview_RendersTheRequestedLocation()
+    {
+        _restaurants.Setup(r => r.GetAllActiveWithSectionsAsync()).ReturnsAsync(
+        [
+            new Restaurant { Id = 1, Name = "Riverside", Timezone = "UTC" },
+            new Restaurant { Id = 2, Name = "Old Town", Timezone = "UTC" },
+        ]);
+
+        var result = Assert.IsType<EmailPreviewResult>(
+            Assert.IsType<OkObjectResult>(
+                await ControllerFor(FakeCurrentUser.Anonymous()).Preview(restaurantId: 2)).Value);
+
+        Assert.Equal("Old Town", result.RestaurantName);
+        Assert.Contains("Old Town", result.Html, StringComparison.Ordinal);
+        Assert.Contains("Old Town", result.Subject, StringComparison.Ordinal);
     }
 }

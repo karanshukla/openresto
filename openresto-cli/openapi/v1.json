@@ -1783,6 +1783,33 @@
         }
       }
     },
+    "/api/admin/email-settings/preview": {
+      "get": {
+        "tags": [
+          "EmailStatus"
+        ],
+        "summary": "The booking confirmation as a guest would receive it, rendered from a stand-in booking at\nrestaurantId (the first location when none is named). Nothing is sent\nand nothing is stored; the sample carries no real customer, so it needs no\nBookingGuestVisibility gate.",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/highlights": {
       "get": {
         "tags": [

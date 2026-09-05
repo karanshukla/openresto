@@ -1302,6 +1302,21 @@
         "recentFailures_one": "{{count}} échec récent",
         "recentFailures_other": "{{count}} échecs récents"
       },
+      "emailPreview": {
+        "title": "Aperçu de la confirmation",
+        "subtitle": "Ce qu'un client reçoit après sa réservation",
+        "locationLabel": "Établissement de l'aperçu",
+        "from": "De",
+        "to": "À",
+        "subject": "Objet",
+        "senderNotSet": "{{name}} (aucune adresse d'expéditeur définie)",
+        "frameTitle": "Aperçu de l'e-mail de confirmation de réservation",
+        "notConfigured": "Rien n'est encore envoyé : renseignez vos paramètres SMTP et testez la connexion.",
+        "confirmationsOff": "Les confirmations de réservation sont désactivées : les clients ne reçoivent rien.",
+        "hint": "Une réservation d'exemple, avec votre identité visuelle réelle. Rien n'est envoyé.",
+        "loading": "Génération de l'aperçu…",
+        "unavailable": "Impossible de générer l'aperçu."
+      },
       "bookingConfirmation": {
         "sectionLabel": "Confirmations de réservation",
         "toggleLabel": "Envoyer les e-mails de confirmation de réservation",

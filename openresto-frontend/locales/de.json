@@ -1302,6 +1302,21 @@
         "recentFailures_one": "{{count}} aktueller Fehler",
         "recentFailures_other": "{{count}} aktuelle Fehler"
       },
+      "emailPreview": {
+        "title": "Vorschau der Bestätigung",
+        "subtitle": "Was ein Gast nach der Buchung erhält",
+        "locationLabel": "Standort der Vorschau",
+        "from": "Von",
+        "to": "An",
+        "subject": "Betreff",
+        "senderNotSet": "{{name}} (noch keine Absenderadresse)",
+        "frameTitle": "Vorschau der Buchungsbestätigungs-E-Mail",
+        "notConfigured": "Es wird noch nichts versendet: SMTP-Daten eintragen und Verbindung testen.",
+        "confirmationsOff": "Buchungsbestätigungen sind ausgeschaltet, Gäste erhalten also nichts.",
+        "hint": "Eine Beispielbuchung mit Ihrem echten Branding. Es wird nichts versendet.",
+        "loading": "Vorschau wird erstellt …",
+        "unavailable": "Die Vorschau konnte nicht erstellt werden."
+      },
       "bookingConfirmation": {
         "sectionLabel": "Buchungsbestätigungen",
         "toggleLabel": "Buchungsbestätigungs-E-Mails senden",

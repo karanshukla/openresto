@@ -2110,6 +2110,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/email-settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The booking confirmation as a guest would receive it, rendered from a stand-in booking at
+         *     restaurantId (the first location when none is named). Nothing is sent
+         *     and nothing is stored; the sample carries no real customer, so it needs no
+         *     BookingGuestVisibility gate.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    restaurantId?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/highlights": {
         parameters: {
             query?: never;

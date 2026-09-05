@@ -39,6 +39,8 @@ export const styles = StyleSheet.create({
   // within its own parent, so a column shrink-wrapped to the preview would have nowhere to go
   // and the preview would scroll away with the form.
   split: { flexDirection: "row", gap: theme.spacing.xl },
+  // Two stacked panels in the aside slot, which takes a single node.
+  asideStack: { gap: theme.spacing.lg },
   splitForm: { flex: 1, minWidth: 0 },
   splitAside: { width: 500, flexShrink: 0 },
   // The pair of location-wide bulk actions (pause bookings, extend bookings) under the page

@@ -115,6 +115,11 @@ curl -H "X-API-Key: $OPENRESTO_API_KEY" \
 # Recent delivery failures
 curl -H "X-API-Key: $OPENRESTO_API_KEY" \
   https://bookings.example.com/api/admin/email-settings/failures
+
+# The confirmation a guest would receive, rendered from a stand-in booking. Nothing is sent.
+# Add ?restaurantId=<id> to render a location other than the first.
+curl -H "X-API-Key: $OPENRESTO_API_KEY" \
+  https://bookings.example.com/api/admin/email-settings/preview
 ```
 
 Some of the admin surface is deliberately out of reach of any key, no matter its scopes: auth

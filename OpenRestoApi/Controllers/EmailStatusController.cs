@@ -26,10 +26,12 @@ namespace OpenRestoApi.Controllers;
 [RequiresScope(ApiKeyScopes.Email, ApiKeyScopes.Read)]
 public class EmailStatusController(
     EmailSettingsService emailSettings,
-    ICurrentUserService currentUser) : ControllerBase
+    ICurrentUserService currentUser,
+    EmailPreviewService emailPreview) : ControllerBase
 {
     private readonly EmailSettingsService _emailSettings = emailSettings;
     private readonly ICurrentUserService _currentUser = currentUser;
+    private readonly EmailPreviewService _emailPreview = emailPreview;
 
     /// <summary>
     /// Whether outgoing mail can be sent at all, and whether booking confirmations are switched
@@ -74,6 +76,17 @@ public class EmailStatusController(
         });
         return Ok(response);
     }
+
+    /// <summary>
+    /// The booking confirmation as a guest would receive it, rendered from a stand-in booking at
+    /// <paramref name="restaurantId"/> (the first location when none is named). Nothing is sent
+    /// and nothing is stored; the sample carries no real customer, so it needs no
+    /// <see cref="BookingGuestVisibility"/> gate.
+    /// </summary>
+    /// <seealso>EmailStatusControllerTests.Preview_RendersTheRequestedLocation</seealso>
+    [HttpGet("preview")]
+    public async Task<IActionResult> Preview([FromQuery] int? restaurantId)
+        => Ok(await _emailPreview.BuildConfirmationPreviewAsync(restaurantId));
 }
 
 public class EmailStatusResponse

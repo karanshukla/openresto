@@ -10,6 +10,11 @@ namespace OpenRestoApi.Core.Application.Services;
 /// <inheritdoc cref="IEmailTemplateService" />
 public sealed class EmailTemplateService : IEmailTemplateService
 {
+    // The en-dash (U+2013) is verbatim from the original inline subject and is deliberately not
+    // a hyphen.
+    public string BuildConfirmationSubject(Restaurant restaurant) =>
+        $"Booking confirmed \u2013 {restaurant.Name}";
+
     public string BuildConfirmationEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl)
     {
         DateTime localDate = TimeZoneHelper.ConvertUtcToLocal(booking.Date, restaurant.Timezone);

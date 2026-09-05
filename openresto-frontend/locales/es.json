@@ -1302,6 +1302,21 @@
         "recentFailures_one": "{{count}} error reciente",
         "recentFailures_other": "{{count}} errores recientes"
       },
+      "emailPreview": {
+        "title": "Vista previa de la confirmación",
+        "subtitle": "Lo que recibe un cliente tras reservar",
+        "locationLabel": "Local de la vista previa",
+        "from": "De",
+        "to": "Para",
+        "subject": "Asunto",
+        "senderNotSet": "{{name}} (aún sin dirección de remitente)",
+        "frameTitle": "Vista previa del correo de confirmación de reserva",
+        "notConfigured": "Todavía no se envía nada: añade tus datos SMTP y prueba la conexión.",
+        "confirmationsOff": "Las confirmaciones de reserva están desactivadas, así que los clientes no reciben nada.",
+        "hint": "Una reserva de ejemplo, con tu identidad visual real. No se envía nada.",
+        "loading": "Generando la vista previa…",
+        "unavailable": "No se ha podido generar la vista previa."
+      },
       "bookingConfirmation": {
         "sectionLabel": "Confirmaciones de reserva",
         "toggleLabel": "Enviar correos de confirmación de reserva",

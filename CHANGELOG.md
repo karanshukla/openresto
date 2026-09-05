@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The admin email settings page now previews the booking confirmation** (`/admin/settings/email`). The panel beside the SMTP form renders the real confirmation for a stand-in booking, with the location's own name, photo, hours, address and reference format, and the brand colour, icon and footer from your brand settings. The From line follows the sender name and address as you type them, before you save, and the panel says plainly when confirmations are off or SMTP is not configured yet, which are the two ways a guest ends up receiving nothing. Instances with more than one location get a picker, since each one renders differently. Nothing is sent and nothing is stored.
+- `GET /api/admin/email-settings/preview` (scope `email:read`, optional `?restaurantId=`) returns that rendered HTML plus the subject, so a script can check what guests are receiving without booking a table.
+
+### Changed
+
+- The confirmation email's subject is now built by `EmailTemplateService` alongside its body. The send path and the new preview call the same builder, so the two cannot drift.
+
 ## [2.0.0] - 2026-09-03
 
 Hey everyone,

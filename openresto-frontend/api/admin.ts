@@ -476,6 +476,31 @@ export async function getEmailFailures(): Promise<EmailFailureDto[]> {
   }
 }
 
+/** The confirmation email as a guest would receive it, rendered server-side for the admin. */
+export interface EmailPreviewDto {
+  restaurantId: number | null;
+  restaurantName: string;
+  recipientEmail: string;
+  subject: string;
+  html: string;
+}
+
+/**
+ * Renders the booking confirmation for a stand-in booking. The HTML comes from the same template
+ * the send path uses, so the panel never has to keep a copy of the markup in step with it.
+ */
+export async function getEmailPreview(restaurantId?: number): Promise<EmailPreviewDto | null> {
+  try {
+    const query = restaurantId === undefined ? "" : `?restaurantId=${restaurantId}`;
+    const res = await get(`/admin/email-settings/preview${query}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("getEmailPreview error:", err);
+    return null;
+  }
+}
+
 export interface EmailSettingsDto {
   host: string;
   port: number;
