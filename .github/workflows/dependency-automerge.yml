@@ -1,0 +1,65 @@
+name: Dependency auto-merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.repo.full_name == github.repository
+    steps:
+      - name: Dependabot metadata
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Decide eligibility
+        id: decide
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          ACTOR: ${{ github.event.pull_request.user.login }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          DEPENDABOT_UPDATE_TYPE: ${{ steps.dependabot-metadata.outputs.update-type }}
+        run: |
+          safe=false
+          if [ "$ACTOR" = "dependabot[bot]" ]; then
+            # Only semver patch/minor bumps auto-merge; majors always wait for review.
+            case "$DEPENDABOT_UPDATE_TYPE" in
+              version-update:semver-patch|version-update:semver-minor) safe=true ;;
+            esac
+          elif [ "$ACTOR" = "karanshukla" ]; then
+            # The dependency-update routine commits under this account rather than a
+            # bot identity. The `dependencies` label is the reliable signal; the title
+            # pattern is a fallback for when it is missing. Either way, anything
+            # mentioning "major"/"breaking" is left for manual merge.
+            matched=false
+            case ",$LABELS," in
+              *,dependencies,*) matched=true ;;
+            esac
+            if [ "$matched" = false ]; then
+              if printf '%s' "$TITLE" | grep -Eiq '^(chore|fix)(\([a-z0-9/_-]+\))?:.*(dependenc|advisory|CVE|vulnerab|bump)'; then
+                matched=true
+              fi
+            fi
+            if [ "$matched" = true ]; then
+              if ! printf '%s %s' "$TITLE" "$BODY" | grep -Eiq '\b(major|breaking)\b'; then
+                safe=true
+              fi
+            fi
+          fi
+          echo "safe=$safe" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge
+        if: steps.decide.outputs.safe == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
