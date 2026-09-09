@@ -49,5 +49,8 @@
     "@types/node": "^24.0.0",
     "openapi-typescript": "^7.4.4",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "js-yaml": "^4.3.2"
   }
 }
