@@ -24,7 +24,6 @@ jobs:
         id: decide
         env:
           TITLE: ${{ github.event.pull_request.title }}
-          BODY: ${{ github.event.pull_request.body }}
           ACTOR: ${{ github.event.pull_request.user.login }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           DEPENDABOT_UPDATE_TYPE: ${{ steps.dependabot-metadata.outputs.update-type }}
@@ -38,8 +37,10 @@ jobs:
           elif [ "$ACTOR" = "karanshukla" ]; then
             # The dependency-update routine commits under this account rather than a
             # bot identity. The `dependencies` label is the reliable signal; the title
-            # pattern is a fallback for when it is missing. Either way, anything
-            # mentioning "major"/"breaking" is left for manual merge.
+            # pattern is a fallback for when it is missing. Either way, a title
+            # mentioning "major"/"breaking" is left for manual merge. Only the
+            # title is scanned -- dependency-audit bodies routinely mention other
+            # packages' major versions, which used to veto safe patch-level PRs.
             matched=false
             case ",$LABELS," in
               *,dependencies,*) matched=true ;;
@@ -50,7 +51,7 @@ jobs:
               fi
             fi
             if [ "$matched" = true ]; then
-              if ! printf '%s %s' "$TITLE" "$BODY" | grep -Eiq '\b(major|breaking)\b'; then
+              if ! printf '%s' "$TITLE" | grep -Eiq '\b(major|breaking)\b'; then
                 safe=true
               fi
             fi
