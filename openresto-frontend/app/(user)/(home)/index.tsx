@@ -65,6 +65,15 @@ const PHONE_SECTION_PADDING_H = 20;
 const PHONE_BODY_PADDING_H = 16;
 /** `styles.grid`'s gap. */
 const GRID_GAP = 18;
+/** The most columns the locations grid ever opens, room permitting. */
+const MAX_GRID_COLUMNS = 3;
+/**
+ * Narrowest a location card stays readable at. The grid drops a column rather than lay one
+ * out below this, because the count and the width have to agree: a `minWidth` floor on the
+ * wrapper leaves them disagreeing, and flex-wrap settles that by fitting fewer cards per row
+ * than the count asked for and leaving the rest of the row empty.
+ */
+const MIN_CARD_WIDTH = 320;
 /** Clearance between the status bar and the hero title where the screen has no header. */
 const HERO_TOP_GAP = 24;
 /**
@@ -256,6 +265,24 @@ export function columnWidth(
   return (inner - gap * (columns - 1)) / columns;
 }
 
+/**
+ * How many columns of at least `MIN_CARD_WIDTH` fit in that same row, up to `max`.
+ *
+ * Deriving the count from the room available is what keeps it in step with `columnWidth`.
+ * Viewport thresholds picked by hand cannot: 3 columns from 1000dp asks for 302dp columns
+ * on a landscape iPad, and 2 columns from 600dp asks for 275dp ones on a portrait Android
+ * tablet — both under the floor, so both rows came out a card short with a gap beside them.
+ *
+ * @see [index.test.tsx](<../../../tests/app/(user)/index.test.tsx>) — pins that every width
+ * lays out a full row.
+ */
+export function gridColumns(viewport: number, insetH: number, gap: number, max: number): number {
+  for (let columns = max; columns > 1; columns--) {
+    if (columnWidth(viewport, insetH, gap, columns) >= MIN_CARD_WIDTH) return columns;
+  }
+  return 1;
+}
+
 export function resetHomeCache() {
   _cachedRestaurants = null;
   _cachedHighlights = null;
@@ -359,16 +386,13 @@ export default function HomeScreen() {
   const heroObjectFit = heroContain ? "contain" : "cover";
   const heroObjectPosition = heroContain ? "center top" : "center";
 
-  const numColumns = width < 600 ? 1 : width < 1000 ? 2 : 3;
   const numHighlightCols = width < 600 ? 1 : width < 900 ? 2 : 4;
 
   const bodyInset = isMobile ? PHONE_BODY_PADDING_H : CONTENT_PADDING_H;
+  const numColumns = gridColumns(width, bodyInset, GRID_GAP, MAX_GRID_COLUMNS);
   const cardWrapperStyle = [
     styles.cardWrapper,
-    numColumns > 1 && {
-      width: columnWidth(width, bodyInset, GRID_GAP, numColumns),
-      minWidth: 320,
-    },
+    numColumns > 1 && { width: columnWidth(width, bodyInset, GRID_GAP, numColumns) },
   ];
   // One row's worth, except on a phone: a single card reads as the whole list having
   // loaded and found one location.
