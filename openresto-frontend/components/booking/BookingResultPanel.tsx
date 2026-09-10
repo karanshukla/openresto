@@ -9,6 +9,8 @@ import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
 import { isPast } from "@/utils/bookingStatus";
 import { fmtDateTime } from "@/utils/formatters";
+import { bookingConfirmationLink } from "@/utils/bookingLink";
+import { useBrand } from "@/context/BrandContext";
 import BookingSummaryHeader from "@/components/booking/BookingSummaryHeader";
 import BookingFactsBand from "@/components/booking/BookingFactsBand";
 import BookingGuestDetails from "@/components/booking/BookingGuestDetails";
@@ -50,6 +52,7 @@ export default function BookingResultPanel({
 }: BookingResultPanelProps) {
   const { colors, primaryColor, isDark } = useAppTheme();
   const { t } = useTranslation();
+  const brand = useBrand();
   const [copied, setCopied] = useState(false);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -112,18 +115,30 @@ export default function BookingResultPanel({
    * too, so the one control does what the web strip's Copy does and more. Web keeps Copy: a
    * browser has no sheet worth the name.
    *
+   * The link is the same one the confirmation email carries, so the recipient lands on this
+   * panel. iOS takes it as its own item: that is what lets Messages render a preview and
+   * Safari and AirDrop appear as targets, where a URL buried in text is just text. Android's
+   * intent has only the one text field, so the link goes on its own line there.
+   *
    * @see [BookingResultPanel.test.tsx](../../tests/components/booking/BookingResultPanel.test.tsx)
-   * — pins that Share replaces Copy off web and what it puts on the sheet.
+   * — pins that Share replaces Copy off web, what it puts on the sheet, and where the link
+   * goes on each platform.
    */
   const handleShare = () => {
-    Share.share({
-      message: t("booking.result.shareMessage", {
-        ref,
-        name: restaurant?.name ?? t("booking.result.unnamedRestaurant"),
-        when: fmtDateTime(new Date(booking.date)),
-        count: booking.seats,
-      }),
-    }).catch(() => {});
+    const message = t("booking.result.shareMessage", {
+      ref,
+      name: restaurant?.name ?? t("booking.result.unnamedRestaurant"),
+      when: fmtDateTime(new Date(booking.date)),
+      count: booking.seats,
+    });
+    const url = bookingConfirmationLink(ref, booking.customerEmail, brand.websiteUrl);
+
+    const content = !url
+      ? { message }
+      : Platform.OS === "ios"
+        ? { message, url }
+        : { message: `${message}\n${url}` };
+    Share.share(content).catch(() => {});
   };
 
   const handleCopy = () => {

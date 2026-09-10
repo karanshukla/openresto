@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, fireEvent, waitFor } from "@testing-library/react-native";
+import { act, screen, fireEvent, waitFor } from "@testing-library/react-native";
 import { Platform, Share } from "react-native";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
@@ -215,6 +215,96 @@ describe("BookingResultPanel", () => {
       shareSpy.mockRestore();
       Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
     }
+  });
+
+  describe("the link on the share sheet", () => {
+    const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    const flushBrand = () => act(() => new Promise<void>((r) => setTimeout(r, 0)));
+
+    beforeEach(() => {
+      delete process.env.EXPO_PUBLIC_API_URL;
+    });
+
+    afterEach(() => {
+      process.env.EXPO_PUBLIC_API_URL = originalApiUrl;
+      Object.defineProperty(Platform, "OS", { get: () => "web", configurable: true });
+    });
+
+    it("hands iOS the confirmation link as its own item, built from the brand's website URL", async () => {
+      Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+      (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ appName: "Open Resto", websiteUrl: "https://bookings.example.com/" }),
+      });
+      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      try {
+        renderWithProviders(
+          <BookingResultPanel
+            booking={mockBooking}
+            restaurant={mockRestaurant}
+            compact={false}
+            cancelling={false}
+            onCancelPress={jest.fn()}
+          />
+        );
+        await flushBrand();
+        fireEvent.press(screen.getByTestId("share-booking-btn"));
+        const content = shareSpy.mock.calls[0][0] as { message: string; url?: string };
+        expect(content.url).toBe(
+          "https://bookings.example.com/booking-confirmation/REF123?email=test%40test.com"
+        );
+        expect(content.message).not.toContain("https://");
+      } finally {
+        shareSpy.mockRestore();
+      }
+    });
+
+    it("puts the link on its own line of the message on Android, falling back to the build's server", () => {
+      Object.defineProperty(Platform, "OS", { get: () => "android", configurable: true });
+      process.env.EXPO_PUBLIC_API_URL = "https://bookings.example.com/api";
+      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      try {
+        renderWithProviders(
+          <BookingResultPanel
+            booking={mockBooking}
+            restaurant={mockRestaurant}
+            compact={false}
+            cancelling={false}
+            onCancelPress={jest.fn()}
+          />
+        );
+        fireEvent.press(screen.getByTestId("share-booking-btn"));
+        const content = shareSpy.mock.calls[0][0] as { message: string; url?: string };
+        expect(content.url).toBeUndefined();
+        expect(content.message).toMatch(
+          /REF123 at Test Resto[^\n]*\nhttps:\/\/bookings\.example\.com\/booking-confirmation\/REF123\?email=test%40test\.com$/
+        );
+      } finally {
+        shareSpy.mockRestore();
+      }
+    });
+
+    it("shares the details alone when no origin is known, rather than a link to nowhere", () => {
+      Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
+      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      try {
+        renderWithProviders(
+          <BookingResultPanel
+            booking={mockBooking}
+            restaurant={mockRestaurant}
+            compact={false}
+            cancelling={false}
+            onCancelPress={jest.fn()}
+          />
+        );
+        fireEvent.press(screen.getByTestId("share-booking-btn"));
+        const content = shareSpy.mock.calls[0][0] as { message: string; url?: string };
+        expect(content).not.toHaveProperty("url");
+        expect(content.message).not.toContain("booking-confirmation");
+      } finally {
+        shareSpy.mockRestore();
+      }
+    });
   });
 
   it("geocodes the restaurant address and embeds a map when nominatim returns coordinates", async () => {

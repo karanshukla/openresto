@@ -55,7 +55,7 @@ submission or a deep link would fail on and tells you what is left.
 | Recent bookings         | encrypted cookie                | stored on the device                                         |
 | Add to calendar         | download an `.ics`              | share sheet straight into the calendar app                   |
 | Directions              | Google or Apple link            | one button, opening the maps app the phone has               |
-| Share a booking         | copy the reference              | the share sheet, with the reference, place, time and party   |
+| Share a booking         | copy the reference              | the share sheet, with the details and a link to the booking  |
 | Refresh                 | reload the page                 | pull down on Home and Locations                              |
 | Confirmation email link | opens the browser               | opens the app (Universal Links / App Links, once configured) |
 | Branding                | live from the server            | icon, name, colour and splash baked in at build time         |
