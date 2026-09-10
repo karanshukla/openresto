@@ -10,6 +10,7 @@ import type { ReactTestInstance } from "react-test-renderer";
 import HomeScreen, {
   bloomRingAlpha,
   columnWidth,
+  gridColumns,
   heroBlooms,
   resetHomeCache,
 } from "@/app/(user)/(home)/index";
@@ -183,6 +184,45 @@ describe("HomeScreen", () => {
 
     it("gives a single column the whole inset row", () => {
       expect(columnWidth(375, 16, 18, 1)).toBe(343);
+    });
+  });
+
+  // The count and the width are one decision. Held apart — a count from viewport thresholds,
+  // a floor under the width — they disagree over whole bands of tablet widths, and flex-wrap
+  // settles the disagreement by leaving the last slot of a row empty.
+  describe("gridColumns", () => {
+    const inset = (width: number) => (width < 768 ? 16 : 28);
+    const columnsAt = (width: number) => gridColumns(width, inset(width), 18, 3);
+
+    it("never lays out a column narrower than a card reads at", () => {
+      // Every width from a small phone to past the content cap, not just the round ones.
+      for (let width = 320; width <= 1500; width++) {
+        const columns = columnsAt(width);
+        if (columns > 1) {
+          expect(columnWidth(width, inset(width), 18, columns)).toBeGreaterThanOrEqual(320);
+        }
+      }
+    });
+
+    it("fills every row it opens", () => {
+      for (let width = 320; width <= 1500; width++) {
+        const columns = columnsAt(width);
+        const column = columnWidth(width, inset(width), 18, columns);
+        const inner = Math.min(width, 1320) - inset(width) * 2;
+        // What flex-wrap will actually fit on the row, which has to be the whole count.
+        expect(Math.floor((inner + 18) / (column + 18))).toBe(columns);
+      }
+    });
+
+    it("drops to two columns on a landscape tablet rather than squeeze in three", () => {
+      // 1024 asked for three 310dp columns before, and got two cards and a 310dp hole.
+      expect(columnsAt(1024)).toBe(2);
+      expect(columnsAt(1052)).toBe(3);
+    });
+
+    it("gives a portrait tablet one full-width card rather than two short of the row", () => {
+      expect(columnsAt(600)).toBe(1);
+      expect(columnsAt(690)).toBe(2);
     });
   });
 
