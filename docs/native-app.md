@@ -49,19 +49,19 @@ submission or a deep link would fail on and tells you what is left.
 
 ## What the app adds
 
-| Feature                 | Web / PWA                       | Native app                                                   |
-| ----------------------- | ------------------------------- | ------------------------------------------------------------ |
-| Browse, book, look up   | ✅                              | ✅ same screens, same server                                 |
-| Recent bookings         | encrypted cookie                | stored on the device                                         |
-| Add to calendar         | download an `.ics`              | share sheet straight into the calendar app                   |
-| Directions              | Google or Apple link            | one button, opening the maps app the phone has               |
-| Share a booking         | copy the reference              | the share sheet, with the reference, place, time and party   |
-| Refresh                 | reload the page                 | pull down on Home and Locations                              |
-| Confirmation email link | opens the browser               | opens the app (Universal Links / App Links, once configured) |
-| Branding                | live from the server            | icon, name, colour and splash baked in at build time         |
-| Booking reminders       | browser push (needs VAPID keys) | a push the day before and shortly before the table           |
-| Table hold warning      | on-screen countdown only        | a local notification a minute before the hold lapses         |
-| Wallet pass             | download / save link            | Add to Apple Wallet on iOS, Save to Google Wallet on Android |
+| Feature                 | Web / PWA                                                   | Native app                                                   |
+| ----------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| Browse, book, look up   | ✅                                                          | ✅ same screens, same server                                 |
+| Recent bookings         | encrypted cookie                                            | stored on the device                                         |
+| Add to calendar         | download an `.ics`                                          | share sheet straight into the calendar app                   |
+| Directions              | Google or Apple link                                        | one button, opening the maps app the phone has               |
+| Share a booking         | copy the reference, or share a link via the browser's sheet | the share sheet, with the details and a link to the booking  |
+| Refresh                 | reload the page                                             | pull down on Home and Locations                              |
+| Confirmation email link | opens the browser                                           | opens the app (Universal Links / App Links, once configured) |
+| Branding                | live from the server                                        | icon, name, colour and splash baked in at build time         |
+| Booking reminders       | browser push (needs VAPID keys)                             | a push the day before and shortly before the table           |
+| Table hold warning      | on-screen countdown only                                    | a local notification a minute before the hold lapses         |
+| Wallet pass             | download / save link                                        | Add to Apple Wallet on iOS, Save to Google Wallet on Android |
 
 The server address is a **build-time constant** in the app, exactly as it is for the web
 image. You build for one server. Change servers, rebuild.

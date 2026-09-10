@@ -9,6 +9,9 @@ import { BookingDto } from "@/api/bookings";
 import { RestaurantDto } from "@/api/restaurants";
 import { isPast } from "@/utils/bookingStatus";
 import { fmtDateTime } from "@/utils/formatters";
+import { bookingConfirmationLink } from "@/utils/bookingLink";
+import { useBrand } from "@/context/BrandContext";
+import { COPY_CONFIRMATION_MS, copyToClipboard } from "@/components/admin/settings/clipboard";
 import BookingSummaryHeader from "@/components/booking/BookingSummaryHeader";
 import BookingFactsBand from "@/components/booking/BookingFactsBand";
 import BookingGuestDetails from "@/components/booking/BookingGuestDetails";
@@ -50,7 +53,9 @@ export default function BookingResultPanel({
 }: BookingResultPanelProps) {
   const { colors, primaryColor, isDark } = useAppTheme();
   const { t } = useTranslation();
+  const brand = useBrand();
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const ref = booking.bookingRef ?? "";
@@ -109,21 +114,43 @@ export default function BookingResultPanel({
 
   /**
    * The share sheet is where a phone puts "send this to someone", and it covers the clipboard
-   * too, so the one control does what the web strip's Copy does and more. Web keeps Copy: a
-   * browser has no sheet worth the name.
+   * too, so the one control does what the web strip's Copy does and more. Web keeps Copy for
+   * the reference and adds Share beside it: a phone browser and an installed PWA reach the same
+   * OS sheet through the Web Share API, and a browser without one gets the link on the
+   * clipboard instead, which is the nearest thing a desktop has.
+   *
+   * The link is the same one the confirmation email carries, so the recipient lands on this
+   * panel. iOS and the Web Share API take it as its own item: that is what lets Messages render
+   * a preview and Safari and AirDrop appear as targets, where a URL buried in text is just
+   * text. Android's intent has only the one text field, so the link goes on its own line there.
    *
    * @see [BookingResultPanel.test.tsx](../../tests/components/booking/BookingResultPanel.test.tsx)
-   * — pins that Share replaces Copy off web and what it puts on the sheet.
+   * — pins that Share replaces Copy off web and sits beside it on web, what it puts on the
+   * sheet, where the link goes on each platform, and the clipboard fallback.
    */
-  const handleShare = () => {
-    Share.share({
-      message: t("booking.result.shareMessage", {
-        ref,
-        name: restaurant?.name ?? t("booking.result.unnamedRestaurant"),
-        when: fmtDateTime(new Date(booking.date)),
-        count: booking.seats,
-      }),
-    }).catch(() => {});
+  const handleShare = async () => {
+    const message = t("booking.result.shareMessage", {
+      ref,
+      name: restaurant?.name ?? t("booking.result.unnamedRestaurant"),
+      when: fmtDateTime(new Date(booking.date)),
+      count: booking.seats,
+    });
+    const url = bookingConfirmationLink(ref, booking.customerEmail, brand.websiteUrl);
+
+    if (Platform.OS === "web" && typeof navigator.share !== "function") {
+      if (url && (await copyToClipboard(url))) {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), COPY_CONFIRMATION_MS);
+      }
+      return;
+    }
+
+    const content = !url
+      ? { message }
+      : Platform.OS === "android"
+        ? { message: `${message}\n${url}` }
+        : { message, url };
+    Share.share(content).catch(() => {});
   };
 
   const handleCopy = () => {
@@ -170,34 +197,39 @@ export default function BookingResultPanel({
               </ThemedText>
               <ThemedText style={[styles.refValue, { color: primaryColor }]}>{ref}</ThemedText>
             </View>
-            {Platform.OS === "web" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                tone="neutral"
-                icon={copied ? "checkmark" : "copy-outline"}
-                onPress={handleCopy}
-                accessibilityLabel={
-                  copied
-                    ? t("booking.result.referenceCopiedLabel")
-                    : t("booking.result.copyReferenceLabel")
-                }
-              >
-                {copied ? t("booking.result.copiedButton") : t("booking.result.copyButton")}
-              </Button>
-            ) : (
+            <View style={styles.refActions}>
+              {Platform.OS === "web" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  tone="neutral"
+                  icon={copied ? "checkmark" : "copy-outline"}
+                  onPress={handleCopy}
+                  accessibilityLabel={
+                    copied
+                      ? t("booking.result.referenceCopiedLabel")
+                      : t("booking.result.copyReferenceLabel")
+                  }
+                >
+                  {copied ? t("booking.result.copiedButton") : t("booking.result.copyButton")}
+                </Button>
+              )}
               <Button
                 testID="share-booking-btn"
                 variant="ghost"
                 size="sm"
                 tone="neutral"
-                icon="share-outline"
+                icon={linkCopied ? "checkmark" : "share-outline"}
                 onPress={handleShare}
-                accessibilityLabel={t("booking.result.shareLabel")}
+                accessibilityLabel={
+                  linkCopied ? t("booking.result.linkCopiedLabel") : t("booking.result.shareLabel")
+                }
               >
-                {t("booking.result.shareButton")}
+                {linkCopied
+                  ? t("booking.result.linkCopiedButton")
+                  : t("booking.result.shareButton")}
               </Button>
-            )}
+            </View>
           </View>
         </>
       ) : null}
