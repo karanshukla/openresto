@@ -34,6 +34,7 @@ export const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
   },
   refTextGroup: { flexShrink: 1, minWidth: 0, gap: 3 },
+  refActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xs, flexShrink: 0 },
   refLabel: { ...theme.typography.labelSmall, textTransform: "uppercase", letterSpacing: 0.6 },
   refValue: { ...theme.typography.bodyBold, fontWeight: "700", letterSpacing: 0.3 },
   divider: { height: 1 },

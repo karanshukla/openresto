@@ -307,6 +307,96 @@ describe("BookingResultPanel", () => {
     });
   });
 
+  describe("Share on web", () => {
+    const link = "http://localhost/booking-confirmation/REF123?email=test%40test.com";
+
+    afterEach(() => {
+      delete (navigator as { share?: unknown }).share;
+      delete (navigator as { clipboard?: unknown }).clipboard;
+    });
+
+    it("sits beside Copy rather than replacing it", () => {
+      renderWithProviders(
+        <BookingResultPanel
+          booking={mockBooking}
+          restaurant={mockRestaurant}
+          compact={false}
+          cancelling={false}
+          onCancelPress={jest.fn()}
+        />
+      );
+      expect(screen.getByText("Copy")).toBeTruthy();
+      expect(screen.getByText("Share")).toBeTruthy();
+    });
+
+    it("opens the browser's share sheet with the link as its own item where there is one", () => {
+      (navigator as { share?: unknown }).share = jest.fn().mockResolvedValue(undefined);
+      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      try {
+        renderWithProviders(
+          <BookingResultPanel
+            booking={mockBooking}
+            restaurant={mockRestaurant}
+            compact={false}
+            cancelling={false}
+            onCancelPress={jest.fn()}
+          />
+        );
+        fireEvent.press(screen.getByTestId("share-booking-btn"));
+        expect(shareSpy).toHaveBeenCalledTimes(1);
+        const content = shareSpy.mock.calls[0][0] as { message: string; url?: string };
+        expect(content.url).toBe(link);
+        expect(content.message).toContain("REF123");
+        expect(content.message).not.toContain("http");
+      } finally {
+        shareSpy.mockRestore();
+      }
+    });
+
+    it("copies the link instead where the browser has no share sheet, and reverts the label", async () => {
+      const writeText = jest.fn().mockResolvedValue(undefined);
+      (navigator as { clipboard?: unknown }).clipboard = { writeText };
+      const shareSpy = jest.spyOn(Share, "share");
+      try {
+        renderWithProviders(
+          <BookingResultPanel
+            booking={mockBooking}
+            restaurant={mockRestaurant}
+            compact={false}
+            cancelling={false}
+            onCancelPress={jest.fn()}
+          />
+        );
+        fireEvent.press(screen.getByTestId("share-booking-btn"));
+        await waitFor(() => expect(writeText).toHaveBeenCalledWith(link));
+        expect(shareSpy).not.toHaveBeenCalled();
+        await waitFor(() => expect(screen.getByText("Link copied")).toBeTruthy());
+        await waitFor(() => expect(screen.getByText("Share")).toBeTruthy(), { timeout: 3000 });
+      } finally {
+        shareSpy.mockRestore();
+      }
+    }, 10000);
+
+    it("stays on its resting label when the clipboard write is refused", async () => {
+      (navigator as { clipboard?: unknown }).clipboard = {
+        writeText: jest.fn().mockRejectedValue(new Error("denied")),
+      };
+      renderWithProviders(
+        <BookingResultPanel
+          booking={mockBooking}
+          restaurant={mockRestaurant}
+          compact={false}
+          cancelling={false}
+          onCancelPress={jest.fn()}
+        />
+      );
+      fireEvent.press(screen.getByTestId("share-booking-btn"));
+      await act(() => new Promise<void>((r) => setTimeout(r, 0)));
+      expect(screen.queryByText("Link copied")).toBeNull();
+      expect(screen.getByText("Share")).toBeTruthy();
+    });
+  });
+
   it("geocodes the restaurant address and embeds a map when nominatim returns coordinates", async () => {
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
       ok: true,

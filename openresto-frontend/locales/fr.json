@@ -126,6 +126,8 @@
       "copiedButton": "Copié",
       "copyButton": "Copier",
       "copyReferenceLabel": "Copier la référence de réservation",
+      "linkCopiedButton": "Lien copié",
+      "linkCopiedLabel": "Lien de réservation copié",
       "mapTitle": "Carte de {{name}}",
       "pastHint": "Cette réservation est déjà passée et ne peut plus être annulée.",
       "referenceCopiedLabel": "Référence de réservation copiée",

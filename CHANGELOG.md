@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **The native app's Share button now includes a link to the reservation.** The share sheet used to carry only the reference, restaurant, time and party as text; it now also carries the same `/booking-confirmation/<ref>?email=…` link the confirmation email sends, built from the brand's website URL (or the server the build was pointed at when none is set). On iOS the link travels as its own item, so Messages previews it and AirDrop and Safari appear as targets; on Android it goes on its own line of the message. A recipient with the app installed opens it there through the existing Universal / App Link setup, and everyone else lands on the web page.
+- **Sharing a booking now hands out a link to it, on every platform.** The share sheet used to be native-only and carried only the reference, restaurant, time and party as text; it now also carries the same `/booking-confirmation/<ref>?email=…` link the confirmation email sends, built from the brand's website URL (or the server the build was pointed at when none is set). On iOS the link travels as its own item, so Messages previews it and AirDrop and Safari appear as targets; on Android it goes on its own line of the message. The web app and the installed PWA gain a Share button beside Copy: a browser with a share sheet (every phone browser, and desktop Chrome and Edge) opens it through the Web Share API, and one without copies the link to the clipboard instead. A recipient with the native app installed opens the link there through the existing Universal / App Link setup, and everyone else lands on the web page.
 
 ## [2.0.1] - 2026-09-05
 

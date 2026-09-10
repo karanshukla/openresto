@@ -126,6 +126,8 @@
       "copiedButton": "Copied",
       "copyButton": "Copy",
       "copyReferenceLabel": "Copy booking reference",
+      "linkCopiedButton": "Link copied",
+      "linkCopiedLabel": "Booking link copied",
       "mapTitle": "Map of {{name}}",
       "pastHint": "This booking has already passed and can no longer be cancelled.",
       "referenceCopiedLabel": "Booking reference copied",
