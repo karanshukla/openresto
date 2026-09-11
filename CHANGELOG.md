@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-11
+
 ### Added
 
 - **Sharing a booking now hands out a link to it, on every platform.** The share sheet used to be native-only and carried only the reference, restaurant, time and party as text; it now also carries the same `/booking-confirmation/<ref>?email=…` link the confirmation email sends, built from the brand's website URL (or the server the build was pointed at when none is set). On iOS the link travels as its own item, so Messages previews it and AirDrop and Safari appear as targets; on Android it goes on its own line of the message. The web app and the installed PWA gain a Share button beside Copy: a browser with a share sheet (every phone browser, and desktop Chrome and Edge) opens it through the Web Share API, and one without copies the link to the clipboard instead. A recipient with the native app installed opens the link there through the existing Universal / App Link setup, and everyone else lands on the web page.
@@ -468,4 +470,5 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [1.9.0]: https://github.com/karanshukla/openresto/releases/tag/v1.9.0
 [2.0.0]: https://github.com/karanshukla/openresto/releases/tag/v2.0.0
 [2.0.1]: https://github.com/karanshukla/openresto/releases/tag/v2.0.1
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.0.1...HEAD
+[2.1.0]: https://github.com/karanshukla/openresto/releases/tag/v2.1.0
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.1.0...HEAD
