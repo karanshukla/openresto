@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { screen, waitFor, fireEvent, act } from "@testing-library/react-native";
+import { screen, waitFor, fireEvent, act, within } from "@testing-library/react-native";
 import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet } from "react-native";
 import LookupScreen from "@/components/booking/LookupScreen";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -405,6 +405,82 @@ describe("LookupScreen", () => {
       renderWithProviders(<LookupScreen initialRef="REF123" initialEmail="test@test.com" />);
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
       expect(haptics.outcome).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The booking is taller than the viewport, so the result column pins the way BookingDrawer
+   * does beside the locations list: capped at the scroller's visible height, scrolling inside.
+   */
+  describe("the result column beside the form", () => {
+    const onPlatform = async (os: string, body: () => Promise<void>) => {
+      const original = Platform.OS;
+      (Platform as unknown as { OS: string }).OS = os;
+      try {
+        await body();
+      } finally {
+        (Platform as unknown as { OS: string }).OS = original;
+      }
+    };
+
+    const renderFound = async () => {
+      (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
+      (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
+      renderWithProviders(
+        <LookupScreen initialRef="REF123" initialEmail="test@test.com" justBooked />
+      );
+      await waitFor(() => expect(screen.getByText("Booking Confirmed")).toBeTruthy());
+      fireEvent(screen.UNSAFE_getAllByType(ScrollView)[0], "layout", {
+        nativeEvent: { layout: { height: 900 } },
+      });
+    };
+
+    const columnStyle = () =>
+      StyleSheet.flatten(screen.getByTestId("lookup-result-column").props.style);
+
+    const rowStyle = () => StyleSheet.flatten(screen.getByTestId("lookup-columns").props.style);
+    const footerInScroller = () =>
+      within(screen.UNSAFE_getAllByType(ScrollView)[0]).queryByTestId("mock-footer") !== null;
+
+    it("pins on web, capped to the scroller it pins in", async () => {
+      await onPlatform("web", async () => {
+        await renderFound();
+        const style = columnStyle();
+        expect(style.position).toBe("sticky");
+        expect(style.overflowY).toBe("auto");
+        // The card, inside the shadow's room, clears the scroller's edge by the same margin at
+        // the top and the bottom.
+        const cardTop = style.top + style.padding;
+        expect(style.maxHeight - style.padding + style.top).toBe(900 - cardTop);
+      });
+    });
+
+    it("holds the row to a viewport's height on web, so the tallest column has room to pin", async () => {
+      await onPlatform("web", async () => {
+        await renderFound();
+        const cardTop = columnStyle().top + columnStyle().padding;
+        expect(rowStyle().minHeight).toBe(900 - cardTop);
+      });
+    });
+
+    it("leaves nothing after the row in the scroller on web, so reaching it cannot unpin the column", async () => {
+      await onPlatform("web", async () => {
+        await renderFound();
+        expect(screen.getByTestId("mock-footer")).toBeTruthy();
+        expect(footerInScroller()).toBe(false);
+        expect(screen.queryByTestId("scroll-to-top-rail")).toBeNull();
+      });
+    });
+
+    it("stays in the page's flow off web, where nothing can pin it", async () => {
+      await onPlatform("ios", async () => {
+        await renderFound();
+        const style = columnStyle();
+        expect(style.position).toBeUndefined();
+        expect(style.maxHeight).toBeUndefined();
+        expect(rowStyle().minHeight).toBeUndefined();
+        expect(footerInScroller()).toBe(true);
+      });
     });
   });
 
