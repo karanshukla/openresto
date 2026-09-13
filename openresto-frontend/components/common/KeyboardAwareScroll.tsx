@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   Keyboard,
+  LayoutChangeEvent,
   Platform,
   ScrollView,
   type NativeScrollEvent,
@@ -46,6 +47,7 @@ type ScrollShell = ComponentType<{
   keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   scrollEventThrottle?: number;
+  onLayout?: (e: LayoutChangeEvent) => void;
   children?: ReactNode;
 }>;
 
@@ -86,6 +88,7 @@ export function KeyboardAwareScroll({
   contentContainerStyle?: StyleProp<ViewStyle>;
   keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  onLayout?: (e: LayoutChangeEvent) => void;
   children?: ReactNode;
 }) {
   const ownRef = useRef<ScrollView | null>(null);

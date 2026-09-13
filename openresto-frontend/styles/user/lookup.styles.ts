@@ -6,11 +6,56 @@ const FORM_COL_WIDTH = 400;
 /** The result column takes the rest, up to a comfortable reading measure. */
 const RESULT_COL_MAX_WIDTH = 560;
 const COLUMN_GAP = 24;
+/** How far below the top of the scroller either column pins, so the two line up once pinned. */
+const PIN_TOP = theme.spacing.lg;
+/** Room inside the result column's own scroller for the card's shadow, which it would clip. */
+const SHADOW_ROOM = theme.spacing.md;
 
-// The form is short and the result is long, so on wide layouts the form column sticks
-// while the result scrolls past it — otherwise scrolling down the booking leaves a
-// column-height of empty space where the form used to be.
-const stickyOnWeb = Platform.OS === "web" ? ({ position: "sticky", top: 0 } as object) : null;
+// Either column can be the long one — the form grows with the recent-bookings list — so both
+// pin: scrolling past whichever is taller must not leave a column-height of empty space where
+// the shorter one used to be.
+const stickyOnWeb = Platform.OS === "web" ? ({ position: "sticky", top: PIN_TOP } as object) : null;
+
+/**
+ * Pins the result beside the form the way BookingDrawer sits beside the locations list. Two
+ * things are needed, because `sticky` alone does nothing here. A booking is taller than the
+ * viewport, so the column is capped at the scroller's visible height and scrolls inside. And
+ * the result is the row's tallest child, which leaves a sticky box nowhere to go, so the row is
+ * held to a viewport's height: the heading scrolls off and the columns pin beneath it. Nothing
+ * may follow the row inside the scroller, or scrolling past it carries the column away — so
+ * the row's floor stands in for the page's bottom padding, and LookupScreen moves the footer
+ * below the scroller (as LocationsScreen does beside its drawer) and drops the scroll-to-top
+ * rail, which a page that only scrolls by its heading has no use for.
+ *
+ * The column's padding and matching negative margin are room for the card's shadow, leaving
+ * the card itself where it sat. Evaluated per render rather than at import because both sizes
+ * come from a measured height.
+ *
+ * @see [LookupScreen.test.tsx](../../tests/components/booking/LookupScreen.test.tsx) — pins the
+ * cap and the row's floor to the measured scroller on web, and both columns staying in the
+ * page's flow off it.
+ */
+export function pinnedColumns(viewportHeight: number): {
+  page: object | null;
+  row: object | null;
+  result: object | null;
+} {
+  if (Platform.OS !== "web" || viewportHeight <= 0) return { page: null, row: null, result: null };
+  return {
+    page: { paddingBottom: 0 },
+    row: { minHeight: viewportHeight - PIN_TOP },
+    result: {
+      position: "sticky",
+      top: PIN_TOP - SHADOW_ROOM,
+      maxHeight: viewportHeight - 2 * (PIN_TOP - SHADOW_ROOM),
+      overflowY: "auto",
+      // SlidePanel's entrance slides in from the side, which would flash a horizontal scrollbar.
+      overflowX: "hidden",
+      padding: SHADOW_ROOM,
+      margin: -SHADOW_ROOM,
+    },
+  };
+}
 
 export const styles = StyleSheet.create({
   root: { flex: 1 },

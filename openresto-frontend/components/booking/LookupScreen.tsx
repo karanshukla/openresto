@@ -32,7 +32,7 @@ import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
 import { useOnline } from "@/hooks/use-online";
 import ScreenHeading from "@/components/layout/ScreenHeading";
-import { styles } from "@/styles/user/lookup.styles";
+import { pinnedColumns, styles } from "@/styles/user/lookup.styles";
 
 /**
  * The find-my-booking screen: a search form, plus — once a lookup runs — a result panel
@@ -60,6 +60,7 @@ export default function LookupScreen({
   const [refInput, setRefInput] = useState(initialRef ?? "");
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
   const refInputRef = useRef<TextInput>(null);
@@ -91,6 +92,7 @@ export default function LookupScreen({
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
   const showPanel = status !== "idle";
   const twoColumn = !isCompact && showPanel;
+  const pinned = pinnedColumns(twoColumn ? viewportHeight : 0);
 
   // Read once, at mount, because the auto-open below fires once: a diner who rotates their
   // phone mid-session shouldn't have a booking opened at them for it.
@@ -234,8 +236,11 @@ export default function LookupScreen({
           ]}
           keyboardShouldPersistTaps="handled"
           onScroll={fab.trackScroll}
+          onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
         >
-          <PageContainer style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle]}>
+          <PageContainer
+            style={[styles.page, twoColumn ? styles.pageWide : styles.pageIdle, pinned.page]}
+          >
             <ScreenHeading
               standalone
               title={t("lookup.title")}
@@ -243,7 +248,10 @@ export default function LookupScreen({
               style={styles.header}
             />
 
-            <View style={twoColumn ? styles.wideRow : styles.singleCol}>
+            <View
+              testID="lookup-columns"
+              style={twoColumn ? [styles.wideRow, pinned.row] : styles.singleCol}
+            >
               <View style={twoColumn ? styles.formCol : undefined}>
                 <View
                   style={[
@@ -336,7 +344,7 @@ export default function LookupScreen({
               </View>
 
               {twoColumn && (
-                <View style={styles.resultCol}>
+                <View testID="lookup-result-column" style={[styles.resultCol, pinned.result]}>
                   <SlidePanel
                     variant="side"
                     onDismiss={reset}
@@ -349,10 +357,12 @@ export default function LookupScreen({
             </View>
           </PageContainer>
 
-          <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />
-          <Footer />
+          {!pinned.result && <ScrollToTopFab visible={fab.visible} onPress={scrollToTop} />}
+          {!pinned.result && <Footer />}
         </KeyboardAwareScroll>
       </KeyboardAvoider>
+
+      {pinned.result && <Footer />}
 
       {isCompact && showPanel && (
         <SlidePanel
