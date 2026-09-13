@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-13
+
+### Added
+
+- **The booking result now stays in view on wide screens.** On `/lookup` and `/booking-confirmation`, the result panel used to scroll away with the rest of the page, unlike the booking drawer on `/locations`, which stays put. A booking is the tallest thing in the row, so a sticky column previously had nothing to stick against. On a wide web layout the result column is now capped at the scroller's visible height and scrolls inside it, with the row held to the viewport's height so the heading scrolls off and both columns pin underneath. The footer moves below the scroller, the same way it does beside the drawer on `LocationsScreen`, and the scroll-to-top rail drops out, since either one after the row would carry the pinned column off with it. Native is unchanged.
+
 ## [2.1.0] - 2026-09-11
 
 ### Added
@@ -471,4 +477,5 @@ Hello! Thanks for reading the changelog, and for the 50 stars on Github! This pr
 [2.0.0]: https://github.com/karanshukla/openresto/releases/tag/v2.0.0
 [2.0.1]: https://github.com/karanshukla/openresto/releases/tag/v2.0.1
 [2.1.0]: https://github.com/karanshukla/openresto/releases/tag/v2.1.0
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.1.0...HEAD
+[2.2.0]: https://github.com/karanshukla/openresto/releases/tag/v2.2.0
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.2.0...HEAD
